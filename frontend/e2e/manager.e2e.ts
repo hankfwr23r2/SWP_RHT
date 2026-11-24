@@ -53,8 +53,10 @@ test('danh sách theo nhóm, menu hiện số việc đang chờ, điện thoạ
   await page.setViewportSize({ width: 360, height: 740 })
   await open(page, '/manager/orders')
   await expect(page.getByRole('link', { name: 'BK-TEST' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Lập báo giá' })).toBeVisible()
   await page.getByRole('tab', { name: 'Thiếu giấy' }).click()
   await expect(page.getByRole('link', { name: 'BK-THIEU' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Xử lý giấy' })).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0)
   await page.setViewportSize({ width: 1280, height: 800 })
   await expect(page.getByRole('link', { name: /Đơn hàng/ }).getByText('1')).toBeVisible()
@@ -75,7 +77,8 @@ test('lập bản nháp, điều chỉnh có lý do rồi gửi báo giá', asyn
   await expect(dialog).toHaveCount(0)
   await page.getByRole('button', { name: 'Gửi khách' }).click()
   await page.getByRole('alertdialog').getByRole('button', { name: 'Gửi khách' }).click()
-  await expect(page.getByText('Chờ bạn trả lời')).toBeVisible()
+  await expect(page.getByText('Chờ khách trả lời', { exact: true })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Bước tiếp theo' })).toContainText('Đang chờ khách trả lời báo giá')
   expect(state.calls).toEqual([
     { path: '/bookings/8/quotations', body: {} },
     { path: '/quotations/5/adjust', body: { adjustment: -500000, reason: 'Khách thân thiết' } },

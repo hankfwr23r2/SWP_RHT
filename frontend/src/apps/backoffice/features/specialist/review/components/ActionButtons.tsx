@@ -37,11 +37,11 @@ export function ActionButtons({ options, actions }: { options: ReviewAction[]; a
 
   return <>
     <div className={s.actions}>
-      {options.map(option => <Button key={option.label} size="sm" variant={option.danger ? 'danger' : 'secondary'}
+      {[...options].sort((a, b) => Number(!!a.danger) - Number(!!b.danger) || Number(!!b.primary) - Number(!!a.primary)).map(option => <Button key={option.label} size="sm" variant={option.primary ? 'primary' : option.danger ? 'ghost' : 'secondary'}
         disabled={actions.busy} onClick={() => {
           actions.clear()
           setQuoteError('')
-          setReason('')
+          setReason(option.initialReason ?? '')
           setSubmitted(false)
           setSelected(option)
         }}>{t(`staffReview.action.${option.label}`)}</Button>)}

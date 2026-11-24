@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canCancel, canReject, canSettle, GROUPS, groupOfParam, ORDER_GROUPS } from './orderGroups'
+import { canCancel, canReject, canSettle, GROUPS, groupOfParam, ORDER_GROUPS, taskOf } from './orderGroups'
 
 describe('nhóm đơn của quản lý', () => {
   it('mỗi trạng thái nằm đúng một nhóm', () => {
@@ -11,6 +11,13 @@ describe('nhóm đơn của quản lý', () => {
     expect(groupOfParam('abc')).toBe('quoting')
     expect(groupOfParam(null)).toBe('quoting')
     for (const group of GROUPS) expect(groupOfParam(group)).toBe(group)
+  })
+  it('chọn nút theo việc cần làm', () => {
+    expect(taskOf('PENDING_INTAKE')).toBe('intake')
+    expect(taskOf('QUOTING')).toBe('quote')
+    expect(taskOf('DELIVERED')).toBe('settle')
+    expect(taskOf('CONFIRMED', 'documents')).toBe('delay')
+    expect(taskOf('CONFIRMED')).toBeUndefined()
   })
   it('ẩn nút chắc chắn không dùng được', () => {
     expect(canCancel('CONFIRMED')).toBe(true)

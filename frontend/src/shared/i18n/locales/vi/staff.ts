@@ -1,5 +1,6 @@
 // Khung chung của app nội bộ: menu, thanh trên, hồ sơ nhân viên, phần dùng chung giữa các vai trò
 export const staff = {
+  staffAction: { next: 'Bước tiếp theo' },
   incidents: {
     "title": "Sự cố",
     "description": "Sự cố đang xử lý: lập phương án, duyệt, theo dõi chi phí. Sự cố không đổi trạng thái đơn.",

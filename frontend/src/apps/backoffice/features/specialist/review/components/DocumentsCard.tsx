@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { BookingDocument, ChecklistItem, DocumentChecklist } from '@shared/api/bookingDocuments'
 import type { BookingDetail, BookingStatus } from '@shared/api/bookingOrders'
@@ -18,15 +18,17 @@ const documentTone = { UPLOADED: 'info', APPROVED: 'success', REJECTED: 'danger'
 function DocumentRow({ document, editable, actions }: { document: BookingDocument; editable: boolean; actions: ReviewActions }) {
   const { t, i18n } = useTranslation()
   const { id, status, fileUrl, fileName, expiryDate, reviewNote } = document
-  return <li className={s.item}>
+  const pending = editable && status === 'UPLOADED'
+  return <li className={s.item} data-pending={pending || undefined}>
     <div className={s.stack}>
       <div className={s.row}>
-        {fileUrl && <a href={fileUrl} target="_blank" rel="noopener noreferrer">{fileName || t('staffReview.viewFile')}</a>}
+        {fileUrl && <a className={s.file} href={fileUrl} target="_blank" rel="noopener noreferrer">
+          <i className="fa-solid fa-eye" aria-hidden="true" /> {t('staffReview.viewFile', { name: fileName ?? '' })}</a>}
         {status && <StatusBadge tone={documentTone[status]} label={t(`staffReview.documentStatus.${status}`)} />}
       </div>
       {expiryDate && <p>{t('staffReview.expiry', { date: showDate(expiryDate, i18n.language) })}</p>}
       {reviewNote && <p>{reviewNote}</p>}
-      {editable && status === 'UPLOADED' && id != null &&
+      {pending && id != null &&
         <ActionButtons options={[actions.approveDocument(id), actions.rejectDocument(id)]} actions={actions} />}
     </div>
   </li>
@@ -40,11 +42,19 @@ export function DocumentsCard({ checklist, horses, status, actions }: {
   const horseFor = (item: ChecklistItem) => horses?.find(horse => horse.id === item.bookingHorseId)
   const editable = showsDocumentActions(status)
   const items = checklist.items ?? []
+  // Duyệt hoặc từ chối xong một giấy thì cuộn tới giấy chờ duyệt kế tiếp
+  const list = useRef<HTMLUListElement>(null)
+  const pending = checklist.documents?.filter(document => document.status === 'UPLOADED').length ?? 0
+  const before = useRef(pending)
+  useEffect(() => {
+    if (pending < before.current) list.current?.querySelector('[data-pending]')?.scrollIntoView?.({ block: 'center' })
+    before.current = pending
+  }, [pending])
 
   return <Card title={t('staffReview.documents')}>
     <div className={s.stack}>
       {checklist.requirementsDependOnGate && <p>{t('staffReview.gatePending')}</p>}
-      {!items.length ? <EmptyState title={t('staffReview.noDocuments')} description={t('staffReview.noDocumentsHint')} /> : <ul className={s.list}>
+      {!items.length ? <EmptyState title={t('staffReview.noDocuments')} description={t('staffReview.noDocumentsHint')} /> : <ul ref={list} className={s.list}>
         {items.map(item => {
           const horse = horseFor(item)
           const documents = documentsFor(item, checklist.documents ?? [], horse?.horseId)
@@ -60,6 +70,8 @@ export function DocumentsCard({ checklist, horses, status, actions }: {
               </div>
               {!!documents.length && <ul className={s.list}>{documents.map(document =>
                 <DocumentRow key={document.id} document={document} editable={editable} actions={actions} />)}</ul>}
+              {status === 'UNDER_REVIEW' && submitter === 'CUSTOMER' && item.satisfied === false && !documents.some(document => document.status === 'UPLOADED')
+                && <ActionButtons options={[actions.askDocument([item.requirement?.documentTypeName, horse?.horseName].filter(Boolean).join(' · '))]} actions={actions} />}
               {canUpload && <div><Button size="sm" disabled={actions.busy} onClick={() => {
                 actions.clear()
                 setUploading(item)

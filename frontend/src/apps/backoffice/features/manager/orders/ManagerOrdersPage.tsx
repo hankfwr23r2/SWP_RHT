@@ -1,6 +1,6 @@
 // Đơn hàng của quản lý: theo từng nhóm việc, tìm theo mã đơn, khách, tuyến.
 import { useState } from 'react'
-import { Link, useSearchParams } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { OrderStatusBadge } from '@shared/components/OrderStatusBadge'
 import { Button } from '@shared/ui/Button'
@@ -12,12 +12,13 @@ import { Skeleton } from '@shared/ui/Skeleton'
 import { Table, type TableColumn } from '@shared/ui/Table'
 import { Tabs } from '@shared/ui/Tabs'
 import { day, showDate } from '@backoffice/shared/staffFormat'
-import { GROUPS, groupOfParam } from './orderGroups'
+import { GROUPS, groupOfParam, taskOf } from './orderGroups'
 import { useOrderList, type OrderRow } from './useOrderList'
 import s from '@backoffice/shared/StaffPanels.module.css'
 
 export default function ManagerOrdersPage() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const group = groupOfParam(params.get('group'))
   const [query, setQuery] = useState(params.get('q') ?? '')
@@ -35,6 +36,10 @@ export default function ManagerOrdersPage() {
     { key: 'horses', header: t('mgr.orders.horses'), align: 'center', render: row => row.horseCount || '—' },
     { key: 'created', header: t('mgr.orders.created'), render: row => row.createdAt ? day(row.createdAt) : '—' },
     { key: 'status', header: t('mgr.orders.status'), render: row => <OrderStatusBadge status={row.status} /> },
+    { key: 'action', header: t('mgr.orders.action'), align: 'end', render: row => {
+      const task = taskOf(row.status, group)
+      return <Button size="sm" variant={task ? 'primary' : 'secondary'} onClick={() => navigate(`/manager/orders/${row.id}`)}>{t(`mgr.orders.tasks.${task ?? 'view'}`)}</Button>
+    } },
   ]
 
   const content = () => {
