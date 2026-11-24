@@ -1,6 +1,27 @@
 // Khung chung của app nội bộ: menu, thanh trên, hồ sơ nhân viên, phần dùng chung giữa các vai trò
 export const staff = {
   staffAction: { next: 'Next step' },
+  managerOverview: {
+    "title": "Overview",
+    "description": "This week's operations and items waiting for the manager.",
+    "cardsLabel": "Overview figures",
+    "card": { "revenue": "Company revenue, 30 days", "trips": "Trips completed this week", "onTime": "On-time stop arrivals", "incidents": "Open incidents" },
+    "details": "View details",
+    "incidentsTitle": "Open incidents · {{count}} awaiting plan approval",
+    "incidentsCaption": "Open incidents",
+    "allIncidents": "All incidents",
+    "noIncidents": "No open incidents",
+    "noIncidentsDescription": "Incidents reported by crews appear here until closed.",
+    "colIncident": "Incident",
+    "colTrip": "Trip, horse, booking",
+    "colStatus": "Status",
+    "colReported": "Reported",
+    "tripsTitle": "Trips this week",
+    "tripsCaption": "Trips this week",
+    "allTrips": "Trip reports",
+    "noTrips": "No trips this week",
+    "noTripsDescription": "Trips planned by coordinators this week appear here."
+  },
   incidents: {
     "title": "Incidents",
     "description": "Open incidents: propose plans, approve, follow costs. Incidents do not change the booking status.",

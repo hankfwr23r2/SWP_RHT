@@ -61,7 +61,7 @@ export const routes: AppRoute[] = [
   { path: '/admin/accounts', lazyPage: () => import('./features/admin/accounts/AccountsPage'), loader: () => import('./features/admin/accounts/loaders').then(m => m.loader()), roles: A, get title() { return i18n.t('staffCatalog.accounts.title') }, layout: 'staff' },
   { path: '/admin/parties', lazyPage: () => import('./features/admin/parties/PartiesPage'), loader: () => import('./features/admin/parties/loaders').then(m => m.loader()), roles: ['admin', 'coordinator'], get title() { return i18n.t('staffCatalog.parties.title') }, layout: 'staff' },
 
-  { path: '/manager', lazyPage: () => import('./features/manager/dashboard/DashboardPage'), loader: load('bookingListLoader'), roles: M, title: 'Bảng điều khiển', layout: 'staff' },
+  { path: '/manager', lazyPage: () => import('./features/manager/overview/OverviewPage'), roles: M, title: 'Tổng quan', layout: 'staff' },
   {
     path: '/manager/orders', roles: M, layout: 'staff', catalog: false,
     lazyPage: () => Promise.all([import('./features/manager/orders/ManagerOrdersPage'), managerTexts()]).then(([page]) => page), title: 'Đơn hàng',

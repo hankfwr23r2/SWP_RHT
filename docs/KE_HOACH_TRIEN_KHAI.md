@@ -665,7 +665,7 @@ Xong thì chạy Quality Gate và báo kết quả thật.
 | B4 | Sự cố, chi phí | B | 4 | Xong: sự cố, phương án, chi phí (#385, #386). Biên lai chi phí, ảnh hiện trường (#441). Thực hiện phương án đổi xe và đưa ngựa về hub (#442). B4 xong | #385, #386, #441, #442 |
 | B5 | Giao thất bại, giao lại | B | 4 | Xong: chờ người nhận, quá giờ thì giao thất bại, về hub, giao lại (#387). Gửi chuồng tại hub có hạn giữ, phí lưu chuồng và chăm sóc theo ngày, nhắc quá hạn (#440). Chờ luồng A: khoản thu phí khi người nhận tới hub đón lúc đơn còn IN_OPERATION | #387, #440 |
 | A8 | Quyết toán, hủy, đánh giá | A | 5 | Xong backend | #396, #397 |
-| B6 | Theo dõi, thông báo, báo cáo | B | 5 | Xong phần chính (6 PR): chuông thông báo, hành trình ngựa và tra cứu công khai, báo cáo vận hành, nhật ký hệ thống. Báo khách khi nhận, giao ngựa và qua cửa khẩu (#430). Báo cáo doanh thu `/reports/revenue` (#434). Còn: bảng điều khiển `/manager` | #388, #389, #390, #391, #392, #393, #430, #434 |
+| B6 | Theo dõi, thông báo, báo cáo | B | 5 | Xong phần chính (6 PR): chuông thông báo, hành trình ngựa và tra cứu công khai, báo cáo vận hành, nhật ký hệ thống. Báo khách khi nhận, giao ngựa và qua cửa khẩu (#430). Báo cáo doanh thu `/reports/revenue` (#434). Màn Tổng quan `/manager` (#444). B6 xong | #388, #389, #390, #391, #392, #393, #430, #434, #444 |
 | E | Tích hợp, dọn dẹp, ERD, merge | A + B | 6 | Chưa làm | |
 
 ---
@@ -676,7 +676,7 @@ Người dùng chốt: ẩn khỏi menu và đổi trang mở đầu, chưa xóa
 
 | Màn cũ | Đường dẫn | Màn thay thế |
 |---|---|---|
-| Tổng quan quản lý (`manager/dashboard`, kéo theo `manager/intake`, `manager/approvals`) | `/manager` | `/manager/orders` |
+| Tổng quan quản lý (`manager/dashboard`, kéo theo `manager/intake`, `manager/approvals`) | `/manager` | `/manager/orders` (đơn); `/manager` nay là màn Tổng quan mới `manager/overview` (B6) |
 | Doanh thu (`manager/reports`) | `/manager/reports` | Đã chuyển sang `/reports/revenue`, hiện lại trong menu (#434) |
 | Sự cố quản lý cũ (`manager/incidents`, không còn đường dẫn) | | `/manager/incidents` (bảng sự cố mới) |
 | Xe và lộ trình (`coordinator/fleet-plan`) | `/coordinator/fleet-plan` | `/coordinator/plans` và `/coordinator/dispatch` |
