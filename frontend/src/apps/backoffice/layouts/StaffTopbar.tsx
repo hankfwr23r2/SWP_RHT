@@ -14,7 +14,11 @@ import { StaffProfileModal } from './StaffProfileModal'
 import s from './StaffShell.module.css'
 
 // Trang danh sách nhận từ khóa tìm kiếm của từng vai trò
-const SEARCH_IN: Record<StaffRole, string> = { admin: '/admin/accounts', manager: '/manager/orders', specialist: '/specialist/verification', coordinator: '/coordinator/fleet-plan', driver: '/driver', escort: '/escort' }
+const SEARCH_IN: Record<StaffRole, string> = { admin: '/admin/accounts', manager: '/manager/orders', specialist: HOME_OF.specialist, coordinator: '/coordinator/fleet-plan', driver: '/driver', escort: '/escort' }
+
+function reviewNoticeLink(path: string) {
+  return path.replace(/^(?:\/backoffice)?\/specialist\/verification(?=\/|\?|#|$)/, '/specialist/review')
+}
 
 export function StaffTopbar() {
   const { t } = useTranslation()
@@ -48,7 +52,7 @@ export function StaffTopbar() {
       </form>
       <div className={s.right}>
         <TranslateToggle />
-        <NoticeBell />
+        <NoticeBell resolveLink={role === 'specialist' ? reviewNoticeLink : undefined} />
         <Button icon={<i className="fa-solid fa-arrow-right-from-bracket" />} onClick={() => { logout(); navigate('/login') }} aria-label={t('staffTopbar.logout', 'Đăng xuất')} title={t('staffTopbar.logout', 'Đăng xuất')} />
       </div>
     </header>

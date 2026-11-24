@@ -6,6 +6,7 @@ import { staff } from './staff'
 import { staffManager } from './staffManager'
 import { manager } from './manager'
 import { specialist } from './specialist'
+import { staffReview } from './staffReview'
 import { coordinator } from './coordinator'
 import { fieldCrew } from './fieldCrew'
 import { admin } from './admin'
@@ -18,6 +19,7 @@ export const en = {
   ...staff, ...staffManager,
   ...manager,
   ...specialist,
+  ...staffReview,
   ...coordinator,
   ...fieldCrew,
   ...admin,

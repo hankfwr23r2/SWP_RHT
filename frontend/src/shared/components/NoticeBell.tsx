@@ -9,7 +9,7 @@ import { ConfirmDialog } from '@shared/ui/ConfirmDialog'
 import { useToast } from '@shared/ui/toast'
 import s from './NoticeBell.module.css'
 
-export function NoticeBell() {
+export function NoticeBell({ resolveLink }: { resolveLink?: (path: string) => string }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const toast = useToast()
@@ -43,7 +43,7 @@ export function NoticeBell() {
     if (!n.read) await notificationsApi.markRead(n.id!).catch(() => undefined)
     setOpen(false)
     load()
-    if (n.linkUrl) navigate(n.linkUrl)
+    if (n.linkUrl) navigate(resolveLink?.(n.linkUrl) ?? n.linkUrl)
   }
   const readAll = async () => { await notificationsApi.markAllRead().catch(() => undefined); load() }
   const remove = async (action: () => Promise<void>, done: string) => {
