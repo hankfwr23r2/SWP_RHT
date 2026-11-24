@@ -13,7 +13,6 @@ const SRC = join(FRONTEND, 'src')
 
 const EXCEPTIONS = {
   S1: [
-    'src/apps/backoffice/features/admin/pricing/AdminPricingPage.tsx',
     'src/apps/backoffice/features/auth/StaffLoginPage.tsx',
     'src/apps/backoffice/features/coordinator/fleet-plan/FleetPlanPage.tsx',
     'src/apps/backoffice/features/coordinator/fleet-plan/InlineRouteMap.tsx',
@@ -64,7 +63,6 @@ const EXCEPTIONS = {
     'src/shared/ui/TripTrackMap.tsx',
   ],
   S2: [
-    'src/apps/backoffice/features/admin/routes/AdminRoutesPage.tsx',
     'src/apps/backoffice/features/coordinator/fleet-plan/FleetPlanPage.tsx',
     'src/apps/backoffice/features/coordinator/fleet-plan/InlineRouteMap.tsx',
     'src/apps/backoffice/features/coordinator/fleet-plan/RouteMapPicker.tsx',

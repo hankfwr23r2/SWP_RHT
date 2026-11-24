@@ -1,11 +1,12 @@
 // Danh sách trang của app nội bộ: URL → trang → vai trò.
 import { lazy } from 'react'
-import i18n from '@shared/i18n'
+import i18n, { i18nReady } from '@shared/i18n'
 import type { PageLoader } from '@shared/routing/pageData'
 import type { AppRoute } from '@shared/routing/types'
 import { managerTexts } from '@shared/i18n/staffTexts'
 import { ManagerLoginPage, StaffLoginPage } from './features/auth/StaffLoginPage'
 import type * as Loaders from './shared/loaders'
+import type * as NetworkLoaders from './features/admin/network/loaders'
 // Loader nằm ngoài gói tải đầu: chỉ tải khi mở trang có dữ liệu
 const load = <K extends keyof typeof Loaders>(name: K): PageLoader => async ctx =>
   (await import('./shared/loaders'))[name](ctx)
@@ -24,17 +25,35 @@ const M: AppRoute['roles'] = ['manager']
 const SP: AppRoute['roles'] = ['specialist']
 const CO: AppRoute['roles'] = ['coordinator']
 
+const loadNetwork = <K extends keyof typeof NetworkLoaders>(name: K): PageLoader => async ctx =>
+  (await import('./features/admin/network/loaders'))[name](ctx)
+
+const staffCatalogPage = (path: string, title: string, page: NonNullable<AppRoute['lazyPage']>, loader: PageLoader, roles = A): AppRoute => ({
+  path, roles, layout: 'staff', loader,
+  lazyPage: () => Promise.all([page(), i18nReady]).then(([component]) => component),
+  get title() { return i18n.t('staffNetwork.' + title) },
+})
+
 export const routes: AppRoute[] = [
   { path: '/forgot-password', page: StaffForgotPasswordPage, roles: [], title: 'Khôi phục mật khẩu', layout: 'bare', catalog: false },
   { path: '/profile', page: StaffProfilePage, roles: ['admin', 'manager', 'specialist', 'coordinator', 'driver', 'escort'], title: 'Hồ sơ nhân viên', layout: 'staff' },
   { path: '/login', page: StaffLoginPage, roles: [], title: 'Đăng nhập nội bộ', layout: 'bare', catalog: false },
   { path: '/manager/login', page: ManagerLoginPage, roles: [], title: 'Đăng nhập quản lý', layout: 'bare', catalog: false },
 
-  { path: '/admin/pricing', lazyPage: () => import('./features/admin/pricing/AdminPricingPage'), loader: load('adminPricingLoader'), roles: A, title: 'Biểu giá & Công thức', layout: 'staff' },
+  staffCatalogPage('/admin/pricing', 'pricing', () => import('./features/admin/pricing/AdminPricingPage'),
+    () => import('./features/admin/pricing/loaders').then(m => m.pricingLoader()), ['admin', 'manager']),
+  staffCatalogPage('/admin/pricing/:id', 'viewPriceList', () => import('./features/admin/pricing/PriceListDetailPage'),
+    ctx => import('./features/admin/pricing/loaders').then(m => m.pricingDetailLoader(ctx)), ['admin', 'manager']),
+  staffCatalogPage('/admin/network/locations', 'locations', () => import('./features/admin/network/LocationsPage'), loadNetwork('locationsLoader')),
+  staffCatalogPage('/admin/network/areas', 'areas', () => import('./features/admin/network/AreasPage'), loadNetwork('areasLoader')),
+  staffCatalogPage('/admin/network/routes', 'routes', () => import('./features/admin/network/RoutesPage'), loadNetwork('routesLoader')),
+  staffCatalogPage('/admin/network/routes/new', 'addRoute', () => import('./features/admin/network/RouteEditorPage'), loadNetwork('routeEditorLoader')),
+  staffCatalogPage('/admin/network/routes/:id', 'viewRoute', () => import('./features/admin/network/RouteEditorPage'), loadNetwork('routeEditorLoader')),
+  staffCatalogPage('/admin/network/routes/:id/edit', 'editRoute', () => import('./features/admin/network/RouteEditorPage'), loadNetwork('routeEditorLoader')),
+  staffCatalogPage('/admin/network/schedules', 'schedules', () => import('./features/admin/network/SchedulesPage'), loadNetwork('schedulesLoader')),
+  staffCatalogPage('/admin/network/departures', 'departures', () => import('./features/admin/network/DeparturesPage'), loadNetwork('departuresLoader')),
   { path: '/admin/horse-types', lazyPage: () => import('./features/admin/horse-types/AdminHorseTypesPage'), loader: () => import('./features/admin/horse-types/loaders').then(m => m.loader()), roles: A, get title() { return i18n.t('staffCatalog.horseTypes.title') }, layout: 'staff' },
   { path: '/admin/vehicles', lazyPage: () => import('./features/admin/vehicles/VehiclesPage'), loader: () => import('./features/admin/vehicles/loaders').then(m => m.loader()), roles: A, get title() { return i18n.t('staffCatalog.vehicles.title') }, layout: 'staff' },
-  { path: '/admin/routes', lazyPage: () => import('./features/admin/routes/AdminRoutesPage'), loader: load('adminRoutesLoader'), roles: A, title: 'Tuyến đường cố định', layout: 'staff' },
-  { path: '/admin/services', lazyPage: () => import('./features/admin/services/AdminServicesPage'), loader: load('adminServicesLoader'), roles: A, title: 'Dịch vụ & Biểu phí', layout: 'staff' },
   { path: '/admin/settings', lazyPage: () => import('./features/admin/settings/SettingsPage'), loader: () => import('./features/admin/settings/loaders').then(m => m.loader()), roles: A, get title() { return i18n.t('staffCatalog.settings.title') }, layout: 'staff' },
   { path: '/admin/regulations', lazyPage: () => import('./features/admin/regulations/RegulationsPage'), loader: () => import('./features/admin/regulations/loaders').then(m => m.loader()), roles: A, get title() { return i18n.t('staffCatalog.regulations.title') }, layout: 'staff' },
   { path: '/admin/system-logs', lazyPage: () => import('./features/admin/system-logs/SystemLogsPage'), loader: () => import('./features/admin/system-logs/loaders').then(m => m.loader()), roles: A, get title() { return i18n.t('systemLogs.title') }, layout: 'staff' },

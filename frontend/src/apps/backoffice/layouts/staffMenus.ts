@@ -3,15 +3,17 @@ import type { StaffRole } from '@shared/types/role'
 // Menu theo vai trò. Các mục của Flow 1 (tiếp nhận, duyệt báo giá, duyệt hồ sơ ngựa, phương án xe) theo quy trình mới.
 export const STAFF_MENUS: Record<StaffRole, [path: string, label: string, opt?: { group?: string; icon?: string }][]> = {
   admin: [
-    ['/admin/pricing', 'Biểu giá & Công thức', { icon: 'fa-calculator' }],
     ['/admin/horse-types', 'Danh mục loại ngựa', { icon: 'fa-horse-head' }],
     ['/admin/vehicles', 'Đội xe', { icon: 'fa-truck' }],
-    ['/admin/routes', 'Tuyến đường cố định', { icon: 'fa-road' }],
-    ['/admin/services', 'Dịch vụ & Biểu phí', { icon: 'fa-bell-concierge' }],
     ['/admin/settings', 'Tham số hệ thống', { icon: 'fa-scale-balanced' }],
     ['/admin/regulations', 'Quy định và giấy tờ', { icon: 'fa-file-circle-check' }],
     ['/admin/accounts', 'Tài khoản nhân viên', { icon: 'fa-users-gear' }],
     ['/admin/parties', 'Đối tác', { icon: 'fa-address-book' }],
+    ['/admin/network/locations', 'Địa điểm', { icon: 'fa-location-dot' }],
+    ['/admin/network/areas', 'Vùng phục vụ', { icon: 'fa-diagram-project' }],
+    ['/admin/network/routes', 'Tuyến', { icon: 'fa-road' }],
+    ['/admin/network/schedules', 'Lịch chạy', { icon: 'fa-calendar-days' }],
+    ['/admin/pricing', 'Bảng giá', { icon: 'fa-calculator' }],
     ['/admin/system-logs', 'Nhật ký hệ thống', { icon: 'fa-clock-rotate-left' }],
     ['/admin/ui-library', 'Thư viện giao diện', { icon: 'fa-swatchbook' }],
   ],

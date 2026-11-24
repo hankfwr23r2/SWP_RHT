@@ -12,21 +12,6 @@ export async function bookingListLoader() {
   return loadAll({ all: bookingsApi.list() })
 }
 
-export async function adminRoutesLoader() {
-  const { routesApi } = await import('@shared/api/routes')
-  return loadAll({ routes: routesApi.listRoutes(), locations: routesApi.listAdminLocations() })
-}
-
-export async function adminServicesLoader() {
-  const { adminServicesApi } = await import('@shared/api/adminServices')
-  return loadAll({ services: adminServicesApi.listServices(), categories: adminServicesApi.listCategories() })
-}
-
-export async function adminPricingLoader() {
-  const { systemConfigApi } = await import('@shared/api/systemConfig')
-  return loadAll({ configs: systemConfigApi.listAdminConfigs() })
-}
-
 // Giám sát vận chuyển: đơn và kíp xe
 export async function monitoringLoader() {
   const [{ bookingsApi }, { crewApi }] = await Promise.all([bookings(), import('@shared/services/fleet')])
