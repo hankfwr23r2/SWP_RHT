@@ -18,6 +18,16 @@ const run = (over: Partial<NonNullable<CrewTrip['trip']>> = {}, extra: Partial<C
 })
 
 describe('tripRunModel', () => {
+  it('ở cửa khẩu có bàn giao với đại lý khi có con xuống xe (đơn xuất) hoặc lên xe (đơn nhập)', () => {
+    const border = run({ stops: [
+      { id: 1, stopType: 'HUB', actualArrivalAt: 't', actualDepartureAt: 't' },
+      { id: 2, stopType: 'BORDER', actualArrivalAt: 't' },
+    ] }, { horses: [{ leg: { id: 9, boardTripStopId: 1, alightTripStopId: 2, status: 'IN_PROGRESS' } }] })
+    expect(handoverTypesAt(border, border.trip!.stops![1])).toEqual(['AGENT'])
+    const empty = run({ stops: border.trip!.stops }, { horses: [] })
+    expect(handoverTypesAt(empty, empty.trip!.stops![1])).toEqual([])
+  })
+
   it('trả ngựa khi quá hạn số dư chỉ có ở điểm đón đang đứng, sau khi đã nhận con lên xe', () => {
     const received = { leg: { id: 9, boardTripStopId: 2, alightTripStopId: 3, status: 'IN_PROGRESS' as const } }
     expect(canReturnUnpaid(run(), run().trip!.stops![1])).toBe(false)

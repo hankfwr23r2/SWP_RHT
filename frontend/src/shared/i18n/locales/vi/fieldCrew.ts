@@ -2,6 +2,7 @@
 export const fieldCrew = {
   myTrips: {
     "run": {
+      "agentParty": "Đại lý: {{name}}",
       "unpaidReturn": {
         "action": "Trả ngựa do quá hạn thanh toán",
         "title": "Trả ngựa cho người gửi?",
@@ -83,6 +84,7 @@ export const fieldCrew = {
         "DELIVERY": "Giao ngựa",
         "HUB_IN": "Giao vào hub",
         "RETURN": "Trả ngựa cho người gửi",
+        "AGENT": "Bàn giao với đại lý",
         "HUB_OUT": "Nhận từ hub"
       },
       "handoverStatus": {

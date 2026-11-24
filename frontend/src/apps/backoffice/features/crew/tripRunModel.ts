@@ -37,6 +37,8 @@ export function handoverTypesAt(run: CrewTrip, stop: Stop): HandoverType[] {
   if (stop.stopType === 'DELIVERY' && alighting) types.push('DELIVERY')
   if (stop.stopType === 'HUB' && alighting) types.push('HUB_IN')
   if (stop.stopType === 'HUB' && boarding) types.push('HUB_OUT')
+  // Cửa khẩu: giao cho đại lý (đơn xuất) hoặc nhận từ đại lý (đơn nhập); backend chọn đại lý theo chặng
+  if (stop.stopType === 'BORDER' && (alighting || boarding)) types.push('AGENT')
   return types
 }
 

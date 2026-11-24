@@ -1,7 +1,7 @@
 // Điều độ (điều phối viên): đơn chờ xếp xe và lượt xe trong tuần (docs/MAN_HINH_VA_TAC_DONG.md mục 3.9)
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { dispatchApi, type DispatchBooking, type VehicleTrip } from '@shared/api/dispatch'
+import { dispatchApi, type DispatchBooking, type DispatchHorse, type VehicleTrip } from '@shared/api/dispatch'
 import { BookingJourney } from '@shared/components/HorseJourney'
 import { useLoad } from '@shared/hooks/useLoad'
 import { Button } from '@shared/ui/Button'
@@ -13,6 +13,7 @@ import { Modal } from '@shared/ui/Modal'
 import { PageHeader } from '@shared/ui/PageHeader'
 import { Skeleton } from '@shared/ui/Skeleton'
 import { Tabs } from '@shared/ui/Tabs'
+import { AgentLegModal } from './AgentLegModal'
 import { BookingsTable } from './BookingsTable'
 import { CreateTripModal } from './CreateTripModal'
 import { HubStaysPanel } from './HubStaysPanel'
@@ -20,6 +21,13 @@ import { TripDetailModal } from './TripDetailModal'
 import { TripsTable } from './TripsTable'
 import { weekRange } from './dispatchModel'
 import s from './Dispatch.module.css'
+
+// Lấy lại đơn và con ngựa từ dữ liệu mới nhất sau mỗi lần tải lại
+const agentTarget = (bookings: DispatchBooking[], key: { bookingId: number; bookingHorseId: number }): { booking: DispatchBooking; horse: DispatchHorse } | undefined => {
+  const booking = bookings.find(b => b.id === key.bookingId)
+  const horse = booking?.horses?.find(h => h.bookingHorseId === key.bookingHorseId)
+  return booking && horse ? { booking, horse } : undefined
+}
 
 const today = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' })
 
@@ -30,6 +38,7 @@ export default function DispatchPage() {
   const [creating, setCreating] = useState(false)
   const [openTripId, setOpenTripId] = useState<number>()
   const [journeyOf, setJourneyOf] = useState<DispatchBooking>()
+  const [agentOf, setAgentOf] = useState<{ bookingId: number; bookingHorseId: number }>()
   const range = weekRange(weekStart)
   const { data, loaded, error, reload } = useLoad(async () => {
     const [bookings, trips] = await Promise.all([dispatchApi.bookings(range.fromDate, range.toDate), dispatchApi.trips(range.from, range.to)])
@@ -42,7 +51,8 @@ export default function DispatchPage() {
     if (error || !data) return <ErrorState title={t('dispatch.loadError')} message={error?.message} onRetry={reload} />
     if (tab === 'bookings') {
       return data.bookings.length
-        ? <BookingsTable bookings={data.bookings} onJourney={setJourneyOf} />
+        ? <BookingsTable bookings={data.bookings} onJourney={setJourneyOf}
+            onAgent={(booking, horse) => setAgentOf({ bookingId: booking.id ?? 0, bookingHorseId: horse.bookingHorseId ?? 0 })} />
         : <EmptyState icon={<i className="fa-solid fa-inbox" />} title={t('dispatch.bookings.emptyTitle')} description={t('dispatch.bookings.emptyDescription')} />
     }
     return data.trips.length
@@ -88,6 +98,9 @@ export default function DispatchPage() {
       )}
       {openTripId !== undefined && data && (
         <TripDetailModal tripId={openTripId} bookings={data.bookings} onClose={() => setOpenTripId(undefined)} onChanged={() => void reload()} />
+      )}
+      {agentOf && data && agentTarget(data.bookings, agentOf) && (
+        <AgentLegModal {...agentTarget(data.bookings, agentOf)!} onClose={() => setAgentOf(undefined)} onChanged={() => void reload()} />
       )}
       {journeyOf && (
         <Modal title={t('dispatch.bookings.journeyTitle', { code: journeyOf.code })} onClose={() => setJourneyOf(undefined)}>
