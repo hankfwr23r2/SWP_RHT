@@ -10,6 +10,10 @@ export type ReviewAction = {
   run: (reason: string) => Promise<unknown>
   reason?: boolean
   danger?: boolean
+  // Nút chính của bước này
+  primary?: boolean
+  // Lý do gợi ý sẵn, người dùng sửa được
+  initialReason?: string
 }
 
 export function useReviewActions(id: number) {
@@ -47,16 +51,20 @@ export function useReviewActions(id: number) {
 
   return {
     run, busy, error, fields, clear,
-    intake: (): ReviewAction => ({ label: 'intake', run: () => bookingReviewsApi.intake(id) }),
+    intake: (): ReviewAction => ({ label: 'intake', primary: true, run: () => bookingReviewsApi.intake(id) }),
     returnForResubmission: (): ReviewAction => ({
       label: 'return', reason: true, run: reason => bookingReviewsApi.returnForResubmission(id, { reason }),
+    }),
+    askDocument: (name: string): ReviewAction => ({
+      label: 'askDocument', reason: true, initialReason: t('staffReview.askReason', { name }),
+      run: reason => bookingReviewsApi.returnForResubmission(id, { reason }),
     }),
     reject: (): ReviewAction => ({
       label: 'rejectOrder', reason: true, danger: true, run: reason => bookingReviewsApi.reject(id, { reason }),
     }),
-    startQuoting: (): ReviewAction => ({ label: 'startQuoting', run: () => bookingReviewsApi.startQuoting(id) }),
+    startQuoting: (): ReviewAction => ({ label: 'startQuoting', primary: true, run: () => bookingReviewsApi.startQuoting(id) }),
     approveDocument: (documentId: number): ReviewAction => ({
-      label: 'approveDocument', run: () => bookingDocumentsApi.approve(id, documentId),
+      label: 'approveDocument', primary: true, run: () => bookingDocumentsApi.approve(id, documentId),
     }),
     rejectDocument: (documentId: number): ReviewAction => ({
       label: 'rejectDocument', reason: true, danger: true, run: reason => bookingDocumentsApi.reject(id, documentId, { reason }),
@@ -64,7 +72,7 @@ export function useReviewActions(id: number) {
     upload: (item: ChecklistItem, file: File, expiry: string) =>
       run(() => bookingDocumentsApi.uploadForPartner(id, item, file, expiry)),
     confirmInsurance: (insuranceId: number): ReviewAction => ({
-      label: 'confirmInsurance', run: () => bookingReviewsApi.confirmInsurance(id, insuranceId),
+      label: 'confirmInsurance', primary: true, run: () => bookingReviewsApi.confirmInsurance(id, insuranceId),
     }),
     requestRevision: (insuranceId: number): ReviewAction => ({
       label: 'requestRevision', reason: true, run: reason => bookingReviewsApi.requestInsuranceRevision(id, insuranceId, { reason }),

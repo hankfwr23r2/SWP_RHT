@@ -3,7 +3,7 @@ import { lazy } from 'react'
 import i18n, { i18nReady } from '@shared/i18n'
 import type { PageLoader } from '@shared/routing/pageData'
 import type { AppRoute } from '@shared/routing/types'
-import { managerTexts } from '@shared/i18n/staffTexts'
+import { managerTexts, reviewTexts } from '@shared/i18n/staffTexts'
 import { ManagerLoginPage, StaffLoginPage } from './features/auth/StaffLoginPage'
 import type * as Loaders from './shared/loaders'
 import type * as NetworkLoaders from './features/admin/network/loaders'
@@ -86,21 +86,21 @@ export const routes: AppRoute[] = [
 
   {
     path: '/specialist/review', roles: SP, layout: 'staff',
-    lazyPage: () => Promise.all([import('./features/specialist/review/ReviewListPage'), i18nReady]).then(([page]) => page),
+    lazyPage: () => Promise.all([import('./features/specialist/review/ReviewListPage'), reviewTexts()]).then(([page]) => page),
     loader: () => import('./features/specialist/review/loaders').then(m => m.reviewListLoader()),
-    get title() { return i18n.t('staffReview.title') },
+    title: 'Thẩm định đơn',
   },
   {
     path: '/specialist/review/:id', roles: SP, layout: 'staff',
-    lazyPage: () => Promise.all([import('./features/specialist/review/ReviewDetailPage'), i18nReady]).then(([page]) => page),
+    lazyPage: () => Promise.all([import('./features/specialist/review/ReviewDetailPage'), reviewTexts()]).then(([page]) => page),
     loader: context => import('./features/specialist/review/loaders').then(m => m.reviewDetailLoader(context)),
-    get title() { return i18n.t('staffReview.detailTitle') },
+    title: 'Chi tiết thẩm định',
   },
   {
     path: '/specialist/missing-documents', roles: SP, layout: 'staff',
-    lazyPage: () => Promise.all([import('./features/specialist/review/MissingDocumentsPage'), i18nReady]).then(([page]) => page),
+    lazyPage: () => Promise.all([import('./features/specialist/review/MissingDocumentsPage'), reviewTexts()]).then(([page]) => page),
     loader: () => import('./features/specialist/review/loaders').then(m => m.missingDocumentsLoader()),
-    get title() { return i18n.t('staffReview.missingTitle') },
+    title: 'Đơn thiếu giấy',
   },
 
   { path: '/coordinator/dispatch', lazyPage: () => import('./features/coordinator/dispatch/DispatchPage'), roles: CO, title: 'Điều độ', layout: 'staff', catalog: false },

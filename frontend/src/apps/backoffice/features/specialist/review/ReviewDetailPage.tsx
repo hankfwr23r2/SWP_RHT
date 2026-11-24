@@ -1,6 +1,8 @@
-import { Link, useRevalidator } from 'react-router'
+import { useRevalidator } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import type { BookingDetail } from '@shared/api/bookingOrders'
+import { ActionBar } from '@backoffice/shared/ActionBar'
+import { BackButton } from '@backoffice/shared/BackButton'
 import { OrderStatusBadge } from '@shared/components/OrderStatusBadge'
 import { usePageData } from '@shared/routing/pageData'
 import { Card } from '@shared/ui/Card'
@@ -11,6 +13,7 @@ import { ActionButtons } from './components/ActionButtons'
 import { DocumentsCard } from './components/DocumentsCard'
 import { InsurancesCard } from './components/InsurancesCard'
 import { OrderFacts } from './components/OrderFacts'
+import { reviewTodos } from './nextStep'
 import type { reviewDetailLoader } from './loaders'
 import { useReviewActions, type ReviewAction } from './useReviewActions'
 import s from './Review.module.css'
@@ -26,19 +29,26 @@ function ReviewDetail({ id, detail, data }: {
   const options: ReviewAction[] = []
   if (status === 'PENDING_INTAKE') options.push(actions.intake(), actions.reject())
   if (status === 'UNDER_REVIEW') options.push(actions.returnForResubmission(), actions.reject(), actions.startQuoting())
+  const todos = reviewTodos(detail, data.checklist)
+  const work = [
+    todos.docs && t('staffReview.todoDocs', { count: todos.docs }),
+    todos.insurance && t('staffReview.todoInsurance', { count: todos.insurance }),
+    todos.customer && t('staffReview.todoCustomer', { count: todos.customer }),
+  ].filter(Boolean).join(' ')
+  const next = status === 'UNDER_REVIEW' ? work || t('staffReview.ready') : status && t(`staffReview.nextStep.${status}`)
   return <>
     <div className={s.row}>
       <h1>{t('staffReview.order', { code: booking?.code })}</h1>
       <OrderStatusBadge status={status} />
     </div>
     {reviewReason && <p>{t('staffReview.reviewReason', { reason: reviewReason })}</p>}
-    <ActionButtons options={options} actions={actions} />
     {(!data.insurers || !data.stallTypes) && <ErrorState onRetry={data.reload} retrying={state !== 'idle'} />}
     <OrderFacts detail={detail} stallTypes={data.stallTypes} />
     {data.checklist
       ? <DocumentsCard checklist={data.checklist} horses={detail.horses} status={status} actions={actions} />
       : <Card title={t('staffReview.documents')}><ErrorState onRetry={data.reload} retrying={state !== 'idle'} /></Card>}
     <InsurancesCard horses={detail.horses} status={status} insurers={data.insurers} actions={actions} />
+    <ActionBar next={next}>{options.length > 0 && <ActionButtons options={options} actions={actions} />}</ActionBar>
   </>
 }
 
@@ -48,7 +58,7 @@ export default function ReviewDetailPage() {
   const { state } = useRevalidator()
   const id = data.detail?.booking?.id
   return <div className={s.stack}>
-    <Link to="/specialist/review">{t('staffReview.back')}</Link>
+    <BackButton to="/specialist/review" label={t('staffReview.back')} />
     {data.detail && id != null ? <ReviewDetail key={id} id={id} detail={data.detail} data={data} /> : <>
       <h1>{t('staffReview.detailTitle')}</h1>
       {state !== 'idle' ? <Skeleton lines={4} /> : data.errors.length ? <ErrorState onRetry={data.reload} retrying={state !== 'idle'} />

@@ -12,6 +12,7 @@ import { Field } from '@shared/ui/Field'
 import { Input } from '@shared/ui/Input'
 import { Skeleton } from '@shared/ui/Skeleton'
 import { Tabs } from '@shared/ui/Tabs'
+import { ReviewRowActions } from './components/ReviewRowActions'
 import type { reviewListLoader } from './loaders'
 import { matchesReview, reviewStatuses, showDate, type ReviewStatus } from './reviewDisplay'
 import { useReviewQueue } from './useReviewQueue'
@@ -26,7 +27,7 @@ function ReviewQueue({ status, query, initial }: { status: ReviewStatus; query: 
 
   return <>
     {rows.length ? <ul className={s.list}>
-      {rows.map(row => <li key={row.id}><Card>
+      {rows.map(row => <li key={row.id}><Card><div className={s.stack}>
         <div className={s.row}>
           <div>
             <h2>{row.id != null ? <Link to={`/specialist/review/${row.id}`}>{row.code}</Link> : row.code}</h2>
@@ -37,7 +38,8 @@ function ReviewQueue({ status, query, initial }: { status: ReviewStatus; query: 
           </div>
           <OrderStatusBadge status={row.status} />
         </div>
-      </Card></li>)}
+        {row.id != null && <ReviewRowActions row={{ ...row, id: row.id }} />}
+      </div></Card></li>)}
     </ul> : <EmptyState title={t(query ? 'staffReview.noMatch' : 'staffReview.emptyQueue')}
       description={t(query && hasMore ? 'staffReview.moreForSearch' : query ? 'staffReview.tryAnotherSearch' : 'staffReview.chooseTab')} />}
     {pageError ? <ErrorState onRetry={more} retrying={busy} /> : hasMore && <Button loading={busy} onClick={more}>{t('staffReview.loadMore')}</Button>}
