@@ -181,8 +181,35 @@ class BorderAgentFlowTest {
         mvc.perform(post("/trip-stops/{id}/depart", gateStop).header(HttpHeaders.AUTHORIZATION, driver)).andExpect(status().isOk());
     }
 
+    @Test
+    void importHorseRefusedAtTheGateStaysWithTheAgent() throws Exception {
+        long[] gate = arriveWithImportAtTheGate();
+        long trip = gate[0];
+        long handover = gate[2];
+        long agentLeg = gate[3];
+        refuse(handover, legOnTrip(trip), " ").andExpect(status().isBadRequest());
+        refuse(handover, legOnTrip(trip), "Ngựa sốt cao, không đủ sức khỏe đi tiếp").andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.handovers[0].status").value("FAILED"));
+        entityManager.flush();
+        assertThat(jdbc.queryForObject("SELECT status FROM booking_horse WHERE id = ?", String.class, line)).isEqualTo("EXCLUDED");
+        assertThat(legStatus(legOnTrip(trip))).isEqualTo("CANCELLED");
+        // Chặng đại lý đang chở kết thúc không giao: ngựa ở lại với đại lý
+        assertThat(legStatus(agentLeg)).isEqualTo("CANCELLED");
+        assertThat(jdbc.queryForObject("SELECT actual_end_at IS NOT NULL FROM horse_leg WHERE id = ?", Boolean.class, agentLeg)).isTrue();
+        // Không con nào lên xe: xe rời cửa khẩu không cần kiểm thanh toán, đơn không sang IN_OPERATION
+        act(driver, "/trip-stops/" + gate[1] + "/depart").andExpect(status().isOk());
+        assertThat(bookingStatus()).isEqualTo("CONFIRMED");
+    }
+
     // Đơn mẫu đổi thành đơn nhập chưa trả số dư; đại lý giao, tổ xe nhận lên xe ở cửa khẩu. Trả về {lượt xe, điểm cửa khẩu}
     private long[] receiveImportAtTheGate() throws Exception {
+        long[] gate = arriveWithImportAtTheGate();
+        act(escort, "/handovers/" + gate[2] + "/complete").andExpect(status().isOk());
+        return new long[] {gate[0], gate[1]};
+    }
+
+    // Đơn nhập đủ giấy, chưa trả số dư: xe tới cửa khẩu, mở lần nhận từ đại lý và quét chip. Trả về {lượt xe, điểm cửa khẩu, lần giao nhận, chặng đại lý}
+    private long[] arriveWithImportAtTheGate() throws Exception {
         java.time.LocalDate pickup = jdbc.queryForObject("SELECT requested_pickup_date FROM booking WHERE id = ?", java.sql.Date.class, booking).toLocalDate();
         long departure = testData.departure("MOCBAI-HCM", pickup.plusDays(1), 9).getId();
         entityManager.flush();
@@ -196,7 +223,8 @@ class BorderAgentFlowTest {
         jdbc.update("UPDATE departure SET booked_stall_count = 1 WHERE id = ?", departure);
         entityManager.clear();
         Instant departAt = jdbc.queryForObject("SELECT planned_departure_at FROM departure WHERE id = ?", java.sql.Timestamp.class, departure).toInstant();
-        id(agentLeg(agent, gate, departAt.minusSeconds(86_400), departAt).andExpect(status().isCreated()));
+        long agentLeg = id(agentLeg(agent, gate, departAt.minusSeconds(86_400), departAt).andExpect(status().isCreated()));
+        act(coordinator, "/agent-legs/" + agentLeg + "/start").andExpect(status().isOk());
         long trip = linehaulTrip(departure, gate);
         List<Long> stops = stopIds(trip);
         assignLeg(trip, stops.getFirst(), stops.getLast());
@@ -209,8 +237,12 @@ class BorderAgentFlowTest {
         entityManager.flush();
         jdbc.update("UPDATE booking SET booking_type = 'LOCAL' WHERE id = ?", booking);
         entityManager.clear();
-        act(escort, "/handovers/" + handover + "/complete").andExpect(status().isOk());
-        return new long[] {trip, stops.getFirst()};
+        return new long[] {trip, stops.getFirst(), handover, agentLeg};
+    }
+
+    private ResultActions refuse(long handoverId, long legId, String reason) throws Exception {
+        return mvc.perform(post("/handovers/{id}/refusals", handoverId).header(HttpHeaders.AUTHORIZATION, escort)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"horseLegId\":%d,\"reason\":\"%s\"}".formatted(legId, reason)));
     }
 
     private ResultActions returnAt(long stopId) throws Exception {

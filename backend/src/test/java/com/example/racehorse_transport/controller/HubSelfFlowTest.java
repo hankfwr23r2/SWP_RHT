@@ -131,6 +131,28 @@ class HubSelfFlowTest {
     }
 
     @Test
+    void horseRefusedAtTheHubIsExcludedAndItsAppointmentDropped() throws Exception {
+        sql("UPDATE booking SET pickup_method = 'SELF' WHERE id = " + booking);
+        long refused = id(appoint(lines.getFirst(), departAt.minusSeconds(4 * 3600)));
+        id(appoint(lines.getLast(), departAt.minusSeconds(4 * 3600)));
+        long trip = linehaulTrip();
+        List<Long> stops = stopIds(trip);
+        for (long line : lines) assign(trip, line, stops.getFirst(), stops.getLast());
+
+        refuseAt(refused, " ").andExpect(status().isBadRequest());
+        refuseAt(refused, "Ngựa què chân trước").andExpect(status().isOk());
+        entityManager.flush();
+        assertThat(jdbc.queryForObject("SELECT status FROM booking_horse WHERE id = ?", String.class, lines.getFirst())).isEqualTo("EXCLUDED");
+        assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE id = ?", String.class, leg(trip, lines.getFirst()))).isEqualTo("CANCELLED");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM horse_stay WHERE id = ?", Long.class, refused)).isZero();
+        // Con còn lại vẫn chờ nhận
+        long hub = locations.findByCode("HUB-HCM").orElseThrow().getId();
+        mvc.perform(get("/horse-stays/appointments").param("locationId", String.valueOf(hub)).header(HttpHeaders.AUTHORIZATION, coordinator))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(1));
+        assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE id = ?", String.class, leg(trip, lines.getLast()))).isEqualTo("PLANNED");
+    }
+
+    @Test
     void consigneeCollectsTheHorsesAtTheHubAndTheBookingIsDelivered() throws Exception {
         long trip = linehaulTrip();
         List<Long> stops = stopIds(trip);
@@ -241,6 +263,11 @@ class HubSelfFlowTest {
     private ResultActions receive(long stay, String microchip) throws Exception {
         return mvc.perform(post("/horse-stays/{id}/receipts", stay).header(HttpHeaders.AUTHORIZATION, coordinator)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"microchip\":\"%s\"}".formatted(microchip)));
+    }
+
+    private ResultActions refuseAt(long stay, String reason) throws Exception {
+        return mvc.perform(post("/horse-stays/{id}/refusals", stay).header(HttpHeaders.AUTHORIZATION, coordinator)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"reason\":\"%s\"}".formatted(reason)));
     }
 
     private ResultActions deliver(long stay, String microchip) throws Exception {

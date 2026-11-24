@@ -20,4 +20,7 @@ public interface HorseStayRepository extends JpaRepository<HorseStay, Long> {
     List<HorseStay> findByLocation_IdAndActualStartAtIsNullOrderByPlannedStartAt(Long locationId);
 
     List<HorseStay> findByBookingHorse_IdInOrderById(Collection<Long> bookingHorseIds);
+
+    // Lịch hẹn chưa bắt đầu của một con (khách tự chở tới hub)
+    void deleteByBookingHorse_IdAndActualStartAtIsNull(Long bookingHorseId);
 }

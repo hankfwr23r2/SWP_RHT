@@ -55,6 +55,7 @@ export const dispatchApi = {
   hubAppointments: (locationId: number) => get<HorseStay[]>('/horse-stays/appointments', { locationId: String(locationId) }),
   appointAtHub: (bookingHorseId: number, plannedStartAt: string) => post<HorseStay>(`/booking-horses/${bookingHorseId}/hub-appointments`, { plannedStartAt }),
   receiveAtHub: (stayId: number, microchip: string, conditionNote?: string) => post<HorseStay>(`/horse-stays/${stayId}/receipts`, { microchip, conditionNote }),
+  refuseAtHub: (stayId: number, reason: string) => post<null>(`/horse-stays/${stayId}/refusals`, { reason }),
   setCollectionTime: (stayId: number, collectAt: string) => post<HorseStay>(`/horse-stays/${stayId}/collection-time`, { collectAt }),
   stableAtHub: (stayId: number, fee: number, note?: string) => post<HorseStay>(`/horse-stays/${stayId}/stabling`, { fee, note }),
   deliverAtHub: (stayId: number, microchip: string, conditionNote?: string) => post<HorseStay>(`/horse-stays/${stayId}/deliveries`, { microchip, conditionNote }),

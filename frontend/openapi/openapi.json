@@ -4144,6 +4144,17 @@
         "required" : [ "microchip" ],
         "type" : "object"
       },
+      "HubRefusalRequestDto" : {
+        "properties" : {
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
+        "type" : "object"
+      },
       "HubServiceAreaRequest" : {
         "properties" : {
           "hubLocationId" : {
@@ -10982,7 +10993,7 @@
     },
     "/handovers/{id}/refusals" : {
       "post" : {
-        "operationId" : "refuse",
+        "operationId" : "refuse_1",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -11273,6 +11284,43 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseHorseStayResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "hub-handover-controller" ]
+      }
+    },
+    "/horse-stays/{id}/refusals" : {
+      "post" : {
+        "operationId" : "refuse",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/HubRefusalRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
                 }
               }
             },

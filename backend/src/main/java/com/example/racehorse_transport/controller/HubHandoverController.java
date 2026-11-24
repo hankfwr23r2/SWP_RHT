@@ -7,6 +7,7 @@ import com.example.racehorse_transport.dto.operation.HubAppointmentRequestDto;
 import com.example.racehorse_transport.dto.operation.HubCollectionTimeRequestDto;
 import com.example.racehorse_transport.dto.operation.HubStablingRequestDto;
 import com.example.racehorse_transport.dto.operation.HubHandoverRequestDto;
+import com.example.racehorse_transport.dto.operation.HubRefusalRequestDto;
 import com.example.racehorse_transport.service.HorseStayService;
 import com.example.racehorse_transport.service.HubHandoverService;
 import jakarta.validation.Valid;
@@ -54,6 +55,12 @@ public class HubHandoverController {
     @PostMapping("/horse-stays/{id}/receipts")
     public ApiResponseDto<HorseStayResponseDto> receive(@PathVariable Long id, Authentication authentication, @Valid @RequestBody HubHandoverRequestDto request) {
         return ApiResponseDto.success(hubHandovers.receive(id, request, authentication.getName()), "Đã nhận ngựa tại hub");
+    }
+
+    @PostMapping("/horse-stays/{id}/refusals")
+    public ApiResponseDto<Void> refuse(@PathVariable Long id, Authentication authentication, @Valid @RequestBody HubRefusalRequestDto request) {
+        hubHandovers.refuse(id, request, authentication.getName());
+        return ApiResponseDto.success(null, "Đã ghi không nhận ngựa");
     }
 
     @PostMapping("/horse-stays/{id}/collection-time")

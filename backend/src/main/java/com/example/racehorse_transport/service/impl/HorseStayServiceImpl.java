@@ -43,6 +43,7 @@ import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -123,6 +124,12 @@ public class HorseStayServiceImpl implements HorseStayService {
     @Transactional
     public void closeActive(Long bookingHorseId, Instant at) {
         stays.findFirstByBookingHorse_IdAndActualStartAtIsNotNullAndActualEndAtIsNull(bookingHorseId).ifPresent(stay -> stay.setActualEndAt(at));
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void dropAppointments(Long bookingHorseId) {
+        stays.deleteByBookingHorse_IdAndActualStartAtIsNull(bookingHorseId);
     }
 
     @Override
