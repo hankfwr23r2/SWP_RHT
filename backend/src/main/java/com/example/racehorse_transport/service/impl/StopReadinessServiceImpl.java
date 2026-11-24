@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,8 +36,7 @@ public class StopReadinessServiceImpl implements StopReadinessService {
     private final HandoverRepository handovers;
     private final HorseLegRepository legs;
     private final HorseHealthLogRepository healthLogs;
-    // Luồng A cài đặt ở A7. Chưa có thì không cho xe rời nơi nhận ngựa (không đoán là đã trả)
-    private final ObjectProvider<PaymentReadinessService> paymentReadiness;
+    private final PaymentReadinessService payments;
     private final SystemConfigService configs;
     private final AuditService audit;
     private final Clock clock;
@@ -62,10 +60,6 @@ public class StopReadinessServiceImpl implements StopReadinessService {
             boarded.put(leg.getBookingHorse().getBooking().getId(), leg.getBookingHorse().getBooking().getCode());
         }
         if (boarded.isEmpty()) return;
-        PaymentReadinessService payments = paymentReadiness.getIfAvailable();
-        if (payments == null) {
-            throw new DispatchRuleException("payment", "Chưa kiểm được thanh toán của đơn nên xe chưa rời nơi nhận được.", true);
-        }
         boarded.forEach((id, code) -> {
             if (!payments.isPaidInFull(id)) {
                 throw new DispatchRuleException("payment", "Đơn " + code + " chưa trả đủ. Xe chưa rời nơi nhận được.", true);

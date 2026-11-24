@@ -11,7 +11,6 @@ import com.example.racehorse_transport.PostgresIntegrationTest;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.security.JwtUtils;
-import com.example.racehorse_transport.service.PaymentReadinessService;
 import com.example.racehorse_transport.support.TestData;
 import com.jayway.jsonpath.JsonPath;
 import jakarta.persistence.EntityManager;
@@ -21,9 +20,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -36,15 +33,6 @@ import org.springframework.transaction.annotation.Transactional;
 @AutoConfigureMockMvc
 @Transactional
 class HealthStayFlowTest {
-
-    // Luồng A chưa cài PaymentReadinessService (A7): coi như đã trả đủ để xe rời điểm đón
-    @TestConfiguration
-    static class PaymentStub {
-        @Bean
-        PaymentReadinessService paymentReadinessService() {
-            return bookingId -> true;
-        }
-    }
 
     @Autowired private MockMvc mvc;
     @Autowired private JdbcTemplate jdbc;

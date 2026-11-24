@@ -644,7 +644,7 @@ Xong thì chạy Quality Gate và báo kết quả thật.
 | B1 | Điều độ | B | 1 | Xong (4 PR) | #377, #378, #379, #380 |
 | A3 | Bảng giá, tính giá | A | 2 | Chưa làm | |
 | A4 | Quy định, giấy tờ yêu cầu | A | 2 | Chưa làm | |
-| B2 | Điểm dừng, giao nhận | B | 2 | Đang làm: PR1 backend (#381), PR2 màn tổ xe (#382) xong; còn giao nhận AGENT ở cửa khẩu, biên bản và giấy gốc; chờ A7 (thanh toán: trả 70%, rời nơi nhận), A (loại ngựa) cho Không nhận, A8 cho trả ngựa tại chỗ | #381, #382 |
+| B2 | Điểm dừng, giao nhận | B | 2 | Đang làm: PR1 backend (#381), PR2 màn tổ xe (#382), PR3 nhận ngựa lập khoản số dư, kiểm thanh toán thật khi rời nơi nhận, không nhận một con (#398). Còn: giao nhận AGENT ở cửa khẩu, nhận và trả ngựa tại hub (SELF), biên bản và giấy gốc; quá hạn số dư thì hủy đơn (`cancelUnpaidAtPickup` của A8) và trả ngựa tại chỗ | #381, #382, #398 |
 | A5 | Đặt đơn | A | 3 | Chưa làm | |
 | B3 | Lưu trú, sức khỏe | B | 3 | Xong phần chính (2 PR). Còn: nghỉ đêm OVERNIGHT, bàn giao ca SHIFT; hủy chặng của con bị loại chờ luồng A | #383, #384 |
 | A6 | Thẩm định, bảo hiểm | A | 4 | Backend xong, chưa commit (`feat/a6-review`) | |
@@ -653,5 +653,5 @@ Xong thì chạy Quality Gate và báo kết quả thật.
 | B4 | Sự cố, chi phí | B | 4 | Xong phần chính (2 PR). Còn: phương án đổi xe, về hub tự lập lượt xe; biên lai, ảnh hiện trường | #385, #386 |
 | B5 | Giao thất bại, giao lại | B | 4 | Xong phần chính: chờ người nhận, quá giờ thì giao thất bại, về hub, giao lại. Còn: gửi chuồng | #387 |
 | A8 | Quyết toán, hủy, đánh giá | A | 5 | Backend đã triển khai trên nhánh A8. FE và kiểm thử PostgreSQL theo dõi riêng | |
-| B6 | Theo dõi, thông báo, báo cáo | B | 5 | Xong phần chính (6 PR): chuông thông báo, hành trình ngựa và tra cứu công khai, báo cáo vận hành, nhật ký hệ thống. Còn: báo khách khi nhận, giao ngựa (cần tách `HandoverServiceImpl`), bảng điều khiển `/manager` | #388, #389, #390, #391, #392 |
+| B6 | Theo dõi, thông báo, báo cáo | B | 5 | Xong phần chính (6 PR): chuông thông báo, hành trình ngựa và tra cứu công khai, báo cáo vận hành, nhật ký hệ thống. Còn: báo khách khi nhận, giao ngựa (đã tách `HandoverOutcomeService` ở B2 PR3), bảng điều khiển `/manager` | #388, #389, #390, #391, #392, #393 |
 | E | Tích hợp, dọn dẹp, ERD, merge | A + B | 6 | Chưa làm | |

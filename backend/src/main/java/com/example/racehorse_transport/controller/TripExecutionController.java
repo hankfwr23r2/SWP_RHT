@@ -3,6 +3,7 @@ package com.example.racehorse_transport.controller;
 import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.dto.operation.CrewTripResponseDto;
 import com.example.racehorse_transport.dto.operation.HandoverCreateRequestDto;
+import com.example.racehorse_transport.dto.operation.HandoverRefusalRequestDto;
 import com.example.racehorse_transport.dto.operation.HandoverScanRequestDto;
 import com.example.racehorse_transport.dto.operation.StopDepartRequestDto;
 import com.example.racehorse_transport.service.DeliveryFailureService;
@@ -70,6 +71,11 @@ public class TripExecutionController {
     @PostMapping("/handovers/{id}/horses")
     public ApiResponseDto<CrewTripResponseDto> scan(@PathVariable Long id, Authentication authentication, @Valid @RequestBody HandoverScanRequestDto request) {
         return ApiResponseDto.success(handovers.scan(id, request, authentication.getName()), "Đã quét chip");
+    }
+
+    @PostMapping("/handovers/{id}/refusals")
+    public ApiResponseDto<CrewTripResponseDto> refuse(@PathVariable Long id, Authentication authentication, @Valid @RequestBody HandoverRefusalRequestDto request) {
+        return ApiResponseDto.success(handovers.refuse(id, request, authentication.getName()), "Đã ghi không nhận ngựa");
     }
 
     @PostMapping("/handovers/{id}/complete")

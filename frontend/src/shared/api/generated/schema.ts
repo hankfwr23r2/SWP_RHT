@@ -1396,6 +1396,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/handovers/{id}/refusals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["refuse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/handovers/{id}/start-waiting": {
         parameters: {
             query?: never;
@@ -3666,6 +3682,11 @@ export interface components {
             horseName?: string;
             microchipMatched?: boolean;
             scannedMicrochip?: string;
+        };
+        HandoverRefusalRequestDto: {
+            /** Format: int64 */
+            horseLegId: number;
+            reason: string;
         };
         HandoverResponseDto: {
             /** Format: date-time */
@@ -7397,6 +7418,32 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["HandoverScanRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCrewTripResponseDto"];
+                };
+            };
+        };
+    };
+    refuse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HandoverRefusalRequestDto"];
             };
         };
         responses: {

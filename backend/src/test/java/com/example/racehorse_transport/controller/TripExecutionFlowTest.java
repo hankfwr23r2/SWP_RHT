@@ -11,20 +11,16 @@ import com.example.racehorse_transport.PostgresIntegrationTest;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.security.JwtUtils;
-import com.example.racehorse_transport.service.PaymentReadinessService;
 import com.example.racehorse_transport.support.TestData;
 import com.jayway.jsonpath.JsonPath;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -37,17 +33,6 @@ import org.springframework.transaction.annotation.Transactional;
 @AutoConfigureMockMvc
 @Transactional
 class TripExecutionFlowTest {
-
-    // Luồng A chưa cài PaymentReadinessService (A7): bản giả đúng hợp đồng, test bật tắt "đã trả đủ"
-    static final AtomicBoolean PAID = new AtomicBoolean(true);
-
-    @TestConfiguration
-    static class PaymentStub {
-        @Bean
-        PaymentReadinessService paymentReadinessService() {
-            return bookingId -> PAID.get();
-        }
-    }
 
     @Autowired private MockMvc mvc;
     @Autowired private JdbcTemplate jdbc;
@@ -67,7 +52,6 @@ class TripExecutionFlowTest {
 
     @BeforeEach
     void planDirectTrip() throws Exception {
-        PAID.set(true);
         coordinator = token(testData.staff(testData.unique("exec.coordinator"), "COORDINATOR"), "COORDINATOR");
         Staff driverStaff = testData.staff(testData.unique("exec.driver"), "DRIVER");
         Staff escortStaff = testData.staff(testData.unique("exec.escort"), "ESCORT");
@@ -116,6 +100,11 @@ class TripExecutionFlowTest {
         act(driver, "/trip-stops/" + stops.get(0) + "/depart").andExpect(status().isOk());
         act(driver, "/trip-stops/" + stops.get(1) + "/arrive").andExpect(status().isOk());
 
+        // Khách mới trả cọc: số dư lập khi nhận ngựa xong (seed có sẵn số dư đã trả nên bỏ đi)
+        entityManager.flush();
+        jdbc.update("DELETE FROM payment WHERE booking_id = ? AND payment_type = 'BALANCE'", booking);
+        entityManager.clear();
+
         // Giao nhận ở điểm đón: loại sai với điểm dừng bị từ chối
         handover(escort, stops.get(1), "DELIVERY").andExpect(status().isBadRequest());
         long pickup = handoverId(handover(escort, stops.get(1), "PICKUP").andExpect(status().isCreated()));
@@ -131,11 +120,21 @@ class TripExecutionFlowTest {
                 .andExpect(jsonPath("$.data.handovers[0].status").value("DONE"))
                 .andExpect(jsonPath("$.data.horses[0].leg.status").value("IN_PROGRESS"));
 
+        // Nhận xong thì lập khoản số dư = tổng báo giá trừ tiền cọc, hạn tính từ lúc nhận
+        var balance = jdbc.queryForMap("""
+                SELECT p.amount, p.status, p.due_at, h.handed_at, q.total_amount - q.deposit_amount AS expected
+                FROM payment p JOIN quotation q ON q.id = p.quotation_id, handover h
+                WHERE p.booking_id = ? AND p.payment_type = 'BALANCE' AND h.id = ?""", booking, pickup);
+        assertThat(balance.get("status")).isEqualTo("PENDING");
+        assertThat((java.math.BigDecimal) balance.get("amount")).isEqualByComparingTo((java.math.BigDecimal) balance.get("expected"));
+        assertThat(((java.sql.Timestamp) balance.get("due_at")).toInstant()).isAfter(((java.sql.Timestamp) balance.get("handed_at")).toInstant());
+
         // Quy tắc #32: chưa trả đủ thì xe không rời nơi nhận
-        PAID.set(false);
         act(driver, "/trip-stops/" + stops.get(1) + "/depart").andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message", startsWith("Đơn DEV-DIRECT-001 chưa trả đủ")));
-        PAID.set(true);
+        entityManager.flush();
+        jdbc.update("UPDATE payment SET status = 'PAID', paid_at = now() WHERE booking_id = ? AND payment_type = 'BALANCE'", booking);
+        entityManager.clear();
         act(driver, "/trip-stops/" + stops.get(1) + "/depart").andExpect(status().isOk());
         assertThat(bookingStatus()).isEqualTo("IN_OPERATION");
 
@@ -205,10 +204,38 @@ class TripExecutionFlowTest {
                 .content("{\"horseLegId\":%d,\"microchip\":\"%s\"}".formatted(first, firstChip))).andExpect(status().isOk());
         mvc.perform(post("/handovers/{id}/horses", handover).header(HttpHeaders.AUTHORIZATION, driver2).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"horseLegId\":%d,\"microchip\":\"985000000999999\"}".formatted(second))).andExpect(status().isOk());
-        act(driver2, "/handovers/" + handover + "/complete").andExpect(status().isOk());
 
+        // Chip sai: không nhận con thứ hai, bắt buộc có lý do
+        refuse(driver2, handover, second, " ").andExpect(status().isBadRequest());
+        refuse(driver2, handover, second, "Chip không khớp giấy tờ").andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.handovers[0].horses.length()").value(1));
+        assertThat(jdbc.queryForObject("SELECT status FROM booking_horse WHERE id = ?", String.class, lines.get(1))).isEqualTo("EXCLUDED");
+        assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE id = ?", String.class, second)).isEqualTo("CANCELLED");
+        // Luồng A thay báo giá ngay trong cùng giao dịch
+        assertThat(jdbc.queryForList("SELECT status FROM quotation WHERE booking_id = ? ORDER BY version", String.class, domestic))
+                .containsExactly("SUPERSEDED", "ACCEPTED");
+
+        act(driver2, "/handovers/" + handover + "/complete").andExpect(status().isOk());
         assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE id = ?", String.class, first)).isEqualTo("IN_PROGRESS");
-        assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE id = ?", String.class, second)).isEqualTo("PLANNED");
+        assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE id = ?", String.class, second)).isEqualTo("CANCELLED");
+    }
+
+    @Test
+    void refusingTheOnlyHorseEndsThePickupAndTheVehicleLeaves() throws Exception {
+        makeLocal();
+        acknowledge(driver);
+        act(driver, "/vehicle-trips/" + trip + "/start").andExpect(status().isOk());
+        act(driver, "/trip-stops/" + stops.get(0) + "/arrive").andExpect(status().isOk());
+        act(driver, "/trip-stops/" + stops.get(0) + "/depart").andExpect(status().isOk());
+        act(driver, "/trip-stops/" + stops.get(1) + "/arrive").andExpect(status().isOk());
+        long pickup = handoverId(handover(escort, stops.get(1), "PICKUP").andExpect(status().isCreated()));
+
+        refuse(escort, pickup, leg, "Ngựa què chân trước").andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.handovers[0].status").value("FAILED"));
+        assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE id = ?", String.class, leg)).isEqualTo("CANCELLED");
+        // Không con nào lên xe: không kiểm thanh toán, đơn không sang IN_OPERATION
+        act(driver, "/trip-stops/" + stops.get(1) + "/depart").andExpect(status().isOk());
+        assertThat(bookingStatus()).isEqualTo("CONFIRMED");
     }
 
     @Test
@@ -258,6 +285,11 @@ class TripExecutionFlowTest {
     private ResultActions scan(String token, long handoverId, String microchip) throws Exception {
         return mvc.perform(post("/handovers/{id}/horses", handoverId).header(HttpHeaders.AUTHORIZATION, token)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"horseLegId\":%d,\"microchip\":\"%s\"}".formatted(leg, microchip)));
+    }
+
+    private ResultActions refuse(String token, long handoverId, long horseLegId, String reason) throws Exception {
+        return mvc.perform(post("/handovers/{id}/refusals", handoverId).header(HttpHeaders.AUTHORIZATION, token)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"horseLegId\":%d,\"reason\":\"%s\"}".formatted(horseLegId, reason)));
     }
 
     private String content(org.springframework.test.web.servlet.RequestBuilder request, String token) throws Exception {
