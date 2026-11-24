@@ -39,9 +39,9 @@ export function WeekBoard({ weekStart, vehicles, trips, onOpen }: {
               return (
                 <button key={trip.id} type="button" onClick={() => onOpen(trip)}
                   className={`${s.block} ${s[trip.tripType ?? 'TRANSFER']} ${FROM[span.from]} ${SPAN[span.days]}`}>
-                  <span className={s.blockTitle}><i className={`fa-solid ${ICON[trip.tripType ?? ''] ?? 'fa-truck'}`} aria-hidden="true" /> {t(`dispatch.tripType.${trip.tripType}`)} · {trip.endLocationName}</span>
+                  <span className={s.blockTitle}><i className={`fa-solid ${ICON[trip.tripType ?? ''] ?? 'fa-truck'}`} aria-hidden="true" /> {t(`tripWords.type.${trip.tripType}`)} · {trip.endLocationName}</span>
                   <span className={s.blockMeta}>{[trip.plannedStartAt, trip.plannedEndAt].flatMap(at => (at ? [clock.format(new Date(at))] : [])).join(' – ')}</span>
-                  <span className={s.blockMeta}>{trip.code} · {t(`dispatch.tripStatus.${trip.status}`)}</span>
+                  <span className={s.blockMeta}>{trip.code} · {t(`tripWords.status.${trip.status}`)}</span>
                   {lacksDriver(trip) && <span className={s.warn}><i className="fa-solid fa-triangle-exclamation" aria-hidden="true" /> {t('dispatch.board.noDriver')}</span>}
                 </button>
               )

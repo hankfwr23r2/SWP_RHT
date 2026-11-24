@@ -132,9 +132,9 @@ export default function TripRunPage() {
   return (
     <div className={s.page}>
       <Link to="/my-trips">{t('myTrips.run.back')}</Link>
-      <PageHeader title={`${trip.code} · ${t(`dispatch.tripType.${trip.tripType}`)}`}
+      <PageHeader title={`${trip.code} · ${t(`tripWords.type.${trip.tripType}`)}`}
         description={`${trip.licensePlate} · ${trip.startLocationName} → ${trip.endLocationName}`} />
-      <StatusBadge tone={trip.status === 'COMPLETED' ? 'success' : trip.status === 'IN_PROGRESS' ? 'info' : 'neutral'} label={t(`dispatch.tripStatus.${trip.status}`)} />
+      <StatusBadge tone={trip.status === 'COMPLETED' ? 'success' : trip.status === 'IN_PROGRESS' ? 'info' : 'neutral'} label={t(`tripWords.status.${trip.status}`)} />
       {canStart(data) && (
         <Button variant="primary" size="lg" fullWidth loading={busy} onClick={() => run(() => tripExecutionApi.start(tripId), t('myTrips.run.done.started'))}>
           {t('myTrips.run.start')}

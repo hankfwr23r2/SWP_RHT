@@ -14,9 +14,12 @@ interface Props {
   onJourney: (booking: DispatchBooking) => void
   onAgent: (booking: DispatchBooking, horse: DispatchHorse) => void
   onHub: (booking: DispatchBooking, horse: DispatchHorse) => void
+  // Tuần này hết đơn chờ: tuần gần nhất còn đơn, để mở luôn
+  next?: { weekStart: string; count: number }
+  onWeek: (weekStart: string) => void
 }
 
-export function WaitingList({ bookings, onJourney, onAgent, onHub }: Props) {
+export function WaitingList({ bookings, onJourney, onAgent, onHub, next, onWeek }: Props) {
   const { t } = useTranslation()
   const [all, setAll] = useState(false)
   const waiting = bookings.filter(booking => missingLegs(booking).length > 0)
@@ -28,7 +31,8 @@ export function WaitingList({ bookings, onJourney, onAgent, onHub }: Props) {
         <Button size="sm" variant={all ? 'ghost' : 'primary'} aria-pressed={!all} onClick={() => setAll(false)}>{t('dispatch.board.waiting', { count: waiting.length })}</Button>
         <Button size="sm" variant={all ? 'primary' : 'ghost'} aria-pressed={all} onClick={() => setAll(true)}>{t('dispatch.board.all', { count: bookings.length })}</Button>
       </div>
-      {!shown.length && <EmptyState icon={<i className="fa-solid fa-inbox" />} title={t(all ? 'dispatch.bookings.emptyTitle' : 'dispatch.board.nothing')} description={t('dispatch.bookings.emptyDescription')} />}
+      {!shown.length && <EmptyState icon={<i className="fa-solid fa-inbox" />} title={t(all ? 'dispatch.bookings.emptyTitle' : 'dispatch.board.nothing')} description={next ? t('dispatch.board.nextWeekHint', { count: next.count }) : t('dispatch.bookings.emptyDescription')}
+        action={next && <Button variant="primary" onClick={() => onWeek(next.weekStart)}>{t('dispatch.board.openWeek', { date: formatDate(new Date(next.weekStart)) })}</Button>} />}
       <ul className={s.cards} aria-label={t('dispatch.bookings.caption')}>
         {shown.map(booking => (
           <li key={booking.id} className={s.card}>
@@ -42,7 +46,7 @@ export function WaitingList({ bookings, onJourney, onAgent, onHub }: Props) {
               {booking.plannedDepartureAt && ` · ${t('dispatch.board.runsAt', { at: formatDateTime(new Date(booking.plannedDepartureAt)) })}`}</p>
             <div className={s.chips}>
               {missingLegs(booking).length
-                ? missingLegs(booking).map(leg => <Badge key={leg} tone="warning">{t('dispatch.board.need', { leg: t(`dispatch.tripType.${leg}`) })}</Badge>)
+                ? missingLegs(booking).map(leg => <Badge key={leg} tone="warning">{t('dispatch.board.need', { leg: t(`tripWords.type.${leg}`) })}</Badge>)
                 : <Badge tone="success">{t('dispatch.board.complete')}</Badge>}
             </div>
             <ul className={s.horses}>

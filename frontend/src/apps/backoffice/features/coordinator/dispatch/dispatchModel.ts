@@ -121,6 +121,16 @@ export function placesFor(type: TripType, hubId: number, bookings: DispatchBooki
 export const horsesNeeding = (type: TripType, bookings: DispatchBooking[]) =>
   bookings.flatMap(booking => (booking.horses ?? []).filter(horse => horse.missingLegs?.includes(type as LegType)).map(horse => horse.bookingHorseId ?? 0))
 
+// Tuần sớm nhất còn đơn chờ xếp xe, theo ngày đón khách chọn
+export function nextWaitingWeek(bookings: DispatchBooking[]): { weekStart: string; count: number } | undefined {
+  const waiting = bookings.filter(booking => booking.requestedPickupDate && missingLegs(booking).length)
+  const first = waiting.map(booking => booking.requestedPickupDate!).sort()[0]
+  if (!first) return undefined
+  const weekStart = mondayOf(first)
+  const weekEnd = addDays(weekStart, 6)
+  return { weekStart, count: waiting.filter(booking => booking.requestedPickupDate! <= weekEnd).length }
+}
+
 // Các hub, hub gốc của xe (trụ sở) đứng đầu để chọn sẵn
 export function hubsOf(locations: NetworkLocation[], vehicles: DispatchVehicle[]) {
   const home = new Set(vehicles.map(vehicle => vehicle.homeHubLocationId))

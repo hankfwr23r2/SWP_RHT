@@ -37,10 +37,10 @@ export default function TripReportsPage() {
 
   const columns: TableColumn<TripReportRow>[] = [
     { key: 'code', header: t('opsReport.colTrip'), render: r => r.code },
-    { key: 'type', header: t('opsReport.colType'), render: r => t(`dispatch.tripType.${r.tripType}`) },
+    { key: 'type', header: t('opsReport.colType'), render: r => t(`tripWords.type.${r.tripType}`) },
     { key: 'vehicle', header: t('opsReport.colVehicle'), render: r => r.licensePlate },
     { key: 'start', header: t('opsReport.colStart'), render: r => (r.plannedStartAt ? formatDateTime(new Date(r.plannedStartAt)) : '') },
-    { key: 'status', header: t('opsReport.colStatus'), render: r => t(`dispatch.tripStatus.${r.status}`) },
+    { key: 'status', header: t('opsReport.colStatus'), render: r => t(`tripWords.status.${r.status}`) },
     { key: 'onTime', header: t('opsReport.colLate'), render: r => t('opsReport.lateOf', { late: r.lateStopCount, arrived: r.arrivedStopCount }) },
     { key: 'horses', header: t('opsReport.colHorses'), render: r => r.horseCount },
     { key: 'incidents', header: t('opsReport.colIncidents'), render: r => r.incidentCount },

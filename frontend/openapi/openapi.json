@@ -3109,17 +3109,44 @@
           "deliveryHubCode" : {
             "type" : "string"
           },
+          "deliveryHubName" : {
+            "type" : "string"
+          },
           "departures" : {
             "items" : {
               "$ref" : "#/components/schemas/DepartureResponse"
             },
             "type" : "array"
           },
+          "leadDays" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
           "pickupHubCode" : {
+            "type" : "string"
+          },
+          "pickupHubName" : {
             "type" : "string"
           },
           "routing" : {
             "enum" : [ "DIRECT", "LINEHAUL" ],
+            "type" : "string"
+          },
+          "servedProvinces" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "tooLateDepartureIds" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "array"
+          },
+          "unavailable" : {
+            "enum" : [ "PICKUP_NOT_SERVED", "DELIVERY_NOT_SERVED", "NO_ROUTE" ],
             "type" : "string"
           }
         },

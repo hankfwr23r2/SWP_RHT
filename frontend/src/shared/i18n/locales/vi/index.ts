@@ -3,6 +3,7 @@
 import { common } from './common'
 import { customer } from './customer'
 import { staff } from './staff'
+import { staffDispatch } from './staffDispatch'
 import { staffManager } from './staffManager'
 import { manager } from './manager'
 import { specialist } from './specialist'
@@ -16,7 +17,7 @@ import { staffNetwork } from './staffNetwork'
 export const vi = {
   ...common,
   ...customer,
-  ...staff, ...staffManager,
+  ...staff, ...staffDispatch, ...staffManager,
   ...manager,
   ...specialist,
   ...staffReview,

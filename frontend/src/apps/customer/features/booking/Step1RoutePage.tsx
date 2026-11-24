@@ -129,7 +129,7 @@ export default function Step1RoutePage() {
             <div className={s.stack}>
               {linehaul && isHome(pickup) && (
                 <MethodChoice name="pickupMethod" legend={t('bookingForm.route.pickupMethod')} side="pickup"
-                  value={draft.pickupMethod} hub={suggestions.data?.pickupHubCode}
+                  value={draft.pickupMethod} hub={suggestions.data?.pickupHubName}
                   blocked={blocked.pickup} onChange={pickupMethod => save({ pickupMethod })} />
               )}
               <Field label={t(selfPickup ? 'bookingForm.route.hubDate' : 'bookingForm.route.pickupDate')} required error={dateError}
@@ -139,7 +139,7 @@ export default function Step1RoutePage() {
               </Field>
               {linehaul && isHome(delivery) && (
                 <MethodChoice name="deliveryMethod" legend={t('bookingForm.route.deliveryMethod')} side="delivery"
-                  value={draft.deliveryMethod} hub={suggestions.data?.deliveryHubCode}
+                  value={draft.deliveryMethod} hub={suggestions.data?.deliveryHubName}
                   blocked={blocked.delivery} onChange={deliveryMethod => save({ deliveryMethod })} />
               )}
             </div>

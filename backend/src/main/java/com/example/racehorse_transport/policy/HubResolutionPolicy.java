@@ -41,6 +41,15 @@ public final class HubResolutionPolicy {
         };
     }
 
+    // Phía trong nước cần hub nhưng tỉnh chưa thuộc hub nào; phía nước ngoài do đại lý lo
+    public static boolean missingPickupHub(BookingType bookingType, Long pickupHubId) {
+        return bookingType != BookingType.IMPORT && pickupHubId == null;
+    }
+
+    public static boolean missingDeliveryHub(BookingType bookingType, Long deliveryHubId) {
+        return (bookingType == BookingType.IMPORT || bookingType == BookingType.INTERPROVINCE) && deliveryHubId == null;
+    }
+
     // Loại đơn phải khớp nơi đón và nơi giao. Công ty đặt tại Việt Nam nên VN là phía trong nước.
     public static void requireConsistentBookingType(BookingType bookingType, String pickupCountry, String deliveryCountry,
                                                     String pickupProvince, String deliveryProvince) {

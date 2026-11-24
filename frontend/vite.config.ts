@@ -75,8 +75,15 @@ const icons = (): Plugin => {
   }
 }
 
+// Chế độ chạy thử (docs/CHAY_THU.md): giao diện dùng cùng giờ với backend đã tua
+const localDemo: Plugin = {
+  name: 'local-demo-clock',
+  transformIndexHtml: () => process.env.VITE_LOCAL_DEMO === '1'
+    ? [{ tag: 'script', attrs: { src: '/api/v1/public/demo/clock.js' }, injectTo: 'head-prepend' }] : [],
+}
+
 export default defineConfig({
-  plugins: [react(), multiAppFallback, icons()],
+  plugins: [react(), multiAppFallback, icons(), localDemo],
   css: { modules: { localsConvention: 'camelCase' } },
   resolve: {
     alias: {

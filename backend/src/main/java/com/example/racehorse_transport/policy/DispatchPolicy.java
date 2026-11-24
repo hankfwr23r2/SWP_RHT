@@ -158,7 +158,7 @@ public final class DispatchPolicy {
     // Nơi được so bằng khóa "L<id>" (điểm mạng lưới) hoặc "A<id>" (địa chỉ của đơn).
     public static void requireContinuous(String previousEnd, String nextStart) {
         if (!Objects.equals(previousEnd, nextStart)) {
-            throw new DispatchRuleException("boardTripStopId", "Chặng mới phải bắt đầu ở nơi chặng trước của con ngựa kết thúc.", true);
+            throw new DispatchRuleException("boardTripStopId", "Chặng mới phải bắt đầu ở nơi chặng trước của con ngựa kết thúc. Hãy xếp lần lượt chặng đón, chặng trục rồi chặng giao.", true);
         }
     }
 

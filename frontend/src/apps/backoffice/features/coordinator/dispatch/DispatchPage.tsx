@@ -18,7 +18,7 @@ import { CreateTripModal } from './CreateTripModal'
 import { TripDetailModal } from './TripDetailModal'
 import { WaitingList } from './WaitingList'
 import { WeekBoard } from './WeekBoard'
-import { addDays, mondayOf, weekRange } from './dispatchModel'
+import { addDays, missingLegs, mondayOf, nextWaitingWeek, weekRange } from './dispatchModel'
 import b from './Board.module.css'
 import s from './Dispatch.module.css'
 
@@ -29,6 +29,7 @@ const agentTarget = (bookings: DispatchBooking[], key: { bookingId: number; book
   return booking && horse ? { booking, horse } : undefined
 }
 
+const LOOKAHEAD_DAYS = 60
 const today = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' })
 
 export default function DispatchPage() {
@@ -45,7 +46,10 @@ export default function DispatchPage() {
     const [bookings, trips, vehicles] = await Promise.all([
       dispatchApi.bookings(range.fromDate, range.toDate), dispatchApi.trips(range.from, range.to), dispatchApi.vehicles(),
     ])
-    return { bookings, trips, vehicles }
+    // Tuần không còn đơn chờ thì tìm tuần gần nhất còn đơn, để điều phối không phải dò từng tuần
+    const next = bookings.some(booking => missingLegs(booking).length) ? undefined
+      : nextWaitingWeek(await dispatchApi.bookings(addDays(range.toDate, 1), addDays(range.toDate, LOOKAHEAD_DAYS)))
+    return { bookings, trips, vehicles, next }
   }, [weekStart], { toastOnError: false })
 
   const content = () => {
@@ -53,7 +57,7 @@ export default function DispatchPage() {
     if (error || !data) return <ErrorState title={t('dispatch.loadError')} message={error?.message} onRetry={reload} />
     return (
       <div className={b.layout}>
-        <WaitingList bookings={data.bookings} onJourney={setJourneyOf}
+        <WaitingList bookings={data.bookings} next={data.next} onWeek={setWeekStart} onJourney={setJourneyOf}
           onAgent={(booking, horse) => setAgentOf({ bookingId: booking.id ?? 0, bookingHorseId: horse.bookingHorseId ?? 0 })}
           onHub={(booking, horse) => setHubOf({ booking, horse })} />
         <WeekBoard weekStart={weekStart} vehicles={data.vehicles} trips={data.trips} onOpen={(trip: VehicleTrip) => setOpenTripId(trip.id)} />

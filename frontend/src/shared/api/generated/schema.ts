@@ -4310,10 +4310,18 @@ export interface components {
         };
         DepartureSuggestionResponse: {
             deliveryHubCode?: string;
+            deliveryHubName?: string;
             departures?: components["schemas"]["DepartureResponse"][];
+            /** Format: int64 */
+            leadDays?: number;
             pickupHubCode?: string;
+            pickupHubName?: string;
             /** @enum {string} */
             routing?: "DIRECT" | "LINEHAUL";
+            servedProvinces?: string[];
+            tooLateDepartureIds?: number[];
+            /** @enum {string} */
+            unavailable?: "PICKUP_NOT_SERVED" | "DELIVERY_NOT_SERVED" | "NO_ROUTE";
         };
         DispatchBookingResponseDto: {
             /** @enum {string} */

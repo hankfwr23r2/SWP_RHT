@@ -36,7 +36,7 @@ export function ManualStops({ stops, onChange, bookings, locations }: {
 }) {
   const { t } = useTranslation()
   const places = [
-    ...locations.map(location => ({ value: `L${location.id}`, label: t('dispatch.create.placeHub', { name: location.name }) })),
+    ...locations.map(location => ({ value: `L${location.id}`, label: t(`dispatch.create.place${location.locationType === 'REST_STOP' ? 'Rest' : location.locationType === 'BORDER_GATE' ? 'Gate' : 'Hub'}`, { name: location.name }) })),
     ...bookings.flatMap(booking => [
       booking.pickupAddress && { value: `P${booking.pickupAddress.id}`, label: t('dispatch.create.placePickup', { code: booking.code, line: booking.pickupAddress.addressLine }) },
       booking.deliveryAddress && { value: `D${booking.deliveryAddress.id}`, label: t('dispatch.create.placeDelivery', { code: booking.code, line: booking.deliveryAddress.addressLine }) },
@@ -50,7 +50,7 @@ export function ManualStops({ stops, onChange, bookings, locations }: {
       {stops.map((stop, index) => (
         <div key={index} className={s.stopRow}>
           <Field label={t('dispatch.create.place', { n: index + 1 })} required>
-            {c => <Select {...c} value={stop.place} onChange={value => update(index, { place: value })} placeholder={t('dispatch.detail.choose')} options={places} />}
+            {c => <Select {...c} value={stop.place} onChange={value => update(index, { place: value })} placeholder={t('tripWords.choose')} options={places} />}
           </Field>
           <Field label={t('dispatch.create.arrival')} required>
             {c => <Input {...c} type="datetime-local" value={stop.arrival} onChange={e => update(index, { arrival: e.target.value })} />}

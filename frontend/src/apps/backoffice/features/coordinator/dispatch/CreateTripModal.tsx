@@ -51,7 +51,7 @@ export function CreateTripModal({ bookings, weekFrom, weekTo, onClose, onCreated
   const eligible = bookings.filter(booking => horsesNeeding(tripType, [booking]).length > 0)
   const picked = eligible.filter(booking => chosen.includes(booking.id ?? 0))
   const request = picked.length && hubId ? { tripType, places: placesFor(tripType, hubId, picked), bookingHorseIds: horsesNeeding(tripType, picked), startAt } : undefined
-  const reset = (type: TripType) => { setTripType(type); setChosen([]); setStartAt(undefined); setPlan(undefined); setManual(false) }
+  const reset = (type: TripType) => { setTripType(type); setChosen([]); setStartAt(undefined); setPlan(undefined); setManual(false); setStops(type === 'TRANSFER' ? [emptyStop(), emptyStop()] : [emptyStop(), emptyStop(), emptyStop()]) }
   const toggle = (id: number) => { setPlan(undefined); setStartAt(undefined); setChosen(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id]) }
 
   const ready = vehicleId !== '' && (tripType === 'LINEHAUL' ? departureId !== '' : byHand ? stopsReady(stops) : !!request && !!plan && !plan.blocked)
@@ -78,10 +78,10 @@ export function CreateTripModal({ bookings, weekFrom, weekTo, onClose, onCreated
         <div className={s.form}>
           <Field label={t('dispatch.create.type')} required>
             {c => <Select {...c} value={tripType} onChange={value => reset(value as TripType)}
-              options={TRIP_TYPES.map(type => ({ value: type, label: t(`dispatch.tripType.${type}`) }))} />}
+              options={TRIP_TYPES.map(type => ({ value: type, label: t(`tripWords.type.${type}`) }))} />}
           </Field>
           <Field label={t('dispatch.create.vehicle')} required>
-            {c => <Select {...c} value={vehicleId} onChange={setVehicleId} placeholder={t('dispatch.detail.choose')}
+            {c => <Select {...c} value={vehicleId} onChange={setVehicleId} placeholder={t('tripWords.choose')}
               options={data.vehicles.map(vehicle => ({
                 value: `${vehicle.id}`,
                 label: vehicle.status === 'ACTIVE' ? `${vehicle.licensePlate}` : t('dispatch.create.vehicleLocked', { plate: vehicle.licensePlate, status: vehicle.status }),
@@ -90,7 +90,7 @@ export function CreateTripModal({ bookings, weekFrom, weekTo, onClose, onCreated
           </Field>
           {tripType === 'LINEHAUL' && (
             <Field label={t('dispatch.create.departure')} hint={t('dispatch.create.departureHint')} required>
-              {c => <Select {...c} value={departureId} onChange={setDepartureId} placeholder={t('dispatch.detail.choose')}
+              {c => <Select {...c} value={departureId} onChange={setDepartureId} placeholder={t('tripWords.choose')}
                 options={data.departures.map(departure => ({
                   value: `${departure.id}`,
                   label: `${departure.routeCode} · ${departure.plannedDepartureAt ? formatDateTime(new Date(departure.plannedDepartureAt)) : ''}`,
@@ -100,7 +100,7 @@ export function CreateTripModal({ bookings, weekFrom, weekTo, onClose, onCreated
           )}
           {tripType !== 'LINEHAUL' && !byHand && (
             <Field label={t('dispatch.create.hub')} required>
-              {c => <Select {...c} value={hubId ? String(hubId) : ''} onChange={value => { setPlan(undefined); setHubChoice(value) }} placeholder={t('dispatch.detail.choose')}
+              {c => <Select {...c} value={hubId ? String(hubId) : ''} onChange={value => { setPlan(undefined); setHubChoice(value) }} placeholder={t('tripWords.choose')}
                 options={hubs.map(hub => ({ value: String(hub.id), label: hub.name ?? '' }))} />}
             </Field>
           )}

@@ -200,6 +200,7 @@ export const staffManager = {
       seatCount: 'Đã cọc {{committed}}, đã giữ {{booked}} trên {{capacity}} chỗ',
       belowMinimum: 'Dưới mức tối thiểu',
       decisionAt: 'Mốc quyết định',
+      notYet: 'Xác nhận chạy được từ mốc này',
       runConfirmed: 'Đã xác nhận chạy',
       status: 'Trạng thái',
       actions: 'Thao tác',

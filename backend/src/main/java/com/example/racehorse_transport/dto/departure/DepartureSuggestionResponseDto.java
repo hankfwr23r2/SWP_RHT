@@ -16,6 +16,17 @@ public class DepartureSuggestionResponseDto {
     // Hub phục vụ điểm đón, điểm giao; null ở phía nước ngoài của đơn quốc tế
     private String pickupHubCode;
     private String deliveryHubCode;
+    private String pickupHubName;
+    private String deliveryHubName;
+    // Lý do không có tuyến nào để chọn; null khi có tuyến hoặc chạy thẳng
+    private Unavailable unavailable;
+    // Tỉnh đang có hub phục vụ, chỉ điền khi nơi đón hoặc nơi giao chưa có hub
+    private List<String> servedProvinces;
+    // Chuyến không còn đủ ngày làm giấy trước hạn nhận đặt (docs/NGHIEP_VU_THEO_59_BANG.md GĐ1), kèm số ngày cần
+    private List<Long> tooLateDepartureIds;
+    private Long leadDays;
     // Rỗng khi chạy thẳng, hoặc khi không có chuyến phù hợp
     private List<DepartureResponseDto> departures;
+
+    public enum Unavailable { PICKUP_NOT_SERVED, DELIVERY_NOT_SERVED, NO_ROUTE }
 }

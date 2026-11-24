@@ -53,12 +53,12 @@ export function GroupingPanel({ defaultDate, onCreated }: { defaultDate: string;
           {c => <Input {...c} type="date" value={date} onChange={e => e.target.value && setDate(e.target.value)} />}
         </Field>
         <Field label={t('dispatch.stays.hub')}>
-          {c => <Select {...c} value={hubId} onChange={setHubChoice} placeholder={t('dispatch.detail.choose')}
+          {c => <Select {...c} value={hubId} onChange={setHubChoice} placeholder={t('tripWords.choose')}
             options={(setup?.hubs ?? []).map(hub => ({ value: String(hub.id), label: hub.name ?? '' }))} />}
         </Field>
         <Field label={t('dispatch.grouping.kind')}>
           {c => <Select {...c} value={kind} onChange={value => setKind(value as Kind)}
-            options={[{ value: 'PICKUP', label: t('dispatch.tripType.PICKUP') }, { value: 'DELIVERY', label: t('dispatch.tripType.DELIVERY') }]} />}
+            options={[{ value: 'PICKUP', label: t('tripWords.type.PICKUP') }, { value: 'DELIVERY', label: t('tripWords.type.DELIVERY') }]} />}
         </Field>
       </div>
       {content()}

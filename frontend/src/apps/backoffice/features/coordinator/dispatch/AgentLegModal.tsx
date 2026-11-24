@@ -99,12 +99,12 @@ export function AgentLegModal({ booking, horse, onClose, onChanged }: Props) {
         {!loaded ? <Skeleton variant="block" lines={2} /> : error || !data ? <ErrorState title={t('dispatch.loadError')} message={error?.message} onRetry={reload} /> : (
           <div className={s.form}>
             <Field label={t('dispatch.agent.agent')} required>
-              {c => <Select {...c} value={agentId} onChange={setAgentId} placeholder={t('dispatch.detail.choose')}
+              {c => <Select {...c} value={agentId} onChange={setAgentId} placeholder={t('tripWords.choose')}
                 options={data.agents.map(p => ({ value: String(p.id), label: p.displayName ?? '' }))} />}
             </Field>
             {isImport && (
               <Field label={t('dispatch.agent.gate')} required>
-                {c => <Select {...c} value={gateId} onChange={setGateId} placeholder={t('dispatch.detail.choose')}
+                {c => <Select {...c} value={gateId} onChange={setGateId} placeholder={t('tripWords.choose')}
                   options={data.gates.map(l => ({ value: String(l.id), label: l.name ?? '' }))} />}
               </Field>
             )}

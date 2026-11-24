@@ -106,7 +106,8 @@ FROM (VALUES
           ('Phòng khám thú y ngựa (mẫu)', '0900000400', 'TP.HCM', 'VN'),
           ('Đội cứu hộ xe tải (mẫu)', '0900000500', 'TP.HCM', 'VN'),
           ('Công ty bảo hiểm (mẫu)', '0900000600', 'TP.HCM', 'VN'),
-          ('Chuồng gửi ngựa Đà Nẵng (mẫu)', '0900000700', 'TP. Đà Nẵng', 'VN')
+          ('Chuồng gửi ngựa Đà Nẵng (mẫu)', '0900000700', 'TP. Đà Nẵng', 'VN'),
+          ('Chuồng gửi ngựa Tuy Hòa (mẫu)', '0900000701', 'Phường Tuy Hòa, Đắk Lắk', 'VN')
      ) AS v(display_name, phone, address, country_code)
 WHERE NOT EXISTS (SELECT 1 FROM party p WHERE p.display_name = v.display_name);
 
@@ -118,7 +119,8 @@ FROM (VALUES
           ('Phòng khám thú y ngựa (mẫu)', 'VET'),
           ('Đội cứu hộ xe tải (mẫu)', 'RESCUE'),
           ('Công ty bảo hiểm (mẫu)', 'INSURER'),
-          ('Chuồng gửi ngựa Đà Nẵng (mẫu)', 'STABLE')
+          ('Chuồng gửi ngựa Đà Nẵng (mẫu)', 'STABLE'),
+          ('Chuồng gửi ngựa Tuy Hòa (mẫu)', 'STABLE')
      ) AS v(display_name, role_type)
 JOIN party p ON p.display_name = v.display_name
 ON CONFLICT DO NOTHING;

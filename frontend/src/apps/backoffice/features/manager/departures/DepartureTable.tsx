@@ -28,7 +28,12 @@ export function DepartureTable({ rows, busy, onConfirm, onCancel }: Props) {
     ) },
     { key: 'decision', header: t('mgr.departures.decisionAt'), render: row => row.runConfirmedAt
       ? <StatusBadge tone="success" label={t('mgr.departures.runConfirmed')} />
-      : row.decisionAt ? moment(row.decisionAt) : '—' },
+      : row.decisionAt ? (
+        <>
+          {moment(row.decisionAt)}
+          {!row.confirmable && (row.status === 'OPEN' || row.status === 'CLOSED') && <p className={s.hint}>{t('mgr.departures.notYet')}</p>}
+        </>
+      ) : '—' },
     { key: 'status', header: t('mgr.departures.status'), render: row => row.status && <StatusBadge tone={TONE[row.status]} label={t(`mgr.departures.statuses.${row.status}`)} /> },
     { key: 'actions', header: t('mgr.departures.actions'), align: 'end', render: row => (
       <div className={s.row}>

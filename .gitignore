@@ -60,3 +60,6 @@ graphify-out/
 # Claude Code
 CLAUDE.md
 *:Zone.Identifier
+
+# Dữ liệu của chế độ chạy thử
+local-demo/

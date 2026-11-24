@@ -28,7 +28,7 @@ type Action = { stay: HorseStay; kind: 'receive' | 'refuse' | 'deliver' | 'colle
 export default function HubPage() {
   const { t } = useTranslation()
   const toast = useToast()
-  const [hubId, setHubId] = useState('')
+  const [hubChoice, setHubId] = useState('')
   const [action, setAction] = useState<Action>()
   const [chip, setChip] = useState('')
   const [note, setNote] = useState('')
@@ -36,6 +36,7 @@ export default function HubPage() {
   const [fee, setFee] = useState('')
   const [busy, setBusy] = useState(false)
   const { data: hubs } = useLoad(async () => (await dispatchApi.locations()).filter(location => location.locationType === 'HUB'), [])
+  const hubId = hubChoice || (hubs?.[0]?.id ? String(hubs[0].id) : '')
   const { data, loaded, error, reload } = useLoad(async () => {
     if (!hubId) return { appointments: [], stays: [] }
     const [appointments, stays] = await Promise.all([dispatchApi.hubAppointments(Number(hubId)), dispatchApi.horseStays(Number(hubId))])
@@ -132,7 +133,7 @@ export default function HubPage() {
       <PageHeader title={t('dispatch.stays.tab')} description={t('dispatch.stays.subtitle')} />
       <div className={h.form}>
         <Field label={t('dispatch.stays.hub')}>
-          {c => <Select {...c} value={hubId} onChange={setHubId} placeholder={t('dispatch.detail.choose')}
+          {c => <Select {...c} value={hubId} onChange={setHubId} placeholder={t('tripWords.choose')}
             options={(hubs ?? []).map(hub => ({ value: `${hub.id}`, label: hub.name ?? '' }))} />}
         </Field>
       </div>

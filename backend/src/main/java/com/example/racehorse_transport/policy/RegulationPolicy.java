@@ -51,6 +51,12 @@ public final class RegulationPolicy {
         }
     }
 
+    // Số ngày làm giấy theo quy định có hiệu lực vào ngày này; 0 khi chưa có quy định (bước gửi đơn sẽ báo)
+    public static long leadDays(List<CountryRule> candidates, LocalDate pickupDate) {
+        return candidates.stream().filter(rule -> effectiveOn(rule, pickupDate)).findFirst()
+                .map(RegulationPolicy::leadDays).orElse(0L);
+    }
+
     public static long leadDays(CountryRule rule) {
         return (long) rule.getPermitLeadDays() + rule.getCertificateLeadDays();
     }

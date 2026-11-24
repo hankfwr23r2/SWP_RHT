@@ -65,7 +65,16 @@ public class DocumentReviewServiceImpl implements DocumentReviewService {
             default -> java.util.stream.Stream.of(checklistItem(requirement, bookingId, null, rows, today));
         }).toList();
         return new BookingDocumentChecklistResponseDto(resolved.requirementsDependOnGate(), items,
-                rows.stream().map(BookingDocumentResponseDto::from).toList());
+                rows.stream().map(row -> BookingDocumentResponseDto.from(row, bookingHorseId(row, active))).toList());
+    }
+
+    private static Long bookingHorseId(Document row, List<BookingHorse> active) {
+        if (row.getBookingHorse() != null) {
+            return row.getBookingHorse().getId();
+        }
+        return row.getHorse() == null ? null : active.stream()
+                .filter(horse -> horse.getHorse().getId().equals(row.getHorse().getId()))
+                .map(BookingHorse::getId).findFirst().orElse(null);
     }
 
     private static Item checklistItem(DocumentRequirementResponseDto requirement, Long bookingId, BookingHorse horse,

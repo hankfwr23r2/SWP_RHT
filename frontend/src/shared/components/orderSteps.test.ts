@@ -44,6 +44,8 @@ describe('giấy tờ', () => {
   it('khóa nộp khi đã duyệt hoặc đơn đã qua giai đoạn nộp', () => {
     expect(canUpload('UNDER_REVIEW', item(1))).toBe(true)
     expect(canUpload('UNDER_REVIEW', item(1), { status: 'APPROVED' })).toBe(false)
+    expect(canUpload('UNDER_REVIEW', item(1), { status: 'UPLOADED' })).toBe(false)
+    expect(canUpload('UNDER_REVIEW', item(1), { status: 'REJECTED' })).toBe(true)
     expect(canUpload('QUOTING', item(1))).toBe(false)
     expect(canUpload('CONFIRMED', item(1))).toBe(false)
     expect(canUpload('CONFIRMED', item(1, { requiredForQuoting: true }))).toBe(true)

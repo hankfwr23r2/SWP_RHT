@@ -106,6 +106,12 @@ class TripGroupingFlowTest {
                 FROM booking b JOIN departure d ON d.id = b.departure_id JOIN route r ON r.id = d.route_id WHERE b.id = ?""",
                 java.sql.Timestamp.class, domestic).toInstant();
         LocalDate day = LocalDate.ofInstant(arrival, ZoneId.of("Asia/Ho_Chi_Minh"));
+        // Chưa xếp chặng trục thì ngựa chưa tới hub giao, chưa gợi ý lượt giao
+        suggest(day, danang, "DELIVERY").andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(0));
+        sql("""
+                INSERT INTO horse_leg (booking_horse_id, sequence_number, leg_type, from_location_id, to_location_id, agent_party_id, planned_start_at, planned_end_at, status)
+                SELECT bh.id, 1, 'LINEHAUL', %d, %d, (SELECT min(id) FROM party), now(), now() + interval '1 day', 'PLANNED' FROM booking_horse bh WHERE bh.booking_id = %d"""
+                .formatted(hcm, danang, domestic));
         String body = content(suggest(day, danang, "DELIVERY").andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].bookings[0].bookingCode").value("DEV-DOMESTIC-001"))

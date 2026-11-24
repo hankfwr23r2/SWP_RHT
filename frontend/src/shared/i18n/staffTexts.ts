@@ -20,6 +20,11 @@ export const managerTexts = textBundle(
   () => import('./locales/en/staffManager').then(m => m.staffManager),
 )
 
+export const dispatchTexts = textBundle(
+  () => import('./locales/vi/staffDispatch').then(m => m.staffDispatch),
+  () => import('./locales/en/staffDispatch').then(m => m.staffDispatch),
+)
+
 export const reviewTexts = textBundle(
   () => import('./locales/vi/staffReview').then(m => m.staffReview),
   () => import('./locales/en/staffReview').then(m => m.staffReview),
