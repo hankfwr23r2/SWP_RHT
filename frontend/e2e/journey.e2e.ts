@@ -34,7 +34,8 @@ test('điều phối mở hành trình của đơn từ màn điều độ', asy
   })
   await page.goto('/backoffice/coordinator/dispatch')
 
-  await page.getByRole('table', { name: 'Đơn chờ xếp xe' }).getByRole('button', { name: 'Xem' }).click({ timeout: 15_000 })
+  await page.getByRole('button', { name: /^Tất cả/ }).click({ timeout: 15_000 })
+  await page.getByRole('list', { name: 'Đơn chờ xếp xe' }).getByRole('button', { name: 'Hành trình' }).click()
   const dialog = page.getByRole('dialog', { name: 'Hành trình đơn BK-AAAA0001' })
   const timeline = dialog.getByRole('region', { name: 'Hành trình của Sao Mai' })
   await expect(timeline).toContainText('Đã giao người nhận')
