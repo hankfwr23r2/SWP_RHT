@@ -882,6 +882,7 @@ Mỗi con ngựa trong đơn có một chuỗi chặng: đón → hub → trục
 | `agent_party_id` | `bigint` | có | FK → party | Đại lý chở |
 | `board_trip_stop_id` | `bigint` | có | FK → trip_stop | Lên xe ở điểm dừng nào |
 | `alight_trip_stop_id` | `bigint` | có | FK → trip_stop | Xuống xe ở điểm dừng nào |
+| `stall_position` | `smallint` | có | CK `>= 1` | Vị trí trên xe, đánh số từ đầu xe ra cửa sau. Khoang rộng chiếm vị trí này và vị trí kế sau. NULL = chưa xếp, hoặc đại lý chở. Chỉ dịch vụ xếp khoang của luồng B ghi |
 | `replaced_horse_leg_id` | `bigint` | có | FK → horse_leg | Chặng thay thế cho chặng thất bại, ví dụ giao lại lần hai |
 | `planned_start_at` | `timestamptz` | | | |
 | `planned_end_at` | `timestamptz` | | | |
@@ -895,6 +896,7 @@ Ràng buộc bảng:
 - `CHECK (num_nonnulls(to_location_id, to_booking_address_id) = 1)`
 - `CHECK (num_nonnulls(vehicle_trip_id, agent_party_id) = 1)`
 - `CHECK (agent_party_id IS NULL OR (board_trip_stop_id IS NULL AND alight_trip_stop_id IS NULL))`: chặng do đại lý chở thì không có điểm lên xuống trên xe công ty.
+- `CHECK (agent_party_id IS NULL OR stall_position IS NULL)`
 - `CHECK (planned_end_at > planned_start_at)`
 
 Index: `vehicle_trip_id`, `agent_party_id`, `board_trip_stop_id`, `alight_trip_stop_id`, `replaced_horse_leg_id`, `status`.
@@ -1493,3 +1495,5 @@ Các quy tắc dưới đây cần so dữ liệu ở nhiều bảng nên CHECK 
 | 36 | Xe không chuyển sang MAINTENANCE, RETIRED khi đang chạy hoặc còn lượt chưa hoàn thành. RETIRED không quay lại. Không gán xe khác ACTIVE vào lượt mới | vehicle, vehicle_trip |
 | 37 | Người phụ trách một con ngựa là `handled_by` của `handover` DONE mới nhất mà công ty là bên nhận. Không sửa tay. `crew_assignment` chỉ là kế hoạch | handover, crew_assignment |
 | 38 | Hộ tống không kết thúc ca hoặc lượt xe khi còn phụ trách ngựa chưa bàn giao. Người ký nhận phải đang trong ca, có mặt ở nơi đó, và đã xem phiếu tóm tắt của từng con | handover, vehicle_trip |
+| 39 | Trên cùng một đoạn đường của lượt xe, hai con không trùng `stall_position`. Khoang rộng chiếm hai vị trí liền nhau. Vị trí cuối không vượt số chỗ của xe (quy tắc #9) | horse_leg, vehicle, trip_stop |
+| 40 | Con đã lên xe không đổi `stall_position`. Lượt xe đã xuất phát thì chỉ xếp các con lên ở điểm dừng sau. Lưu sơ đồ phải khóa `vehicle_trip` và lưu cả xe trong một giao dịch | horse_leg, vehicle_trip |
