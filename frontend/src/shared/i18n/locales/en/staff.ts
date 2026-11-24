@@ -1,5 +1,6 @@
 // Khung chung của app nội bộ: menu, thanh trên, hồ sơ nhân viên, phần dùng chung giữa các vai trò
 export const staff = {
+  staffAction: { next: 'Next step' },
   incidents: {
     "title": "Incidents",
     "description": "Open incidents: propose plans, approve, follow costs. Incidents do not change the booking status.",

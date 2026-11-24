@@ -19,3 +19,8 @@ export const managerTexts = textBundle(
   () => import('./locales/vi/staffManager').then(m => m.staffManager),
   () => import('./locales/en/staffManager').then(m => m.staffManager),
 )
+
+export const reviewTexts = textBundle(
+  () => import('./locales/vi/staffReview').then(m => m.staffReview),
+  () => import('./locales/en/staffReview').then(m => m.staffReview),
+)

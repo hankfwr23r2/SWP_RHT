@@ -18,7 +18,31 @@ export const staffManager = {
         WIDE: 'Khoang rộng',
       },
     },
+    nextStep: {
+      PENDING_INTAKE: 'Tiếp nhận đơn hoặc từ chối kèm lý do.',
+      UNDER_REVIEW: 'Đang chờ chuyên viên thẩm định hồ sơ.',
+      NEEDS_RESUBMISSION: 'Đang chờ khách bổ sung hồ sơ.',
+      QUOTING: 'Lập, kiểm và gửi báo giá cho khách.',
+      AWAITING_DEPOSIT: 'Đang chờ khách trả lời báo giá và đặt cọc.',
+      QUOTE_EXPIRED: 'Báo giá đã hết hạn, chỗ trên chuyến đã nhả.',
+      CONFIRMED: 'Đã cọc. Điều phối xếp xe. Giấy không kịp thì báo ở mục bên dưới.',
+      SCHEDULE_CHANGE_REQUIRED: 'Đang chờ khách chọn lại chuyến.',
+      IN_OPERATION: 'Đang vận chuyển. Duyệt chi phí phát sinh nếu có.',
+      DELIVERED: 'Duyệt chi phí, thu thêm nếu có, rồi đóng đơn.',
+      COMPLETED: 'Đơn đã đóng.',
+      CANCELLED: 'Đơn đã hủy. Xem khoản hoàn nếu có.',
+      REJECTED: 'Đơn đã bị từ chối.',
+    },
     orders: {
+      action: 'Việc cần làm',
+      back: 'Về danh sách đơn',
+      tasks: {
+        intake: 'Xem và tiếp nhận',
+        quote: 'Lập báo giá',
+        settle: 'Quyết toán',
+        delay: 'Xử lý giấy',
+        view: 'Xem',
+      },
       title: 'Đơn hàng',
       subtitle: 'Đơn theo từng nhóm việc.',
       code: 'Mã đơn',
@@ -71,6 +95,7 @@ export const staffManager = {
       rejectHint: 'Khách nhận được lý do này và chỗ trên chuyến được nhả.',
     },
     quote: {
+      waitingCustomer: 'Chờ khách trả lời',
       title: 'Báo giá',
       empty: 'Chưa có báo giá',
       emptyHint: 'Lập bản nháp để hệ thống tính giá theo bảng giá.',
@@ -94,6 +119,7 @@ export const staffManager = {
       sendHint: 'Tổng {{total}}, đặt cọc {{deposit}}. Gửi xong không sửa được bản này.',
     },
     payments: {
+      refund: 'Xử lý hoàn tiền',
       title: 'Khoản thu và hoàn',
     },
     delay: {

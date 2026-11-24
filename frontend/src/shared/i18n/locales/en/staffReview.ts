@@ -1,5 +1,27 @@
 export const staffReview = {
   "staffReview": {
+    "open": "View order",
+    "reviewNow": "Review",
+    "askReason": "Please submit: {{name}}",
+    "viewFile": "View {{name}}",
+    "todoDocs": "Documents waiting for approval: {{count}}.",
+    "todoInsurance": "Horses with insurance to confirm: {{count}}.",
+    "todoCustomer": "Documents the customer still owes: {{count}}.",
+    "ready": "Everything is checked. You can start quoting.",
+    "nextStep": {
+      "PENDING_INTAKE": "Accept the order to start reviewing, or reject it with a reason.",
+      "NEEDS_RESUBMISSION": "Waiting for the customer to complete the file. The order comes back automatically.",
+      "QUOTING": "Waiting for the manager to prepare and send the quotation.",
+      "AWAITING_DEPOSIT": "Waiting for the customer to accept the quotation and pay the deposit.",
+      "QUOTE_EXPIRED": "The quotation has expired. Nothing left to review.",
+      "CONFIRMED": "Upload and approve the missing documents before pickup.",
+      "SCHEDULE_CHANGE_REQUIRED": "Waiting for the customer to choose another departure.",
+      "IN_OPERATION": "The order is in transit. Nothing left to review.",
+      "DELIVERED": "The order has been delivered. Nothing left to review.",
+      "COMPLETED": "The order is closed.",
+      "CANCELLED": "The order is cancelled.",
+      "REJECTED": "The order was rejected."
+    },
     "title": "Order review",
     "detailTitle": "Review details",
     "missingTitle": "Orders missing documents",
@@ -61,7 +83,6 @@ export const staffReview = {
     "optional": "Optional",
     "satisfied": "Requirement met",
     "unsatisfied": "Requirement pending",
-    "viewFile": "View file",
     "upload": "Upload on behalf",
     "file": "Document file",
     "expiryDate": "Document expiry date",
@@ -103,6 +124,7 @@ export const staffReview = {
     "failed": "The action could not be completed. Please try again.",
     "checkFields": "Please check the highlighted fields.",
     "action": {
+      "askDocument": "Ask the customer",
       "intake": "Accept for review",
       "return": "Return for updates",
       "rejectOrder": "Reject order",
@@ -114,6 +136,7 @@ export const staffReview = {
       "reopenInsurance": "Reopen insurance"
     },
     "consequence": {
+      "askDocument": "The order will wait for the customer, who receives this message.",
       "intake": "This order will move to Under review.",
       "return": "The order will wait for customer updates. The customer will receive your reason.",
       "rejectOrder": "The order will close and any reserved stalls will be released.",

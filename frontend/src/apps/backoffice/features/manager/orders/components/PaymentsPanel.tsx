@@ -1,5 +1,6 @@
-import { useRevalidator } from 'react-router'
+import { useNavigate, useRevalidator } from 'react-router'
 import { useTranslation } from 'react-i18next'
+import { Button } from '@shared/ui/Button'
 import { Card } from '@shared/ui/Card'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { StatusBadge } from '@shared/ui/StatusBadge'
@@ -11,6 +12,7 @@ const TONE = { PENDING: 'warning', PAID: 'success', FAILED: 'danger', CANCELLED:
 
 export function PaymentsPanel({ data }: { data: OrderData }) {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const { revalidate, state } = useRevalidator()
   if (!data.payments) return <Card title={t('mgr.payments.title')}><ErrorState onRetry={revalidate} retrying={state !== 'idle'} /></Card>
   if (!data.payments.length) return null
@@ -27,6 +29,7 @@ export function PaymentsPanel({ data }: { data: OrderData }) {
             </div>
             <span className={s.amount}>{money(payment.amount, payment.currencyCode)}</span>
             {payment.status && <StatusBadge tone={TONE[payment.status]} label={t(`myOrders.payments.status.${payment.status}`)} />}
+            {payment.type === 'REFUND' && payment.status === 'PENDING' && <Button size="sm" onClick={() => navigate('/manager/refunds')}>{t('mgr.payments.refund')}</Button>}
           </li>
         ))}
       </ul>

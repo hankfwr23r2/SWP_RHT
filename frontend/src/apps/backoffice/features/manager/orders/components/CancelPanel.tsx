@@ -20,7 +20,7 @@ export function CancelPanel({ bookingId }: { bookingId: number }) {
     <Card title={t('mgr.cancel.title')}>
       <div className={s.row}>
         <Button onClick={() => setMode('customer')}>{t('mgr.cancel.customer')}</Button>
-        <Button variant="danger" onClick={() => setMode('company')}>{t('mgr.cancel.company')}</Button>
+        <Button variant="ghost" onClick={() => setMode('company')}>{t('mgr.cancel.company')}</Button>
       </div>
       {mode && <CancelDialog key={mode} bookingId={bookingId} byCompany={mode === 'company'} onClose={() => setMode(null)} />}
     </Card>
