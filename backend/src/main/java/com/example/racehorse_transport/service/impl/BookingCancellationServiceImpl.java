@@ -59,6 +59,14 @@ public class BookingCancellationServiceImpl implements BookingCancellationServic
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public BookingCancellationResponseDto previewForManager(Long bookingId, boolean byCompany) {
+        var booking = bookings.findById(bookingId).orElseThrow(BookingCancellationServiceImpl::notFound);
+        var cancellation = evaluate(booking, byCompany, !byCompany);
+        return cancellation.response(booking, cancellation.amounts());
+    }
+
+    @Override
     @Transactional
     public BookingCancellationResponseDto cancelByCustomer(Long bookingId, String username, CancelBookingRequestDto request) {
         var booking = lock(bookingId);

@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.dto.payment.RefundResponseDto;
 import com.example.racehorse_transport.dto.payment.MarkRefundedRequestDto;
 import com.example.racehorse_transport.dto.booking.BookingCancellationResponseDto;
 import com.example.racehorse_transport.entity.QuotationLine;
@@ -67,6 +68,13 @@ public class RefundServiceImpl implements RefundService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn."));
         var existing = payments.findByBooking_IdOrderById(booking.getId());
         createPending(booking, existing, quotation.getCurrencyCode(), PaymentPolicy.unallocatedOverpayment(quotation, existing));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<RefundResponseDto> refunds(PaymentStatus status) {
+        return payments.findByPaymentTypeAndStatusOrderById(PaymentType.REFUND, status).stream()
+                .map(RefundResponseDto::from).toList();
     }
 
     @Override

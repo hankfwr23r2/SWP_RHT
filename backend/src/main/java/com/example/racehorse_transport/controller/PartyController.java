@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.controller;
 
+import com.example.racehorse_transport.dto.party.InsurerResponseDto;
 import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.dto.party.PartyCreateRequestDto;
 import com.example.racehorse_transport.dto.party.PartyResponseDto;
@@ -34,6 +35,13 @@ public class PartyController {
     @GetMapping
     public ApiResponseDto<List<PartyResponseDto>> listParties() {
         return ApiResponseDto.success(partyService.parties(), "Danh sách đối tác");
+    }
+
+    // Khách khai bảo hiểm và chuyên viên ghi báo giá đều cần chọn hãng
+    @GetMapping("/insurers")
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'SPECIALIST', 'MANAGER', 'ADMIN', 'COORDINATOR')")
+    public ApiResponseDto<List<InsurerResponseDto>> listInsurers() {
+        return ApiResponseDto.success(partyService.insurers(), "Danh sách hãng bảo hiểm");
     }
 
     @GetMapping("/{id}")

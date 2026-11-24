@@ -46,6 +46,19 @@ public class PaymentServiceImpl implements PaymentService {
     public List<PaymentResponseDto> payments(Long bookingId, String username) {
         bookings.findByIdAndCustomer_User_Username(bookingId, username)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn."));
+        return describe(bookingId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PaymentResponseDto> paymentsForManager(Long bookingId) {
+        if (!bookings.existsById(bookingId)) {
+            throw new ResourceNotFoundException("Không tìm thấy đơn.");
+        }
+        return describe(bookingId);
+    }
+
+    private List<PaymentResponseDto> describe(Long bookingId) {
         var sessions = transactions.findByPayment_Booking_IdAndGatewayCodeAndStatus(bookingId,
                         PaymentCheckoutServiceImpl.SESSION_GATEWAY, PaymentTransactionStatus.PENDING).stream()
                 .map(session -> PaymentPolicy.parseReference(session.getGatewayTransactionNumber()))

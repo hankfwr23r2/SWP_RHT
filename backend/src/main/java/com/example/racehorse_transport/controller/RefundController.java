@@ -1,5 +1,7 @@
 package com.example.racehorse_transport.controller;
 
+import com.example.racehorse_transport.entity.enums.PaymentStatus;
+import com.example.racehorse_transport.dto.payment.RefundResponseDto;
 import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.dto.payment.MarkRefundedRequestDto;
 import com.example.racehorse_transport.dto.payment.PaymentResponseDto;
@@ -20,6 +22,12 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping
 public class RefundController {
     private final RefundService refunds;
+
+    @GetMapping("/refunds")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ApiResponseDto<List<RefundResponseDto>> refunds(@RequestParam(defaultValue = "PENDING") PaymentStatus status) {
+        return ApiResponseDto.success(refunds.refunds(status), "Thành công.");
+    }
 
     @GetMapping("/bookings/{id}/refund-review")
     @PreAuthorize("hasRole('MANAGER')")

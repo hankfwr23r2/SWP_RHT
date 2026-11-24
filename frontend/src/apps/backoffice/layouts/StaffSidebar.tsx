@@ -1,11 +1,7 @@
-// Thanh bên của Manager: tài khoản, nút tiếp nhận đơn, menu (có số đơn chờ), danh sách đơn cần xử lý gấp. Thu gọn được thành cột biểu tượng.
-import { useCallback, useState } from 'react'
-import { NavLink, useLocation } from 'react-router'
+// Thanh bên của nhân viên: menu theo vai trò, thu gọn được thành cột biểu tượng. Số việc đang chờ sẽ có lại ở PR màn hình Quản lý.
+import { useState } from 'react'
+import { NavLink } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { bookingsApi, invalidateBookingsListCache } from '@shared/services/bookings'
-import { useAutoRefresh, useLoad } from '@shared/hooks/useLoad'
-import { accountsApi } from '@shared/services/accounts'
-import { workOf } from '../shared/staffWork'
 import { useAuth } from '@shared/auth/AuthContext'
 import type { StaffRole } from '@shared/types/role'
 import { STAFF_MENUS } from './staffMenus'
@@ -29,18 +25,7 @@ export function StaffSidebar() {
   const { t } = useTranslation()
   const { session } = useAuth()
   const role = session!.role as StaffRole
-  const { pathname } = useLocation()
   const [collapsed, setCollapsed] = useState(readCollapsed)
-  // Tải lại mỗi lần đổi trang để duyệt xong là số giảm ngay
-  const { data: all, reload } = useLoad(bookingsApi.list, [pathname])
-  const refresh = useCallback(() => { invalidateBookingsListCache(); reload() }, [reload])
-  useAutoRefresh(refresh)
-  const { data: accounts } = useLoad(role === 'admin' ? accountsApi.list : async () => [], [pathname, role])
-  const { counts: workCounts } = workOf(role, all ?? [], session!.name, session!.username)
-  // Quản trị viên: tổng số tài khoản ở mục duy nhất; các vai trò khác: số việc đang chờ
-  const count: Record<string, number> = role === 'admin'
-    ? { '/admin/accounts': accounts?.length ?? 0 }
-    : workCounts
   const toggle = () => setCollapsed(c => { try { localStorage.setItem(KEY, c ? '0' : '1') } catch { /* không lưu được thì thôi */ } return !c })
 
   return (
@@ -57,7 +42,6 @@ export function StaffSidebar() {
             <NavLink key={to} to={to} end title={itemLabel} onPointerEnter={() => prefetchManagerPage(to)} onFocus={() => prefetchManagerPage(to)} className={({ isActive }) => `${s.item} ${isActive ? s.on : ''}`}>
               <i className={`fa-solid ${opt?.icon}`} aria-hidden="true" />
               <span>{itemLabel}</span>
-              {!!count[to] && <b className={`${s.count} ${to.endsWith('/locked') && count[to] ? s.countHot : ''}`} aria-label={role === 'admin' ? t('staffSidebar.accountsCount', { count: count[to] }) : t('staffSidebar.pendingCount', { count: count[to] })}>{count[to]}</b>}
             </NavLink>
           )
         })}

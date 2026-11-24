@@ -8,6 +8,9 @@ import com.example.racehorse_transport.dto.booking.ManagerCancelBookingRequestDt
 public interface BookingCancellationService {
     BookingCancellationResponseDto preview(Long bookingId, String username);
 
+    // byCompany: công ty hủy hay quản lý hủy do khách
+    BookingCancellationResponseDto previewForManager(Long bookingId, boolean byCompany);
+
     BookingCancellationResponseDto cancelByCustomer(Long bookingId, String username, CancelBookingRequestDto request);
 
     BookingCancellationResponseDto cancelForCompany(Long bookingId, String username, CompanyCancelBookingRequestDto request);

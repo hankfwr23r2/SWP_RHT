@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.repository;
 
+import org.springframework.data.domain.Pageable;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.DepartureStatus;
@@ -25,6 +26,21 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @EntityGraph(attributePaths = "departure")
     List<Booking> findByStatusInOrderByCreatedAtAscIdAsc(
             Collection<BookingStatus> statuses);
+
+    @EntityGraph(attributePaths = {"customer", "departure", "departure.route"})
+    List<Booking> findByStatusInOrderByCreatedAtDescIdDesc(Collection<BookingStatus> statuses, Pageable page);
+
+    interface HorseCount {
+        Long getBookingId();
+        Long getHorseCount();
+    }
+
+    @Query("""
+            SELECT h.booking.id AS bookingId, COUNT(h) AS horseCount FROM BookingHorse h
+            WHERE h.booking.id IN :bookingIds
+                AND h.status = com.example.racehorse_transport.entity.enums.BookingHorseStatus.ACTIVE
+            GROUP BY h.booking.id""")
+    List<HorseCount> countActiveHorses(@Param("bookingIds") Collection<Long> bookingIds);
 
     Optional<Booking> findByCode(String code);
 
