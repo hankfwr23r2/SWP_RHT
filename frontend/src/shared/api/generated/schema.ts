@@ -2484,6 +2484,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/reports/revenue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["revenue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/reports/trips": {
         parameters: {
             query?: never;
@@ -3539,6 +3555,11 @@ export interface components {
         };
         ApiResponseRegulationPreviewResponseDto: {
             data?: components["schemas"]["RegulationPreviewResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseRevenueReportResponseDto: {
+            data?: components["schemas"]["RevenueReportResponseDto"];
             message?: string;
             status?: string;
         };
@@ -5319,6 +5340,34 @@ export interface components {
             email: string;
             newPassword: string;
             otp: string;
+        };
+        RevenueBookingDto: {
+            /** Format: int64 */
+            bookingId?: number;
+            code?: string;
+            collected?: number;
+            customerName?: string;
+            /** Format: date-time */
+            depositPaidAt?: string;
+            passThrough?: number;
+            revenue?: number;
+            /** @enum {string} */
+            status?: "PENDING_INTAKE" | "UNDER_REVIEW" | "NEEDS_RESUBMISSION" | "QUOTING" | "AWAITING_DEPOSIT" | "QUOTE_EXPIRED" | "CONFIRMED" | "SCHEDULE_CHANGE_REQUIRED" | "IN_OPERATION" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED";
+        };
+        RevenueDayDto: {
+            cost?: number;
+            /** Format: date */
+            date?: string;
+            revenue?: number;
+        };
+        RevenueReportResponseDto: {
+            bookings?: components["schemas"]["RevenueBookingDto"][];
+            collected?: number;
+            companyCost?: number;
+            days?: components["schemas"]["RevenueDayDto"][];
+            passThrough?: number;
+            profit?: number;
+            revenue?: number;
         };
         RouteRequest: {
             code: string;
@@ -10072,6 +10121,29 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseOperationsSummaryResponseDto"];
+                };
+            };
+        };
+    };
+    revenue: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseRevenueReportResponseDto"];
                 };
             };
         };

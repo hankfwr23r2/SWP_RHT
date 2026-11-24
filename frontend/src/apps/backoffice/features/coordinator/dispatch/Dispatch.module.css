@@ -35,6 +35,13 @@
   margin-bottom: var(--space-5);
 }
 
+/* Bỏ viền và lề mặc định của trình duyệt cho nhóm điểm dừng */
+.fieldset {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+}
+
 .sectionHead {
   display: flex;
   flex-wrap: wrap;

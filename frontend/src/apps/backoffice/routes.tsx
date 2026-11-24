@@ -80,7 +80,7 @@ export const routes: AppRoute[] = [
     path: '/manager/refunds', roles: M, layout: 'staff', catalog: false,
     lazyPage: () => Promise.all([import('./features/manager/refunds/RefundsPage'), managerTexts()]).then(([page]) => page), title: 'Hoàn tiền',
   },
-  { path: '/manager/reports', lazyPage: () => import('./features/manager/reports/ReportsPage'), loader: load('bookingListLoader'), roles: M, title: 'Báo cáo doanh thu', layout: 'staff' },
+  { path: '/manager/reports', lazyPage: () => import('./features/manager/reports/ReportsPage'), roles: M, title: 'Báo cáo doanh thu', layout: 'staff' },
   { path: '/manager/trip-reports', lazyPage: () => import('./features/manager/trip-reports/TripReportsPage'), roles: M, title: 'Báo cáo vận hành', layout: 'staff', catalog: false },
   { path: '/manager/incidents', lazyPage: () => import('./features/incidents/IncidentsBoardPage'), roles: M, title: 'Sự cố', layout: 'staff', catalog: false },
 

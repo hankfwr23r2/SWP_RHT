@@ -81,7 +81,7 @@ export function CreateTripModal({ bookings, weekFrom, weekTo, onClose, onCreated
           )}
         </div>
         {tripType !== 'LINEHAUL' && (
-          <fieldset className={s.section}>
+          <fieldset className={`${s.section} ${s.fieldset}`}>
             <legend className={s.sectionTitle}>{t('dispatch.create.stops')}</legend>
             <p className={s.muted}>{t('dispatch.create.stopsHint')}</p>
             {stops.map((stop, index) => (
