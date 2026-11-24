@@ -49,7 +49,10 @@ export function CreateTripModal({ bookings, weekFrom, weekTo, returning, onClose
 
   const vehicle = data?.vehicles.find(item => String(item.id) === vehicleId)
   // Chuyến không xuất phát từ nơi xe đang ở thì xe không chạy được (quy tắc #20)
-  const departures = (data?.departures ?? []).filter(departure => !vehicle?.currentLocationCode || departure.originCode === vehicle.currentLocationCode)
+  const fromHere = (data?.departures ?? []).filter(departure => !vehicle?.currentLocationCode || departure.originCode === vehicle.currentLocationCode)
+  // Đưa xe về: ưu tiên chuyến về thẳng hub gốc; không có thì hiện mọi chuyến đi từ đây (xe ở cửa khẩu Lào về qua Đà Nẵng)
+  const homeward = returning ? fromHere.filter(departure => departure.destinationCode === returning.homeHubLocationCode) : []
+  const departures = homeward.length ? homeward : fromHere
   const hubs = hubsOf(data?.locations ?? [], data?.vehicles ?? [])
   const hubId = Number(hubChoice || hubs[0]?.id || 0)
   const byHand = manual || tripType === 'TRANSFER'

@@ -3250,6 +3250,9 @@
             "format" : "date-time",
             "type" : "string"
           },
+          "homeHubLocationCode" : {
+            "type" : "string"
+          },
           "homeHubLocationId" : {
             "format" : "int64",
             "type" : "integer"

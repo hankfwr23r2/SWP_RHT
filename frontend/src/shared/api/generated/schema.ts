@@ -4362,6 +4362,7 @@ export interface components {
             currentLocationName?: string;
             /** Format: date-time */
             freeFrom?: string;
+            homeHubLocationCode?: string;
             /** Format: int64 */
             homeHubLocationId?: number;
             /** Format: int64 */
