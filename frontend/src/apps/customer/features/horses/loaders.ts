@@ -1,5 +1,5 @@
 // Dữ liệu các trang dùng hồ sơ ngựa của khách, router tải song song với file trang (xem shared/routing/pageData)
-import { loadAll, type PageLoaderContext } from '@shared/routing/pageData'
+import { loadAll } from '@shared/routing/pageData'
 import { useLoad } from '@shared/hooks/useLoad'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -85,22 +85,4 @@ export function useLegacyHorseDocuments(horse: HorseProfile, onSaved: (horse: Ho
     error: errors[type],
   }))
   return { documents, change, save, busy }
-}
-
-// Đặt chuyến bước 2 vẫn dùng hợp đồng cũ cho tới khi trang đó được chuyển đổi.
-export async function horsesLoader({ session }: PageLoaderContext) {
-  const [{ horsesApi }, { backendBookingApi }] = await Promise.all([import('@shared/services/horses'), import('@shared/api/bookings')])
-  return loadAll({ horses: horsesApi.list(session.name), customerBookings: backendBookingApi.getCustomerBookings() })
-}
-
-// Đặt chuyến bước 3, 4: chỉ cần ngựa
-export async function horseListLoader({ session }: PageLoaderContext) {
-  const [{ horsesApi }, { serviceCatalogApi }] = await Promise.all([
-    import('@shared/services/horses'),
-    import('@shared/api/serviceCatalog'),
-  ])
-  return loadAll({
-    horses: horsesApi.list(session.name),
-    services: serviceCatalogApi.listActive(),
-  })
 }

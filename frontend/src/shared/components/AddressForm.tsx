@@ -1,7 +1,7 @@
 import { lazy, Suspense, useId, useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { CustomerAddress, CustomerAddressCreate } from '@shared/api/customerAddresses'
-import type { MapPoint } from '@shared/components/MapPicker'
+import type { MapPoint } from './MapPicker'
 import { Button } from '@shared/ui/Button'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { Field } from '@shared/ui/Field'
@@ -9,10 +9,10 @@ import { Input } from '@shared/ui/Input'
 import { Modal } from '@shared/ui/Modal'
 import { Select } from '@shared/ui/Select'
 import { Skeleton } from '@shared/ui/Skeleton'
-import { useAddressCountries, useAddressProvinces } from './loaders'
-import s from './Addresses.module.css'
+import { useAddressCountries, useAddressProvinces } from '@shared/hooks/useAddressBook'
+import s from './AddressForm.module.css'
 
-const MapPicker = lazy(() => import('@shared/components/MapPicker'))
+const MapPicker = lazy(() => import('./MapPicker'))
 
 interface Props {
   address?: CustomerAddress

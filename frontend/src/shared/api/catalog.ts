@@ -5,7 +5,7 @@ type Schemas = components['schemas']
 export type Country = Schemas['CountryResponse']
 export type Province = Schemas['ProvinceResponse']
 export type StallType = Schemas['StallTypeResponseDto']
-export type Insurer = Schemas['PartyResponseDto']
+export type Insurer = Schemas['InsurerResponseDto']
 export type BillableService = Schemas['BillableServiceResponseDto']
 
 function catalogList<T>(path: string) {

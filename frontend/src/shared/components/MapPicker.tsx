@@ -51,7 +51,8 @@ export default function MapPicker({ value, onChange, disabled, latitudeError, lo
       instance = L.map(container.current, { ...BASE_MAP_OPTIONS, zoomControl: false })
       map.current = instance
       const start = initialPoint.current
-      instance.setView(start ? [start.latitude, start.longitude] : [0, 0], start ? 15 : 2)
+      // Chưa có điểm thì mở ở Việt Nam và các nước lân cận
+      instance.setView(start ? [start.latitude, start.longitude] : [15.5, 106.5], start ? 15 : 5)
       addBaseLayer(instance)
     } catch {
       setMapError(true)
@@ -103,7 +104,7 @@ export default function MapPicker({ value, onChange, disabled, latitudeError, lo
     const position: L.LatLngTuple = [value.latitude, value.longitude]
     if (marker.current) marker.current.setLatLng(position)
     else marker.current = L.circleMarker(position, { className: s.marker, radius: 9 }).addTo(instance)
-    if (!instance.getBounds().contains(position) || instance.getZoom() < 5) {
+    if (!instance.getBounds().contains(position) || instance.getZoom() < 10) {
       instance.setView(position, 15, { animate: false })
     }
   }, [mapError, value])

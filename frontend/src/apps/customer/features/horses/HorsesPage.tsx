@@ -19,7 +19,7 @@ export default function HorsesPage() {
   const [form, setForm] = useState<{ id?: number } | null>(null)
 
   return (
-    <div className={`container ${s.page}`}>
+    <div className="page"><div className="wrap">
       <div className={s.head}>
         <header className={`page-header ${s.pageHeader}`}><h1>{t('horses.title')}</h1><p>{t('horses.subtitle')}</p></header>
         <Button variant="primary" onClick={() => setForm({})}
@@ -38,7 +38,7 @@ export default function HorsesPage() {
         setForm(null)
         void revalidate()
       }} />}
-    </div>
+    </div></div>
   )
 }
 

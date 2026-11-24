@@ -9,8 +9,9 @@ import { ConfirmDialog } from '@shared/ui/ConfirmDialog'
 import { EmptyState } from '@shared/ui/EmptyState'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { Skeleton } from '@shared/ui/Skeleton'
-import { AddressForm } from './AddressForm'
-import { useAddressActions, useAddressLabels, type addressesLoader } from './loaders'
+import { AddressForm } from '@shared/components/AddressForm'
+import { useAddressActions, useAddressLabels } from '@shared/hooks/useAddressBook'
+import type { addressesLoader } from './loaders'
 import s from './Addresses.module.css'
 
 export default function AddressBookPage() {
@@ -35,7 +36,7 @@ export default function AddressBookPage() {
   }
 
   return (
-    <div className={`container ${s.page}`}>
+    <div className="page"><div className="wrap">
       <header className={`page-header ${s.heading}`}>
         <div><h1>{t('addresses.title')}</h1><p>{t('addresses.subtitle')}</p></div>
         <Button variant="primary" onClick={() => setForm({})}
@@ -55,7 +56,7 @@ export default function AddressBookPage() {
         title={t('addresses.deleteTitle', { label: deleting.label })}
         message={t('addresses.deleteMessage')} confirmLabel={t('common.delete')}
         onCancel={() => setDeleting(null)} onConfirm={remove} />}
-    </div>
+    </div></div>
   )
 }
 

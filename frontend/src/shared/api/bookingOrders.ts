@@ -1,14 +1,16 @@
 import apiClient, { type ApiResponse } from './client'
-import type { components, operations } from './generated/schema'
+import { formResponseOptions, readFormResponse } from './customerAddresses'
+import type { components } from './generated/schema'
 
 type Schemas = components['schemas']
-export type DepartureSuggestionQuery = operations['suggestions']['parameters']['query']
+export type DepartureSuggestionQuery = Schemas['DepartureSuggestionQuery']
 export type DepartureSuggestion = Schemas['DepartureSuggestionResponse']
 export type RegulationPreviewRequest = Schemas['RegulationPreviewRequestDto']
 export type RegulationPreview = Schemas['RegulationPreviewResponseDto']
 export type PricingPreviewRequest = Schemas['PricingPreviewRequestDto']
 export type PricingPreview = Schemas['PricingPreviewResponseDto']
 export type BookingCreateRequest = Schemas['BookingCreateRequestDto']
+export type CustomerProfile = Schemas['CustomerProfileResponseDto']
 export type BookingOrder = Schemas['BookingResponseDto']
 
 export const bookingOrdersApi = {
@@ -19,5 +21,7 @@ export const bookingOrdersApi = {
   previewPricing: async (body: PricingPreviewRequest) =>
     (await apiClient.post<ApiResponse<PricingPreview>>('/pricing/preview', body)).data.data,
   create: async (body: BookingCreateRequest) =>
-    (await apiClient.post<ApiResponse<BookingOrder>>('/bookings', body)).data.data,
+    readFormResponse<BookingOrder>(await apiClient.post('/bookings', body, formResponseOptions)),
+  myProfile: async () =>
+    (await apiClient.get<ApiResponse<CustomerProfile>>('/customers/me')).data.data,
 }

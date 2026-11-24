@@ -1,0 +1,149 @@
+// Chuyển bản nháp thành yêu cầu gửi backend. Không tính giá, không tự suy hạn chót.
+import type { BookingCreateRequest, PricingPreviewRequest } from '@shared/api/bookingOrders'
+import type { CustomerAddress } from '@shared/api/customerAddresses'
+import { PARTY_ROLES, type BookingDraft, type HorseChoice, type PartyDraft } from './draft'
+
+export type BookingType = BookingCreateRequest['bookingType']
+type AddressKind = BookingCreateRequest['addresses'][number]['addressType']
+
+const HOME_COUNTRY = 'VN'
+const HOUR_MS = 3_600_000
+const DAY_MS = 24 * HOUR_MS
+
+// Ngày nghiệp vụ theo giờ Việt Nam, dạng YYYY-MM-DD
+export const todayIso = (now = Date.now()) => new Date(now + 7 * HOUR_MS).toISOString().slice(0, 10)
+export const addDays = (iso: string, days: number) =>
+  new Date(Date.parse(`${iso}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10)
+export const showDate = (iso: string) => iso.split('-').reverse().join('/')
+export function showDateTime(instant: string) {
+  const local = new Date(Date.parse(instant) + 7 * HOUR_MS).toISOString()
+  return `${showDate(local.slice(0, 10))} ${local.slice(11, 16)}`
+}
+
+export const isHome = (address: CustomerAddress | undefined) => address?.countryCode === HOME_COUNTRY
+
+// Loại đơn theo nơi đón và nơi giao; hai nơi đều ở nước ngoài thì không phục vụ
+export function bookingTypeOf(pickup?: CustomerAddress, delivery?: CustomerAddress): BookingType | null {
+  if (!pickup || !delivery || (!isHome(pickup) && !isHome(delivery))) return null
+  if (!isHome(delivery)) return 'EXPORT'
+  if (!isHome(pickup)) return 'IMPORT'
+  return pickup.provinceCode === delivery.provinceCode ? 'LOCAL' : 'INTERPROVINCE'
+}
+
+// Ngày muộn nhất ô chọn ngày cho phép; backend vẫn kiểm lại
+export function latestPickup(type: BookingType | null, departureDate?: string) {
+  if (!departureDate) return undefined
+  return type === 'IMPORT' ? departureDate : addDays(departureDate, -1)
+}
+
+export function routeReady(draft: BookingDraft) {
+  if (!draft.pickupAddressId || !draft.deliveryAddressId || !draft.pickupDate) return false
+  return draft.routing === 'DIRECT' || (draft.routing === 'LINEHAUL' && draft.departure?.id != null)
+}
+
+export const horsesReady = (draft: BookingDraft) =>
+  draft.horseIds.length > 0 && draft.horseIds.every(id => draft.horses[id]?.stallTypeCode)
+
+export function insuranceReady(horse: HorseChoice | undefined) {
+  if (!horse?.coverage) return false
+  if (horse.coverage === 'NONE') return horse.acceptedWaiver
+  return horse.coverage === 'ARRANGED'
+    || !!(horse.policyNumber.trim() && horse.validFrom && horse.validTo && horse.validFrom <= horse.validTo)
+}
+
+export const servicesReady = (draft: BookingDraft) => draft.horseIds.every(id => insuranceReady(draft.horses[id]))
+
+// Giờ đón dùng để ước lượng giá: 8 giờ sáng, hoặc trước giờ xuất phát nếu cùng ngày
+function pickupAt(draft: BookingDraft) {
+  const morning = Date.parse(`${draft.pickupDate}T08:00:00+07:00`)
+  const leaves = draft.departure?.plannedDepartureAt ? Date.parse(draft.departure.plannedDepartureAt) : Infinity
+  return new Date(Math.min(morning, leaves - HOUR_MS)).toISOString()
+}
+
+export function pricingRequest(draft: BookingDraft): PricingPreviewRequest | null {
+  if (!routeReady(draft) || !horsesReady(draft)) return null
+  return {
+    pickupAddressId: draft.pickupAddressId!,
+    deliveryAddressId: draft.deliveryAddressId!,
+    departureId: draft.routing === 'LINEHAUL' ? draft.departure?.id : undefined,
+    pickupAt: pickupAt(draft),
+    pickupMethod: draft.pickupMethod,
+    deliveryMethod: draft.deliveryMethod,
+    horses: draft.horseIds.map(horseId => ({
+      horseId,
+      stallTypeCode: draft.horses[horseId].stallTypeCode,
+      addOnServiceIds: draft.horses[horseId].addOnServiceIds,
+    })),
+  }
+}
+
+const text = (value: string) => value.trim() || undefined
+
+function addressInput(kind: AddressKind, address: CustomerAddress, contact: PartyDraft, note: string) {
+  return {
+    addressType: kind,
+    addressLine: [address.addressLine, address.ward].filter(Boolean).join(', ').slice(0, 500),
+    provinceCode: address.provinceCode!,
+    countryCode: address.countryCode!,
+    latitude: address.latitude!,
+    longitude: address.longitude!,
+    contactName: contact.fullName.trim(),
+    contactPhone: contact.phone.trim(),
+    accessNote: text(note),
+    sourceCustomerAddressId: address.id,
+  }
+}
+
+function insuranceInput(horse: HorseChoice): BookingCreateRequest['horses'][number]['insurance'] {
+  if (horse.coverage === 'NONE') return { coverageOption: 'NONE', acceptedWaiver: horse.acceptedWaiver }
+  if (horse.coverage !== 'PERSONAL') return { coverageOption: 'ARRANGED' }
+  return {
+    coverageOption: 'PERSONAL',
+    insurerPartyId: horse.insurerPartyId ? Number(horse.insurerPartyId) : undefined,
+    policyNumber: horse.policyNumber.trim(),
+    validFrom: horse.validFrom,
+    validTo: horse.validTo,
+  }
+}
+
+export function createRequest(draft: BookingDraft, pickup: CustomerAddress, delivery: CustomerAddress): BookingCreateRequest {
+  return {
+    bookingType: bookingTypeOf(pickup, delivery)!,
+    departureId: draft.routing === 'LINEHAUL' ? draft.departure?.id : undefined,
+    requestedPickupDate: draft.pickupDate,
+    pickupMethod: draft.pickupMethod,
+    deliveryMethod: draft.deliveryMethod,
+    emergencySpendingLimit: draft.emergencySpendingLimit ? Number(draft.emergencySpendingLimit) : undefined,
+    acceptedServiceTerms: draft.acceptedTerms,
+    parties: PARTY_ROLES.map(role => {
+      const party = draft.parties[role]
+      const identity = text(party.identityNumber)
+      const country = role === 'CONSIGNEE' ? delivery.countryCode : pickup.countryCode
+      return {
+        bookingRole: role,
+        fullName: party.fullName.trim(),
+        phone: party.phone.trim(),
+        address: party.address.trim(),
+        identityDocumentType: identity && text(party.identityType),
+        identityDocumentNumber: identity,
+        identityDocumentCountryCode: identity && country,
+      }
+    }),
+    addresses: [
+      addressInput('PICKUP', pickup, draft.parties.SHIPPER, draft.pickupNote),
+      addressInput('DELIVERY', delivery, draft.parties.CONSIGNEE, draft.deliveryNote),
+    ],
+    horses: draft.horseIds.map(horseId => {
+      const horse = draft.horses[horseId]
+      return {
+        horseId,
+        stallTypeCode: horse.stallTypeCode,
+        dietNote: text(horse.dietNote),
+        feedingsPerDay: horse.feedingsPerDay ? Number(horse.feedingsPerDay) : undefined,
+        feedSuppliedByOwner: horse.feedSuppliedByOwner,
+        addOns: horse.addOnServiceIds.map(serviceId => ({ serviceId, quantity: 1 })),
+        insurance: insuranceInput(horse),
+      }
+    }),
+  }
+}

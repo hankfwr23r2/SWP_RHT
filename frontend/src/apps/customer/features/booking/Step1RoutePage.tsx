@@ -1,694 +1,151 @@
-// Bước 1: loại chuyến, ngày khởi hành, người gửi & điểm đón, người nhận & điểm giao.
-// Áp dụng mô hình hành chính 2 cấp (Tỉnh/Thành → Xã/Phường).
-import { useEffect, useId, useMemo, useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router'
+// Bước 1: nơi đón, nơi giao, cách đưa và nhận ngựa, chuyến trong tuần, giấy phải nộp.
+import { useState, type FormEvent } from 'react'
+import { useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { useAuth } from '@shared/auth/AuthContext'
-import {
-  PROVINCES_DATA,
-  buildFullAddress,
-  splitAddress,
-  type ProvinceInfo,
-} from '@shared/config/administrative'
-import { MIN_LEAD_DAYS } from '@shared/config/business-rules'
-import { COUNTRIES, type CountryCode } from '@shared/config/network'
-import { earliestDeparture, fromIsoDay, isDepartureAllowed } from '@shared/lib/booking'
-import { formatDate } from '@shared/lib/format'
-import { isValidContactName, isValidPhoneForCountry, PHONE_CALLING_CODES, toInternationalPhone } from '@shared/lib/contactValidation'
-import { isValidLocationDetail, removeLocationDetailSpecialCharacters } from '@shared/lib/locationValidation'
-import { customerProfileApi } from '@shared/api/customerProfile'
-import type { Party, TransportType } from '@shared/types/booking'
-import { AddressPicker } from '@shared/ui/AddressPicker'
-import { Flag } from '@shared/ui/Flag'
-import { FormSelect } from '@shared/ui/FormSelect'
-import { useToast } from '@shared/ui/toast'
-import { BookingShell } from './BookingShell'
-import { ArrowRightIcon, CalendarIcon, CheckIcon, GlobeIcon, PinIcon, RouteIcon, SenderIcon, SwapIcon, TruckIcon, UserIcon } from './BookingIcons'
-import { DepartureDatePicker } from './DepartureDatePicker'
-import { countriesOf, useBookingDraft } from './draft'
+import { bookingOrdersApi } from '@shared/api/bookingOrders'
+import { useLoad } from '@shared/hooks/useLoad'
+import { Button } from '@shared/ui/Button'
+import { Card } from '@shared/ui/Card'
+import { Field } from '@shared/ui/Field'
+import { Input } from '@shared/ui/Input'
+import { BookingShell, StepActions } from './BookingShell'
+import { AddressSelect } from './components/AddressSelect'
+import { DeparturePicker } from './components/DeparturePicker'
+import { MethodChoice } from './components/MethodChoice'
+import { RegulationNotice } from './components/RegulationNotice'
+import { useBookingDraft, type Departure } from './draft'
+import { findAddress, useBookingData } from './loaders'
+import { addDays, bookingTypeOf, isHome, latestPickup, routeReady, todayIso } from './model'
 import s from './Booking.module.css'
-
-type Partner = Exclude<CountryCode, 'VN'>
-const PARTNER_COUNTRIES: CountryCode[] = ['VN', 'KH', 'LA']
-
-const countryOption = (code: CountryCode) => (
-  <span className={s.countryOption}>
-    <Flag code={code} size={18} /> {COUNTRIES[code].name}
-  </span>
-)
-function parsePhoneDraft(value: string, fallbackCountry: CountryCode): { country: CountryCode; phone: string } {
-  const digits = value.replace(/\D/g, '')
-  const matchingCountry = PARTNER_COUNTRIES
-    .map(country => ({ country, callingCode: PHONE_CALLING_CODES[country] }))
-    .sort((first, second) => second.callingCode.length - first.callingCode.length)
-    .find(({ callingCode }) => digits.startsWith(callingCode.slice(1)))
-
-  if (matchingCountry) {
-    const nationalNumber = digits.slice(matchingCountry.callingCode.length - 1)
-    return {
-      country: matchingCountry.country,
-      phone: nationalNumber ? `0${nationalNumber}` : '',
-    }
-  }
-
-  return { country: fallbackCountry, phone: value }
-}
-
-interface PhoneFieldProps {
-  id: string
-  label: string
-  country: CountryCode
-  phone: string
-  invalid: boolean
-  error: string
-  onCountryChange: (country: CountryCode) => void
-  onPhoneChange: (phone: string) => void
-}
-
-function PhoneField({ id, label, country, phone, invalid, error, onCountryChange, onPhoneChange }: PhoneFieldProps) {
-  const { i18n } = useTranslation()
-  return (
-    <div className="form-group">
-      <label htmlFor={`${id}-number`} className="required">{label}</label>
-      <div className={s.phoneField}>
-        <select
-          id={`${id}-country`}
-          className="form-control"
-          aria-label={i18n.language === 'en' ? `Phone country code for ${label.toLowerCase()}` : `Mã quốc gia điện thoại ${label.toLowerCase()}`}
-          value={country}
-          onChange={event => {
-            const selectedCountry = PARTNER_COUNTRIES.find(code => code === event.target.value)
-            if (selectedCountry) onCountryChange(selectedCountry)
-          }}
-        >
-          {PARTNER_COUNTRIES.map(code => (
-            <option key={code} value={code}>{COUNTRIES[code].name} ({PHONE_CALLING_CODES[code]})</option>
-          ))}
-        </select>
-        <input
-          id={`${id}-number`}
-          className={`form-control ${invalid ? 'invalid' : ''}`}
-          value={phone}
-          placeholder={i18n.language === 'en' ? 'Enter phone number' : 'Nhập số điện thoại'}
-          type="tel"
-          autoComplete="tel-national"
-          onChange={event => onPhoneChange(event.target.value)}
-        />
-      </div>
-      {error && <div className="form-error">{error}</div>}
-    </div>
-  )
-}
-
-interface AddressState {
-  provinceCode: string
-  wardName: string
-  detail: string
-}
-
-interface LocationPickerProps {
-  country: CountryCode
-  address: AddressState
-  onChange: (next: AddressState) => void
-  errors?: { province?: string; ward?: string; detail?: string }
-}
-
-function LocationPicker({ country, address, onChange, errors }: LocationPickerProps) {
-  const { t } = useTranslation()
-  const provinces = useMemo(() => PROVINCES_DATA.filter(p => p.country === country), [country])
-  const areaLabel = useId()
-
-  const selectedProv: ProvinceInfo | undefined = provinces.find(p => p.code === address.provinceCode)
-
-  const handleAreaChange = (area: { provinceCode: string; wardName: string }) => {
-    onChange({ ...address, ...area })
-  }
-
-  const handleDetailChange = (detail: string) => {
-    onChange({
-      ...address,
-      detail,
-    })
-  }
-
-  const handleDetailBlur = () => {
-    onChange({
-      ...address,
-      detail: removeLocationDetailSpecialCharacters(address.detail),
-    })
-  }
-
-  const fullAddr = selectedProv ? buildFullAddress(address.detail, address.wardName, selectedProv.name) : ''
-
-  return (
-    <div style={{ display: 'grid', gap: 10, marginTop: 4 }}>
-      <div className={s.grid2}>
-        <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-          <label className="required" htmlFor={`${areaLabel}-detail`}>{t('bookingWizard.farmAddress')}</label>
-          <input
-            id={`${areaLabel}-detail`}
-            type="text"
-            className={`form-control ${errors?.detail ? 'invalid' : ''}`}
-            placeholder={t('bookingWizard.farmAddressPlaceholder')}
-            value={address.detail}
-            onChange={e => handleDetailChange(e.target.value)}
-            onBlur={handleDetailBlur}
-          />
-          {errors?.detail && <div className="form-error">{errors.detail}</div>}
-        </div>
-
-        <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-          <label className="required" id={areaLabel}>
-            {country === 'VN' ? t('bookingWizard.addressArea') : t('bookingWizard.addressAreaDistrict')} <span className={s.subNote}>({COUNTRIES[country].name})</span>
-          </label>
-          <AddressPicker
-            country={country}
-            provinceCode={address.provinceCode}
-            wardName={address.wardName}
-            onChange={handleAreaChange}
-            invalid={!!(errors?.province || errors?.ward)}
-            labelledBy={areaLabel}
-          />
-          {(errors?.province || errors?.ward) && <div className="form-error">{errors.province || errors.ward}</div>}
-        </div>
-
-        {fullAddr && (
-          <div className={s.addressPreview}>
-            <PinIcon />
-            <span>
-              <b>{t('bookingWizard.geoAddress')}</b> {fullAddr}
-            </span>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
 
 export default function Step1RoutePage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const toast = useToast()
-  const { session } = useAuth()
+  const data = useBookingData()
   const { draft, save } = useBookingDraft()
-
-  const types: [TransportType, string, string][] = [
-    ['domestic', t('bookingWizard.domestic'), t('bookingWizard.domesticRoute')],
-    ['international', t('bookingWizard.international'), t('bookingWizard.internationalRoute')],
-  ]
-
-  const initialCountries = countriesOf(draft)
-  const initialConsignorPhone = parsePhoneDraft(draft.consignor.phone, initialCountries?.origin ?? 'VN')
-  const initialConsigneePhone = parsePhoneDraft(draft.consignee.phone, initialCountries?.dest ?? 'VN')
-  const [type, setType] = useState(draft.type)
-  const [originCountry, setOriginCountry] = useState<CountryCode>(initialCountries?.origin ?? 'VN')
-  const [destCountry, setDestCountry] = useState<CountryCode | ''>(initialCountries?.dest ?? '')
-  const [date, setDate] = useState(draft.departDate)
-  const [consignorPhoneCountry, setConsignorPhoneCountry] = useState<CountryCode>(initialConsignorPhone.country)
-  const [consigneePhoneCountry, setConsigneePhoneCountry] = useState<CountryCode>(initialConsigneePhone.country)
-
-  const partner: Partner | '' = type === 'international'
-    ? originCountry !== 'VN'
-      ? originCountry
-      : destCountry && destCountry !== 'VN'
-        ? destCountry
-        : ''
-    : ''
-  const direction: 'out' | 'in' = type === 'international' && originCountry !== 'VN' ? 'in' : 'out'
-  const countries = type === 'domestic'
-    ? { origin: 'VN' as const, dest: 'VN' as const }
-    : partner && destCountry
-      ? { origin: originCountry, dest: destCountry }
-      : null
-  const originC = countries?.origin ?? 'VN'
-  const destC = countries?.dest ?? 'VN'
-  const routeReady = type === 'domestic' || (type === 'international' && !!partner)
-
-  // Khởi tạo trạng thái địa chỉ 2 cấp
-  const [pickupAddr, setPickupAddr] = useState<AddressState>(() =>
-    splitAddress(draft.originId || draft.consignor.address, originC)
-  )
-  const [dropoffAddr, setDropoffAddr] = useState<AddressState>(() =>
-    splitAddress(draft.destId || draft.consignee.address, destC)
-  )
-
-  const [consignor, setConsignor] = useState<Party>(() =>
-    draft.consignor.name
-      ? { ...draft.consignor, phone: initialConsignorPhone.phone }
-      : { ...draft.consignor, phone: initialConsignorPhone.phone, name: session?.name ?? '' }
-  )
-  const [consignee, setConsignee] = useState<Party>(() => ({
-    ...draft.consignee,
-    phone: initialConsigneePhone.phone,
-  }))
+  const [today] = useState(() => todayIso())
   const [submitted, setSubmitted] = useState(false)
 
-  // Tính chuỗi địa chỉ đầy đủ
-  const fullPickup = useMemo(() => {
-    const prov = PROVINCES_DATA.find(p => p.code === pickupAddr.provinceCode)
-    return prov ? buildFullAddress(pickupAddr.detail, pickupAddr.wardName, prov.name) : pickupAddr.detail
-  }, [pickupAddr])
+  const pickup = findAddress(data, draft.pickupAddressId)
+  const delivery = findAddress(data, draft.deliveryAddressId)
+  const type = bookingTypeOf(pickup, delivery)
+  const fromDate = draft.fromDate || addDays(today, 1)
+  const selected = draft.departure
 
-  const fullDropoff = useMemo(() => {
-    const prov = PROVINCES_DATA.find(p => p.code === dropoffAddr.provinceCode)
-    return prov ? buildFullAddress(dropoffAddr.detail, dropoffAddr.wardName, prov.name) : dropoffAddr.detail
-  }, [dropoffAddr])
-
-  // Tự động lưu bản nháp đồng bộ địa chỉ
-  useEffect(() => {
-    save({
-      type,
-      partner,
-      direction,
-      originId: fullPickup,
-      destId: fullDropoff,
-      departDate: date,
-      consignor: { ...consignor, name: consignor.name.trim().replace(/\s+/g, ' '), idCountry: originC, idType: 'national_id', phone: toInternationalPhone(consignorPhoneCountry, consignor.phone), address: fullPickup },
-      consignee: { ...consignee, name: consignee.name.trim().replace(/\s+/g, ' '), idCountry: destC, idType: 'national_id', phone: toInternationalPhone(consigneePhoneCountry, consignee.phone), address: fullDropoff },
+  const suggestions = useLoad(async () => {
+    if (!type || !pickup || !delivery) return undefined
+    const result = await bookingOrdersApi.suggestions({
+      bookingType: type,
+      pickupProvinceCode: pickup.provinceCode!,
+      deliveryProvinceCode: delivery.provinceCode!,
+      pickupLatitude: pickup.latitude, pickupLongitude: pickup.longitude,
+      deliveryLatitude: delivery.latitude, deliveryLongitude: delivery.longitude,
+      fromDate, stalls: 1,
     })
-  }, [type, partner, direction, fullPickup, fullDropoff, date, consignor, consignee, consignorPhoneCountry, consigneePhoneCountry, originC, destC, save])
+    const direct = result.routing === 'DIRECT'
+    // Chuyến đã chọn nhưng hết chỗ hoặc qua hạn chốt thì bỏ chọn; còn thì cập nhật chỗ trống
+    const current = selected && result.departures?.find(departure => departure.id === selected.id)
+    save({
+      routing: result.routing ?? '',
+      departure: current ?? null,
+      ...(selected && !current && { pickupDate: '' }),
+      ...(direct && { pickupMethod: 'COMPANY', deliveryMethod: 'COMPANY' }),
+    })
+    return result
+  }, [type, pickup?.id, delivery?.id, fromDate], { toastOnError: false })
 
-  const min = earliestDeparture()
-  const reset = () => {
-    setPickupAddr({ provinceCode: '', wardName: '', detail: '' })
-    setDropoffAddr({ provinceCode: '', wardName: '', detail: '' })
+  const needRules = type != null && type !== 'LOCAL' && routeReady(draft)
+  const regulations = useLoad(async () => needRules
+    ? bookingOrdersApi.previewRegulations({
+      bookingType: type!, pickupCountryCode: pickup!.countryCode!, deliveryCountryCode: delivery!.countryCode!,
+      requestedPickupDate: draft.pickupDate, departureId: selected?.id,
+    })
+    : undefined, [needRules, type, selected?.id, draft.pickupDate], { toastOnError: false })
+
+  const changeAddress = (side: 'pickupAddressId' | 'deliveryAddressId', id: number) =>
+    save({ [side]: id, routing: '', departure: null, pickupDate: '', pickupMethod: 'COMPANY', deliveryMethod: 'COMPANY' })
+
+  const swap = () => save({
+    pickupAddressId: draft.deliveryAddressId, deliveryAddressId: draft.pickupAddressId,
+    routing: '', departure: null, pickupDate: '', pickupMethod: 'COMPANY', deliveryMethod: 'COMPANY',
+  })
+
+  const chooseDeparture = (departure: Departure) => {
+    const latest = latestPickup(type, departure.departureDate)
+    save({ departure, pickupDate: latest && latest >= today ? latest : '' })
   }
 
-  const changeType = (next: TransportType) => {
-    if (next === type) return
-    setType(next)
-    reset()
-    setOriginCountry('VN')
-    setDestCountry(next === 'domestic' ? 'VN' : '')
-  }
+  const lastDay = latestPickup(type, selected?.departureDate)
+  const direct = draft.routing === 'DIRECT'
+  const linehaul = draft.routing === 'LINEHAUL'
+  const selfPickup = draft.pickupMethod === 'SELF'
+  const bothAbroad = pickup && delivery && !type
+  const infeasible = needRules && regulations.data?.feasible === false
+  const badDate = !!draft.pickupDate && (draft.pickupDate < today || (!!lastDay && draft.pickupDate > lastDay))
+  const dateError = badDate ? t('bookingForm.route.badDate') : submitted && !draft.pickupDate ? t('bookingForm.required') : undefined
 
-  const changeOrigin = (next: CountryCode) => {
-    setOriginCountry(next)
-    setDestCountry(next === 'VN' ? (destCountry === 'VN' ? '' : destCountry) : 'VN')
-    reset()
-  }
-
-  const changeDest = (next: string) => {
-    setDestCountry(next as CountryCode)
-    reset()
-  }
-
-  const swapCountries = () => {
-    if (!destCountry) return
-    setOriginCountry(destCountry)
-    setDestCountry(originCountry)
-    reset()
-  }
-
-  const fillFromProfile = async (target: 'consignor' | 'consignee') => {
-    if (!session) return
-    try {
-      const profile = await customerProfileApi.getProfile()
-      const profilePhone = profile.phone?.trim()
-      const fallbackCountry = target === 'consignor' ? consignorPhoneCountry : consigneePhoneCountry
-      const parsedPhone = profilePhone ? parsePhoneDraft(profilePhone, fallbackCountry) : null
-      const updateParty = (party: Party): Party => ({
-        ...party,
-        name: profile.fullName || session.name || party.name,
-        ...(parsedPhone ? { phone: parsedPhone.phone } : {}),
-      })
-
-      if (target === 'consignor') {
-        setConsignor(updateParty)
-        if (parsedPhone) setConsignorPhoneCountry(parsedPhone.country)
-      } else {
-        setConsignee(updateParty)
-        if (parsedPhone) setConsigneePhoneCountry(parsedPhone.country)
-      }
-
-      if (!profilePhone) {
-        toast('Hồ sơ tài khoản chưa có số điện thoại. Vui lòng nhập số điện thoại.', 'info')
-      }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Không thể tải thông tin hồ sơ.'
-      toast(message, 'error')
-    }
-  }
-
-  const dateError = !date
-    ? 'Chọn ngày khởi hành.'
-    : !isDepartureAllowed(fromIsoDay(date))
-      ? `Ngày khởi hành phải từ ${formatDate(min)} trở đi (đặt trước tối thiểu ${MIN_LEAD_DAYS} ngày).`
-      : ''
-
-  // Kiểm tra lỗi
-  const errors = {
-    type: !type ? 'Chọn loại chuyến.' : '',
-    partner: type === 'international' && !partner ? 'Chọn nước khởi hành và nước đến.' : '',
-    date: dateError,
-    // Người gửi
-    consignorName: routeReady && !isValidContactName(consignor.name) ? 'Nhập tên hợp lệ (2–100 ký tự, cần có chữ cái). Có thể nhập tên cá nhân hoặc trang trại.' : '',
-    consignorPhone: routeReady && !isValidPhoneForCountry(consignorPhoneCountry, consignor.phone) ? 'Nhập số hợp lệ theo mã quốc gia đã chọn.' : '',
-    consignorId: routeReady && !consignor.idNumber?.trim() ? 'Nhập số CCCD / Thẻ căn cước người gửi.' : '',
-    pickupProv: routeReady && !pickupAddr.provinceCode ? 'Chọn tỉnh/thành điểm đón.' : '',
-    pickupWard: routeReady && !pickupAddr.wardName ? (originC === 'VN' ? 'Chọn xã/phường điểm đón.' : 'Chọn quận/huyện điểm đón.') : '',
-    pickupDetail: routeReady && !pickupAddr.detail.trim()
-      ? 'Nhập tên trang trại / địa chỉ đón cụ thể.'
-      : routeReady && !isValidLocationDetail(pickupAddr.detail)
-        ? 'Tên trang trại / địa chỉ chỉ được chứa chữ cái, số và khoảng trắng.'
-        : '',
-    // Người nhận
-    consigneeName: routeReady && !isValidContactName(consignee.name) ? 'Nhập tên hợp lệ (2–100 ký tự, cần có chữ cái). Có thể nhập tên cá nhân hoặc trang trại.' : '',
-    consigneePhone: routeReady && !isValidPhoneForCountry(consigneePhoneCountry, consignee.phone) ? 'Nhập số hợp lệ theo mã quốc gia đã chọn.' : '',
-    consigneeId: routeReady && !consignee.idNumber?.trim() ? 'Nhập số CCCD / Thẻ căn cước người nhận.' : '',
-    dropoffProv: routeReady && !dropoffAddr.provinceCode ? 'Chọn tỉnh/thành điểm giao.' : '',
-    dropoffWard: routeReady && !dropoffAddr.wardName ? (destC === 'VN' ? 'Chọn xã/phường điểm giao.' : 'Chọn quận/huyện điểm giao.') : '',
-    dropoffDetail: routeReady && !dropoffAddr.detail.trim()
-      ? 'Nhập tên trang trại / địa chỉ giao cụ thể.'
-      : routeReady && !isValidLocationDetail(dropoffAddr.detail)
-        ? 'Tên trang trại / địa chỉ chỉ được chứa chữ cái, số và khoảng trắng.'
-        : '',
-  }
-
-  const valid = !Object.values(errors).some(Boolean)
-  const show = (e: string) => (submitted && e ? <div className="form-error">{e}</div> : null)
-
-  const submit = (e: FormEvent) => {
-    e.preventDefault()
+  const next = (event: FormEvent) => {
+    event.preventDefault()
     setSubmitted(true)
-    if (!valid) {
-      toast('Vui lòng hoàn thành các thông tin bắt buộc trước khi tiếp tục.', 'error')
-      document.querySelector('.invalid, .form-error')?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    if (!type || !routeReady(draft) || badDate || infeasible) {
+      requestAnimationFrame(() => document.querySelector('[role="alert"]')?.scrollIntoView({ block: 'center', behavior: 'smooth' }))
       return
     }
-    save({
-      type,
-      partner,
-      direction,
-      originId: fullPickup,
-      destId: fullDropoff,
-      departDate: date,
-      consignor: { ...consignor, name: consignor.name.trim().replace(/\s+/g, ' '), idCountry: originC, idType: 'national_id', phone: toInternationalPhone(consignorPhoneCountry, consignor.phone), address: fullPickup },
-      consignee: { ...consignee, name: consignee.name.trim().replace(/\s+/g, ' '), idCountry: destC, idType: 'national_id', phone: toInternationalPhone(consigneePhoneCountry, consignee.phone), address: fullDropoff },
-    })
     navigate('/booking/horses')
   }
 
   return (
-    <BookingShell
-      step={1}
-      title={t('bookingWizard.step1Title')}
-      subtitle={t('bookingWizard.step1Subtitle')}
-    >
-      <form onSubmit={submit} noValidate>
-        {/* KHỐI 1: LOẠI CHUYẾN */}
-        <div className="card" data-card>
-          <div className="card-header">
-            <h3><RouteIcon /> {t('bookingWizard.tripType')}</h3>
-          </div>
-          <div className={s.typeGrid} role="radiogroup" aria-label={t('bookingWizard.tripType')}>
-            {types.map(([value, title, route]) => (
-              <button
-                key={value}
-                type="button"
-                role="radio"
-                aria-checked={type === value}
-                className={`${s.typeCard} ${type === value ? s.typeOn : ''}`}
-                onClick={() => changeType(value)}
-              >
-                <span className={s.typeIcon}>{value === 'domestic' ? <TruckIcon /> : <GlobeIcon />}</span>
-                <span className={s.typeBody}>
-                  <span className={s.typeTop}>
-                    <span className={s.typeTitle}>{title}</span>
-                    {type === value && <span className={s.typeCheck}><CheckIcon /></span>}
-                  </span>
-                  <span className={s.typeRoute}>{route}</span>
-                </span>
-              </button>
-            ))}
-          </div>
-          {show(errors.type)}
-        </div>
-
-        {/* KHỐI 2: HÀNH TRÌNH & NGÀY KHỞI HÀNH */}
-        {type && (
-          <div className="card" data-card>
-            <div className="card-header">
-              <h3><RouteIcon /> {t('booking.step1')} &amp; {t('bookingWizard.departureDate')}</h3>
+    <BookingShell step={1} title={t('bookingForm.route.title')} subtitle={t('bookingForm.route.subtitle')}>
+      <form className={s.stack} onSubmit={next} noValidate>
+        <Card title={t('bookingForm.route.places')} actions={
+          <Button size="sm" variant="ghost" disabled={!pickup && !delivery} onClick={swap}
+            icon={<i className="fa-solid fa-right-left" />}>{t('bookingForm.route.swap')}</Button>
+        }>
+          <div className={s.stack}>
+            <div className={s.grid}>
+              <AddressSelect label={t('bookingForm.route.pickup')} value={draft.pickupAddressId} exclude={draft.deliveryAddressId}
+                error={submitted && !pickup ? t('bookingForm.required') : undefined} onChange={id => changeAddress('pickupAddressId', id)} />
+              <AddressSelect label={t('bookingForm.route.delivery')} value={draft.deliveryAddressId} exclude={draft.pickupAddressId}
+                error={submitted && !delivery ? t('bookingForm.required') : undefined} onChange={id => changeAddress('deliveryAddressId', id)} />
             </div>
+            {bothAbroad && <p className={`${s.alert} ${s.danger}`} role="alert">{t('bookingForm.route.bothAbroad')}</p>}
+            {type && <p className={s.hint}><strong>{t(`bookingForm.types.${type}`)}</strong> — {t(`bookingForm.typeHints.${type}`)}</p>}
+          </div>
+        </Card>
 
-            <div className={s.routeSetup}>
-              {type === 'international' && (
-                <div className={s.routePicker}>
-                  <div className="form-group">
-                    <label className="required" htmlFor="origin-country">{t('bookingWizard.originCountry')}</label>
-                    <FormSelect
-                      id="origin-country"
-                      value={originCountry}
-                      onChange={e => changeOrigin(e.target.value as CountryCode)}
-                      className={submitted && errors.partner ? 'invalid' : ''}
-                    >
-                      {PARTNER_COUNTRIES.map(code => <option key={code} value={code}>{countryOption(code)}</option>)}
-                    </FormSelect>
-                  </div>
+        {type && !direct && (
+          <DeparturePicker suggestion={suggestions.data} loaded={suggestions.loaded} error={suggestions.error} onRetry={suggestions.reload}
+            fromDate={fromDate} minDate={today} onFromDate={date => save({ fromDate: date, departure: null, pickupDate: '' })}
+            selectedId={selected?.id} onSelect={chooseDeparture}
+            invalid={infeasible ? t('bookingForm.route.notFeasible', { days: regulations.data?.leadDays ?? 0 })
+              : submitted && !selected ? t('bookingForm.route.departureRequired') : undefined} />
+        )}
 
-                  <button
-                    type="button"
-                    className={s.swapBtn}
-                    onClick={swapCountries}
-                    disabled={!destCountry}
-                    aria-label={t('bookingWizard.swapDirection')}
-                    title={t('bookingWizard.swapDirection')}
-                  >
-                    <SwapIcon />
-                  </button>
-
-                  <div className="form-group">
-                    <label className="required" htmlFor="dest-country">{t('bookingWizard.destCountry')}</label>
-                    <FormSelect
-                      id="dest-country"
-                      value={destCountry}
-                      onChange={e => changeDest(e.target.value)}
-                      disabled={originCountry !== 'VN'}
-                      className={submitted && errors.partner && !destCountry ? 'invalid' : ''}
-                    >
-                      {originCountry === 'VN' ? (
-                        <>
-                          <option value="">{t('bookingWizard.selectDestCountry')}</option>
-                          <option value="KH">{countryOption('KH')}</option>
-                          <option value="LA">{countryOption('LA')}</option>
-                        </>
-                      ) : <option value="VN">{countryOption('VN')}</option>}
-                    </FormSelect>
-                  </div>
-                </div>
+        {(direct || (linehaul && selected)) && (
+          <Card title={t('bookingForm.route.transfer')}>
+            <div className={s.stack}>
+              {linehaul && isHome(pickup) && (
+                <MethodChoice name="pickupMethod" legend={t('bookingForm.route.pickupMethod')} side="pickup"
+                  value={draft.pickupMethod} hub={suggestions.data?.pickupHubCode} onChange={pickupMethod => save({ pickupMethod })} />
               )}
-
-              {type === 'international' && (
-                <div className={s.routePreview}>
-                  <div className={s.routeEnds}>
-                    <div className={s.routeEnd}>
-                      <Flag code={originC} size={24} />
-                      <span className={s.routeText}><small>{t('booking.origin')}</small><b>{COUNTRIES[originC].name}</b></span>
-                    </div>
-                    <span className={s.routeArrow}><span /><ArrowRightIcon /><span /></span>
-                    <div className={s.routeEnd}>
-                      {partner
-                        ? <Flag code={destC} size={24} />
-                        : <span className={s.routeFlagEmpty}><GlobeIcon /></span>}
-                      <span className={s.routeText}><small>{t('booking.destination')}</small><b>{partner ? COUNTRIES[destC].name : t('bookingWizard.selectDestCountry')}</b></span>
-                    </div>
-                  </div>
-                </div>
+              <Field label={t(selfPickup ? 'bookingForm.route.hubDate' : 'bookingForm.route.pickupDate')} required error={dateError}
+                hint={linehaul ? t(type === 'IMPORT' ? 'bookingForm.route.importDateHint' : 'bookingForm.route.linehaulDateHint') : t('bookingForm.route.directDateHint')}>
+                {control => <Input {...control} type="date" value={draft.pickupDate} min={today} max={lastDay}
+                  onChange={event => save({ pickupDate: event.target.value })} />}
+              </Field>
+              {linehaul && isHome(delivery) && (
+                <MethodChoice name="deliveryMethod" legend={t('bookingForm.route.deliveryMethod')} side="delivery"
+                  value={draft.deliveryMethod} hub={suggestions.data?.deliveryHubCode} onChange={deliveryMethod => save({ deliveryMethod })} />
               )}
-
-              {show(errors.partner)}
-
-              <div className={s.dateBlock}>
-                <div className={s.dateBlockHead}>
-                  <h4><CalendarIcon /> {t('bookingWizard.departureDate')}</h4>
-                  <span className={s.dateMin}>{t('bookingWizard.earliestDeparture', { date: formatDate(min) })}</span>
-                </div>
-                <DepartureDatePicker value={date} min={min} onChange={setDate} invalid={submitted && !!errors.date} />
-                {show(errors.date)}
-              </div>
             </div>
-          </div>
+          </Card>
         )}
 
-        {/* KHỐI 3: NGƯỜI GỬI & ĐIỂM ĐÓN NGỰA */}
-        {routeReady && (
-          <div className="card" data-card>
-            <div className="card-header">
-              <div className={s.partyHeader} style={{ width: '100%', marginBottom: 0 }}>
-                <h3 style={{ margin: 0 }}>
-                  <SenderIcon />
-                  {t('bookingWizard.senderAndPickup')} <span className={s.subNote}>({COUNTRIES[originC].name})</span>
-                </h3>
-                {session?.name && (
-                  <button type="button" className={s.quickMeBtn} onClick={() => void fillFromProfile('consignor')}>
-                    <UserIcon /> {t('bookingWizard.iAmSender')}
-                  </button>
-                )}
-              </div>
-            </div>
+        {needRules && <RegulationNotice preview={regulations.data} loaded={regulations.loaded} error={regulations.error} onRetry={regulations.reload} />}
 
-            <div className={s.grid2}>
-              <div className="form-group">
-                <label htmlFor="consignor-name" className="required">
-                  {t('bookingWizard.senderName')}
-                </label>
-                <input
-                  id="consignor-name"
-                  className={`form-control ${submitted && errors.consignorName ? 'invalid' : ''}`}
-                  value={consignor.name}
-                  maxLength={100}
-                  placeholder={t('bookingWizard.senderNamePlaceholder')}
-                  onChange={e => setConsignor({ ...consignor, name: e.target.value })}
-                />
-                {show(errors.consignorName)}
-              </div>
-
-              <PhoneField
-                id="consignor-phone"
-                label={t('bookingWizard.senderPhone')}
-                country={consignorPhoneCountry}
-                phone={consignor.phone}
-                invalid={submitted && !!errors.consignorPhone}
-                error={submitted ? errors.consignorPhone : ''}
-                onCountryChange={setConsignorPhoneCountry}
-                onPhoneChange={phone => setConsignor({ ...consignor, phone })}
-              />
-            </div>
-
-            {/* BỘ CHỌN ĐỊA CHỈ 2 CẤP ĐIỂM ĐÓN */}
-            <LocationPicker
-              country={originC}
-              address={pickupAddr}
-              onChange={setPickupAddr}
-              errors={
-                submitted
-                  ? {
-                      province: errors.pickupProv,
-                      ward: errors.pickupWard,
-                      detail: errors.pickupDetail,
-                    }
-                  : undefined
-              }
-            />
-
-            {/* CCCD / THẺ CĂN CƯỚC NGƯỜI GỬI */}
-            <div className="form-group" style={{ marginTop: 12, maxWidth: 360 }}>
-              <label htmlFor="consignor-idNumber" className="required">
-                {t('bookingWizard.senderId')}
-              </label>
-              <input
-                id="consignor-idNumber"
-                className={`form-control ${submitted && errors.consignorId ? 'invalid' : ''}`}
-                value={consignor.idNumber}
-                maxLength={50}
-                placeholder={t('bookingWizard.senderId')}
-                onChange={e => setConsignor({ ...consignor, idNumber: e.target.value })}
-              />
-              {show(errors.consignorId)}
-            </div>
-          </div>
-        )}
-
-        {/* KHỐI 4: NGƯỜI NHẬN & ĐIỂM GIAO NGỰA */}
-        {routeReady && (
-          <div className="card" data-card>
-            <div className="card-header">
-              <div className={s.partyHeader} style={{ width: '100%', marginBottom: 0 }}>
-                <h3 style={{ margin: 0 }}>
-                  <PinIcon />
-                  {t('bookingWizard.receiverAndDropoff')} <span className={s.subNote}>({COUNTRIES[destC].name})</span>
-                </h3>
-                {session?.name && (
-                  <button type="button" className={s.quickMeBtn} onClick={() => void fillFromProfile('consignee')}>
-                    <UserIcon /> {t('bookingWizard.iAmReceiver')}
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div className={s.grid2}>
-              <div className="form-group">
-                <label htmlFor="consignee-name" className="required">
-                  {t('bookingWizard.receiverName')}
-                </label>
-                <input
-                  id="consignee-name"
-                  className={`form-control ${submitted && errors.consigneeName ? 'invalid' : ''}`}
-                  value={consignee.name}
-                  maxLength={100}
-                  placeholder={t('bookingWizard.receiverNamePlaceholder')}
-                  onChange={e => setConsignee({ ...consignee, name: e.target.value })}
-                />
-                {show(errors.consigneeName)}
-              </div>
-
-              <PhoneField
-                id="consignee-phone"
-                label={t('bookingWizard.receiverPhone')}
-                country={consigneePhoneCountry}
-                phone={consignee.phone}
-                invalid={submitted && !!errors.consigneePhone}
-                error={submitted ? errors.consigneePhone : ''}
-                onCountryChange={setConsigneePhoneCountry}
-                onPhoneChange={phone => setConsignee({ ...consignee, phone })}
-              />
-            </div>
-
-            {/* BỘ CHỌN ĐỊA CHỈ 2 CẤP ĐIỂM GIAO */}
-            <LocationPicker
-              country={destC}
-              address={dropoffAddr}
-              onChange={setDropoffAddr}
-              errors={
-                submitted
-                  ? {
-                      province: errors.dropoffProv,
-                      ward: errors.dropoffWard,
-                      detail: errors.dropoffDetail,
-                    }
-                  : undefined
-              }
-            />
-
-            {/* CCCD / THẺ CĂN CƯỚC NGƯỜI NHẬN */}
-            <div className="form-group" style={{ marginTop: 12, maxWidth: 360 }}>
-              <label htmlFor="consignee-idNumber" className="required">
-                {t('bookingWizard.receiverId')}
-              </label>
-              <input
-                id="consignee-idNumber"
-                className={`form-control ${submitted && errors.consigneeId ? 'invalid' : ''}`}
-                value={consignee.idNumber}
-                maxLength={50}
-                placeholder={t('bookingWizard.receiverId')}
-                onChange={e => setConsignee({ ...consignee, idNumber: e.target.value })}
-              />
-              {show(errors.consigneeId)}
-            </div>
-          </div>
-        )}
-
-        {routeReady && (
-          <div className={s.corridorNote}>
-            <span className={s.corridorIcon}>
-              <i className="fa-solid fa-shield-halved" />
-            </span>
-            <div>
-              <b>{t('bookingWizard.corridorTitle')}</b>
-              <p>{t('bookingWizard.corridorDesc')}</p>
-            </div>
-          </div>
-        )}
-
-        <div className={s.actions}>
-          <Link to="/portal" className="btn btn-ghost">
-            {t('bookingWizard.btnCancel')}
-          </Link>
-          <button type="submit" className="btn btn-primary" disabled={!type}>
-            {t('bookingWizard.btnNextHorses')} <ArrowRightIcon />
-          </button>
-        </div>
+        <StepActions back="/portal" backLabel={t('bookingForm.cancel')}>
+          <Button type="submit" variant="primary" size="lg">{t('bookingForm.route.next')}</Button>
+        </StepActions>
       </form>
     </BookingShell>
   )
