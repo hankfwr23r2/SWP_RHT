@@ -32,6 +32,21 @@ public interface BookingHorseRepository extends JpaRepository<BookingHorse, Long
     List<String> findBusyBookingCodes(Collection<Long> horseIds, BookingHorseStatus horseStatus,
             Collection<BookingStatus> endedStatuses);
 
+    // Cùng điều kiện với findBusyBookingCodes, kèm con ngựa
+    @Query("""
+            SELECT h.horse.id AS horseId, b.code AS bookingCode FROM BookingHorse h JOIN h.booking b
+            WHERE h.horse.id IN :horseIds AND h.status = :horseStatus AND b.status NOT IN :endedStatuses
+            ORDER BY b.code
+            """)
+    List<HorseBooking> findBusyHorses(Collection<Long> horseIds, BookingHorseStatus horseStatus,
+            Collection<BookingStatus> endedStatuses);
+
+    interface HorseBooking {
+        Long getHorseId();
+
+        String getBookingCode();
+    }
+
     interface DepartureStallCount {
         Long getDepartureId();
         String getStallTypeCode();

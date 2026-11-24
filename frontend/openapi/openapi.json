@@ -3696,6 +3696,9 @@
       },
       "HorseResponseDto" : {
         "properties" : {
+          "activeBookingCode" : {
+            "type" : "string"
+          },
           "birthYear" : {
             "format" : "int32",
             "type" : "integer"

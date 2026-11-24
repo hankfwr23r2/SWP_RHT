@@ -1,6 +1,8 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect as baseExpect, test, type Page } from '@playwright/test'
 
-// Đặt đơn 4 bước trên trang thật, API được mô phỏng
+// Đặt đơn 4 bước trên trang thật, API được mô phỏng. Mỗi test mở nhiều trang nên chờ lâu hơn mặc định.
+const expect = baseExpect.configure({ timeout: 15_000 })
+test.describe.configure({ timeout: 90_000 })
 const addresses = [
   { id: 1, label: 'Trại A', addressLine: 'Số 1', provinceCode: 'VN-79', countryCode: 'VN', latitude: 11, longitude: 106.5 },
   { id: 2, label: 'Trại B', addressLine: 'Số 2', provinceCode: 'VN-48', countryCode: 'VN', latitude: 16, longitude: 108 },
@@ -11,7 +13,7 @@ const departure = {
 }
 
 async function open(page: Page, options: { feasible?: boolean; rejectFirst?: boolean } = {}) {
-  const state = { created: [] as Record<string, unknown>[], priced: [] as Record<string, unknown>[] }
+  const state = { created: [] as Record<string, unknown>[], priced: [] as Record<string, unknown>[], busy: 'BK-KHAC' as string | undefined }
   await page.addInitScript(() => {
     sessionStorage.setItem('SWP_SESSION_customer', JSON.stringify({ role: 'customer', name: 'Khách thử', username: 'customer.test' }))
     localStorage.setItem('SWP_ACCESS_TOKEN_customer', `e30.${btoa(JSON.stringify({ exp: 4102444800 }))}.x`)
@@ -27,6 +29,7 @@ async function open(page: Page, options: { feasible?: boolean; rejectFirst?: boo
     if (path === '/horses') return reply([
       { id: 11, name: 'Gió Nam', microchip: '985000000000011', status: 'ACTIVE' },
       { id: 12, name: 'Đã nghỉ', microchip: '985000000000012', status: 'RETIRED' },
+      { id: 13, name: 'Sao Mai', microchip: '985000000000013', status: 'ACTIVE', activeBookingCode: state.busy },
     ])
     if (path === '/stall-types') return reply([{ code: 'STANDARD', name: 'Khoang tiêu chuẩn', seats: 1 }, { code: 'WIDE', name: 'Khoang rộng', seats: 2 }])
     if (path === '/billable-services') return reply([
@@ -52,7 +55,7 @@ async function open(page: Page, options: { feasible?: boolean; rejectFirst?: boo
     return reply([])
   })
   await page.goto('/booking/route')
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Ngựa đi từ đâu tới đâu?', { timeout: 20_000 })
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Ngựa đi từ đâu tới đâu?')
   return state
 }
 
@@ -121,6 +124,25 @@ test('khoang rộng vượt chỗ còn lại của chuyến thì báo và không
   await expect(page.getByRole('alert')).toContainText('chuyến chỉ còn 1 chỗ')
   await page.getByRole('button', { name: /Tiếp tục/ }).click()
   await expect(page).toHaveURL(/booking\/horses/)
+})
+
+test('ngựa đang trong đơn khác thì khóa ở bước 2; vừa bận sau khi chọn thì phải bỏ chọn', async ({ page }) => {
+  const state = await open(page)
+  await chooseRoute(page)
+  await page.getByRole('button', { name: /Tiếp tục/ }).click()
+  await expect(page.getByRole('checkbox', { name: /Sao Mai/ })).toBeDisabled()
+  await expect(page.getByText('Đang trong đơn BK-KHAC')).toBeVisible()
+
+  state.busy = undefined
+  await page.reload()
+  await page.getByRole('checkbox', { name: /Sao Mai/ }).check()
+  state.busy = 'BK-KHAC'
+  await page.reload()
+  await expect(page.getByRole('alert')).toContainText('Bỏ chọn Sao Mai')
+  await page.getByRole('button', { name: /Tiếp tục/ }).click()
+  await expect(page).toHaveURL(/booking\/horses/)
+  await page.getByRole('checkbox', { name: /Sao Mai/ }).uncheck()
+  await expect(page.getByText('Bỏ chọn Sao Mai')).toHaveCount(0)
 })
 
 test('lỗi backend hiện dưới đúng ô, sửa xong gửi lại được và bản nháp vẫn còn', async ({ page }) => {

@@ -4149,6 +4149,7 @@ export interface components {
             vehicleTripId?: number;
         };
         HorseResponseDto: {
+            activeBookingCode?: string;
             /** Format: int32 */
             birthYear?: number;
             breed?: string;

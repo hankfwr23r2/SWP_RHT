@@ -6,10 +6,14 @@ import com.example.racehorse_transport.dto.horse.HorseTypeResponseDto;
 import com.example.racehorse_transport.dto.horse.HorseUpdateRequestDto;
 import com.example.racehorse_transport.entity.Horse;
 import com.example.racehorse_transport.entity.HorseType;
+import com.example.racehorse_transport.entity.enums.BookingHorseStatus;
 import com.example.racehorse_transport.entity.enums.HorseStatus;
 import com.example.racehorse_transport.exception.HorseRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
+import com.example.racehorse_transport.policy.BookingSubmissionPolicy;
 import com.example.racehorse_transport.policy.HorsePolicy;
+import com.example.racehorse_transport.repository.BookingHorseRepository;
+import com.example.racehorse_transport.repository.BookingHorseRepository.HorseBooking;
 import com.example.racehorse_transport.repository.CustomerRepository;
 import com.example.racehorse_transport.repository.HorseRepository;
 import com.example.racehorse_transport.repository.HorseTypeRepository;
@@ -19,7 +23,9 @@ import java.time.Clock;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -37,6 +43,7 @@ public class HorseServiceImpl implements HorseService {
     private final HorseRepository horses;
     private final HorseTypeRepository horseTypes;
     private final CustomerRepository customers;
+    private final BookingHorseRepository bookingHorses;
     private final Clock clock;
 
     @Override
@@ -48,13 +55,15 @@ public class HorseServiceImpl implements HorseService {
     @Override
     @Transactional(readOnly = true)
     public List<HorseResponseDto> horses(String username) {
-        return horses.findByOwner_User_UsernameOrderByNameAscIdAsc(username).stream().map(HorseResponseDto::from).toList();
+        List<Horse> owned = horses.findByOwner_User_UsernameOrderByNameAscIdAsc(username);
+        Map<Long, String> active = activeBookings(owned.stream().map(Horse::getId).toList());
+        return owned.stream().map(horse -> HorseResponseDto.from(horse, active.get(horse.getId()))).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public HorseResponseDto horse(String username, Long id) {
-        return HorseResponseDto.from(ownedHorse(username, id));
+        return HorseResponseDto.from(ownedHorse(username, id), activeBookings(List.of(id)).get(id));
     }
 
     @Override
@@ -68,7 +77,7 @@ public class HorseServiceImpl implements HorseService {
         horse.setMicrochip(microchip);
         horse.setStatus(HorseStatus.ACTIVE);
         setDeclared(horse, request.declaredValue(), request.declaredCurrencyCode());
-        return HorseResponseDto.from(saveUnique(horse));
+        return HorseResponseDto.from(saveUnique(horse), null);
     }
 
     @Override
@@ -80,7 +89,15 @@ public class HorseServiceImpl implements HorseService {
         request.applyTo(horse, horseType);
         setDeclared(horse, request.declaredValue(), request.declaredCurrencyCode());
         horse.setUpdatedAt(clock.instant().truncatedTo(ChronoUnit.MICROS));
-        return HorseResponseDto.from(saveUnique(horse));
+        return HorseResponseDto.from(saveUnique(horse), activeBookings(List.of(id)).get(id));
+    }
+
+    private Map<Long, String> activeBookings(List<Long> horseIds) {
+        if (horseIds.isEmpty()) {
+            return Map.of();
+        }
+        return bookingHorses.findBusyHorses(horseIds, BookingHorseStatus.ACTIVE, BookingSubmissionPolicy.ENDED_STATUSES).stream()
+                .collect(Collectors.toMap(HorseBooking::getHorseId, HorseBooking::getBookingCode, (first, second) -> first));
     }
 
     private void requireValid(Short birthYear, BigDecimal declaredValue, String declaredCurrencyCode) {
