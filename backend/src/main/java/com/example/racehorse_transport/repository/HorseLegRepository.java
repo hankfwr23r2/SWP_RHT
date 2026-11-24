@@ -47,6 +47,8 @@ public interface HorseLegRepository extends JpaRepository<HorseLeg, Long> {
 
     long countByVehicleTrip_IdAndStatus(Long vehicleTripId, HorseLegStatus status);
 
+    List<HorseLeg> findByBookingHorse_Booking_IdAndStatus(Long bookingId, HorseLegStatus status);
+
     // Quy tắc #16: số con ACTIVE của đơn chưa giao xong: chưa có chặng giao hoặc chạy thẳng đã xong,
     // và chưa có lần giao DELIVERY đã xong (người nhận tự tới hub nhận, không có chặng giao)
     @Query("""

@@ -185,6 +185,15 @@ public class HorseLegServiceImpl implements HorseLegService {
         return horsesOnTrip(trip.getId());
     }
 
+    @Override
+    @Transactional
+    public int cancelPlannedLegsOfBooking(Long bookingId) {
+        List<HorseLeg> planned = legs.findByBookingHorse_Booking_IdAndStatus(bookingId, HorseLegStatus.PLANNED);
+        planned.forEach(leg -> leg.setStatus(HorseLegStatus.CANCELLED));
+        legs.flush();
+        return planned.size();
+    }
+
     private static void requireNotStarted(VehicleTrip trip) {
         if (trip.getStatus() != VehicleTripStatus.PLANNED && trip.getStatus() != VehicleTripStatus.DISPATCHED) {
             throw new DispatchRuleException("vehicleTripId", "Lượt xe đã chạy hoặc đã hủy, không đổi ngựa được.", true);

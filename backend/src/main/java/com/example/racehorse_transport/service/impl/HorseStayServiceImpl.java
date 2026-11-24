@@ -95,7 +95,11 @@ public class HorseStayServiceImpl implements HorseStayService {
     @Override
     @Transactional(readOnly = true)
     public List<HorseStayResponseDto> appointmentsAt(Long locationId) {
-        return stays.findByLocation_IdAndActualStartAtIsNullOrderByPlannedStartAt(locationId).stream().map(HorseStayResponseDto::from).toList();
+        // Đơn đã rời chuyến hoặc bị hủy thì lịch hẹn không còn hiệu lực
+        return stays.findByLocation_IdAndActualStartAtIsNullOrderByPlannedStartAt(locationId).stream()
+                .filter(stay -> stay.getBookingHorse().getBooking().getStatus() == BookingStatus.CONFIRMED
+                        && stay.getBookingHorse().getStatus() == BookingHorseStatus.ACTIVE)
+                .map(HorseStayResponseDto::from).toList();
     }
 
     @Override
