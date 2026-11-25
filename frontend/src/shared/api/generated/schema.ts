@@ -468,6 +468,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/bookings/{bookingId}/delay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["bookingDelay"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{bookingId}/delay/refund": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["refundAfterDelay"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{bookingId}/delay/refund-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["previewDelayRefund"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{bookingId}/delay/reschedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["rescheduleAfterDelay"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/bookings/{bookingId}/delivery-complaints": {
         parameters: {
             query?: never;
@@ -1790,6 +1854,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["confirmRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/departures/{id}/delay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["delay"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4049,6 +4129,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListBookingDelayResponseDto: {
+            data?: components["schemas"]["BookingDelayResponseDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseListBookingDocumentResponseDto: {
             data?: components["schemas"]["BookingDocumentResponseDto"][];
             message?: string;
@@ -4534,6 +4619,19 @@ export interface components {
             /** Format: date */
             requestedPickupDate: string;
         };
+        BookingDelayResponseDto: {
+            autoCancelled?: boolean;
+            canRefundFull?: boolean;
+            canRescheduleFree?: boolean;
+            delayReason?: string;
+            /** Format: int64 */
+            departureId?: number;
+            /** Format: date-time */
+            plannedDepartureAt?: string;
+            requiresManagerContact?: boolean;
+            /** Format: date-time */
+            revisedDepartureAt?: string;
+        };
         BookingDepartureChangeRequestDto: {
             /** Format: int64 */
             departureId: number;
@@ -4995,20 +5093,29 @@ export interface components {
             stallCapacity: number;
         };
         DepartureDecisionResponseDto: {
+            /** Format: date-time */
+            autoCancelledAt?: string;
             belowMinimum?: boolean;
             /** Format: int32 */
             bookedStallCount?: number;
+            canRevise?: boolean;
             /** Format: int32 */
             committedStallCount?: number;
             confirmable?: boolean;
             /** Format: date-time */
             decisionAt?: string;
+            delayReason?: string;
+            /** Format: date-time */
+            delayedAt?: string;
             /** Format: date */
             departureDate?: string;
             /** Format: int64 */
             id?: number;
             /** Format: date-time */
             plannedDepartureAt?: string;
+            receivedBookings?: components["schemas"]["ReceivedBookingResponseDto"][];
+            /** Format: date-time */
+            revisedDepartureAt?: string;
             routeCode?: string;
             routeName?: string;
             /** Format: date-time */
@@ -5019,6 +5126,12 @@ export interface components {
             status?: "OPEN" | "CLOSED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
             /** Format: int32 */
             uncommittedBookingCount?: number;
+            warning?: boolean;
+        };
+        DepartureDelayRequestDto: {
+            reason: string;
+            /** Format: date-time */
+            revisedDepartureAt: string;
         };
         DepartureResponse: {
             /** Format: int32 */
@@ -5027,6 +5140,9 @@ export interface components {
             bookedStallCount?: number;
             /** Format: date-time */
             bookingCutoffAt?: string;
+            delayReason?: string;
+            /** Format: date-time */
+            delayedAt?: string;
             /** Format: date */
             departureDate?: string;
             /** Format: int64 */
@@ -5037,6 +5153,8 @@ export interface components {
             originCode?: string;
             /** Format: date-time */
             plannedDepartureAt?: string;
+            /** Format: date-time */
+            revisedDepartureAt?: string;
             routeCode?: string;
             /** Format: int64 */
             routeId?: number;
@@ -5681,6 +5799,11 @@ export interface components {
             /** @enum {string} */
             confirmedCauseType?: "COMPANY_FAULT" | "HORSE_CONDITION" | "CUSTOMER_DOCS" | "AGENT_FAULT" | "FORCE_MAJEURE" | "RECIPIENT_ABSENT";
             deliveryFailure?: components["schemas"]["DeliveryFailureDto"];
+            /** Format: date */
+            departureDate?: string;
+            /** Format: int64 */
+            departureId?: number;
+            departureRouteName?: string;
             description?: string;
             /** Format: date-time */
             fitConfirmedAt?: string;
@@ -6462,6 +6585,11 @@ export interface components {
             ratedAt?: string;
             /** Format: int32 */
             score?: number;
+        };
+        ReceivedBookingResponseDto: {
+            code?: string;
+            /** Format: int64 */
+            id?: number;
         };
         RefundQuotationLinesRequestDto: {
             unspentQuotationLineIds: number[];
@@ -7858,6 +7986,102 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    bookingDelay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListBookingDelayResponseDto"];
+                };
+            };
+        };
+    };
+    refundAfterDelay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelBookingRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingCancellationResponseDto"];
+                };
+            };
+        };
+    };
+    previewDelayRefund: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingCancellationResponseDto"];
+                };
+            };
+        };
+    };
+    rescheduleAfterDelay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookingRescheduleRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingResponseDto"];
                 };
             };
         };
@@ -10102,6 +10326,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseDepartureDecisionResponseDto"];
+                };
+            };
+        };
+    };
+    delay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DepartureDelayRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDepartureResponse"];
                 };
             };
         };

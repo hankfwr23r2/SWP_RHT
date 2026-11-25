@@ -563,6 +563,23 @@
         },
         "type" : "object"
       },
+      "ApiResponseListBookingDelayResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/BookingDelayResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListBookingDocumentResponseDto" : {
         "properties" : {
           "data" : {
@@ -2077,6 +2094,38 @@
         "required" : [ "acceptedServiceTerms", "addresses", "bookingType", "horses", "parties", "requestedPickupDate" ],
         "type" : "object"
       },
+      "BookingDelayResponseDto" : {
+        "properties" : {
+          "autoCancelled" : {
+            "type" : "boolean"
+          },
+          "canRefundFull" : {
+            "type" : "boolean"
+          },
+          "canRescheduleFree" : {
+            "type" : "boolean"
+          },
+          "delayReason" : {
+            "type" : "string"
+          },
+          "departureId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "plannedDepartureAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "requiresManagerContact" : {
+            "type" : "boolean"
+          },
+          "revisedDepartureAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "BookingDepartureChangeRequestDto" : {
         "properties" : {
           "departureId" : {
@@ -3327,12 +3376,19 @@
       },
       "DepartureDecisionResponseDto" : {
         "properties" : {
+          "autoCancelledAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
           "belowMinimum" : {
             "type" : "boolean"
           },
           "bookedStallCount" : {
             "format" : "int32",
             "type" : "integer"
+          },
+          "canRevise" : {
+            "type" : "boolean"
           },
           "committedStallCount" : {
             "format" : "int32",
@@ -3345,6 +3401,13 @@
             "format" : "date-time",
             "type" : "string"
           },
+          "delayReason" : {
+            "type" : "string"
+          },
+          "delayedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
           "departureDate" : {
             "format" : "date",
             "type" : "string"
@@ -3354,6 +3417,16 @@
             "type" : "integer"
           },
           "plannedDepartureAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "receivedBookings" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ReceivedBookingResponseDto"
+            },
+            "type" : "array"
+          },
+          "revisedDepartureAt" : {
             "format" : "date-time",
             "type" : "string"
           },
@@ -3378,8 +3451,26 @@
           "uncommittedBookingCount" : {
             "format" : "int32",
             "type" : "integer"
+          },
+          "warning" : {
+            "type" : "boolean"
           }
         },
+        "type" : "object"
+      },
+      "DepartureDelayRequestDto" : {
+        "properties" : {
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "revisedDepartureAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason", "revisedDepartureAt" ],
         "type" : "object"
       },
       "DepartureResponse" : {
@@ -3393,6 +3484,13 @@
             "type" : "integer"
           },
           "bookingCutoffAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "delayReason" : {
+            "type" : "string"
+          },
+          "delayedAt" : {
             "format" : "date-time",
             "type" : "string"
           },
@@ -3415,6 +3513,10 @@
             "type" : "string"
           },
           "plannedDepartureAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "revisedDepartureAt" : {
             "format" : "date-time",
             "type" : "string"
           },
@@ -5146,6 +5248,17 @@
           },
           "deliveryFailure" : {
             "$ref" : "#/components/schemas/DeliveryFailureDto"
+          },
+          "departureDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "departureId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "departureRouteName" : {
+            "type" : "string"
           },
           "description" : {
             "type" : "string"
@@ -7218,6 +7331,18 @@
           },
           "score" : {
             "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "ReceivedBookingResponseDto" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
             "type" : "integer"
           }
         },
@@ -9969,6 +10094,134 @@
           }
         },
         "tags" : [ "balance-hold-controller" ]
+      }
+    },
+    "/bookings/{bookingId}/delay" : {
+      "get" : {
+        "operationId" : "bookingDelay",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "bookingId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListBookingDelayResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-delay-controller" ]
+      }
+    },
+    "/bookings/{bookingId}/delay/refund" : {
+      "post" : {
+        "operationId" : "refundAfterDelay",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "bookingId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CancelBookingRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBookingCancellationResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-delay-controller" ]
+      }
+    },
+    "/bookings/{bookingId}/delay/refund-preview" : {
+      "get" : {
+        "operationId" : "previewDelayRefund",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "bookingId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBookingCancellationResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-delay-controller" ]
+      }
+    },
+    "/bookings/{bookingId}/delay/reschedule" : {
+      "post" : {
+        "operationId" : "rescheduleAfterDelay",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "bookingId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/BookingRescheduleRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBookingResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-delay-controller" ]
       }
     },
     "/bookings/{bookingId}/delivery-complaints" : {
@@ -12940,6 +13193,43 @@
           }
         },
         "tags" : [ "departure-controller" ]
+      }
+    },
+    "/departures/{id}/delay" : {
+      "post" : {
+        "operationId" : "delay",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DepartureDelayRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseDepartureResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "departure-delay-controller" ]
       }
     },
     "/dispatch/bookings" : {

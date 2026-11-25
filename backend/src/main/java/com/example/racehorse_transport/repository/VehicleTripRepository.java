@@ -34,6 +34,15 @@ public interface VehicleTripRepository extends JpaRepository<VehicleTrip, Long> 
 
     boolean existsByCode(String code);
 
+    @Query("""
+            SELECT t.id FROM VehicleTrip t WHERE t.status <> com.example.racehorse_transport.entity.enums.VehicleTripStatus.CANCELLED
+            AND ((t.departure.id = :departureId AND t.tripType = com.example.racehorse_transport.entity.enums.VehicleTripType.LINEHAUL)
+                OR EXISTS (SELECT l.id FROM HorseLeg l WHERE l.vehicleTrip = t AND l.bookingHorse.booking.departure.id = :departureId
+                    AND l.legType = com.example.racehorse_transport.entity.enums.HorseLegType.DELIVERY
+                    AND l.status = com.example.racehorse_transport.entity.enums.HorseLegStatus.PLANNED))
+            ORDER BY t.id""")
+    List<Long> findIdsForDelayShift(Long departureId);
+
     // Mọi lượt chưa hủy của xe, để kiểm trùng giờ và nơi lượt trước kết thúc
     List<VehicleTrip> findByVehicle_IdAndStatusNot(Long vehicleId, VehicleTripStatus status);
 

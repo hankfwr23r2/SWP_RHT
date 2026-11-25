@@ -36,4 +36,6 @@ public interface DepartureService {
 
     // Hủy chuyến chưa chạy; các đơn trên chuyến chuyển sang SCHEDULE_CHANGE_REQUIRED kèm lý do
     DepartureResponseDto cancel(Long departureId, String reason, String actorUsername);
+
+    void cancelForDelay(Long departureId, String reason);
 }

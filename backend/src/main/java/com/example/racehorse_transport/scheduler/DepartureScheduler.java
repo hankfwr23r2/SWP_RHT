@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.scheduler;
 
 import com.example.racehorse_transport.service.DepartureDecisionService;
+import com.example.racehorse_transport.service.DepartureDelayService;
 import com.example.racehorse_transport.service.DepartureService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -13,6 +14,12 @@ public class DepartureScheduler {
 
     private final DepartureService departureService;
     private final DepartureDecisionService decisionService;
+    private final DepartureDelayService delayService;
+
+    @Scheduled(fixedDelayString = "${app.departure.delay-scan-ms:60000}", initialDelayString = "${app.departure.delay-scan-ms:60000}")
+    public void scanDelays() {
+        delayService.scan();
+    }
 
     @Scheduled(cron = "${app.departure.generate-cron:0 15 0 * * *}", zone = "Asia/Ho_Chi_Minh")
     public void generateFromSchedules() {

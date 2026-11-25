@@ -23,6 +23,7 @@ export const staff = {
     "noTripsDescription": "Lượt xe điều phối lập trong tuần sẽ hiện ở đây."
   },
   incidents: {
+    departure: 'Chuyến liên quan: {{route}} · {{date}}',
     handoverCause: {
       told: "Giờ đã báo",
       arrived: "Giờ tới thật",

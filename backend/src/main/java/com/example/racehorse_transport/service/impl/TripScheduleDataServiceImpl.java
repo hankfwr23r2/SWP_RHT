@@ -1,5 +1,7 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.policy.DepartureDelayPolicy;
+
 import com.example.racehorse_transport.dto.dispatch.HorseLegRequestDto;
 import com.example.racehorse_transport.dto.dispatch.PlannedTripRequestDto;
 import com.example.racehorse_transport.dto.dispatch.PlannedTripRequestDto.PlaceDto;
@@ -159,12 +161,12 @@ public class TripScheduleDataServiceImpl implements TripScheduleDataService {
     private Instant hubDeadline(List<Booking> found) {
         int hours = configs.getInt("HUB_CHECKIN_HOURS");
         return found.stream().map(Booking::getDeparture).filter(Objects::nonNull)
-                .map(departure -> departure.getPlannedDepartureAt().minus(Duration.ofHours(hours))).min(Comparator.naturalOrder()).orElse(null);
+                .map(departure -> DepartureDelayPolicy.effectiveTime(departure).minus(Duration.ofHours(hours))).min(Comparator.naturalOrder()).orElse(null);
     }
 
     private static Instant readyAt(List<Booking> found) {
         return found.stream().map(Booking::getDeparture).filter(Objects::nonNull)
-                .map(departure -> departure.getPlannedDepartureAt().plus(Duration.ofMinutes(departure.getRoute().getEstimatedDurationMinutes())))
+                .map(departure -> DepartureDelayPolicy.effectiveTime(departure).plus(Duration.ofMinutes(departure.getRoute().getEstimatedDurationMinutes())))
                 .max(Comparator.naturalOrder()).orElse(null);
     }
 

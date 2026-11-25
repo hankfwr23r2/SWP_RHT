@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { bookingOrdersApi } from '@shared/api/bookingOrders'
+import { bookingOrdersApi, type BookingReschedule } from '@shared/api/bookingOrders'
 import { useLoad } from '@shared/hooks/useLoad'
 import { Button } from '@shared/ui/Button'
 import { Card } from '@shared/ui/Card'
@@ -17,7 +17,13 @@ import { useOrderAction } from '../useOrderAction'
 import s from '../Orders.module.css'
 
 // Chọn lại chuyến khi lịch phải đổi
-export function RescheduleCard({ data }: { data: OrderData }) {
+interface Props {
+  data: OrderData
+  excludeDepartureId?: number
+  reschedule?: (body: BookingReschedule) => Promise<unknown>
+}
+
+export function RescheduleCard({ data, excludeDepartureId, reschedule }: Props) {
   const { t } = useTranslation()
   const { run, busy, error } = useOrderAction()
   const [today] = useState(() => todayIso())
@@ -39,7 +45,7 @@ export function RescheduleCard({ data }: { data: OrderData }) {
     })
   }, [data.id], { toastOnError: false })
 
-  const departures = (suggestion?.departures ?? []).filter(departure => departure.id !== booking?.departureId)
+  const departures = (suggestion?.departures ?? []).filter(departure => departure.id !== (excludeDepartureId ?? booking?.departureId))
   const selected = departures.find(departure => departure.id === departureId)
   const last = selected?.departureDate && (booking?.bookingType === 'IMPORT' ? selected.departureDate : dayBefore(selected.departureDate))
   const badDate = !!selected && (!pickupDate || pickupDate < today || (!!last && pickupDate > last))
@@ -50,7 +56,8 @@ export function RescheduleCard({ data }: { data: OrderData }) {
   }
   const send = async () => {
     setConfirming(false)
-    await run(() => bookingOrdersApi.reschedule(data.id, { departureId: departureId!, requestedPickupDate: pickupDate }), t('myOrders.reschedule.done'))
+    const body = { departureId: departureId!, requestedPickupDate: pickupDate }
+    await run(() => reschedule ? reschedule(body) : bookingOrdersApi.reschedule(data.id, body), t('myOrders.reschedule.done'))
   }
 
   // Đơn chạy thẳng đổi ngày đón ở thẻ đón hụt, không chọn chuyến

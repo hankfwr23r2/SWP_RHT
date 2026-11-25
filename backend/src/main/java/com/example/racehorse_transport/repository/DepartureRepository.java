@@ -27,6 +27,17 @@ public interface DepartureRepository extends JpaRepository<Departure, Long> {
     @Query("SELECT d FROM Departure d JOIN FETCH d.route r JOIN FETCH r.origin o JOIN FETCH r.destination dest LEFT JOIN FETCH o.counterpartCountry LEFT JOIN FETCH dest.counterpartCountry WHERE d.id = :id")
     Optional<Departure> findWithRoute(@Param("id") Long id);
 
+    @Query("""
+            SELECT d.id FROM Departure d WHERE d.status IN :statuses AND (
+                (d.runConfirmedAt IS NULL AND d.runRemindedAt IS NULL
+                 AND d.plannedDepartureAt > :now AND d.plannedDepartureAt <= :reminderCutoff)
+                OR (d.delayedAt IS NULL AND ((d.runConfirmedAt IS NULL AND d.plannedDepartureAt <= :now)
+                    OR d.plannedDepartureAt <= :graceCutoff))
+                OR (d.revisedDepartureAt IS NULL AND d.delayEscalatedAt IS NULL AND d.plannedDepartureAt <= :cancelCutoff))
+            ORDER BY d.id""")
+    List<Long> findDelayCandidates(Collection<DepartureStatus> statuses, Instant now, Instant reminderCutoff,
+                                   Instant graceCutoff, Instant cancelCutoff);
+
     // Sinh chuyến từ lịch; chạy lại nhiều lần (hoặc nhiều máy chủ cùng chạy) cũng không tạo trùng
     @Modifying
     @Query(value = """

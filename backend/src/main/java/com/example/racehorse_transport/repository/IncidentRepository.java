@@ -32,7 +32,7 @@ public interface IncidentRepository extends JpaRepository<Incident, Long> {
 
     boolean existsByVehicleTrip_IdAndHorseLegIsNullAndStatusIn(Long vehicleTripId, Collection<IncidentStatus> statuses);
 
-    @EntityGraph(attributePaths = {"vehicleTrip", "booking", "horseLeg", "horseLeg.bookingHorse.horse",
+    @EntityGraph(attributePaths = {"vehicleTrip", "vehicleTrip.departure.route", "booking", "horseLeg", "horseLeg.bookingHorse.horse",
             "horseLeg.alightTripStop", "reportedBy", "fitConfirmedBy", "causeConfirmedBy"})
     @Query("""
             SELECT i FROM Incident i LEFT JOIN i.horseLeg leg WHERE (i.status IN :statuses
@@ -42,11 +42,11 @@ public interface IncidentRepository extends JpaRepository<Incident, Long> {
             """)
     List<Incident> findForBoard(Collection<IncidentStatus> statuses, IncidentType deliveryType, java.time.Instant since);
 
-    @EntityGraph(attributePaths = {"booking", "vehicleTrip", "horseLeg", "horseLeg.bookingHorse", "horseLeg.bookingHorse.horse",
+    @EntityGraph(attributePaths = {"booking", "vehicleTrip", "vehicleTrip.departure.route", "horseLeg", "horseLeg.bookingHorse", "horseLeg.bookingHorse.horse",
             "horseLeg.alightTripStop", "reportedBy", "fitConfirmedBy", "causeConfirmedBy"})
     List<Incident> findByVehicleTrip_IdOrderByReportedAtDesc(Long vehicleTripId);
 
-    @EntityGraph(attributePaths = {"booking", "vehicleTrip", "horseLeg", "horseLeg.bookingHorse", "horseLeg.bookingHorse.horse",
+    @EntityGraph(attributePaths = {"booking", "vehicleTrip", "vehicleTrip.departure.route", "horseLeg", "horseLeg.bookingHorse", "horseLeg.bookingHorse.horse",
             "horseLeg.alightTripStop", "reportedBy", "fitConfirmedBy", "causeConfirmedBy"})
     @Query("SELECT i FROM Incident i WHERE i.id = :id AND i.incidentType <> com.example.racehorse_transport.entity.enums.IncidentType.COMPLAINT")
     Optional<Incident> findOneById(Long id);
