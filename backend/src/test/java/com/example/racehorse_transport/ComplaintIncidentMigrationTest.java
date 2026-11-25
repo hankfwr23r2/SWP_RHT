@@ -39,13 +39,21 @@ class ComplaintIncidentMigrationTest {
     }
 
     @Test
-    void databaseRejectsSecondComplaintForTheSameBooking() {
+    void databaseRejectsSecondOpenComplaintForTheSameBooking() {
         Long bookingId = newBooking();
         insertIncident(bookingId, "COMPLAINT", null, null);
 
         assertThatThrownBy(() -> insertIncident(bookingId, "COMPLAINT", null, null))
                 .isInstanceOf(DataIntegrityViolationException.class)
-                .hasMessageContaining("uk_incident_complaint_booking");
+                .hasMessageContaining("uk_incident_open_complaint_booking");
+    }
+
+    @Test
+    void allowsAnotherComplaintAfterThePreviousOneIsClosed() {
+        Long closedBooking = newBooking();
+        insertIncident(closedBooking, "COMPLAINT", null, null);
+        jdbc.update("UPDATE incident SET status = 'CLOSED' WHERE booking_id = ?", closedBooking);
+        assertThat(insertIncident(closedBooking, "COMPLAINT", null, null)).isEqualTo(1);
     }
 
     @Test
