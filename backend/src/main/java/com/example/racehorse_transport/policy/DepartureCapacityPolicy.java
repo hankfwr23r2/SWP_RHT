@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.policy;
 
+import com.example.racehorse_transport.exception.BookingRuleException;
 import com.example.racehorse_transport.entity.enums.DepartureStatus;
 import java.time.Instant;
 import java.util.Optional;
@@ -47,6 +48,16 @@ public final class DepartureCapacityPolicy {
     // Chuyến đang nhận đơn mà đã qua giờ chốt thì đóng
     public static boolean shouldClose(DepartureStatus status, Instant bookingCutoffAt, Instant now) {
         return status == DepartureStatus.OPEN && !now.isBefore(bookingCutoffAt);
+    }
+
+    public static DepartureStatus afterLinehaulDeparture(DepartureStatus status) {
+        if (status == DepartureStatus.IN_PROGRESS || status == DepartureStatus.COMPLETED) return status;
+        if (CANCELLABLE.contains(status)) return DepartureStatus.IN_PROGRESS;
+        throw BookingRuleException.conflict("Chuyến đã hủy, không thể bắt đầu.");
+    }
+
+    public static DepartureStatus afterLinehaulCompletion(DepartureStatus status, boolean unfinishedTrips) {
+        return status == DepartureStatus.IN_PROGRESS && !unfinishedTrips ? DepartureStatus.COMPLETED : status;
     }
 
     public static boolean canCancel(DepartureStatus status) {

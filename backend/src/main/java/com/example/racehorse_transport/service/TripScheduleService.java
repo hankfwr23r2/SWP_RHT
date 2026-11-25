@@ -9,5 +9,5 @@ public interface TripScheduleService {
 
     PlannedTripResponseDto plan(PlannedTripRequestDto request);
 
-    VehicleTripResponseDto create(PlannedTripRequestDto request);
+    VehicleTripResponseDto create(PlannedTripRequestDto request, String username);
 }

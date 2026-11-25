@@ -184,7 +184,7 @@ export default function TripRunPage() {
           )
         })}
       </ol>
-      {trip.status === 'IN_PROGRESS' && <TripIncidentPanel run={data} />}
+      {(trip.status === 'IN_PROGRESS' || trip.status === 'COMPLETED') && <TripIncidentPanel run={data} />}
       {failing !== undefined && (
         <ConfirmDialog
           tone="danger"

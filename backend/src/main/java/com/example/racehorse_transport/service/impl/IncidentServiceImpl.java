@@ -14,7 +14,6 @@ import com.example.racehorse_transport.entity.VehicleTrip;
 import com.example.racehorse_transport.entity.enums.CrewAssignmentStatus;
 import com.example.racehorse_transport.entity.enums.IncidentPlanStatus;
 import com.example.racehorse_transport.entity.enums.IncidentStatus;
-import com.example.racehorse_transport.entity.enums.IncidentType;
 import com.example.racehorse_transport.entity.enums.PartyRoleType;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
@@ -84,6 +83,7 @@ public class IncidentServiceImpl implements IncidentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lượt xe " + request.vehicleTripId()));
         Staff reporter = crew.findFirstByVehicleTrip_IdAndStaff_User_UsernameAndStatusNot(trip.getId(), username, CrewAssignmentStatus.RELEASED)
                 .orElseThrow(() -> new AccessDeniedException("Bạn không ở trong tổ lái của lượt xe này.")).getStaff();
+        IncidentPolicy.requireReportable(trip.getStatus(), request.incidentType(), request.horseLegId() != null);
         HorseLeg leg = null;
         if (request.horseLegId() != null) {
             leg = legs.findById(request.horseLegId()).filter(l -> l.getVehicleTrip() != null && l.getVehicleTrip().getId().equals(trip.getId()))
@@ -101,6 +101,7 @@ public class IncidentServiceImpl implements IncidentService {
     @Transactional
     public IncidentResponseDto propose(Long incidentId, IncidentPlanRequestDto request, String username) {
         Incident incident = openIncident(incidentId);
+        IncidentPolicy.requireResolutionAvailable(incident.getIncidentType(), request.resolutionType());
         Party handler = request.handlerPartyId() == null ? null : parties.findById(request.handlerPartyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đối tác " + request.handlerPartyId()));
         IncidentPolicy.requireHandler(request.resolutionType(), handler != null, handler == null ? List.of() : validRoles(handler.getId()));
@@ -154,8 +155,22 @@ public class IncidentServiceImpl implements IncidentService {
     @Transactional
     public IncidentResponseDto confirmFit(Long incidentId, String username) {
         Incident incident = openIncident(incidentId);
-        Staff member = crew.findFirstByVehicleTrip_IdAndStaff_User_UsernameAndStatusNot(incident.getVehicleTrip().getId(), username, CrewAssignmentStatus.RELEASED)
-                .orElseThrow(() -> new AccessDeniedException("Bạn không ở trong tổ lái của lượt xe này.")).getStaff();
+        Staff member = currentStaff(username);
+        if ("COORDINATOR".equals(member.getUser().getRole().getCode())) {
+            if (!incidents.hasDocumentType(incidentId, "VET_REPORT")) {
+                throw new DispatchRuleException("documentType", "Cần tải kết quả thú y trước khi xác nhận thay.", true);
+            }
+        } else {
+            VehicleTrip trip = incident.getVehicleTrip() != null ? incident.getVehicleTrip()
+                    : incident.getHorseLeg() == null ? null : incident.getHorseLeg().getVehicleTrip();
+            if (trip == null || crew.findFirstByVehicleTrip_IdAndStaff_User_UsernameAndStatusNot(
+                    trip.getId(), username, CrewAssignmentStatus.RELEASED).isEmpty()) {
+                throw new AccessDeniedException("Bạn không ở trong tổ lái của lượt xe này.");
+            }
+        }
+        if (!IncidentPolicy.requiresFit(incident.getIncidentType(), incident.getHorseLeg() != null)) {
+            throw new DispatchRuleException("incidentType", "Sự cố này không yêu cầu xác nhận đủ sức.", true);
+        }
         IncidentPolicy.requireCanConfirmFit(incident.getStatus(), incident.getReportedAt(), clock.instant(), configs.getInt("MIN_REST_MINUTES"));
         incident.setFitConfirmedBy(member);
         incident.setFitConfirmedAt(clock.instant());
@@ -166,7 +181,7 @@ public class IncidentServiceImpl implements IncidentService {
     @Transactional
     public IncidentResponseDto resolve(Long incidentId, String username) {
         Incident incident = openIncident(incidentId);
-        boolean concernsHorse = incident.getHorseLeg() != null || incident.getIncidentType() == IncidentType.HEALTH;
+        boolean concernsHorse = IncidentPolicy.requiresFit(incident.getIncidentType(), incident.getHorseLeg() != null);
         IncidentPolicy.requireResolvable(incident.getStatus(), concernsHorse, incident.getFitConfirmedAt() != null);
         plans.findByIncident_IdOrderByVersion(incidentId).stream().filter(p -> p.getStatus() == IncidentPlanStatus.APPROVED)
                 .forEach(p -> p.setStatus(IncidentPlanStatus.DONE));
@@ -217,6 +232,6 @@ public class IncidentServiceImpl implements IncidentService {
         if (found.isEmpty()) return List.of();
         Map<Long, List<PlanDto>> byIncident = plans.findByIncident_IdInOrderByIncident_IdAscVersionAsc(found.stream().map(Incident::getId).toList()).stream()
                 .collect(Collectors.groupingBy(p -> p.getIncident().getId(), Collectors.mapping(PlanDto::from, Collectors.toList())));
-        return found.stream().map(i -> IncidentResponseDto.from(i, byIncident.getOrDefault(i.getId(), List.of()))).toList();
+        return found.stream().map(i -> IncidentResponseDto.from(i, IncidentPolicy.requiresFit(i.getIncidentType(), i.getHorseLeg() != null), byIncident.getOrDefault(i.getId(), List.of()))).toList();
     }
 }

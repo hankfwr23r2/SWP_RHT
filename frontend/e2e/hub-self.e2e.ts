@@ -124,12 +124,12 @@ test('người nhận tới trễ hơn giờ hẹn thì điều phối gửi chu
   // Giờ hẹn đã qua: có nút gửi chuồng
   await row.getByRole('button', { name: 'Gửi chuồng' }).click()
   const stable = page.getByRole('dialog', { name: 'Gửi chuồng · Gió Bấc · BK-AAAA0005' })
-  await expect(stable.getByRole('button', { name: 'Gửi chuồng' })).toBeDisabled()
-  await stable.getByLabel('Phí gửi chuồng (VND)').fill('500000')
+  // Phí do máy chủ tính theo biểu, không có ô nhập
+  await expect(stable.getByLabel(/Phí/)).toHaveCount(0)
   await stable.getByLabel('Ghi chú').fill('Người nhận báo tới muộn')
   await stable.getByRole('button', { name: 'Gửi chuồng' }).click()
   await expect(present.getByRole('row', { name: /Gió Bấc/ })).toContainText('Gửi chuồng')
-  expect(sent.stable).toEqual({ fee: 500000, note: 'Người nhận báo tới muộn' })
+  expect(sent.stable).toEqual({ note: 'Người nhận báo tới muộn' })
   // Ngựa đang gửi chuồng vẫn trả được, không gửi chuồng lần nữa
   await expect(present.getByRole('row', { name: /Gió Bấc/ }).getByRole('button', { name: 'Trả ngựa' })).toBeVisible()
   await expect(present.getByRole('row', { name: /Gió Bấc/ }).getByRole('button', { name: 'Gửi chuồng' })).toHaveCount(0)

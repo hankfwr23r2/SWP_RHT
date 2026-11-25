@@ -69,8 +69,8 @@ public class HubHandoverController {
     }
 
     @PostMapping("/horse-stays/{id}/stabling")
-    public ApiResponseDto<HorseStayResponseDto> stable(@PathVariable Long id, Authentication authentication, @Valid @RequestBody HubStablingRequestDto request) {
-        return ApiResponseDto.success(stays.stableOverdue(id, request, authentication.getName()), "Đã chuyển sang gửi chuồng");
+    public ApiResponseDto<HorseStayResponseDto> stable(@PathVariable Long id, @Valid @RequestBody HubStablingRequestDto request) {
+        return ApiResponseDto.success(stays.stableOverdue(id, request), "Đã chuyển sang gửi chuồng");
     }
 
     @PostMapping("/horse-stays/{id}/deliveries")

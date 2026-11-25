@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.service.StablingChargeService;
 import com.example.racehorse_transport.dto.health.HorseStayResponseDto;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Party;
@@ -10,17 +11,10 @@ import com.example.racehorse_transport.policy.DispatchPolicy;
 import com.example.racehorse_transport.repository.PartyRepository;
 import com.example.racehorse_transport.repository.PartyRoleRepository;
 import java.time.LocalDate;
-import com.example.racehorse_transport.entity.CostItem;
-import com.example.racehorse_transport.entity.Staff;
-import com.example.racehorse_transport.entity.enums.CostCategory;
-import com.example.racehorse_transport.entity.enums.CostPayerType;
 import com.example.racehorse_transport.dto.operation.HubStablingRequestDto;
-import com.example.racehorse_transport.repository.CostItemRepository;
-import com.example.racehorse_transport.repository.StaffRepository;
 import java.time.Clock;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import org.springframework.security.access.AccessDeniedException;
 import com.example.racehorse_transport.entity.BookingHorse;
 import com.example.racehorse_transport.entity.HorseLeg;
 import com.example.racehorse_transport.entity.Location;
@@ -40,8 +34,6 @@ import com.example.racehorse_transport.service.CustomerNoticeService;
 import com.example.racehorse_transport.service.HorseStayService;
 import com.example.racehorse_transport.service.NotificationService;
 import com.example.racehorse_transport.service.SystemConfigService;
-import com.example.racehorse_transport.policy.StablingPolicy;
-import com.example.racehorse_transport.entity.enums.AppUserStatus;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
@@ -67,8 +59,7 @@ public class HorseStayServiceImpl implements HorseStayService {
     private final HorseStayRepository stays;
     private final HorseLegRepository legs;
     private final BookingHorseRepository bookingHorses;
-    private final CostItemRepository costItems;
-    private final StaffRepository staff;
+    private final StablingChargeService stablingCharges;
     private final Clock clock;
     private final PartyRepository parties;
     private final PartyRoleRepository partyRoles;
@@ -132,30 +123,23 @@ public class HorseStayServiceImpl implements HorseStayService {
 
     @Override
     @Transactional
+    public void requireStablingPaid(Long bookingHorseId) {
+        stays.findFirstByBookingHorse_IdAndActualStartAtIsNotNullAndActualEndAtIsNull(bookingHorseId)
+                .ifPresent(stablingCharges::requirePaid);
+    }
+
+    @Override
+    @Transactional
     public void closeActive(Long bookingHorseId, Instant at, Long actorUserId) {
         stays.findFirstByBookingHorse_IdAndActualStartAtIsNotNullAndActualEndAtIsNull(bookingHorseId).ifPresent(stay -> {
+            stablingCharges.chargeThrough(stay, at, actorUserId);
             stay.setActualEndAt(at);
-            // Gửi chuồng sau giao thất bại chưa có phí (gửi chuồng do người nhận tới hub trễ đã ghi phí lúc mở)
-            if (stay.getStayType() == HorseStayType.STABLING && !costItems.existsByHorseStay_Id(stay.getId())) {
-                long days = StablingPolicy.days(stay.getActualStartAt(), at);
-                CostItem fee = new CostItem();
-                fee.setCategory(CostCategory.STABLING);
-                fee.setDescription("Lưu chuồng và chăm sóc tại " + stay.getLocation().getName() + " " + days + " ngày sau khi giao thất bại");
-                fee.setAmount(StablingPolicy.fee(stay.getActualStartAt(), at, configs.getInt(DAILY_FEE)));
-                fee.setCurrencyCode("VND");
-                fee.setPayerType(CostPayerType.CONSIGNEE);
-                fee.setBooking(stay.getBookingHorse().getBooking());
-                fee.setHorseStay(stay);
-                fee.setIncurredAt(at);
-                fee.setRecordedBy(staff.getReferenceById(actorUserId));
-                costItems.save(fee);
-            }
         });
     }
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
-    public void openFailedDeliveryStabling(HorseLeg failedLeg, Location hub, Instant at) {
+    public void openFailedDeliveryStabling(HorseLeg failedLeg, Location hub, Instant at, Long actorUserId) {
         HorseStay stay = new HorseStay();
         stay.setBookingHorse(failedLeg.getBookingHorse());
         stay.setStayType(HorseStayType.STABLING);
@@ -169,6 +153,10 @@ public class HorseStayServiceImpl implements HorseStayService {
                 failedLeg.getBookingHorse().getHorse().getName() + " chưa giao được do không gặp người nhận, đang được giữ và chăm sóc tại "
                         + hub.getName() + " tới " + TIME.format(stay.getPlannedEndAt()) + ". Phí lưu chuồng và chăm sóc "
                         + money(configs.getInt(DAILY_FEE)) + " mỗi ngày, người nhận chịu.", "/orders/" + booking.getId());
+        legs.findByBookingHorse_IdOrderBySequenceNumber(failedLeg.getBookingHorse().getId()).stream()
+                .filter(leg -> leg.getStatus() == HorseLegStatus.PLANNED && leg.getReplacedHorseLeg() != null
+                        && leg.getReplacedHorseLeg().getId().equals(failedLeg.getId()))
+                .findFirst().ifPresent(leg -> stablingCharges.chargeThrough(stay, leg.getPlannedStartAt(), actorUserId));
     }
 
     @Override
@@ -187,25 +175,7 @@ public class HorseStayServiceImpl implements HorseStayService {
     @Override
     @Transactional
     public int remindOverdueStabling() {
-        Instant now = clock.instant();
-        List<HorseStay> overdue = stays.findByStayTypeAndActualStartAtIsNotNullAndActualEndAtIsNullAndPlannedEndAtBefore(HorseStayType.STABLING, now)
-                .stream().filter(stay -> !costItems.existsByHorseStay_Id(stay.getId())).toList();
-        List<Long> managers = staff.findUserIdsByRoleAndStatus("MANAGER", AppUserStatus.ACTIVE);
-        for (HorseStay stay : overdue) {
-            Booking booking = stay.getBookingHorse().getBooking();
-            String horse = stay.getBookingHorse().getHorse().getName();
-            String accrued = money(StablingPolicy.fee(stay.getActualStartAt(), now, configs.getInt(DAILY_FEE)).longValue());
-            String link = "/orders/" + booking.getId();
-            notifications.notify(List.of(booking.getCustomer().getUser().getId()), booking.getId(), "Quá hạn giữ ngựa tại hub",
-                    horse + " đã quá hạn giữ tại " + stay.getLocation().getName() + " từ " + TIME.format(stay.getPlannedEndAt())
-                            + ". Phí lưu chuồng và chăm sóc tạm tính " + accrued + " và vẫn tính mỗi ngày. Liên hệ công ty để nhận ngựa.", link);
-            if (!managers.isEmpty()) {
-                notifications.notify(managers, booking.getId(), "Quá hạn giữ ngựa tại hub",
-                        horse + " (đơn " + booking.getCode() + ") quá hạn giữ tại " + stay.getLocation().getName() + ", phí tạm tính " + accrued
-                                + ". Quyết định giao lại, trả về người gửi hoặc xử lý theo hợp đồng.", "/manager/orders/" + booking.getId());
-            }
-        }
-        return overdue.size();
+        return stablingCharges.remindOverdueStabling();
     }
 
     private static String money(long amount) {
@@ -270,41 +240,32 @@ public class HorseStayServiceImpl implements HorseStayService {
 
     @Override
     @Transactional
-    public HorseStayResponseDto stableOverdue(Long horseStayId, HubStablingRequestDto request, String username) {
+    public HorseStayResponseDto stableOverdue(Long horseStayId, HubStablingRequestDto request) {
         HorseStay assembly = selfCollectionStay(horseStayId);
         Instant now = clock.instant();
         if (!now.isAfter(assembly.getPlannedEndAt())) {
             throw new DispatchRuleException("horseStayId", "Chưa quá giờ hẹn người nhận tới (" + TIME.format(assembly.getPlannedEndAt()) + ").", true);
         }
-        Staff actor = staff.findByUser_Username(username).orElseThrow(() -> new AccessDeniedException("Không tìm thấy hồ sơ nhân viên."));
         assembly.setActualEndAt(now);
         HorseStay stabling = new HorseStay();
         stabling.setBookingHorse(assembly.getBookingHorse());
         stabling.setStayType(HorseStayType.STABLING);
         stabling.setLocation(assembly.getLocation());
         stabling.setPlannedStartAt(now);
-        stabling.setPlannedEndAt(now.plus(DEFAULT_ASSEMBLY));
+        stabling.setPlannedEndAt(now.plus(Duration.ofDays(configs.getInt(MAX_DAYS))));
         stabling.setActualStartAt(now);
         stays.saveAndFlush(stabling);
-        // Phí gửi chuồng người nhận chịu (NGHIEP_VU GĐ8 mục 6); quản lý duyệt rồi mới vào quyết toán
-        CostItem fee = new CostItem();
-        fee.setCategory(CostCategory.STABLING);
-        fee.setDescription("Gửi chuồng tại " + assembly.getLocation().getName() + " do người nhận tới trễ hơn giờ hẹn"
-                + (request.note() == null || request.note().isBlank() ? "" : ". " + request.note().strip()));
-        fee.setAmount(request.fee());
-        fee.setCurrencyCode("VND");
-        fee.setPayerType(CostPayerType.CONSIGNEE);
-        fee.setBooking(assembly.getBookingHorse().getBooking());
-        fee.setHorseStay(stabling);
-        fee.setIncurredAt(now);
-        fee.setRecordedBy(actor);
-        costItems.saveAndFlush(fee);
+        Booking booking = assembly.getBookingHorse().getBooking();
+        String note = request.note() == null || request.note().isBlank() ? "" : " " + request.note().strip();
+        notifications.notify(List.of(booking.getCustomer().getUser().getId()), booking.getId(), "Ngựa đang được giữ tại hub",
+                "Đã quá giờ hẹn. Phí lưu chuồng và chăm sóc tại " + assembly.getLocation().getName()
+                        + " là " + money(configs.getInt(DAILY_FEE)) + " mỗi ngày." + note, "/orders/" + booking.getId());
         return HorseStayResponseDto.from(stabling);
     }
 
     // Lưu trú tập kết đang diễn ra của con mà người nhận tự tới hub nhận, ngựa đã tới bằng chặng cuối
     private HorseStay selfCollectionStay(Long id) {
-        HorseStay stay = stays.findById(id).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lưu trú " + id));
+        HorseStay stay = stays.findForUpdate(id).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lưu trú " + id));
         Booking booking = stay.getBookingHorse().getBooking();
         boolean arrived = legs.findByBookingHorse_IdOrderBySequenceNumber(stay.getBookingHorse().getId()).stream()
                 .noneMatch(l -> l.getStatus() == HorseLegStatus.PLANNED || l.getStatus() == HorseLegStatus.IN_PROGRESS);

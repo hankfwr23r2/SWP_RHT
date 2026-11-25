@@ -16,6 +16,9 @@ import { StatusBadge } from '@shared/ui/StatusBadge'
 import { Textarea } from '@shared/ui/Textarea'
 import { useToast } from '@shared/ui/toast'
 import { EvidencePanel } from '@backoffice/shared/EvidencePanel'
+import { IncidentCostForm } from '@backoffice/shared/IncidentCostForm'
+import { IncidentEvidenceSection } from './IncidentEvidenceSection'
+import { PlanRejectDialog } from './PlanRejectDialog'
 import s from './Incidents.module.css'
 
 const RESOLUTIONS: ResolutionType[] = ['CONTINUE', 'VET_TREATMENT', 'STABLE_NEARBY', 'TRANSFER_VEHICLE', 'RETURN_TO_HUB', 'CANCEL']
@@ -31,11 +34,10 @@ export function IncidentDetailModal({ incidentId, role, onClose, onChanged }: Pr
   const [estimatedCost, setEstimatedCost] = useState('')
   const [handler, setHandler] = useState('')
   const [rejecting, setRejecting] = useState<{ id: number; version: number }>()
-  const [reason, setReason] = useState('')
   const [vehicleId, setVehicleId] = useState('')
   const { data, loaded, error, reload } = useLoad(async () => {
-    const [incident, costs] = await Promise.all([incidentsApi.incident(incidentId), incidentsApi.costs(incidentId)])
-    return { incident, costs }
+    const [incident, costs, evidence] = await Promise.all([incidentsApi.incident(incidentId), incidentsApi.costs(incidentId), incidentsApi.photos(incidentId)])
+    return { incident, costs, evidence }
   }, [incidentId], { toastOnError: false })
   const { data: parties } = useLoad(async () => (role === 'coordinator' ? incidentsApi.parties() : []), [role])
   const { data: vehicles } = useLoad(async () => (role === 'coordinator' ? dispatchApi.vehicles() : []), [role])
@@ -61,6 +63,7 @@ export function IncidentDetailModal({ incidentId, role, onClose, onChanged }: Pr
   const incident: Incident = data.incident
   const plans = incident.plans ?? []
   const latest = plans[plans.length - 1]
+  const canReturn = incident.incidentType !== 'HANDOVER_TIMEOUT'
   const open = incident.status !== 'RESOLVED' && incident.status !== 'CLOSED'
 
   return (
@@ -74,13 +77,19 @@ export function IncidentDetailModal({ incidentId, role, onClose, onChanged }: Pr
       <div className={s.section}>
         <div className={s.row}>
           <StatusBadge tone={open ? 'warning' : 'success'} label={t(`incidents.status.${incident.status}`)} />
-          {incident.horseName && <StatusBadge tone={incident.fitConfirmedAt ? 'success' : 'neutral'}
+          {incident.requiresFit && <StatusBadge tone={incident.fitConfirmedAt ? 'success' : 'neutral'}
             label={incident.fitConfirmedAt ? t('incidents.fitConfirmed') : t('incidents.notFit')} />}
         </div>
         <p className={s.muted}>{[incident.vehicleTripCode, incident.horseName, incident.bookingCode].filter(Boolean).join(' · ')}</p>
         <p>{incident.description}</p>
-        <EvidencePanel title={t('incidents.photos')} load={() => incidentsApi.photos(incidentId)}
-          upload={role === 'coordinator' && incident.status !== 'CLOSED' ? file => incidentsApi.attachPhoto(incidentId, file) : undefined} />
+        <IncidentEvidenceSection evidence={data.evidence} busy={busy}
+          canConfirm={role === 'coordinator' && incident.status === 'PLAN_ACTIVE' && !!incident.requiresFit && !incident.fitConfirmedAt}
+          onConfirm={() => run(() => incidentsApi.confirmFit(incidentId), t('myTrips.run.incident.fitDone'))}
+          onUpload={role === 'coordinator' && incident.status !== 'CLOSED' ? async (file, type) => {
+            const evidence = await incidentsApi.attachPhoto(incidentId, file, undefined, type)
+            await reload()
+            return evidence
+          } : undefined} />
       </div>
 
       <section className={s.section} aria-labelledby="incident-plans">
@@ -99,7 +108,7 @@ export function IncidentDetailModal({ incidentId, role, onClose, onChanged }: Pr
                 {role === 'manager' && plan.status === 'PROPOSED' && plan.id === latest?.id && (
                   <div className={s.row}>
                     <Button variant="primary" loading={busy} onClick={() => run(() => incidentsApi.approve(plan.id ?? 0), t('incidents.done.approved'))}>{t('incidents.approve')}</Button>
-                    <Button variant="danger" onClick={() => { setReason(''); setRejecting({ id: plan.id ?? 0, version: plan.version ?? 0 }) }}>{t('incidents.reject')}</Button>
+                    <Button variant="danger" onClick={() => setRejecting({ id: plan.id ?? 0, version: plan.version ?? 0 })}>{t('incidents.reject')}</Button>
                   </div>
                 )}
               </li>
@@ -118,7 +127,7 @@ export function IncidentDetailModal({ incidentId, role, onClose, onChanged }: Pr
               onClick={() => run(() => incidentsApi.swapVehicle(incidentId, Number(vehicleId)), t('incidents.done.swapped'))}>{t('incidents.swapVehicle')}</Button>
           </div>
         )}
-        {role === 'coordinator' && latest?.status === 'APPROVED' && latest.resolutionType === 'RETURN_TO_HUB' && (
+        {role === 'coordinator' && canReturn && latest?.status === 'APPROVED' && latest.resolutionType === 'RETURN_TO_HUB' && (
           <div className={s.form}>
             <p className={s.muted}>{t('incidents.returnToHubHint')}</p>
             <Button variant="primary" loading={busy} onClick={() => run(() => incidentsApi.returnToHub(incidentId), t('incidents.done.returned'))}>{t('incidents.returnToHub')}</Button>
@@ -128,7 +137,7 @@ export function IncidentDetailModal({ incidentId, role, onClose, onChanged }: Pr
           <div className={s.form}>
             <Field label={t('incidents.resolutionType')}>
               {c => <Select {...c} value={resolution} onChange={value => setResolution(value as ResolutionType)}
-                options={RESOLUTIONS.map(r => ({ value: r, label: t(`incidents.resolution.${r}`) }))} />}
+                options={RESOLUTIONS.filter(r => canReturn || r !== 'RETURN_TO_HUB').map(r => ({ value: r, label: t(`incidents.resolution.${r}`) }))} />}
             </Field>
             <Field label={t('incidents.handler')}>
               {c => <Select {...c} value={handler} onChange={setHandler} placeholder={t('incidents.noHandler')}
@@ -153,6 +162,10 @@ export function IncidentDetailModal({ incidentId, role, onClose, onChanged }: Pr
 
       <section className={s.section} aria-labelledby="incident-costs">
         <h3 id="incident-costs" className={s.title}>{t('incidents.costs')}</h3>
+        {role === 'coordinator' && incident.status !== 'CLOSED' && (
+          <IncidentCostForm incidentId={incidentId} busy={busy} className={s.form}
+            onSave={draft => run(() => incidentsApi.recordCost(draft), t('myTrips.run.incident.costSaved'))} />
+        )}
         {data.costs.length ? (
           <ul className={s.list}>
             {data.costs.map(cost => (
@@ -176,23 +189,10 @@ export function IncidentDetailModal({ incidentId, role, onClose, onChanged }: Pr
         ) : <p className={s.muted}>{t('incidents.noCosts')}</p>}
       </section>
 
-      {rejecting && (
-        <Modal title={t('incidents.rejectTitle', { n: rejecting.version })} onClose={() => setRejecting(undefined)}
-          footer={(
-            <>
-              <Button onClick={() => setRejecting(undefined)}>{t('ui.cancel')}</Button>
-              <Button variant="danger" disabled={!reason.trim()} loading={busy}
-                onClick={() => run(() => incidentsApi.reject(rejecting.id, reason.trim()), t('incidents.done.rejected')).then(ok => { if (ok) setRejecting(undefined) })}>
-                {t('incidents.reject')}
-              </Button>
-            </>
-          )}>
-          <p className={s.muted}>{t('incidents.rejectMessage')}</p>
-          <Field label={t('incidents.rejectReason')} required>
-            {c => <Textarea {...c} value={reason} onChange={e => setReason(e.target.value)} data-autofocus />}
-          </Field>
-        </Modal>
-      )}
+      {rejecting && <PlanRejectDialog version={rejecting.version} busy={busy} onClose={() => setRejecting(undefined)}
+        onReject={async reason => {
+          if (await run(() => incidentsApi.reject(rejecting.id, reason), t('incidents.done.rejected'))) setRejecting(undefined)
+        }} />}
     </Modal>
   )
 }

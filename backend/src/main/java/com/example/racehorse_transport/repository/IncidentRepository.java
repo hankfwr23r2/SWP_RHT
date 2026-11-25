@@ -44,6 +44,12 @@ public interface IncidentRepository extends JpaRepository<Incident, Long> {
             """)
     boolean hasIncidentForBookingOtherThan(@Param("bookingId") Long bookingId, @Param("closed") IncidentStatus closed);
 
+    @Query("""
+            SELECT count(d) > 0 FROM Document d
+            WHERE d.incident.id = :incidentId AND d.documentType.code = :code
+            """)
+    boolean hasDocumentType(@Param("incidentId") Long incidentId, @Param("code") String code);
+
     // Báo cáo chuyến
     List<Incident> findByVehicleTrip_IdInOrderByReportedAt(Collection<Long> vehicleTripIds);
 }

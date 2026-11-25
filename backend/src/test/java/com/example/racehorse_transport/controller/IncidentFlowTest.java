@@ -46,6 +46,7 @@ class IncidentFlowTest {
 
     private String coordinator;
     private String manager;
+    private long coordinatorId;
     private String escort;
     private long trip;
     private long leg;
@@ -53,7 +54,9 @@ class IncidentFlowTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        coordinator = token(testData.staff(testData.unique("incident.coordinator"), "COORDINATOR"), "COORDINATOR");
+        Staff coordinatorStaff = testData.staff(testData.unique("incident.coordinator"), "COORDINATOR");
+        coordinatorId = coordinatorStaff.getUserId();
+        coordinator = token(coordinatorStaff, "COORDINATOR");
         manager = token(testData.staff(testData.unique("incident.manager"), "MANAGER"), "MANAGER");
         Staff escortStaff = testData.staff(testData.unique("incident.escort"), "ESCORT");
         escort = token(escortStaff, "ESCORT");
@@ -77,6 +80,8 @@ class IncidentFlowTest {
                 .content("{\"bookingHorseId\":%d,\"boardTripStopId\":%d,\"alightTripStopId\":%d}".formatted(line, stops.get(1).longValue(), stops.get(2).longValue())))
                 .andExpect(status().isCreated());
         leg = jdbc.queryForObject("SELECT id FROM horse_leg WHERE booking_horse_id = ? AND vehicle_trip_id = ?", Long.class, line, trip);
+        jdbc.update("UPDATE vehicle_trip SET status = 'IN_PROGRESS', actual_start_at = now() WHERE id = ?", trip);
+        entityManager.clear();
     }
 
     @Test
@@ -179,6 +184,53 @@ class IncidentFlowTest {
         long incident = id(report(null, "DELAY", "FORCE_MAJEURE"));
         mvc.perform(post("/incidents/{id}/plans", incident).header(HttpHeaders.AUTHORIZATION, escort).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"resolutionType\":\"CONTINUE\",\"instructions\":\"Đi tiếp\"}")).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void newHealthReportsNeedAHorseAndCompletedTripsRejectNewReports() throws Exception {
+        report(null, "HEALTH", "HORSE_CONDITION").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Sự cố sức khỏe phải chọn con ngựa."));
+        jdbc.update("UPDATE vehicle_trip SET status = 'COMPLETED', actual_end_at = now() WHERE id = ?", trip);
+        entityManager.clear();
+        report(leg, "ACCIDENT", "COMPANY_FAULT").andExpect(status().isConflict());
+    }
+
+    @Test
+    void legacyHealthAfterTripCompletionRequiresAVetReportForCoordinator() throws Exception {
+        long incident = id(report(leg, "HEALTH", "HORSE_CONDITION").andExpect(status().isCreated()));
+        long plan = ((Number) JsonPath.read(propose(incident, "CONTINUE", null).andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString(), "$.data.plans[0].id")).longValue();
+        act(manager, "/incident-plans/" + plan + "/approve").andExpect(status().isOk());
+        entityManager.flush();
+        jdbc.update("UPDATE incident SET horse_leg_id = null, reported_at = now() - interval '40 minutes' WHERE id = ?", incident);
+        jdbc.update("UPDATE vehicle_trip SET status = 'COMPLETED', actual_end_at = now() WHERE id = ?", trip);
+        entityManager.clear();
+
+        addEvidence(incident, "INCIDENT_PHOTO");
+        act(coordinator, "/incidents/" + incident + "/fit-confirmation").andExpect(status().isConflict());
+        addEvidence(incident, "VET_REPORT");
+        act(coordinator, "/incidents/" + incident + "/fit-confirmation").andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.requiresFit").value(true)).andExpect(jsonPath("$.data.fitConfirmedAt").exists());
+        cost(incident, "VET", "150000", true).andExpect(status().isCreated());
+    }
+
+    @Test
+    void handoverTimeoutResolvesWithoutFitAndCannotUseReturnToHub() throws Exception {
+        long incident = id(report(leg, "HANDOVER_TIMEOUT", "RECIPIENT_ABSENT").andExpect(status().isCreated()));
+        propose(incident, "RETURN_TO_HUB", null).andExpect(status().isConflict());
+        act(coordinator, "/incidents/" + incident + "/return-to-hub").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Xe giao thẳng vào hub, không cần bấm đưa về hub."));
+        long plan = ((Number) JsonPath.read(propose(incident, "CONTINUE", null).andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString(), "$.data.plans[0].id")).longValue();
+        act(manager, "/incident-plans/" + plan + "/approve").andExpect(status().isOk());
+        act(coordinator, "/incidents/" + incident + "/resolve").andExpect(status().isOk());
+    }
+
+    private void addEvidence(long incidentId, String type) {
+        jdbc.update("""
+                INSERT INTO document (document_type_id, file_url, file_name, uploaded_by, status, incident_id)
+                SELECT id, 'test://' || code, code || '.pdf', ?, 'UPLOADED', ? FROM document_type WHERE code = ?
+                """, coordinatorId, incidentId, type);
     }
 
     private ResultActions report(Long horseLeg, String type, String cause) throws Exception {

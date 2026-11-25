@@ -14,7 +14,7 @@ public interface IncidentEvidenceService {
     List<EvidenceResponseDto> receipts(Long costItemId);
 
     // Ảnh hiện trường của sự cố chưa đóng; latitude, longitude đi cùng nhau hoặc cùng bỏ trống
-    List<EvidenceResponseDto> attachPhoto(Long incidentId, MultipartFile file, BigDecimal latitude, BigDecimal longitude, String username);
+    List<EvidenceResponseDto> attachPhoto(Long incidentId, MultipartFile file, BigDecimal latitude, BigDecimal longitude, String documentType, String username);
 
     List<EvidenceResponseDto> photos(Long incidentId);
 }
