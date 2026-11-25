@@ -208,10 +208,13 @@ public class HorseStayServiceImpl implements HorseStayService {
         BookingHorse line = bookingHorses.findById(bookingHorseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngựa trong đơn " + bookingHorseId));
         Booking booking = line.getBooking();
-        if (booking.getPickupMethod() != TransferMethod.SELF || booking.getDeparture() == null) {
+        if ((booking.getPickupMethod() != TransferMethod.SELF
+                && line.getPickupMissChoice() != com.example.racehorse_transport.entity.enums.PickupMissChoice.SELF_DELIVERY)
+                || booking.getDeparture() == null) {
             throw new DispatchRuleException("bookingHorseId", "Chỉ hẹn nhận tại hub cho đơn đi trục mà khách tự chở ngựa tới hub.");
         }
-        if (line.getStatus() != BookingHorseStatus.ACTIVE || booking.getStatus() != BookingStatus.CONFIRMED) {
+        if (line.getStatus() != BookingHorseStatus.ACTIVE || (booking.getStatus() != BookingStatus.CONFIRMED
+                && booking.getStatus() != BookingStatus.IN_OPERATION)) {
             throw new DispatchRuleException("bookingHorseId", "Đơn " + booking.getCode() + " không ở trạng thái hẹn nhận ngựa được.", true);
         }
         Location hub = booking.getDeparture().getRoute().getOrigin();
@@ -295,8 +298,13 @@ public class HorseStayServiceImpl implements HorseStayService {
     public List<HorseStayResponseDto> appointmentsAt(Long locationId) {
         // Đơn đã rời chuyến hoặc bị hủy thì lịch hẹn không còn hiệu lực
         return stays.findByLocation_IdAndActualStartAtIsNullOrderByPlannedStartAt(locationId).stream()
-                .filter(stay -> stay.getBookingHorse().getBooking().getStatus() == BookingStatus.CONFIRMED
-                        && stay.getBookingHorse().getStatus() == BookingHorseStatus.ACTIVE)
+                .filter(stay -> {
+                    var line = stay.getBookingHorse();
+                    var status = line.getBooking().getStatus();
+                    return line.getStatus() == BookingHorseStatus.ACTIVE && (status == BookingStatus.CONFIRMED
+                            || (status == BookingStatus.IN_OPERATION && line.getPickupMissChoice()
+                                == com.example.racehorse_transport.entity.enums.PickupMissChoice.SELF_DELIVERY));
+                })
                 .map(HorseStayResponseDto::from).toList();
     }
 

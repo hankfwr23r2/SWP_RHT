@@ -9,6 +9,7 @@ import com.example.racehorse_transport.policy.StallSeatPolicy;
 import com.example.racehorse_transport.repository.BookingHorseRepository;
 import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
+import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +28,8 @@ public class BookingHorseServiceImpl implements BookingHorseService {
     private final RefundService refunds;
     private final StaffRepository staff;
     private final NotificationService notifications;
+    private final HorseLegRepository legs;
+    private final BookingStatusService statuses;
 
     @Override
     @Transactional
@@ -40,7 +43,7 @@ public class BookingHorseServiceImpl implements BookingHorseService {
             return;
         }
         if (actorUserId == null || reason == null || reason.isBlank() || reason.strip().length() > 500
-                || horse.getStatus() != BookingHorseStatus.ACTIVE || booking.getStatus() != BookingStatus.CONFIRMED) {
+                || horse.getStatus() != BookingHorseStatus.ACTIVE || (booking.getStatus() != BookingStatus.CONFIRMED && booking.getStatus() != BookingStatus.IN_OPERATION)) {
             throw BookingRuleException.conflict("Chỉ loại ngựa đang hoạt động lúc nhận, kèm người thao tác và lý do.");
         }
         horse.setStatus(BookingHorseStatus.EXCLUDED);
@@ -51,6 +54,9 @@ public class BookingHorseServiceImpl implements BookingHorseService {
         boolean overpaid = replacement.map(payments::reconcileBalance).map(amount -> amount.signum() < 0).orElse(false);
         if (overpaid) {
             replacement.ifPresent(refunds::refundOverpayment);
+        }
+        if (booking.getStatus() == BookingStatus.IN_OPERATION && legs.countActiveHorsesNotDelivered(bookingId) == 0) {
+            statuses.transition(bookingId, BookingStatus.DELIVERED, "Đã giao các con còn lại trong đơn.", actorUserId);
         }
         var message = "Không nhận ngựa " + horse.getHorse().getName() + ". Lý do: " + reason.strip()
                 + (overpaid ? ". Khách đã trả dư so với báo giá thay thế. Kiểm tra khoản hoàn đang chờ." : "");

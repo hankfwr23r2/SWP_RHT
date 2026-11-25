@@ -77,7 +77,9 @@ describe('tripRunModel', () => {
   it('tới theo thứ tự, rời khi không còn giao nhận dở', () => {
     const r = run()
     expect(canArrive(r, r.trip!.stops![2])).toBe(false)
-    expect(canDepart(r, r.trip!.stops![1])).toBe(true)
+    expect(canDepart(r, r.trip!.stops![1])).toBe(false)
+    const resolved = run({}, { horses: [{ leg: { boardTripStopId: 2, status: 'IN_PROGRESS' } }] })
+    expect(canDepart(resolved, resolved.trip!.stops![1])).toBe(true)
     const pending = run({}, { handovers: [{ id: 5, tripStopId: 2, status: 'PENDING' }] })
     expect(canDepart(pending, pending.trip!.stops![1])).toBe(false)
     const notStarted = run({ status: 'PLANNED' })

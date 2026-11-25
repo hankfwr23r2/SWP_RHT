@@ -23,5 +23,11 @@ public interface BookingCancellationService {
 
     void releaseUnpaidAtPickup(Long bookingId, Long actorUserId);
 
+    void cancelAfterPickupMiss(Long bookingId, boolean customerLiable, Long actorUserId);
+
+    void rebookDirectAfterPickupMiss(Long bookingId, Long actorUserId);
+
+    void releaseAfterPickupMiss(Long bookingId, boolean customerLiable, Long actorUserId);
+
     void releaseUnpaidAtHub(Long bookingId);
 }

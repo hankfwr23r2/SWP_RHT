@@ -292,6 +292,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/booking-horses/{id}/confirm-pickup-liability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["confirmPickupLiability"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/booking-horses/{id}/health-logs": {
         parameters: {
             query?: never;
@@ -318,6 +334,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["appoint"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/booking-horses/{id}/pickup-choices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["chooseAfterPickupMiss"];
         delete?: never;
         options?: never;
         head?: never;
@@ -876,6 +908,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["previewForManager"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/pickup-misses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listPickupMisses"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3613,6 +3661,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListPickupMissResponseDto: {
+            data?: components["schemas"]["PickupMissResponseDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseListPriceItemResponseDto: {
             data?: components["schemas"]["PriceItemResponseDto"][];
             message?: string;
@@ -3749,6 +3802,11 @@ export interface components {
         };
         ApiResponsePaymentResultResponseDto: {
             data?: components["schemas"]["PaymentResultResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponsePickupMissResponseDto: {
+            data?: components["schemas"]["PickupMissResponseDto"];
             message?: string;
             status?: string;
         };
@@ -4586,9 +4644,14 @@ export interface components {
             ownerLabel?: string;
         };
         HandoverRefusalRequestDto: {
+            customerContact?: string;
+            emergencyContact?: string;
             /** Format: int64 */
             horseLegId: number;
             reason: string;
+            /** @enum {string} */
+            reasonCode: "SENDER_ABSENT" | "CHIP_MISMATCH" | "ORIGINAL_DOCUMENTS_MISSING" | "HORSE_UNWELL" | "HORSE_WILL_NOT_BOARD" | "VEHICLE_FAILURE" | "UNSUITABLE_STALL" | "LATE_ARRIVAL" | "CREW_SHORTAGE" | "FLOOD" | "ROAD_CLOSURE";
+            senderContact?: string;
         };
         HandoverResponseDto: {
             /** Format: date-time */
@@ -5332,6 +5395,34 @@ export interface components {
         };
         PickupHubTransferRequestDto: {
             reason: string;
+        };
+        PickupMissChoiceRequestDto: {
+            /** @enum {string} */
+            choice: "DROP_HORSE" | "RETRY_PICKUP" | "SELF_DELIVERY" | "CHANGE_DEPARTURE" | "RESCHEDULE_PICKUP" | "CANCEL_BOOKING";
+            /** Format: date-time */
+            hubArrivalAt?: string;
+            phoneNote?: string;
+            /** Format: date */
+            pickupDate?: string;
+        };
+        PickupMissLiabilityRequestDto: {
+            /** @enum {string} */
+            liability: "CUSTOMER" | "COMPANY" | "FORCE_MAJEURE";
+        };
+        PickupMissResponseDto: {
+            availableChoices?: ("DROP_HORSE" | "RETRY_PICKUP" | "SELF_DELIVERY" | "CHANGE_DEPARTURE" | "RESCHEDULE_PICKUP" | "CANCEL_BOOKING")[];
+            /** Format: int64 */
+            bookingHorseId?: number;
+            /** @enum {string} */
+            choice?: "DROP_HORSE" | "RETRY_PICKUP" | "SELF_DELIVERY" | "CHANGE_DEPARTURE" | "RESCHEDULE_PICKUP" | "CANCEL_BOOKING";
+            /** Format: date-time */
+            choiceDueAt?: string;
+            horseName?: string;
+            /** @enum {string} */
+            liability?: "CUSTOMER" | "COMPANY" | "FORCE_MAJEURE";
+            /** Format: date-time */
+            missedAt?: string;
+            reason?: string;
         };
         PickupWaitExtensionRequestDto: {
             reason: string;
@@ -6700,6 +6791,32 @@ export interface operations {
             };
         };
     };
+    confirmPickupLiability: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PickupMissLiabilityRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePickupMissResponseDto"];
+                };
+            };
+        };
+    };
     ofHorse: {
         parameters: {
             query?: never;
@@ -6744,6 +6861,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseHorseStayResponseDto"];
+                };
+            };
+        };
+    };
+    chooseAfterPickupMiss: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PickupMissChoiceRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePickupMissResponseDto"];
                 };
             };
         };
@@ -7636,6 +7779,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseBookingCancellationResponseDto"];
+                };
+            };
+        };
+    };
+    listPickupMisses: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListPickupMissResponseDto"];
                 };
             };
         };
@@ -9057,9 +9222,13 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
+        requestBody?: {
             content: {
-                "application/json": components["schemas"]["HandoverRefusalRequestDto"];
+                "multipart/form-data": {
+                    /** Format: binary */
+                    photo: string;
+                    request: components["schemas"]["HandoverRefusalRequestDto"];
+                };
             };
         };
         responses: {

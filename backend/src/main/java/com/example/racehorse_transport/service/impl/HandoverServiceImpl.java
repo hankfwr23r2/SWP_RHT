@@ -3,6 +3,7 @@ package com.example.racehorse_transport.service.impl;
 import com.example.racehorse_transport.dto.operation.CrewTripResponseDto;
 import com.example.racehorse_transport.dto.operation.HandoverCreateRequestDto;
 import com.example.racehorse_transport.dto.operation.HandoverRefusalRequestDto;
+import org.springframework.web.multipart.MultipartFile;
 import com.example.racehorse_transport.dto.operation.HandoverResponseDto;
 import com.example.racehorse_transport.dto.operation.HandoverScanRequestDto;
 import com.example.racehorse_transport.entity.CrewAssignment;
@@ -151,6 +152,14 @@ public class HandoverServiceImpl implements HandoverService {
         // Con đã bị từ chối nhận (chặng đã hủy) không còn trong lần giao nhận
         List<HandoverHorse> results = scans.findById_HandoverId(handover.getId()).stream()
                 .filter(r -> r.getHorseLeg().getStatus() != HorseLegStatus.CANCELLED).toList();
+        if (handover.getHandoverType() == HandoverType.PICKUP
+                || (handover.getHandoverType() == HandoverType.AGENT && handover.getFromParty() != null)) {
+            var matchedIds = results.stream().filter(r -> Boolean.TRUE.equals(r.getMicrochipMatched()))
+                    .map(r -> r.getId().getHorseLegId()).collect(Collectors.toSet());
+            if (candidates(handover).stream().anyMatch(leg -> !matchedIds.contains(leg.getId()))) {
+                throw new DispatchRuleException("horseLegId", "Còn ngựa chưa nhận hoặc chưa ghi đón hụt.", true);
+            }
+        }
         TripExecutionPolicy.requireSomeMatched(results.stream().map(HandoverHorse::getMicrochipMatched).toList());
         // Nhận và giao ngựa phải có biên bản đã ký (MAN_HINH 4.3, 6.5)
         if (needsRecord(handover) && !documents.existsByHandover_IdAndDocumentType_Code(handover.getId(), RECORD_TYPE)) {
@@ -163,7 +172,7 @@ public class HandoverServiceImpl implements HandoverService {
 
     @Override
     @Transactional
-    public CrewTripResponseDto refuse(Long handoverId, HandoverRefusalRequestDto request, String username) {
+    public CrewTripResponseDto refuse(Long handoverId, HandoverRefusalRequestDto request, MultipartFile photo, String username) {
         Handover handover = pending(handoverId, username);
         Long tripId = handover.getTripStop().getVehicleTrip().getId();
         Long actorId = requireCrew(tripId, username).getStaff().getUserId();
@@ -174,7 +183,8 @@ public class HandoverServiceImpl implements HandoverService {
         }
         HorseLeg leg = candidates(handover).stream().filter(l -> l.getId().equals(request.horseLegId())).findFirst()
                 .orElseThrow(() -> new DispatchRuleException("horseLegId", "Con ngựa này không thuộc lần giao nhận.", true));
-        outcomes.refuse(leg.getBookingHorse().getId(), request.reason().strip(), clock.instant(), actorId);
+        outcomes.refuseAtStop(leg.getBookingHorse().getId(), request, photo,
+                handover.getTripStop().getActualArrivalAt(), clock.instant(), actorId);
         // Không còn con nào để nhận thì lần giao nhận kết thúc là không thành, xe được rời điểm dừng
         if (candidates(handover).isEmpty()) {
             handover.setStatus(HandoverStatus.FAILED);

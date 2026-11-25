@@ -66,7 +66,7 @@ Task nào làm tới thao tác nào thì đối chiếu dòng đó. Một dòng 
 | 4.3b | Như trên | **Trả ngựa tại chỗ** khi hết giờ chờ thanh toán | `handover` RETURN, `handover_document`, `booking` SCHEDULE_CHANGE_REQUIRED | Chưa hết giờ chờ hoặc giao dịch còn trong thời gian xác nhận | Nhả chỗ, giữ khoản số dư, khách có 30 ngày chọn lại lịch. Đơn khác đi tiếp | Cần chọn lại chuyến |
 | 4.11 · chờ số dư | Theo dõi (điều phối) | Ghi kết quả gọi khách và liên hệ khẩn cấp. Gia hạn một lần hoặc xác nhận đưa về hub | `audit_log`, `payment.due_at`, `horse_leg` | Gia hạn phải còn kịp tới hub và trong giới hạn ngồi xe. Đưa về hub yêu cầu đã hết giờ chờ và có điểm hub an toàn | Ngựa vẫn hiện trên bảng chăm sóc | Hiện kết quả thao tác |
 | 3.5c · giữ do số dư | Hub (điều phối), Chi tiết đơn (khách) | Xem mốc tính phí và hướng dẫn chọn lại lịch. Trả tại hub sau khi xác nhận chip | `horse_stay`, `handover` RETURN, `cost_item`, `payment` | Kiểm tra chip và còn lưu trú | Trả ngựa dù khách còn nợ. Phí được chốt sau khi giao nhận hoàn tất và cấn cọc nếu đã hủy | Lưu trú đã kết thúc, khoản thu thêm nếu có |
-| 4.4 | Như trên | **Không nhận**, kèm lý do | `booking_horse` EXCLUDED, báo giá thay thế ACCEPTED | Không ghi lý do | Nhả chỗ, hủy chặng sau, thay báo giá trong cùng giao dịch theo đơn giá đã chốt và báo quản lý. Con khác vẫn đi | Con nào bị loại, vì sao |
+| 4.4 | Như trên | **Ghi đón hụt**, chọn nguyên nhân và chụp ảnh | `booking_horse`, `document`, `audit_log` | Thiếu lý do hoặc ảnh. Người gửi vắng cần đủ thời gian và đủ ba kết quả gọi | Gỡ chặng kế hoạch của con hụt, giữ chỗ trên chuyến cho tới quyết định hoặc hết hạn | Con nào chưa nhận được, hạn chọn và bên chịu |
 | 4.5 | Điểm dừng: hub (hộ tống) | Quét chip, **Giao vào hub** | `handover` HUB_IN, `horse_stay` ASSEMBLY | Chip sai | Xe đón rảnh. Người ở `handled_by` phụ trách tới HUB_OUT **[mới]** | "Ở hub, chờ chuyến" |
 | 4.6 | Ngựa ở hub (hộ tống) | Cho ăn bữa tối, bữa sáng theo chỉ dẫn; đo, ghi ăn uống | `horse_health_log` (`horse_stay_id`, `water_intake`, `feed_intake`) | Không còn lưu trú | Con chưa ghi bữa hiện đỏ **[mới]** | Chỉ số mới nhất |
 | 4.7 | Thú y tại chuồng (chuyên viên) | Chọn đối tác VET, hẹn ngày; tải phiếu khám, phiếu xét nghiệm **[mới]** | `document` gắn `booking_horse_id` | Đối tác không có vai trò VET | Kiểm phiếu bắt buộc trước khi xe đi đón hoặc khi nhận tại hub nếu SELF; không khám được thì trừ khi quyết toán | Phiếu khám |
@@ -152,3 +152,12 @@ Công ty không vận hành nơi cách ly. Điều kiện cách ly thể hiện 
 | 6.6, 7.1–7.4 | B4, B5 |
 | 6.7–6.8, 7.6 | A8 |
 | 7.5 | A1 (đã có backend) |
+
+## Đợt 1b bước 3 · Đón hụt
+
+| Màn | Thao tác | Tác động |
+|---|---|---|
+| Tổ lái, lần nhận tại điểm đón hoặc cửa khẩu | Chọn nguyên nhân, nhập diễn giải, ghi từng cuộc gọi nếu người gửi vắng, chụp ảnh | Ghi `booking_horse`, `document`, `audit_log`. Chặn hoàn tất nhận hoặc rời điểm còn con chưa xử lý |
+| Chi tiết đơn của khách | Xem lý do, bên chịu và hạn. Chọn A/B/C/D theo lựa chọn máy chủ, hoặc hẹn ngày mới cho đơn chạy thẳng | Lựa chọn được xử lý dưới khóa đơn |
+| Điều phối, Điều độ → Hành trình của đơn | Chọn theo xác nhận qua điện thoại, nhập nội dung cuộc gọi | Cùng hợp đồng lựa chọn với khách, nhật ký ghi tài khoản điều phối |
+| Chi tiết đơn của quản lý | Chốt bên chịu | Ghi kết luận và nhật ký, xem lại trên chi tiết đơn |

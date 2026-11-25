@@ -412,8 +412,7 @@ Với `pickup_method = SELF`, kiểm giấy trước khi ký nhận tại hub, g
 **Không trả đủ trong 30 phút:** tổ xe trả ngựa và giấy gốc tại chỗ (`handover` RETURN), quản lý hủy đơn do khách (5.4), nhả chỗ. Các đơn khác trên xe đi tiếp. Link VNPAY mở trước hạn mà chưa có kết quả thì chờ thêm 5 phút sau hạn. Với đơn IMPORT nhận tại cửa khẩu, xe trục đưa ngựa về hub. Nếu số dư chưa đủ khi xe rời cửa khẩu thì đơn vẫn CONFIRMED. Tại hub, hệ thống kiểm số dư khi hoàn tất HUB_OUT. Đơn SCHEDULE_CHANGE_REQUIRED có thể thanh toán khoản số dư còn mở.
 
 **Ngoại lệ ở bước 4–5:**
-- Chip không khớp: không nhận con đó, ghi `incident` loại DOCUMENT.
-- Ngựa không đủ sức khỏe: loại khỏi đơn (`booking_horse.status = EXCLUDED`), hủy các `horse_leg` còn lại của con đó, trừ `departure.booked_stall_count`, và điều chỉnh báo giá bằng phiên bản mới (SUPERSEDED bản cũ và ACCEPTED bản mới trong cùng transaction). Nếu đã trả dư, kể cả khi VNPAY xác nhận số dư theo link cũ sau khi thay báo giá, lập khoản hoàn phần dư.
+- Chip không khớp hoặc ngựa chưa đủ điều kiện lên xe: ghi đón hụt và giữ ngựa trong đơn. Khách hoặc điều phối chọn cách xử lý, quản lý chốt bên chịu. Chỉ quyết định bỏ con mới chuyển `booking_horse.status` sang EXCLUDED và xử lý chỗ trục, báo giá và khoản hoàn.
 
 **Mốc không hoàn tiền:** khi khách đã trả đủ hoặc xe đã rời nơi nhận thì khách không tự hủy được (5.4).
 
@@ -881,3 +880,11 @@ Các class migration một lần sẽ **bỏ** khi chuyển sang Flyway: `Bookin
 | **Sửa** | Các service CRUD, bảo hiểm, thanh toán, sự cố, quyết toán, báo cáo, scheduler, seeder (thành dữ liệu Flyway) |
 | **Viết lại** | Lập lịch và giữ xe (`FleetService`, `BookingScheduleService`), tiến trình chuyến (`TripProgressService`), giao nhận, yêu cầu giấy tờ, chia chi phí sự cố, theo dõi ngựa |
 | **Bỏ** | `DetailsJson`, `quote_lines_json`, tính giá ở frontend, khóa giá trong `system_config`, ModelMapper, các class migration một lần |
+
+## Đón hụt tại nơi nhận
+
+Tổ lái ghi từng con với nguyên nhân và ảnh. Với người gửi vắng, ghi kết quả gọi người gửi, khách và liên hệ khẩn cấp sau thời gian chờ theo cấu hình. Tại cửa khẩu, ngựa chưa nhận vẫn do đại lý giữ. Khi ghi hụt, ngựa vẫn ACTIVE, chỗ trên chuyến và báo giá hiện hành được giữ. Các chặng kế hoạch của con đó được gỡ để điều phối lập lại. Hoàn tất lần nhận và rời điểm đón hoặc cửa khẩu cần mọi con đã nhận hoặc đã ghi hụt.
+
+Quản lý chốt khách, công ty hoặc bất khả kháng chịu trách nhiệm. Khách hoặc điều phối ghi lựa chọn trên đơn, với ghi chú cuộc gọi khi chọn hộ. A bỏ ngựa khỏi đơn, B đón lại một lần trên chuyến nếu đã có lượt phù hợp và tài xế, C hẹn tự đưa tới hub, D đưa cả đơn sang chọn lại chuyến nếu chưa nhận con nào. Đơn nhập dùng A hoặc D. Đơn chạy thẳng dùng A hoặc hẹn ngày đón mới. Khách có thể hủy đơn chưa nhận ngựa sau khi có kết luận trách nhiệm.
+
+Hạn mặc định 12 giờ khi ghi sớm, 1 giờ sát chuyến và chặn tại mốc tập kết. Hết hạn chọn hoặc qua hạn tập kết mà B/C vẫn chưa nhận được ngựa, nếu đã nhận con khác thì bỏ con hụt. Nếu chưa nhận con nào, nhả chỗ và chuyển đơn sang Cần chọn lại chuyến.

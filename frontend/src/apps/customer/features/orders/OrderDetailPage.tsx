@@ -1,6 +1,7 @@
 // Chi tiết đơn của khách: việc tiếp theo, báo giá và thanh toán, giấy tờ, hành trình, đổi chuyến, hủy, đánh giá.
 import { Link, useRevalidator } from 'react-router'
 import { useTranslation } from 'react-i18next'
+import { PickupMissPanel } from '@shared/components/PickupMissPanel'
 import { BookingJourney } from '@shared/components/HorseJourney'
 import { OrderStatusBadge } from '@shared/components/OrderStatusBadge'
 import { CANCELLABLE, HAS_JOURNEY, RATEABLE } from '@shared/components/orderSteps'
@@ -43,6 +44,7 @@ export default function OrderDetailPage() {
       <div className={s.layout}>
         <div className={s.stack}>
           <NextStepBanner data={data} />
+          <PickupMissPanel bookingId={data.id} mode="customer" onChanged={revalidate} />
           {data.detail?.balanceHoldAt && (
             <Card title={t('myOrders.balanceHold.title')}>
               <p>{t('myOrders.balanceHold.since', { at: formatDateTime(new Date(data.detail.balanceHoldAt)) })}</p>

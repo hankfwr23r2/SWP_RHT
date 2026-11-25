@@ -60,6 +60,27 @@ public class BookingHorse {
     @Column(name = "status", length = 30, nullable = false)
     private BookingHorseStatus status;
 
+    @Column(name = "pickup_missed_at")
+    private Instant pickupMissedAt;
+
+    @Column(name = "pickup_choice_due_at")
+    private Instant pickupChoiceDueAt;
+
+    @Column(name = "pickup_miss_reason", length = 500)
+    private String pickupMissReason;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "pickup_miss_liability", length = 20)
+    private com.example.racehorse_transport.entity.enums.PickupMissLiability pickupMissLiability;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "pickup_miss_choice", length = 24)
+    private com.example.racehorse_transport.entity.enums.PickupMissChoice pickupMissChoice;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pickup_retry_departure_id")
+    private Departure pickupRetryDeparture;
+
     // DB đặt giá trị mặc định now() lúc thêm dòng
     @Generated
     @Column(name = "added_at", nullable = false, insertable = false, updatable = false)

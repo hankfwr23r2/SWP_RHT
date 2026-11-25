@@ -10,6 +10,7 @@ import com.example.racehorse_transport.entity.Quotation;
 import com.example.racehorse_transport.entity.QuotationLine;
 import com.example.racehorse_transport.entity.enums.BookingHorseStatus;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
+import com.example.racehorse_transport.entity.enums.ScheduleChangeCause;
 import com.example.racehorse_transport.entity.enums.PaymentStatus;
 import com.example.racehorse_transport.entity.enums.PaymentType;
 import com.example.racehorse_transport.entity.enums.QuotationStatus;
@@ -142,6 +143,36 @@ public class BookingCancellationServiceImpl implements BookingCancellationServic
         statuses.requireScheduleChange(bookingId, previous,
                 com.example.racehorse_transport.entity.enums.ScheduleChangeCause.CUSTOMER,
                 "Lỡ chuyến do chưa trả số dư tại hub.", null);
+    }
+
+    @Override
+    @Transactional
+    public void cancelAfterPickupMiss(Long bookingId, boolean customerLiable, Long actorUserId) {
+        var booking = lock(bookingId);
+        if (booking.getStatus() == BookingStatus.CANCELLED) return;
+        cancel(booking, evaluate(booking, !customerLiable, false),
+                "Hủy đơn sau khi không đón được ngựa.", null, actorUserId, List.of());
+    }
+
+    @Override
+    @Transactional
+    public void releaseAfterPickupMiss(Long bookingId, boolean customerLiable, Long actorUserId) {
+        var booking = lock(bookingId);
+        if (booking.getStatus() != BookingStatus.CONFIRMED) return;
+        var previous = booking.getDeparture();
+        releaseSpace(booking);
+        statuses.requireScheduleChange(bookingId, previous, customerLiable ? ScheduleChangeCause.CUSTOMER
+                : ScheduleChangeCause.COMPANY, "Không đón được ngựa.", actorUserId);
+    }
+
+    @Override
+    @Transactional
+    public void rebookDirectAfterPickupMiss(Long bookingId, Long actorUserId) {
+        var booking = lock(bookingId);
+        if (booking.getDeparture() != null || booking.getStatus() != BookingStatus.SCHEDULE_CHANGE_REQUIRED) {
+            throw BookingRuleException.conflict("Đơn không chờ chọn lại ngày đón.");
+        }
+        statuses.transition(bookingId, BookingStatus.CONFIRMED, "Đã chọn lại ngày đón sau lần đón hụt.", actorUserId);
     }
 
     private Cancellation evaluate(Booking booking, boolean company, boolean allowPickupCancellation) {

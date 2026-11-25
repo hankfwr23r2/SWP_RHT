@@ -63,6 +63,10 @@ public class StopReadinessServiceImpl implements StopReadinessService {
         closeEmptyHubOut(stop);
         TripExecutionPolicy.requireCanDepart(stop.getActualArrivalAt() != null, stop.getActualDepartureAt() != null,
                 handovers.countByTripStop_IdAndStatus(stop.getId(), HandoverStatus.PENDING));
+        if ((stop.getStopType() == TripStopType.PICKUP || stop.getStopType() == TripStopType.BORDER)
+                && !legs.findByBoardTripStop_IdAndStatusIn(stop.getId(), Set.of(HorseLegStatus.PLANNED)).isEmpty()) {
+            throw new DispatchRuleException("tripStopId", "Còn ngựa chưa nhận hoặc chưa ghi đón hụt.", true);
+        }
         requireNoHorseLeftAtStable(stop);
         if (stop.getStopType() == TripStopType.PICKUP) {
             requirePaid(stop);

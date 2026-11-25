@@ -206,7 +206,7 @@ class HubSelfFlowTest {
     }
 
     @Test
-    void horseRefusedAtTheHubIsExcludedAndItsAppointmentDropped() throws Exception {
+    void horseRefusedAtTheHubStaysOnBookingAndItsAppointmentIsDropped() throws Exception {
         sql("UPDATE booking SET pickup_method = 'SELF' WHERE id = " + booking);
         long refused = id(appoint(lines.getFirst(), departAt.minusSeconds(4 * 3600)));
         id(appoint(lines.getLast(), departAt.minusSeconds(4 * 3600)));
@@ -217,7 +217,8 @@ class HubSelfFlowTest {
         refuseAt(refused, " ").andExpect(status().isBadRequest());
         refuseAt(refused, "Ngựa què chân trước").andExpect(status().isOk());
         entityManager.flush();
-        assertThat(jdbc.queryForObject("SELECT status FROM booking_horse WHERE id = ?", String.class, lines.getFirst())).isEqualTo("EXCLUDED");
+        assertThat(jdbc.queryForObject("SELECT status FROM booking_horse WHERE id = ?", String.class, lines.getFirst())).isEqualTo("ACTIVE");
+        assertThat(jdbc.queryForObject("SELECT pickup_missed_at IS NOT NULL FROM booking_horse WHERE id = ?", Boolean.class, lines.getFirst())).isTrue();
         assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE id = ?", String.class, leg(trip, lines.getFirst()))).isEqualTo("CANCELLED");
         assertThat(jdbc.queryForObject("SELECT count(*) FROM horse_stay WHERE id = ?", Long.class, refused)).isZero();
         // Con còn lại vẫn chờ nhận

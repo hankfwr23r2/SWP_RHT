@@ -23,7 +23,10 @@ export const pendingAt = (run: CrewTrip, stopId?: number): Handover | undefined 
 // Rời được khi đang ở điểm này và không còn giao nhận dở. Điểm cuối thì kết thúc lượt thay vì rời
 export function canDepart(run: CrewTrip, stop: Stop): boolean {
   const stops = stopsOf(run)
-  return running(run) && stopState(stop) === 'here' && !pendingAt(run, stop.id) && stops[stops.length - 1]?.id !== stop.id
+  return running(run) && stopState(stop) === 'here' && !pendingAt(run, stop.id)
+    && !((stop.stopType === 'PICKUP' || stop.stopType === 'BORDER') && (run.horses ?? [])
+      .some(h => h.leg?.boardTripStopId === stop.id && h.leg?.status === 'PLANNED'))
+    && stops[stops.length - 1]?.id !== stop.id
 }
 
 // Loại giao nhận cần làm ở điểm đang đứng, chưa mở và chưa xong

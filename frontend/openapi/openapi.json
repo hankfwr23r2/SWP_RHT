@@ -1045,6 +1045,23 @@
         },
         "type" : "object"
       },
+      "ApiResponseListPickupMissResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PickupMissResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListPriceItemResponseDto" : {
         "properties" : {
           "data" : {
@@ -1473,6 +1490,20 @@
         "properties" : {
           "data" : {
             "$ref" : "#/components/schemas/PaymentResultResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponsePickupMissResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/PickupMissResponseDto"
           },
           "message" : {
             "type" : "string"
@@ -3698,6 +3729,16 @@
       },
       "HandoverRefusalRequestDto" : {
         "properties" : {
+          "customerContact" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "emergencyContact" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
           "horseLegId" : {
             "format" : "int64",
             "type" : "integer"
@@ -3706,9 +3747,18 @@
             "maxLength" : 500,
             "minLength" : 0,
             "type" : "string"
+          },
+          "reasonCode" : {
+            "enum" : [ "SENDER_ABSENT", "CHIP_MISMATCH", "ORIGINAL_DOCUMENTS_MISSING", "HORSE_UNWELL", "HORSE_WILL_NOT_BOARD", "VEHICLE_FAILURE", "UNSUITABLE_STALL", "LATE_ARRIVAL", "CREW_SHORTAGE", "FLOOD", "ROAD_CLOSURE" ],
+            "type" : "string"
+          },
+          "senderContact" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
           }
         },
-        "required" : [ "horseLegId", "reason" ],
+        "required" : [ "horseLegId", "reason", "reasonCode" ],
         "type" : "object"
       },
       "HandoverResponseDto" : {
@@ -5706,6 +5756,77 @@
           }
         },
         "required" : [ "reason" ],
+        "type" : "object"
+      },
+      "PickupMissChoiceRequestDto" : {
+        "properties" : {
+          "choice" : {
+            "enum" : [ "DROP_HORSE", "RETRY_PICKUP", "SELF_DELIVERY", "CHANGE_DEPARTURE", "RESCHEDULE_PICKUP", "CANCEL_BOOKING" ],
+            "type" : "string"
+          },
+          "hubArrivalAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "phoneNote" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "pickupDate" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "required" : [ "choice" ],
+        "type" : "object"
+      },
+      "PickupMissLiabilityRequestDto" : {
+        "properties" : {
+          "liability" : {
+            "enum" : [ "CUSTOMER", "COMPANY", "FORCE_MAJEURE" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "liability" ],
+        "type" : "object"
+      },
+      "PickupMissResponseDto" : {
+        "properties" : {
+          "availableChoices" : {
+            "items" : {
+              "enum" : [ "DROP_HORSE", "RETRY_PICKUP", "SELF_DELIVERY", "CHANGE_DEPARTURE", "RESCHEDULE_PICKUP", "CANCEL_BOOKING" ],
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "bookingHorseId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "choice" : {
+            "enum" : [ "DROP_HORSE", "RETRY_PICKUP", "SELF_DELIVERY", "CHANGE_DEPARTURE", "RESCHEDULE_PICKUP", "CANCEL_BOOKING" ],
+            "type" : "string"
+          },
+          "choiceDueAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "horseName" : {
+            "type" : "string"
+          },
+          "liability" : {
+            "enum" : [ "CUSTOMER", "COMPANY", "FORCE_MAJEURE" ],
+            "type" : "string"
+          },
+          "missedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "reason" : {
+            "type" : "string"
+          }
+        },
         "type" : "object"
       },
       "PickupWaitExtensionRequestDto" : {
@@ -8776,6 +8897,43 @@
         "tags" : [ "agent-leg-controller" ]
       }
     },
+    "/booking-horses/{id}/confirm-pickup-liability" : {
+      "post" : {
+        "operationId" : "confirmPickupLiability",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PickupMissLiabilityRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePickupMissResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "pickup-miss-controller" ]
+      }
+    },
     "/booking-horses/{id}/health-logs" : {
       "get" : {
         "operationId" : "ofHorse",
@@ -8838,6 +8996,43 @@
           }
         },
         "tags" : [ "hub-handover-controller" ]
+      }
+    },
+    "/booking-horses/{id}/pickup-choices" : {
+      "post" : {
+        "operationId" : "chooseAfterPickupMiss",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PickupMissChoiceRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePickupMissResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "pickup-miss-controller" ]
       }
     },
     "/bookings" : {
@@ -10064,6 +10259,33 @@
           }
         },
         "tags" : [ "booking-cancellation-controller" ]
+      }
+    },
+    "/bookings/{id}/pickup-misses" : {
+      "get" : {
+        "operationId" : "listPickupMisses",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListPickupMissResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "pickup-miss-controller" ]
       }
     },
     "/bookings/{id}/refund-review" : {
@@ -11866,13 +12088,22 @@
         } ],
         "requestBody" : {
           "content" : {
-            "application/json" : {
+            "multipart/form-data" : {
               "schema" : {
-                "$ref" : "#/components/schemas/HandoverRefusalRequestDto"
+                "properties" : {
+                  "photo" : {
+                    "format" : "binary",
+                    "type" : "string"
+                  },
+                  "request" : {
+                    "$ref" : "#/components/schemas/HandoverRefusalRequestDto"
+                  }
+                },
+                "required" : [ "photo", "request" ],
+                "type" : "object"
               }
             }
-          },
-          "required" : true
+          }
         },
         "responses" : {
           "200" : {

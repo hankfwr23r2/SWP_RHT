@@ -20,6 +20,7 @@ import { Skeleton } from '@shared/ui/Skeleton'
 import { Textarea } from '@shared/ui/Textarea'
 import { StatusBadge, type StatusTone } from '@shared/ui/StatusBadge'
 import { useToast } from '@shared/ui/toast'
+import { PickupMissDialog } from './PickupMissDialog'
 import { HandoverPapersPanel } from './HandoverPapersPanel'
 import { StopHealthPanel } from './StopHealthPanel'
 import { TripIncidentPanel } from './TripIncidentPanel'
@@ -40,7 +41,6 @@ export default function TripRunPage() {
   const [failing, setFailing] = useState<number>()
   const [returning, setReturning] = useState<number>()
   const [refusing, setRefusing] = useState<{ handoverId: number; legId: number; name: string }>()
-  const [refusalReason, setRefusalReason] = useState('')
   // Gửi chuồng qua đêm: chọn đối tác chuồng
   const [stayAt, setStayAt] = useState<number>()
   const [partners, setPartners] = useState<StablePartner[]>([])
@@ -99,7 +99,7 @@ export default function TripRunPage() {
               </Button>
               {canRefuse(data, handover, legId) && (
                 <Button variant="danger" size="lg" fullWidth
-                  onClick={() => { setRefusalReason(''); setRefusing({ handoverId: handover.id ?? 0, legId, name: horse.horseName ?? '' }) }}>
+                  onClick={() => setRefusing({ handoverId: handover.id ?? 0, legId, name: horse.horseName ?? '' })}>
                   {t('myTrips.run.refusal.refuse')}
                 </Button>
               )}
@@ -234,24 +234,12 @@ export default function TripRunPage() {
           </Field>
         </Modal>
       )}
-      {refusing && (
-        <Modal title={t('myTrips.run.refusal.title', { name: refusing.name })} onClose={() => setRefusing(undefined)}
-          footer={(
-            <>
-              <Button onClick={() => setRefusing(undefined)}>{t('ui.cancel')}</Button>
-              <Button variant="danger" disabled={!refusalReason.trim()} loading={busy}
-                onClick={() => run(() => tripExecutionApi.refuse(refusing.handoverId, refusing.legId, refusalReason.trim()), t('myTrips.run.refusal.done'))
-                  .then(ok => { if (ok) setRefusing(undefined) })}>
-                {t('myTrips.run.refusal.refuse')}
-              </Button>
-            </>
-          )}>
-          <p className={s.muted}>{t('myTrips.run.refusal.message')}</p>
-          <Field label={t('myTrips.run.refusal.reason')} required>
-            {c => <Textarea {...c} value={refusalReason} onChange={e => setRefusalReason(e.target.value)} data-autofocus />}
-          </Field>
-        </Modal>
-      )}
+      {refusing && <PickupMissDialog horseLegId={refusing.legId} name={refusing.name} busy={busy}
+        onClose={() => setRefusing(undefined)}
+        onSubmit={(request, photo) => {
+          void run(() => tripExecutionApi.refuse(refusing.handoverId, request, photo), t('myTrips.run.refusal.done'))
+            .then(ok => { if (ok) setRefusing(undefined) })
+        }} />}
       {canComplete(data) && (
         <Button variant="primary" size="lg" fullWidth loading={busy} onClick={() => run(() => tripExecutionApi.complete(tripId), t('myTrips.run.done.completed'))}>
           {t('myTrips.run.complete')}

@@ -29,11 +29,29 @@ export const fieldCrew = {
         "done": "Horses returned and rescheduling opened"
       },
       "refusal": {
-        "refuse": "Refuse",
-        "title": "Refuse {{name}}?",
-        "message": "This horse is removed from the booking, its seat on the departure is released and the quotation is recalculated for the remaining horses. The manager is notified. The other horses are received as usual.",
+        "reasonCode": "Reason category",
+        "senderContact": "Sender call result",
+        "customerContact": "Customer call result",
+        "emergencyContact": "Emergency contact call result",
+        "photo": "Pickup photo",
+        "reasons": {
+          "SENDER_ABSENT": "Sender absent",
+          "CHIP_MISMATCH": "Microchip mismatch",
+          "ORIGINAL_DOCUMENTS_MISSING": "Missing originals",
+          "HORSE_UNWELL": "Horse unwell",
+          "HORSE_WILL_NOT_BOARD": "Horse will not board",
+          "VEHICLE_FAILURE": "Vehicle failure",
+          "UNSUITABLE_STALL": "Unsuitable stall",
+          "LATE_ARRIVAL": "Late arrival",
+          "CREW_SHORTAGE": "Crew shortage",
+          "FLOOD": "Flood",
+          "ROAD_CLOSURE": "Road closure",
+        },
+        "refuse": "Record missed pickup",
+        "title": "Record missed pickup for {{name}}?",
+        "message": "Record the reason. The horse stays on the booking while the customer decides what to do.",
         "reason": "Reason for refusing",
-        "done": "Horse refused"
+        "done": "Missed pickup recorded"
       },
       "delivery": {
         "startWaiting": "Start waiting for recipient",

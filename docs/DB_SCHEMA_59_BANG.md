@@ -743,9 +743,17 @@ Index: `province_code`, `location_id`.
 | `is_feed_supplied_by_owner` | `boolean` | | default `false` | |
 | `status` | `varchar(30)` | | CK `ACTIVE, EXCLUDED, CANCELLED, DELIVERED, RETURNED` | `EXCLUDED` = bị loại vì không đủ sức khỏe khi đón; `RETURNED` = đã trả ngựa xong |
 | `added_at` | `timestamptz` | | default `now()` | |
+| `pickup_missed_at` | `timestamptz` | có | | Giờ ghi lần đón hụt gần nhất |
+| `pickup_choice_due_at` | `timestamptz` | có | Chỉ mục khi chưa chọn | Hạn quyết định cho lần hụt gần nhất |
+| `pickup_miss_reason` | `varchar(500)` | có | | Diễn giải lý do tại nơi đón |
+| `pickup_miss_liability` | `varchar(20)` | có | CK `CUSTOMER, COMPANY, FORCE_MAJEURE` | Quản lý chốt |
+| `pickup_miss_choice` | `varchar(24)` | có | CK `DROP_HORSE, RETRY_PICKUP, SELF_DELIVERY, CHANGE_DEPARTURE, RESCHEDULE_PICKUP, CANCEL_BOOKING` | Quyết định đã ghi dưới khóa đơn |
+| `pickup_retry_departure_id` | `bigint` | có | FK → departure | Chuyến đã dùng lượt đón lại |
 
 Ràng buộc bảng: `UNIQUE (booking_id, horse_id)`.
 Index: `horse_id`.
+
+Ảnh hiện trường dùng `document` loại `PICKUP_MISS_PHOTO`, chủ sở hữu `BOOKING_HORSE`. Mã nguyên nhân, kết quả từng cuộc gọi và lựa chọn hộ ghi vào `audit_log`. Cấu hình `PICKUP_CHOICE_LONG_HOURS`, `PICKUP_CHOICE_SHORT_HOURS`, `PICKUP_RETRY_PREPARATION_HOURS` và `PICKUP_MISS_WAIT_MINUTES` nằm trong `system_config`.
 
 ### 8.5 `booking_horse_service`: dịch vụ thêm cho từng con
 

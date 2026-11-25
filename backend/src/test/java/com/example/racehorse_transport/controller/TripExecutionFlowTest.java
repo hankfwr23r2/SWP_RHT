@@ -303,17 +303,26 @@ class TripExecutionFlowTest {
         mvc.perform(post("/handovers/{id}/horses", handover).header(HttpHeaders.AUTHORIZATION, driver2).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"horseLegId\":%d,\"microchip\":\"985000000999999\"}".formatted(second))).andExpect(status().isOk());
 
-        // Chip sai: không nhận con thứ hai, bắt buộc có lý do
+        act(driver2, "/handovers/" + handover + "/complete").andExpect(status().isConflict());
+        act(driver2, "/trip-stops/" + pickupStops.get(1) + "/depart").andExpect(status().isConflict());
         refuse(driver2, handover, second, " ").andExpect(status().isBadRequest());
         refuse(driver2, handover, second, "Chip không khớp giấy tờ").andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.handovers[0].horses.length()").value(1));
-        assertThat(jdbc.queryForObject("SELECT status FROM booking_horse WHERE id = ?", String.class, lines.get(1))).isEqualTo("EXCLUDED");
+        assertThat(jdbc.queryForObject("SELECT status FROM booking_horse WHERE id = ?", String.class, lines.get(1))).isEqualTo("ACTIVE");
         assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE id = ?", String.class, second)).isEqualTo("CANCELLED");
-        // Luồng A thay báo giá ngay trong cùng giao dịch
+        assertThat(jdbc.queryForList("SELECT status FROM quotation WHERE booking_id = ? ORDER BY version", String.class, domestic))
+                .containsExactly("ACCEPTED");
+        act(driver2, "/handovers/" + handover + "/complete").andExpect(status().isOk());
+        for (int attempt = 0; attempt < 2; attempt++) {
+            mvc.perform(post("/booking-horses/{id}/pickup-choices", lines.get(1))
+                    .header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"choice\":\"DROP_HORSE\",\"phoneNote\":\"Khách xác nhận bỏ con qua điện thoại\"}"))
+                    .andExpect(status().isOk());
+        }
+        entityManager.flush();
+        assertThat(jdbc.queryForObject("SELECT status FROM booking_horse WHERE id = ?", String.class, lines.get(1))).isEqualTo("EXCLUDED");
         assertThat(jdbc.queryForList("SELECT status FROM quotation WHERE booking_id = ? ORDER BY version", String.class, domestic))
                 .containsExactly("SUPERSEDED", "ACCEPTED");
-
-        act(driver2, "/handovers/" + handover + "/complete").andExpect(status().isOk());
         assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE id = ?", String.class, first)).isEqualTo("IN_PROGRESS");
         // Bảng phụ trách: con vừa nhận đang do tài xế ký nhận giữ, con bị loại không hiện
         String row = "$.data[?(@.bookingHorseId == " + lines.get(0) + ")]";
@@ -502,8 +511,14 @@ class TripExecutionFlowTest {
     }
 
     private ResultActions refuse(String token, long handoverId, long horseLegId, String reason) throws Exception {
-        return mvc.perform(post("/handovers/{id}/refusals", handoverId).header(HttpHeaders.AUTHORIZATION, token)
-                .contentType(MediaType.APPLICATION_JSON).content("{\"horseLegId\":%d,\"reason\":\"%s\"}".formatted(horseLegId, reason)));
+        org.mockito.Mockito.when(cloudinary.uploadFile(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyString()))
+                .thenAnswer(call -> "https://cdn.example/pickup-miss-" + System.nanoTime() + ".jpg");
+        var request = new org.springframework.mock.web.MockMultipartFile("request", "", "application/json",
+                "{\"horseLegId\":%d,\"reason\":\"%s\",\"reasonCode\":\"CHIP_MISMATCH\"}".formatted(horseLegId, reason)
+                        .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        var photo = new org.springframework.mock.web.MockMultipartFile("photo", "pickup.jpg", "image/jpeg", new byte[] {1, 2, 3});
+        return mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart("/handovers/{id}/refusals", handoverId)
+                .file(request).file(photo).header(HttpHeaders.AUTHORIZATION, token));
     }
 
     private String content(org.springframework.test.web.servlet.RequestBuilder request, String token) throws Exception {

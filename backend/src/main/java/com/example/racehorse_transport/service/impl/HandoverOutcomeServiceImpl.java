@@ -15,13 +15,15 @@ import com.example.racehorse_transport.policy.TripExecutionPolicy;
 import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.repository.IncidentRepository;
 import com.example.racehorse_transport.service.BookingCancellationService;
-import com.example.racehorse_transport.service.BookingHorseService;
+import com.example.racehorse_transport.service.PickupMissService;
 import com.example.racehorse_transport.service.BookingStatusService;
 import com.example.racehorse_transport.service.DocumentCompletenessService;
 import com.example.racehorse_transport.service.HandoverOutcomeService;
 import com.example.racehorse_transport.service.HorseStayService;
 import com.example.racehorse_transport.service.NotificationService;
 import com.example.racehorse_transport.service.PaymentService;
+import com.example.racehorse_transport.dto.operation.HandoverRefusalRequestDto;
+import org.springframework.web.multipart.MultipartFile;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -39,7 +41,7 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
     private final HorseLegRepository legs;
     private final HorseStayService horseStays;
     private final BookingStatusService bookingStatus;
-    private final BookingHorseService bookingHorses;
+    private final PickupMissService pickupMisses;
     private final PaymentService payments;
     private final BookingCancellationService cancellations;
     private final DocumentCompletenessService documents;
@@ -66,7 +68,8 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
         // Khóa đơn theo ID tăng dần khi một lần giao nhận có nhiều đơn
         List<Booking> bookings = matched.stream().map(l -> l.getBookingHorse().getBooking()).distinct()
                 .sorted(Comparator.comparing(Booking::getId)).toList();
-        if (handover.getHandoverType() == HandoverType.HUB_IN || handover.getHandoverType() == HandoverType.HUB_OUT) {
+        if (handover.getHandoverType() == HandoverType.HUB_IN || handover.getHandoverType() == HandoverType.HUB_OUT
+                || handover.getHandoverType() == HandoverType.PICKUP || (agent && boarding)) {
             bookings.forEach(booking -> paymentReadiness.lockBooking(booking.getId()));
         }
         if (handover.getHandoverType() == HandoverType.HUB_OUT) {
@@ -208,19 +211,21 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
+    public void requireSelfDeliveryBeforeCheckIn(Long horseId) {
+        pickupMisses.requireSelfDeliveryBeforeCheckIn(horseId);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
     public void refuse(Long bookingHorseId, String reason, Instant at, Long actorUserId) {
-        bookingHorses.exclude(bookingHorseId, reason, actorUserId);
-        for (HorseLeg leg : legs.findByBookingHorse_IdOrderBySequenceNumber(bookingHorseId)) {
-            if (leg.getStatus() == HorseLegStatus.PLANNED) {
-                leg.setStatus(HorseLegStatus.CANCELLED);
-            } else if (leg.getStatus() == HorseLegStatus.IN_PROGRESS) {
-                // Trước nơi nhận chỉ có chặng đại lý đang chở (đơn nhập): đại lý giữ ngựa, chặng kết thúc không giao
-                leg.setStatus(HorseLegStatus.CANCELLED);
-                leg.setActualEndAt(at);
-            }
-        }
-        legs.flush();
-        horseStays.dropAppointments(bookingHorseId);
+        pickupMisses.record(bookingHorseId, reason, at, actorUserId);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void refuseAtStop(Long bookingHorseId, HandoverRefusalRequestDto request, MultipartFile photo,
+                             Instant arrivedAt, Instant at, Long actorUserId) {
+        pickupMisses.recordAtStop(bookingHorseId, request, photo, arrivedAt, at, actorUserId);
     }
 
     @Override

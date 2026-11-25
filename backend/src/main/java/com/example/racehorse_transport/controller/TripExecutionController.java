@@ -13,7 +13,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -73,9 +76,10 @@ public class TripExecutionController {
         return ApiResponseDto.success(handovers.scan(id, request, authentication.getName()), "Đã quét chip");
     }
 
-    @PostMapping("/handovers/{id}/refusals")
-    public ApiResponseDto<CrewTripResponseDto> refuse(@PathVariable Long id, Authentication authentication, @Valid @RequestBody HandoverRefusalRequestDto request) {
-        return ApiResponseDto.success(handovers.refuse(id, request, authentication.getName()), "Đã ghi không nhận ngựa");
+    @PostMapping(value = "/handovers/{id}/refusals", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponseDto<CrewTripResponseDto> refuse(@PathVariable Long id, Authentication authentication,
+            @Valid @RequestPart HandoverRefusalRequestDto request, @RequestPart MultipartFile photo) {
+        return ApiResponseDto.success(handovers.refuse(id, request, photo, authentication.getName()), "Đã ghi đón hụt");
     }
 
     @PostMapping("/handovers/{id}/complete")

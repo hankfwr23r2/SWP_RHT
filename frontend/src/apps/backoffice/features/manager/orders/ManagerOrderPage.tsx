@@ -1,6 +1,7 @@
 // Chi tiết đơn của quản lý: báo giá, thanh toán, giấy không kịp, hủy, quyết toán.
 import { useRevalidator } from 'react-router'
 import { useTranslation } from 'react-i18next'
+import { PickupMissPanel } from '@shared/components/PickupMissPanel'
 import { ActionBar } from '@backoffice/shared/ActionBar'
 import { BackButton } from '@backoffice/shared/BackButton'
 import { OrderStatusBadge } from '@shared/components/OrderStatusBadge'
@@ -43,6 +44,7 @@ export default function ManagerOrderPage() {
           <div id="order-intake" className={s.anchor}><IntakePanel data={data} /></div>
           <div id="order-quote" className={s.anchor}><QuotePanel data={data} /></div>
           <PaymentsPanel data={data} />
+          <PickupMissPanel bookingId={data.id} mode="manager" />
           {status === 'CONFIRMED' && <DocumentDelayPanel bookingId={data.id} />}
           {canSettle(status) && <div id="order-settle" className={s.anchor}><SettlementPanel data={data} /></div>}
           {canCancel(status) && <CancelPanel bookingId={data.id} />}

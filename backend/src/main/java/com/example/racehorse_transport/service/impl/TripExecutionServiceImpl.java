@@ -73,7 +73,11 @@ public class TripExecutionServiceImpl implements TripExecutionService {
         for (TripStop stop : stops.findByVehicleTrip_IdOrderBySequenceNumber(trip.getId())) {
             if (stop.getStopType() != TripStopType.PICKUP) continue;
             for (HorseLeg leg : legs.findByBoardTripStop_IdAndStatusIn(stop.getId(), NOT_STARTED)) {
-                var booking = leg.getBookingHorse().getBooking();
+                var horse = leg.getBookingHorse();
+                if (horse.getPickupMissedAt() != null && horse.getPickupMissChoice() == null) {
+                    throw new DispatchRuleException("pickup", "Còn ngựa chưa chọn cách xử lý đón hụt.", true);
+                }
+                var booking = horse.getBooking();
                 bookings.put(booking.getId(), booking.getCode());
                 boolean insured = insurances.findByBookingHorse_Id(leg.getBookingHorse().getId())
                         .map(i -> i.getStatus() == HorseInsuranceStatus.CONFIRMED).orElse(false);
@@ -130,7 +134,11 @@ public class TripExecutionServiceImpl implements TripExecutionService {
         requireCrew(trip.getId(), username);
         TripExecutionPolicy.requireInProgress(trip.getStatus());
         List<TripStop> all = stops.findByVehicleTrip_IdOrderBySequenceNumber(trip.getId());
-        TripExecutionPolicy.requireCanComplete(all.getLast().getActualArrivalAt() != null,
+        TripStop last = all.getLast();
+        if (last.getStopType() == TripStopType.PICKUP || last.getStopType() == TripStopType.BORDER) {
+            readiness.requireCanLeave(last, null, null);
+        }
+        TripExecutionPolicy.requireCanComplete(last.getActualArrivalAt() != null,
                 legs.countByVehicleTrip_IdAndStatus(trip.getId(), HorseLegStatus.IN_PROGRESS)
                         + legs.countFailedNotInHub(trip.getId(), HorseLegStatus.FAILED, HandoverType.HUB_IN, HandoverStatus.DONE));
         trip.setStatus(VehicleTripStatus.COMPLETED);

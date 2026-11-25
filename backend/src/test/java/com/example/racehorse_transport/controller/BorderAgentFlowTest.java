@@ -35,6 +35,8 @@ import org.springframework.transaction.annotation.Transactional;
 class BorderAgentFlowTest {
 
     @Autowired private MockMvc mvc;
+    @org.springframework.test.context.bean.override.mockito.MockitoBean
+    private com.example.racehorse_transport.client.CloudinaryClient cloudinary;
     @Autowired private JdbcTemplate jdbc;
     @Autowired private TestData testData;
     @Autowired private JwtUtils jwtUtils;
@@ -186,7 +188,8 @@ class BorderAgentFlowTest {
         refuse(handover, legOnTrip(trip), "Ngựa sốt cao, không đủ sức khỏe đi tiếp").andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.handovers[0].status").value("FAILED"));
         entityManager.flush();
-        assertThat(jdbc.queryForObject("SELECT status FROM booking_horse WHERE id = ?", String.class, line)).isEqualTo("EXCLUDED");
+        assertThat(jdbc.queryForObject("SELECT status FROM booking_horse WHERE id = ?", String.class, line)).isEqualTo("ACTIVE");
+        assertThat(jdbc.queryForObject("SELECT pickup_missed_at IS NOT NULL FROM booking_horse WHERE id = ?", Boolean.class, line)).isTrue();
         assertThat(legStatus(legOnTrip(trip))).isEqualTo("CANCELLED");
         // Chặng đại lý đang chở kết thúc không giao: ngựa ở lại với đại lý
         assertThat(legStatus(agentLeg)).isEqualTo("CANCELLED");
@@ -236,8 +239,14 @@ class BorderAgentFlowTest {
     }
 
     private ResultActions refuse(long handoverId, long legId, String reason) throws Exception {
-        return mvc.perform(post("/handovers/{id}/refusals", handoverId).header(HttpHeaders.AUTHORIZATION, escort)
-                .contentType(MediaType.APPLICATION_JSON).content("{\"horseLegId\":%d,\"reason\":\"%s\"}".formatted(legId, reason)));
+        org.mockito.Mockito.when(cloudinary.uploadFile(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyString()))
+                .thenAnswer(call -> "https://cdn.example/pickup-miss-" + System.nanoTime() + ".jpg");
+        var request = new org.springframework.mock.web.MockMultipartFile("request", "", "application/json",
+                "{\"horseLegId\":%d,\"reason\":\"%s\",\"reasonCode\":\"HORSE_UNWELL\"}".formatted(legId, reason)
+                        .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        var photo = new org.springframework.mock.web.MockMultipartFile("photo", "pickup.jpg", "image/jpeg", new byte[] {1, 2, 3});
+        return mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart("/handovers/{id}/refusals", handoverId)
+                .file(request).file(photo).header(HttpHeaders.AUTHORIZATION, escort));
     }
 
     private ResultActions returnAt(long stopId) throws Exception {

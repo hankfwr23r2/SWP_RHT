@@ -81,7 +81,9 @@ public class HorseLegServiceImpl implements HorseLegService {
             List<HorseDto> horses = lines.stream().map(line -> {
                 List<HorseLegResponseDto> own = legsByHorse.getOrDefault(line.getId(), List.of());
                 return HorseDto.from(line, own, LegNeedsPolicy.missing(line.getStatus(), booking.getBookingType(), booking.getDeparture() != null,
-                        booking.getPickupMethod(), booking.getDeliveryMethod(),
+                        line.getPickupMissChoice() == com.example.racehorse_transport.entity.enums.PickupMissChoice.SELF_DELIVERY
+                                ? com.example.racehorse_transport.entity.enums.TransferMethod.SELF : booking.getPickupMethod(),
+                        booking.getDeliveryMethod(),
                         own.stream().filter(leg -> !INACTIVE.contains(leg.status())).map(HorseLegResponseDto::legType).toList()));
             }).toList();
             result.add(DispatchBookingResponseDto.from(booking, addresses.get(AddressRole.PICKUP), addresses.get(AddressRole.DELIVERY), horses));
@@ -124,6 +126,10 @@ public class HorseLegServiceImpl implements HorseLegService {
         requireAddressesOfBooking(booking, board, alight);
 
         HorseLegType legType = HorseLegType.valueOf(trip.getTripType().name());
+        if (legType == HorseLegType.PICKUP && line.getPickupMissChoice()
+                == com.example.racehorse_transport.entity.enums.PickupMissChoice.SELF_DELIVERY) {
+            throw new DispatchRuleException("bookingHorseId", "Khách đã chọn tự chở con này tới hub.", true);
+        }
         Map<AddressRole, Long> addressIds = bookingAddresses.findByBooking_Id(booking.getId()).stream()
                 .collect(Collectors.toMap(BookingAddress::getAddressType, BookingAddress::getId));
         requireLegFitsBooking(legType, trip, booking, line, tripStops, board, alight, addressIds);
