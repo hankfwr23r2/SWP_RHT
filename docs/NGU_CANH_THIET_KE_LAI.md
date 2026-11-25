@@ -137,7 +137,7 @@ Khi có mâu thuẫn, **`DB_SCHEMA_59_BANG.md` là nguồn đúng**.
 
 ## 7. Việc tiếp theo
 
-1. Làm nốt mục 13.2 phần 2, 13.4 và mục 14 của [phương án 6 luồng](PHUONG_AN_6_LUONG.md).
+1. Còn lại của [phương án 6 luồng](PHUONG_AN_6_LUONG.md): chia nợ nhiều kỳ (13.3), đổi nơi giao sau khi cọc (12.6).
 2. Gói G2–G5 và 30 điểm của bạn B: [kế hoạch thành viên](KE_HOACH_GIAO_THANH_VIEN.md), [giao việc bạn B](GIAO_VIEC_BAN_B.md).
 3. Tích hợp, nghiệm thu bằng tay và sinh ERD theo [Kế hoạch triển khai](KE_HOACH_TRIEN_KHAI.md#8-đợt-cuối-tích-hợp-và-dọn-dẹp).
 

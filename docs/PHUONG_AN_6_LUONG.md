@@ -451,7 +451,7 @@ Khoảng 10 chỗ trong máy chủ và 10 màn đang dùng **một** địa ch�
 
 ## 13. Phí giữ ngựa và kết thúc đơn còn nợ (25/11/2026)
 
-**Đã chốt với người dùng:** người nhận tự tới hub thì **không chặn**; phí tính theo số lần đủ 24 giờ; đơn **không được treo mãi** vì khách không trả. **Người dùng chốt toàn bộ mục 13 ngày 25/11/2026. Code: phí giữ theo lần đủ 24 giờ (#466), đóng đơn tách công nợ và 13.5 điểm 1–5 (#469), công nợ (#470) đã gộp; phần còn lại đang làm. Chỗ khác trong tài liệu này trái mục 13 thì theo mục 13.**
+**Đã chốt với người dùng:** người nhận tự tới hub thì **không chặn**; phí tính theo số lần đủ 24 giờ; đơn **không được treo mãi** vì khách không trả. **Người dùng chốt toàn bộ mục 13 ngày 25/11/2026. Code: phí giữ theo lần đủ 24 giờ (#466), đóng đơn tách công nợ và 13.5 điểm 1–5 (#469), công nợ (#470) đồng hồ dừng và cước giao lại (#473), ngựa không người nhận và 13.5 điểm 7, 10, 11 (#472) đã gộp. Chưa làm: chia nợ tối đa 3 kỳ. Chỗ khác trong tài liệu này trái mục 13 thì theo mục 13.**
 
 ### 13.1 Căn cứ
 
@@ -579,7 +579,7 @@ Phí giữ **ngừng cộng sau 30 lần đủ 24 giờ**: công ty vẫn chăm,
 
 ## 14. Giờ giao và xe trễ (25/11/2026)
 
-**Người dùng chốt 25/11/2026.** Thay quy tắc khung 60 phút cố định. Cách làm là **tự đề xuất**, chưa kiểm chứng với IRT hay hãng khác. Dòng 1 của bảng 13.2 đọc theo mục này.
+**Người dùng chốt 25/11/2026, đã gộp (#474).** Thay quy tắc khung 60 phút cố định. Cách làm là **tự đề xuất**, chưa kiểm chứng với IRT hay hãng khác. Dòng 1 của bảng 13.2 đọc theo mục này.
 
 ### 14.1 Ba mức báo giờ
 
