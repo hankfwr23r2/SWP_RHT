@@ -3,6 +3,7 @@ import type { BookingSummary } from '@shared/api/bookingReviews'
 import type { BookingStatus } from '@shared/api/bookingOrders'
 
 export const reviewStatuses = ['PENDING_INTAKE', 'UNDER_REVIEW', 'NEEDS_RESUBMISSION', 'QUOTING', 'CONFIRMED'] as const
+export const defaultReviewStatus = 'UNDER_REVIEW'
 export type ReviewStatus = typeof reviewStatuses[number]
 
 // Các nút chỉ gợi ý thao tác theo mốc hiện tại. Backend kiểm lại điều kiện khi nhận yêu cầu.

@@ -15,6 +15,14 @@ import java.util.Optional;
 
 public interface StaffRepository extends JpaRepository<Staff, Long> {
 
+    @Query("""
+            select s from Staff s join fetch s.user u join fetch u.role r where r.code = :role
+              and u.status = com.example.racehorse_transport.entity.enums.AppUserStatus.ACTIVE
+              and s.employmentStatus = com.example.racehorse_transport.entity.enums.EmploymentStatus.ACTIVE
+            order by s.fullName, s.userId
+            """)
+    List<Staff> findActiveForRole(String role);
+
     Optional<Staff> findByUser_Username(String username);
 
     Optional<Staff> findByStaffCode(String staffCode);

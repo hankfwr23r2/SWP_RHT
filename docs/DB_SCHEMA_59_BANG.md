@@ -125,6 +125,8 @@ Các dòng ghi **chờ migration** là lược đồ đích đã chốt ngày 23
 
 ## Danh sách bảng
 
+Danh sách dưới đây ghi mô hình gốc. Migration `V202611292000` bổ sung bảng `booking_specialist_history` ở nhóm 8 (mục 8.9).
+
 | Nhóm | Bảng | Số bảng |
 |---|---|---|
 | 1. Địa lý | `country`, `province`, `location`, `hub_service_area` | 4 |
@@ -159,7 +161,7 @@ Thứ tự này bảo đảm bảng cha luôn được tạo trước bảng con
 | 5 | `route_stop`, `departure_schedule`, `price_item`, `system_config` |
 | 6 | `departure_schedule_day`, `departure` |
 | 7 | `booking` |
-| 8 | `booking_party`, `booking_address`, `booking_horse`, `booking_status_history`, `terms_acceptance`, `booking_rating`, `vehicle_trip`, `quotation`, `notification`, `audit_log` |
+| 8 | `booking_party`, `booking_address`, `booking_horse`, `booking_status_history`, `terms_acceptance`, `booking_rating`, `booking_specialist_history`, `vehicle_trip`, `quotation`, `notification`, `audit_log` |
 | 9 | `booking_horse_service`, `trip_stop`, `crew_assignment`, `horse_stay`, `horse_insurance`, `payment`, `notification_recipient` |
 | 10 | `horse_leg`, `handover`, `payment_transaction` |
 | 11 | `horse_health_log`, `handover_horse`, `quotation_line`, `incident` |
@@ -676,6 +678,7 @@ Index: `document_type_id`, `gate_location_id`.
 | `collection_confirmed` | `boolean` | | Default false | Chủ đơn đã xác nhận cho phép giao mà không cần mã |
 | `code` | `varchar(30)` | | UK | Mã đơn hiển thị cho khách |
 | `customer_id` | `bigint` | | FK → customer(user_id) | Người đặt đơn |
+| `specialist_id` | `bigint` | có | FK → staff(user_id), có index | Chuyên viên phụ trách. Đơn cũ để trống đến khi quản lý giao |
 | `booking_type` | `varchar(30)` | | CK `LOCAL, INTERPROVINCE, EXPORT, IMPORT` | |
 | `departure_id` | `bigint` | có | FK → departure | Chuyến trục chính. NULL khi chưa gán chuyến, hoặc khi đơn chạy thẳng (hub đón trùng hub giao). Mỗi đơn có tối đa một chặng trục |
 | `requested_pickup_date` | `date` | | | Ngày khách muốn đón |
@@ -819,6 +822,20 @@ Index: `user_id`, `booking_id`.
 | `rated_at` | `timestamptz` | | default `now()` | |
 
 Chỉ đánh giá được khi đơn ở trạng thái `DELIVERED` hoặc `COMPLETED` (kiểm ở service).
+
+### 8.9 `booking_specialist_history`: lịch sử phân công chuyên viên
+
+| Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
+|---|---|---|---|---|
+| `id` | `bigint` | | PK, identity | |
+| `booking_id` | `bigint` | | FK → booking, có index | Đơn được giao |
+| `from_staff_id` | `bigint` | có | FK → staff(user_id) | Chuyên viên cũ, trống ở lần giao đầu |
+| `to_staff_id` | `bigint` | | FK → staff(user_id) | Chuyên viên được giao |
+| `changed_by` | `bigint` | | FK → app_user(id) | Quản lý thực hiện |
+| `reason` | `varchar(1000)` | có | | Bắt buộc khi đổi người, có thể trống khi tiếp nhận |
+| `changed_at` | `timestamptz` | | | Thời điểm giao hoặc đổi người |
+
+Giao việc và ghi lịch sử trong cùng giao dịch. Chỉ giao cho chuyên viên có hồ sơ và tài khoản đang hoạt động. Tính số đơn đang giữ khi đọc, bỏ các mốc `COMPLETED`, `CANCELLED`, `REJECTED` và `QUOTE_EXPIRED`. Chặn khóa tài khoản hoặc cho nghỉ khi số đơn đang giữ lớn hơn 0.
 
 ---
 

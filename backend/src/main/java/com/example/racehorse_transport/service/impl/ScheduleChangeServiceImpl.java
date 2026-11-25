@@ -3,11 +3,10 @@ package com.example.racehorse_transport.service.impl;
 import com.example.racehorse_transport.dto.booking.BookingResponseDto;
 import com.example.racehorse_transport.dto.booking.ReportDocumentDelayRequestDto;
 import com.example.racehorse_transport.entity.Booking;
-import com.example.racehorse_transport.entity.enums.AppUserStatus;
 import com.example.racehorse_transport.entity.enums.BookingType;
 import com.example.racehorse_transport.entity.enums.DocumentSubmitter;
 import com.example.racehorse_transport.policy.DocumentCompletenessPolicy;
-import com.example.racehorse_transport.repository.StaffRepository;
+import com.example.racehorse_transport.service.BookingAssignmentService;
 import com.example.racehorse_transport.entity.enums.BookingHorseStatus;
 import com.example.racehorse_transport.entity.enums.DepartureStatus;
 import com.example.racehorse_transport.entity.enums.ScheduleChangeCause;
@@ -53,7 +52,7 @@ public class ScheduleChangeServiceImpl implements ScheduleChangeService {
     private final DepartureService departures;
     private final BookingStatusService statuses;
     private final BookingStatusHistoryRepository history;
-    private final StaffRepository staff;
+    private final BookingAssignmentService assignments;
 
     @Override
     @Transactional(readOnly = true)
@@ -135,7 +134,7 @@ public class ScheduleChangeServiceImpl implements ScheduleChangeService {
                 && !bookings.hasNotificationBetween(bookingId, REMINDER_TITLE, start, end);
         boolean staffMissing = missing.stream().anyMatch(side -> side != DocumentSubmitter.CUSTOMER)
                 && !bookings.hasNotificationBetween(bookingId, SPECIALIST_REMINDER_TITLE, start, end);
-        var specialists = staffMissing ? staff.findUserIdsByRoleAndStatus("SPECIALIST", AppUserStatus.ACTIVE)
+        var specialists = staffMissing ? assignments.recipients(booking)
                 : List.<Long>of();
         String message = "Đơn " + booking.getCode() + " còn thiếu giấy tờ cho ngày "
                 + DocumentCompletenessPolicy.requiredOn(booking, businessDate(clock.instant())) + ".";
@@ -144,7 +143,7 @@ public class ScheduleChangeServiceImpl implements ScheduleChangeService {
                     message, "/orders/" + bookingId);
         }
         if (!specialists.isEmpty()) {
-            notifications.notify(specialists, bookingId, SPECIALIST_REMINDER_TITLE, message, "/specialist/review/" + bookingId);
+            notifications.notify(specialists, bookingId, SPECIALIST_REMINDER_TITLE, message, assignments.reviewLink(booking));
         }
         return customerMissing || !specialists.isEmpty();
     }

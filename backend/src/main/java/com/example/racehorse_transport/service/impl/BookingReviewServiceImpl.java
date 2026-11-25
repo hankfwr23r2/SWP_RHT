@@ -9,7 +9,6 @@ import com.example.racehorse_transport.exception.BookingRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.BookingReviewPolicy;
 import com.example.racehorse_transport.policy.StallSeatPolicy;
-import com.example.racehorse_transport.repository.AppUserRepository;
 import com.example.racehorse_transport.repository.BookingHorseRepository;
 import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.BookingStatusHistoryRepository;
@@ -26,7 +25,7 @@ import static com.example.racehorse_transport.entity.enums.BookingStatus.*;
 @Transactional
 public class BookingReviewServiceImpl implements BookingReviewService {
     private final BookingRepository bookings;
-    private final AppUserRepository users;
+    private final BookingAssignmentService assignments;
     private final BookingHorseRepository horses;
     private final InsuranceService insurance;
     private final BookingStatusService statuses;
@@ -37,8 +36,9 @@ public class BookingReviewServiceImpl implements BookingReviewService {
     private final BookingStatusHistoryRepository history;
 
     @Override
-    public BookingResponseDto intake(Long id, String username) {
+    public BookingResponseDto intake(Long id, String username, Long specialistId) {
         Booking booking = lock(id, PENDING_INTAKE);
+        assignments.assignAtIntake(booking, specialistId, username);
         return transition(booking, UNDER_REVIEW, null, actor(username));
     }
 
@@ -46,7 +46,7 @@ public class BookingReviewServiceImpl implements BookingReviewService {
     public BookingResponseDto returnToCustomer(Long id, String username, String reason) {
         Booking booking = lock(id, UNDER_REVIEW);
         String note = BookingReviewPolicy.requireReason(reason);
-        BookingResponseDto result = transition(booking, NEEDS_RESUBMISSION, note, actor(username));
+        BookingResponseDto result = transition(booking, NEEDS_RESUBMISSION, note, assignments.requireAssigned(booking, username).getUserId());
         notifyCustomer(booking, "Đơn cần bổ sung hồ sơ", note);
         return result;
     }
@@ -59,11 +59,12 @@ public class BookingReviewServiceImpl implements BookingReviewService {
             throw missing();
         }
         BookingReviewPolicy.requireStatus(booking.getStatus(), NEEDS_RESUBMISSION);
-        var previous = history.findFirstByBooking_IdOrderByChangedAtDescIdDesc(id);
         BookingResponseDto result = transition(booking, UNDER_REVIEW, null, customer.getId());
-        previous.filter(row -> row.getToStatus() == NEEDS_RESUBMISSION && row.getChangedBy() != null)
-                .ifPresent(row -> notifications.notify(List.of(row.getChangedBy().getId()), id,
-                        "Khách đã nộp lại hồ sơ", "Kiểm tra lại giấy tờ và bảo hiểm của đơn.", null));
+        var recipients = assignments.recipients(booking);
+        if (!recipients.isEmpty()) {
+            notifications.notify(recipients, id, "Khách đã nộp lại hồ sơ",
+                    "Kiểm tra lại giấy tờ và bảo hiểm của đơn.", assignments.reviewLink(booking));
+        }
         return result;
     }
 
@@ -71,7 +72,13 @@ public class BookingReviewServiceImpl implements BookingReviewService {
     public BookingResponseDto reject(Long id, String username, String reason) {
         Booking booking = lock(id, PENDING_INTAKE, UNDER_REVIEW);
         String note = BookingReviewPolicy.requireReason(reason);
-        BookingResponseDto result = transition(booking, REJECTED, note, actor(username));
+        AppUser actor = assignments.actor(username);
+        if (booking.getStatus() == UNDER_REVIEW) {
+            assignments.requireAssigned(booking, username);
+        } else if (!"MANAGER".equals(actor.getRole().getCode())) {
+            throw BookingRuleException.forbidden("Chỉ quản lý được từ chối đơn chờ tiếp nhận.");
+        }
+        BookingResponseDto result = transition(booking, REJECTED, note, actor.getId());
         int stalls = activeSeats(id);
         if (booking.getDeparture() != null && stalls > 0) {
             departures.release(booking.getDeparture().getId(), stalls);
@@ -105,6 +112,7 @@ public class BookingReviewServiceImpl implements BookingReviewService {
     @Override
     public BookingResponseDto startQuoting(Long id, String username) {
         Booking booking = lock(id, UNDER_REVIEW);
+        var specialist = assignments.requireAssigned(booking, username);
         if (booking.getDeparture() == null && routing.requiresDeparture(booking)) {
             throw BookingRuleException.conflict("Đơn chưa có chuyến trục.");
         }
@@ -113,13 +121,14 @@ public class BookingReviewServiceImpl implements BookingReviewService {
         }
         var active = horses.findForDetail(id).stream().filter(horse -> horse.getStatus() == ACTIVE).toList();
         insurance.validateForQuoting(booking, active);
-        return transition(booking, QUOTING, null, actor(username));
+        return transition(booking, QUOTING, null, specialist.getUserId());
     }
 
     @Override
     @Transactional
     public BookingResponseDto reopenExpiredQuote(Long id, String username) {
         var booking = lock(id, QUOTE_EXPIRED);
+        assignments.requireAvailableForReopening(booking);
         var previous = history.findFirstByBooking_IdAndToStatusOrderByChangedAtDescIdDesc(id, QUOTE_EXPIRED)
                 .map(row -> row.getPreviousDeparture()).orElse(booking.getDeparture());
         Long departureId = previous == null ? null : previous.getId();
@@ -156,7 +165,7 @@ public class BookingReviewServiceImpl implements BookingReviewService {
     }
 
     private Long actor(String username) {
-        return users.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài khoản.")).getId();
+        return assignments.actor(username).getId();
     }
 
     private BookingResponseDto transition(Booking booking, BookingStatus next, String reason, Long actorId) {

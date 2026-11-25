@@ -19,6 +19,7 @@ export const STAFF_MENUS: Record<StaffRole, [path: string, label: string, opt?: 
   ],
   manager: [
     ['/manager', 'Tổng quan', { icon: 'fa-chart-pie' }],
+    ['/manager/assignments', 'Phân công', { group: 'Việc cần làm', icon: 'fa-user-check' }],
     ['/manager/orders', 'Đơn hàng', { group: 'Việc cần làm', icon: 'fa-inbox' }],
     ['/manager/departures', 'Chuyến cần quyết định', { icon: 'fa-truck' }],
     ['/manager/refunds', 'Hoàn tiền', { icon: 'fa-rotate-left' }],

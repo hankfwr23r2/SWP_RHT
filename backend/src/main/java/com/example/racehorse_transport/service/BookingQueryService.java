@@ -9,12 +9,12 @@ import java.util.List;
 
 public interface BookingQueryService {
 
-    List<BookingResponseDto> reviewQueue();
+    List<BookingResponseDto> reviewQueue(String username);
 
     // Mới nhất trước, mỗi trang tối đa PAGE_SIZE dòng
-    List<BookingSummaryResponseDto> summaries(Set<BookingStatus> statuses, int page);
+    List<BookingSummaryResponseDto> summaries(Set<BookingStatus> statuses, int page, String username);
 
-    BookingDetailResponseDto reviewDetail(Long id);
+    BookingDetailResponseDto reviewDetail(Long id, String username);
 
     List<BookingSummaryResponseDto> list(String username);
 

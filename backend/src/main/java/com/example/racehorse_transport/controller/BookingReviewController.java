@@ -35,33 +35,34 @@ public class BookingReviewController {
 
     @GetMapping("/review-queue")
     @PreAuthorize("hasAnyRole('SPECIALIST','MANAGER','COORDINATOR')")
-    public ApiResponseDto<List<BookingResponseDto>> queue() {
-        return ApiResponseDto.success(queries.reviewQueue(), "Thành công.");
+    public ApiResponseDto<List<BookingResponseDto>> queue(@RequestParam(defaultValue = "false") boolean mine, Authentication actor) {
+        return ApiResponseDto.success(queries.reviewQueue(mine ? actor.getName() : null), "Thành công.");
     }
 
     // Danh sách đơn theo trạng thái cho màn hình nhân viên
     @GetMapping("/summaries")
     @PreAuthorize("hasAnyRole('SPECIALIST','MANAGER','COORDINATOR')")
     public ApiResponseDto<List<BookingSummaryResponseDto>> summaries(@RequestParam Set<BookingStatus> statuses,
-            @RequestParam(defaultValue = "0") int page) {
-        return ApiResponseDto.success(queries.summaries(statuses, page), "Thành công.");
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "false") boolean mine,
+            Authentication actor) {
+        return ApiResponseDto.success(queries.summaries(statuses, page, mine ? actor.getName() : null), "Thành công.");
     }
 
     @GetMapping("/{id}/review-detail")
     @PreAuthorize("hasAnyRole('SPECIALIST','MANAGER','COORDINATOR')")
-    public ApiResponseDto<BookingDetailResponseDto> detail(@PathVariable Long id) {
-        return ApiResponseDto.success(queries.reviewDetail(id), "Thành công.");
+    public ApiResponseDto<BookingDetailResponseDto> detail(@PathVariable Long id, Authentication actor) {
+        return ApiResponseDto.success(queries.reviewDetail(id, actor.getName()), "Thành công.");
     }
 
     @PostMapping("/{id}/intake")
-    @PreAuthorize("hasAnyRole('SPECIALIST','MANAGER')")
+    @PreAuthorize("hasRole('MANAGER')")
     public ApiResponseDto<BookingResponseDto> intake(@PathVariable Long id, Authentication authentication,
-            @Valid @RequestBody(required = false) BookingIntakeRequestDto request) {
-        return ApiResponseDto.success(review.intake(id, authentication.getName()), "Thành công.");
+            @Valid @RequestBody BookingIntakeRequestDto request) {
+        return ApiResponseDto.success(review.intake(id, authentication.getName(), request.specialistId()), "Thành công.");
     }
 
     @PostMapping("/{id}/return-for-resubmission")
-    @PreAuthorize("hasAnyRole('SPECIALIST','MANAGER')")
+    @PreAuthorize("hasRole('SPECIALIST')")
     public ApiResponseDto<BookingResponseDto> returnToCustomer(@PathVariable Long id, Authentication authentication, @Valid @RequestBody BookingReturnRequestDto request) {
         return ApiResponseDto.success(review.returnToCustomer(id, authentication.getName(), request.reason()), "Thành công.");
     }

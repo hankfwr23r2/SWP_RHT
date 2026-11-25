@@ -41,6 +41,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @AutoConfigureMockMvc
 class BookingSubmissionPostgresTest {
 
+    @Autowired private AccountService accounts;
     @Autowired private BookingService bookings;
     @Autowired private BookingQueryService queries;
     @Autowired private BookingReviewService review;
@@ -158,7 +159,7 @@ class BookingSubmissionPostgresTest {
                 SELECT count(*) FROM booking_status_history WHERE booking_id = ?
                 AND from_status IS NULL AND to_status = 'PENDING_INTAKE'
                 """, id)).isEqualTo(1);
-        // Khách được báo đã nhận đơn, chuyên viên đang hoạt động được báo đơn mới
+        // Khách được báo đã nhận đơn, quản lý đang hoạt động được báo đơn mới
         assertThat(count("""
                 SELECT count(*) FROM notification n JOIN notification_recipient r ON r.notification_id = n.id
                 JOIN booking b ON b.id = n.booking_id AND r.user_id = b.customer_id
@@ -166,7 +167,7 @@ class BookingSubmissionPostgresTest {
                 """, id)).isEqualTo(1);
         assertThat(count("""
                 SELECT count(*) FROM notification n JOIN notification_recipient r ON r.notification_id = n.id
-                JOIN app_user u ON u.id = r.user_id AND u.username = 'specialist.dev'
+                JOIN app_user u ON u.id = r.user_id AND u.username = 'manager.dev'
                 WHERE n.booking_id = ? AND n.title = 'Đơn mới chờ tiếp nhận'
                 """, id)).isEqualTo(1);
         assertThat(reserved(departure.getId())).isEqualTo(2);
@@ -334,20 +335,36 @@ class BookingSubmissionPostgresTest {
         String other = customer();
         String specialist = data.unique("a6-specialist");
         String coordinator = data.unique("a6-coordinator");
-        data.staff(specialist, "SPECIALIST");
+        Long specialistId = data.staff(specialist, "SPECIALIST").getUserId();
         data.staff(coordinator, "COORDINATOR");
         Long id = bookings.submit(owner, null, directArranged(owner)).id();
 
         mvc.perform(get("/bookings/review-queue").header(HttpHeaders.AUTHORIZATION, token(coordinator, "COORDINATOR")))
                 .andExpect(status().isOk());
-        mvc.perform(post("/bookings/{id}/intake", id).header(HttpHeaders.AUTHORIZATION, token(coordinator, "COORDINATOR")))
+        String assignment = "{\"specialistId\":" + specialistId + "}";
+        mvc.perform(post("/bookings/{id}/intake", id)
+                        .header(HttpHeaders.AUTHORIZATION, token(coordinator, "COORDINATOR"))
+                        .contentType("application/json").content(assignment))
+                .andExpect(status().isForbidden());
+        mvc.perform(post("/bookings/{id}/intake", id)
+                        .header(HttpHeaders.AUTHORIZATION, token("manager.dev", "MANAGER"))
+                        .contentType("application/json").content("{}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(post("/bookings/{id}/intake", id)
+                        .header(HttpHeaders.AUTHORIZATION, token(specialist, "SPECIALIST"))
+                        .contentType("application/json").content(assignment))
                 .andExpect(status().isForbidden());
         mvc.perform(post("/bookings/{id}/intake", Long.MAX_VALUE)
-                        .header(HttpHeaders.AUTHORIZATION, token(specialist, "SPECIALIST")))
+                        .header(HttpHeaders.AUTHORIZATION, token("manager.dev", "MANAGER"))
+                        .contentType("application/json").content(assignment))
                 .andExpect(status().isNotFound());
-        mvc.perform(post("/bookings/{id}/intake", id).header(HttpHeaders.AUTHORIZATION, token(specialist, "SPECIALIST")))
+        mvc.perform(post("/bookings/{id}/intake", id)
+                        .header(HttpHeaders.AUTHORIZATION, token("manager.dev", "MANAGER"))
+                        .contentType("application/json").content(assignment))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.status").value("UNDER_REVIEW"));
-        mvc.perform(post("/bookings/{id}/intake", id).header(HttpHeaders.AUTHORIZATION, token(specialist, "SPECIALIST")))
+        mvc.perform(post("/bookings/{id}/intake", id)
+                        .header(HttpHeaders.AUTHORIZATION, token("manager.dev", "MANAGER"))
+                        .contentType("application/json").content(assignment))
                 .andExpect(status().isConflict());
         assertThat(review.returnToCustomer(id, specialist, "Thiếu hồ sơ").status()).isEqualTo(BookingStatus.NEEDS_RESUBMISSION);
         mvc.perform(post("/bookings/{id}/resubmit", id).header(HttpHeaders.AUTHORIZATION, token(other, "CUSTOMER")))
@@ -359,14 +376,64 @@ class BookingSubmissionPostgresTest {
     }
 
     @Test
+    void reassignmentProtectsLegacyBookingsAndPreventsLockingTheCurrentSpecialist() throws Exception {
+        String owner = customer();
+        String first = data.unique("first-assignee");
+        String second = data.unique("second-assignee");
+        Long firstId = data.staff(first, "SPECIALIST").getUserId();
+        var secondSpecialist = data.staff(second, "SPECIALIST");
+        Long secondId = secondSpecialist.getUserId();
+        Long id = bookings.submit(owner, null, directArranged(owner)).id();
+        jdbc.update("UPDATE booking SET status = 'UNDER_REVIEW' WHERE id = ?", id);
+
+        mvc.perform(post("/bookings/{id}/start-quoting", id).header(HttpHeaders.AUTHORIZATION, token(first, "SPECIALIST")))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Đơn chưa có chuyên viên phụ trách."));
+
+        for (Long assignee : List.of(firstId, secondId)) {
+            mvc.perform(post("/bookings/{id}/reassign-specialist", id)
+                            .header(HttpHeaders.AUTHORIZATION, token("manager.dev", "MANAGER"))
+                            .contentType("application/json")
+                            .content("{\"specialistId\":" + assignee + ",\"reason\":\"Cân đối công việc\"}"))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.data.specialistId").value(assignee));
+        }
+        assertThat(count("""
+                SELECT count(*) FROM booking_specialist_history
+                WHERE booking_id = ? AND reason = 'Cân đối công việc'
+                """, id)).isEqualTo(2);
+
+        mvc.perform(post("/bookings/{id}/start-quoting", id).header(HttpHeaders.AUTHORIZATION, token(first, "SPECIALIST")))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Đơn chưa được giao cho bạn."));
+        assertThatThrownBy(() -> accounts.lockStaffAccount(secondId, "admin.dev",
+                new com.example.racehorse_transport.dto.account.StaffAccountStatusRequestDto("Tạm dừng")))
+                .isInstanceOf(BookingRuleException.class).hasMessageContaining("1 đơn");
+        byte[] workloadResponse = mvc.perform(get("/staff-workloads").param("role", "SPECIALIST")
+                        .header(HttpHeaders.AUTHORIZATION, token("manager.dev", "MANAGER")))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsByteArray();
+        assertThat(new ObjectMapper().readTree(workloadResponse).path("data")).anySatisfy(row -> {
+            assertThat(row.path("staffId").longValue()).isEqualTo(secondId);
+            assertThat(row.path("assignedCount").longValue()).isEqualTo(1);
+        });
+        for (var next : List.of(com.example.racehorse_transport.entity.enums.EmploymentStatus.ON_LEAVE,
+                com.example.racehorse_transport.entity.enums.EmploymentStatus.TERMINATED)) {
+            var request = new com.example.racehorse_transport.dto.account.StaffAccountUpdateRequestDto(
+                    secondSpecialist.getStaffCode(), secondSpecialist.getFullName(), secondSpecialist.getPhone(),
+                    secondSpecialist.getHireDate(), secondSpecialist.getHomeHubLocation().getId(), null, null, next);
+            assertThatThrownBy(() -> accounts.updateStaffAccount(secondId, request))
+                    .isInstanceOf(BookingRuleException.class).hasMessageContaining("1 đơn");
+        }
+    }
+
+    @Test
     void waiverCanBeConfirmedOnceAndAllowsLocalQuotation() {
         String owner = customer();
         long manager = data.staff(data.unique("quoting-notice-manager"), "MANAGER").getUserId();
         String specialist = data.unique("a6-specialist");
-        data.staff(specialist, "SPECIALIST");
+        Long specialistId = data.staff(specialist, "SPECIALIST").getUserId();
         Long id = bookings.submit(owner, null, request(null, pickupDate(), List.of(
                 horseInput(horse(owner), InsuranceCoverageOption.NONE, true, List.of())))).id();
-        review.intake(id, specialist);
+        review.intake(id, "manager.dev", specialistId);
         Long insuranceId = queries.get(owner, id).horses().getFirst().insurance().id();
         insurance.confirm(id, insuranceId, specialist);
         assertThatThrownBy(() -> insurance.confirm(id, insuranceId, specialist))
@@ -381,7 +448,7 @@ class BookingSubmissionPostgresTest {
     @Test
     void onlyOneBookingCanMoveToTheLastStallAndRejectReleasesOnlyOnce() throws Exception {
         String specialist = data.unique("a6-specialist");
-        data.staff(specialist, "SPECIALIST");
+        Long specialistId = data.staff(specialist, "SPECIALIST").getUserId();
         LocalDate date = pickupDate();
         var departure = data.departure("HCM-DN", date.plusDays(1), 2);
         var replacement = data.departure("HCM-DN", date.plusDays(2), 1);
@@ -391,8 +458,8 @@ class BookingSubmissionPostgresTest {
                 horseInput(horse(firstOwner), InsuranceCoverageOption.NONE, true, List.of())))).id();
         Long secondId = bookings.submit(secondOwner, null, request(departure.getId(), date, List.of(
                 horseInput(horse(secondOwner), InsuranceCoverageOption.NONE, true, List.of())))).id();
-        review.intake(firstId, specialist);
-        review.intake(secondId, specialist);
+        review.intake(firstId, "manager.dev", specialistId);
+        review.intake(secondId, "manager.dev", specialistId);
 
         try (var executor = Executors.newFixedThreadPool(2)) {
             var ready = new CountDownLatch(2);
@@ -407,7 +474,7 @@ class BookingSubmissionPostgresTest {
 
         assertThat(reserved(departure.getId())).isEqualTo(1);
         assertThat(reserved(replacement.getId())).isEqualTo(1);
-        Long winner = queries.reviewDetail(firstId).booking().departureId().equals(replacement.getId()) ? firstId : secondId;
+        Long winner = queries.reviewDetail(firstId, specialist).booking().departureId().equals(replacement.getId()) ? firstId : secondId;
         assertThat(review.reject(winner, specialist, "Từ chối").status()).isEqualTo(BookingStatus.REJECTED);
         assertThatThrownBy(() -> review.reject(winner, specialist, "Từ chối")).isInstanceOf(BookingRuleException.class);
         assertThat(reserved(departure.getId())).isEqualTo(1);
@@ -419,12 +486,12 @@ class BookingSubmissionPostgresTest {
         String owner = customer();
         String other = customer();
         String specialist = data.unique("a6-specialist");
-        data.staff(specialist, "SPECIALIST");
+        Long specialistId = data.staff(specialist, "SPECIALIST").getUserId();
         LocalDate date = pickupDate();
         var departure = data.departure("HCM-DN", date.plusDays(1), 2);
         Long id = bookings.submit(owner, null, request(departure.getId(), date, List.of(
                 horseInput(horse(owner), InsuranceCoverageOption.NONE, true, List.of())))).id();
-        review.intake(id, specialist);
+        review.intake(id, "manager.dev", specialistId);
         Long typeId = jdbc.queryForObject("""
                 INSERT INTO document_type (code, name, owner_type) VALUES (?, 'Booking document', 'BOOKING')
                 RETURNING id
@@ -463,7 +530,7 @@ class BookingSubmissionPostgresTest {
     void confirmedArrangedInsuranceKeepsTheEvidenceWhenTwoActionsCompete() throws Exception {
         String owner = customer();
         String specialist = data.unique("a6-specialist");
-        data.staff(specialist, "SPECIALIST");
+        Long specialistId = data.staff(specialist, "SPECIALIST").getUserId();
         Long insurer = jdbc.queryForObject("""
                 INSERT INTO party (party_type, display_name, country_code, status)
                 VALUES ('ORGANIZATION', ?, 'VN', 'ACTIVE') RETURNING id
@@ -471,11 +538,11 @@ class BookingSubmissionPostgresTest {
         jdbc.update("INSERT INTO party_role (party_id, role_type, valid_from) VALUES (?, 'INSURER', ?)",
                 insurer, pickupDate().minusMonths(2));
         Long id = bookings.submit(owner, null, directArranged(owner)).id();
-        review.intake(id, specialist);
+        review.intake(id, "manager.dev", specialistId);
         Long insuranceId = queries.get(owner, id).horses().getFirst().insurance().id();
         var evidence = new com.example.racehorse_transport.dto.booking.InsuranceEvidenceRequestDto(insurer,
                 new BigDecimal("8000000"), new BigDecimal("2500"), "VND", clock.instant().plusSeconds(3600));
-        insurance.recordEvidence(id, insuranceId, evidence);
+        insurance.recordEvidence(id, insuranceId, evidence, specialist);
 
         try (var executor = Executors.newFixedThreadPool(2)) {
             var ready = new CountDownLatch(2);
@@ -499,7 +566,7 @@ class BookingSubmissionPostgresTest {
             assertThat(List.of(first.get(15, TimeUnit.SECONDS), second.get(15, TimeUnit.SECONDS)))
                     .containsExactlyInAnyOrder(200, 409);
         }
-        assertThatThrownBy(() -> insurance.recordEvidence(id, insuranceId, evidence))
+        assertThatThrownBy(() -> insurance.recordEvidence(id, insuranceId, evidence, specialist))
                 .isInstanceOf(BookingRuleException.class);
         var confirmed = queries.get(owner, id).horses().getFirst().insurance();
         assertThat(confirmed.status()).isEqualTo(HorseInsuranceStatus.CONFIRMED);
@@ -512,7 +579,7 @@ class BookingSubmissionPostgresTest {
         String owner = customer();
         String other = customer();
         String specialist = data.unique("a6-specialist");
-        data.staff(specialist, "SPECIALIST");
+        Long specialistId = data.staff(specialist, "SPECIALIST").getUserId();
         Long insurer = jdbc.queryForObject("""
                 INSERT INTO party (party_type, display_name, country_code, status)
                 VALUES ('ORGANIZATION', ?, 'VN', 'ACTIVE') RETURNING id
@@ -524,7 +591,7 @@ class BookingSubmissionPostgresTest {
                 "ORIGINAL-01", date, date.plusDays(5), insurer, null);
         Long id = bookings.submit(owner, null, request(null, date, List.of(
                 new HorseInput(horse(owner), "STANDARD", null, null, false, List.of(), declaration)))).id();
-        review.intake(id, specialist);
+        review.intake(id, "manager.dev", specialistId);
         Long insuranceId = queries.get(owner, id).horses().getFirst().insurance().id();
         var revision = new com.example.racehorse_transport.dto.booking.PersonalInsuranceRevisionRequestDto(
                 insurer, "REVISED-02", date, date.plusDays(8));

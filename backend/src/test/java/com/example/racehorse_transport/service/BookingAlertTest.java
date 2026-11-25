@@ -35,7 +35,7 @@ class BookingAlertTest {
         when(staff.findUserIdsByRoleAndStatus("MANAGER", AppUserStatus.ACTIVE)).thenReturn(List.of(30L));
         when(payments.findLinkedOverdue(1L, 10L, "0900000000", PaymentType.EXTRA_CHARGE, PaymentStatus.PENDING, NOW))
                 .thenReturn(List.of(debt));
-        var notices = new CustomerNoticeServiceImpl(notifications, staff, mock(HorseLegRepository.class),
+        var notices = new CustomerNoticeServiceImpl(notifications, staff, mock(BookingAssignmentService.class), mock(HorseLegRepository.class),
                 mock(HorseStayRepository.class), configs, payments, Clock.fixed(NOW, ZoneOffset.UTC));
 
         notices.bookingSubmitted(booking);
