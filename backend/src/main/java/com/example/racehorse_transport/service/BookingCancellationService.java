@@ -16,6 +16,10 @@ public interface BookingCancellationService {
 
     BookingCancellationResponseDto cancelForCompany(Long bookingId, String username, CompanyCancelBookingRequestDto request);
 
+    BookingCancellationResponseDto previewForDelayedDeparture(Booking booking);
+
+    BookingCancellationResponseDto cancelForDelayedDeparture(Long bookingId, String username, CancelBookingRequestDto request);
+
     BookingCancellationResponseDto cancelForCustomer(Long bookingId, String username, ManagerCancelBookingRequestDto request);
 
     void cancelUnpaidAtPickup(Long bookingId, Long actorUserId);

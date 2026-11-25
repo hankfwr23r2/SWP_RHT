@@ -87,6 +87,20 @@ public class BookingCancellationServiceImpl implements BookingCancellationServic
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public BookingCancellationResponseDto previewForDelayedDeparture(Booking booking) {
+        return evaluate(booking, true, false, ReceiptEvidence.HANDOVER_ONLY).response(booking);
+    }
+
+    @Override
+    @Transactional
+    public BookingCancellationResponseDto cancelForDelayedDeparture(Long bookingId, String username, CancelBookingRequestDto request) {
+        var booking = lock(bookingId);
+        var cancellation = evaluate(booking, true, false, ReceiptEvidence.HANDOVER_ONLY);
+        return cancel(booking, cancellation, request.reason(), username, null, List.of());
+    }
+
+    @Override
     @Transactional
     public BookingCancellationResponseDto cancelForCustomer(Long bookingId, String username, ManagerCancelBookingRequestDto request) {
         var booking = lock(bookingId);
@@ -212,13 +226,18 @@ public class BookingCancellationServiceImpl implements BookingCancellationServic
     }
 
     private Cancellation evaluate(Booking booking, boolean company, boolean allowPickupCancellation) {
+        return evaluate(booking, company, allowPickupCancellation, ReceiptEvidence.HANDOVER_OR_BALANCE);
+    }
+
+    private Cancellation evaluate(Booking booking, boolean company, boolean allowPickupCancellation, ReceiptEvidence receiptEvidence) {
         Long bookingId = booking.getId();
         var entries = payments.findByBooking_IdOrderById(bookingId);
         var quotation = quotations.findByBooking_IdAndStatus(bookingId, QuotationStatus.ACCEPTED).orElse(null);
         boolean depositPaid = entries.stream()
                 .anyMatch(row -> row.getPaymentType() == PaymentType.DEPOSIT && row.getStatus() == PaymentStatus.PAID);
         boolean paidInFull = depositPaid && quotation != null && PaymentPolicy.outstanding(quotation, entries).signum() <= 0;
-        boolean received = entries.stream().anyMatch(row -> row.getPaymentType() == PaymentType.BALANCE)
+        boolean received = (receiptEvidence == ReceiptEvidence.HANDOVER_OR_BALANCE
+                && entries.stream().anyMatch(row -> row.getPaymentType() == PaymentType.BALANCE))
                 || bookings.hasReceivedHorses(bookingId);
         Outcome outcome = company
                 ? BookingCancellationPolicy.companyCanCancel(booking.getStatus()) ? Outcome.FREE : Outcome.NOT_ALLOWED
@@ -302,6 +321,11 @@ public class BookingCancellationServiceImpl implements BookingCancellationServic
 
     private static ResourceNotFoundException notFound() {
         return new ResourceNotFoundException("Không tìm thấy đơn.");
+    }
+
+    private enum ReceiptEvidence {
+        HANDOVER_ONLY,
+        HANDOVER_OR_BALANCE
     }
 
     private record Cancellation(Outcome outcome, Quotation quotation, List<Payment> payments, Breakdown amounts) {

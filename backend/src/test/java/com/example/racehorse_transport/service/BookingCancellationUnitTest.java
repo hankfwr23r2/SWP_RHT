@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.example.racehorse_transport.dto.booking.CancelBookingRequestDto;
 import com.example.racehorse_transport.dto.booking.CompanyCancelBookingRequestDto;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Payment;
@@ -93,6 +94,36 @@ class BookingCancellationUnitTest {
 
         verify(refunds).createPending(1L, "VND", new BigDecimal("4000"));
         verifyNoInteractions(schedules);
+    }
+
+    @Test
+    void paidBalanceWithoutHandoverCanBeRefundedForDelayedDeparture() {
+        var booking = bookings.findForUpdate(1L).orElseThrow();
+        booking.setStatus(BookingStatus.SCHEDULE_CHANGE_REQUIRED);
+        balance.setStatus(PaymentStatus.PAID);
+
+        assertThatThrownBy(() -> cancellations.cancelForCompany(1L, "manager", new CompanyCancelBookingRequestDto("Không có xe")))
+                .isInstanceOf(BookingRuleException.class);
+        verifyNoInteractions(refunds, statuses);
+
+        var preview = cancellations.previewForDelayedDeparture(booking);
+        assertThat(preview.allowed()).isTrue();
+        assertThat(preview.refundable()).isEqualByComparingTo("10000");
+        var result = cancellations.cancelForDelayedDeparture(1L, "customer", new CancelBookingRequestDto("Chuyến chậm"));
+        assertThat(result.refundable()).isEqualByComparingTo(preview.refundable());
+        verify(refunds).createPending(1L, "VND", new BigDecimal("10000"));
+        verify(statuses).transitionForUser(1L, BookingStatus.CANCELLED, "Chuyến chậm", "customer");
+    }
+
+    @Test
+    void delayedDepartureCannotRefundWithACompletedPickupHandover() {
+        var booking = bookings.findForUpdate(1L).orElseThrow();
+        when(bookings.hasReceivedHorses(1L)).thenReturn(true);
+
+        assertThat(cancellations.previewForDelayedDeparture(booking).allowed()).isFalse();
+        assertThatThrownBy(() -> cancellations.cancelForDelayedDeparture(1L, "customer", new CancelBookingRequestDto("Chuyến chậm")))
+                .isInstanceOf(BookingRuleException.class);
+        verifyNoInteractions(refunds, statuses);
     }
 
     private static Payment payment(PaymentType type, PaymentStatus status, String amount) {

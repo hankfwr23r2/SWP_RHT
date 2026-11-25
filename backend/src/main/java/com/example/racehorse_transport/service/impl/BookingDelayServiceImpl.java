@@ -5,7 +5,6 @@ import com.example.racehorse_transport.dto.booking.BookingDelayResponseDto;
 import com.example.racehorse_transport.dto.booking.BookingRescheduleRequestDto;
 import com.example.racehorse_transport.dto.booking.BookingResponseDto;
 import com.example.racehorse_transport.dto.booking.CancelBookingRequestDto;
-import com.example.racehorse_transport.dto.booking.CompanyCancelBookingRequestDto;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.BookingStatusHistory;
 import com.example.racehorse_transport.entity.Departure;
@@ -57,7 +56,7 @@ public class BookingDelayServiceImpl implements BookingDelayService {
     public BookingResponseDto reschedule(Long bookingId, String username, BookingRescheduleRequestDto request) {
         var booking = lockOwned(bookingId, username);
         var departure = lockAffectedDeparture(booking, request.departureId());
-        if (request.departureId().equals(departure.getId()) || !options(booking, departure).canRescheduleFree()) {
+        if (request.departureId().equals(departure.getId()) || !eligibility(booking, departure).canRescheduleFree()) {
             throw BookingRuleException.conflict("Đơn chưa được đổi miễn phí do chuyến chậm hoặc cần chọn chuyến khác.");
         }
         if (booking.getStatus() != BookingStatus.SCHEDULE_CHANGE_REQUIRED) {
@@ -72,7 +71,7 @@ public class BookingDelayServiceImpl implements BookingDelayService {
     public BookingCancellationResponseDto refundPreview(Long bookingId, String username) {
         var booking = owned(bookingId, username);
         requireRefund(booking, affectedDeparture(booking).orElseThrow(BookingDelayServiceImpl::notEligible));
-        return cancellations.previewForManager(bookingId, true);
+        return cancellations.previewForDelayedDeparture(booking);
     }
 
     @Override
@@ -80,17 +79,23 @@ public class BookingDelayServiceImpl implements BookingDelayService {
     public BookingCancellationResponseDto refund(Long bookingId, String username, CancelBookingRequestDto request) {
         var booking = lockOwned(bookingId, username);
         requireRefund(booking, lockAffectedDeparture(booking, null));
-        return cancellations.cancelForCompany(bookingId, username, new CompanyCancelBookingRequestDto(request.reason()));
+        return cancellations.cancelForDelayedDeparture(bookingId, username, request);
     }
 
     private BookingDelayResponseDto options(Booking booking, Departure departure) {
+        var eligibility = eligibility(booking, departure);
+        boolean canRefund = eligibility.canRequestRefund() && cancellations.previewForDelayedDeparture(booking).allowed();
+        return BookingDelayResponseDto.from(departure, eligibility.canRescheduleFree(), canRefund, eligibility.requiresManagerContact());
+    }
+
+    private DelayEligibility eligibility(Booking booking, Departure departure) {
         boolean open = DepartureDelayPolicy.notStarted(departure.getStatus()) || departure.getAutoCancelledAt() != null;
         boolean affected = open && departure.getDelayedAt() != null;
         boolean received = affected && (DepartureDecisionPolicy.blocksCancellation(booking.getStatus())
                 || bookings.hasReceivedHorses(booking.getId()));
         boolean awaitingChange = booking.getStatus() == BookingStatus.SCHEDULE_CHANGE_REQUIRED;
         if (!affected || received) {
-            return BookingDelayResponseDto.from(departure, false, false, received);
+            return new DelayEligibility(false, false, received);
         }
         var duration = DepartureDelayPolicy.delay(departure.getPlannedDepartureAt(), departure.getRevisedDepartureAt(), clock.instant());
         var limits = delays.thresholds();
@@ -98,7 +103,7 @@ public class BookingDelayServiceImpl implements BookingDelayService {
                 && (departure.getAutoCancelledAt() != null || DepartureDelayPolicy.permitsReschedule(duration, limits));
         boolean canRefund = BookingCancellationPolicy.companyCanCancel(booking.getStatus())
                 && (departure.getAutoCancelledAt() != null || DepartureDelayPolicy.permitsRefund(duration, limits));
-        return BookingDelayResponseDto.from(departure, canChange, canRefund, false);
+        return new DelayEligibility(canChange, canRefund, false);
     }
 
     private Optional<Departure> affectedDeparture(Booking booking) {
@@ -131,7 +136,7 @@ public class BookingDelayServiceImpl implements BookingDelayService {
     }
 
     private void requireRefund(Booking booking, Departure departure) {
-        if (!options(booking, departure).canRefundFull()) {
+        if (!eligibility(booking, departure).canRequestRefund()) {
             throw notEligible();
         }
     }
@@ -153,4 +158,6 @@ public class BookingDelayServiceImpl implements BookingDelayService {
     private static ResourceNotFoundException notFound() {
         return new ResourceNotFoundException("Không tìm thấy đơn.");
     }
+
+    private record DelayEligibility(boolean canRescheduleFree, boolean canRequestRefund, boolean requiresManagerContact) {}
 }
