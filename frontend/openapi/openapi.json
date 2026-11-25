@@ -1260,6 +1260,23 @@
         },
         "type" : "object"
       },
+      "ApiResponseListStablingClockResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/StablingClockResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListStaffAccountResponseDto" : {
         "properties" : {
           "data" : {
@@ -2540,7 +2557,7 @@
             "type" : "integer"
           },
           "category" : {
-            "enum" : [ "TOLL", "FUEL", "STABLING", "VET", "RESCUE", "REPAIR", "WAITING", "OTHER" ],
+            "enum" : [ "TOLL", "FUEL", "STABLING", "VET", "RESCUE", "REPAIR", "WAITING", "REDELIVERY", "PLANNED_STABLING", "OTHER" ],
             "type" : "string"
           },
           "currencyCode" : {
@@ -2591,7 +2608,7 @@
             "type" : "string"
           },
           "category" : {
-            "enum" : [ "TOLL", "FUEL", "STABLING", "VET", "RESCUE", "REPAIR", "WAITING", "OTHER" ],
+            "enum" : [ "TOLL", "FUEL", "STABLING", "VET", "RESCUE", "REPAIR", "WAITING", "REDELIVERY", "PLANNED_STABLING", "OTHER" ],
             "type" : "string"
           },
           "currencyCode" : {
@@ -4812,6 +4829,10 @@
             "type" : "string"
           },
           "plannedStartAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "readyAt" : {
             "format" : "date-time",
             "type" : "string"
           },
@@ -7329,7 +7350,7 @@
             "type" : "boolean"
           },
           "category" : {
-            "enum" : [ "TOLL", "FUEL", "STABLING", "VET", "RESCUE", "REPAIR", "WAITING", "OTHER" ],
+            "enum" : [ "TOLL", "FUEL", "STABLING", "VET", "RESCUE", "REPAIR", "WAITING", "REDELIVERY", "PLANNED_STABLING", "OTHER" ],
             "type" : "string"
           },
           "description" : {
@@ -7793,6 +7814,81 @@
             "type" : "string"
           }
         },
+        "type" : "object"
+      },
+      "StablingClockResponseDto" : {
+        "properties" : {
+          "amount" : {
+            "type" : "number"
+          },
+          "canCollect" : {
+            "type" : "boolean"
+          },
+          "canReady" : {
+            "type" : "boolean"
+          },
+          "collectionExpectedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "elapsedSeconds" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "horseName" : {
+            "type" : "string"
+          },
+          "nextChargeAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "readyAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "running" : {
+            "type" : "boolean"
+          },
+          "stayId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "StablingCollectionRequestDto" : {
+        "properties" : {
+          "expectedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "required" : [ "expectedAt" ],
+        "type" : "object"
+      },
+      "StablingLaterSlotRequestDto" : {
+        "properties" : {
+          "chosenAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "earliestAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "required" : [ "chosenAt", "earliestAt" ],
+        "type" : "object"
+      },
+      "StablingReadyRequestDto" : {
+        "properties" : {
+          "callNote" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "callNote" ],
         "type" : "object"
       },
       "StaffAccountCreateRequestDto" : {
@@ -10324,6 +10420,33 @@
           }
         },
         "tags" : [ "settlement-controller" ]
+      }
+    },
+    "/bookings/{bookingId}/stabling-clocks" : {
+      "get" : {
+        "operationId" : "forBooking",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "bookingId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListStablingClockResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "stabling-clock-controller" ]
       }
     },
     "/bookings/{id}" : {
@@ -13994,6 +14117,144 @@
           }
         },
         "tags" : [ "hub-handover-controller" ]
+      }
+    },
+    "/horse-stays/{stayId}/choose-later-slot" : {
+      "post" : {
+        "operationId" : "chooseLaterSlot",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "stayId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/StablingLaterSlotRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "stabling-clock-controller" ]
+      }
+    },
+    "/horse-stays/{stayId}/ready" : {
+      "post" : {
+        "operationId" : "ready",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "stayId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "stabling-clock-controller" ]
+      }
+    },
+    "/horse-stays/{stayId}/record-ready" : {
+      "post" : {
+        "operationId" : "recordReady",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "stayId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/StablingReadyRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "stabling-clock-controller" ]
+      }
+    },
+    "/horse-stays/{stayId}/report-collection" : {
+      "post" : {
+        "operationId" : "reportCollection",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "stayId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/StablingCollectionRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "stabling-clock-controller" ]
       }
     },
     "/horse-types" : {

@@ -19,6 +19,7 @@ import { OrderInfo } from './components/OrderInfo'
 import { PaymentsCard } from './components/PaymentsCard'
 import { QuoteCard } from './components/QuoteCard'
 import { RatingCard } from './components/RatingCard'
+import { StablingClockCard } from './components/StablingClockCard'
 import { RescheduleCard } from './components/RescheduleCard'
 import { useOrderData } from './loaders'
 import s from './Orders.module.css'
@@ -48,6 +49,7 @@ export default function OrderDetailPage() {
         <div className={s.stack}>
           <NextStepBanner data={data} />
           <PickupMissPanel bookingId={data.id} mode="customer" onChanged={revalidate} />
+          {(status === 'IN_OPERATION' || data.detail?.balanceHoldAt) && <StablingClockCard bookingId={data.id} onChanged={revalidate} />}
           {data.detail?.balanceHoldAt && (
             <Card title={t('myOrders.balanceHold.title')}>
               <p>{t('myOrders.balanceHold.since', { at: formatDateTime(new Date(data.detail.balanceHoldAt)) })}</p>

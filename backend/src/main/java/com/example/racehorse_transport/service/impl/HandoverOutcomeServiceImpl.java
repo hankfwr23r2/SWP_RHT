@@ -56,7 +56,8 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
         Instant chargedFrom = booking.getDeparture() == null || booking.getBookingType()
                 == com.example.racehorse_transport.entity.enums.BookingType.IMPORT
                 ? at : booking.getDeparture().getPlannedDepartureAt();
-        horseStays.openBalanceHold(booking.getId(), chargedFrom);
+        horseStays.openBalanceHold(booking.getId(), chargedFrom,
+                booking.getBookingType() == com.example.racehorse_transport.entity.enums.BookingType.IMPORT ? null : booking.getDeparture());
         cancellations.releaseUnpaidAtHub(booking.getId());
     }
 

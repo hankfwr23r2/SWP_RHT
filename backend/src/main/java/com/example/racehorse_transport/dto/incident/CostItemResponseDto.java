@@ -17,7 +17,7 @@ public record CostItemResponseDto(
         return new CostItemResponseDto(cost.getId(), cost.getCategory(), cost.getDescription(), cost.getAmount(), cost.getCurrencyCode(),
                 cost.getPayerType(), cost.getIncident() == null ? null : cost.getIncident().getId(),
                 cost.getBooking() == null ? null : cost.getBooking().getCode(), cost.getCustomerConsulted(), cost.getIncurredAt(),
-                cost.getRecordedBy().getFullName(), cost.getApprovedBy() == null ? null : cost.getApprovedBy().getFullName(),
+                cost.getRecordedBy() == null ? null : cost.getRecordedBy().getFullName(), cost.getApprovedBy() == null ? null : cost.getApprovedBy().getFullName(),
                 cost.getApprovedAt(), cost.getExtraChargePayment() == null ? null : cost.getExtraChargePayment().getId(),
                 cost.getCustomerAgreed(), cost.getCustomerResponseAt(), cost.getCustomerResponseDueAt(),
                 cost.isAgentRecoveryRequired(), cost.getAgentRecoveredAt());

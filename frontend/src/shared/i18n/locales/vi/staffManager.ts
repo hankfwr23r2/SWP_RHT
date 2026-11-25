@@ -229,6 +229,8 @@ export const staffManager = {
         TOLL: 'Phí cầu đường',
         FUEL: 'Nhiên liệu',
         STABLING: 'Gửi chuồng',
+        REDELIVERY: 'Cước giao lại và nhiên liệu',
+        PLANNED_STABLING: 'Lưu chuồng theo kế hoạch',
         VET: 'Thú y',
         RESCUE: 'Cứu hộ',
         REPAIR: 'Sửa chữa',

@@ -3,6 +3,7 @@ package com.example.racehorse_transport.service.impl;
 import com.example.racehorse_transport.service.StablingChargeService;
 import com.example.racehorse_transport.dto.health.HorseStayResponseDto;
 import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.entity.Departure;
 import com.example.racehorse_transport.entity.Party;
 import com.example.racehorse_transport.entity.TripStop;
 import com.example.racehorse_transport.entity.enums.PartyRoleType;
@@ -69,7 +70,7 @@ public class HorseStayServiceImpl implements HorseStayService {
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
-    public void openBalanceHold(Long bookingId, Instant chargedFrom) {
+    public void openBalanceHold(Long bookingId, Instant chargedFrom, Departure missedDeparture) {
         Instant until = chargedFrom.plus(Duration.ofDays(configs.getInt(MAX_DAYS)));
         stays.findByBookingHorse_Booking_Id(bookingId).stream()
                 .filter(stay -> stay.getStayType() == HorseStayType.ASSEMBLY && stay.getLocation().getLocationType() == LocationType.HUB)
@@ -77,6 +78,7 @@ public class HorseStayServiceImpl implements HorseStayService {
                 .forEach(stay -> {
                     stay.setStayType(HorseStayType.STABLING);
                     stay.setBalanceHoldAt(chargedFrom);
+                    stay.setMissedDeparture(missedDeparture);
                     stay.setStablingUnitPrice(java.math.BigDecimal.valueOf(configs.getInt(DAILY_FEE)));
                     if (until.isAfter(stay.getPlannedStartAt())) stay.setPlannedEndAt(until);
                 });
@@ -147,8 +149,8 @@ public class HorseStayServiceImpl implements HorseStayService {
     @Transactional
     public void closeActive(Long bookingHorseId, Instant at, Long actorUserId) {
         stays.findFirstByBookingHorse_IdAndActualStartAtIsNotNullAndActualEndAtIsNull(bookingHorseId).ifPresent(stay -> {
-            stablingCharges.chargeThrough(stay, at, actorUserId);
             stay.setActualEndAt(at);
+            stablingCharges.chargeThrough(stay, at, actorUserId);
         });
     }
 
@@ -157,6 +159,7 @@ public class HorseStayServiceImpl implements HorseStayService {
     public void openFailedDeliveryStabling(HorseLeg failedLeg, Location hub, Instant at, Long actorUserId) {
         HorseStay stay = new HorseStay();
         stay.setBookingHorse(failedLeg.getBookingHorse());
+        stay.setFailedDeliveryLeg(failedLeg);
         stay.setStayType(HorseStayType.STABLING);
         stay.setStablingUnitPrice(java.math.BigDecimal.valueOf(configs.getInt(DAILY_FEE)));
         stay.setLocation(hub);
@@ -169,10 +172,6 @@ public class HorseStayServiceImpl implements HorseStayService {
                 failedLeg.getBookingHorse().getHorse().getName() + " chưa giao được do không gặp người nhận, đang được giữ và chăm sóc tại "
                         + hub.getName() + " tới " + TIME.format(stay.getPlannedEndAt()) + ". Phí lưu chuồng và chăm sóc "
                         + money(configs.getInt(DAILY_FEE)) + " cho mỗi 24 giờ trọn vẹn, người nhận chịu; chưa đủ 24 giờ không tính.", "/orders/" + booking.getId());
-        legs.findByBookingHorse_IdOrderBySequenceNumber(failedLeg.getBookingHorse().getId()).stream()
-                .filter(leg -> leg.getStatus() == HorseLegStatus.PLANNED && leg.getReplacedHorseLeg() != null
-                        && leg.getReplacedHorseLeg().getId().equals(failedLeg.getId()))
-                .findFirst().ifPresent(leg -> stablingCharges.chargeThrough(stay, leg.getPlannedStartAt(), actorUserId));
     }
 
     @Override

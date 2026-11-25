@@ -121,8 +121,8 @@ public class ExtraChargeServiceImpl implements ExtraChargeService {
                 .orElseThrow(() -> BookingRuleException.conflict("Đơn chưa có báo giá đã chấp nhận."));
         var selected = costs.findAllById(costItemIds);
         PaymentPolicy.requireExtraChargeAllowed(booking.getStatus(), selected);
-        if (stablingOnly && !selected.stream().allMatch(CostPayerPolicy::isScheduledStablingFee)) {
-            throw BookingRuleException.conflict("Chỉ lập khoản thu tự động cho phí giữ ngựa.");
+        if (stablingOnly && !selected.stream().allMatch(CostPayerPolicy::isAutomaticTransportFee)) {
+            throw BookingRuleException.conflict("Chỉ lập khoản thu tự động cho phí giữ ngựa, lưu chuồng và giao lại.");
         }
         var amount = PaymentPolicy.extraChargeAmount(bookingId, quotation.getCurrencyCode(), costItemIds.size(), selected);
         if (!"VND".equals(quotation.getCurrencyCode()) || !VnpayClient.isPayable(amount)) {

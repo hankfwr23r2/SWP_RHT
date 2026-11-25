@@ -293,6 +293,19 @@ public final class PricingPolicy {
         return result;
     }
 
+    public static BigDecimal plannedStablingUnitPrice(PriceList list, List<PriceItem> items, Long routeId) {
+        var service = items.stream().map(PriceItem::getBillableService)
+                .filter(candidate -> "QUARANTINE_STAY".equals(candidate.getCode())).findFirst()
+                .orElseThrow(() -> new PricingRuleException("Thiếu dịch vụ lưu chuồng.", true));
+        return line(list, items, service, new Match(routeId, null, null, null), BigDecimal.ONE).unitPrice();
+    }
+
+    public static BigDecimal redeliveryCharge(PriceList list, List<PriceItem> items, List<BillableService> catalog,
+            Long routeId, Long classId, List<BigDecimal> distances) {
+        return distances.stream().flatMap(km -> roadCharges(list, items, catalog, ServiceLayer.DELIVERY, routeId, classId, km).stream())
+                .map(Line::amount).reduce(BigDecimal.ZERO, BigDecimal::add).setScale(0, RoundingMode.HALF_UP);
+    }
+
     public static Line repriceRoad(PriceList list, List<PriceItem> items, BillableService service,
                                    Long routeId, Long classId, BigDecimal km) {
         return line(list, items, service, new Match(routeId, classId, null, km), km);

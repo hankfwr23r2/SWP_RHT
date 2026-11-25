@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.service;
 
 import com.example.racehorse_transport.dto.health.HorseStayResponseDto;
+import com.example.racehorse_transport.entity.Departure;
 import com.example.racehorse_transport.dto.health.StablePartnerResponseDto;
 import com.example.racehorse_transport.entity.Party;
 import com.example.racehorse_transport.entity.TripStop;
@@ -13,7 +14,7 @@ import java.util.List;
 // Thời gian ngựa ở một nơi, không trên xe (B3). Chủ sở hữu horse_stay.
 public interface HorseStayService {
 
-    void openBalanceHold(Long bookingId, Instant chargedFrom);
+    void openBalanceHold(Long bookingId, Instant chargedFrom, Departure missedDeparture);
 
     // Giao vào hub xong: mở lưu trú tập kết ở hub, dự kiến tới khi chặng sau bắt đầu
     void openAssembly(HorseLeg alightedLeg, Instant at);

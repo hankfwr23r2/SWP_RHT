@@ -516,6 +516,8 @@ Giả định của đợt này: địa chỉ giao của đơn nhập là nơi c
 
 ### GĐ8. Giao ngựa
 
+> Áp dụng mục 13 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md) cho phí giữ, cước giao lại và đóng đơn.
+
 > **Đã chốt 25/11/2026** (phí giữ, đóng đơn, công nợ đã làm; cước giao lại đang làm): theo mục 13 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md).
 
 Với `delivery_method = SELF`, trả ngựa tại hub và ghi `handover` DELIVERY gắn với `horse_stay`. Quá giờ hẹn thì gửi chuồng, báo khách khi bắt đầu giữ và tính phí theo `STABLING_DAILY_FEE` khi rời hub.
@@ -535,16 +537,16 @@ Giao ngựa **đối xứng với đón ngựa**. **Ai:** tài xế và hộ t�
 **Người nhận vắng mặt (hết thời gian chờ miễn phí, mặc định 120 phút trong `system_config`):**
 1. `handover.status = TIMEOUT`. Ghi `incident` loại HANDOVER_TIMEOUT, nguyên nhân RECIPIENT_ABSENT.
 2. Chặng giao chuyển `FAILED`. Xe đi thẳng tới hub cuối lượt, không cần thao tác Đưa về hub.
-3. Khi giao ngựa vào hub, mở `horse_stay` STABLING và thông báo mức thu theo ngày. Không thu phí chờ tại nhà.
-4. Giao lại bằng chặng DELIVERY có `replaced_horse_leg_id` trỏ về chặng thất bại. Khi lập, chốt phí đến giờ lên xe dự kiến, tự duyệt và lập khoản thu thêm. Chặn HUB_OUT nếu còn phí đã chốt chưa trả.
-5. Lúc rời hub, lập thêm khoản chênh nếu số ngày thực tế lớn hơn số đã tính. Người nhận tự tới hub nhận thì giao ngựa được ngay. Khách trả phần còn thiếu qua khoản thu thêm.
+3. Khi giao ngựa vào hub, mở `horse_stay` STABLING và thông báo mức thu theo số lần đủ 24 giờ. Nếu xe đến trễ hơn khung đã báo, ghi lỗi công ty và mở lưu trú tập kết.
+4. Giao lại bằng chặng DELIVERY có `replaced_horse_leg_id` trỏ về chặng thất bại. Chốt phí giữ lúc khách báo sẵn sàng, chốt cước khi xác định được lượt giao lại. Chặn HUB_OUT nếu còn phí giữ hoặc cước giao lại chưa trả.
+5. Khách tự báo giờ đến hub. Hệ thống áp dụng khoảng tạm dừng theo mốc báo và giờ bàn giao. Người nhận lấy ngựa ngay, phí còn thiếu được lập thành khoản thu thêm.
 6. Gắn phí vào `horse_stay_id`, đặt bên chịu `CONSIGNEE`. Trong hệ thống khách thanh toán khoản thu thêm.
 
 ---
 
 ### GĐ9. Quyết toán
 
-**Ai:** quản lý. Có thể lập và thanh toán khoản thu thêm tại `DELIVERED`, `COMPLETED` và, riêng phí giữ ngựa, tại `IN_OPERATION`. Hóa đơn muộn giữ nguyên trạng thái đơn.
+**Ai:** quản lý. Có thể lập và thanh toán khoản thu thêm tại `DELIVERED`, `COMPLETED` và, với phí giữ, lưu chuồng kế hoạch và giao lại, tại `IN_OPERATION`. Hóa đơn muộn giữ nguyên trạng thái đơn.
 
 | Việc | Bảng |
 |---|---|
@@ -574,6 +576,12 @@ Khoản thu thêm đến hạn sau `EXTRA_CHARGE_DUE_DAYS` kể từ lúc lập.
 ---
 
 ### GĐ10. Đóng đơn
+
+> Áp dụng mục 13 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md) cho phí giữ, cước giao lại và đóng đơn.
+
+| Việc | Bảng |
+|---|---|
+| Đóng khi đạt điều kiện mục 13.3. Khoản thu thêm chưa trả tiếp tục nằm trong công nợ của khách. | `booking.status = COMPLETED`, `payment` |
 
 > **Đã chốt 25/11/2026** (phí giữ, đóng đơn, công nợ đã làm; cước giao lại đang làm): theo mục 13 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md).
 
@@ -919,7 +927,7 @@ Phí bảo hiểm giữ lại chỉ gồm phần hãng chưa hoàn. Chuyên viê
 
 Phí giữ = số lần **đủ 24 giờ** × đơn giá chụp lúc bắt đầu giữ; phần lẻ không tính, cộng dồn mọi lần giữ của con đó trong đơn, tối đa 30 lần. Mốc rơi ngoài 06:00–18:00 dời tới 08:00. Bắt đầu: lúc vào hub (người nhận vắng), giờ hẹn (khách tới hub trễ), giờ chạy theo kế hoạch (chưa trả số dư). Báo khách trước mỗi mốc 3 giờ. Xe tới sau khung giờ đã báo thì lỗi công ty, không tính phí; tới sớm thì thời gian chờ đếm từ đầu khung.
 
-Chưa làm ở phần này: đồng hồ dừng khi khách báo sẵn sàng, cước giao lại, giờ xe trục chạy thật.
+Phần 2 bên dưới bổ sung dừng đồng hồ, cước giao lại và giờ xe trục chạy thực tế.
 
 ## Đóng đơn tách khỏi công nợ · mục 13.3, 13.5 (1–5)
 
@@ -932,6 +940,15 @@ Chi phí phía khách chưa duyệt: nhắc quản lý ngày 3, 7; đủ 14 ngà
 Nợ quá hạn từ 200.000 đ thì chưa đặt đơn mới được; nhỏ hơn chỉ nhắc. Khách khiếu nại mỗi khoản một lần: tạm dừng hạn và không chặn tới khi quản lý kết luận (chấp nhận thì hủy khoản, giữ nguyên thì hạn lùi đúng thời gian chờ). Ngày 14 báo quản lý gọi khách, gia hạn một lần tối đa 14 ngày. Ngày 30 là nợ khó thu: ngừng nhắc mỗi ngày, báo khách và quản lý một lần. Xóa nợ chỉ với nợ khó thu, cần lý do và tệp quyết định; quyền đặt đơn do quản lý mở riêng; khách muốn trả sau thì quản lý mở lại khoản.
 
 Chưa làm: chia tối đa 3 kỳ; so nợ theo số điện thoại và chip ngựa (13.5 điểm 7); điều khoản phí lúc đặt đơn (điểm 10).
+
+
+## Đồng hồ phí giữ và giao lại ở hub · phần 2 của mục 13.2
+
+Khách báo sẵn sàng trên chi tiết đơn. Điều phối ghi hộ từ màn Hub kèm ghi chú cuộc gọi. Hệ thống chốt phí giữ tại thời điểm báo, lập khoản thu cước giao lại khi đã xác định lượt xe và đọc giờ thanh toán thành công để dừng đồng hồ. Khi khách chọn khung muộn hơn, điều phối ghi khung sớm nhất được đưa và khung khách chọn. Thời gian giữ tiếp tục cộng từ khung sớm nhất. Nếu giao hụt do lỗi công ty, thời gian chờ ở hub không phát sinh phí giữ hay cước giao lại.
+
+Khách báo giờ tự đến trong 24 giờ. Bàn giao chậm nhất hai giờ sau giờ dự kiến đã báo thì đồng hồ dừng từ lúc khách gửi thông báo. Quá hạn thì khoảng tạm dừng được tính lại. Bàn giao tại hub vẫn thực hiện khi còn khoản phí chưa trả. Khi lên xe giao lại, kiểm phí giữ và cước giao lại tại HUB_OUT. Điều phối nhận nhắc việc nếu quá 24 giờ chưa lập lượt giao lại.
+
+Đơn lỡ chuyến vì số dư dùng giờ lượt trục chạy thực tế nếu muộn hơn T. Hạn hủy vẫn theo T. Sau khi trả đủ và chọn chuyến thay thế, hệ thống chuyển sang tính lưu chuồng kế hoạch theo biểu giá của báo giá đã chấp nhận.
 
 ## Ngựa chưa có người nhận và các mốc liên quan
 

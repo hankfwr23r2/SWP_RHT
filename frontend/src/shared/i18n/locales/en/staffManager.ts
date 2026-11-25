@@ -229,6 +229,8 @@ export const staffManager = {
         TOLL: 'Tolls',
         FUEL: 'Fuel',
         STABLING: 'Stabling',
+        REDELIVERY: 'Redelivery and fuel',
+        PLANNED_STABLING: 'Planned stabling',
         VET: 'Vet',
         RESCUE: 'Rescue',
         REPAIR: 'Repair',

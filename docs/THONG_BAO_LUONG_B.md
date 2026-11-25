@@ -88,6 +88,11 @@ Chuyên viên ghi số phí bảo hiểm đã hoàn lũy kế theo chứng từ.
 
 `payment` thêm cột công nợ cho `EXTRA_CHARGE` (`V202611282000`). `CustomerDebtService` chạy 08:00 cùng nhắc quá hạn.
 
+
+## Mục 13.2 phần 2 · Dừng đồng hồ và giao lại
+
+Điều phối ghi cuộc gọi báo sẵn sàng và khung muộn trên màn Hub. Chặng giao lại vẫn tham chiếu chặng hụt. Khoản cước và nhiên liệu được gắn vào lượt giao lại theo đơn, sau khi biết các con đi lượt đó. HUB_OUT kiểm khoản phí giữ và cước giao lại. Khách tự đến hub nhận ngựa theo quy trình bàn giao hiện có. Migration `V202611282400` bổ sung sự kiện vào lưu trú và dùng bảng chi phí, khoản thu hiện có. `V202611282401` gắn chặng giao hụt hoặc chuyến vừa lỡ cho lưu trú đang mở nếu có lịch sử khớp.
+
 ## Ngựa chưa có người nhận và các mốc liên quan
 
 G19 đọc unpaidReturnStopIds từ lượt xe. G20 gửi thông báo khách ngay khi ghi đón hụt. POST /horse-stays/{id}/resolve-unclaimed ghi handover RETURN và đính kèm biên bản, sau đó gọi HorseStayService.closeActive để kết thúc giữ và chốt phí. G1 cho quản lý ghi khiếu nại kế tiếp trong hạn sau khi lần trước đã đóng. Công nợ trùng định danh chỉ thông báo cho quản lý.

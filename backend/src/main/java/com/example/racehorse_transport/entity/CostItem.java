@@ -124,8 +124,8 @@ public class CostItem {
     @Column(name = "incurred_at", nullable = false)
     private Instant incurredAt;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "recorded_by", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "recorded_by")
     private Staff recordedBy;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = true)

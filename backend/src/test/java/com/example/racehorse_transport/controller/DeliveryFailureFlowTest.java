@@ -38,6 +38,8 @@ class DeliveryFailureFlowTest {
 
     @Autowired private MockMvc mvc;
     @org.springframework.test.context.bean.override.mockito.MockitoBean private com.example.racehorse_transport.client.CloudinaryClient cloudinary;
+    @org.springframework.test.context.bean.override.mockito.MockitoBean
+    private com.example.racehorse_transport.service.DeliveryRouteService deliveryRoutes;
     @Autowired private JdbcTemplate jdbc;
     @Autowired private TestData testData;
     @Autowired private JwtUtils jwtUtils;
@@ -45,6 +47,7 @@ class DeliveryFailureFlowTest {
     @Autowired private EntityManager entityManager;
     @Autowired private DeliveryFailureService deliveryFailures;
     @Autowired private HorseStayService horseStays;
+    @Autowired private com.example.racehorse_transport.service.StablingClockService stablingClock;
 
     private String coordinator;
     private Staff coordinatorStaff;
@@ -58,6 +61,10 @@ class DeliveryFailureFlowTest {
 
     @BeforeEach
     void setUp() {
+        org.mockito.Mockito.when(deliveryRoutes.plan(org.mockito.ArgumentMatchers.anyLong(),
+                org.mockito.ArgumentMatchers.anyList(), org.mockito.ArgumentMatchers.anyList(), org.mockito.ArgumentMatchers.anyInt()))
+                .thenReturn(new com.example.racehorse_transport.policy.DeliveryRoutePolicy.Plan(
+                        List.of(1), 25, List.of(25.0), List.of(3600L, 3600L), 25));
         coordinatorStaff = testData.staff(testData.unique("redeliver.coordinator"), "COORDINATOR");
         coordinator = token(coordinatorStaff, "COORDINATOR");
         booking = jdbc.queryForObject("SELECT id FROM booking WHERE code = 'DEV-DIRECT-001'", Long.class);
@@ -133,6 +140,7 @@ class DeliveryFailureFlowTest {
         Trip second = plan("DELIVERY", 24 * 60, stop("locationId", hcm, "HUB", 24 * 60), stop("bookingAddressId", delivery, "DELIVERY", 24 * 60 + 120),
                 stop("locationId", hcm, "HUB", 24 * 60 + 300));
         second.assign(line, 0, 1);
+        recordReady(stay);
         entityManager.flush();
         assertThat(jdbc.queryForObject("SELECT replaced_horse_leg_id FROM horse_leg WHERE booking_horse_id = ? AND sequence_number = 2", Long.class, line))
                 .isEqualTo(failedLeg);
@@ -152,11 +160,25 @@ class DeliveryFailureFlowTest {
         second.act("/handovers/" + hubOut + "/complete").andExpect(status().isConflict());
         entityManager.flush();
         jdbc.update("UPDATE payment SET status = 'PAID', paid_at = now() WHERE id = ?", payment);
+        assertThat(jdbc.update("""
+                UPDATE payment SET status = 'PAID', paid_at = now() WHERE id = (
+                    SELECT extra_charge_payment_id FROM cost_item
+                    WHERE booking_id = ? AND vehicle_trip_id = ? AND category = 'REDELIVERY')
+                """, booking, second.id)).isEqualTo(1);
         jdbc.update("""
                 UPDATE horse_stay SET actual_start_at = now() - (? * interval '1 day') - interval '38 hour',
                     planned_start_at = now() - (? * interval '1 day') - interval '38 hour'
                 WHERE id = ?
                 """, billedDays, billedDays, stay);
+        entityManager.clear();
+        stablingClock.remindMissingRedelivery();
+        entityManager.flush();
+        assertThat(jdbc.update("""
+                UPDATE payment SET status = 'PAID', paid_at = now() WHERE id = (
+                    SELECT extra_charge_payment_id FROM cost_item
+                    WHERE horse_stay_id = ? ORDER BY id DESC LIMIT 1)
+                    AND status = 'PENDING'
+                """, stay)).isEqualTo(1);
         entityManager.clear();
         second.act("/handovers/" + hubOut + "/complete").andExpect(status().isOk());
         entityManager.flush();
@@ -198,7 +220,14 @@ class DeliveryFailureFlowTest {
                 stop("bookingAddressId", delivery, "DELIVERY", 24 * 60 + 120), stop("locationId", hcm, "HUB", 24 * 60 + 300));
         replacement.assign(line, 0, 1);
         entityManager.flush();
-        long stay = jdbc.queryForObject("SELECT horse_stay_id FROM cost_item WHERE booking_id = ?", Long.class, booking);
+        long stay = jdbc.queryForObject("SELECT id FROM horse_stay WHERE booking_horse_id = ? AND stay_type = 'STABLING' AND actual_end_at IS NULL",
+                Long.class, line);
+        jdbc.update("""
+                UPDATE horse_stay SET actual_start_at = now() - interval '30 hours',
+                    planned_start_at = now() - interval '30 hours' WHERE id = ?
+                """, stay);
+        entityManager.clear();
+        recordReady(stay);
         String owner = jdbc.queryForObject("SELECT u.username FROM booking b JOIN app_user u ON u.id = b.customer_id WHERE b.id = ?", String.class, booking);
         HandoverEvidenceFixtures.confirm(mvc, jwtUtils, booking, owner);
         org.mockito.Mockito.when(cloudinary.uploadFile(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyString()))
@@ -215,8 +244,21 @@ class DeliveryFailureFlowTest {
         assertThat(bookingStatus()).isEqualTo("DELIVERED");
         assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE vehicle_trip_id = ?", String.class, replacement.id))
                 .isEqualTo("CANCELLED");
-        assertThat(jdbc.queryForObject("SELECT status FROM payment WHERE booking_id = ? AND payment_type = 'EXTRA_CHARGE'",
-                String.class, booking)).isEqualTo("PENDING");
+        assertThat(jdbc.queryForObject("""
+                SELECT p.status FROM payment p JOIN cost_item c ON c.extra_charge_payment_id = p.id
+                WHERE p.booking_id = ? AND p.payment_type = 'EXTRA_CHARGE' AND c.horse_stay_id = ?
+                """, String.class, booking, stay)).isEqualTo("PENDING");
+        assertThat(jdbc.queryForObject("""
+                SELECT p.status FROM payment p JOIN cost_item c ON c.extra_charge_payment_id = p.id
+                WHERE p.booking_id = ? AND p.payment_type = 'EXTRA_CHARGE' AND c.category = 'REDELIVERY'
+                """, String.class, booking)).isEqualTo("PENDING");
+    }
+
+    private void recordReady(long stay) throws Exception {
+        mvc.perform(post("/horse-stays/{id}/record-ready", stay)
+                .header(HttpHeaders.AUTHORIZATION, coordinator)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"callNote\":\"Đã gọi người nhận.\"}"))
+                .andExpect(status().isOk());
     }
 
     @Test
