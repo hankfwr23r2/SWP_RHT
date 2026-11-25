@@ -397,7 +397,8 @@ class HealthStayFlowTest {
             mvc.perform(post("/crew-assignments/{id}/acknowledge", ((Number) JsonPath.read(mine, "$.data[0].id")).longValue()).header(HttpHeaders.AUTHORIZATION, member))
                     .andExpect(status().isOk());
         }
-        act("/vehicle-trips/" + trip + "/start").andExpect(status().isOk());
+        mvc.perform(post("/vehicle-trips/{id}/start", trip).header(HttpHeaders.AUTHORIZATION, driver).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"earlyReason\":\"Đã sẵn sàng xuất phát sớm\"}")).andExpect(status().isOk());
         act("/trip-stops/" + stops.get(0) + "/arrive").andExpect(status().isOk());
         act("/trip-stops/" + stops.get(0) + "/depart").andExpect(status().isOk());
         act("/trip-stops/" + stops.get(1) + "/arrive").andExpect(status().isOk());

@@ -19,6 +19,10 @@ public final class HandoverEvidenceFixtures {
 
     public static MockHttpServletRequestBuilder complete(MockMvc mvc, JdbcTemplate jdbc, JwtUtils jwt, String path) throws Exception {
         var request = post(path);
+        // Chuyến trong test ở tương lai nên xuất phát sớm phải có lý do
+        if (path.matches("/vehicle-trips/[0-9]+/start")) {
+            return request.contentType(org.springframework.http.MediaType.APPLICATION_JSON).content("{\"earlyReason\":\"Đã sẵn sàng xuất phát sớm\"}");
+        }
         if (!path.matches("/handovers/[0-9]+/complete")) return request;
         long handover = Long.parseLong(path.split("/")[2]);
         if (!Boolean.TRUE.equals(jdbc.queryForObject("""

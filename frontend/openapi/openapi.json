@@ -5874,6 +5874,9 @@
             "enum" : [ "COMPANY_FAULT", "HORSE_CONDITION", "CUSTOMER_DOCS", "AGENT_FAULT", "FORCE_MAJEURE", "RECIPIENT_ABSENT" ],
             "type" : "string"
           },
+          "coordinatorStaffCode" : {
+            "type" : "string"
+          },
           "deliveryFailure" : {
             "$ref" : "#/components/schemas/DeliveryFailureDto"
           },
@@ -9840,6 +9843,9 @@
               "$ref" : "#/components/schemas/TripStopResponseDto"
             },
             "type" : "array"
+          },
+          "takeOverAllowed" : {
+            "type" : "boolean"
           },
           "tripType" : {
             "enum" : [ "PICKUP", "LINEHAUL", "DELIVERY", "TRANSFER", "DIRECT" ],
