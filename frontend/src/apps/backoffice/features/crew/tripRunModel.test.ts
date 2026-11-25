@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { CrewTrip } from '@shared/api/tripExecution'
-import { canArrive, canComplete, canDepart, canRefuse, canReturnUnpaid, canStart, handoverTypesAt, horsesPassing, isRestStop, stopState } from './tripRunModel'
+import { canArrive, canComplete, canDepart, canRefuse, canReturnUnpaid, canStart, handoverTypesAt, horsesPassing, isRestStop, receivesOriginals, stopState } from './tripRunModel'
 
 const run = (over: Partial<NonNullable<CrewTrip['trip']>> = {}, extra: Partial<CrewTrip> = {}): CrewTrip => ({
   trip: {
@@ -53,6 +53,15 @@ describe('tripRunModel', () => {
     expect(handoverTypesAt(border, border.trip!.stops![1])).toEqual(['AGENT'])
     const empty = run({ stops: border.trip!.stops }, { horses: [] })
     expect(handoverTypesAt(empty, empty.trip!.stops![1])).toEqual([])
+  })
+
+  it('cho ghi nhận giấy gốc từ đại lý khi ngựa lên xe công ty tại cửa khẩu', () => {
+    const r = run({}, { horses: [
+      { leg: { id: 9, boardTripStopId: 2, alightTripStopId: 3 } },
+      { leg: { id: 10, boardTripStopId: 1, alightTripStopId: 2 } },
+    ] })
+    expect(receivesOriginals(r, { handoverType: 'AGENT', tripStopId: 2, horses: [{ horseLegId: 9 }] })).toBe(true)
+    expect(receivesOriginals(r, { handoverType: 'AGENT', tripStopId: 2, horses: [{ horseLegId: 10 }] })).toBe(false)
   })
 
   it('trả ngựa khi quá hạn số dư chỉ có ở điểm đón đang đứng, sau khi đã nhận con lên xe', () => {

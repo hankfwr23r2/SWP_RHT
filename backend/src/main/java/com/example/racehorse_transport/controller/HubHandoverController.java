@@ -11,9 +11,13 @@ import com.example.racehorse_transport.dto.operation.HubRefusalRequestDto;
 import com.example.racehorse_transport.service.HorseStayService;
 import com.example.racehorse_transport.service.HubHandoverService;
 import jakarta.validation.Valid;
+import org.springframework.web.multipart.MultipartFile;
+import com.example.racehorse_transport.dto.operation.HandoverPaperResponseDto;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -52,9 +56,15 @@ public class HubHandoverController {
         return ApiResponseDto.success(stays.stablePartners(), "Chuồng gửi qua đêm");
     }
 
-    @PostMapping("/horse-stays/{id}/receipts")
-    public ApiResponseDto<HorseStayResponseDto> receive(@PathVariable Long id, Authentication authentication, @Valid @RequestBody HubHandoverRequestDto request) {
-        return ApiResponseDto.success(hubHandovers.receive(id, request, authentication.getName()), "Đã nhận ngựa tại hub");
+    @GetMapping("/horse-stays/{id}/handover-papers")
+    public ApiResponseDto<List<HandoverPaperResponseDto>> handoverPapers(@PathVariable Long id, @RequestParam boolean receiving) {
+        return ApiResponseDto.success(hubHandovers.papers(id, receiving), "Giấy tờ gốc");
+    }
+
+    @PostMapping(value = "/horse-stays/{id}/receipts", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponseDto<HorseStayResponseDto> receive(@PathVariable Long id, Authentication authentication, @Valid @RequestPart("request") HubHandoverRequestDto request,
+                                                     @RequestPart("photo") MultipartFile photo, @RequestPart("record") MultipartFile record) {
+        return ApiResponseDto.success(hubHandovers.receive(id, request, photo, record, authentication.getName()), "Đã nhận ngựa tại hub");
     }
 
     @PostMapping("/horse-stays/{id}/refusals")
@@ -73,8 +83,9 @@ public class HubHandoverController {
         return ApiResponseDto.success(stays.stableOverdue(id, request, authentication.getName()), "Đã chuyển sang gửi chuồng");
     }
 
-    @PostMapping("/horse-stays/{id}/deliveries")
-    public ApiResponseDto<HorseStayResponseDto> deliver(@PathVariable Long id, Authentication authentication, @Valid @RequestBody HubHandoverRequestDto request) {
-        return ApiResponseDto.success(hubHandovers.deliver(id, request, authentication.getName()), "Đã trả ngựa cho người nhận");
+    @PostMapping(value = "/horse-stays/{id}/deliveries", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponseDto<HorseStayResponseDto> deliver(@PathVariable Long id, Authentication authentication, @Valid @RequestPart("request") HubHandoverRequestDto request,
+                                                     @RequestPart("photo") MultipartFile photo, @RequestPart("record") MultipartFile record) {
+        return ApiResponseDto.success(hubHandovers.deliver(id, request, photo, record, authentication.getName()), "Đã trả ngựa cho người nhận");
     }
 }

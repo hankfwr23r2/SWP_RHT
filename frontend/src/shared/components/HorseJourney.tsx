@@ -55,6 +55,17 @@ export function HorseJourney({ horse }: { horse: HorseJourneyData }) {
                       {entry.endAt && entry.kind !== 'handover' ? ` → ${time(entry.endAt)}` : ''}
                     </div>
                   )}
+                  {!!entry.evidence?.length && (
+                    <ul>
+                      {entry.evidence.map(file => (
+                        <li key={file.id}>
+                          <a href={file.fileUrl} target="_blank" rel="noopener noreferrer">
+                            {t(file.type === 'HANDOVER_RECORD' ? 'journey.evidence.record' : 'journey.evidence.photo', { name: file.fileName })}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               </li>
             ))}

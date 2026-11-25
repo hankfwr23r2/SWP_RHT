@@ -25,7 +25,7 @@ export const fieldCrew = {
       "unpaidReturn": {
         "action": "Return horses: balance overdue",
         "title": "Return the received horses?",
-        "message": "The customer has not paid the balance after the waiting time. Every horse received at this stop is handed back (to the shipper, or to the agent at a border gate) and the booking is cancelled. If a VNPAY payment is still pending, the system refuses and you wait a little longer.",
+        "message": "The customer has not paid the balance after the waiting time. Every horse received at this stop is handed back (to the shipper, or to the agent at a border gate) and the booking is cancelled. If a VNPAY payment is still pending, the system refuses and you wait a little longer. Confirm that all originals held by the company are returned with the horses.",
         "done": "Horses returned and booking cancelled"
       },
       "refusal": {

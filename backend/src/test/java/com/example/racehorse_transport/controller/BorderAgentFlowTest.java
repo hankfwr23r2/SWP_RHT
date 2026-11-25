@@ -4,10 +4,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.example.racehorse_transport.PostgresIntegrationTest;
+import com.example.racehorse_transport.support.HandoverEvidenceFixtures;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.security.JwtUtils;
@@ -24,6 +29,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.mock.web.MockMultipartFile;
+import com.example.racehorse_transport.client.CloudinaryClient;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +43,7 @@ import org.springframework.transaction.annotation.Transactional;
 class BorderAgentFlowTest {
 
     @Autowired private MockMvc mvc;
+    @MockitoBean private CloudinaryClient cloudinary;
     @Autowired private JdbcTemplate jdbc;
     @Autowired private TestData testData;
     @Autowired private JwtUtils jwtUtils;
@@ -93,6 +102,9 @@ class BorderAgentFlowTest {
         long handover = handoverId(handover(stops.get(2), null).andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.handovers[1].partyName").value("Đại lý vận tải Campuchia (mẫu)")));
         scan(handover, legOnTrip(trip)).andExpect(status().isOk());
+        act(escort, "/handovers/" + handover + "/complete").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message", startsWith("Chưa có biên bản giao nhận")));
+        attachRecord(handover);
         act(escort, "/handovers/" + handover + "/complete").andExpect(status().isOk());
         assertThat(legStatus(legOnTrip(trip))).isEqualTo("COMPLETED");
         assertThat(legStatus(agentLeg)).isEqualTo("IN_PROGRESS");
@@ -103,10 +115,13 @@ class BorderAgentFlowTest {
         mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/custody-board").header(HttpHeaders.AUTHORIZATION, coordinator))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data[?(@.agentLegId == " + agentLeg + ")]").isNotEmpty());
 
+        mvc.perform(multipart("/agent-legs/{id}/complete", agentLeg).header(HttpHeaders.AUTHORIZATION, coordinator))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.message").value("Cần ảnh hoặc biên bản đại lý đã giao."));
         // Điều phối nhập hộ mốc đại lý đã giao: con cuối giao xong thì đơn DELIVERED
         act(coordinator, "/agent-legs/" + agentLeg + "/complete").andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("COMPLETED"));
         assertThat(bookingStatus()).isEqualTo("DELIVERED");
+        assertThat(customerNotices(booking)).contains("Đại lý đã giao ngựa");
     }
 
     @Test
@@ -140,6 +155,7 @@ class BorderAgentFlowTest {
         long handover = handoverId(handover(stops.getFirst(), agent).andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.handovers[0].partyName").value("Đại lý vận tải Campuchia (mẫu)")));
         scan(handover, legOnTrip(trip)).andExpect(status().isOk());
+        attachRecord(handover);
         // Quy tắc #35: thiếu giấy (gồm giấy vận chuyển mẫu 14a) thì không nhận, ngựa ở lại với đại lý
         act(escort, "/handovers/" + handover + "/complete").andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message", startsWith("Đơn DEV-EXPORT-001 còn thiếu giấy bắt buộc")));
@@ -163,6 +179,15 @@ class BorderAgentFlowTest {
         long[] received = receiveImportAtTheGate();
         long trip = received[0];
         long gateStop = received[1];
+        Long original = jdbc.queryForObject("""
+                SELECT min(d.document_id) FROM handover_document d JOIN handover h ON h.id = d.handover_id
+                WHERE h.trip_stop_id = ? AND h.handover_type = 'AGENT'
+                """, Long.class, gateStop);
+        assertThat(original).isNotNull();
+        jdbc.update("""
+                UPDATE handover_document SET direction = 'RECEIVED' WHERE document_id = ?
+                  AND handover_id IN (SELECT id FROM handover WHERE trip_stop_id = ? AND handover_type = 'AGENT')
+                """, original, gateStop);
         // Nhận ở cửa khẩu xong thì lập khoản số dư (seed có sẵn số dư đã trả nên đã bỏ đi)
         assertThat(jdbc.queryForObject("SELECT status FROM payment WHERE booking_id = ? AND payment_type = 'BALANCE'", String.class, booking)).isEqualTo("PENDING");
         mvc.perform(post("/trip-stops/{id}/depart", gateStop).header(HttpHeaders.AUTHORIZATION, driver)).andExpect(status().isConflict())
@@ -179,6 +204,11 @@ class BorderAgentFlowTest {
                 .andExpect(jsonPath("$.data.handovers[1].horses[0].scannedMicrochip").value(chip));
         assertThat(legStatus(legOnTrip(trip))).isEqualTo("CANCELLED");
         assertThat(bookingStatus()).isEqualTo("CANCELLED");
+        entityManager.flush();
+        assertThat(jdbc.queryForObject("""
+                SELECT d.direction FROM handover_document d JOIN handover h ON h.id = d.handover_id
+                WHERE d.document_id = ? AND h.trip_stop_id = ? AND h.handover_type = 'RETURN'
+                """, String.class, original, gateStop)).isEqualTo("RETURNED");
         // Hành trình: ngựa đang ở đại lý
         mvc.perform(get("/bookings/{id}/journey", booking).header(HttpHeaders.AUTHORIZATION, coordinator)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.horses[0].holder").value("PARTY"));
@@ -208,6 +238,7 @@ class BorderAgentFlowTest {
     // Đơn mẫu đổi thành đơn nhập chưa trả số dư; đại lý giao, tổ xe nhận lên xe ở cửa khẩu. Trả về {lượt xe, điểm cửa khẩu}
     private long[] receiveImportAtTheGate() throws Exception {
         long[] gate = arriveWithImportAtTheGate();
+        attachRecord(gate[2]);
         act(escort, "/handovers/" + gate[2] + "/complete").andExpect(status().isOk());
         return new long[] {gate[0], gate[1]};
     }
@@ -308,9 +339,17 @@ class BorderAgentFlowTest {
                 .contentType(MediaType.APPLICATION_JSON).content("{\"handoverType\":\"AGENT\",\"partyId\":%s}".formatted(partyId)));
     }
 
+    private void attachRecord(long handoverId) {
+        jdbc.update("""
+                INSERT INTO document (document_type_id, file_url, file_name, uploaded_by, status, handover_id)
+                SELECT t.id, 'https://example.test/record.pdf', 'record.pdf', h.handled_by, 'UPLOADED', h.id
+                FROM document_type t CROSS JOIN handover h WHERE t.code = 'HANDOVER_RECORD' AND h.id = ?
+                """, handoverId);
+    }
+
     private ResultActions scan(long handoverId, long legId) throws Exception {
         return mvc.perform(post("/handovers/{id}/horses", handoverId).header(HttpHeaders.AUTHORIZATION, escort)
-                .contentType(MediaType.APPLICATION_JSON).content("{\"horseLegId\":%d,\"microchip\":\"%s\"}".formatted(legId, chip)));
+                .contentType(MediaType.APPLICATION_JSON).content("{\"horseLegId\":%d,\"conditionNote\":\"Khỏe\",\"microchip\":\"%s\"}".formatted(legId, chip)));
     }
 
     private long legOnTrip(long trip) {
@@ -336,7 +375,12 @@ class BorderAgentFlowTest {
     }
 
     private ResultActions act(String token, String path) throws Exception {
-        return mvc.perform(post(path).header(HttpHeaders.AUTHORIZATION, token));
+        if (path.matches("/agent-legs/[0-9]+/complete")) {
+            when(cloudinary.uploadFile(any(), anyString())).thenReturn("https://example.test/proof.pdf");
+            return mvc.perform(multipart(path).file(new MockMultipartFile("proof", "proof.pdf", "application/pdf", new byte[]{1}))
+                    .header(HttpHeaders.AUTHORIZATION, token));
+        }
+        return mvc.perform(HandoverEvidenceFixtures.complete(mvc, jdbc, jwtUtils, path).header(HttpHeaders.AUTHORIZATION, token));
     }
 
     private String content(org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder request, String token) throws Exception {

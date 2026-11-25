@@ -16,6 +16,7 @@ import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.service.BookingStatusService;
 import com.example.racehorse_transport.service.CustomerNoticeService;
 import com.example.racehorse_transport.service.NotificationService;
+import com.example.racehorse_transport.service.CollectionCodeService;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ public class BookingStatusServiceImpl implements BookingStatusService {
     private final NotificationService notifications;
     private final StaffRepository staff;
     private final CustomerNoticeService notices;
+    private final CollectionCodeService collectionCodes;
 
     @Override
     @Transactional
@@ -64,6 +66,9 @@ public class BookingStatusServiceImpl implements BookingStatusService {
             throw new IllegalStateException("Đơn " + booking.getCode() + " không chuyển được từ " + from + " sang " + toStatus + ".");
         }
         booking.setStatus(toStatus);
+        if (toStatus == BookingStatus.IN_OPERATION) {
+            collectionCodes.issue(booking);
+        }
 
         recordHistory(booking, from, reason, actorUserId == null ? null : users.getReferenceById(actorUserId),
                 previousDeparture, cause);

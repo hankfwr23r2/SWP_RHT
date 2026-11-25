@@ -4,6 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -25,6 +29,12 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import com.example.racehorse_transport.client.CloudinaryClient;
+import com.example.racehorse_transport.support.HandoverEvidenceFixtures;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Map;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +45,7 @@ import org.springframework.transaction.annotation.Transactional;
 class HubSelfFlowTest {
 
     @Autowired private MockMvc mvc;
+    @MockitoBean private CloudinaryClient cloudinary;
     @Autowired private JdbcTemplate jdbc;
     @Autowired private TestData testData;
     @Autowired private JwtUtils jwtUtils;
@@ -272,8 +283,7 @@ class HubSelfFlowTest {
     }
 
     private ResultActions receive(long stay, String microchip) throws Exception {
-        return mvc.perform(post("/horse-stays/{id}/receipts", stay).header(HttpHeaders.AUTHORIZATION, coordinator)
-                .contentType(MediaType.APPLICATION_JSON).content("{\"microchip\":\"%s\"}".formatted(microchip)));
+        return hubHandover(stay, microchip, true);
     }
 
     private ResultActions refuseAt(long stay, String reason) throws Exception {
@@ -281,9 +291,31 @@ class HubSelfFlowTest {
                 .contentType(MediaType.APPLICATION_JSON).content("{\"reason\":\"%s\"}".formatted(reason)));
     }
 
+    private ResultActions hubHandover(long stay, String microchip, boolean receiving) throws Exception {
+        when(cloudinary.uploadFile(any(), anyString())).thenAnswer(invocation ->
+                "https://example.test/" + invocation.<org.springframework.web.multipart.MultipartFile>getArgument(0).getOriginalFilename());
+        String listed = mvc.perform(get("/horse-stays/{id}/handover-papers", stay)
+                        .param("receiving", String.valueOf(receiving)).header(HttpHeaders.AUTHORIZATION, coordinator))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        List<Number> documentIds = JsonPath.read(listed, "$.data[*].documentId");
+        var request = new java.util.LinkedHashMap<String, Object>();
+        request.put("microchip", microchip);
+        request.put("conditionNote", "Khỏe");
+        request.put("papers", documentIds.stream().map(id -> Map.of("documentId", id, "originalMissing", receiving)).toList());
+        if (!receiving) {
+            String username = jdbc.queryForObject("SELECT u.username FROM booking b JOIN app_user u ON u.id = b.customer_id WHERE b.id = ?", String.class, booking);
+            HandoverEvidenceFixtures.confirm(mvc, jwtUtils, booking, username);
+            request.put("recipient", Map.of("recipientName", "Người nhận thử nghiệm"));
+        }
+        return mvc.perform(multipart("/horse-stays/{id}/" + (receiving ? "receipts" : "deliveries"), stay)
+                .file(new MockMultipartFile("request", "", "application/json", new ObjectMapper().writeValueAsBytes(request)))
+                .file(new MockMultipartFile("photo", "horse.jpg", "image/jpeg", new byte[]{1}))
+                .file(new MockMultipartFile("record", "record.pdf", "application/pdf", new byte[]{1}))
+                .header(HttpHeaders.AUTHORIZATION, coordinator));
+    }
+
     private ResultActions deliver(long stay, String microchip) throws Exception {
-        return mvc.perform(post("/horse-stays/{id}/deliveries", stay).header(HttpHeaders.AUTHORIZATION, coordinator)
-                .contentType(MediaType.APPLICATION_JSON).content("{\"microchip\":\"%s\",\"conditionNote\":\"Khỏe\"}".formatted(microchip)));
+        return hubHandover(stay, microchip, false);
     }
 
     // Sửa thẳng DB rồi bỏ bộ đệm của JPA để service đọc lại

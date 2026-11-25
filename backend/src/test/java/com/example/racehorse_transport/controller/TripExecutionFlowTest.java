@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.example.racehorse_transport.PostgresIntegrationTest;
+import com.example.racehorse_transport.support.HandoverEvidenceFixtures;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.security.JwtUtils;
@@ -123,6 +124,9 @@ class TripExecutionFlowTest {
         act(escort, "/handovers/" + pickup + "/complete").andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Chưa có biên bản giao nhận. Chụp biên bản đã ký trước khi hoàn tất."));
         signedRecord(pickup);
+        mvc.perform(post("/handovers/{id}/complete", pickup).header(HttpHeaders.AUTHORIZATION, escort))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Cần ít nhất một ảnh cho từng con ngựa."));
         act(escort, "/handovers/" + pickup + "/complete").andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.handovers[0].recordAttached").value(true))
                 .andExpect(jsonPath("$.data.handovers[0].status").value("DONE"))
@@ -250,7 +254,7 @@ class TripExecutionFlowTest {
         long second = jdbc.queryForObject("SELECT id FROM horse_leg WHERE booking_horse_id = ? AND vehicle_trip_id = ?", Long.class, lines.get(1), pickupTrip);
         String firstChip = jdbc.queryForObject("SELECT h.microchip FROM booking_horse bh JOIN horse h ON h.id = bh.horse_id WHERE bh.id = ?", String.class, lines.get(0));
         mvc.perform(post("/handovers/{id}/horses", handover).header(HttpHeaders.AUTHORIZATION, driver2).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"horseLegId\":%d,\"microchip\":\"%s\"}".formatted(first, firstChip))).andExpect(status().isOk());
+                .content("{\"horseLegId\":%d,\"conditionNote\":\"Khỏe\",\"microchip\":\"%s\"}".formatted(first, firstChip))).andExpect(status().isOk());
         mvc.perform(post("/handovers/{id}/horses", handover).header(HttpHeaders.AUTHORIZATION, driver2).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"horseLegId\":%d,\"microchip\":\"985000000999999\"}".formatted(second))).andExpect(status().isOk());
 
@@ -439,7 +443,7 @@ class TripExecutionFlowTest {
     }
 
     private ResultActions act(String token, String path) throws Exception {
-        return mvc.perform(post(path).header(HttpHeaders.AUTHORIZATION, token));
+        return mvc.perform(HandoverEvidenceFixtures.complete(mvc, jdbc, jwtUtils, path).header(HttpHeaders.AUTHORIZATION, token));
     }
 
     private ResultActions handover(String token, long stopId, String type) throws Exception {
@@ -449,7 +453,7 @@ class TripExecutionFlowTest {
 
     private ResultActions scan(String token, long handoverId, String microchip) throws Exception {
         return mvc.perform(post("/handovers/{id}/horses", handoverId).header(HttpHeaders.AUTHORIZATION, token)
-                .contentType(MediaType.APPLICATION_JSON).content("{\"horseLegId\":%d,\"microchip\":\"%s\"}".formatted(leg, microchip)));
+                .contentType(MediaType.APPLICATION_JSON).content("{\"horseLegId\":%d,\"conditionNote\":\"Khỏe\",\"microchip\":\"%s\"}".formatted(leg, microchip)));
     }
 
     private ResultActions refuse(String token, long handoverId, long horseLegId, String reason) throws Exception {

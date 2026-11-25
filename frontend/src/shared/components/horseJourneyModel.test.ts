@@ -19,6 +19,16 @@ const horse: HorseJourney = {
 }
 
 describe('journeyEntries', () => {
+  it('giữ tệp bằng chứng tại đúng lần giao nhận', () => {
+    const record = { id: 7, type: 'HANDOVER_RECORD', fileName: 'record.pdf', fileUrl: 'https://example.test/record.pdf' }
+    const entries = journeyEntries({ ...horse, handovers: [
+      { id: 10, handoverType: 'PICKUP', status: 'DONE', evidence: [record] },
+      { id: 12, handoverType: 'DELIVERY', status: 'DONE', evidence: [] },
+    ] })
+    expect(entries.find(entry => entry.key === 'handover-10')?.evidence).toEqual([record])
+    expect(entries.find(entry => entry.key === 'handover-12')?.evidence).toEqual([])
+  })
+
   it('xếp theo giờ, giao nhận trước chặng khi cùng giờ, mốc chưa có giờ xếp cuối', () => {
     expect(journeyEntries(horse).map(e => e.key)).toEqual(['handover-10', 'leg-1', 'handover-11', 'leg-2', 'handover-12', 'leg-3'])
   })

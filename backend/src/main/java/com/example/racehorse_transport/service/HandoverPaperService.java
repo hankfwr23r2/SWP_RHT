@@ -9,11 +9,13 @@ import org.springframework.web.multipart.MultipartFile;
 public interface HandoverPaperService {
 
     // Ảnh hoặc bản quét biên bản đã ký: document HANDOVER_RECORD gắn handover. Nhận và giao ngựa phải có trước khi hoàn tất
+    CrewTripResponseDto attachPhoto(Long handoverId, Long horseLegId, MultipartFile file, String username);
+
     CrewTripResponseDto attachRecord(Long handoverId, MultipartFile file, String username);
 
     // Giấy gốc (giấy bắt buộc đã duyệt) của các đơn trong lần giao nhận, kèm đã nhận hoặc trả chưa
     List<HandoverPaperResponseDto> papers(Long handoverId, String username);
 
     // Nhận ngựa từ khách hoặc đại lý: RECEIVED. Giao ngựa: RETURNED
-    List<HandoverPaperResponseDto> markPaper(Long handoverId, Long documentId, String username);
+    List<HandoverPaperResponseDto> markPaper(Long handoverId, Long documentId, boolean originalMissing, String username);
 }

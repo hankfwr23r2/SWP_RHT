@@ -7,6 +7,7 @@ import { CANCELLABLE, HAS_JOURNEY, RATEABLE } from '@shared/components/orderStep
 import { Card } from '@shared/ui/Card'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { CancelOrder } from './components/CancelOrder'
+import { CollectionCodeCard } from './components/CollectionCodeCard'
 import { DocumentsCard } from './components/DocumentsCard'
 import { InsuranceCard } from './components/InsuranceCard'
 import { NextStepBanner } from './components/NextStepBanner'
@@ -47,6 +48,7 @@ export default function OrderDetailPage() {
           <section id="payments" className={s.section}><PaymentsCard data={data} /></section>
           <InsuranceCard data={data} />
           <section id="documents" className={s.section}><DocumentsCard data={data} /></section>
+          {status === 'IN_OPERATION' && <CollectionCodeCard bookingId={data.id} />}
           {HAS_JOURNEY.includes(status) && <Card title={t('myOrders.journey')}><BookingJourney bookingId={data.id} /></Card>}
           {RATEABLE.includes(status) && <section id="rating" className={s.section}><RatingCard bookingId={data.id} /></section>}
         </div>

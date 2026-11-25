@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.dto.tracking;
 
 import com.example.racehorse_transport.entity.BookingAddress;
+import com.example.racehorse_transport.entity.Document;
 import com.example.racehorse_transport.entity.Handover;
 import com.example.racehorse_transport.entity.HorseLeg;
 import com.example.racehorse_transport.entity.HorseStay;
@@ -58,15 +59,23 @@ public record HorseJourneyResponseDto(
 
     // placeName: điểm dừng của xe hoặc nơi lưu trú
     public record JourneyHandoverDto(Long id, HandoverType handoverType, HandoverStatus status, String placeName,
-                              String fromPartyName, String toPartyName, Instant waitStartedAt, Instant handedAt, Boolean microchipMatched) {
+                              String fromPartyName, String toPartyName, Instant waitStartedAt, Instant handedAt, Boolean microchipMatched,
+                              List<HandoverEvidenceResponseDto> evidence) {
 
         // microchipMatched NULL: lần giao nhận chưa xong, con này chưa được quét
-        public static JourneyHandoverDto from(Handover handover, Boolean microchipMatched) {
+        public static JourneyHandoverDto from(Handover handover, Boolean microchipMatched, List<HandoverEvidenceResponseDto> evidence) {
             var stop = handover.getTripStop();
             String place = stop != null ? nameOf(stop.getLocation(), stop.getBookingAddress()) : handover.getHorseStay().getLocation().getName();
             return new JourneyHandoverDto(handover.getId(), handover.getHandoverType(), handover.getStatus(), place,
                     nameOf(handover.getFromParty()), nameOf(handover.getToParty()), handover.getWaitStartedAt(), handover.getHandedAt(),
-                    microchipMatched);
+                    microchipMatched, evidence);
+        }
+    }
+
+    public record HandoverEvidenceResponseDto(Long id, String type, String fileName, String fileUrl) {
+        public static HandoverEvidenceResponseDto from(Document document) {
+            return new HandoverEvidenceResponseDto(document.getId(), document.getDocumentType().getCode(),
+                    document.getFileName(), document.getFileUrl());
         }
     }
 

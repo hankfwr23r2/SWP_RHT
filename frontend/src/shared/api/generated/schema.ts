@@ -580,6 +580,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/bookings/{id}/collection-code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["code"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/confirm-collection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["confirm_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/bookings/{id}/cost-items": {
         parameters: {
             query?: never;
@@ -1572,6 +1604,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/handovers/{id}/horses/{horseLegId}/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["photo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/handovers/{id}/papers": {
         parameters: {
             query?: never;
@@ -1742,6 +1790,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["deliver"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horse-stays/{id}/handover-papers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["handoverPapers"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3320,6 +3384,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseCollectionCodeResponseDto: {
+            data?: components["schemas"]["CollectionCodeResponseDto"];
+            message?: string;
+            status?: string;
+        };
         ApiResponseContactResponseDto: {
             data?: components["schemas"]["ContactResponseDto"];
             message?: string;
@@ -3977,6 +4046,10 @@ export interface components {
             currentPassword: string;
             newPassword: string;
         };
+        CollectionCodeResponseDto: {
+            collectionCode?: string;
+            customerConfirmed?: boolean;
+        };
         CompanyCancelBookingRequestDto: {
             reason: string;
         };
@@ -4199,6 +4272,10 @@ export interface components {
             identityDocumentType?: "CCCD" | "PASSPORT" | "BUSINESS_REG";
             phone?: string;
             taxCode?: string;
+        };
+        DeliveryRecipientRequestDto: {
+            collectionCode?: string;
+            recipientName: string;
         };
         DepartureCancelRequest: {
             reason: string;
@@ -4497,12 +4574,24 @@ export interface components {
             /** Format: int32 */
             seats?: number;
         };
+        HandoverCompleteRequestDto: {
+            recipients?: {
+                [key: string]: components["schemas"]["DeliveryRecipientRequestDto"];
+            };
+        };
         HandoverCreateRequestDto: {
             /** @enum {string} */
             handoverType: "PICKUP" | "HUB_IN" | "HUB_OUT" | "STAY_IN" | "STAY_OUT" | "AGENT" | "DELIVERY" | "RETURN" | "SHIFT";
             note?: string;
             /** Format: int64 */
             partyId?: number;
+        };
+        HandoverEvidenceResponseDto: {
+            fileName?: string;
+            fileUrl?: string;
+            /** Format: int64 */
+            id?: number;
+            type?: string;
         };
         HandoverHorseDto: {
             bookingCode?: string;
@@ -4516,11 +4605,12 @@ export interface components {
         HandoverPaperRequestDto: {
             /** Format: int64 */
             documentId: number;
+            originalMissing?: boolean;
         };
         HandoverPaperResponseDto: {
             bookingCode?: string;
             /** @enum {string} */
-            direction?: "RECEIVED" | "RETURNED";
+            direction?: "RECEIVED" | "NOT_RECEIVED" | "RETURNED";
             /** Format: int64 */
             documentId?: number;
             documentTypeName?: string;
@@ -4811,8 +4901,10 @@ export interface components {
             collectAt: string;
         };
         HubHandoverRequestDto: {
-            conditionNote?: string;
+            conditionNote: string;
             microchip: string;
+            papers?: components["schemas"]["HandoverPaperRequestDto"][];
+            recipient?: components["schemas"]["DeliveryRecipientRequestDto"];
         };
         HubRefusalRequestDto: {
             reason: string;
@@ -4958,6 +5050,7 @@ export interface components {
             submitterType?: "CUSTOMER" | "CONSIGNEE" | "COMPANY" | "AGENT";
         };
         JourneyHandoverDto: {
+            evidence?: components["schemas"]["HandoverEvidenceResponseDto"][];
             fromPartyName?: string;
             /** Format: date-time */
             handedAt?: string;
@@ -6302,7 +6395,14 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    proof?: string;
+                };
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -7092,6 +7192,50 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseBookingResponseDto"];
+                };
+            };
+        };
+    };
+    code: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCollectionCodeResponseDto"];
+                };
+            };
+        };
+    };
+    confirm_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCollectionCodeResponseDto"];
                 };
             };
         };
@@ -8763,7 +8907,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["HandoverCompleteRequestDto"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -8810,6 +8958,36 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["HandoverScanRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCrewTripResponseDto"];
+                };
+            };
+        };
+    };
+    photo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                horseLegId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
             };
         };
         responses: {
@@ -9094,9 +9272,15 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
+        requestBody?: {
             content: {
-                "application/json": components["schemas"]["HubHandoverRequestDto"];
+                "multipart/form-data": {
+                    /** Format: binary */
+                    photo: string;
+                    /** Format: binary */
+                    record: string;
+                    request: components["schemas"]["HubHandoverRequestDto"];
+                };
             };
         };
         responses: {
@@ -9111,6 +9295,30 @@ export interface operations {
             };
         };
     };
+    handoverPapers: {
+        parameters: {
+            query: {
+                receiving: boolean;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListHandoverPaperResponseDto"];
+                };
+            };
+        };
+    };
     receive: {
         parameters: {
             query?: never;
@@ -9120,9 +9328,15 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
+        requestBody?: {
             content: {
-                "application/json": components["schemas"]["HubHandoverRequestDto"];
+                "multipart/form-data": {
+                    /** Format: binary */
+                    photo: string;
+                    /** Format: binary */
+                    record: string;
+                    request: components["schemas"]["HubHandoverRequestDto"];
+                };
             };
         };
         responses: {

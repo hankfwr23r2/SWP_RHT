@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.dto.health.HorseStayResponseDto;
+import org.springframework.web.multipart.MultipartFile;
 import com.example.racehorse_transport.dto.operation.HubHandoverRequestDto;
 import com.example.racehorse_transport.dto.operation.HubRefusalRequestDto;
 import com.example.racehorse_transport.entity.Booking;
@@ -30,9 +31,12 @@ import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.service.DocumentCompletenessService;
 import com.example.racehorse_transport.service.HubHandoverService;
 import com.example.racehorse_transport.service.HandoverOutcomeService;
+import com.example.racehorse_transport.service.HandoverEvidenceService;
 import java.time.Clock;
 import java.time.Instant;
+import com.example.racehorse_transport.dto.operation.HandoverPaperResponseDto;
 import java.util.List;
+import java.util.Set;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
@@ -52,10 +56,21 @@ public class HubHandoverServiceImpl implements HubHandoverService {
     private final DocumentCompletenessService documents;
     private final HandoverOutcomeService outcomes;
     private final Clock clock;
+    private final HandoverEvidenceService evidence;
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<HandoverPaperResponseDto> papers(Long horseStayId, boolean receiving) {
+        HorseStay stay = stays.findById(horseStayId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lưu trú " + horseStayId));
+        Booking booking = stay.getBookingHorse().getBooking();
+        return evidence.originals(null, Set.of(booking.getId()), receiving).stream()
+                .map(document -> HandoverPaperResponseDto.from(document, booking.getCode(), null)).toList();
+    }
 
     @Override
     @Transactional
-    public HorseStayResponseDto receive(Long horseStayId, HubHandoverRequestDto request, String username) {
+    public HorseStayResponseDto receive(Long horseStayId, HubHandoverRequestDto request, MultipartFile photo, MultipartFile signedRecord, String username) {
         HorseStay stay = awaitingSelfDropOff(horseStayId);
         Booking booking = stay.getBookingHorse().getBooking();
         // Đầu SELF không có chặng đón: ngựa được ghi vào chặng trục sẽ lên xe ở chính hub này
@@ -73,7 +88,7 @@ public class HubHandoverServiceImpl implements HubHandoverService {
         }
         requireChip(stay, request);
         Instant now = clock.instant();
-        Handover handover = record(stay, next, HandoverType.PICKUP, request, username, now);
+        Handover handover = record(stay, next, HandoverType.PICKUP, request, photo, signedRecord, username, now);
         stay.setActualStartAt(now);
         stays.flush();
         // Lập khoản số dư (xe chỉ rời hub khi đã trả đủ, #32) và báo khách
@@ -90,7 +105,7 @@ public class HubHandoverServiceImpl implements HubHandoverService {
 
     @Override
     @Transactional
-    public HorseStayResponseDto deliver(Long horseStayId, HubHandoverRequestDto request, String username) {
+    public HorseStayResponseDto deliver(Long horseStayId, HubHandoverRequestDto request, MultipartFile photo, MultipartFile signedRecord, String username) {
         // Người nhận tới trễ: ngựa đang gửi chuồng tại hub vẫn trả được
         HorseStay stay = stays.findById(horseStayId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lưu trú " + horseStayId));
         if (stay.getStayType() != HorseStayType.ASSEMBLY && stay.getStayType() != HorseStayType.STABLING) {
@@ -112,7 +127,7 @@ public class HubHandoverServiceImpl implements HubHandoverService {
         }
         requireChip(stay, request);
         Instant now = clock.instant();
-        Handover handover = record(stay, last, HandoverType.DELIVERY, request, username, now);
+        Handover handover = record(stay, last, HandoverType.DELIVERY, request, photo, signedRecord, username, now);
         stay.setActualEndAt(now);
         stays.flush();
         // Con cuối của đơn giao xong thì đơn DELIVERED (#16); báo khách
@@ -153,7 +168,7 @@ public class HubHandoverServiceImpl implements HubHandoverService {
     }
 
     // handover gắn horse_stay (không có điểm dừng); handover_horse ghi chặng liền kề của con ngựa
-    private Handover record(HorseStay stay, HorseLeg leg, HandoverType type, HubHandoverRequestDto request, String username, Instant at) {
+    private Handover record(HorseStay stay, HorseLeg leg, HandoverType type, HubHandoverRequestDto request, MultipartFile photo, MultipartFile signedRecord, String username, Instant at) {
         Handover handover = new Handover();
         handover.setHandoverType(type);
         handover.setHorseStay(stay);
@@ -168,7 +183,13 @@ public class HubHandoverServiceImpl implements HubHandoverService {
         row.setScannedMicrochip(request.microchip().strip());
         row.setMicrochipMatched(true);
         row.setConditionNote(request.conditionNote() == null || request.conditionNote().isBlank() ? null : request.conditionNote().strip());
+        if (type == HandoverType.DELIVERY) {
+            row.setRecipientName(evidence.requireRecipient(leg.getBookingHorse().getBooking(), request.recipient()));
+        }
         scans.saveAndFlush(row);
+        evidence.recordHubPapers(handover, leg.getBookingHorse().getBooking().getId(), type == HandoverType.PICKUP, request.papers());
+        evidence.attachPhoto(row, photo, handover.getHandledBy().getUserId());
+        evidence.attachRecord(handover.getId(), signedRecord, handover.getHandledBy().getUserId());
         return handover;
     }
 

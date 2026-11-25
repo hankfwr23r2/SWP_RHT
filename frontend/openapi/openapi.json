@@ -266,6 +266,20 @@
         },
         "type" : "object"
       },
+      "ApiResponseCollectionCodeResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/CollectionCodeResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseContactResponseDto" : {
         "properties" : {
           "data" : {
@@ -2232,6 +2246,17 @@
         "required" : [ "confirmPassword", "currentPassword", "newPassword" ],
         "type" : "object"
       },
+      "CollectionCodeResponseDto" : {
+        "properties" : {
+          "collectionCode" : {
+            "type" : "string"
+          },
+          "customerConfirmed" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
       "CompanyCancelBookingRequestDto" : {
         "properties" : {
           "reason" : {
@@ -2837,6 +2862,21 @@
           }
         },
         "required" : [ "countryCode", "customerType", "fullName" ],
+        "type" : "object"
+      },
+      "DeliveryRecipientRequestDto" : {
+        "properties" : {
+          "collectionCode" : {
+            "pattern" : "[0-9]{6}",
+            "type" : "string"
+          },
+          "recipientName" : {
+            "maxLength" : 120,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "recipientName" ],
         "type" : "object"
       },
       "DepartureCancelRequest" : {
@@ -3592,6 +3632,17 @@
         },
         "type" : "object"
       },
+      "HandoverCompleteRequestDto" : {
+        "properties" : {
+          "recipients" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/DeliveryRecipientRequestDto"
+            },
+            "type" : "object"
+          }
+        },
+        "type" : "object"
+      },
       "HandoverCreateRequestDto" : {
         "properties" : {
           "handoverType" : {
@@ -3609,6 +3660,24 @@
           }
         },
         "required" : [ "handoverType" ],
+        "type" : "object"
+      },
+      "HandoverEvidenceResponseDto" : {
+        "properties" : {
+          "fileName" : {
+            "type" : "string"
+          },
+          "fileUrl" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "type" : {
+            "type" : "string"
+          }
+        },
         "type" : "object"
       },
       "HandoverHorseDto" : {
@@ -3640,6 +3709,9 @@
           "documentId" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "originalMissing" : {
+            "type" : "boolean"
           }
         },
         "required" : [ "documentId" ],
@@ -3651,7 +3723,7 @@
             "type" : "string"
           },
           "direction" : {
-            "enum" : [ "RECEIVED", "RETURNED" ],
+            "enum" : [ "RECEIVED", "NOT_RECEIVED", "RETURNED" ],
             "type" : "string"
           },
           "documentId" : {
@@ -4454,9 +4526,18 @@
             "maxLength" : 30,
             "minLength" : 0,
             "type" : "string"
+          },
+          "papers" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HandoverPaperRequestDto"
+            },
+            "type" : "array"
+          },
+          "recipient" : {
+            "$ref" : "#/components/schemas/DeliveryRecipientRequestDto"
           }
         },
-        "required" : [ "microchip" ],
+        "required" : [ "conditionNote", "microchip" ],
         "type" : "object"
       },
       "HubRefusalRequestDto" : {
@@ -4833,6 +4914,12 @@
       },
       "JourneyHandoverDto" : {
         "properties" : {
+          "evidence" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HandoverEvidenceResponseDto"
+            },
+            "type" : "array"
+          },
           "fromPartyName" : {
             "type" : "string"
           },
@@ -8291,6 +8378,21 @@
             "type" : "integer"
           }
         } ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "properties" : {
+                  "proof" : {
+                    "format" : "binary",
+                    "type" : "string"
+                  }
+                },
+                "type" : "object"
+              }
+            }
+          }
+        },
         "responses" : {
           "200" : {
             "content" : {
@@ -9303,6 +9405,60 @@
           }
         },
         "tags" : [ "booking-review-controller" ]
+      }
+    },
+    "/bookings/{id}/collection-code" : {
+      "get" : {
+        "operationId" : "code",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCollectionCodeResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "collection-code-controller" ]
+      }
+    },
+    "/bookings/{id}/confirm-collection" : {
+      "post" : {
+        "operationId" : "confirm_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCollectionCodeResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "collection-code-controller" ]
       }
     },
     "/bookings/{id}/cost-items" : {
@@ -11493,6 +11649,15 @@
             "type" : "integer"
           }
         } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/HandoverCompleteRequestDto"
+              }
+            }
+          }
+        },
         "responses" : {
           "200" : {
             "content" : {
@@ -11570,6 +11735,57 @@
           }
         },
         "tags" : [ "trip-execution-controller" ]
+      }
+    },
+    "/handovers/{id}/horses/{horseLegId}/photos" : {
+      "post" : {
+        "operationId" : "photo",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "path",
+          "name" : "horseLegId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "properties" : {
+                  "file" : {
+                    "format" : "binary",
+                    "type" : "string"
+                  }
+                },
+                "required" : [ "file" ],
+                "type" : "object"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCrewTripResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "handover-paper-controller" ]
       }
     },
     "/handovers/{id}/papers" : {
@@ -11919,13 +12135,26 @@
         } ],
         "requestBody" : {
           "content" : {
-            "application/json" : {
+            "multipart/form-data" : {
               "schema" : {
-                "$ref" : "#/components/schemas/HubHandoverRequestDto"
+                "properties" : {
+                  "photo" : {
+                    "format" : "binary",
+                    "type" : "string"
+                  },
+                  "record" : {
+                    "format" : "binary",
+                    "type" : "string"
+                  },
+                  "request" : {
+                    "$ref" : "#/components/schemas/HubHandoverRequestDto"
+                  }
+                },
+                "required" : [ "photo", "record", "request" ],
+                "type" : "object"
               }
             }
-          },
-          "required" : true
+          }
         },
         "responses" : {
           "200" : {
@@ -11933,6 +12162,40 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseHorseStayResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "hub-handover-controller" ]
+      }
+    },
+    "/horse-stays/{id}/handover-papers" : {
+      "get" : {
+        "operationId" : "handoverPapers",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "receiving",
+          "required" : true,
+          "schema" : {
+            "type" : "boolean"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListHandoverPaperResponseDto"
                 }
               }
             },
@@ -11956,13 +12219,26 @@
         } ],
         "requestBody" : {
           "content" : {
-            "application/json" : {
+            "multipart/form-data" : {
               "schema" : {
-                "$ref" : "#/components/schemas/HubHandoverRequestDto"
+                "properties" : {
+                  "photo" : {
+                    "format" : "binary",
+                    "type" : "string"
+                  },
+                  "record" : {
+                    "format" : "binary",
+                    "type" : "string"
+                  },
+                  "request" : {
+                    "$ref" : "#/components/schemas/HubHandoverRequestDto"
+                  }
+                },
+                "required" : [ "photo", "record", "request" ],
+                "type" : "object"
               }
             }
-          },
-          "required" : true
+          }
         },
         "responses" : {
           "200" : {
