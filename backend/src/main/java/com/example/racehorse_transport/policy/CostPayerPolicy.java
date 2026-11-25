@@ -1,5 +1,8 @@
 package com.example.racehorse_transport.policy;
 
+import com.example.racehorse_transport.entity.CostItem;
+import com.example.racehorse_transport.entity.enums.CostCategory;
+import com.example.racehorse_transport.entity.enums.HorseStayType;
 import com.example.racehorse_transport.entity.enums.CostPayerType;
 import com.example.racehorse_transport.entity.enums.IncidentCauseType;
 import com.example.racehorse_transport.exception.DispatchRuleException;
@@ -21,6 +24,16 @@ public final class CostPayerPolicy {
 
     public static boolean customerSide(CostPayerType payer) {
         return payer == CostPayerType.CUSTOMER || payer == CostPayerType.CONSIGNEE;
+    }
+
+    public static boolean isScheduledStablingFee(CostItem cost) {
+        return cost.getCategory() == CostCategory.STABLING
+                && cost.getHorseStay() != null && cost.getHorseStay().getStayType() == HorseStayType.STABLING;
+    }
+
+    public static boolean countsAgainstEmergencyLimit(CostItem cost) {
+        return customerSide(cost.getPayerType()) && !Boolean.TRUE.equals(cost.getCustomerConsulted())
+                && !isScheduledStablingFee(cost);
     }
 
     // Khoản khách chịu phải gắn với một đơn

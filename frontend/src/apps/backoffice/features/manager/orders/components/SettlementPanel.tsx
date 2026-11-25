@@ -23,7 +23,7 @@ export function SettlementPanel({ data }: { data: OrderData }) {
 
   if (!settlement) return <Card title={t('mgr.settle.title')}><ErrorState onRetry={revalidate} retrying={state !== 'idle'} /></Card>
   const costs = settlement.costs ?? []
-  const chargeable = (cost: CostItem) => cost.payerType === 'CUSTOMER' && !!cost.approvedAt && cost.extraChargePaymentId == null
+  const chargeable = (cost: CostItem) => cost.id != null && (settlement.chargeableCostIds ?? []).includes(cost.id)
   const picked = chosen.filter(id => costs.some(cost => cost.id === id && chargeable(cost)))
   const toggle = (id: number) => setChosen(picked.includes(id) ? picked.filter(item => item !== id) : [...picked, id])
   const approve = (id: number) => run(() => settlementApi.approveCost(id), t('mgr.settle.approved'))
@@ -64,10 +64,10 @@ export function SettlementPanel({ data }: { data: OrderData }) {
           ))}
         </ul>
         {error && <p className={s.error} role="alert">{error}</p>}
-        {settlement.status === 'DELIVERED' && (
+        {(picked.length > 0 || settlement.status === 'DELIVERED') && (
           <div className={s.row}>
             <Button variant="primary" disabled={!picked.length || busy} onClick={() => setDialog('charge')}>{t('mgr.settle.charge')}</Button>
-            <Button disabled={busy} onClick={() => setDialog('complete')}>{t('mgr.settle.complete')}</Button>
+            {settlement.status === 'DELIVERED' && <Button disabled={busy || settlement.outstanding !== 0} onClick={() => setDialog('complete')}>{t('mgr.settle.complete')}</Button>}
           </div>
         )}
       </div>

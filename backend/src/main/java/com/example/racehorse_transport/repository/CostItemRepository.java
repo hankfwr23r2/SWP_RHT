@@ -12,6 +12,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface CostItemRepository extends JpaRepository<CostItem, Long> {
 
+    List<CostItem> findByHorseStay_Id(Long horseStayId);
+
     boolean existsByHorseStay_Id(Long horseStayId);
 
     @EntityGraph(attributePaths = {"booking", "incident", "recordedBy", "approvedBy"})
@@ -22,8 +24,10 @@ public interface CostItemRepository extends JpaRepository<CostItem, Long> {
 
     // Tổng các khoản khách chịu đã duyệt mà chưa hỏi khách (dùng hạn mức chi khẩn cấp)
     @Query("""
-            SELECT coalesce(sum(c.amount), 0) FROM CostItem c
+            SELECT coalesce(sum(c.amount), 0) FROM CostItem c LEFT JOIN c.horseStay s
             WHERE c.booking.id = :bookingId AND c.payerType IN :payers AND c.customerConsulted = false AND c.approvedAt IS NOT NULL
+              AND (s.id IS NULL OR s.stayType <> com.example.racehorse_transport.entity.enums.HorseStayType.STABLING
+                   OR c.category <> com.example.racehorse_transport.entity.enums.CostCategory.STABLING)
             """)
     BigDecimal sumApprovedWithoutConsulting(@Param("bookingId") Long bookingId, @Param("payers") Collection<CostPayerType> payers);
 

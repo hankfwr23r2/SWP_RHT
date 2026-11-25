@@ -52,6 +52,10 @@ public class CostItem {
     @Column(name = "currency_code", length = 3, nullable = false)
     private String currencyCode;
 
+    // snapshot: số ngày tính trong dòng phí giữ ngựa này
+    @Column(name = "stabling_days")
+    private Long stablingDays;
+
     // Ai chịu khoản này
     @Enumerated(EnumType.STRING)
     @Column(name = "payer_type", length = 30, nullable = false)

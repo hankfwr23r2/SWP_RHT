@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.repository;
 
+import com.example.racehorse_transport.entity.enums.VehicleTripType;
 import com.example.racehorse_transport.entity.VehicleTrip;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import jakarta.persistence.LockModeType;
@@ -15,6 +16,9 @@ import org.springframework.data.repository.query.Param;
 
 public interface VehicleTripRepository extends JpaRepository<VehicleTrip, Long> {
     boolean existsByVehicle_IdAndStatusNotIn(Long vehicleId, Collection<VehicleTripStatus> statuses);
+
+    boolean existsByDeparture_IdAndTripTypeAndStatusNotIn(Long departureId,
+            VehicleTripType tripType, Collection<VehicleTripStatus> statuses);
 
     boolean existsByCode(String code);
 

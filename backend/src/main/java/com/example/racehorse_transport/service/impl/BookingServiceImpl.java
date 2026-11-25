@@ -60,6 +60,7 @@ public class BookingServiceImpl implements BookingService {
         Customer customer = customers.findSubmittingCustomer(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ khách hàng."));
 
+        statusHistory.requireSubmissionAllowed(customer.getUserId());
         SubmissionRouting resolved = routing.resolve(request);
 
         Map<Long, Horse> selectedHorses = lockAvailableHorses(request, customer);

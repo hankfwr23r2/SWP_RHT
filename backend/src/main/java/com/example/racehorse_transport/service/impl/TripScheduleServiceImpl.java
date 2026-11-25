@@ -46,7 +46,7 @@ public class TripScheduleServiceImpl implements TripScheduleService {
     }
 
     @Override
-    public VehicleTripResponseDto create(PlannedTripRequestDto request) {
+    public VehicleTripResponseDto create(PlannedTripRequestDto request, String username) {
         if (request.vehicleId() == null) {
             throw new DispatchRuleException("vehicleId", "Vui lòng chọn xe.");
         }
@@ -55,7 +55,7 @@ public class TripScheduleServiceImpl implements TripScheduleService {
         if (plan.blocked()) {
             throw new DispatchRuleException("places", message(plan.warnings(), input), true);
         }
-        return data.save(request, input, plan);
+        return data.save(request, input, plan, username);
     }
 
     private PlannedTripResponseDto compute(PlannedTripRequestDto request, TripInput input) {

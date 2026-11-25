@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service;
 
+import com.example.racehorse_transport.entity.Departure;
 import com.example.racehorse_transport.dto.departure.DepartureCreateRequestDto;
 import com.example.racehorse_transport.dto.departure.DepartureResponseDto;
 import com.example.racehorse_transport.entity.enums.DepartureStatus;
@@ -9,6 +10,11 @@ import java.util.List;
 // Chuyến cụ thể theo ngày. Chủ sở hữu bảng departure (kể cả cột dẫn xuất booked_stall_count): luồng A (A1).
 // reserve/release là hợp đồng gọi chéo (docs/KE_HOACH_TRIEN_KHAI.md mục 3.3).
 public interface DepartureService {
+    Departure lockForLinehaulPlanning(Long departureId);
+
+    void linehaulDeparted(Long departureId);
+
+    void linehaulCompleted(Long departureId);
 
     // Giữ khoang trên chuyến. Khóa dòng departure (SELECT ... FOR UPDATE) rồi mới cộng booked_stall_count;
     // vượt capacity_stalls thì ném lỗi nghiệp vụ.

@@ -63,7 +63,7 @@ public class IncidentEvidenceServiceImpl implements IncidentEvidenceService {
 
     @Override
     @Transactional
-    public List<EvidenceResponseDto> attachPhoto(Long incidentId, MultipartFile file, BigDecimal latitude, BigDecimal longitude, String username) {
+    public List<EvidenceResponseDto> attachPhoto(Long incidentId, MultipartFile file, BigDecimal latitude, BigDecimal longitude, String documentType, String username) {
         Incident incident = incidents.findById(incidentId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố " + incidentId));
         if (incident.getStatus() == IncidentStatus.CLOSED) {
             throw new DispatchRuleException("incidentId", "Sự cố đã đóng, không thêm ảnh.", true);
@@ -71,7 +71,13 @@ public class IncidentEvidenceServiceImpl implements IncidentEvidenceService {
         if ((latitude == null) != (longitude == null)) {
             throw new DispatchRuleException("latitude", "Tọa độ phải có cả vĩ độ và kinh độ.");
         }
-        Long id = documentFiles.attach(file, INCIDENT_PHOTO, DocumentSubject.INCIDENT, incident.getId(), actor(username).getUserId());
+        Staff uploader = actor(username);
+        String code = documentType == null ? INCIDENT_PHOTO : documentType;
+        if (!INCIDENT_PHOTO.equals(code)
+                && !("VET_REPORT".equals(code) && "COORDINATOR".equals(uploader.getUser().getRole().getCode()))) {
+            throw new DispatchRuleException("documentType", "Loại tệp chứng cứ không phù hợp.");
+        }
+        Long id = documentFiles.attach(file, code, DocumentSubject.INCIDENT, incident.getId(), uploader.getUserId());
         Document photo = documents.findById(id).orElseThrow();
         photo.setCapturedAt(clock.instant());
         photo.setLatitude(latitude);

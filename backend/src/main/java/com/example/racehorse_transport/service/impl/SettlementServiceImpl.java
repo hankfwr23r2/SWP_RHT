@@ -137,8 +137,10 @@ public class SettlementServiceImpl implements SettlementService {
         }
 
         SettlementResponseDto toResponse(Booking booking) {
+            var chargeable = costs.stream().filter(cost -> PaymentPolicy.canSelectExtraChargeCost(booking.getStatus(), cost))
+                    .map(CostItem::getId).toList();
             return SettlementResponseDto.from(booking, quotation.getCurrencyCode(), quotation.getTotalAmount(),
-                    approvedCosts, outstanding, openIncident, costs.stream().map(CostItemResponseDto::from).toList(),
+                    approvedCosts, outstanding, openIncident, chargeable, costs.stream().map(CostItemResponseDto::from).toList(),
                     payments.stream().map(PaymentResponseDto::from).toList());
         }
     }

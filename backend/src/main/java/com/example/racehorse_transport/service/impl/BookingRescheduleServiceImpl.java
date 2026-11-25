@@ -83,6 +83,7 @@ public class BookingRescheduleServiceImpl implements BookingRescheduleService {
         if (oldId != null) {
             departures.release(oldId, seats);
         }
+        statuses.clearPlannedTransport(booking.getId());
         booking.setDeparture(replacement);
         statuses.transition(bookingId, deposited ? BookingStatus.CONFIRMED : BookingStatus.UNDER_REVIEW,
                 "Khách chọn lại chuyến ngày " + replacement.getDepartureDate(), booking.getCustomer().getUser().getId());

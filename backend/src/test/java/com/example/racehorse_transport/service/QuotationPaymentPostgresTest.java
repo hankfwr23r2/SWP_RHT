@@ -67,6 +67,7 @@ class QuotationPaymentPostgresTest {
     @Autowired private BookingCancellationService cancellations;
     @Autowired private RefundService refunds;
     @Autowired private SettlementService settlements;
+    @Autowired private ExtraChargeService extraCharges;
     @Autowired private SettlementScheduler settlementScheduler;
     @Autowired private DocumentReminderScheduler reminderScheduler;
     @Autowired private ScheduleChangeService schedule;
@@ -632,6 +633,7 @@ class QuotationPaymentPostgresTest {
         var charge = settlements.createExtraCharge(booking, List.of(cost), fixture.manager());
         assertThat(charge.type()).isEqualTo(PaymentType.EXTRA_CHARGE);
         assertThat(charge.amount()).isEqualByComparingTo("1500");
+        assertThat(charge.dueAt()).isEqualTo(START.plus(java.time.Duration.ofDays(7)));
         assertThat(jdbc.queryForObject("select extra_charge_payment_id from cost_item where id = ?", Long.class, cost))
                 .isEqualTo(charge.id());
         assertThatThrownBy(() -> settlements.createExtraCharge(booking, List.of(cost), fixture.manager()))
@@ -642,6 +644,39 @@ class QuotationPaymentPostgresTest {
         assertThat(results.receive(callback).code()).isEqualTo("00");
         assertThat(results.receive(callback).code()).isEqualTo("02");
         assertThat(settlements.settlement(booking).outstanding()).isEqualByComparingTo("0");
+    }
+
+    @Test
+    void lateInvoiceForCompletedBookingRemindsOnceAndBlocksSubmissionUntilPaid() {
+        Instant now = Instant.now();
+        when(clock.instant()).thenReturn(now);
+        var fixture = fixture(BookingType.LOCAL, BookingStatus.COMPLETED);
+        long booking = fixture.booking().getId();
+        long customer = fixture.booking().getCustomer().getUserId();
+        long quote = quote(fixture, QuotationStatus.ACCEPTED, now.plusSeconds(120), "10000", "10000");
+        paidDeposit(booking, quote, "10000");
+        long cost = jdbc.queryForObject("""
+                INSERT INTO cost_item (category, description, amount, currency_code, payer_type, booking_id,
+                    is_customer_consulted, incurred_at, recorded_by, approved_by, approved_at)
+                VALUES ('VET', 'Hóa đơn thú y muộn', 1500, 'VND', 'CUSTOMER', ?, true, now(), ?, ?, now()) RETURNING id
+                """, Long.class, booking, fixture.managerId(), fixture.managerId());
+        var charge = settlements.createExtraCharge(booking, List.of(cost), fixture.manager());
+        assertThat(charge.dueAt()).isEqualTo(now.plus(java.time.Duration.ofDays(7)));
+        jdbc.update("UPDATE payment SET due_at = now() - interval '1 minute' WHERE id = ?", charge.id());
+        assertThatThrownBy(() -> extraCharges.requireNoOverdue(customer)).isInstanceOf(BookingRuleException.class)
+                .hasMessageContaining("trước khi gửi đơn mới");
+        extraCharges.remindOverdue();
+        extraCharges.remindOverdue();
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM notification n JOIN notification_recipient r ON r.notification_id = n.id
+                WHERE r.user_id = ? AND n.title = 'Khoản thu thêm quá hạn'
+                """, Long.class, customer)).isEqualTo(1L);
+        String reference = checkout(charge.id(), fixture);
+        Instant paid = now.truncatedTo(java.time.temporal.ChronoUnit.SECONDS).plusSeconds(1);
+        when(clock.instant()).thenReturn(paid);
+        assertThat(results.receive(callback(reference, "804978", 1500, paid, true)).code()).isEqualTo("00");
+        extraCharges.requireNoOverdue(customer);
+        assertThat(bookingStatus(fixture)).isEqualTo("COMPLETED");
     }
 
     private long paidDeposit(long booking, long quote, String value) {

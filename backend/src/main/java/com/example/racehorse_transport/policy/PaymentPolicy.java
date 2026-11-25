@@ -79,7 +79,7 @@ public final class PaymentPolicy {
                     && now.isBefore(DepositPaymentWindowPolicy.expiresAt(payment.getDueAt()));
             case BALANCE -> booking.getStatus() == BookingStatus.CONFIRMED
                     && payment.getQuotation().getStatus() == QuotationStatus.ACCEPTED;
-            case EXTRA_CHARGE -> booking.getStatus() == BookingStatus.DELIVERED
+            case EXTRA_CHARGE -> acceptsExtraChargePayment(booking.getStatus())
                     && payment.getQuotation() != null && payment.getQuotation().getStatus() == QuotationStatus.ACCEPTED;
             case REFUND -> false;
         };
@@ -99,10 +99,26 @@ public final class PaymentPolicy {
                     && DepositPaymentWindowPolicy.canConfirm(payment.getDueAt(), session.createdAt(),
                             paidAt, receivedAt, graceMinutes);
             case BALANCE -> amount.compareTo(payment.getAmount()) >= 0 && booking.getStatus() != BookingStatus.CANCELLED;
-            case EXTRA_CHARGE -> booking.getStatus() == BookingStatus.DELIVERED
+            case EXTRA_CHARGE -> acceptsExtraChargePayment(booking.getStatus())
                     && amount.compareTo(payment.getAmount()) == 0;
             case REFUND -> false;
         };
+    }
+
+    public static boolean acceptsExtraChargePayment(BookingStatus status) {
+        return status == BookingStatus.IN_OPERATION || status == BookingStatus.DELIVERED || status == BookingStatus.COMPLETED;
+    }
+
+    public static boolean canSelectExtraChargeCost(BookingStatus status, CostItem cost) {
+        return acceptsExtraChargePayment(status) && (status != BookingStatus.IN_OPERATION || CostPayerPolicy.isScheduledStablingFee(cost))
+                && CostPayerPolicy.customerSide(cost.getPayerType()) && cost.getApprovedAt() != null && cost.getExtraChargePayment() == null;
+    }
+
+    public static void requireExtraChargeAllowed(BookingStatus status, List<CostItem> costs) {
+        if (!acceptsExtraChargePayment(status)
+                || (status == BookingStatus.IN_OPERATION && !costs.stream().allMatch(CostPayerPolicy::isScheduledStablingFee))) {
+            throw BookingRuleException.conflict("Chỉ lập khoản thu thêm khi đã giao, đã hoàn thành hoặc thu phí giữ ngựa khi đang vận chuyển.");
+        }
     }
 
     public static BigDecimal extraChargeAmount(Long bookingId, String currency, int expectedCount, List<CostItem> costs) {

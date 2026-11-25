@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Handover;
 import com.example.racehorse_transport.entity.HorseLeg;
@@ -44,6 +45,7 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
     private final DocumentCompletenessService documents;
     private final NotificationService notifications;
     private final IncidentRepository incidents;
+    private final BookingRepository bookingRows;
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
@@ -53,6 +55,12 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
         // Khóa đơn theo ID tăng dần khi một lần giao nhận có nhiều đơn
         List<Booking> bookings = matched.stream().map(l -> l.getBookingHorse().getBooking()).distinct()
                 .sorted(Comparator.comparing(Booking::getId)).toList();
+        if (handover.getHandoverType() == HandoverType.HUB_IN || handover.getHandoverType() == HandoverType.HUB_OUT) {
+            bookings.forEach(booking -> bookingRows.findForUpdate(booking.getId()).orElseThrow());
+        }
+        if (handover.getHandoverType() == HandoverType.HUB_OUT) {
+            matched.forEach(leg -> horseStays.requireStablingPaid(leg.getBookingHorse().getId()));
+        }
         if (agent && boarding) {
             // Quy tắc #35: đơn nhập chỉ nhận ngựa ở cửa khẩu khi đủ giấy bắt buộc, gồm giấy vận chuyển mẫu 14a
             bookings.stream().filter(b -> !documents.isComplete(b.getId())).findFirst().ifPresent(b -> {
@@ -78,7 +86,7 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
             if (leg.getStatus() == HorseLegStatus.FAILED) {
                 // Không gặp người nhận thì giữ có phí người nhận chịu; về hub do sự cố khác thì tập kết chờ giao lại
                 if (incidents.existsByHorseLeg_IdAndIncidentType(leg.getId(), IncidentType.HANDOVER_TIMEOUT)) {
-                    horseStays.openFailedDeliveryStabling(leg, handover.getTripStop().getLocation(), now);
+                    horseStays.openFailedDeliveryStabling(leg, handover.getTripStop().getLocation(), now, actorUserId);
                 } else {
                     horseStays.openReturnAssembly(leg, handover.getTripStop().getLocation(), now);
                 }
@@ -133,9 +141,11 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
         Booking booking = leg.getBookingHorse().getBooking();
         if (handover.getHandoverType() == HandoverType.PICKUP) {
             payments.requestBalance(booking.getId(), handover.getHandedAt());
-        } else if (handover.getHandoverType() == HandoverType.DELIVERY
-                && booking.getStatus() == BookingStatus.IN_OPERATION && legs.countActiveHorsesNotDelivered(booking.getId()) == 0) {
-            bookingStatus.transition(booking.getId(), BookingStatus.DELIVERED, "Người nhận đã nhận đủ ngựa tại hub", actorUserId);
+        } else if (handover.getHandoverType() == HandoverType.DELIVERY) {
+            horseStays.closeActive(leg.getBookingHorse().getId(), handover.getHandedAt(), actorUserId);
+            if (booking.getStatus() == BookingStatus.IN_OPERATION && legs.countActiveHorsesNotDelivered(booking.getId()) == 0) {
+                bookingStatus.transition(booking.getId(), BookingStatus.DELIVERED, "Người nhận đã nhận đủ ngựa tại hub", actorUserId);
+            }
         }
         notifyCustomers(handover, List.of(leg));
     }

@@ -4506,16 +4506,12 @@
       },
       "HubStablingRequestDto" : {
         "properties" : {
-          "fee" : {
-            "type" : "number"
-          },
           "note" : {
             "maxLength" : 500,
             "minLength" : 0,
             "type" : "string"
           }
         },
-        "required" : [ "fee" ],
         "type" : "object"
       },
       "IncidentPlanRequestDto" : {
@@ -4634,6 +4630,9 @@
           },
           "reportedByName" : {
             "type" : "string"
+          },
+          "requiresFit" : {
+            "type" : "boolean"
           },
           "resolvedAt" : {
             "format" : "date-time",
@@ -7016,6 +7015,13 @@
           "bookingId" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "chargeableCostIds" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "array"
           },
           "costs" : {
             "items" : {
@@ -12523,6 +12529,13 @@
           "required" : false,
           "schema" : {
             "type" : "number"
+          }
+        }, {
+          "in" : "query",
+          "name" : "documentType",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
           }
         } ],
         "requestBody" : {

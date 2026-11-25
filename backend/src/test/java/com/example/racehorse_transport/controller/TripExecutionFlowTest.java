@@ -86,6 +86,52 @@ class TripExecutionFlowTest {
     }
 
     @Test
+    void departureStartsAtTheFirstStopAndWaitsForAllNonCancelledLinehaulTrips() throws Exception {
+        long departure = jdbc.queryForObject("SELECT departure_id FROM booking WHERE code = 'DEV-DOMESTIC-001'", Long.class);
+        jdbc.update("""
+                UPDATE departure SET run_confirmed_at = now(), run_confirmed_by = (SELECT min(id) FROM app_user)
+                WHERE id = ?
+                """, departure);
+        long first = emptyLinehaul(departure);
+        long second = emptyLinehaul(departure);
+        Staff member = testData.staff(testData.unique("exec.linehaul"), "DRIVER");
+        String assigned = token(member, "DRIVER");
+        mvc.perform(post("/vehicle-trips/{id}/crew-assignments", first).header(HttpHeaders.AUTHORIZATION, coordinator)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"staffId\":%d,\"crewRole\":\"DRIVER\"}".formatted(member.getUserId())))
+                .andExpect(status().isCreated());
+        List<Long> linehaulStops = jdbc.queryForList(
+                "SELECT id FROM trip_stop WHERE vehicle_trip_id = ? ORDER BY sequence_number", Long.class, first);
+
+        acknowledge(assigned);
+        act(assigned, "/vehicle-trips/" + first + "/start").andExpect(status().isOk());
+        assertThat(departureStatus(departure)).isIn("OPEN", "CLOSED");
+        act(assigned, "/trip-stops/" + linehaulStops.getFirst() + "/arrive").andExpect(status().isOk());
+        act(assigned, "/trip-stops/" + linehaulStops.getFirst() + "/depart").andExpect(status().isOk());
+        entityManager.flush();
+        assertThat(departureStatus(departure)).isEqualTo("IN_PROGRESS");
+
+        jdbc.update("UPDATE trip_stop SET actual_arrival_at = now() WHERE id = ?", linehaulStops.getLast());
+        entityManager.clear();
+        act(assigned, "/vehicle-trips/" + first + "/complete").andExpect(status().isOk());
+        assertThat(departureStatus(departure)).isEqualTo("IN_PROGRESS");
+        mvc.perform(post("/vehicle-trips/{id}/cancel", second).header(HttpHeaders.AUTHORIZATION, coordinator)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"reason\":\"Không cần xe thứ hai\"}")).andExpect(status().isOk());
+        entityManager.flush();
+        assertThat(departureStatus(departure)).isEqualTo("COMPLETED");
+    }
+
+    private long emptyLinehaul(long departureId) throws Exception {
+        return id(mvc.perform(post("/vehicle-trips").header(HttpHeaders.AUTHORIZATION, coordinator)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"tripType\":\"LINEHAUL\",\"vehicleId\":%d,\"departureId\":%d}"
+                        .formatted(testData.vehicle(2, 0).getId(), departureId))).andExpect(status().isCreated()));
+    }
+
+    private String departureStatus(long departureId) {
+        return jdbc.queryForObject("SELECT status FROM departure WHERE id = ?", String.class, departureId);
+    }
+
+    @Test
     void crewRunsTheWholeDirectTrip() throws Exception {
         // Đơn nội tỉnh không cần giấy bắt buộc (DocumentCompletenessService của luồng A); ca thiếu giấy ở test riêng
         makeLocal();

@@ -136,13 +136,30 @@ class DeliveryFailureFlowTest {
                 .isEqualTo(failedLeg);
         second.acknowledgeAndStart();
         second.act("/trip-stops/" + second.stops.get(0) + "/arrive").andExpect(status().isOk());
-        // Nhận ngựa từ hub rồi mới lên xe
-        second.scanAndComplete(second.openHandover(0, "HUB_OUT"));
-        // Nhận ra khỏi chuồng: phí lưu chuồng và chăm sóc 5 ngày (4 ngày 2 giờ làm tròn lên), người nhận chịu, chờ quản lý duyệt
+        var precharge = jdbc.queryForMap("""
+                SELECT category, payer_type, stabling_days, approved_at, extra_charge_payment_id
+                FROM cost_item WHERE horse_stay_id = ?
+                """, stay);
+        assertThat(precharge).containsEntry("category", "STABLING").containsEntry("payer_type", "CONSIGNEE");
+        assertThat(precharge.get("approved_at")).isNotNull();
+        long payment = ((Number) precharge.get("extra_charge_payment_id")).longValue();
+        long billedDays = ((Number) precharge.get("stabling_days")).longValue();
+        assertThat(billedDays).isPositive();
+        long hubOut = second.openHandover(0, "HUB_OUT");
+        second.scan(hubOut);
+        second.act("/handovers/" + hubOut + "/complete").andExpect(status().isConflict());
         entityManager.flush();
-        assertThat(jdbc.queryForMap("SELECT category, payer_type, amount, approved_at FROM cost_item WHERE horse_stay_id = ?", stay))
-                .containsEntry("category", "STABLING").containsEntry("payer_type", "CONSIGNEE")
-                .containsEntry("amount", new java.math.BigDecimal("5000000.00")).containsEntry("approved_at", null);
+        jdbc.update("UPDATE payment SET status = 'PAID', paid_at = now() WHERE id = ?", payment);
+        jdbc.update("""
+                UPDATE horse_stay SET actual_start_at = now() - (? * interval '1 day') - interval '2 hour',
+                    planned_start_at = now() - (? * interval '1 day') - interval '2 hour'
+                WHERE id = ?
+                """, billedDays, billedDays, stay);
+        entityManager.clear();
+        second.act("/handovers/" + hubOut + "/complete").andExpect(status().isOk());
+        entityManager.flush();
+        assertThat(jdbc.queryForList("SELECT stabling_days FROM cost_item WHERE horse_stay_id = ? ORDER BY id", Long.class, stay))
+                .containsExactly(billedDays, 1L);
         second.act("/trip-stops/" + second.stops.get(0) + "/depart").andExpect(status().isOk());
         second.act("/trip-stops/" + second.stops.get(1) + "/arrive").andExpect(status().isOk());
         long redelivery = second.openHandover(1, "DELIVERY");
@@ -154,6 +171,41 @@ class DeliveryFailureFlowTest {
                 .andExpect(jsonPath("$.data.horses[0].legs[1].replacedHorseLegId").value(failedLeg))
                 .andExpect(jsonPath("$.data.horses[0].legs[1].status").value("COMPLETED"))
                 .andExpect(jsonPath("$.data.horses[0].handovers[*].handoverType").value(org.hamcrest.Matchers.contains("PICKUP", "DELIVERY", "HUB_IN", "HUB_OUT", "DELIVERY")));
+    }
+
+    @Test
+    void consigneeCanCollectAtTheHubWhileTheRedeliveryChargeIsUnpaid() throws Exception {
+        Trip first = plan("DIRECT", 0, stop("locationId", hcm, "HUB", 0), stop("bookingAddressId", pickup, "PICKUP", 60),
+                stop("bookingAddressId", delivery, "DELIVERY", 240), stop("locationId", hcm, "HUB", 480));
+        first.assign(line, 1, 2);
+        first.startAndReceiveAt(1);
+        first.act("/trip-stops/" + first.stops.get(1) + "/depart").andExpect(status().isOk());
+        first.act("/trip-stops/" + first.stops.get(2) + "/arrive").andExpect(status().isOk());
+        long handover = first.openHandover(2, "DELIVERY");
+        first.act("/handovers/" + handover + "/start-waiting").andExpect(status().isOk());
+        entityManager.flush();
+        jdbc.update("UPDATE handover SET wait_started_at = now() - interval '121 minutes' WHERE id = ?", handover);
+        entityManager.clear();
+        first.act("/handovers/" + handover + "/fail").andExpect(status().isOk());
+        first.act("/trip-stops/" + first.stops.get(2) + "/depart").andExpect(status().isOk());
+        first.act("/trip-stops/" + first.stops.get(3) + "/arrive").andExpect(status().isOk());
+        first.scanAndComplete(first.openHandover(3, "HUB_IN"));
+        first.act("/vehicle-trips/" + first.id + "/complete").andExpect(status().isOk());
+
+        Trip replacement = plan("DELIVERY", 24 * 60, stop("locationId", hcm, "HUB", 24 * 60),
+                stop("bookingAddressId", delivery, "DELIVERY", 24 * 60 + 120), stop("locationId", hcm, "HUB", 24 * 60 + 300));
+        replacement.assign(line, 0, 1);
+        entityManager.flush();
+        long stay = jdbc.queryForObject("SELECT horse_stay_id FROM cost_item WHERE booking_id = ?", Long.class, booking);
+        mvc.perform(post("/horse-stays/{id}/deliveries", stay).header(HttpHeaders.AUTHORIZATION, coordinator)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"microchip\":\"%s\"}".formatted(chip)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.actualEndAt").isNotEmpty());
+        entityManager.flush();
+        assertThat(bookingStatus()).isEqualTo("DELIVERED");
+        assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE vehicle_trip_id = ?", String.class, replacement.id))
+                .isEqualTo("CANCELLED");
+        assertThat(jdbc.queryForObject("SELECT status FROM payment WHERE booking_id = ? AND payment_type = 'EXTRA_CHARGE'",
+                String.class, booking)).isEqualTo("PENDING");
     }
 
     @Test
@@ -247,11 +299,15 @@ class DeliveryFailureFlowTest {
         }
 
         void scanAndComplete(long handover) throws Exception {
+            scan(handover);
+            act("/handovers/" + handover + "/complete").andExpect(status().isOk());
+        }
+
+        void scan(long handover) throws Exception {
             long leg = jdbc.queryForObject("SELECT id FROM horse_leg WHERE booking_horse_id = ? AND vehicle_trip_id = ?", Long.class, line, id);
             mvc.perform(post("/handovers/{id}/horses", handover).header(HttpHeaders.AUTHORIZATION, driver).contentType(MediaType.APPLICATION_JSON)
                     .content("{\"horseLegId\":%d,\"microchip\":\"%s\"}".formatted(leg, chip))).andExpect(status().isOk());
             signedRecord(handover);
-            act("/handovers/" + handover + "/complete").andExpect(status().isOk());
         }
 
         ResultActions act(String path) throws Exception {

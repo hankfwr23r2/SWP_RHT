@@ -72,6 +72,18 @@ class DeparturePoliciesTest {
     }
 
     @Test
+    void firstDepartureStartsTheRunAndLastTripCompletesItIdempotently() {
+        assertThat(DepartureCapacityPolicy.afterLinehaulDeparture(DepartureStatus.CLOSED)).isEqualTo(DepartureStatus.IN_PROGRESS);
+        assertThat(DepartureCapacityPolicy.afterLinehaulDeparture(DepartureStatus.IN_PROGRESS)).isEqualTo(DepartureStatus.IN_PROGRESS);
+        assertThat(DepartureCapacityPolicy.afterLinehaulDeparture(DepartureStatus.COMPLETED)).isEqualTo(DepartureStatus.COMPLETED);
+        assertThat(DepartureCapacityPolicy.afterLinehaulCompletion(DepartureStatus.IN_PROGRESS, true)).isEqualTo(DepartureStatus.IN_PROGRESS);
+        assertThat(DepartureCapacityPolicy.afterLinehaulCompletion(DepartureStatus.IN_PROGRESS, false)).isEqualTo(DepartureStatus.COMPLETED);
+        assertThat(DepartureCapacityPolicy.afterLinehaulCompletion(DepartureStatus.COMPLETED, false)).isEqualTo(DepartureStatus.COMPLETED);
+        assertThatThrownBy(() -> DepartureCapacityPolicy.afterLinehaulDeparture(DepartureStatus.CANCELLED)).hasMessageContaining("đã hủy");
+        assertThat(DepartureCapacityPolicy.canCancel(DepartureStatus.COMPLETED)).isFalse();
+    }
+
+    @Test
     void nineWideHorsesDoNotFitNineSeats() {
         int seats = StallSeatPolicy.total(java.util.Map.of("WIDE", 9));
         assertThat(DepartureCapacityPolicy.reasonNotReservable(DepartureStatus.OPEN, NOW.plusSeconds(60), NOW, 9, 0, seats))

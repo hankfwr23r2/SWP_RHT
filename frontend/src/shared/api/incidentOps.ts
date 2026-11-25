@@ -18,7 +18,7 @@ export type Evidence = Schemas['EvidenceResponseDto']
 
 const get = async <T>(url: string) => (await apiClient.get<ApiResponse<T>>(url)).data.data
 const post = async <T>(url: string, body?: unknown) => (await apiClient.post<ApiResponse<T>>(url, body)).data.data
-const upload = async (url: string, file: File, params?: Record<string, number>) => {
+const upload = async (url: string, file: File, params?: Record<string, number | string>) => {
   const body = new FormData()
   body.append('file', file)
   return (await apiClient.post<ApiResponse<Evidence[]>>(url, body, { params, headers: { 'Content-Type': 'multipart/form-data' } })).data.data
@@ -46,5 +46,6 @@ export const incidentsApi = {
   receipts: (costId: number) => get<Evidence[]>(`/cost-items/${costId}/receipts`),
   attachReceipt: (costId: number, file: File) => upload(`/cost-items/${costId}/receipts`, file),
   photos: (incidentId: number) => get<Evidence[]>(`/incidents/${incidentId}/photos`),
-  attachPhoto: (incidentId: number, file: File, at?: { latitude: number; longitude: number }) => upload(`/incidents/${incidentId}/photos`, file, at),
+  attachPhoto: (incidentId: number, file: File, at?: { latitude: number; longitude: number }, documentType?: 'INCIDENT_PHOTO' | 'VET_REPORT') =>
+    upload(`/incidents/${incidentId}/photos`, file, { ...at, ...(documentType ? { documentType } : {}) }),
 }

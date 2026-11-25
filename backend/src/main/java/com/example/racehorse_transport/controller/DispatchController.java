@@ -29,6 +29,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -114,8 +115,8 @@ public class DispatchController {
 
     // Lập lượt xe kèm ngựa theo giờ hệ thống tính; lỗi thì không lưu gì
     @PostMapping("/vehicle-trips/planned")
-    public ResponseEntity<ApiResponseDto<VehicleTripResponseDto>> createPlannedTrip(@Valid @RequestBody PlannedTripRequestDto request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponseDto.success(schedules.create(request), "Đã lập lượt xe"));
+    public ResponseEntity<ApiResponseDto<VehicleTripResponseDto>> createPlannedTrip(@Valid @RequestBody PlannedTripRequestDto request, Authentication authentication) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponseDto.success(schedules.create(request, authentication.getName()), "Đã lập lượt xe"));
     }
 
     @GetMapping("/vehicle-trips/{id}/horse-legs")
@@ -125,8 +126,8 @@ public class DispatchController {
     }
 
     @PostMapping("/vehicle-trips/{id}/horse-legs")
-    public ResponseEntity<ApiResponseDto<List<TripHorseResponseDto>>> assignHorse(@PathVariable Long id, @Valid @RequestBody HorseLegRequestDto request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponseDto.success(horseLegs.assign(id, request), "Đã xếp ngựa vào lượt xe"));
+    public ResponseEntity<ApiResponseDto<List<TripHorseResponseDto>>> assignHorse(@PathVariable Long id, @Valid @RequestBody HorseLegRequestDto request, Authentication authentication) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponseDto.success(horseLegs.assign(id, request, authentication.getName()), "Đã xếp ngựa vào lượt xe"));
     }
 
     @PostMapping("/horse-legs/{id}/cancel")
