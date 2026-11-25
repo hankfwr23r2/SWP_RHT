@@ -104,7 +104,7 @@ public class BalanceHoldServiceImpl implements BalanceHoldService {
                 row.setHandedAt(now);
             }
         }
-        horseStays.openBalanceHold(bookingId, base);
+        horseStays.openBalanceHold(bookingId, base, hasNextLinehaul ? departure : null);
         notices.holdStarted(booking, base);
     }
 }

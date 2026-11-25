@@ -40,7 +40,7 @@ Task nào làm tới thao tác nào thì đối chiếu dòng đó. Một dòng 
 | 3.5 | Thẩm định hồ sơ (chuyên viên) | Tải giấy COMPANY, CONSIGNEE, AGENT, duyệt hoặc từ chối từng giấy, xác nhận hoặc mở lại bảo hiểm | `document`, `horse_insurance`, `audit_log` | Từ chối hoặc mở lại thiếu lý do. Chỉ mở lại khi đơn UNDER_REVIEW hoặc NEEDS_RESUBMISSION | Giấy tải lên chờ duyệt. Khi thẩm định, chuyên viên có thể trả đơn thiếu hồ sơ khách về NEEDS_RESUBMISSION. Ở CONFIRMED, khách có thể nộp lại giấy CUSTOMER bắt buộc khi thiếu bản còn hiệu lực | Giấy nào thiếu, ai nộp và cần ở mốc nào |
 
 | 3.5b | Đơn thiếu giấy (chuyên viên, quản lý) **[A8]** | Xem danh sách; tới mốc 48 giờ quản lý chọn nguyên nhân khách, công ty hoặc cơ quan | `booking_status_history.cause_type`, `previous_departure_id`, `booking.departure_id` | Thiếu nguyên nhân hoặc lý do, chưa tới mốc quyết định, hoặc giấy đã đủ | Nhắc khách từ 5 ngày trước. Nhả chỗ, đơn sang `SCHEDULE_CHANGE_REQUIRED` | Giấy thiếu, chuyến tuần sau, tiền hoàn nếu không đi |
-| 3.5c | Nhận và trả ngựa tại hub (nhân viên hub) | Xác nhận lịch hẹn, kiểm giấy khi nhận và ký giao nhận | `handover` PICKUP hoặc DELIVERY gắn `horse_stay` | Thiếu giấy bắt buộc khi nhận | Quá hạn nhận thì gửi chuồng, báo mức phí theo ngày bằng thông báo tự động. Đặt hoặc đổi giờ hẹn thì báo khách, các con cùng giờ chỉ báo một lần | Giờ hẹn và biên bản |
+| 3.5c | Nhận và trả ngựa tại hub (nhân viên hub) | Xác nhận lịch hẹn, kiểm giấy khi nhận và ký giao nhận | `handover` PICKUP hoặc DELIVERY gắn `horse_stay` | Thiếu giấy bắt buộc khi nhận | Quá hạn nhận thì gửi chuồng, thông báo mức phí cho mỗi 24 giờ trọn vẹn. Đặt hoặc đổi giờ hẹn thì báo khách, các con cùng giờ chỉ báo một lần | Giờ hẹn và biên bản |
 | 3.6 | Kế hoạch đơn (điều phối) | Xem chuyến đang giữ chỗ, đổi chuyến trước khi cọc (đơn đang thẩm định hoặc chờ bổ sung) | `booking.departure_id`, `horse_stay` | Chuyến hết chỗ | Đổi chuyến thì nhả và giữ khoang cùng lúc. Ngày xuất phát mới dùng để kiểm bảo hiểm PERSONAL khi bắt đầu báo giá | Lịch dự kiến |
 | 3.7 | Duyệt báo giá (quản lý) | Xem dòng giá, điều chỉnh kèm lý do, **Gửi** | `quotation`, `quotation_line` | Khi bắt đầu báo giá, thiếu giấy CUSTOMER bắt buộc, chưa xác định yêu cầu theo cửa khẩu, thiếu chuyến trục hoặc bảo hiểm ngựa ACTIVE chưa hợp lệ. Khi gửi, tổng hoặc tiền cọc bằng 0 hay báo giá bảo hiểm mua hộ đã hết hạn | Đơn sang `AWAITING_DEPOSIT`, đếm giờ hết hạn | Báo giá, hạn chấp nhận |
 | 3.7a | Chuyến cần quyết định (quản lý) **[mới]** | Từng tuyến trong tuần: **Chạy**, dùng xe nhỏ, dồn chuyến, **Hủy** | `departure`, `booking` | Trước mốc 48 giờ (chỉ chặn **Chạy**); dồn hoặc hủy thiếu lý do | Hiện chỗ đã cọc trên sức chứa, cảnh báo dưới 30%, tuyến sau cần xe này, lượt về rỗng. Đơn chưa gửi báo giá bị nhả chỗ tại mốc quyết định | Xác nhận chạy, hoặc đổi chuyến và hoàn 100% |
@@ -97,7 +97,7 @@ Công ty không vận hành nơi cách ly. Điều kiện cách ly thể hiện 
 | 6.3 | Điểm dừng: cửa khẩu chiều xuất (tài xế) | Tải giấy, **Bàn giao đại lý** | `document`, `handover` AGENT | Thiếu giấy; không có đối tác ở ít nhất một bên | **Trách nhiệm sang đại lý**; chặng đại lý bắt đầu | "Đã qua cửa khẩu" |
 | 6.4 | Chặng đại lý (điều phối) | Nhập mốc và ảnh đại lý gửi | `horse_leg`, `document` | Mốc lùi thời gian | | Mốc, ghi rõ "theo đại lý" |
 | 6.5 | Điểm dừng: giao (tài xế) | **Bắt đầu chờ**, quét chip, ký, trả giấy gốc, **Hoàn tất** | `handover` DELIVERY, `handover_document`, `booking_horse` DELIVERED | Chip sai, thiếu chữ ký | Con cuối cùng xong: `DELIVERED` | "Đã giao", biên bản |
-| 6.6 | Như trên | **Không gặp người nhận** | `handover` TIMEOUT, `incident`, `horse_stay` STABLING | Chưa hết giờ chờ miễn phí | Xe tự đi về hub. Lập lượt giao lại chốt phí giữ. HUB_OUT chặn khi chưa trả. Người nhận tự tới hub lấy được ngay. | Ngựa ở đâu, phí |
+| 6.6 | Như trên | **Không gặp người nhận** | `handover` TIMEOUT, `incident`, `horse_stay` STABLING | Chưa hết giờ chờ miễn phí | Xe đi về hub. Báo sẵn sàng chốt phí giữ, lượt giao lại xác định cước giao. HUB_OUT kiểm đã trả hai khoản. Người nhận tự tới hub lấy được ngay. | Ngựa ở đâu, phí |
 | 6.7 | Quyết toán (quản lý) | Duyệt từng chi phí, lập khoản thu thêm | `cost_item`, `payment` EXTRA_CHARGE | Khoản khách hoặc người nhận chưa hỏi và vượt hạn mức, trừ phí biểu phí gắn STABLING | Đóng khi hết nợ, không còn chi phí khách chịu chưa duyệt và không còn sự cố mở. Đơn không phát sinh tự đóng sau 7 ngày | Bảng kê, hạn và nút VNPAY. Nhắc 08:00 và chặn gửi đơn mới khi có khoản quá hạn. |
 | 6.8 | Đánh giá (khách) | Chấm điểm | `booking_rating` | Đơn chưa ở `DELIVERED` hoặc `COMPLETED`, hoặc đã đánh giá | | |
 
@@ -197,3 +197,10 @@ Quyết toán: nút đóng đơn theo `canClose` của máy chủ, không theo s
 ## Công nợ khoản thu thêm · mục 13.3, 13.5 (6, 8, 9)
 
 Khách: nút **Khiếu nại khoản này** ở khoản thu thêm chưa trả. Quản lý: ở khoản thu của đơn có kết luận khiếu nại, gia hạn, xóa nợ, mở lại khoản, cho đặt đơn lại; mọi thao tác ghi `audit_log`.
+
+
+### Giữ ngựa tại hub trên chi tiết đơn và màn Hub
+
+Chi tiết đơn hiển thị đồng hồ, phí tạm tính và mốc tính tiếp theo theo từng con đang giữ. Khách xác nhận báo sẵn sàng hoặc nhập giờ dự kiến tự đến hub. Thẻ tải lại dữ liệu từ máy chủ định kỳ và sau khi ghi lựa chọn.
+
+Màn Hub cho điều phối ghi sẵn sàng thay khách kèm ghi chú cuộc gọi và ghi hai mốc khi khách chọn khung giao muộn hơn. Bàn giao trực tiếp tại hub sử dụng thao tác giao hiện có.

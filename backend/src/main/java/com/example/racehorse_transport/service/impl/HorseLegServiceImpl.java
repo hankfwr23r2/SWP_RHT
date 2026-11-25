@@ -1,6 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.service.StablingChargeService;
+import com.example.racehorse_transport.service.RedeliveryChargeService;
 import com.example.racehorse_transport.dto.dispatch.DispatchBookingResponseDto;
 import com.example.racehorse_transport.dto.dispatch.DispatchBookingResponseDto.HorseDto;
 import com.example.racehorse_transport.dto.dispatch.HorseLegRequestDto;
@@ -63,7 +63,7 @@ public class HorseLegServiceImpl implements HorseLegService {
     private final StallPlanService stallPlans;
     private final SystemConfigService configs;
     private final CustomerNoticeService notices;
-    private final StablingChargeService stablingCharges;
+    private final RedeliveryChargeService redeliveryCharges;
 
     @Override
     @Transactional(readOnly = true)
@@ -204,9 +204,7 @@ public class HorseLegServiceImpl implements HorseLegService {
         legs.saveAndFlush(leg);
         // Hệ thống tự xếp vị trí khoang ngay khi gán ngựa (NGHIEP_VU GĐ5), điều phối chỉnh ở sơ đồ khoang
         stallPlans.placeNew(leg);
-        if (leg.getReplacedHorseLeg() != null || leg.getLegType() == HorseLegType.LINEHAUL || leg.getLegType() == HorseLegType.DELIVERY) {
-            stablingCharges.precharge(leg, username);
-        }
+        if (leg.getReplacedHorseLeg() != null) redeliveryCharges.chargeReadyTrip(leg);
         notices.legAssigned(leg);
         return horsesOnTrip(trip.getId());
     }

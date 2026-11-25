@@ -15,6 +15,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface VehicleTripRepository extends JpaRepository<VehicleTrip, Long> {
+    @Query("SELECT MIN(t.actualStartAt) FROM VehicleTrip t WHERE t.departure.id = :departureId")
+    Optional<Instant> firstActualStartForDeparture(Long departureId);
     boolean existsByVehicle_IdAndStatusNotIn(Long vehicleId, Collection<VehicleTripStatus> statuses);
 
     boolean existsByDeparture_IdAndTripTypeAndStatusNotIn(Long departureId,

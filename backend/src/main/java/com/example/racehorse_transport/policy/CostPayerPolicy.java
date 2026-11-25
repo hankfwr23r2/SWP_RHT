@@ -36,6 +36,9 @@ public final class CostPayerPolicy {
         if (category == CostCategory.WAITING) {
             throw new DispatchRuleException("category", "Không thu phí chờ.");
         }
+        if (category == CostCategory.REDELIVERY || category == CostCategory.PLANNED_STABLING) {
+            throw new DispatchRuleException("category", "Khoản phí này do hệ thống tính theo biểu giá.");
+        }
     }
 
     public static boolean customerSide(CostPayerType payer) {
@@ -47,9 +50,14 @@ public final class CostPayerPolicy {
                 && cost.getHorseStay() != null && cost.getHorseStay().getStayType() == HorseStayType.STABLING;
     }
 
+    public static boolean isAutomaticTransportFee(CostItem cost) {
+        return isScheduledStablingFee(cost) || cost.getCategory() == CostCategory.REDELIVERY
+                || cost.getCategory() == CostCategory.PLANNED_STABLING;
+    }
+
     public static boolean countsAgainstEmergencyLimit(CostItem cost) {
         return customerSide(cost.getPayerType()) && !Boolean.TRUE.equals(cost.getCustomerConsulted())
-                && !isScheduledStablingFee(cost);
+                && !isAutomaticTransportFee(cost);
     }
 
     public static void requireCostResponse(CostItem cost, java.time.Instant now, String overrideReason) {

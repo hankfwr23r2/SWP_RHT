@@ -59,6 +59,24 @@ public interface HorseStayRepository extends JpaRepository<HorseStay, Long> {
             """)
     List<Handover> findUnbilledBalanceHoldReturns(Long bookingId);
 
+    List<HorseStay> findByReadyAtIsNotNullAndActualEndAtIsNull();
+
+    @Query("""
+            SELECT s FROM HorseStay s WHERE s.balanceHoldAt IS NOT NULL
+                AND EXISTS (SELECT l.id FROM HorseLeg l WHERE l.bookingHorse = s.bookingHorse
+                    AND l.boardTripStop.id = :tripStopId AND l.actualStartAt = s.actualEndAt
+                    AND l.legType = com.example.racehorse_transport.entity.enums.HorseLegType.LINEHAUL)
+            ORDER BY s.bookingHorse.booking.id, s.id
+            """)
+    List<HorseStay> findPlannedStablingForDeparture(Long tripStopId);
+
+    @Query("""
+            SELECT CASE WHEN COUNT(l) > 0 THEN TRUE ELSE FALSE END FROM HorseLeg l
+            WHERE l.bookingHorse.id = :horseId AND l.actualStartAt = :at
+                AND l.legType = com.example.racehorse_transport.entity.enums.HorseLegType.LINEHAUL
+            """)
+    boolean hasLinehaulBoarding(Long horseId, Instant at);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT s FROM HorseStay s WHERE s.id = :stayId")
     Optional<HorseStay> findForUpdate(Long stayId);

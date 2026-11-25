@@ -46,6 +46,22 @@ class PricingPolicyTest {
     }
 
     @Test
+    void pricesRedeliveryAtTheVehicleClassAndHubDistanceOfEachAddress() {
+        var delivery = service(1, ServiceLayer.DELIVERY, BillingUnit.PER_KM, false);
+        var fuel = service(2, ServiceLayer.FUEL, BillingUnit.PER_KM, false);
+        var small = new VehicleClass();
+        small.setId(2L);
+        var smallDelivery = item(2, delivery, "30000", null, null);
+        smallDelivery.setVehicleClass(small);
+        var prices = List.of(item(1, delivery, "45000", null, null), smallDelivery,
+                item(3, fuel, "9000", null, null));
+        assertThat(PricingPolicy.redeliveryCharge(list(), prices, List.of(delivery, fuel), null, 2L,
+                List.of(new BigDecimal("10"), new BigDecimal("20")))).isEqualByComparingTo("1273500");
+        assertThat(PricingPolicy.redeliveryCharge(list(), prices, List.of(delivery, fuel), null, 2L,
+                List.of(new BigDecimal("0.07")))).isEqualByComparingTo("2972");
+    }
+
+    @Test
     void pricesRoadLinehaulDocumentsAndChosenServiceWithoutQuarantine() {
         List<BillableService> catalog = List.of(
                 service(1, ServiceLayer.PICKUP, BillingUnit.PER_KM, false),

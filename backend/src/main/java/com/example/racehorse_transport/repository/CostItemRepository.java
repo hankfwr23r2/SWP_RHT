@@ -14,6 +14,22 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface CostItemRepository extends JpaRepository<CostItem, Long> {
+    @Query("""
+            SELECT c FROM CostItem c LEFT JOIN FETCH c.extraChargePayment
+            WHERE c.horseStay.id = :stayId OR (
+                c.category = com.example.racehorse_transport.entity.enums.CostCategory.REDELIVERY
+                AND EXISTS (SELECT l.id FROM HorseLeg l, HorseStay s
+                            WHERE s.id = :stayId AND l.bookingHorse = s.bookingHorse
+                              AND l.vehicleTrip = c.vehicleTrip AND l.bookingHorse.booking = c.booking
+                              AND l.replacedHorseLeg IS NOT NULL AND (s.failedDeliveryLeg IS NULL OR l.replacedHorseLeg = s.failedDeliveryLeg)
+                              AND (s.failedDeliveryLeg IS NOT NULL OR l.plannedStartAt >= s.actualStartAt)
+                              AND l.status <> com.example.racehorse_transport.entity.enums.HorseLegStatus.CANCELLED
+                              AND (s.actualEndAt IS NULL OR c.incurredAt <= s.actualEndAt)))
+            """)
+    List<CostItem> findStablingClockCosts(Long stayId);
+
+    boolean existsByBooking_IdAndVehicleTrip_IdAndCategory(Long bookingId, Long tripId,
+            com.example.racehorse_transport.entity.enums.CostCategory category);
     @Query("select c.incident.id from CostItem c where c.id = :id")
     Optional<Long> findIncidentId(Long id);
 
@@ -44,6 +60,8 @@ public interface CostItemRepository extends JpaRepository<CostItem, Long> {
     @Query("""
             SELECT coalesce(sum(c.amount), 0) FROM CostItem c LEFT JOIN c.horseStay s
             WHERE c.booking.id = :bookingId AND c.payerType IN :payers AND c.customerConsulted = false AND c.approvedAt IS NOT NULL
+              AND c.category NOT IN (com.example.racehorse_transport.entity.enums.CostCategory.REDELIVERY,
+                                     com.example.racehorse_transport.entity.enums.CostCategory.PLANNED_STABLING)
               AND (s.id IS NULL OR s.stayType <> com.example.racehorse_transport.entity.enums.HorseStayType.STABLING
                    OR c.category <> com.example.racehorse_transport.entity.enums.CostCategory.STABLING)
             """)

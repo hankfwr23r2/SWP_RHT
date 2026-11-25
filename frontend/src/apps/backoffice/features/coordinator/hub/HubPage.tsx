@@ -22,6 +22,7 @@ import { PageHeader } from '@shared/ui/PageHeader'
 import { localToIso } from '@backoffice/shared/localTime'
 import s from '@backoffice/shared/StaffPanels.module.css'
 import h from './Hub.module.css'
+import { HubStablingActions } from './HubStablingActions'
 
 // Nhận, trả ngựa (quét chip); không nhận (có lý do); hẹn giờ người nhận tới; gửi chuồng khi quá giờ hẹn (phí người nhận chịu)
 type Action = { stay: HorseStay; kind: 'receive' | 'refuse' | 'deliver' | 'collect' | 'stable' | 'returnHeld' }
@@ -136,6 +137,8 @@ export default function HubPage() {
         return (
           <span className={s.row}>
             <Button size="sm" onClick={() => open(stay, 'deliver')}>{t('dispatch.stays.deliver')}</Button>
+            {stay.stayType === 'STABLING' && stay.id != null && <HubStablingActions
+              stayId={stay.id} readyAt={stay.readyAt} onChanged={reload} />}
             {stay.stayType === 'ASSEMBLY' && <Button size="sm" variant="ghost" onClick={() => open(stay, 'collect')}>{t('dispatch.stays.collect')}</Button>}
             {overdue && <Button size="sm" variant="danger" onClick={() => open(stay, 'stable')}>{t('dispatch.stays.stable')}</Button>}
           </span>
