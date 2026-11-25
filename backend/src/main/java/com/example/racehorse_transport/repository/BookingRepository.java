@@ -62,6 +62,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     Optional<Booking> findByCode(String code);
 
+    @Query("SELECT b.id FROM Booking b WHERE b.status = :status AND b.createdAt <= :cutoff")
+    List<Long> findIdsByStatusAndCreatedAtThrough(BookingStatus status, Instant cutoff);
+
     // Tra cứu công khai bằng số vận đơn
     Optional<Booking> findByWaybillNumber(String waybillNumber);
 

@@ -28,11 +28,15 @@ public final class BookingAssignmentPolicy {
     }
 
     public static void requireAvailable(Staff specialist) {
-        if (specialist.getEmploymentStatus() != EmploymentStatus.ACTIVE
-                || specialist.getUser().getStatus() != AppUserStatus.ACTIVE
-                || !"SPECIALIST".equals(specialist.getUser().getRole().getCode())) {
+        if (!isAvailable(specialist)) {
             throw new BookingRuleException("specialistId", "Chuyên viên phải đang làm việc và có tài khoản hoạt động.");
         }
+    }
+
+    public static boolean isAvailable(Staff specialist) {
+        return specialist != null && specialist.getEmploymentStatus() == EmploymentStatus.ACTIVE
+                && specialist.getUser().getStatus() == AppUserStatus.ACTIVE
+                && "SPECIALIST".equals(specialist.getUser().getRole().getCode());
     }
 
     public static void requireReassignable(BookingStatus status) {

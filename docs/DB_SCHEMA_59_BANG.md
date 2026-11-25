@@ -1593,6 +1593,14 @@ Giá trị khởi đầu của các tham số chốt ngày 23/11/2026, thêm b�
 | `DELIVERY_NOTICE_WINDOW_MINUTES` | 60 | Khung giờ giao đã báo; xe tới sau khung là lỗi công ty (số mẫu, tự đề xuất) |
 | `HANDOVER_FREE_WAIT_MINUTES` | 1 | 1440 |
 
+Hạn nội bộ ở điểm 1.F5:
+
+| Tham số | Nhóm | Mặc định (giờ) | Nhỏ nhất | Lớn nhất |
+|---|---|---:|---:|---:|
+| `BOOKING_INTAKE_DUE_HOURS` | `BOOKING` | 4 | 1 | 168 |
+| `BOOKING_REVIEW_DUE_HOURS` | `BOOKING` | 24 | 1 | 168 |
+| `BOOKING_QUOTE_DUE_HOURS` | `QUOTATION` | 24 | 1 | 168 |
+
 ### 15.5 `route_cache`: bộ đệm kết quả tính lộ trình
 
 Không phải dữ liệu nghiệp vụ. Có thể xóa toàn bộ bất kỳ lúc nào.

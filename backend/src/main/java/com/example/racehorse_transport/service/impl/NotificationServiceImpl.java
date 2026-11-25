@@ -11,6 +11,7 @@ import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.NotificationRecipientRepository;
 import com.example.racehorse_transport.repository.NotificationRepository;
 import com.example.racehorse_transport.service.NotificationService;
+import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,12 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional
     public void notify(List<Long> recipientUserIds, Long bookingId, String title, String message, String link) {
+        notifyAt(recipientUserIds, bookingId, title, message, link, null);
+    }
+
+    @Override
+    @Transactional
+    public void notifyAt(List<Long> recipientUserIds, Long bookingId, String title, String message, String link, Instant createdAt) {
         if (recipientUserIds == null || recipientUserIds.isEmpty()) {
             throw new IllegalArgumentException("Thông báo phải có ít nhất một người nhận.");
         }
@@ -57,12 +64,8 @@ public class NotificationServiceImpl implements NotificationService {
             }
         }
 
-        Notification notification = new Notification();
-        notification.setBooking(bookingId == null ? null : findBooking(bookingId));
-        notification.setTitle(title);
-        notification.setMessage(message);
-        notification.setLinkUrl(link);
-        Notification saved = notifications.save(notification);
+        Booking booking = bookingId == null ? null : findBooking(bookingId);
+        Notification saved = save(booking, title, message, link, createdAt);
 
         recipients.saveAll(userIds.stream().map(userId -> {
             NotificationRecipient recipient = new NotificationRecipient();
@@ -71,6 +74,19 @@ public class NotificationServiceImpl implements NotificationService {
             recipient.setUser(found.get(userId));
             return recipient;
         }).toList());
+    }
+
+    private Notification save(Booking booking, String title, String message, String link, Instant createdAt) {
+        if (createdAt != null) {
+            Long id = notifications.insertAt(booking == null ? null : booking.getId(), title, message, link, createdAt);
+            return notifications.getReferenceById(id);
+        }
+        Notification notification = new Notification();
+        notification.setBooking(booking);
+        notification.setTitle(title);
+        notification.setMessage(message);
+        notification.setLinkUrl(link);
+        return notifications.save(notification);
     }
 
     private Booking findBooking(Long bookingId) {

@@ -67,21 +67,23 @@ Các nhánh phụ: Cần bổ sung, Báo giá hết hạn, Cần chọn lại ch
 - **Màn 3, dịch vụ và bảo hiểm.** Khách chọn dịch vụ thêm và cách bảo hiểm cho **từng con**: đã có, nhờ công ty mua, hoặc không mua. Không mua thì phải tích đồng ý điều khoản trách nhiệm hạn chế cho con đó.
 - **Màn 4, xem lại và gửi.** Khách khai bốn vai: người gửi, người nhận, người trả tiền, liên hệ khẩn cấp. Có thể ghi lưu ý đường vào và **hạn mức chi khẩn cấp** (khi ngựa gặp sự cố trên đường, công ty được chi tới mức này mà không cần hỏi trước). Đồng ý điều khoản rồi gửi đơn.
 - Suốt 4 màn, khách luôn thấy **giá tạm tính** do máy chủ tính, và bản nháp được giữ khi quay lại màn trước.
-- Khi đơn được gửi, hệ thống **giữ chỗ ngay** trên chuyến, đặt trạng thái **Chờ tiếp nhận**, báo khách "Đã nhận đơn" và báo mọi chuyên viên.
+- Khi đơn được gửi, hệ thống **giữ chỗ ngay** trên chuyến, đặt trạng thái **Chờ tiếp nhận**, báo khách "Đã nhận đơn" và báo quản lý.
 
 ### Bước 3. Công ty tiếp nhận và thẩm định
 
-- Khi đơn được gửi, chuyên viên (hoặc quản lý) bấm **Tiếp nhận**, đơn sang **Đang thẩm định**; hoặc **Từ chối** kèm lý do.
+- Quản lý bấm **Tiếp nhận** và phân công chuyên viên. Đơn sang **Đang thẩm định**. Quản lý cũng có thể **Từ chối** đơn chờ tiếp nhận kèm lý do.
 - Chuyên viên kiểm giấy khách nộp và bảo hiểm từng con (chi tiết ở luồng 2).
 - Song song, điều phối viên xem chuyến đơn đang giữ chỗ và có thể đổi đơn sang chuyến khác; khách được báo.
 - Thiếu hồ sơ thì chuyên viên **trả lại để bổ sung** kèm lý do, đơn sang **Cần bổ sung**. Khách nộp thêm và gửi lại, đơn quay về Đang thẩm định; người đã trả đơn được báo.
 - Đủ điều kiện thì chuyên viên bấm **Bắt đầu báo giá**, đơn sang **Đang báo giá**.
-- Cả bước 3 và bước 4 có **một hạn chung: mốc quyết định, 48 giờ trước giờ chạy**. Công ty phải **gửi xong báo giá trước mốc này**. Quá mốc mà đơn vẫn chưa được gửi báo giá thì hệ thống tự nhả chỗ, đơn sang **Cần chọn lại chuyến**; khách chọn chuyến khác hoặc hủy miễn phí. Lý do: từ mốc này công ty phải chốt số ngựa để quyết định chạy, không chờ đơn chưa có giá.
+- Hạn nội bộ mặc định là **4 giờ** từ lúc gửi đơn để quản lý tiếp nhận và **24 giờ** từ lần gần nhất đơn sang Đang thẩm định để chuyên viên phụ trách xử lý. Khi khách gửi lại hồ sơ, thời gian thẩm định đếm lại từ đầu.
+- Với đơn đi trục, công ty vẫn phải **gửi xong báo giá trước mốc quyết định, 48 giờ trước giờ chạy**. Quá mốc mà đơn chưa được gửi báo giá thì hệ thống tự nhả chỗ và chuyển đơn sang **Cần chọn lại chuyến**. Khách chọn chuyến khác hoặc hủy miễn phí.
 
 ### Bước 4. Quản lý báo giá
 
 - Quản lý bấm **Lập bản nháp**. Hệ thống tự tính từng dòng theo bảng giá đang hiệu lực và chốt lịch: ngày đón, ngày xuất phát, ngày giao dự kiến.
 - Quản lý không sửa giá từng dòng, chỉ thêm **dòng điều chỉnh** tăng hoặc giảm kèm lý do.
+- Hạn nội bộ mặc định để gửi báo giá là **24 giờ** từ lần gần nhất đơn sang Đang báo giá, kể cả khi phải báo giá lại.
 - Quản lý bấm **Gửi khách**. Báo giá khóa lại, đơn sang **Chờ đặt cọc**, khách được báo. Từ giây phút gửi, **khách có 24 giờ** để vừa chấp nhận vừa trả cọc.
 
 ### Bước 5. Khách trả lời và đặt cọc
@@ -119,7 +121,7 @@ Ví dụ chuyến TP.HCM – Đà Nẵng chạy **05:00 thứ Ba 08/12**, khách
 |---|---|---|---|
 | 13/10 | 8 tuần | Hệ thống | Chuyến được tạo và mở bán |
 | 23/11 | | Khách | Gửi đơn, **giữ chỗ từ lúc này** |
-| 23/11 → 25/11 | | Chuyên viên, quản lý | Thẩm định và báo giá. Không có hạn riêng từng việc, nhưng phải gửi xong báo giá trước 05:00 06/12 |
+| 23/11 → 25/11 | | Quản lý và chuyên viên | Tiếp nhận, thẩm định, gửi báo giá theo các hạn nội bộ ở mục 1.E. Báo giá phải gửi trước 05:00 06/12 |
 | 25/11 09:00 | | Quản lý | Gửi báo giá |
 | 26/11 09:00 | | **Khách** | **Hạn trả lời và trả cọc**: 24 giờ sau khi gửi báo giá |
 | 30/11 | | Khách | Ngày cuối khách mới còn đặt được chuyến này: hạn nhận đặt 05/12 trừ 5 ngày làm giấy |
@@ -196,7 +198,8 @@ Vì báo giá phải gửi trước mốc quyết định và sống tối đa 2
 | Việc | Khách | Chuyên viên | Điều phối | Quản lý |
 |---|:-:|:-:|:-:|:-:|
 | Tạo đơn, nộp lại, chấp nhận hoặc từ chối báo giá, trả tiền | ✓ | | | |
-| Tiếp nhận, từ chối đơn, trả lại để bổ sung | | ✓ | | ✓ |
+| Tiếp nhận, phân công chuyên viên hoặc từ chối đơn chờ tiếp nhận | | | | ✓ |
+| Thẩm định, trả lại để bổ sung hoặc từ chối đơn đang thẩm định | | ✓ | | |
 | Bắt đầu báo giá | | ✓ | | |
 | Đổi chuyến cho đơn đang thẩm định hoặc cần bổ sung | | | ✓ | |
 | Lập, điều chỉnh, gửi báo giá | | | | ✓ |
@@ -237,7 +240,7 @@ Vì báo giá phải gửi trước mốc quyết định và sống tối đa 2
 
 - **1.33** Trước khi khách xác nhận hủy, màn hình cho xem **số tiền được hoàn và số tiền mất**. Lý do hủy bắt buộc, tối đa 500 ký tự.
 - **1.34** Hủy thì nhả chỗ ngay, hủy các khoản chưa trả, báo khách và điều phối viên.
-- **1.35** Hoàn tiền **chuyển khoản ngoài hệ thống**: hệ thống tạo khoản hoàn chờ xử lý, quản lý chuyển tiền rồi ghi **mã chuyển khoản** (không trùng) và ảnh chứng từ nếu có. Hiện **không có hạn** phải hoàn trong bao lâu.
+- **1.35** Hoàn tiền bằng **chuyển khoản ngoài hệ thống**. Hệ thống tạo khoản hoàn chờ xử lý, hạn chuyển khoản theo `REFUND_DUE_DAYS` (mặc định 7 ngày), quá hạn thì nhắc quản lý mỗi ngày. Quản lý chuyển tiền rồi ghi **mã chuyển khoản** (không trùng) và ảnh chứng từ nếu có.
 
 ## 1.E. Bảng tra nhanh các hạn
 
@@ -247,11 +250,17 @@ Vì báo giá phải gửi trước mốc quyết định và sống tối đa 2
 | Mở bán chuyến | Hệ thống | Lùi từ giờ chạy | 8 tuần | | Cấu hình |
 | Đặt kịp làm giấy (bước 2) | Khách | Hôm đặt tới hạn nhận đặt | 5 / 21 / 37 ngày | Chuyến bị khóa, chọn chuyến sau | Quy định từng nước |
 | Hạn nhận đặt (bước 2) | Khách | Lùi từ giờ chạy | 72 giờ | Không đặt, không đổi sang chuyến đó được | Lịch chạy |
+| Tiếp nhận (bước 3) | Quản lý | Lúc khách gửi đơn | 4 giờ mặc định | Nhắc tiếp nhận | `BOOKING_INTAKE_DUE_HOURS` |
+| Thẩm định (bước 3) | Chuyên viên phụ trách | Lần gần nhất đơn sang Đang thẩm định | 24 giờ mặc định | Nhắc thẩm định | `BOOKING_REVIEW_DUE_HOURS` |
+| Gửi báo giá (bước 4) | Quản lý | Lần gần nhất đơn sang Đang báo giá | 24 giờ mặc định | Nhắc gửi báo giá | `BOOKING_QUOTE_DUE_HOURS` |
 | Mốc quyết định (bước 3, 4) | Công ty | Lùi từ giờ chạy | 48 giờ | Đơn chưa gửi báo giá bị nhả chỗ. Từ đây quản lý được xác nhận chạy | Cấu hình |
 | Trả lời và trả cọc (bước 5) | Khách | Lúc gửi báo giá | 24 giờ, hoặc sớm hơn (1.28) | Báo giá hết hạn, nhả chỗ | Cấu hình |
 | Một lần mở trang VNPAY (bước 5) | Khách | Lúc bấm trả | 15 phút | Bấm mở lại | Cài đặt máy chủ |
 | Chờ kết quả ngân hàng (bước 5) | Hệ thống | Sau hạn trả cọc | 5 phút | Cho đơn hết hạn | Cài đặt máy chủ |
 | Giữ giá khi đổi chuyến (T12) | Khách | Ngày chạy của chuyến vừa lỡ | 30 ngày | Không chọn được chuyến muộn hơn | Cấu hình |
+| Chuyển khoản hoàn (1.35) | Quản lý | Theo quyết toán sẵn có | 7 ngày mặc định | Nhắc mỗi ngày khi khoản hoàn quá hạn (đã có từ trước) | `REFUND_DUE_DAYS` |
+
+Ba hạn tiếp nhận, thẩm định, gửi báo giá tính theo giờ liên tục. Hệ thống quét mỗi giờ và gửi thông báo tối đa một lần mỗi ngày theo giờ Việt Nam cho từng đơn và từng bước. Lịch nhắc giữ nguyên trạng thái đơn.
 
 ## 1.F. Điểm còn hở, cần nhóm quyết
 
@@ -261,7 +270,7 @@ Tìm thấy khi đối chiếu code để viết luồng này:
 2. **Đã sửa.** Báo quản lý khi đơn sang Đang báo giá và khi khách chấp nhận hoặc từ chối báo giá. Báo khách khi báo giá hết hạn và khi hệ thống xác nhận đã nhận cọc.
 3. **Đã sửa.** Khi đặt đơn liên tỉnh chạy thẳng, hệ thống kiểm số ngày làm giấy theo quy định đến ngày đón.
 4. **Đã sửa.** Nút Từ chối đơn chỉ hiện ở Chờ tiếp nhận và Đang thẩm định, theo điều kiện của máy chủ.
-5. **Không có hạn cho việc của công ty**: tiếp nhận, thẩm định, báo giá không có hạn riêng, chỉ bị chặn chung ở mốc quyết định. Hoàn tiền cũng không có hạn. Hỏi: có cần đặt hạn nội bộ (ví dụ tiếp nhận trong 4 giờ làm việc) để nhắc nhân viên?
+5. **Đã sửa.** Tiếp nhận, thẩm định, gửi báo giá có hạn nội bộ theo giờ; hạn chuyển khoản hoàn dùng `REFUND_DUE_DAYS` sẵn có. Hệ thống quét mỗi giờ và nhắc đúng vai trò một lần mỗi ngày cho từng đơn và từng bước. Chuyên viên nhận nhắc khi đã được phân công và còn hoạt động.
 6. **Xử lý chuyến trễ** theo cách hàng không: đã có đề xuất, chờ duyệt, chưa làm. Sẽ viết ở luồng 3 và 5.
 7. **Đã sửa.** Chi tiết đơn của khách ẩn ô đánh giá khi đơn đã có đánh giá.
 
@@ -393,7 +402,7 @@ Tiếp ví dụ chuyến chạy **05:00 thứ Ba 08/12** (liên tỉnh), khách 
 | Thời điểm | Còn bao lâu tới giờ chạy | Hạn của ai | Chuyện gì xảy ra |
 |---|---|---|---|
 | 30/11 | | Khách | Ngày cuối đặt được chuyến này, vì cần 5 ngày làm giấy trước hạn nhận đặt 05/12 |
-| 23/11 → trước khi báo giá | | **Khách** và chuyên viên | Đợt 1: nộp và duyệt giấy của khách, bảo hiểm. Không có hạn riêng, chặn chung bởi mốc quyết định |
+| 23/11 → trước khi báo giá | | **Khách** và chuyên viên | Đợt 1: nộp và duyệt giấy của khách, bảo hiểm. Chuyên viên nhận nhắc theo hạn thẩm định ở mục 1.E |
 | 03/12 → 08/12, 08:00 mỗi ngày | 5 ngày | Hệ thống | Báo khách hoặc chuyên viên theo bên nộp giấy còn thiếu |
 | 06/12 05:00 | 48 giờ | **Quản lý** | Từ lúc này được báo giấy không kịp |
 | 07/12, lúc xe đi đón | 1 ngày | **Công ty** | Kiểm lần cuối. Thiếu giấy thì xe không xuất phát |
@@ -1321,7 +1330,7 @@ Dòng hai: loại một con thì bỏ cước trục, dịch vụ và phí bảo
 - **6.17** Phần báo giá phải trả **đúng**, dư thì hoàn xong mới đóng. Khoản thu thêm chưa trả là công nợ riêng, không chặn đóng đơn. Chi tiết: mục 13.3 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md).
 - **6.18** Chi phí **công ty** chịu chưa duyệt không chặn quản lý đóng, nhưng có bất kỳ chi phí nào thì hệ thống **không tự đóng**.
 - **6.19** Không có trạng thái Đang quyết toán: trong lúc quyết toán đơn vẫn là Đã giao.
-- **6.20** Hoàn tiền: quản lý chuyển khoản ngoài, ghi mã chuyển khoản (không trùng, tối đa 100 ký tự) và ảnh chứng từ nếu có.
+- **6.20** Quản lý chuyển khoản hoàn ngoài hệ thống, ghi mã chuyển khoản (không trùng, tối đa 100 ký tự) và ảnh chứng từ nếu có. Hạn và lịch nhắc theo mục 1.E. Khách nhận thông báo khi quản lý ghi nhận đã hoàn tiền.
 - **6.21** Phần thu hộ (lệ phí nhà nước, bảo hiểm) tách khỏi doanh thu.
 - **6.22** Đánh giá 1–5 sao, một lần, khi đơn Đã giao hoặc Hoàn thành.
 
@@ -1373,7 +1382,7 @@ Dòng hai: loại một con thì bỏ cước trục, dịch vụ và phí bảo
 
 **Tiền và đóng đơn:**
 
-16. **Lập khoản thu thêm không báo khách**, không có hạn trả. **Hoàn tiền xong cũng không báo.**
+16. **Lập khoản thu thêm không báo khách**, không có hạn trả.
 17. **Đơn sang Đã giao không báo quản lý** để quyết toán.
 18. **Chưa có khiếu nại.** Tài liệu ghi hạn 7 ngày từ lúc giao, hệ thống không có màn và quản lý đóng đơn được ngay. Đề xuất: 7 ngày đầu chỉ đóng khi khách xác nhận nhận ngựa ổn.
 19. **Đã sửa** · Nút trả ngựa chỉ hiện ở điểm đón khi máy chủ xác nhận các đơn trên xe tại điểm đó đã quá hạn trả số dư và không còn giao dịch đang xác nhận.
