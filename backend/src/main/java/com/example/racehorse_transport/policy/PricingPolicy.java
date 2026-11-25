@@ -167,11 +167,21 @@ public final class PricingPolicy {
 
     public static RoadPricing chooseRoadPricing(PriceList list, List<PriceItem> items, List<BillableService> catalog,
                                                 Long routeId, List<RoadLeg> loopRoads, List<RoadLeg> separateDelivery) {
-        List<Line> loopLines = roadLines(list, items, catalog, routeId, loopRoads);
+        return chooseRoadPricing(list, items, catalog, routeId, loopRoads, separateDelivery, false);
+    }
+
+    public static RoadPricing chooseDeliveryPricing(PriceList list, List<PriceItem> items, List<BillableService> catalog,
+            Long routeId, List<RoadLeg> loopRoads, List<RoadLeg> separateDelivery) {
+        return chooseRoadPricing(list, items, catalog, routeId, loopRoads, separateDelivery, true);
+    }
+
+    private static RoadPricing chooseRoadPricing(PriceList list, List<PriceItem> items, List<BillableService> catalog,
+            Long routeId, List<RoadLeg> loopRoads, List<RoadLeg> separateDelivery, boolean deliveryOnly) {
+        List<Line> loopLines = roadLines(list, items, catalog, routeId, loopRoads, deliveryOnly);
         if (!separateDelivery.isEmpty()) {
             List<RoadLeg> separateRoads = new ArrayList<>(loopRoads.stream().filter(leg -> leg.layer() != ServiceLayer.DELIVERY).toList());
             separateRoads.addAll(separateDelivery);
-            List<Line> separateLines = roadLines(list, items, catalog, routeId, separateRoads);
+            List<Line> separateLines = roadLines(list, items, catalog, routeId, separateRoads, deliveryOnly);
             if (sum(separateLines).compareTo(sum(loopLines)) < 0) {
                 return new RoadPricing(List.copyOf(separateRoads), List.copyOf(separateLines));
             }
@@ -188,10 +198,10 @@ public final class PricingPolicy {
     }
 
     private static List<Line> roadLines(PriceList list, List<PriceItem> items, List<BillableService> catalog,
-                                        Long routeId, List<RoadLeg> roads) {
+                                        Long routeId, List<RoadLeg> roads, boolean deliveryOnly) {
         List<Line> lines = new ArrayList<>();
         for (RoadLeg leg : roads) {
-            if (leg.km().signum() > 0) {
+            if (leg.km().signum() > 0 && (!deliveryOnly || leg.layer() == ServiceLayer.DELIVERY)) {
                 addLayer(lines, list, items, catalog, leg.layer(),
                         new Match(routeId, leg.vehicleClassId(), null, leg.km()), leg.km());
             }

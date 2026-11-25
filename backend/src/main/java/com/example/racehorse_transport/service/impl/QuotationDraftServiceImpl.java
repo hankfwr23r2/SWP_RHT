@@ -1,6 +1,8 @@
 package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.dto.quotation.QuotationResponseDto;
+import com.example.racehorse_transport.dto.booking.DeliveryChangeResponseDto;
+import com.example.racehorse_transport.policy.DeliveryChangePolicy;
 import com.example.racehorse_transport.dto.operation.PickupAddOnResponseDto;
 import com.example.racehorse_transport.entity.*;
 import com.example.racehorse_transport.entity.enums.*;
@@ -226,14 +228,7 @@ public class QuotationDraftServiceImpl implements QuotationDraftService {
             return preview ? accepted : Optional.empty();
         }
         if (!exclusion && retry == null && !waivePickup) return preview ? accepted : Optional.empty();
-        var replacement = newDraft(booking, quotations.findByBooking_IdOrderByVersion(booking.getId()));
-        replacement.setPriceList(previous.getPriceList());
-        replacement.setCurrencyCode(previous.getCurrencyCode());
-        replacement.setDepositRate(previous.getDepositRate());
-        replacement.setConfirmedPickupDate(previous.getConfirmedPickupDate());
-        replacement.setConfirmedDepartureDate(previous.getConfirmedDepartureDate());
-        replacement.setEstimatedDeliveryDate(previous.getEstimatedDeliveryDate());
-        replacement.setExpiresAt(previous.getExpiresAt());
+        var replacement = replacementDraft(previous);
 
         boolean customer = horse.getPickupMissLiability() == PickupMissLiability.CUSTOMER;
         List<QuotationLine> keep = new ArrayList<>();
@@ -284,8 +279,26 @@ public class QuotationDraftServiceImpl implements QuotationDraftService {
         replacement.setDepositAmount(previous.getDepositAmount().max(replacement.getPassThroughAmount())
                 .min(replacement.getTotalAmount()));
         if (preview) return Optional.of(replacement);
+        acceptReplacement(previous, replacement, keep);
+        return Optional.of(replacement);
+    }
+
+    private Quotation replacementDraft(Quotation previous) {
+        var booking = previous.getBooking();
+        var replacement = newDraft(booking, quotations.findByBooking_IdOrderByVersion(booking.getId()));
+        replacement.setPriceList(previous.getPriceList());
+        replacement.setCurrencyCode(previous.getCurrencyCode());
+        replacement.setDepositRate(previous.getDepositRate());
+        replacement.setConfirmedPickupDate(previous.getConfirmedPickupDate());
+        replacement.setConfirmedDepartureDate(previous.getConfirmedDepartureDate());
+        replacement.setEstimatedDeliveryDate(previous.getEstimatedDeliveryDate());
+        replacement.setExpiresAt(previous.getExpiresAt());
+        return replacement;
+    }
+
+    private void acceptReplacement(Quotation previous, Quotation replacement, List<QuotationLine> rows) {
         quotations.save(replacement);
-        storeLines(keep);
+        storeLines(rows);
 
         QuotationPolicy.requireTransition(previous.getStatus(), QuotationStatus.SUPERSEDED);
         previous.setStatus(QuotationStatus.SUPERSEDED);
@@ -295,7 +308,54 @@ public class QuotationDraftServiceImpl implements QuotationDraftService {
         replacement.setAcceptedAt(clock.instant());
         QuotationPolicy.requireTransition(replacement.getStatus(), QuotationStatus.ACCEPTED);
         replacement.setStatus(QuotationStatus.ACCEPTED);
-        return Optional.of(replacement);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public DeliveryReplacement replaceDelivery(Quotation previous, List<BookingHorse> active,
+            List<Payment> entries, com.example.racehorse_transport.service.DeliveryRouteService.DeliveryPricing delivery,
+            LocalDate date, BigDecimal expected) {
+        var booking = previous.getBooking();
+        var replacement = replacementDraft(previous);
+        replacement.setEstimatedDeliveryDate(date);
+        var original = lines.findByQuotation_IdOrderByLineNumber(previous.getId());
+        var list = previous.getPriceList();
+        var items = priceItems.findByPriceList_Id(list.getId());
+        var itemById = items.stream().collect(Collectors.toMap(PriceItem::getId, Function.identity()));
+        var catalog = items.stream().map(PriceItem::getBillableService).distinct().toList();
+        List<RoadLeg> roads = new ArrayList<>();
+        original.stream().filter(row -> row.getLineType() == QuotationLineType.PICKUP
+                && row.getHorseLeg() == null && BillingUnit.PER_KM.name().equals(row.getUnit()))
+                .findFirst().ifPresent(row -> {
+                    var item = row.getPriceItem();
+                    Long vehicleClass = item != null && item.getVehicleClass() != null
+                            ? item.getVehicleClass().getId() : snapshots.smallestClass(active);
+                    roads.add(new RoadLeg(ServiceLayer.PICKUP, vehicleClass, row.getQuantity()));
+                });
+        roads.add(delivery.loop());
+        var priced = PricingPolicy.chooseDeliveryPricing(list, items, catalog, booking.getDeparture().getRoute().getId(),
+                roads, delivery.separate());
+        List<QuotationLine> updated = new ArrayList<>(original.stream()
+                .filter(row -> !DeliveryChangePolicy.replaceLine(row)).map(row -> copyLine(row, replacement)).toList());
+        for (var price : priced.lines()) {
+            var item = itemById.get(price.priceItemId());
+            var service = item.getBillableService();
+            if (service.getLayer() != ServiceLayer.PICKUP && price.billingUnit() == BillingUnit.PER_KM) {
+                updated.add(line(replacement, lineType(service.getLayer()), service, item, null,
+                        service.getName(), price.quantity(), price.unitPrice(), price.passThrough()));
+            }
+        }
+        setTotals(replacement, updated);
+        replacement.setDepositAmount(previous.getDepositAmount().min(replacement.getTotalAmount())
+                .max(replacement.getPassThroughAmount()));
+        var paid = previous.getTotalAmount().subtract(PaymentPolicy.outstanding(previous, entries));
+        var total = replacement.getTotalAmount();
+        var balance = DeliveryChangePolicy.requireBalance(total, paid, expected);
+        var preview = new DeliveryChangeResponseDto(DeliveryChangePolicy.deliveryCharge(original),
+                DeliveryChangePolicy.deliveryCharge(updated), total.subtract(previous.getTotalAmount()),
+                total, balance, date, replacement.getCurrencyCode());
+        if (expected != null) acceptReplacement(previous, replacement, updated);
+        return new DeliveryReplacement(replacement, preview);
     }
 
     // Đơn giao nhiều nơi: bỏ một con thì tính lại vòng giao của các con còn lại

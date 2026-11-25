@@ -1,4 +1,7 @@
 // Chi tiết đơn của khách: việc tiếp theo, báo giá và thanh toán, giấy tờ, hành trình, đổi chuyến, hủy, đánh giá.
+import { useState } from 'react'
+import { Button } from '@shared/ui/Button'
+import { DeliveryChangeDialog } from './components/DeliveryChangeDialog'
 import { Link, useRevalidator } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { PickupMissPanel } from '@shared/components/PickupMissPanel'
@@ -30,6 +33,7 @@ export default function OrderDetailPage() {
   const { t } = useTranslation()
   const data = useOrderData()
   const { revalidate, state } = useRevalidator()
+  const [changingDelivery, setChangingDelivery] = useState(false)
   const booking = data.detail?.booking
   const delay = useBookingDelay(data.id)
   const status = booking?.status
@@ -84,6 +88,14 @@ export default function OrderDetailPage() {
         </div>
         <aside className={s.side}>
           <OrderInfo data={data} />
+          {data.detail?.canChangeDelivery && (
+            <Button onClick={() => setChangingDelivery(true)}>{t('myOrders.deliveryChange.title')}</Button>
+          )}
+          {data.detail?.deliveryChangeDisabledReason && data.detail.deliveryChangeDisabledReason !== 'NOT_CONFIRMED' && (
+            <p className={s.hint}>{t(`myOrders.deliveryChange.reasons.${data.detail.deliveryChangeDisabledReason}`)}</p>
+          )}
+          {changingDelivery && data.detail && <DeliveryChangeDialog id={data.id} detail={data.detail}
+            onClose={() => setChangingDelivery(false)} onChanged={revalidate} />}
           {!delay.data?.requiresManagerContact && (CANCELLABLE.includes(status) || delay.data?.canRefundFull) && (
             <CancelOrder bookingId={data.id} refund={delay.data?.canRefundFull ? {
               preview: delay.refundPreview,
