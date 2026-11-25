@@ -32,6 +32,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.racehorse_transport.entity.TripStop;
 import com.example.racehorse_transport.entity.enums.TripStopType;
 import com.example.racehorse_transport.repository.TripStopRepository;
 
