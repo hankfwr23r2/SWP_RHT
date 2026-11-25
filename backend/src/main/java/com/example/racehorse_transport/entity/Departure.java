@@ -49,6 +49,24 @@ public class Departure {
     @Column(name = "planned_departure_at", nullable = false)
     private Instant plannedDepartureAt;
 
+    @Column(name = "revised_departure_at")
+    private Instant revisedDepartureAt;
+
+    @Column(name = "run_reminded_at")
+    private Instant runRemindedAt;
+
+    @Column(name = "delayed_at")
+    private Instant delayedAt;
+
+    @Column(name = "delay_reason", length = 500)
+    private String delayReason;
+
+    @Column(name = "delay_escalated_at")
+    private Instant delayEscalatedAt;
+
+    @Column(name = "auto_cancelled_at")
+    private Instant autoCancelledAt;
+
     @Column(name = "booking_cutoff_at", nullable = false)
     private Instant bookingCutoffAt;
 

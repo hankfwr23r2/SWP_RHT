@@ -1,5 +1,7 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.policy.DepartureDelayPolicy;
+
 import com.example.racehorse_transport.dto.dispatch.CrewAssignmentResponseDto;
 import com.example.racehorse_transport.dto.dispatch.TripStopRequestDto;
 import com.example.racehorse_transport.dto.dispatch.TripStopResponseDto;
@@ -159,7 +161,7 @@ public class DispatchServiceImpl implements DispatchService {
         if (route.size() < 2) {
             throw new DispatchRuleException("departureId", "Tuyến của chuyến chưa có đủ điểm dừng.");
         }
-        Instant start = departure.getPlannedDepartureAt();
+        Instant start = DepartureDelayPolicy.effectiveTime(departure);
         RouteStop last = route.getLast();
         Instant end = start.plusSeconds(60L * (last.getArrivalOffsetMinutes() + last.getDwellMinutes()));
         DispatchPolicy.requirePlannedWindow(start, end);

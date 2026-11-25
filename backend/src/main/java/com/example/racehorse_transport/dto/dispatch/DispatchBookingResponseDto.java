@@ -38,10 +38,16 @@ public record DispatchBookingResponseDto(
 
     public static DispatchBookingResponseDto from(Booking booking, BookingAddress pickup, BookingAddress delivery, List<HorseDto> horses) {
         var departure = booking.getDeparture();
+        return from(booking, pickup, delivery, horses, departure == null ? null : departure.getPlannedDepartureAt());
+    }
+
+    public static DispatchBookingResponseDto from(Booking booking, BookingAddress pickup, BookingAddress delivery,
+                                                   List<HorseDto> horses, Instant departureAt) {
+        var departure = booking.getDeparture();
         return new DispatchBookingResponseDto(booking.getId(), booking.getCode(), booking.getBookingType(), booking.getStatus(),
                 booking.getRequestedPickupDate(),
                 departure == null ? null : departure.getId(), departure == null ? null : departure.getRoute().getCode(),
-                departure == null ? null : departure.getPlannedDepartureAt(),
+                departureAt,
                 AddressDto.from(pickup), AddressDto.from(delivery), horses, booking.getPickupMethod(), booking.getDeliveryMethod());
     }
 }

@@ -23,6 +23,9 @@ public class DepartureResponseDto {
     private String destinationCode;
     private LocalDate departureDate;
     private Instant plannedDepartureAt;
+    private Instant revisedDepartureAt;
+    private Instant delayedAt;
+    private String delayReason;
     private Instant bookingCutoffAt;
     private Integer stallCapacity;
     private Integer bookedStallCount;
@@ -43,6 +46,9 @@ public class DepartureResponseDto {
                 .destinationCode(departure.getRoute().getDestination().getCode())
                 .departureDate(departure.getDepartureDate())
                 .plannedDepartureAt(departure.getPlannedDepartureAt())
+                .revisedDepartureAt(departure.getRevisedDepartureAt())
+                .delayedAt(departure.getDelayedAt())
+                .delayReason(departure.getDelayReason())
                 .bookingCutoffAt(departure.getBookingCutoffAt())
                 .stallCapacity(departure.getStallCapacity())
                 .bookedStallCount(departure.getBookedStallCount())

@@ -174,6 +174,17 @@ public class DepartureServiceImpl implements DepartureService {
     public DepartureResponseDto cancel(Long departureId, String reason, String actorUsername) {
         AppUser actor = users.findByUsername(actorUsername)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài khoản " + actorUsername));
+        cancelDeparture(departureId, reason, actor.getId());
+        return toDto(departures.findWithRoute(departureId).orElseThrow());
+    }
+
+    @Override
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
+    public void cancelForDelay(Long departureId, String reason) {
+        cancelDeparture(departureId, reason, null);
+    }
+
+    private void cancelDeparture(Long departureId, String reason, Long actorId) {
         // Thứ tự khóa dùng chung với nhả chỗ, đổi chuyến: đơn (id tăng dần) trước, chuyến sau
         Set<Long> locked = new HashSet<>(bookings.findIdsByDeparture(departureId));
         locked.stream().sorted().forEach(bookings::findForUpdate);
@@ -186,7 +197,8 @@ public class DepartureServiceImpl implements DepartureService {
         if (onDeparture.stream().anyMatch(booking -> !locked.contains(booking.getId()))) {
             throw new IllegalStateException("Chuyến vừa có thêm đơn. Tải lại rồi hủy lại.");
         }
-        onDeparture.stream().filter(booking -> DepartureDecisionPolicy.blocksCancellation(booking.getStatus())).findFirst()
+        onDeparture.stream().filter(booking -> DepartureDecisionPolicy.blocksCancellation(booking.getStatus())
+                        || bookings.hasReceivedHorses(booking.getId())).findFirst()
                 .ifPresent(booking -> {
                     throw new IllegalStateException("Đơn " + booking.getCode() + " đã nhận ngựa nên không hủy chuyến. Xử lý bằng sự cố.");
                 });
@@ -195,12 +207,11 @@ public class DepartureServiceImpl implements DepartureService {
         String bookingReason = "Chuyến ngày " + departure.getDepartureDate() + " bị hủy: " + reason.trim();
         for (Booking booking : onDeparture) {
             if (BookingStatusPolicy.canTransition(booking.getStatus(), BookingStatus.SCHEDULE_CHANGE_REQUIRED)) {
-                bookingStatus.requireScheduleChange(booking.getId(), departure, ScheduleChangeCause.COMPANY, bookingReason, actor.getId());
+                bookingStatus.requireScheduleChange(booking.getId(), departure, ScheduleChangeCause.COMPANY, bookingReason, actorId);
             } else {
                 bookingStatus.clearPlannedTransport(booking.getId());
             }
         }
-        return toDto(departures.findWithRoute(departureId).orElseThrow());
     }
 
     private DepartureResponseDto toDto(Departure departure) {

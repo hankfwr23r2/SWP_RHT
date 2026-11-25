@@ -472,16 +472,24 @@ Index: `route_id`.
 | `departure_schedule_id` | `bigint` | có | FK → departure_schedule | NULL = chuyến đột xuất |
 | `route_id` | `bigint` | | FK → route | Bắt buộc để chuyến đột xuất cũng biết tuyến |
 | `departure_date` | `date` | | | |
-| `planned_departure_at` | `timestamptz` | | | |
+| `planned_departure_at` | `timestamptz` | | | Giờ gốc của chuyến, giữ nguyên khi dời lịch |
 | `booking_cutoff_at` | `timestamptz` | | | |
 | `stall_capacity` | `int` | | CK `> 0` | Snapshot từ lịch, sửa được cho từng chuyến |
 | `booked_stall_count` | `int` | | default `0` | Dẫn xuất: số **chỗ** đã đặt (khoang thường 1, khoang rộng 2). Chỉ `DepartureService` ghi, khi đang giữ `FOR UPDATE` |
 | `status` | `varchar(30)` | | CK `OPEN, CLOSED, IN_PROGRESS, COMPLETED, CANCELLED` | |
 | `run_confirmed_at` | `timestamptz` | có | | Lúc quản lý xác nhận chạy. NULL = chưa xác nhận, điều phối chưa được lập lượt trục |
 | `run_confirmed_by` | `bigint` | có | FK → app_user | Quản lý xác nhận |
+| `revised_departure_at` | `timestamptz` | có | CK sau giờ gốc | Giờ mới nhất do quản lý nhập |
+| `run_reminded_at` | `timestamptz` | có | | Lúc hệ thống gửi nhắc chưa xác nhận chạy |
+| `delayed_at` | `timestamptz` | có | | Lúc công ty ghi nhận chuyến chậm lần đầu |
+| `delay_reason` | `varchar(500)` | có | | Lý do công ty ghi khi chuyến chậm hoặc dời giờ |
+| `delay_escalated_at` | `timestamptz` | có | | Lúc báo quản lý xử lý vì đã nhận ngựa và chưa có giờ mới |
+| `auto_cancelled_at` | `timestamptz` | có | CK chỉ khi CANCELLED | Lúc hệ thống hủy chuyến trễ do công ty |
 
 Ràng buộc bảng:
 - `CHECK ((run_confirmed_at IS NULL) = (run_confirmed_by IS NULL))`.
+- `CHECK (revised_departure_at IS NULL OR revised_departure_at > planned_departure_at)`.
+- `delayed_at` và `delay_reason` cùng có giá trị. `auto_cancelled_at` chỉ có khi chuyến đã ghi chậm và có trạng thái `CANCELLED`.
 - `UNIQUE (departure_schedule_id, departure_date)`: mỗi lịch sinh tối đa một chuyến mỗi ngày. Chuyến đột xuất có `departure_schedule_id` NULL nên không bị giới hạn.
 - `CHECK (booking_cutoff_at < planned_departure_at)`.
 - `CHECK (booked_stall_count BETWEEN 0 AND stall_capacity)`: DB chặn bán quá chỗ.
@@ -1443,6 +1451,8 @@ Backend kiểm tra giới hạn khi cập nhật giá trị. Nếu hai cận đ�
 | `QUOTATION_VALID_HOURS` | 1 | 720 |
 | `DEPARTURE_DECISION_HOURS` | 1 | 168 |
 | `DEPARTURE_MIN_FILL_PERCENT` | 1 | 100 |
+| `DEPARTURE_RUN_REMINDER_HOURS`, `DEPARTURE_DELAY_RESCHEDULE_HOURS`, `DEPARTURE_DELAY_REFUND_HOURS` | 1 | 168 |
+| `DEPARTURE_DELAY_GRACE_MINUTES` | 1 | 240 |
 | `BALANCE_WAIT_MINUTES` | 5 | 240 |
 | `ADDRESS_MAX_KM_FROM_PROVINCE` | 50 | 500 |
 | `PICKUP_WINDOW_START_HOUR`, `DELIVERY_WINDOW_START_HOUR` | 0 | 23 |
@@ -1463,6 +1473,10 @@ Giá trị khởi đầu của các tham số chốt ngày 23/11/2026, thêm b�
 |---|---:|---|
 | `DEPARTURE_DECISION_HOURS` | 48 | Mốc quyết định chạy, tính trước giờ xuất phát |
 | `DEPARTURE_MIN_FILL_PERCENT` | 30 | Ngưỡng cảnh báo số chỗ đã cọc trên `stall_capacity` |
+| `DEPARTURE_RUN_REMINDER_HOURS` | 24 | Nhắc trước giờ gốc nếu chưa xác nhận chạy |
+| `DEPARTURE_DELAY_GRACE_MINUTES` | 30 | Thời gian chờ khởi hành với chuyến đã xác nhận |
+| `DEPARTURE_DELAY_RESCHEDULE_HOURS` | 2 | Trễ từ giờ gốc để được đổi chuyến miễn phí |
+| `DEPARTURE_DELAY_REFUND_HOURS` | 5 | Trễ từ giờ gốc để được yêu cầu hoàn 100%; tới mốc này chưa có giờ mới thì xét tự hủy |
 | `HUB_CHECKIN_HOURS` | 3 | Ngựa phải tới hub trước giờ chuyến trục xuất phát |
 | `BALANCE_WAIT_MINUTES` | 30 | Thời gian chờ khách trả số dư (tổng trừ số đã trả) sau khi nhận ngựa |
 | `BALANCE_PICKUP_REMINDER_MID_MINUTES`, `BALANCE_PICKUP_REMINDER_LAST_MINUTES` | 15, 25 | Nhắc sau khi nhận tại nhà |

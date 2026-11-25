@@ -1,5 +1,7 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.policy.DepartureDelayPolicy;
+
 import com.example.racehorse_transport.dto.dispatch.TripGroupResponseDto;
 import com.example.racehorse_transport.dto.dispatch.TripGroupResponseDto.GroupBookingDto;
 import com.example.racehorse_transport.dto.dispatch.TripGroupResponseDto.GroupHorseDto;
@@ -120,12 +122,12 @@ public class TripGroupingServiceImpl implements TripGroupingService {
                         LinkedHashMap::new, Collectors.toList()));
                 if (byAddress.size() > 1) {
                     multiPlace.add(byAddress.entrySet().stream().map(row -> new Entry(booking, row.getKey(), row.getValue(),
-                            booking.getDeparture().getPlannedDepartureAt(), arrivalOf(booking))).toList());
+                            DepartureDelayPolicy.effectiveTime(booking.getDeparture()), arrivalOf(booking))).toList());
                     continue;
                 }
                 address = byAddress.keySet().iterator().next();
             }
-            entries.put(booking.getId(), new Entry(booking, address, horses, booking.getDeparture().getPlannedDepartureAt(), arrivalOf(booking)));
+            entries.put(booking.getId(), new Entry(booking, address, horses, DepartureDelayPolicy.effectiveTime(booking.getDeparture()), arrivalOf(booking)));
             candidates.add(new Candidate(booking.getId(), point(address.getLatitude().doubleValue(), address.getLongitude().doubleValue()),
                     horses.stream().mapToInt(h -> StallSeatPolicy.seats(h.getStallType().getCode())).sum()));
         }
@@ -228,7 +230,7 @@ public class TripGroupingServiceImpl implements TripGroupingService {
     // Giờ chuyến trục tới hub cuối: giờ chạy cộng thời gian dự kiến của tuyến
     private static Instant arrivalOf(Booking booking) {
         var departure = booking.getDeparture();
-        return departure.getPlannedDepartureAt().plus(Duration.ofMinutes(departure.getRoute().getEstimatedDurationMinutes()));
+        return DepartureDelayPolicy.effectiveTime(departure).plus(Duration.ofMinutes(departure.getRoute().getEstimatedDurationMinutes()));
     }
 
     private static Point point(double lat, double lng) {

@@ -117,7 +117,7 @@ Mỗi gói một người. G1, G2, G3 làm song song được.
 | Quản lý nhập giờ mới và nguyên nhân | Giữ giờ gốc, lưu giờ mới, dời giờ kế hoạch phía sau | Thấy giờ cũ, giờ mới, lý do |
 | Trễ từ 2 giờ | | Đổi chuyến miễn phí, giữ giá |
 | Trễ từ 5 giờ | | Hoàn 100% hoặc chờ tiếp |
-| T + 5 giờ vẫn không có giờ mới | Tự hủy chuyến, nguyên nhân công ty | Đổi hoặc hoàn 100% |
+| T + 5 giờ vẫn không có giờ mới | Chưa nhận ngựa thì tự hủy chuyến do công ty. Đã nhận ngựa thì giữ chuyến Chậm và báo quản lý, điều phối | Đơn chưa giao ngựa được đổi hoặc yêu cầu hoàn 100% |
 
 **Thêm**
 
@@ -125,7 +125,7 @@ Mỗi gói một người. G1, G2, G3 làm song song được.
 - Sự cố loại Chậm trễ hiện liên kết tới chuyến của lượt xe (5.G23).
 - Mọi số giờ là **cấu hình**. Trễ tính từ **giờ gốc**, dời nhiều lần vẫn tính từ giờ gốc.
 - Đổi chuyến do công ty **không** tính lượt đổi miễn phí của khách. Hoàn tiền theo luồng công ty hủy.
-- Ngựa công ty **đã nhận**: không hoàn ngay trên app; hiện cho quản lý liên hệ khách và xử lý. Chưa nhận thì khách tự bấm.
+- Ngựa công ty **đã nhận**: quản lý liên hệ khách và xử lý, kể cả khi đơn vẫn đang Đã xác nhận. Trên cùng chuyến, đơn chưa giao ngựa vẫn được tự đổi hoặc yêu cầu hoàn khi đủ mốc.
 - Không thêm trạng thái vào đơn; không đổi 48 giờ và 72 giờ hiện có.
 
 **File chính:** `DepartureServiceImpl`, `DepartureDecisionServiceImpl`, policy mới cho chuyến trễ, `DepartureScheduler`, `departure` (entity, migration), màn chuyến của quản lý, chi tiết đơn của khách.
@@ -140,9 +140,9 @@ Mỗi gói một người. G1, G2, G3 làm song song được.
 | G3-3 | Dời 1 giờ; dời 2 giờ | Không mở đổi chuyến; mở |
 | G3-4 | Dời 3 giờ rồi dời thêm 2 giờ | Tính 5 giờ từ giờ gốc, mở hoàn tiền |
 | G3-5 | Khách hoàn 100% | Đúng số đã trả, gồm thu hộ; nhả chỗ, gỡ chặng |
-| G3-6 | T + 5 giờ không có giờ mới | Tự hủy một lần dù chạy lặp |
-| G3-7 | Chuyến đã xuất phát rồi trễ | Không hủy, không hoàn |
-| G3-8 | Đơn có ngựa đã nhận | Không tự hoàn, hiện cho quản lý |
+| G3-6 | T + 5 giờ không có giờ mới, chưa nhận con nào | Tự hủy một lần dù chạy lặp |
+| G3-7 | Chuyến đã xuất phát, tổ lái báo trễ cả lượt | Điều phối và mỗi đơn còn ngựa trên xe nhận một thông báo. Không hủy chuyến, không tự hoàn |
+| G3-8 | Chuyến có một đơn đã giao ngựa và một đơn chưa giao, T + 5 giờ chưa có giờ mới | Giữ chuyến Chậm, báo quản lý một lần. Đơn đã giao không tự hoàn; đơn chưa giao được đổi hoặc yêu cầu hoàn |
 | G3-9 | Hai người cùng dời giờ và tự hủy chạy | Không hỏng dữ liệu |
 
 ### G4. Nghiệm thu bằng tay phần đã gộp

@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.policy.DepartureDelayPolicy;
 import com.example.racehorse_transport.service.RedeliveryChargeService;
 import com.example.racehorse_transport.dto.dispatch.DispatchBookingResponseDto;
 import com.example.racehorse_transport.dto.dispatch.DispatchBookingResponseDto.HorseDto;
@@ -87,7 +88,9 @@ public class HorseLegServiceImpl implements HorseLegService {
                         booking.getDeliveryMethod(),
                         own.stream().filter(leg -> !INACTIVE.contains(leg.status())).map(HorseLegResponseDto::legType).toList()));
             }).toList();
-            result.add(DispatchBookingResponseDto.from(booking, addresses.get(AddressRole.PICKUP), addresses.get(AddressRole.DELIVERY), horses));
+            var departure = booking.getDeparture();
+            result.add(DispatchBookingResponseDto.from(booking, addresses.get(AddressRole.PICKUP), addresses.get(AddressRole.DELIVERY),
+                    horses, departure == null ? null : DepartureDelayPolicy.effectiveTime(departure)));
         }
         return result;
     }
@@ -181,7 +184,7 @@ public class HorseLegServiceImpl implements HorseLegService {
         DispatchPolicy.requirePlannedWindow(board.getPlannedDepartureAt(), alight.getPlannedArrivalAt());
         if (legType == HorseLegType.PICKUP && booking.getDeparture() != null) {
             DispatchPolicy.requireAtHubBeforeDeadline(alight.getPlannedArrivalAt(),
-                    booking.getDeparture().getPlannedDepartureAt().minusSeconds(configs.getInt("HUB_CHECKIN_HOURS") * 3600L));
+                    DepartureDelayPolicy.effectiveTime(booking.getDeparture()).minusSeconds(configs.getInt("HUB_CHECKIN_HOURS") * 3600L));
         }
 
         HorseLeg leg = new HorseLeg();

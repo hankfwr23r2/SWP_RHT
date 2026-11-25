@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router'
 import type { DepartureDecision } from '@shared/api/departures'
 import { Button } from '@shared/ui/Button'
 import { StatusBadge } from '@shared/ui/StatusBadge'
@@ -11,15 +12,22 @@ interface Props {
   busy: boolean
   onConfirm: (row: DepartureDecision) => void
   onCancel: (row: DepartureDecision) => void
+  onDelay: (row: DepartureDecision) => void
 }
 
 const TONE = { OPEN: 'info', CLOSED: 'neutral', IN_PROGRESS: 'info', COMPLETED: 'success', CANCELLED: 'danger' } as const
 
-export function DepartureTable({ rows, busy, onConfirm, onCancel }: Props) {
+export function DepartureTable({ rows, busy, onConfirm, onCancel, onDelay }: Props) {
   const { t } = useTranslation()
   const columns: TableColumn<DepartureDecision>[] = [
     { key: 'route', header: t('mgr.departures.route'), render: row => <strong>{row.routeName}</strong> },
-    { key: 'at', header: t('mgr.departures.departsAt'), render: row => row.plannedDepartureAt ? moment(row.plannedDepartureAt) : showDate(row.departureDate ?? '') },
+    { key: 'at', header: t('mgr.departures.departsAt'), render: row => (
+      <>
+        {row.plannedDepartureAt ? moment(row.plannedDepartureAt) : showDate(row.departureDate ?? '')}
+        {row.revisedDepartureAt && <p>{t('mgr.departures.delay.revised', { at: moment(row.revisedDepartureAt) })}</p>}
+        {row.delayReason && <p className={s.hint}>{row.delayReason}</p>}
+      </>
+    ) },
     { key: 'seats', header: t('mgr.departures.seats'), render: row => (
       <>
         {t('mgr.departures.seatCount', { committed: row.committedStallCount ?? 0, booked: row.bookedStallCount ?? 0, capacity: row.stallCapacity ?? 0 })}
@@ -34,11 +42,22 @@ export function DepartureTable({ rows, busy, onConfirm, onCancel }: Props) {
           {!row.confirmable && (row.status === 'OPEN' || row.status === 'CLOSED') && <p className={s.hint}>{t('mgr.departures.notYet')}</p>}
         </>
       ) : '—' },
-    { key: 'status', header: t('mgr.departures.status'), render: row => row.status && <StatusBadge tone={TONE[row.status]} label={t(`mgr.departures.statuses.${row.status}`)} /> },
+    { key: 'status', header: t('mgr.departures.status'), render: row => (
+      <>
+        {row.status && <StatusBadge tone={TONE[row.status]} label={t(`mgr.departures.statuses.${row.status}`)} />}
+        {row.warning && <p className={s.error}>{t('mgr.departures.delay.warning')}</p>}
+        {row.delayedAt && row.canRevise && <p><StatusBadge tone="danger" label={t('mgr.departures.delay.late')} /></p>}
+        {row.autoCancelledAt && <p className={s.hint}>{t('mgr.departures.delay.autoCancelled')}</p>}
+        {!!row.receivedBookings?.length && <p className={s.error}>{t('mgr.departures.delay.contact')}</p>}
+        {row.receivedBookings?.map(order => <p key={order.id}><Link to={`/manager/orders/${order.id}`}>{order.code}</Link></p>)}
+      </>
+    ) },
     { key: 'actions', header: t('mgr.departures.actions'), align: 'end', render: row => (
       <div className={s.row}>
         {row.confirmable && <Button size="sm" variant="primary" disabled={busy} onClick={() => onConfirm(row)}>{t('mgr.departures.confirm')}</Button>}
-        {(row.status === 'OPEN' || row.status === 'CLOSED') && <Button size="sm" variant="ghost" disabled={busy} onClick={() => onCancel(row)}>{t('mgr.departures.cancel')}</Button>}
+        {row.canRevise && <Button size="sm" disabled={busy} onClick={() => onDelay(row)}>{t('mgr.departures.delay.open')}</Button>}
+        {(row.status === 'OPEN' || row.status === 'CLOSED') && !row.receivedBookings?.length
+          && <Button size="sm" variant="ghost" disabled={busy} onClick={() => onCancel(row)}>{t('mgr.departures.cancel')}</Button>}
       </div>
     ) },
   ]

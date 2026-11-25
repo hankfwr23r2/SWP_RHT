@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.dto.departure.DepartureDecisionResponseDto;
+import com.example.racehorse_transport.dto.departure.DepartureDecisionResponseDto.ReceivedBookingResponseDto;
 import com.example.racehorse_transport.entity.AppUser;
 import com.example.racehorse_transport.entity.Departure;
 import com.example.racehorse_transport.entity.Staff;
@@ -10,6 +11,7 @@ import com.example.racehorse_transport.entity.enums.DepartureStatus;
 import com.example.racehorse_transport.entity.enums.EmploymentStatus;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.DepartureDecisionPolicy;
+import com.example.racehorse_transport.policy.DepartureDelayPolicy;
 import com.example.racehorse_transport.policy.StallSeatPolicy;
 import com.example.racehorse_transport.repository.AppUserRepository;
 import com.example.racehorse_transport.repository.BookingHorseRepository;
@@ -56,7 +58,7 @@ public class DepartureDecisionServiceImpl implements DepartureDecisionService {
             throw new IllegalArgumentException("Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.");
         }
         return toDtos(departures.search(null, null, fromDate, toDate).stream()
-                .filter(departure -> departure.getStatus() != DepartureStatus.CANCELLED).toList());
+                .filter(departure -> departure.getStatus() != DepartureStatus.CANCELLED || departure.getAutoCancelledAt() != null).toList());
     }
 
     @Override
@@ -67,8 +69,7 @@ public class DepartureDecisionServiceImpl implements DepartureDecisionService {
         Departure departure = departures.findForUpdate(departureId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chuyến " + departureId));
         Instant now = clock.instant();
-        DepartureDecisionPolicy.reasonNotConfirmable(departure.getStatus(), departure.getPlannedDepartureAt(),
-                        config.getInt("DEPARTURE_DECISION_HOURS"), departure.getRunConfirmedAt() != null, now)
+        reasonNotConfirmable(departure, config.getInt("DEPARTURE_DECISION_HOURS"), now)
                 .ifPresent(reason -> {
                     throw new IllegalStateException(reason);
                 });
@@ -121,9 +122,29 @@ public class DepartureDecisionServiceImpl implements DepartureDecisionService {
                     DepartureDecisionPolicy.decisionAt(departure.getPlannedDepartureAt(), decisionHours), seats,
                     uncommitted.getOrDefault(departure.getId(), 0),
                     DepartureDecisionPolicy.belowMinimum(seats, departure.getStallCapacity(), minFillPercent),
-                    DepartureDecisionPolicy.reasonNotConfirmable(departure.getStatus(), departure.getPlannedDepartureAt(),
-                            decisionHours, departure.getRunConfirmedAt() != null, now).isEmpty());
+                    reasonNotConfirmable(departure, decisionHours, now).isEmpty(),
+                    departure.getRunRemindedAt() != null && departure.getRunConfirmedAt() == null
+                            && DepartureDelayPolicy.notStarted(departure.getStatus()),
+                    DepartureDelayPolicy.notStarted(departure.getStatus()), receivedBookings(departure));
         }).toList();
+    }
+
+    private List<ReceivedBookingResponseDto> receivedBookings(Departure departure) {
+        if (departure.getDelayedAt() == null || !DepartureDelayPolicy.notStarted(departure.getStatus())) {
+            return List.of();
+        }
+        return bookings.findByDeparture_Id(departure.getId()).stream()
+                .filter(booking -> DepartureDecisionPolicy.blocksCancellation(booking.getStatus())
+                        || bookings.hasReceivedHorses(booking.getId()))
+                .map(ReceivedBookingResponseDto::from).toList();
+    }
+
+    private java.util.Optional<String> reasonNotConfirmable(Departure departure, int decisionHours, Instant now) {
+        Instant original = departure.getPlannedDepartureAt();
+        Instant planningTime = now.isBefore(original) ? original
+                : DepartureDelayPolicy.effectiveTime(original, departure.getRevisedDepartureAt());
+        return DepartureDecisionPolicy.reasonNotConfirmable(departure.getStatus(), planningTime, decisionHours,
+                departure.getRunConfirmedAt() != null, now);
     }
 
     private void notifyCoordinators(Departure departure) {

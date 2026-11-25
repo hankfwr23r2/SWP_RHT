@@ -8,6 +8,7 @@ import { CANCELLABLE, HAS_JOURNEY, RATEABLE } from '@shared/components/orderStep
 import { Card } from '@shared/ui/Card'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { formatDateTime } from '@shared/lib/format'
+import { BookingDelayCard } from './components/BookingDelayCard'
 import { CancelOrder } from './components/CancelOrder'
 import { CollectionCodeCard } from './components/CollectionCodeCard'
 import { DeliveryComplaintCard } from './components/DeliveryComplaintCard'
@@ -22,6 +23,7 @@ import { RatingCard } from './components/RatingCard'
 import { StablingClockCard } from './components/StablingClockCard'
 import { RescheduleCard } from './components/RescheduleCard'
 import { useOrderData } from './loaders'
+import { useBookingDelay } from './useBookingDelay'
 import s from './Orders.module.css'
 
 export default function OrderDetailPage() {
@@ -29,6 +31,7 @@ export default function OrderDetailPage() {
   const data = useOrderData()
   const { revalidate, state } = useRevalidator()
   const booking = data.detail?.booking
+  const delay = useBookingDelay(data.id)
   const status = booking?.status
 
   if (!booking || !status) {
@@ -48,6 +51,7 @@ export default function OrderDetailPage() {
       <div className={s.layout}>
         <div className={s.stack}>
           <NextStepBanner data={data} />
+          <BookingDelayCard delay={delay.data} loaded={delay.loaded} error={delay.error?.message} onRetry={delay.reload} />
           <PickupMissPanel bookingId={data.id} mode="customer" onChanged={revalidate} />
           {(status === 'IN_OPERATION' || data.detail?.balanceHoldAt) && <StablingClockCard bookingId={data.id} onChanged={revalidate} />}
           {data.detail?.balanceHoldAt && (
@@ -56,7 +60,15 @@ export default function OrderDetailPage() {
               <p>{t(status === 'CANCELLED' ? 'myOrders.balanceHold.cancelled' : 'myOrders.balanceHold.options')}</p>
             </Card>
           )}
-          {status === 'SCHEDULE_CHANGE_REQUIRED' && <section id="reschedule" className={s.section}><RescheduleCard data={data} /></section>}
+          {(status === 'SCHEDULE_CHANGE_REQUIRED' || delay.data?.canRescheduleFree) && (
+            <section id="reschedule" className={s.section}>
+              <RescheduleCard data={data} excludeDepartureId={delay.data?.departureId}
+                reschedule={delay.data?.canRescheduleFree ? async body => {
+                  await delay.reschedule(body)
+                  await delay.reload()
+                } : undefined} />
+            </section>
+          )}
           <section id="quote" className={s.section}><QuoteCard data={data} /></section>
           <section id="payments" className={s.section}><PaymentsCard data={data} /></section>
           {HAS_JOURNEY.includes(status) && <IncidentDecisionsCard bookingId={data.id} />}
@@ -72,7 +84,12 @@ export default function OrderDetailPage() {
         </div>
         <aside className={s.side}>
           <OrderInfo data={data} />
-          {CANCELLABLE.includes(status) && <CancelOrder bookingId={data.id} />}
+          {!delay.data?.requiresManagerContact && (CANCELLABLE.includes(status) || delay.data?.canRefundFull) && (
+            <CancelOrder bookingId={data.id} refund={delay.data?.canRefundFull ? {
+              preview: delay.refundPreview,
+              submit: async reason => { await delay.refund(reason); await delay.reload() },
+            } : undefined} />
+          )}
         </aside>
       </div>
     </div></div>

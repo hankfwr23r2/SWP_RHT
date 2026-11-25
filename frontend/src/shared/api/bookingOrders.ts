@@ -19,6 +19,8 @@ export type BookingStatus = NonNullable<BookingOrder['status']>
 export type BookingSummary = Schemas['BookingSummaryResponseDto']
 export type BookingDetail = Schemas['BookingDetailResponseDto']
 export type BookingCancellation = Schemas['BookingCancellationResponseDto']
+export type BookingDelay = Schemas['BookingDelayResponseDto']
+export type BookingReschedule = Schemas['BookingRescheduleRequestDto']
 export type InsuranceRevision = Schemas['PersonalInsuranceRevisionRequestDto']
 
 export const bookingOrdersApi = {
@@ -36,6 +38,14 @@ export const bookingOrdersApi = {
   detail: async (id: number) => (await apiClient.get<ApiResponse<BookingDetail>>(`/bookings/${id}`)).data.data,
   cancellationPreview: async (id: number) =>
     (await apiClient.get<ApiResponse<BookingCancellation>>(`/bookings/${id}/cancellation-preview`)).data.data,
+  delay: async (id: number) =>
+    (await apiClient.get<ApiResponse<BookingDelay[]>>(`/bookings/${id}/delay`)).data.data,
+  delayRefundPreview: async (id: number) =>
+    (await apiClient.get<ApiResponse<BookingCancellation>>(`/bookings/${id}/delay/refund-preview`)).data.data,
+  delayRefund: async (id: number, reason: string) =>
+    (await apiClient.post<ApiResponse<BookingCancellation>>(`/bookings/${id}/delay/refund`, { reason })).data.data,
+  delayReschedule: async (id: number, body: BookingReschedule) =>
+    (await apiClient.post<ApiResponse<BookingOrder>>(`/bookings/${id}/delay/reschedule`, body)).data.data,
   cancel: async (id: number, reason: string) =>
     (await apiClient.post<ApiResponse<BookingCancellation>>(`/bookings/${id}/cancel`, { reason })).data.data,
   reschedule: async (id: number, body: Schemas['BookingRescheduleRequestDto']) =>

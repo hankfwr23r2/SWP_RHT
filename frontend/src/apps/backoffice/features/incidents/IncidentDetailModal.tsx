@@ -79,6 +79,9 @@ export function IncidentDetailModal({ incidentId, role, onClose, onChanged }: Pr
       <div className={s.section}>
         <div className={s.row}>
           <StatusBadge tone={open ? 'warning' : 'success'} label={t(`incidents.status.${incident.status}`)} />
+          {incident.departureId && <p>{t('incidents.departure', {
+            route: incident.departureRouteName, date: incident.departureDate,
+          })}</p>}
           {incident.requiresFit && <StatusBadge tone={incident.fitConfirmedAt ? 'success' : 'neutral'}
             label={incident.fitConfirmedAt ? t('incidents.fitConfirmed') : t('incidents.notFit')} />}
         </div>

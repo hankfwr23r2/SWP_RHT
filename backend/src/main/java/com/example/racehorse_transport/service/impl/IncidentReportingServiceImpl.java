@@ -8,7 +8,9 @@ import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.VehicleTrip;
 import com.example.racehorse_transport.entity.enums.AppUserStatus;
 import com.example.racehorse_transport.entity.enums.CrewAssignmentStatus;
+import com.example.racehorse_transport.entity.enums.HorseLegStatus;
 import com.example.racehorse_transport.entity.enums.IncidentStatus;
+import com.example.racehorse_transport.entity.enums.IncidentType;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.IncidentPolicy;
@@ -19,6 +21,7 @@ import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.VehicleTripRepository;
 import com.example.racehorse_transport.service.IncidentReportingService;
 import com.example.racehorse_transport.service.NotificationService;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -75,6 +78,22 @@ public class IncidentReportingServiceImpl implements IncidentReportingService {
                     "Sự cố vận chuyển",
                     "Đơn " + booking.getCode() + " có sự cố: " + incident.getTitle() + ".",
                     "/orders/" + booking.getId());
+        } else if (incident.getIncidentType() == IncidentType.DELAY) {
+            notifyCustomersOfTripDelay(incident.getVehicleTrip().getId());
+        }
+    }
+
+    private void notifyCustomersOfTripDelay(Long tripId) {
+        Set<Long> notifiedBookings = new HashSet<>();
+        for (HorseLeg leg : legs.findActiveOnTrip(tripId, Set.of(HorseLegStatus.PLANNED, HorseLegStatus.COMPLETED,
+                HorseLegStatus.FAILED, HorseLegStatus.CANCELLED))) {
+            Booking booking = leg.getBookingHorse().getBooking();
+            Long bookingId = booking.getId();
+            if (notifiedBookings.add(bookingId)) {
+                notifications.notify(List.of(booking.getCustomer().getUser().getId()), bookingId,
+                        "Xe đang chạy bị chậm", "Xe đang chở ngựa của đơn " + booking.getCode() + " bị chậm.",
+                        "/orders/" + bookingId);
+            }
         }
     }
 

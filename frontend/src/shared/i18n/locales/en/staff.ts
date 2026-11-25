@@ -23,6 +23,7 @@ export const staff = {
     "noTripsDescription": "Trips planned by coordinators this week appear here."
   },
   incidents: {
+    departure: 'Related departure: {{route}} · {{date}}',
     handoverCause: {
       told: "Announced time",
       arrived: "Actual arrival",
