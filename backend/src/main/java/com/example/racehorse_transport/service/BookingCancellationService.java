@@ -28,7 +28,9 @@ public interface BookingCancellationService {
 
     BookingCancellationResponseDto previewAfterPickupMiss(Booking booking, boolean customerLiable);
 
-    void rebookDirectAfterPickupMiss(Long bookingId, Long actorUserId);
+    void rebookDirectAfterPickupMiss(Long bookingId, java.time.LocalDate pickupDate, Long actorUserId);
+
+    boolean isDirect(com.example.racehorse_transport.entity.Booking booking);
 
     void releaseAfterPickupMiss(Long bookingId, boolean customerLiable, Long actorUserId);
 

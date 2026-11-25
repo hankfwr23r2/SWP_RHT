@@ -68,13 +68,12 @@ public class PickupMissServiceImpl implements PickupMissService {
         var journey = legs.findByBookingHorse_IdOrderBySequenceNumber(horseId);
         journey.stream().filter(leg -> leg.getStatus() == HorseLegStatus.PLANNED)
                 .forEach(leg -> leg.setStatus(HorseLegStatus.CANCELLED));
-        if (booking.getBookingType() == BookingType.IMPORT) {
-            journey.stream().filter(leg -> leg.getStatus() == HorseLegStatus.IN_PROGRESS
-                    && leg.getAgentParty() != null).forEach(leg -> {
-                        leg.setStatus(HorseLegStatus.CANCELLED);
-                        leg.setActualEndAt(at);
-                    });
-        }
+        // Đơn nhập hụt ở cửa khẩu: chặng đại lý đang chở kết thúc, ngựa ở lại với đại lý
+        journey.stream().filter(leg -> leg.getStatus() == HorseLegStatus.IN_PROGRESS
+                && leg.getAgentParty() != null).forEach(leg -> {
+                    leg.setStatus(HorseLegStatus.CANCELLED);
+                    leg.setActualEndAt(at);
+                });
         stays.dropAppointments(horseId);
         horse.setPickupMissedAt(at);
         horse.setPickupMissReason(reason);
@@ -266,14 +265,13 @@ public class PickupMissServiceImpl implements PickupMissService {
             stays.planSelfDropOff(horse.getId(), arrival);
         } else if (request.choice() == PickupMissChoice.RESCHEDULE_PICKUP) {
             var today = LocalDate.ofInstant(clock.instant(), ZoneId.of("Asia/Ho_Chi_Minh"));
+            var missedOn = LocalDate.ofInstant(horse.getPickupMissedAt(), ZoneId.of("Asia/Ho_Chi_Minh"));
             if (request.pickupDate() == null || !request.pickupDate().isAfter(today)
-                    || request.pickupDate().isAfter(today.plusDays(configs.getInt("PRICE_HOLD_DAYS")))) {
+                    || request.pickupDate().isAfter(missedOn.plusDays(configs.getInt("PRICE_HOLD_DAYS")))) {
                 throw BookingRuleException.conflict("Ngày đón mới phải nằm trong hạn giữ giá.");
             }
+            cancellations.rebookDirectAfterPickupMiss(booking.getId(), request.pickupDate(), actorId);
             booking.setRequestedPickupDate(request.pickupDate());
-            if (booking.getStatus() == BookingStatus.SCHEDULE_CHANGE_REQUIRED) {
-                cancellations.rebookDirectAfterPickupMiss(booking.getId(), actorId);
-            }
             horses.findByBooking_Id(booking.getId()).stream()
                     .filter(line -> line.getStatus() == BookingHorseStatus.ACTIVE && line.getPickupMissedAt() != null)
                     .forEach(line -> line.setPickupMissChoice(PickupMissChoice.RESCHEDULE_PICKUP));
@@ -318,7 +316,7 @@ public class PickupMissServiceImpl implements PickupMissService {
         var booking = horse.getBooking();
         if (horse.getPickupMissChoice() == PickupMissChoice.CHANGE_DEPARTURE
                 && booking.getStatus() == BookingStatus.SCHEDULE_CHANGE_REQUIRED
-                && booking.getBookingType() == BookingType.LOCAL
+                && cancellations.isDirect(booking)
                 && clock.instant().isBefore(horse.getPickupMissedAt().plus(Duration.ofDays(configs.getInt("PRICE_HOLD_DAYS"))))) {
             return List.of(PickupMissChoice.RESCHEDULE_PICKUP);
         }
@@ -328,7 +326,7 @@ public class PickupMissServiceImpl implements PickupMissService {
         List<PickupMissChoice> choices = new ArrayList<>();
         choices.add(PickupMissChoice.DROP_HORSE);
         if (booking.getDeparture() == null) {
-            if (entireBookingMissed) choices.add(PickupMissChoice.RESCHEDULE_PICKUP);
+            if (entireBookingMissed && cancellations.isDirect(booking)) choices.add(PickupMissChoice.RESCHEDULE_PICKUP);
         } else {
             if (booking.getBookingType() != BookingType.IMPORT) {
                 if (canRetry(horse)) choices.add(PickupMissChoice.RETRY_PICKUP);
@@ -336,7 +334,7 @@ public class PickupMissServiceImpl implements PickupMissService {
             }
             if (entireBookingMissed) choices.add(PickupMissChoice.CHANGE_DEPARTURE);
         }
-        if (booking.getDeparture() != null && booking.getBookingType() != BookingType.IMPORT
+        if (booking.getBookingType() != BookingType.IMPORT
                 && entireBookingMissed && horse.getPickupMissLiability() != null) {
             choices.add(PickupMissChoice.CANCEL_BOOKING);
         }

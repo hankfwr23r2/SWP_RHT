@@ -124,14 +124,33 @@ public class BookingRescheduleServiceImpl implements BookingRescheduleService {
                         BookingStatus.SCHEDULE_CHANGE_REQUIRED, ScheduleChangeCause.CUSTOMER) > 1) {
             throw BookingRuleException.conflict("Đơn đã dùng lượt đổi chuyến miễn phí do khách.");
         }
+        validateInsurance(active, pickupDate, replacement.getDepartureDate());
+    }
+
+    private void validateInsurance(List<BookingHorse> active, LocalDate pickupDate, LocalDate departureDate) {
         var activeHorseIds = active.stream().map(BookingHorse::getId).toList();
         insurance.findForDetail(activeHorseIds).stream()
                 .filter(row -> row.getCoverageOption() == InsuranceCoverageOption.PERSONAL)
                 .forEach(row -> {
                     InsuranceReviewPolicy.requireStatus(row, HorseInsuranceStatus.CONFIRMED);
-                    InsuranceReviewPolicy.validatePeriod(row.getValidFrom(), row.getValidTo(), pickupDate,
-                            replacement.getDepartureDate());
+                    InsuranceReviewPolicy.validatePeriod(row.getValidFrom(), row.getValidTo(), pickupDate, departureDate);
                 });
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isDirect(Booking booking) {
+        return !routing.requiresDeparture(booking);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void requireDirectSchedule(Booking booking, LocalDate pickupDate) {
+        if (!isDirect(booking)) {
+            throw BookingRuleException.conflict("Đơn đi theo chuyến, cần chọn chuyến mới.");
+        }
+        routing.requireDirectLeadTime(booking, pickupDate);
+        validateInsurance(activeHorses(booking.getId()), pickupDate, null);
     }
 
     @Override

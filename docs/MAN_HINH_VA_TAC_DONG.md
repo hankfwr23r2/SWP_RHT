@@ -167,3 +167,7 @@ Công ty không vận hành nơi cách ly. Điều kiện cách ly thể hiện 
 Khách và điều phối thấy tổng báo giá, số còn phải trả và số dự kiến hoàn khi xác nhận lựa chọn đã có bên chịu. Với hủy, hộp xác nhận hiện khoản hoàn và cọc bị giữ. Khi chưa chốt bên chịu, hộp xác nhận ghi số tiền đang chờ xác định. Quản lý có thể xác nhận dịch vụ theo ngựa đã hoàn thành ngay trong mục đón hụt trước khi chốt bên chịu. Khách thanh toán số dư bổ sung qua khu vực thanh toán hiện có, kể cả khi đơn đã Đang vận chuyển.
 
 Chuyên viên ghi phí bảo hiểm được hoàn cho con đã loại trong phần bảo hiểm của màn hình thẩm định, nhập số hoàn lũy kế và số chứng từ của hãng. Hệ thống cập nhật báo giá và khoản hoàn phần dư dưới khóa đơn.
+
+## Đợt 1b bước 5 · Dời chuyến
+
+Thẻ chọn lại chuyến ẩn với đơn chạy thẳng; khách chọn **ngày đón mới** hoặc hủy ở thẻ đón hụt. Máy chủ chặn ngày quá 30 ngày kể từ lần hụt, thiếu thời gian làm lại giấy, hết bảo hiểm.

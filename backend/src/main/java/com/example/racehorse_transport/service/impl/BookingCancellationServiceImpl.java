@@ -21,6 +21,7 @@ import com.example.racehorse_transport.policy.BalanceHoldPolicy;
 import com.example.racehorse_transport.policy.BookingCancellationPolicy.Breakdown;
 import com.example.racehorse_transport.policy.BookingCancellationPolicy.Outcome;
 import com.example.racehorse_transport.policy.PaymentPolicy;
+import com.example.racehorse_transport.policy.PickupMissPolicy;
 import com.example.racehorse_transport.policy.StallSeatPolicy;
 import com.example.racehorse_transport.repository.BookingHorseRepository;
 import com.example.racehorse_transport.repository.BookingRepository;
@@ -50,6 +51,7 @@ public class BookingCancellationServiceImpl implements BookingCancellationServic
     private final RefundService refunds;
     private final PaymentCheckoutService checkout;
     private final ScheduleChangeService schedules;
+    private final com.example.racehorse_transport.service.BookingRescheduleService reschedules;
 
     @Override
     @Transactional(readOnly = true)
@@ -179,17 +181,27 @@ public class BookingCancellationServiceImpl implements BookingCancellationServic
         var previous = booking.getDeparture();
         releaseSpace(booking);
         statuses.requireScheduleChange(bookingId, previous, customerLiable ? ScheduleChangeCause.CUSTOMER
-                : ScheduleChangeCause.COMPANY, "Không đón được ngựa.", actorUserId);
+                : ScheduleChangeCause.COMPANY, PickupMissPolicy.RELEASED_REASON, actorUserId);
     }
 
     @Override
     @Transactional
-    public void rebookDirectAfterPickupMiss(Long bookingId, Long actorUserId) {
+    public void rebookDirectAfterPickupMiss(Long bookingId, java.time.LocalDate pickupDate, Long actorUserId) {
         var booking = lock(bookingId);
-        if (booking.getDeparture() != null || booking.getStatus() != BookingStatus.SCHEDULE_CHANGE_REQUIRED) {
+        if (booking.getDeparture() != null || booking.getStatus() != BookingStatus.SCHEDULE_CHANGE_REQUIRED
+                && booking.getStatus() != BookingStatus.CONFIRMED) {
             throw BookingRuleException.conflict("Đơn không chờ chọn lại ngày đón.");
         }
-        statuses.transition(bookingId, BookingStatus.CONFIRMED, "Đã chọn lại ngày đón sau lần đón hụt.", actorUserId);
+        reschedules.requireDirectSchedule(booking, pickupDate);
+        if (booking.getStatus() == BookingStatus.SCHEDULE_CHANGE_REQUIRED) {
+            statuses.transition(bookingId, BookingStatus.CONFIRMED, "Đã chọn lại ngày đón sau lần đón hụt.", actorUserId);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isDirect(Booking booking) {
+        return reschedules.isDirect(booking);
     }
 
     private Cancellation evaluate(Booking booking, boolean company, boolean allowPickupCancellation) {

@@ -381,7 +381,8 @@ class HubSelfFlowTest {
         request.put("microchip", microchip);
         request.put("conditionNote", "Khỏe");
         request.put("papers", documentIds.stream().map(id -> Map.of("documentId", id, "originalMissing", receiving)).toList());
-        if (!receiving) {
+        // Mã nhận ngựa chỉ áp dụng khi giao; trả ngựa đang giữ thì không có
+        if (!receiving && "IN_OPERATION".equals(bookingStatus())) {
             String username = jdbc.queryForObject("SELECT u.username FROM booking b JOIN app_user u ON u.id = b.customer_id WHERE b.id = ?", String.class, booking);
             HandoverEvidenceFixtures.confirm(mvc, jwtUtils, booking, username);
             request.put("recipient", Map.of("recipientName", "Người nhận thử nghiệm"));

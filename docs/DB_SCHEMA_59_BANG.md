@@ -1435,6 +1435,7 @@ Giá trị khởi đầu của các tham số chốt ngày 23/11/2026, thêm b�
 | `AUTHORITY_DELAY_REFUND_MISSES` | 2 | Số lần lỡ chuyến do cơ quan cấp giấy để hoàn cọc vận chuyển khi hủy. Đơn vị `COUNT`, giới hạn 1–10 |
 | `PRICE_HOLD_DAYS` | 30 | Giữ giá khi đổi chuyến, tính từ ngày chạy của chuyến vừa lỡ |
 | `SETTLEMENT_AUTO_CLOSE_DAYS` | 7 | Tự đóng đơn không phát sinh |
+| `SCHEDULE_CHOICE_REMINDER_1..4_DAYS` | 3, 7, 14, 25 | Nhắc chọn lại lịch sau đón hụt |
 | `EXTRA_CHARGE_DUE_DAYS` | 7 | Hạn khoản thu thêm từ lúc lập, 1–30 ngày |
 | `STABLING_DAILY_FEE` | 1.000.000 đ | Phí giữ tại hub mỗi con mỗi ngày |
 | `HANDOVER_FREE_WAIT_MINUTES` | 1 | 1440 |

@@ -323,6 +323,15 @@ class TripExecutionFlowTest {
                     .content("{\"choice\":\"DROP_HORSE\",\"phoneNote\":\"Khách xác nhận bỏ con qua điện thoại\"}"))
                     .andExpect(status().isOk());
         }
+        // Quản lý chốt bên chịu xong mới bỏ con và tính lại tiền
+        entityManager.flush();
+        assertThat(jdbc.queryForObject("SELECT status FROM booking_horse WHERE id = ?", String.class, lines.get(1))).isEqualTo("ACTIVE");
+        String manager = token(testData.staff(testData.unique("exec.manager"), "MANAGER"), "MANAGER");
+        for (int attempt = 0; attempt < 2; attempt++) {
+            mvc.perform(post("/booking-horses/{id}/confirm-pickup-liability", lines.get(1))
+                    .header(HttpHeaders.AUTHORIZATION, manager).contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"liability\":\"CUSTOMER\"}")).andExpect(status().isOk());
+        }
         entityManager.flush();
         assertThat(jdbc.queryForObject("SELECT status FROM booking_horse WHERE id = ?", String.class, lines.get(1))).isEqualTo("EXCLUDED");
         assertThat(jdbc.queryForList("SELECT status FROM quotation WHERE booking_id = ? ORDER BY version", String.class, domestic))

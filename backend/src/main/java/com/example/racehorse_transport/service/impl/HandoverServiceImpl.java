@@ -152,6 +152,7 @@ public class HandoverServiceImpl implements HandoverService {
         // Con đã bị từ chối nhận (chặng đã hủy) không còn trong lần giao nhận
         List<HandoverHorse> results = scans.findById_HandoverId(handover.getId()).stream()
                 .filter(r -> r.getHorseLeg().getStatus() != HorseLegStatus.CANCELLED).toList();
+        TripExecutionPolicy.requireSomeMatched(results.stream().map(HandoverHorse::getMicrochipMatched).toList());
         if (handover.getHandoverType() == HandoverType.PICKUP
                 || (handover.getHandoverType() == HandoverType.AGENT && handover.getFromParty() != null)) {
             var matchedIds = results.stream().filter(r -> Boolean.TRUE.equals(r.getMicrochipMatched()))
@@ -160,7 +161,6 @@ public class HandoverServiceImpl implements HandoverService {
                 throw new DispatchRuleException("horseLegId", "Còn ngựa chưa nhận hoặc chưa ghi đón hụt.", true);
             }
         }
-        TripExecutionPolicy.requireSomeMatched(results.stream().map(HandoverHorse::getMicrochipMatched).toList());
         // Nhận và giao ngựa phải có biên bản đã ký (MAN_HINH 4.3, 6.5)
         if (needsRecord(handover) && !evidence.hasRecord(handover.getId())) {
             throw new DispatchRuleException("record", "Chưa có biên bản giao nhận. Chụp biên bản đã ký trước khi hoàn tất.", true);

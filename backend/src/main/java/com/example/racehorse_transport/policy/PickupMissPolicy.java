@@ -6,6 +6,7 @@ import java.time.Duration;
 import java.time.Instant;
 
 public final class PickupMissPolicy {
+    public static final String RELEASED_REASON = "Không đón được ngựa.";
     private PickupMissPolicy() {}
 
     public static void requireEvidence(PickupMissReason reason, Instant arrivedAt, Instant at, Duration wait,
@@ -36,5 +37,14 @@ public final class PickupMissPolicy {
         }
         Instant shortDue = missedAt.plus(shortWindow);
         return shortDue.isBefore(checkInAt) ? shortDue : checkInAt;
+    }
+
+    // Mốc nhắc gần nhất đã tới, tính từ lúc đơn chờ chọn lại lịch
+    public static java.util.OptionalInt reminderDay(Instant since, Instant now, java.util.List<Integer> days) {
+        return days.stream().filter(day -> !now.isBefore(since.plus(Duration.ofDays(day)))).mapToInt(Integer::intValue).max();
+    }
+
+    public static boolean choiceWindowEnded(Instant since, Instant now, int days) {
+        return !now.isBefore(since.plus(Duration.ofDays(days)));
     }
 }

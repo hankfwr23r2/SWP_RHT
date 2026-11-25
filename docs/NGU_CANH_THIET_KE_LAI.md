@@ -150,3 +150,7 @@ Khi không đón được con nào, đơn đã xác nhận tiếp tục chờ qu
 ## Đợt 1b bước 4 · Quyết định về số dư
 
 Thay quy tắc một khoản số dư mỗi đơn bằng một khoản số dư ban đầu và khoản bổ sung phát sinh khi nhận ngựa của lượt đón lại. Số đã trả luôn đối chiếu với lịch sử thanh toán. Việc đổi lịch lần đầu không có phí đổi lịch riêng. Nếu do khách và đã có lượt xe đến đón, chi phí của lượt đón lại được báo riêng theo ví dụ 8.5 của phương án.
+
+## Đợt 1b bước 5 · Dời chuyến
+
+Đổi quyết định cũ: sau khi cọc, đổi chuyến không đòi đủ lại thời gian làm giấy, chỉ tính giấy phải làm lại (mục 10 của PHUONG_AN_6_LUONG).

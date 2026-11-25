@@ -40,7 +40,8 @@ class BookingCancellationUnitTest {
     private final PaymentCheckoutService checkout = mock(PaymentCheckoutService.class);
     private final ScheduleChangeService schedules = mock(ScheduleChangeService.class);
     private final BookingCancellationService cancellations = new BookingCancellationServiceImpl(
-            bookings, horses, quotations, payments, statuses, departures, refunds, checkout, schedules);
+            bookings, horses, quotations, payments, statuses, departures, refunds, checkout, schedules,
+            mock(BookingRescheduleService.class));
     private final Payment balance = payment(PaymentType.BALANCE, PaymentStatus.PENDING, "6000");
 
     @BeforeEach

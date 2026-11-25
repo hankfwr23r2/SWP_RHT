@@ -43,4 +43,15 @@ class PickupMissPolicyTest {
         PickupMissPolicy.requireEvidence(PickupMissReason.SENDER_ABSENT, NOW, NOW.plus(wait), wait,
                 "No answer", "No answer", "No answer");
     }
+
+    @Test
+    void remindsAtTheLatestReachedDayAndEndsAtTheLimit() {
+        var since = java.time.Instant.parse("2026-12-07T02:00:00Z");
+        var days = java.util.List.of(3, 7, 14, 25);
+        assertThat(PickupMissPolicy.reminderDay(since, since.plus(Duration.ofDays(3)).minusSeconds(1), days)).isEmpty();
+        assertThat(PickupMissPolicy.reminderDay(since, since.plus(Duration.ofDays(3)), days)).hasValue(3);
+        assertThat(PickupMissPolicy.reminderDay(since, since.plus(Duration.ofDays(20)), days)).hasValue(14);
+        assertThat(PickupMissPolicy.choiceWindowEnded(since, since.plus(Duration.ofDays(30)).minusSeconds(1), 30)).isFalse();
+        assertThat(PickupMissPolicy.choiceWindowEnded(since, since.plus(Duration.ofDays(30)), 30)).isTrue();
+    }
 }

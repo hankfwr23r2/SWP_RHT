@@ -88,4 +88,15 @@ class RegulationPolicyTest {
         hub.setLocationType(LocationType.HUB);
         assertThatThrownBy(() -> RegulationPolicy.validateGate(hub)).isInstanceOf(RegulationRuleException.class);
     }
+
+    @Test
+    void redoLeadTimeCountsOnlyTheKindsOfPapersStillMissing() {
+        var rule = new com.example.racehorse_transport.dto.regulation.CountryRuleResponseDto(1L, "KH",
+                com.example.racehorse_transport.entity.enums.RuleDirection.EXPORT, 14, 7, LocalDate.of(2026, 1, 1), null);
+        assertThat(RegulationPolicy.redoLeadDays(rule, java.util.Set.of())).isZero();
+        assertThat(RegulationPolicy.redoLeadDays(rule, java.util.Set.of("IMPORT_PERMIT"))).isEqualTo(14);
+        assertThat(RegulationPolicy.redoLeadDays(rule, java.util.Set.of("LAB_TEST"))).isEqualTo(7);
+        assertThat(RegulationPolicy.redoLeadDays(rule, java.util.Set.of("IMPORT_PERMIT", "LAB_TEST"))).isEqualTo(21);
+        assertThat(RegulationPolicy.redoLeadDays(null, java.util.Set.of("LAB_TEST"))).isZero();
+    }
 }

@@ -902,3 +902,9 @@ Khách có thể chọn A cho con cuối cùng khi quản lý chưa chốt trác
 Phí lượt đón lại dùng bảng giá trên báo giá đã chốt và quãng đường đón đã báo. Mỗi lượt xe chỉ có một nhóm dòng thu cho đơn. Nếu số dư trước đã trả, lần nhận tiếp theo lập một khoản số dư bổ sung còn thiếu với hạn từ giờ nhận. Nếu khách trả dư, ghi khoản hoàn chờ xử lý. Hủy khi chưa nhận con nào giữ cọc nếu khách chịu trách nhiệm, hoàn hết phần chưa hoàn nếu do công ty hoặc bất khả kháng.
 
 Phí bảo hiểm giữ lại chỉ gồm phần hãng chưa hoàn. Chuyên viên ghi tổng hoàn theo chứng từ, hệ thống trừ phần đó trên báo giá thay thế và kiểm phần khách đã trả dư.
+
+## Đợt 1b bước 5 · Dời chuyến
+
+Đơn đã cọc đổi chuyến chỉ tính thời gian giấy phải làm lại: giấy đã duyệt còn hạn tới ngày chạy mới không tính; thiếu giấy phép (`IMPORT_PERMIT`, `IMPORT_APPROVAL`) tính `permit_lead_days`, thiếu giấy khác tính `certificate_lead_days`. Đơn chưa cọc vẫn tính đủ. Đơn chạy thẳng xác định theo định tuyến hub, đổi ngày đón trong 30 ngày kể từ lần hụt, kiểm giấy và bảo hiểm cho ngày mới; hủy được sau khi quản lý chốt bên chịu.
+
+Đơn chờ chọn lại lịch vì đón hụt, hoặc vì trả ngựa tại nơi đón, được nhắc ngày 3, 7, 14, 25 (`SCHEDULE_CHOICE_REMINDER_1..4_DAYS`). Đủ `PRICE_HOLD_DAYS` thì đơn đón hụt hủy theo nguyên nhân: mọi con do khách thì mất cọc, có con không do khách thì hoàn 100%; chưa chốt bên chịu thì nhắc quản lý mỗi ngày, không tự hủy.

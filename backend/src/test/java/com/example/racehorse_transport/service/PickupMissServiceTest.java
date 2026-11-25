@@ -58,6 +58,7 @@ class PickupMissServiceTest {
         when(configs.getInt("PICKUP_CHOICE_SHORT_HOURS")).thenReturn(1);
         when(configs.getInt("HUB_CHECKIN_HOURS")).thenReturn(3);
         when(configs.getInt("PRICE_HOLD_DAYS")).thenReturn(30);
+        when(cancellations.isDirect(booking)).thenReturn(true);
     }
 
     @Test
@@ -193,7 +194,8 @@ class PickupMissServiceTest {
         service.decide(3L, choice, "owner");
         service.decide(3L, choice, "owner");
         assertThat(horse.getStatus()).isEqualTo(BookingHorseStatus.ACTIVE);
-        verifyNoInteractions(cancellations);
+        verify(cancellations, org.mockito.Mockito.atLeast(0)).isDirect(booking);
+        org.mockito.Mockito.verifyNoMoreInteractions(cancellations);
 
         var manager = new AppUser();
         manager.setId(8L);
@@ -298,5 +300,41 @@ class PickupMissServiceTest {
         departure.setPlannedDepartureAt(NOW.plus(Duration.ofHours(30)));
         booking.setDeparture(departure);
         booking.setBookingType(BookingType.INTERPROVINCE);
+    }
+
+    @Test
+    void directInterprovinceOrderCanPickANewDateWithinThirtyDaysEvenAfterTheChoiceDeadline() {
+        booking.setBookingType(BookingType.INTERPROVINCE);
+        service.record(3L, "Did not board", NOW.minus(Duration.ofHours(13)), 4L);
+        service.expire(3L);
+        booking.setStatus(BookingStatus.SCHEDULE_CHANGE_REQUIRED);
+
+        var late = new PickupMissChoiceRequestDto(PickupMissChoice.RESCHEDULE_PICKUP, null, null, LocalDate.of(2027, 1, 6));
+        assertThatThrownBy(() -> service.decide(3L, late, "owner")).isInstanceOf(BookingRuleException.class)
+                .hasMessageContaining("hạn giữ giá");
+        var date = LocalDate.of(2027, 1, 5);
+        service.decide(3L, new PickupMissChoiceRequestDto(PickupMissChoice.RESCHEDULE_PICKUP, null, null, date), "owner");
+
+        verify(cancellations).rebookDirectAfterPickupMiss(2L, date, 7L);
+        assertThat(booking.getRequestedPickupDate()).isEqualTo(date);
+    }
+
+    @Test
+    void orderThatLostItsDepartureIsNotTreatedAsDirect() {
+        booking.setBookingType(BookingType.INTERPROVINCE);
+        when(cancellations.isDirect(booking)).thenReturn(false);
+        service.record(3L, "Did not board", NOW, 4L);
+        var request = new PickupMissChoiceRequestDto(PickupMissChoice.RESCHEDULE_PICKUP, null, null, LocalDate.of(2026, 12, 8));
+        assertThatThrownBy(() -> service.decide(3L, request, "owner")).isInstanceOf(BookingRuleException.class);
+    }
+
+    @Test
+    void directOrderCanBeCancelledOnceTheManagerConfirmsLiability() {
+        service.record(3L, "Did not board", NOW, 4L);
+        var request = new PickupMissChoiceRequestDto(PickupMissChoice.CANCEL_BOOKING, null, null, null);
+        assertThatThrownBy(() -> service.decide(3L, request, "owner")).isInstanceOf(BookingRuleException.class);
+        horse.setPickupMissLiability(PickupMissLiability.COMPANY);
+        service.decide(3L, request, "owner");
+        verify(cancellations).cancelAfterPickupMiss(2L, false, 7L);
     }
 }
