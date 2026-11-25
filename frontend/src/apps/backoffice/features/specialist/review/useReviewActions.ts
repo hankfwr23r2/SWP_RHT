@@ -51,7 +51,6 @@ export function useReviewActions(id: number) {
 
   return {
     run, busy, error, fields, clear,
-    intake: (): ReviewAction => ({ label: 'intake', primary: true, run: () => bookingReviewsApi.intake(id) }),
     returnForResubmission: (): ReviewAction => ({
       label: 'return', reason: true, run: reason => bookingReviewsApi.returnForResubmission(id, { reason }),
     }),

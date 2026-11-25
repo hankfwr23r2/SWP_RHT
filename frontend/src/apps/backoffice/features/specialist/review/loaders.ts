@@ -2,9 +2,9 @@ import { bookingDocumentsApi } from '@shared/api/bookingDocuments'
 import { bookingReviewsApi } from '@shared/api/bookingReviews'
 import { catalogApi } from '@shared/api/catalog'
 import { loadAll, type PageLoaderContext } from '@shared/routing/pageData'
-import { reviewStatuses } from './reviewDisplay'
+import { defaultReviewStatus } from './reviewDisplay'
 
-export const reviewListLoader = () => loadAll({ rows: bookingReviewsApi.summaries(reviewStatuses[0], 0) })
+export const reviewListLoader = () => loadAll({ rows: bookingReviewsApi.summaries(defaultReviewStatus, 0, true) })
 
 export function reviewDetailLoader({ params }: PageLoaderContext) {
   const id = Number(params.id)

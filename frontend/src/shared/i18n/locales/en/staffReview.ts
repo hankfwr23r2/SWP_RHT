@@ -1,5 +1,10 @@
 export const staffReview = {
   "staffReview": {
+    assignmentTabs: 'Booking assignment',
+    mine: 'My bookings',
+    all: 'All bookings',
+    assigned: 'Assigned to {{name}}',
+    unassigned: 'No specialist assigned',
     "recordPremiumRefund": "Record insurer refund",
     "refundedPremiumAmount": "Total premium refunded by the insurer",
     "premiumRefundReceipt": "Refund receipt reference",

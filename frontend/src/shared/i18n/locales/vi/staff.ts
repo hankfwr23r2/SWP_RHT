@@ -184,6 +184,7 @@ export const staff = {
     documents: '{{count}} đơn thiếu giấy',
   },
   staffMenus: {
+    '/manager/assignments': 'Phân công',
     '/coordinator/dispatch': 'Điều độ',
     '/my-trips': 'Lượt xe của tôi',
     '/admin/horse-types': 'Danh mục loại ngựa',

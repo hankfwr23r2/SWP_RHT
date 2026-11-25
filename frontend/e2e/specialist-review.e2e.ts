@@ -30,7 +30,7 @@ const initialItems: Schemas['Item'][] = [
     submitterType: 'CUSTOMER', requiredForQuoting: true, requiredBeforePickup: true, satisfied: false },
 ]
 
-async function open(page: Page, path: string, initialStatus: Status = 'UNDER_REVIEW') {
+async function open(page: Page, path: string, initialStatus: Status = 'UNDER_REVIEW', role = 'specialist', ownsBooking = true) {
   let status = initialStatus
   let quoteBlocked = true
   let reviewReason = ''
@@ -43,11 +43,11 @@ async function open(page: Page, path: string, initialStatus: Status = 'UNDER_REV
   const calls: { path: string; body: unknown }[] = []
   const summaries: { status: string | null; page: string | null }[] = []
 
-  await page.addInitScript(() => {
-    sessionStorage.setItem('SWP_SESSION_backoffice', JSON.stringify({ role: 'specialist', name: 'Chuyên viên thử', username: 'specialist.test' }))
+  await page.addInitScript(role => {
+    sessionStorage.setItem('SWP_SESSION_backoffice', JSON.stringify({ role, name: 'Nhân viên thử', username: role + '.test' }))
     localStorage.setItem('SWP_ACCESS_TOKEN_backoffice', `e30.${btoa(JSON.stringify({ exp: 4102444800 }))}.x`)
     localStorage.setItem('i18nextLng', 'vi')
-  })
+  }, role)
   await page.route('**/api/v1/**', async route => {
     const req = route.request()
     const url = new URL(req.url())
@@ -57,7 +57,10 @@ async function open(page: Page, path: string, initialStatus: Status = 'UNDER_REV
     if (req.method() === 'POST') {
       const body = req.headers()['content-type']?.includes('multipart') ? req.postData() : req.postDataJSON()
       calls.push({ path, body })
-      if (path === '/bookings/8/intake') status = 'UNDER_REVIEW'
+      if (path === '/bookings/8/intake') {
+        if (role !== 'manager' || body.specialistId !== 101) return fail(403, 'Không được phép tiếp nhận đơn.')
+        status = 'UNDER_REVIEW'
+      }
       if (path === '/bookings/8/reject') status = 'REJECTED'
       if (path === '/bookings/8/return-for-resubmission') {
         status = 'NEEDS_RESUBMISSION'
@@ -91,17 +94,24 @@ async function open(page: Page, path: string, initialStatus: Status = 'UNDER_REV
       }
       return reply(null)
     }
+    if (path === '/staff-workloads') return reply([
+      { staffId: 100, staffName: 'Mai', assignedCount: 3 },
+      { staffId: 101, staffName: 'An', assignedCount: 1 },
+    ])
     if (path === '/bookings/summaries') {
       const group = url.searchParams.get('statuses')
       const page = url.searchParams.get('page')
       summaries.push({ status: group, page })
+      if (group === 'PENDING_INTAKE' && url.searchParams.get('mine') === 'true') return reply([])
       if (group === 'PENDING_INTAKE' && page === '0') return reply(Array.from({ length: 50 }, (_, index) => ({ id: 100 + index, code: `BK-${index}`, status: group })))
       if (group === 'PENDING_INTAKE') return reply([{ ...order, status: group, customerName: 'Đỗ Phương' }])
       return reply([])
     }
     if (path === '/bookings/missing-documents') return reply([{ ...order, status: 'CONFIRMED' }])
     if (path === '/bookings/8/review-detail') return reply({
-      booking: { ...order, status }, reviewReason, horses: policies,
+      booking: { ...order, status, specialistId: status === 'PENDING_INTAKE' ? null : 101,
+        specialistName: status === 'PENDING_INTAKE' ? null : 'An' },
+      assignedToMe: ownsBooking && role === 'specialist' && status !== 'PENDING_INTAKE', reviewReason, horses: policies,
       addresses: [{ addressType: 'PICKUP', addressLine: 'Trại đón' }, { addressType: 'DELIVERY', addressLine: 'Trại nhận' }],
       parties: [{ bookingRole: 'SHIPPER', fullName: 'Người gửi' }],
     })
@@ -132,6 +142,8 @@ async function sendReason(page: Page, label: string, reason: string) {
 test('phân trang và tìm không dấu, đổi tab, xem đơn thiếu giấy ở 360px', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 740 })
   const { summaries } = await open(page, listPath)
+  await page.getByRole('tab', { name: 'Tất cả' }).click()
+  await page.getByRole('tab', { name: 'Chờ tiếp nhận' }).click()
   await page.getByRole('searchbox').fill('do phuong')
   await page.getByRole('button', { name: 'Tìm kiếm', exact: true }).click()
   await expect(page.getByText('Chưa tìm thấy đơn phù hợp')).toBeVisible()
@@ -152,13 +164,10 @@ test('phân trang và tìm không dấu, đổi tab, xem đơn thiếu giấy �
   await expect(page).toHaveURL(new RegExp(detailPath + '$'))
 })
 
-test('tiếp nhận, duyệt giấy từng ngựa, từ chối kèm lý do và nộp giấy thay đại lý', async ({ page }) => {
-  const { calls } = await open(page, detailPath, 'PENDING_INTAKE')
+test('duyệt giấy từng ngựa, từ chối kèm lý do và nộp giấy thay đại lý', async ({ page }) => {
+  const { calls } = await open(page, detailPath)
   const bar = page.getByRole('region', { name: 'Bước tiếp theo' })
-  await expect(bar).toContainText('Tiếp nhận để bắt đầu kiểm hồ sơ')
   await expect(bar).toBeInViewport()
-  await expect(page.getByRole('button', { name: 'Duyệt giấy' })).toHaveCount(0)
-  await confirm(page, 'Tiếp nhận')
   await expect(page.getByRole('link', { name: 'passport.pdf' })).toHaveAttribute('href', 'https://example.test/passport.pdf')
   await expect(bar).toContainText('Duyệt 2 giấy đang chờ.')
   await confirm(page, 'Duyệt giấy')
@@ -186,7 +195,7 @@ test('tiếp nhận, duyệt giấy từng ngựa, từ chối kèm lý do và n
   const submission = calls.find(call => call.path.endsWith('/upload-for-partner'))
   expect(submission?.body).toEqual(expect.stringContaining('name="bookingHorseId"'))
   expect(submission?.body).toEqual(expect.stringContaining('2099-02-01'))
-  expect(calls[0].path).toBe('/bookings/8/intake')
+  expect(calls[0].path).toBe(documentPath + '/1/approve')
 })
 
 test('ghi báo giá và xác nhận bảo hiểm, mở lại, yêu cầu bổ sung và thử lại khi báo giá bị chặn', async ({ page }) => {
@@ -229,16 +238,24 @@ test('trả lại khách và từ chối đơn gửi lý do tới đúng endpoin
   await sendReason(page, 'Trả lại để bổ sung', 'Thiếu hồ sơ')
   await expect(page.getByText(/Lý do thẩm định gần nhất.*Thiếu hồ sơ/)).toBeVisible()
   expect(calls[0]).toEqual({ path: '/bookings/8/return-for-resubmission', body: { reason: 'Thiếu hồ sơ' } })
-  const pending = await open(page, detailPath, 'PENDING_INTAKE')
+  const pending = await open(page, detailPath)
   await sendReason(page, 'Từ chối đơn', 'Đơn bị trùng')
   expect(pending.calls[0]).toEqual({ path: '/bookings/8/reject', body: { reason: 'Đơn bị trùng' } })
 })
 
-test('tiếp nhận ngay từ danh sách rồi mở đơn', async ({ page }) => {
-  const { calls } = await open(page, listPath)
-  await page.getByRole('button', { name: 'Tiếp nhận', exact: true }).first().click()
-  await expect(page).toHaveURL(/specialist\/review\/100$/)
-  expect(calls[0].path).toBe('/bookings/100/intake')
+test('quản lý tiếp nhận với chuyên viên ít đơn nhất được chọn sẵn', async ({ page }) => {
+  const { calls } = await open(page, '/backoffice/manager/orders/8', 'PENDING_INTAKE', 'manager')
+  await expect(page.getByRole('combobox')).toContainText('An')
+  await confirm(page, 'Tiếp nhận đơn')
+  expect(calls[0]).toEqual({ path: '/bookings/8/intake', body: { specialistId: 101 } })
+})
+
+test('chuyên viên khác chỉ xem đơn và người phụ trách', async ({ page }) => {
+  const { calls } = await open(page, detailPath, 'UNDER_REVIEW', 'specialist', false)
+  await expect(page.getByText('Phụ trách: An')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Duyệt giấy' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Bắt đầu báo giá' })).toHaveCount(0)
+  expect(calls).toEqual([])
 })
 
 test('yêu cầu khách nộp giấy còn thiếu, lý do điền sẵn tên giấy', async ({ page }) => {

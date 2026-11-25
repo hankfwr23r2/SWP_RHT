@@ -17,10 +17,10 @@ const horses: NonNullable<BookingDetail['horses']> = [
   { id: 4, horseName: 'Mây', status: 'ACTIVE', insurance: { id: 4, coverageOption: 'NONE', status: 'DRAFT' } },
 ]
 
-function renderInsurances(status: BookingStatus) {
+function renderInsurances(status: BookingStatus, canEdit = true) {
   function Page() {
     const actions = useReviewActions(1)
-    return <InsurancesCard horses={horses} status={status} insurers={[{ id: 1, displayName: 'Bảo hiểm mẫu' }]} actions={actions} />
+    return <InsurancesCard horses={horses} status={status} canEdit={canEdit} insurers={[{ id: 1, displayName: 'Bảo hiểm mẫu' }]} actions={actions} />
   }
   return render(<RouterProvider router={createMemoryRouter([{ path: '/', Component: Page }])} />)
 }
@@ -34,6 +34,12 @@ describe('Thao tác bảo hiểm trên hồ sơ chuyên viên', () => {
     expect(draft.getByRole('button', { name: 'Xác nhận bảo hiểm' })).toBeTruthy()
     expect(personal.queryByRole('button')).toBeNull()
     expect(waiver.queryByRole('button')).toBeNull()
+  })
+
+  it('chỉ hiển thị dữ liệu bảo hiểm khi chuyên viên khác phụ trách', () => {
+    renderInsurances('UNDER_REVIEW', false)
+    expect(screen.getByRole('heading', { name: 'Sao Mai' })).toBeTruthy()
+    expect(screen.queryByRole('button')).toBeNull()
   })
 
   it('khóa thao tác khi báo giá đang chờ khách', () => {

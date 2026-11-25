@@ -27,8 +27,7 @@ function ReviewDetail({ id, detail, data }: {
   const { booking, reviewReason } = detail
   const status = booking?.status
   const options: ReviewAction[] = []
-  if (status === 'PENDING_INTAKE') options.push(actions.intake(), actions.reject())
-  if (status === 'UNDER_REVIEW') options.push(actions.returnForResubmission(), actions.reject(), actions.startQuoting())
+  if (detail.assignedToMe && status === 'UNDER_REVIEW') options.push(actions.returnForResubmission(), actions.reject(), actions.startQuoting())
   const todos = reviewTodos(detail, data.checklist)
   const work = [
     todos.docs && t('staffReview.todoDocs', { count: todos.docs }),
@@ -41,14 +40,15 @@ function ReviewDetail({ id, detail, data }: {
       <h1>{t('staffReview.order', { code: booking?.code })}</h1>
       <OrderStatusBadge status={status} />
     </div>
+    <p>{booking?.specialistName ? t('staffReview.assigned', { name: booking.specialistName }) : t('staffReview.unassigned')}</p>
     {reviewReason && <p>{t('staffReview.reviewReason', { reason: reviewReason })}</p>}
     {(!data.insurers || !data.stallTypes) && <ErrorState onRetry={data.reload} retrying={state !== 'idle'} />}
     <OrderFacts detail={detail} stallTypes={data.stallTypes} />
     {data.checklist
-      ? <DocumentsCard checklist={data.checklist} horses={detail.horses} status={status} actions={actions} />
+      ? <DocumentsCard checklist={data.checklist} horses={detail.horses} status={detail.assignedToMe ? status : undefined} actions={actions} />
       : <Card title={t('staffReview.documents')}><ErrorState onRetry={data.reload} retrying={state !== 'idle'} /></Card>}
-    <InsurancesCard horses={detail.horses} status={status} insurers={data.insurers} actions={actions} />
-    <ActionBar next={next}>{options.length > 0 && <ActionButtons options={options} actions={actions} />}</ActionBar>
+    <InsurancesCard horses={detail.horses} status={status} canEdit={detail.assignedToMe === true} insurers={data.insurers} actions={actions} />
+    {detail.assignedToMe && <ActionBar next={next}>{options.length > 0 && <ActionButtons options={options} actions={actions} />}</ActionBar>}
   </>
 }
 

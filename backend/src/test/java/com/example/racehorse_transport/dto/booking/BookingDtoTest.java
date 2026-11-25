@@ -17,6 +17,18 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class BookingDtoTest {
+    @Test
+    void bookingResponseIncludesTheCurrentSpecialist() {
+        var booking = new Booking();
+        assertThat(BookingResponseDto.from(booking).specialistId()).isNull();
+        var assignee = new com.example.racehorse_transport.entity.Staff();
+        assignee.setUserId(17L);
+        assignee.setFullName("Mai");
+        booking.setSpecialist(assignee);
+        assertThat(BookingResponseDto.from(booking).specialistId()).isEqualTo(17L);
+        assertThat(BookingResponseDto.from(booking).specialistName()).isEqualTo("Mai");
+    }
+
 
     @Test
     void optionalNotesAcceptUpToTwoThousandCharacters() {
