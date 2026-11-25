@@ -53,6 +53,9 @@ export function RescheduleCard({ data }: { data: OrderData }) {
     await run(() => bookingOrdersApi.reschedule(data.id, { departureId: departureId!, requestedPickupDate: pickupDate }), t('myOrders.reschedule.done'))
   }
 
+  // Đơn chạy thẳng đổi ngày đón ở thẻ đón hụt, không chọn chuyến
+  if (suggestion?.routing === 'DIRECT') return null
+
   return (
     <Card title={t('myOrders.reschedule.title')}>
       <div className={s.stack}>

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useRevalidator } from 'react-router'
 import { useTranslation } from 'react-i18next'
+import { incidentsApi } from '@shared/api/incidentOps'
 import { settlementApi, type CostItem } from '@shared/api/settlement'
 import { Badge } from '@shared/ui/Badge'
 import { Button } from '@shared/ui/Button'
@@ -17,6 +18,7 @@ export function SettlementPanel({ data }: { data: OrderData }) {
   const { t } = useTranslation()
   const { revalidate, state } = useRevalidator()
   const { run, busy, error } = useStaffAction()
+  const [recovering, setRecovering] = useState<number>()
   const [chosen, setChosen] = useState<number[]>([])
   const [dialog, setDialog] = useState<'charge' | 'complete' | null>(null)
   const settlement = data.settlement
@@ -54,6 +56,9 @@ export function SettlementPanel({ data }: { data: OrderData }) {
                   </label>
                 ) : <strong>{cost.category && t(`mgr.settle.category.${cost.category}`)}</strong>}
                 <p className={s.hint}>{[cost.description, cost.payerType && t(`mgr.settle.payer.${cost.payerType}`), cost.recordedByName, cost.incurredAt && moment(cost.incurredAt)].filter(Boolean).join(' · ')}</p>
+                {cost.agentRecoveryRequired && <Badge>{t(cost.agentRecoveredAt ? 'incidentDecisions.recovered' : 'incidentDecisions.recovery')}</Badge>}
+                {cost.agentRecoveryRequired && !cost.agentRecoveredAt && cost.approvedAt && cost.id != null &&
+                  <Button size="sm" disabled={busy} onClick={() => setRecovering(cost.id)}>{t('incidentDecisions.markRecovered')}</Button>}
                 {cost.payerType === 'CUSTOMER' && !cost.customerConsulted && <p className={s.error}>{t('mgr.settle.notConsulted')}</p>}
               </div>
               <span className={s.amount}>{money(cost.amount, cost.currencyCode)}</span>
@@ -71,6 +76,11 @@ export function SettlementPanel({ data }: { data: OrderData }) {
           </div>
         )}
       </div>
+      {recovering != null && <ConfirmDialog title={t('incidentDecisions.markRecovered')}
+        message={t('incidentDecisions.consequence')} confirmLabel={t('incidentDecisions.markRecovered')}
+        onConfirm={async () => {
+          if (await run(() => incidentsApi.markRecovered(recovering), t('incidentDecisions.recovered'))) setRecovering(undefined)
+        }} onCancel={() => setRecovering(undefined)} />}
       {dialog === 'charge' && <ConfirmDialog title={t('mgr.settle.chargeTitle')} message={t('mgr.settle.chargeHint', { count: picked.length })}
         confirmLabel={t('mgr.settle.charge')} onConfirm={charge} onCancel={() => setDialog(null)} />}
       {dialog === 'complete' && <ConfirmDialog title={t('mgr.settle.completeTitle')} message={t('mgr.settle.completeHint')}

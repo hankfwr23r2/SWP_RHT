@@ -6,11 +6,11 @@ Ngày 25/11/2026. Các gói dưới đây lấy từ [PHUONG_AN_6_LUONG.md](PHUO
 
 | Gói | Nội dung | Bắt đầu | Cỡ | Người làm |
 |---|---|---|---|---|
-| **G1** | Khiếu nại và nghiệm thu của khách | Ngay | Lớn | |
-| **G2** | Thông báo còn thiếu | Ngay | Vừa | |
-| **G3** | Xử lý chuyến trễ | Ngay | Lớn | |
-| **G4** | Nghiệm thu bằng tay phần đã gộp (không viết code) | Ngay | Vừa | |
-| **G5** | Phần sửa dở: chỉ số sức khỏe lúc nhận, tệp giao nhận nhiều đơn | Sau khi 1b gộp | Nhỏ | |
+| **G1** | Khiếu nại và nghiệm thu của khách | Ngay | Lớn | HoangPhuc-IT |
+| **G2** | Thông báo còn thiếu | Ngay | Vừa | HoangPhuc-IT |
+| **G3** | Xử lý chuyến trễ | Ngay | Lớn | HoangPhuc-IT |
+| **G4** | Nghiệm thu bằng tay phần đã gộp (không viết code) | Ngay | Vừa | HoangPhuc-IT |
+| **G5** | Phần sửa dở: chỉ số sức khỏe lúc nhận, tệp giao nhận nhiều đơn | Sau khi 1b gộp | Nhỏ | HoangPhuc-IT |
 | *Giữ lại* | 1b đón hụt và chưa trả số dư; đợt 2 tiền và trách nhiệm sự cố; nhiều nơi giao cùng tuyến | Đang làm | | Luồng A |
 
 Mỗi gói một người. G1, G2, G3 làm song song được.
@@ -34,19 +34,22 @@ Mỗi gói một người. G1, G2, G3 làm song song được.
 
 **Quy tắc đã duyệt**
 
-1. Đơn Đã giao: khách bấm **Xác nhận đã nhận ngựa ổn** hoặc **Khiếu nại**. Mỗi đơn chọn một kết quả xác nhận, không rút lại.
-2. Khiếu nại trên app trong **7 ngày** (cấu hình) kể từ lúc đơn Đã giao, có nội dung và **ít nhất một ảnh**, chọn con ngựa hoặc cả đơn.
-3. Ngày 8 đến 14: khách gọi công ty, **quản lý nhập thay**. Sau ngày 14 không nhận trên hệ thống.
+1. Đơn Đã giao: khách bấm **Xác nhận đã nhận ngựa ổn** hoặc **Khiếu nại**. Đã xác nhận thì không rút lại, không khiếu nại trên app nữa; khách vẫn gọi công ty được, quản lý nhập thay trong cả 14 ngày.
+2. Khiếu nại trên app trong **7 ngày** (cấu hình) kể từ lúc **đơn sang Đã giao** (con cuối đã giao, không đếm từng con), có nội dung và **ít nhất một ảnh**, chọn con ngựa hoặc cả đơn. Khách gửi trên app một lần; mỗi đơn chỉ một khiếu nại đang mở.
+3. Ngày 8 đến 14: khách gọi công ty, **quản lý nhập thay**, cũng phải có ảnh. Sau ngày 14 không nhận trên hệ thống.
 4. Đơn có khiếu nại **chưa giải quyết** thì quản lý và hệ thống đều **không đóng được**.
-5. Trong 7 ngày đầu, đơn chỉ đóng khi khách đã xác nhận ổn. Hết 7 ngày không ai khiếu nại thì đóng như cũ.
-6. Quản lý xử lý: trả lời, kết luận (chấp nhận hoặc không, lý do bắt buộc). Khách thấy kết luận. **Không tự hoàn tiền**; hoàn thì dùng luồng hoàn tiền hiện có.
-7. Đơn đã Hoàn thành mà có khiếu nại ngày 8 đến 14: đơn giữ Hoàn thành, khiếu nại vẫn theo dõi riêng. Không thêm trạng thái đơn.
+5. Trong 7 ngày đầu, đơn chỉ đóng khi khách đã xác nhận ổn và do **quản lý** đóng; hệ thống không tự đóng sớm. Hết 7 ngày không ai khiếu nại thì đóng như cũ. G1 **giữ nguyên** điều kiện tiền, chi phí, hoàn tiền; đóng đơn khi còn nợ (mục 13.3) do luồng A làm sau.
+6. Quản lý xử lý: trả lời, kết luận (chấp nhận hoặc không, lý do bắt buộc). Kết luận xong chuyển thẳng `CLOSED`, không dùng `RESOLVED`. Khách thấy kết luận. **Không làm tiền**: hệ thống chưa có hoàn tiền sau khi giao, không ghi hay hứa số tiền.
+7. Đơn đã Hoàn thành mà có khiếu nại ngày 8 đến 14: đơn giữ Hoàn thành, khiếu nại vẫn theo dõi riêng. Không thêm trạng thái đơn, không mở lại đơn.
+8. "Khiếu nại khoản thu" ở mục 13.5 là việc khác, **không thuộc G1**.
 
 **Gợi ý kỹ thuật**
 
-- Không thêm bảng: dùng `incident` gắn đơn, thêm loại `COMPLAINT`. Lưu ý `incident.reported_by` hiện bắt buộc là nhân viên và nguyên nhân bắt buộc có, nên cần migration nới ràng buộc **chỉ cho loại này**.
+- Không thêm bảng: dùng `incident` gắn đơn, thêm loại `COMPLAINT`. Lưu ý `incident.reported_by` hiện bắt buộc là nhân viên và nguyên nhân bắt buộc có, nên cần migration nới ràng buộc **chỉ cho loại này** và thêm cột tài khoản người gửi.
 - Khiếu nại không đi qua phương án sự cố và không cần xác nhận ngựa đủ sức.
-- Quyết toán đã chặn đóng khi còn sự cố mở (`SettlementServiceImpl`), tận dụng.
+- Quyết toán đã chặn đóng khi còn sự cố mở (`SettlementServiceImpl`), tận dụng. Điều kiện xác nhận ổn hoặc đủ 7 ngày viết thành **hàm riêng trong policy** để luồng A nối vào mục 13.3.
+- **Lọc khiếu nại khỏi danh sách sự cố của điều phối** ở truy vấn. Chỗ chặn lập phương án, xác nhận đủ sức, ghi chi phí cho khiếu nại: G1 **liệt kê** trong file nghiệm thu, luồng A thêm sau đợt 2.
+- Migration gộp **sau** 1b, đợt 2 và nhiều nơi giao; cứ làm và mở PR.
 
 **File chính:** `SettlementServiceImpl`, service khiếu nại mới, `incident` (entity, migration), màn chi tiết đơn của khách, màn đơn của quản lý.
 **Đừng đụng:** `IncidentServiceImpl`, `IncidentActionServiceImpl`, `CostItemServiceImpl` (luồng A làm đợt 2); `Payment*`.
@@ -64,6 +67,9 @@ Mỗi gói một người. G1, G2, G3 làm song song được.
 | G1-7 | Khách khác mở khiếu nại của đơn không phải của mình | Không thấy |
 | G1-8 | Quản lý nhập thay ngày 10; ngày 15 | Nhận; từ chối |
 | G1-9 | Bấm gửi hai lần liền | Chỉ một khiếu nại |
+| G1-10 | Đã xác nhận ổn, khách gửi khiếu nại trên app; quản lý nhập thay ngày 5 khi đơn chưa đóng | Từ chối; nhận và chặn đóng |
+| G1-11 | Đơn Hoàn thành, quản lý nhập ngày 10 | Nhận, đơn vẫn Hoàn thành |
+| G1-12 | Điều phối mở danh sách sự cố | Không thấy khiếu nại |
 
 ### G2. Thông báo còn thiếu
 

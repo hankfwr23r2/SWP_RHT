@@ -10,7 +10,7 @@ import java.util.List;
 // intakeByName: nhân viên đã tiếp nhận đơn, chỉ trả cho nhân viên
 public record BookingDetailResponseDto(BookingResponseDto booking, List<PartySnapshot> parties,
         List<AddressSnapshot> addresses, List<HorseDetail> horses, String reviewReason,
-        TransferMethod pickupMethod, TransferMethod deliveryMethod, String intakeByName, boolean rated) {
+        TransferMethod pickupMethod, TransferMethod deliveryMethod, String intakeByName, boolean rated, Instant balanceHoldAt) {
 
     public static BookingDetailResponseDto from(Booking booking, List<BookingParty> parties,
                                                  List<BookingAddress> addresses, List<HorseDetail> horses) {
@@ -19,10 +19,16 @@ public record BookingDetailResponseDto(BookingResponseDto booking, List<PartySna
 
     public static BookingDetailResponseDto from(Booking booking, List<BookingParty> parties,
             List<BookingAddress> addresses, List<HorseDetail> horses, String reviewReason, String intakeByName, boolean rated) {
+        return from(booking, parties, addresses, horses, reviewReason, intakeByName, rated, null);
+    }
+
+    public static BookingDetailResponseDto from(Booking booking, List<BookingParty> parties,
+            List<BookingAddress> addresses, List<HorseDetail> horses, String reviewReason, String intakeByName, boolean rated,
+            Instant balanceHoldAt) {
         return new BookingDetailResponseDto(BookingResponseDto.from(booking),
                 parties.stream().map(PartySnapshot::from).toList(),
                 addresses.stream().map(AddressSnapshot::from).toList(), List.copyOf(horses), reviewReason,
-                booking.getPickupMethod(), booking.getDeliveryMethod(), intakeByName, rated);
+                booking.getPickupMethod(), booking.getDeliveryMethod(), intakeByName, rated, balanceHoldAt);
     }
 
     public record PartySnapshot(BookingPartyRole bookingRole, String fullName, String phone,
@@ -70,7 +76,7 @@ public record BookingDetailResponseDto(BookingResponseDto booking, List<PartySna
     public record InsuranceDetail(Long id, InsuranceCoverageOption coverageOption, HorseInsuranceStatus status,
             Long insurerPartyId, String policyNumber, LocalDate validFrom, LocalDate validTo, Long waiverTermsAcceptanceId,
             BigDecimal coverageAmount, BigDecimal premiumAmount, String currencyCode, Instant quoteExpiresAt,
-            String revisionReason) {
+            String revisionReason, BigDecimal refundedPremiumAmount) {
 
         public static InsuranceDetail from(HorseInsurance insurance) {
             return new InsuranceDetail(insurance.getId(), insurance.getCoverageOption(), insurance.getStatus(),
@@ -78,7 +84,7 @@ public record BookingDetailResponseDto(BookingResponseDto booking, List<PartySna
                     insurance.getPolicyNumber(), insurance.getValidFrom(), insurance.getValidTo(),
                     insurance.getWaiverTermsAcceptance() == null ? null : insurance.getWaiverTermsAcceptance().getId(),
                     insurance.getCoverageAmount(), insurance.getPremiumAmount(), insurance.getCurrencyCode(),
-                    insurance.getQuoteExpiresAt(), insurance.getRevisionReason());
+                    insurance.getQuoteExpiresAt(), insurance.getRevisionReason(), insurance.getRefundedPremiumAmount());
         }
     }
 }

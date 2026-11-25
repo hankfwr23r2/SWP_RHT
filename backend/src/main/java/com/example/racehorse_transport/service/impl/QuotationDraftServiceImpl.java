@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.dto.quotation.QuotationResponseDto;
+import com.example.racehorse_transport.dto.operation.PickupAddOnResponseDto;
 import com.example.racehorse_transport.entity.*;
 import com.example.racehorse_transport.entity.enums.*;
 import com.example.racehorse_transport.exception.BookingRuleException;
@@ -10,6 +11,8 @@ import com.example.racehorse_transport.policy.PricingPolicy.PricingInput;
 import com.example.racehorse_transport.policy.PricingPolicy.PricingResult;
 import com.example.racehorse_transport.policy.PricingPolicy.RoadLeg;
 import com.example.racehorse_transport.policy.QuotationPolicy;
+import com.example.racehorse_transport.policy.PickupMissPricingPolicy;
+import com.example.racehorse_transport.policy.PaymentPolicy;
 import com.example.racehorse_transport.repository.*;
 import com.example.racehorse_transport.service.PricingRouteService;
 import com.example.racehorse_transport.service.PricingService;
@@ -36,7 +39,7 @@ public class QuotationDraftServiceImpl implements QuotationDraftService {
     private final BookingRepository bookings;
     private final QuotationRepository quotations;
     private final QuotationLineRepository lines;
-    private final PriceListRepository priceLists;
+    private final PaymentRepository payments;
     private final PriceItemRepository priceItems;
     private final PricingService pricing;
     private final PricingRouteService maps;
@@ -90,7 +93,7 @@ public class QuotationDraftServiceImpl implements QuotationDraftService {
                 ? history.getLast() : newDraft(booking, history);
         var oldLines = quotation.getId() == null ? List.<QuotationLine>of()
                 : lines.findByQuotation_IdOrderByLineNumber(quotation.getId());
-        quotation.setPriceList(priceLists.getReferenceById(result.priceListId()));
+        quotation.setPriceList(snapshots.priceListReference(result.priceListId()));
         quotation.setCurrencyCode(result.currencyCode());
         quotation.setDepositRate(result.depositRate());
         quotation.setConfirmedPickupDate(data.pickupTime().toLocalDate());
@@ -184,14 +187,45 @@ public class QuotationDraftServiceImpl implements QuotationDraftService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<PickupAddOnResponseDto> pickupAddOns(Long horseId) {
+        return snapshots.pickupAddOns(horseId).stream().map(PickupAddOnResponseDto::from).toList();
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public PickupAddOnResponseDto completePickupAddOn(Long horseId, Long serviceId, Instant at) {
+        return PickupAddOnResponseDto.from(snapshots.completePickupAddOn(horseId, serviceId, at));
+    }
+
+    @Override
     @Transactional(propagation = Propagation.MANDATORY)
     public Optional<Quotation> replaceAfterExclusion(BookingHorse excluded) {
-        var booking = excluded.getBooking();
+        return replace(excluded, true, null, List.of(), false, false);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Optional<Quotation> replaceAfterPickupChoice(BookingHorse horse, HorseLeg retry, List<BookingHorse> riding,
+                                                        boolean waivePickup, boolean exclude, boolean preview) {
+        return replace(horse, exclude, retry, riding, waivePickup, preview);
+    }
+
+    private Optional<Quotation> replace(BookingHorse horse, boolean exclusion, HorseLeg retry,
+                                        List<BookingHorse> riding, boolean waivePickup, boolean preview) {
+        var booking = horse.getBooking();
         var accepted = quotations.findByBooking_IdAndStatus(booking.getId(), QuotationStatus.ACCEPTED);
         if (accepted.isEmpty()) {
             return Optional.empty();
         }
         var previous = accepted.get();
+        var originalLines = lines.findByQuotation_IdOrderByLineNumber(previous.getId());
+        if (retry != null && originalLines.stream().anyMatch(line -> line.getHorseLeg() != null
+                && line.getHorseLeg().getVehicleTrip() != null
+                && Objects.equals(line.getHorseLeg().getVehicleTrip().getId(), retry.getVehicleTrip().getId()))) {
+            return preview ? accepted : Optional.empty();
+        }
+        if (!exclusion && retry == null && !waivePickup) return preview ? accepted : Optional.empty();
         var replacement = newDraft(booking, quotations.findByBooking_IdOrderByVersion(booking.getId()));
         replacement.setPriceList(previous.getPriceList());
         replacement.setCurrencyCode(previous.getCurrencyCode());
@@ -201,12 +235,55 @@ public class QuotationDraftServiceImpl implements QuotationDraftService {
         replacement.setEstimatedDeliveryDate(previous.getEstimatedDeliveryDate());
         replacement.setExpiresAt(previous.getExpiresAt());
 
-        List<QuotationLine> keep = new ArrayList<>(lines.findByQuotation_IdOrderByLineNumber(previous.getId()).stream()
-                .filter(line -> line.getBookingHorse() == null || !line.getBookingHorse().getId().equals(excluded.getId()))
-                .map(line -> copyLine(line, replacement)).toList());
-        repriceDeliveryAfterExclusion(excluded, replacement, keep);
+        boolean customer = horse.getPickupMissLiability() == PickupMissLiability.CUSTOMER;
+        List<QuotationLine> keep = new ArrayList<>();
+        for (QuotationLine row : originalLines) {
+            if (exclusion && row.isPickupDepositFloor()) continue;
+            if (exclusion && row.getBookingHorse() != null && row.getBookingHorse().getId().equals(horse.getId())
+                    && !PickupMissPricingPolicy.retainExcludedLine(row, customer,
+                            customer && row.getLineType() == QuotationLineType.SERVICE && snapshots.addOnCompleted(row))) {
+                continue;
+            }
+            var copy = copyLine(row, replacement);
+            if (exclusion && customer && row.getLineType() == QuotationLineType.INSURANCE
+                    && row.getBookingHorse() != null && row.getBookingHorse().getId().equals(horse.getId())) {
+                copy.setUnitPrice(snapshots.remainingPremium(row));
+                if (copy.getUnitPrice().signum() == 0) continue;
+            }
+            keep.add(copy);
+        }
+        boolean deliveryRepriced = exclusion && repriceDeliveryAfterExclusion(horse, replacement, keep);
+        if (exclusion && horse.getPickupMissLiability() != null && !customer) {
+            repriceRemainingRoads(horse, previous, keep, deliveryRepriced);
+        }
+        if (retry != null) {
+            addRetryCharges(previous, replacement, originalLines, retry, riding, keep);
+        }
+        if (waivePickup) {
+            keep.removeIf(row -> row.getLineType() == QuotationLineType.PICKUP && row.getHorseLeg() == null);
+        }
         QuotationPolicy.cappedDiscounts(keep).forEach(QuotationLine::setUnitPrice);
+        if (exclusion && customer) {
+            var floor = PickupMissPricingPolicy.depositFloorAdjustment(
+                    QuotationPolicy.totals(keep, replacement.getDepositRate()).total(),
+                    PaymentPolicy.paidDeposit(payments.findByBooking_IdOrderById(booking.getId())));
+            if (floor.signum() > 0) {
+                var adjustment = new QuotationLine();
+                adjustment.setQuotation(replacement);
+                adjustment.setLineType(QuotationLineType.ADJUSTMENT);
+                adjustment.setDescription("Điều chỉnh theo mức cọc đã trả");
+                adjustment.setQuantity(BigDecimal.ONE);
+                adjustment.setUnit(BillingUnit.PER_BOOKING.name());
+                adjustment.setUnitPrice(floor);
+                adjustment.setPassThrough(false);
+                adjustment.setPickupDepositFloor(true);
+                keep.add(adjustment);
+            }
+        }
         setTotals(replacement, keep);
+        replacement.setDepositAmount(previous.getDepositAmount().max(replacement.getPassThroughAmount())
+                .min(replacement.getTotalAmount()));
+        if (preview) return Optional.of(replacement);
         quotations.save(replacement);
         storeLines(keep);
 
@@ -221,12 +298,15 @@ public class QuotationDraftServiceImpl implements QuotationDraftService {
         return Optional.of(replacement);
     }
 
-    private void repriceDeliveryAfterExclusion(BookingHorse excluded, Quotation replacement, List<QuotationLine> linesToKeep) {
+    // Đơn giao nhiều nơi: bỏ một con thì tính lại vòng giao của các con còn lại
+    private boolean repriceDeliveryAfterExclusion(BookingHorse excluded, Quotation replacement, List<QuotationLine> linesToKeep) {
         var booking = excluded.getBooking();
-        if (booking.getDeparture() == null || booking.getDeliveryMethod() != TransferMethod.COMPANY) return;
-        var pickup = linesToKeep.stream().filter(line -> line.getLineType() == QuotationLineType.PICKUP).findFirst();
+        if (booking.getDeparture() == null || booking.getDeliveryMethod() != TransferMethod.COMPANY
+                || replacement.getPriceList() == null) return false;
+        var pickup = linesToKeep.stream().filter(line -> line.getLineType() == QuotationLineType.PICKUP
+                && line.getHorseLeg() == null).findFirst();
         var changed = snapshots.deliveryAfterExclusion(excluded, pickup.isPresent());
-        if (changed.isEmpty()) return;
+        if (changed.isEmpty()) return false;
 
         var route = booking.getDeparture().getRoute();
         var destinations = changed.get();
@@ -238,7 +318,8 @@ public class QuotationDraftServiceImpl implements QuotationDraftService {
         var availableItems = priceItems.findByPriceList_Id(priceList.getId());
         var catalog = availableItems.stream().map(PriceItem::getBillableService).distinct().toList();
         var updated = PricingPolicy.chooseRoadPricing(priceList, availableItems, catalog, route.getId(), roadLegs, delivery.separate());
-        linesToKeep.removeIf(line -> line.getLineType() == QuotationLineType.DELIVERY || line.getLineType() == QuotationLineType.FUEL);
+        linesToKeep.removeIf(line -> line.getHorseLeg() == null && (line.getLineType() == QuotationLineType.DELIVERY
+                || line.getLineType() == QuotationLineType.FUEL));
         for (var price : updated.lines()) {
             var item = availableItems.stream().filter(candidate -> candidate.getId().equals(price.priceItemId())).findFirst().orElseThrow();
             var service = item.getBillableService();
@@ -246,6 +327,51 @@ public class QuotationDraftServiceImpl implements QuotationDraftService {
                 linesToKeep.add(line(replacement, lineType(service.getLayer()), service, item, null,
                         service.getName(), price.quantity(), price.unitPrice(), price.passThrough()));
             }
+        }
+        return true;
+    }
+
+    private void repriceRemainingRoads(BookingHorse excluded, Quotation previous, List<QuotationLine> rows,
+                                       boolean deliveryRepriced) {
+        var remaining = snapshots.remainingAfter(excluded);
+        if (remaining.isEmpty() || previous.getPriceList() == null) return;
+        var roadTypes = EnumSet.of(QuotationLineType.PICKUP, QuotationLineType.DELIVERY,
+                QuotationLineType.DIRECT, QuotationLineType.FUEL);
+        if (deliveryRepriced) roadTypes.retainAll(EnumSet.of(QuotationLineType.PICKUP));
+        var roadRows = rows.stream().filter(row -> roadTypes.contains(row.getLineType())
+                && row.getHorseLeg() == null && row.getPriceItem() != null
+                && row.getBillableService().getBillingUnit() == BillingUnit.PER_KM).toList();
+        if (roadRows.isEmpty()) return;
+        var classId = snapshots.smallestClass(remaining);
+        var departure = excluded.getBooking().getDeparture();
+        var routeId = departure == null ? null : departure.getRoute().getId();
+        var list = previous.getPriceList();
+        var items = priceItems.findByPriceList_Id(list.getId());
+        for (var row : roadRows) {
+            var price = PricingPolicy.repriceRoad(list, items, row.getBillableService(), routeId, classId, row.getQuantity());
+            row.setPriceItem(priceItems.getReferenceById(price.priceItemId()));
+            row.setUnitPrice(price.unitPrice());
+        }
+    }
+
+    private void addRetryCharges(Quotation previous, Quotation replacement, List<QuotationLine> originalLines,
+                                 HorseLeg retry, List<BookingHorse> riding, List<QuotationLine> result) {
+        var pickup = originalLines.stream()
+                .filter(row -> row.getLineType() == QuotationLineType.PICKUP && row.getHorseLeg() == null)
+                .findFirst().orElseThrow(() -> BookingRuleException.conflict("Thiếu cước đón trong báo giá gốc."));
+        var list = previous.getPriceList();
+        var items = priceItems.findByPriceList_Id(list.getId());
+        var catalog = items.stream().map(PriceItem::getBillableService).distinct().toList();
+        var departure = previous.getBooking().getDeparture();
+        var prices = PricingPolicy.roadCharges(list, items, catalog, ServiceLayer.PICKUP,
+                departure == null ? null : departure.getRoute().getId(), snapshots.smallestClass(riding), pickup.getQuantity());
+        for (var charge : prices) {
+            var item = items.stream().filter(row -> row.getId().equals(charge.priceItemId())).findFirst().orElseThrow();
+            var service = item.getBillableService();
+            var row = line(replacement, lineType(service.getLayer()), service, item, null,
+                    service.getName() + " - Đón lại", charge.quantity(), charge.unitPrice(), charge.passThrough());
+            row.setHorseLeg(retry);
+            result.add(row);
         }
     }
 
@@ -277,6 +403,8 @@ public class QuotationDraftServiceImpl implements QuotationDraftService {
         copy.setUnit(old.getUnit());
         copy.setUnitPrice(old.getUnitPrice());
         copy.setPassThrough(old.getPassThrough());
+        copy.setPickupDepositFloor(old.isPickupDepositFloor());
+        copy.setRefundPayment(old.getRefundPayment());
         return copy;
     }
 

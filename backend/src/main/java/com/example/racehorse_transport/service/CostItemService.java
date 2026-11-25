@@ -2,6 +2,7 @@ package com.example.racehorse_transport.service;
 
 import com.example.racehorse_transport.dto.incident.CostItemRequestDto;
 import com.example.racehorse_transport.dto.incident.CostItemResponseDto;
+import com.example.racehorse_transport.dto.incident.CostApproveRequestDto;
 import java.util.List;
 
 // Chi phí phát sinh (B4). Chủ sở hữu cost_item.
@@ -16,7 +17,15 @@ public interface CostItemService {
     CostItemResponseDto record(CostItemRequestDto request, String username);
 
     // Quản lý duyệt; khoản khách chịu phải đã hỏi khách hoặc nằm trong hạn mức chi khẩn cấp của đơn
-    CostItemResponseDto approve(Long costItemId, String username);
+    CostItemResponseDto approve(Long costItemId, CostApproveRequestDto request, String username);
+
+    List<CostItemResponseDto> customerCosts(Long bookingId, String username);
+
+    CostItemResponseDto respond(Long costItemId, boolean agreed, String username);
+
+    CostItemResponseDto recordPhoneConsent(Long costItemId, String note, String username);
+
+    CostItemResponseDto markRecovered(Long costItemId);
 
     // Gắn khoản thu thêm vào các chi phí (cost_item.extra_charge_payment_id). Chỉ áp cho chi phí đã duyệt, không do công ty chịu.
     void linkExtraPayment(List<Long> costItemIds, Long paymentId);

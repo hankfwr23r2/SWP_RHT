@@ -25,6 +25,8 @@ class IncidentPolicyTest {
         assertThatThrownBy(() -> IncidentPolicy.requireReportable(VehicleTripStatus.COMPLETED, IncidentType.HEALTH, true))
                 .hasMessageContaining("đang chạy");
         IncidentPolicy.requireReportable(VehicleTripStatus.IN_PROGRESS, IncidentType.ACCIDENT, false);
+        assertThatThrownBy(() -> IncidentPolicy.requireReportable(VehicleTripStatus.IN_PROGRESS, IncidentType.HANDOVER_TIMEOUT, true))
+                .hasMessageContaining("Chỉ hệ thống");
         assertThat(IncidentPolicy.requiresFit(IncidentType.HEALTH, false)).isTrue();
         assertThat(IncidentPolicy.requiresFit(IncidentType.ACCIDENT, true)).isTrue();
         assertThat(IncidentPolicy.requiresFit(IncidentType.ACCIDENT, false)).isFalse();

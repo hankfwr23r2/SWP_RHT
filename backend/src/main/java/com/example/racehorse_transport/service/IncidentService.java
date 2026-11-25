@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service;
 
+import com.example.racehorse_transport.dto.incident.PlanApproveRequestDto;
 import com.example.racehorse_transport.dto.incident.IncidentPlanRequestDto;
 import com.example.racehorse_transport.dto.incident.IncidentReportRequestDto;
 import com.example.racehorse_transport.dto.incident.IncidentResponseDto;
@@ -21,7 +22,11 @@ public interface IncidentService {
     // Điều phối lập phương án phiên bản mới; phương án đang chờ trước đó bị thay
     IncidentResponseDto propose(Long incidentId, IncidentPlanRequestDto request, String username);
 
-    IncidentResponseDto approve(Long planId, String username);
+    List<IncidentResponseDto.PlanDto> plansForCustomer(Long bookingId, String username);
+
+    void acceptPlan(Long planId, String username);
+
+    IncidentResponseDto approve(Long planId, PlanApproveRequestDto request, String username);
 
     // Từ chối phải có lý do; điều phối lập phiên bản tiếp theo
     IncidentResponseDto reject(Long planId, PlanRejectRequestDto request, String username);

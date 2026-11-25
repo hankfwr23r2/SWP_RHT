@@ -1,5 +1,8 @@
 package com.example.racehorse_transport.controller;
 
+import com.example.racehorse_transport.dto.incident.PlanApproveRequestDto;
+import com.example.racehorse_transport.dto.incident.CostApproveRequestDto;
+import com.example.racehorse_transport.dto.incident.PhoneCostConsentRequestDto;
 import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.dto.incident.CostItemRequestDto;
 import com.example.racehorse_transport.dto.incident.CostItemResponseDto;
@@ -66,8 +69,9 @@ public class IncidentController {
 
     @PostMapping("/incident-plans/{id}/approve")
     @PreAuthorize("hasRole('MANAGER')")
-    public ApiResponseDto<IncidentResponseDto> approvePlan(@PathVariable Long id, Authentication authentication) {
-        return ApiResponseDto.success(incidents.approve(id, authentication.getName()), "Đã duyệt phương án");
+    public ApiResponseDto<IncidentResponseDto> approvePlan(@PathVariable Long id,
+            @Valid @RequestBody(required = false) PlanApproveRequestDto request, Authentication authentication) {
+        return ApiResponseDto.success(incidents.approve(id, request, authentication.getName()), "Đã duyệt phương án");
     }
 
     @PostMapping("/incident-plans/{id}/reject")
@@ -127,7 +131,52 @@ public class IncidentController {
 
     @PostMapping("/cost-items/{id}/approve")
     @PreAuthorize("hasRole('MANAGER')")
-    public ApiResponseDto<CostItemResponseDto> approveCost(@PathVariable Long id, Authentication authentication) {
-        return ApiResponseDto.success(costs.approve(id, authentication.getName()), "Đã duyệt chi phí");
+    public ApiResponseDto<CostItemResponseDto> approveCost(@PathVariable Long id,
+            @Valid @RequestBody(required = false) CostApproveRequestDto request, Authentication authentication) {
+        return ApiResponseDto.success(costs.approve(id, request, authentication.getName()), "Đã duyệt chi phí");
+    }
+
+    @GetMapping("/bookings/{id}/customer-incident-plans")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ApiResponseDto<List<IncidentResponseDto.PlanDto>> customerPlans(@PathVariable Long id, Authentication actor) {
+        return ApiResponseDto.success(incidents.plansForCustomer(id, actor.getName()), "OK");
+    }
+
+    @PostMapping("/incident-plans/{id}/accept")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ApiResponseDto<Void> acceptPlan(@PathVariable Long id, Authentication actor) {
+        incidents.acceptPlan(id, actor.getName());
+        return ApiResponseDto.success(null, "OK");
+    }
+
+    @GetMapping("/bookings/{id}/customer-cost-items")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ApiResponseDto<List<CostItemResponseDto>> customerCosts(@PathVariable Long id, Authentication actor) {
+        return ApiResponseDto.success(costs.customerCosts(id, actor.getName()), "OK");
+    }
+
+    @PostMapping("/cost-items/{id}/accept")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ApiResponseDto<CostItemResponseDto> acceptCost(@PathVariable Long id, Authentication actor) {
+        return ApiResponseDto.success(costs.respond(id, true, actor.getName()), "OK");
+    }
+
+    @PostMapping("/cost-items/{id}/decline")
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ApiResponseDto<CostItemResponseDto> declineCost(@PathVariable Long id, Authentication actor) {
+        return ApiResponseDto.success(costs.respond(id, false, actor.getName()), "OK");
+    }
+
+    @PostMapping("/cost-items/{id}/phone-consent")
+    @PreAuthorize("hasRole('COORDINATOR')")
+    public ApiResponseDto<CostItemResponseDto> phoneConsent(@PathVariable Long id,
+            @Valid @RequestBody PhoneCostConsentRequestDto request, Authentication actor) {
+        return ApiResponseDto.success(costs.recordPhoneConsent(id, request.note(), actor.getName()), "OK");
+    }
+
+    @PostMapping("/cost-items/{id}/mark-recovered")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ApiResponseDto<CostItemResponseDto> markRecovered(@PathVariable Long id) {
+        return ApiResponseDto.success(costs.markRecovered(id), "OK");
     }
 }

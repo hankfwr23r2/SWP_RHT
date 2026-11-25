@@ -91,4 +91,10 @@ public class BookingReviewController {
     public ApiResponseDto<BookingResponseDto> changeDeparture(@PathVariable Long id, @Valid @RequestBody BookingDepartureChangeRequestDto request) {
         return ApiResponseDto.success(review.changeDeparture(id, request.departureId()), "Thành công.");
     }
+
+    @PostMapping("/{id}/reopen-quote")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ApiResponseDto<BookingResponseDto> reopenExpiredQuote(@PathVariable Long id, Authentication actor) {
+        return ApiResponseDto.success(review.reopenExpiredQuote(id, actor.getName()), "OK");
+    }
 }

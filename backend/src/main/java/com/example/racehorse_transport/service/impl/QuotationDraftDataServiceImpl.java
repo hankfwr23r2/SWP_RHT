@@ -46,6 +46,43 @@ public class QuotationDraftDataServiceImpl {
     private final SystemConfigService configs;
     private final EntityManager entityManager;
 
+    PriceList priceListReference(Long id) {
+        return entityManager.getReference(PriceList.class, id);
+    }
+
+    Long smallestClass(List<BookingHorse> lines) {
+        return PricingPolicy.smallestVehicleClass(vehicleClasses.findAll(),
+                StallSeatPolicy.total(lines.stream().map(line -> line.getStallType().getCode()).toList())).getId();
+    }
+
+    boolean addOnCompleted(QuotationLine line) {
+        return line.getBillableService() != null && addOns.existsByIdAndCompletedAtIsNotNull(
+                new BookingHorseAddOnId(line.getBookingHorse().getId(), line.getBillableService().getId()));
+    }
+
+    BigDecimal remainingPremium(QuotationLine line) {
+        return insurances.findByBookingHorse_Id(line.getBookingHorse().getId())
+                .map(insurance -> com.example.racehorse_transport.policy.PickupMissPricingPolicy.remainingPremium(
+                        insurance, line.getUnitPrice()))
+                .orElseGet(line::getUnitPrice);
+    }
+
+    List<BookingHorseAddOn> pickupAddOns(Long horseId) {
+        return addOns.findAddOnsForDetail(List.of(horseId));
+    }
+
+    BookingHorseAddOn completePickupAddOn(Long horseId, Long serviceId, Instant at) {
+        var addOn = addOns.findById(new BookingHorseAddOnId(horseId, serviceId))
+                .orElseThrow(() -> BookingRuleException.conflict("Dịch vụ không thuộc ngựa trong đơn."));
+        if (addOn.getCompletedAt() == null) addOn.setCompletedAt(at);
+        return addOn;
+    }
+
+    List<BookingHorse> remainingAfter(BookingHorse excluded) {
+        return activeHorses(excluded.getBooking()).stream()
+                .filter(line -> !line.getId().equals(excluded.getId())).toList();
+    }
+
     record HorseRow(Long id, String stallType, Set<Long> services) {}
     record InsuranceQuote(Long horseId, String horseName, BigDecimal premium, String currency, Instant expiresAt) {}
     record DraftData(PricingInput input, List<HorseRow> horses, List<InsuranceQuote> insurance,
@@ -133,7 +170,7 @@ public class QuotationDraftDataServiceImpl {
 
     @Transactional(propagation = Propagation.MANDATORY, readOnly = true)
     public Optional<ExclusionDelivery> deliveryAfterExclusion(BookingHorse excluded, boolean companyPickup) {
-        var active = activeHorses(excluded.getBooking());
+        var active = remainingAfter(excluded);
         if (active.isEmpty() || excluded.getDeliveryAddress() == null || active.stream()
                 .noneMatch(horse -> horse.getDeliveryAddress() != null
                         && !horse.getDeliveryAddress().getId().equals(excluded.getDeliveryAddress().getId()))) {

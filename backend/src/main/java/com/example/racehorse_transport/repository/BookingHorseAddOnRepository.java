@@ -12,6 +12,8 @@ public interface BookingHorseAddOnRepository extends JpaRepository<BookingHorseA
 
     List<BookingHorseAddOn> findById_BookingHorseId(Long bookingHorseId);
 
+    boolean existsByIdAndCompletedAtIsNotNull(BookingHorseAddOnId id);
+
     @Query("""
             SELECT a FROM BookingHorseAddOn a JOIN FETCH a.billableService
             WHERE a.bookingHorse.id IN :horseRowIds ORDER BY a.id.billableServiceId

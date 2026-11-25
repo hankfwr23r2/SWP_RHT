@@ -15,6 +15,21 @@ import org.springframework.data.repository.query.Param;
 public interface HorseLegRepository extends JpaRepository<HorseLeg, Long> {
     List<HorseLeg> findByBookingHorse_IdOrderBySequenceNumber(Long bookingHorseId);
 
+    boolean existsByIdAndStatus(Long id, HorseLegStatus status);
+
+    @Query("""
+            SELECT l FROM HorseLeg l JOIN FETCH l.vehicleTrip t JOIN FETCH l.alightTripStop a
+            WHERE l.bookingHorse.id = :horseId AND l.legType = com.example.racehorse_transport.entity.enums.HorseLegType.PICKUP
+                AND l.status = com.example.racehorse_transport.entity.enums.HorseLegStatus.PLANNED
+                AND t.status IN (com.example.racehorse_transport.entity.enums.VehicleTripStatus.PLANNED,
+                                 com.example.racehorse_transport.entity.enums.VehicleTripStatus.DISPATCHED)
+                AND EXISTS (SELECT c.id FROM CrewAssignment c WHERE c.vehicleTrip = t
+                    AND c.crewRole = com.example.racehorse_transport.entity.enums.CrewRole.DRIVER
+                    AND c.status <> com.example.racehorse_transport.entity.enums.CrewAssignmentStatus.RELEASED)
+            ORDER BY t.plannedStartAt, l.id
+            """)
+    List<HorseLeg> findPickupRetryPlans(Long horseId);
+
     boolean existsByVehicleTrip_IdAndStatusNot(Long vehicleTripId, HorseLegStatus status);
 
     // Con khác của đơn đang có chặng trên lượt xe

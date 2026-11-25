@@ -215,7 +215,7 @@ class TripExecutionFlowTest {
     }
 
     @Test
-    void overdueBalanceReturnsTheHorseAndCancelsTheBooking() throws Exception {
+    void overdueBalanceReturnsTheHorseAndLeavesTheBookingAvailableForRescheduling() throws Exception {
         makeLocal();
         entityManager.flush();
         jdbc.update("DELETE FROM payment WHERE booking_id = ? AND payment_type = 'BALANCE'", booking);
@@ -232,13 +232,13 @@ class TripExecutionFlowTest {
         scan(escort, pickup, chip).andExpect(status().isOk());
         act(escort, "/handovers/" + pickup + "/complete").andExpect(status().isOk());
 
-        // Còn trong hạn trả số dư: luồng A từ chối hủy, không có gì thay đổi
+        // Còn trong hạn trả số dư: chưa được trả ngựa do quá hạn
         handover(escort, stops.get(1), "RETURN").andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Đơn chưa đủ điều kiện hủy do quá thời gian chờ trả số dư."));
+                .andExpect(jsonPath("$.message").value("Đơn chưa đủ điều kiện trả ngựa vì quá thời gian chờ thanh toán."));
         assertThat(jdbc.queryForObject("SELECT count(*) FROM handover WHERE trip_stop_id = ? AND handover_type = 'RETURN'", Long.class, stops.get(1))).isZero();
         assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE id = ?", String.class, leg)).isEqualTo("IN_PROGRESS");
 
-        // Quá hạn: trả ngựa cho người gửi, đơn bị hủy, khoản số dư bị hủy, xe rời đi không cần kiểm thanh toán
+        // Trả ngựa tại chỗ, vẫn giữ khoản số dư để khách thanh toán khi chọn lại lịch
         entityManager.flush();
         jdbc.update("UPDATE payment SET due_at = now() - interval '1 minute' WHERE booking_id = ? AND payment_type = 'BALANCE'", booking);
         entityManager.clear();
@@ -247,9 +247,12 @@ class TripExecutionFlowTest {
                 .andExpect(jsonPath("$.data.handovers[1].status").value("DONE"))
                 .andExpect(jsonPath("$.data.handovers[1].horses[0].scannedMicrochip").value(chip));
         assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE id = ?", String.class, leg)).isEqualTo("CANCELLED");
-        assertThat(bookingStatus()).isEqualTo("CANCELLED");
+        assertThat(bookingStatus()).isEqualTo("SCHEDULE_CHANGE_REQUIRED");
         assertThat(jdbc.queryForObject("SELECT status FROM payment WHERE booking_id = ? AND payment_type = 'BALANCE'", String.class, booking))
-                .isEqualTo("CANCELLED");
+                .isEqualTo("PENDING");
+        handover(escort, stops.get(1), "RETURN").andExpect(status().isConflict());
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM handover WHERE trip_stop_id = ? AND handover_type = 'RETURN'",
+                Long.class, stops.get(1))).isEqualTo(1L);
         act(driver, "/trip-stops/" + stops.get(1) + "/depart").andExpect(status().isOk());
     }
 
@@ -304,17 +307,35 @@ class TripExecutionFlowTest {
         mvc.perform(post("/handovers/{id}/horses", handover).header(HttpHeaders.AUTHORIZATION, driver2).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"horseLegId\":%d,\"microchip\":\"985000000999999\"}".formatted(second))).andExpect(status().isOk());
 
-        // Chip sai: không nhận con thứ hai, bắt buộc có lý do
+        act(driver2, "/handovers/" + handover + "/complete").andExpect(status().isConflict());
+        act(driver2, "/trip-stops/" + pickupStops.get(1) + "/depart").andExpect(status().isConflict());
         refuse(driver2, handover, second, " ").andExpect(status().isBadRequest());
         refuse(driver2, handover, second, "Chip không khớp giấy tờ").andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.handovers[0].horses.length()").value(1));
-        assertThat(jdbc.queryForObject("SELECT status FROM booking_horse WHERE id = ?", String.class, lines.get(1))).isEqualTo("EXCLUDED");
+        assertThat(jdbc.queryForObject("SELECT status FROM booking_horse WHERE id = ?", String.class, lines.get(1))).isEqualTo("ACTIVE");
         assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE id = ?", String.class, second)).isEqualTo("CANCELLED");
-        // Luồng A thay báo giá ngay trong cùng giao dịch
+        assertThat(jdbc.queryForList("SELECT status FROM quotation WHERE booking_id = ? ORDER BY version", String.class, domestic))
+                .containsExactly("ACCEPTED");
+        act(driver2, "/handovers/" + handover + "/complete").andExpect(status().isOk());
+        for (int attempt = 0; attempt < 2; attempt++) {
+            mvc.perform(post("/booking-horses/{id}/pickup-choices", lines.get(1))
+                    .header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"choice\":\"DROP_HORSE\",\"phoneNote\":\"Khách xác nhận bỏ con qua điện thoại\"}"))
+                    .andExpect(status().isOk());
+        }
+        // Quản lý chốt bên chịu xong mới bỏ con và tính lại tiền
+        entityManager.flush();
+        assertThat(jdbc.queryForObject("SELECT status FROM booking_horse WHERE id = ?", String.class, lines.get(1))).isEqualTo("ACTIVE");
+        String manager = token(testData.staff(testData.unique("exec.manager"), "MANAGER"), "MANAGER");
+        for (int attempt = 0; attempt < 2; attempt++) {
+            mvc.perform(post("/booking-horses/{id}/confirm-pickup-liability", lines.get(1))
+                    .header(HttpHeaders.AUTHORIZATION, manager).contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"liability\":\"CUSTOMER\"}")).andExpect(status().isOk());
+        }
+        entityManager.flush();
+        assertThat(jdbc.queryForObject("SELECT status FROM booking_horse WHERE id = ?", String.class, lines.get(1))).isEqualTo("EXCLUDED");
         assertThat(jdbc.queryForList("SELECT status FROM quotation WHERE booking_id = ? ORDER BY version", String.class, domestic))
                 .containsExactly("SUPERSEDED", "ACCEPTED");
-
-        act(driver2, "/handovers/" + handover + "/complete").andExpect(status().isOk());
         assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE id = ?", String.class, first)).isEqualTo("IN_PROGRESS");
         // Bảng phụ trách: con vừa nhận đang do tài xế ký nhận giữ, con bị loại không hiện
         String row = "$.data[?(@.bookingHorseId == " + lines.get(0) + ")]";
@@ -520,8 +541,16 @@ class TripExecutionFlowTest {
     }
 
     private ResultActions refuse(String token, long handoverId, long horseLegId, String reason) throws Exception {
-        return mvc.perform(post("/handovers/{id}/refusals", handoverId).header(HttpHeaders.AUTHORIZATION, token)
-                .contentType(MediaType.APPLICATION_JSON).content("{\"horseLegId\":%d,\"reason\":\"%s\"}".formatted(horseLegId, reason)));
+        var uploader = org.mockito.Mockito.mock(com.cloudinary.Uploader.class);
+        org.mockito.Mockito.when(cloudinary.uploader()).thenReturn(uploader);
+        org.mockito.Mockito.when(uploader.upload(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+                .thenAnswer(call -> java.util.Map.of("secure_url", "https://cdn.example/pickup-miss-" + System.nanoTime() + ".jpg"));
+        var request = new org.springframework.mock.web.MockMultipartFile("request", "", "application/json",
+                "{\"horseLegId\":%d,\"reason\":\"%s\",\"reasonCode\":\"CHIP_MISMATCH\"}".formatted(horseLegId, reason)
+                        .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        var photo = new org.springframework.mock.web.MockMultipartFile("photo", "pickup.jpg", "image/jpeg", new byte[] {1, 2, 3});
+        return mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart("/handovers/{id}/refusals", handoverId)
+                .file(request).file(photo).header(HttpHeaders.AUTHORIZATION, token));
     }
 
     private String content(org.springframework.test.web.servlet.RequestBuilder request, String token) throws Exception {

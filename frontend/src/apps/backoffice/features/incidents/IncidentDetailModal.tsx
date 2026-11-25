@@ -17,6 +17,8 @@ import { Textarea } from '@shared/ui/Textarea'
 import { useToast } from '@shared/ui/toast'
 import { EvidencePanel } from '@backoffice/shared/EvidencePanel'
 import { IncidentCostForm } from '@backoffice/shared/IncidentCostForm'
+import { IncidentCostControls } from './IncidentCostControls'
+import { IncidentPlanApproval } from './IncidentPlanApproval'
 import { IncidentEvidenceSection } from './IncidentEvidenceSection'
 import { PlanRejectDialog } from './PlanRejectDialog'
 import s from './Incidents.module.css'
@@ -67,7 +69,7 @@ export function IncidentDetailModal({ incidentId, role, onClose, onChanged }: Pr
   const open = incident.status !== 'RESOLVED' && incident.status !== 'CLOSED'
 
   return (
-    <Modal wide title={incident.title} subtitle={`${t(`incidents.type.${incident.incidentType}`)} · ${t(`incidents.cause.${incident.causeType}`)}`} onClose={onClose}
+    <Modal wide title={incident.title} subtitle={`${t(`incidents.type.${incident.incidentType}`)} · ${t(`incidents.cause.${incident.confirmedCauseType ?? incident.causeType}`)}`} onClose={onClose}
       footer={role === 'coordinator' && (
         <>
           {incident.status === 'PLAN_ACTIVE' && <Button variant="primary" loading={busy} onClick={() => run(() => incidentsApi.resolve(incidentId), t('incidents.done.resolved'))}>{t('incidents.resolve')}</Button>}
@@ -107,7 +109,8 @@ export function IncidentDetailModal({ incidentId, role, onClose, onChanged }: Pr
                 {plan.rejectionReason && <p className={s.muted}>{plan.rejectionReason}</p>}
                 {role === 'manager' && plan.status === 'PROPOSED' && plan.id === latest?.id && (
                   <div className={s.row}>
-                    <Button variant="primary" loading={busy} onClick={() => run(() => incidentsApi.approve(plan.id ?? 0), t('incidents.done.approved'))}>{t('incidents.approve')}</Button>
+                    <IncidentPlanApproval incident={incident} busy={busy} onApprove={cause =>
+                      run(() => incidentsApi.approve(plan.id ?? 0, cause), t('incidents.done.approved'))} />
                     <Button variant="danger" onClick={() => setRejecting({ id: plan.id ?? 0, version: plan.version ?? 0 })}>{t('incidents.reject')}</Button>
                   </div>
                 )}
@@ -175,14 +178,16 @@ export function IncidentDetailModal({ incidentId, role, onClose, onChanged }: Pr
                   <StatusBadge tone={cost.payerType === 'COMPANY' ? 'neutral' : 'info'} label={t(`incidents.payer.${cost.payerType}`)} />
                   {cost.payerType !== 'COMPANY' && <StatusBadge tone={cost.customerConsulted ? 'success' : 'warning'}
                     label={cost.customerConsulted ? t('incidents.consulted') : t('incidents.notConsulted')} />}
+                  {!cost.approvedAt && !incident.causeConfirmedAt && incident.incidentType !== 'HANDOVER_TIMEOUT' &&
+                    <StatusBadge tone="neutral" label={t('incidentDecisions.provisional')} />}
                   {cost.approvedAt && <StatusBadge tone="success" label={t('incidents.approved')} />}
                 </div>
                 <p className={s.muted}>{cost.description}</p>
                 <EvidencePanel title={t('incidents.receipts')} load={() => incidentsApi.receipts(cost.id ?? 0)}
                   upload={role === 'coordinator' && !cost.approvedAt ? file => incidentsApi.attachReceipt(cost.id ?? 0, file) : undefined} />
-                {role === 'manager' && !cost.approvedAt && (
-                  <div><Button size="sm" loading={busy} onClick={() => run(() => incidentsApi.approveCost(cost.id ?? 0), t('incidents.done.costApproved'))}>{t('incidents.approveCost')}</Button></div>
-                )}
+                <IncidentCostControls key={cost.id} cost={cost} role={role} busy={busy}
+                  onApprove={reason => run(() => incidentsApi.approveCost(cost.id ?? 0, reason), t('incidents.done.costApproved'))}
+                  onPhoneConsent={note => run(() => incidentsApi.phoneConsent(cost.id ?? 0, note), t('incidentDecisions.saved'))} />
               </li>
             ))}
           </ul>

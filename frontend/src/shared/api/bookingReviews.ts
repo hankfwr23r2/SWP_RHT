@@ -6,6 +6,7 @@ import type { components } from './generated/schema'
 type Schemas = components['schemas']
 export type BookingSummary = Schemas['BookingSummaryResponseDto']
 export type InsuranceEvidence = Schemas['InsuranceEvidenceRequestDto']
+export type InsurancePremiumRefund = Schemas['InsurancePremiumRefundRequestDto']
 
 const bookingPath = (id: number) => `/bookings/${id}`
 const insurancePath = (id: number, insuranceId: number) => `${bookingPath(id)}/insurances/${insuranceId}`
@@ -26,9 +27,12 @@ export const bookingReviewsApi = {
     post<BookingOrder>(bookingPath(id) + '/return-for-resubmission', body),
   reject: (id: number, body: Schemas['BookingRejectionRequestDto']) => post<BookingOrder>(bookingPath(id) + '/reject', body),
   changeDeparture: (id: number, departureId: number) => post<BookingOrder>(bookingPath(id) + '/change-departure', { departureId }),
+  reopenExpiredQuote: (id: number) => post<BookingOrder>(bookingPath(id) + '/reopen-quote', undefined),
   startQuoting: (id: number) => post<BookingOrder>(bookingPath(id) + '/start-quoting', {}),
   recordEvidence: (id: number, insuranceId: number, body: InsuranceEvidence) =>
     post<null>(insurancePath(id, insuranceId) + '/record-evidence', body),
+  recordPremiumRefund: (id: number, insuranceId: number, body: InsurancePremiumRefund) =>
+    post<null>(insurancePath(id, insuranceId) + '/record-premium-refund', body),
   confirmInsurance: (id: number, insuranceId: number) => post<null>(insurancePath(id, insuranceId) + '/confirm', {}),
   requestInsuranceRevision: (id: number, insuranceId: number, body: Schemas['InsuranceRevisionReasonRequestDto']) =>
     post<null>(insurancePath(id, insuranceId) + '/request-revision', body),

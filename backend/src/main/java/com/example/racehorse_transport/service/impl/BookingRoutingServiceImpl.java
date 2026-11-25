@@ -22,12 +22,14 @@ import com.example.racehorse_transport.repository.HubServiceAreaRepository;
 import com.example.racehorse_transport.repository.ProvinceRepository;
 import com.example.racehorse_transport.repository.RouteRepository;
 import com.example.racehorse_transport.service.BookingRoutingService;
+import com.example.racehorse_transport.service.DocumentCompletenessService;
 import com.example.racehorse_transport.service.RegulationService;
 import com.example.racehorse_transport.service.SystemConfigService;
 import com.example.racehorse_transport.service.DeliveryRouteService;
 import com.example.racehorse_transport.dto.route.GeoPointDto;
 import com.example.racehorse_transport.entity.enums.TransferMethod;
 import java.time.Clock;
+import java.time.LocalDate;
 import java.util.Objects;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +48,7 @@ public class BookingRoutingServiceImpl implements BookingRoutingService {
     private final DepartureRepository departures;
     private final BookingAddressRepository bookingAddresses;
     private final RegulationService regulations;
+    private final DocumentCompletenessService completeness;
     private final Clock clock;
     private final SystemConfigService configs;
     private final DeliveryRouteService deliveryRoutes;
@@ -83,12 +86,58 @@ public class BookingRoutingServiceImpl implements BookingRoutingService {
                 DepartureRoutePolicy.counterpartCountryCode(booking.getBookingType(), pickup.getCountry().getCode(), delivery.getCountry().getCode()));
         BookingSubmissionPolicy.validatePickupDate(booking.getBookingType(), booking.getRequestedPickupDate(), replacement.getDepartureDate());
         Long gate = DepartureRoutePolicy.gateId(route, booking.getBookingType());
-        long leadDays = regulations.resolve(booking.getBookingType(), pickup.getCountry().getCode(),
-                delivery.getCountry().getCode(), booking.getRequestedPickupDate(), gate).leadDays();
+        var resolved = regulations.resolve(booking.getBookingType(), pickup.getCountry().getCode(),
+                delivery.getCountry().getCode(), booking.getRequestedPickupDate(), gate);
+        // Đã cọc thì chỉ tính giấy phải làm lại; chưa cọc thì tính đủ như lúc đặt
+        long leadDays = booking.getWaybillNumber() == null ? resolved.leadDays()
+                : completeness.redoLeadDays(booking, resolved, replacement.getDepartureDate());
         if (!RegulationPolicy.feasible(leadDays, clock.instant(), replacement.getBookingCutoffAt())) {
             throw BookingRuleException.conflict("Không đủ thời gian chuẩn bị giấy tờ cho chuyến mới.");
         }
         return replacement;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void validateReopenPickup(Booking booking, Long departureId) {
+        var today = BookingSubmissionPolicy.businessDate(clock.instant());
+        var pickupDate = booking.getRequestedPickupDate();
+        if (departureId != null) {
+            if (pickupDate.isBefore(today)) {
+                throw BookingRuleException.conflict("Ngày đón đã qua.");
+            }
+            return;
+        }
+        if (!pickupDate.isAfter(today)) {
+            throw BookingRuleException.conflict("Ngày đón phải ở tương lai.");
+        }
+        if (requiresDeparture(booking)) {
+            throw BookingRuleException.conflict("Đơn chưa có chuyến trục.");
+        }
+        var addresses = bookingAddresses.findAddressesForDetail(booking.getId());
+        var pickup = bookingAddress(addresses, AddressRole.PICKUP);
+        var delivery = bookingAddress(addresses, AddressRole.DELIVERY);
+        long days = regulations.resolve(booking.getBookingType(), pickup.getCountry().getCode(),
+                delivery.getCountry().getCode(), pickupDate, null).leadDays();
+        if (!RegulationPolicy.feasible(days, today, pickupDate)) {
+            throw BookingRuleException.conflict("Không kịp làm giấy trước ngày đón.");
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void requireDirectLeadTime(Booking booking, LocalDate pickupDate) {
+        if (booking.getBookingType() == BookingType.LOCAL) {
+            return;
+        }
+        List<BookingAddress> addresses = bookingAddresses.findAddressesForDetail(booking.getId());
+        var resolved = regulations.resolve(booking.getBookingType(),
+                bookingAddress(addresses, AddressRole.PICKUP).getCountry().getCode(),
+                bookingAddress(addresses, AddressRole.DELIVERY).getCountry().getCode(), pickupDate, null);
+        if (!RegulationPolicy.feasible(completeness.redoLeadDays(booking, resolved, pickupDate),
+                BookingSubmissionPolicy.businessDate(clock.instant()), pickupDate)) {
+            throw BookingRuleException.conflict("Không đủ thời gian làm lại giấy tờ cho ngày đón mới.");
+        }
     }
 
     private Departure lock(Long id) {

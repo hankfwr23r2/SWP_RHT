@@ -1,5 +1,9 @@
 export const staffReview = {
   "staffReview": {
+    "recordPremiumRefund": "Ghi phí bảo hiểm được hoàn",
+    "refundedPremiumAmount": "Tổng phí bảo hiểm hãng đã hoàn",
+    "premiumRefundReceipt": "Số chứng từ hoàn phí",
+    "premiumRefundHint": "Nhập số hoàn lũy kế theo chứng từ của hãng. Khoản hoàn có thể làm giảm báo giá và phát sinh tiền trả lại khách.",
     "open": "Xem đơn",
     "reviewNow": "Thẩm định",
     "askReason": "Cần nộp: {{name}}",

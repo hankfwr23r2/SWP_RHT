@@ -62,8 +62,11 @@ Task nào làm tới thao tác nào thì đối chiếu dòng đó. Một dòng 
 | 4.2 | Điểm dừng: đón (hộ tống, điện thoại) | Quét chip, khám nhanh, chụp ảnh, nhận giấy gốc | `handover` PICKUP, `handover_horse`, `horse_health_log`, `handover_document`, `document` | Chip sai thì không nhận con đó. Chip đúng thì hiện "Khoang số…" để dẫn ngựa vào | Sự cố `DOCUMENT` | |
 | 4.3 | Như trên | Ký, **Nhận ngựa** | `handover` DONE, `payment` BALANCE nếu còn nợ | Thiếu biên bản | Gửi yêu cầu trả số dư bằng tổng báo giá đã chấp nhận trừ số đã trả. Hạn tính theo `BALANCE_WAIT_MINUTES`. **Trách nhiệm sang tổ xe** | "Đã nhận ngựa, chờ thanh toán", nút thanh toán nếu còn nợ |
 | 4.3a | Như trên **[mới]** | **Rời điểm đón** | `trip_stop`, `horse_leg`, `booking` IN_OPERATION | Còn đơn ở điểm này chưa trả đủ | Hết quyền tự hủy | "Đang vận chuyển" |
-| 4.3b | Như trên **[mới]** | **Trả ngựa tại chỗ** khi quá 30 phút chưa trả đủ (hộp xác nhận nêu hậu quả) | `handover` RETURN, `handover_document`, `booking` CANCELLED | Chưa hết giờ chờ; giao dịch đang chờ xác nhận | Nhả chỗ, mất cọc, gồm cả phần thu hộ. Đơn khác trên xe đi tiếp | Đơn đã hủy, khoản không hoàn. Có link VNPAY đang chờ thì chờ thêm 5 phút sau hạn |
-| 4.4 | Như trên | **Không nhận**, kèm lý do | `booking_horse` EXCLUDED, báo giá thay thế ACCEPTED | Không ghi lý do | Nhả chỗ, hủy chặng sau, thay báo giá trong cùng giao dịch theo đơn giá đã chốt và báo quản lý. Con khác vẫn đi | Con nào bị loại, vì sao |
+| 4.3a · hub, cửa khẩu | Điểm dừng của tổ xe | **Hoàn tất lên xe tại hub** hoặc **Rời cửa khẩu về hub** | `handover`, `horse_leg`, `trip_stop` | Lên xe tại hub cần trả đủ số dư | Đơn nhập chưa trả đủ vẫn Đã xác nhận khi rời cửa khẩu | Hiện mã đơn khi xác nhận HUB_OUT bị chặn do chưa trả đủ |
+| 4.3b | Như trên | **Trả ngựa tại chỗ** khi hết giờ chờ thanh toán | `handover` RETURN, `handover_document`, `booking` SCHEDULE_CHANGE_REQUIRED | Chưa hết giờ chờ hoặc giao dịch còn trong thời gian xác nhận | Nhả chỗ, giữ khoản số dư, khách có 30 ngày chọn lại lịch. Đơn khác đi tiếp | Cần chọn lại chuyến |
+| 4.11 · chờ số dư | Theo dõi (điều phối) | Ghi kết quả gọi khách và liên hệ khẩn cấp. Gia hạn một lần hoặc xác nhận đưa về hub | `audit_log`, `payment.due_at`, `horse_leg` | Gia hạn phải còn kịp tới hub và trong giới hạn ngồi xe. Đưa về hub yêu cầu đã hết giờ chờ và có điểm hub an toàn | Ngựa vẫn hiện trên bảng chăm sóc | Hiện kết quả thao tác |
+| 3.5c · giữ do số dư | Hub (điều phối), Chi tiết đơn (khách) | Xem mốc tính phí và hướng dẫn chọn lại lịch. Trả tại hub sau khi xác nhận chip | `horse_stay`, `handover` RETURN, `cost_item`, `payment` | Kiểm tra chip và còn lưu trú | Trả ngựa dù khách còn nợ. Phí được chốt sau khi giao nhận hoàn tất và cấn cọc nếu đã hủy | Lưu trú đã kết thúc, khoản thu thêm nếu có |
+| 4.4 | Như trên | **Ghi đón hụt**, chọn nguyên nhân và chụp ảnh | `booking_horse`, `document`, `audit_log` | Thiếu lý do hoặc ảnh. Người gửi vắng cần đủ thời gian và đủ ba kết quả gọi | Gỡ chặng kế hoạch của con hụt, giữ chỗ trên chuyến cho tới quyết định hoặc hết hạn | Con nào chưa nhận được, hạn chọn và bên chịu |
 | 4.5 | Điểm dừng: hub (hộ tống) | Quét chip, **Giao vào hub** | `handover` HUB_IN, `horse_stay` ASSEMBLY | Chip sai | Xe đón rảnh. Người ở `handled_by` phụ trách tới HUB_OUT **[mới]** | "Ở hub, chờ chuyến" |
 | 4.6 | Ngựa ở hub (hộ tống) | Cho ăn bữa tối, bữa sáng theo chỉ dẫn; đo, ghi ăn uống | `horse_health_log` (`horse_stay_id`, `water_intake`, `feed_intake`) | Không còn lưu trú | Con chưa ghi bữa hiện đỏ **[mới]** | Chỉ số mới nhất |
 | 4.7 | Thú y tại chuồng (chuyên viên) | Chọn đối tác VET, hẹn ngày; tải phiếu khám, phiếu xét nghiệm **[mới]** | `document` gắn `booking_horse_id` | Đối tác không có vai trò VET | Kiểm phiếu bắt buộc trước khi xe đi đón hoặc khi nhận tại hub nếu SELF; không khám được thì trừ khi quyết toán | Phiếu khám |
@@ -153,3 +156,30 @@ Công ty không vận hành nơi cách ly. Điều kiện cách ly thể hiện 
 ### Đơn nhiều nơi giao cùng hub
 
 Bước chọn ngựa cho chọn nơi giao và nhập người nhận cho địa chỉ khác địa chỉ giao chung. Bước xem lại và chi tiết đơn hiện nơi giao theo con. Bảng điều độ dùng nơi của từng con để gợi ý các điểm dừng và điểm xuống. Màn hiện trường tiếp tục thao tác theo điểm dừng.
+
+## Đợt 2 · Báo giá và chi phí sự cố
+
+- Báo giá hết hạn có nút **Mở lại** ở màn quản lý. Đơn đủ điều kiện về `QUOTING`. Báo giá chạy thẳng của cả khách và quản lý ghi rõ cước xe giữ nguyên khi bớt ngựa.
+- Màn tổ lái dùng nhãn **Nguyên nhân đề xuất**. Quản lý chọn nguyên nhân chốt khi duyệt phương án.
+- Chi tiết đơn của khách hiện chi phí chờ phản hồi và phương án có dự trù. Khách đồng ý hoặc từ chối từng khoản và có thể đồng ý với phương án.
+- Điều phối nhập nội dung cuộc gọi khi khách đồng ý qua điện thoại. Quản lý ghi lý do cấp cứu khi duyệt khoản VET khách đã từ chối.
+- Quyết toán hiện khoản phải đòi lại đại lý và nút đánh dấu đã đòi. Form chi phí bỏ phí chờ.
+
+## Đợt 1b bước 3 · Đón hụt
+
+| Màn | Thao tác | Tác động |
+|---|---|---|
+| Tổ lái, lần nhận tại điểm đón hoặc cửa khẩu | Chọn nguyên nhân, nhập diễn giải, ghi từng cuộc gọi nếu người gửi vắng, chụp ảnh | Ghi `booking_horse`, `document`, `audit_log`. Chặn hoàn tất nhận hoặc rời điểm còn con chưa xử lý |
+| Chi tiết đơn của khách | Xem lý do, bên chịu và hạn. Chọn A/B/C/D theo lựa chọn máy chủ, hoặc hẹn ngày mới cho đơn chạy thẳng | Lựa chọn được xử lý dưới khóa đơn |
+| Điều phối, Điều độ → Hành trình của đơn | Chọn theo xác nhận qua điện thoại, nhập nội dung cuộc gọi | Cùng hợp đồng lựa chọn với khách, nhật ký ghi tài khoản điều phối và bảng điều độ tải lại sau khi lưu |
+| Chi tiết đơn của quản lý | Chốt bên chịu | Ghi kết luận và nhật ký, xem lại trên chi tiết đơn |
+
+## Đợt 1b bước 4 · Số tiền khi xử lý đón hụt
+
+Khách và điều phối thấy tổng báo giá, số còn phải trả và số dự kiến hoàn khi xác nhận lựa chọn đã có bên chịu. Với hủy, hộp xác nhận hiện khoản hoàn và cọc bị giữ. Khi chưa chốt bên chịu, hộp xác nhận ghi số tiền đang chờ xác định. Quản lý có thể xác nhận dịch vụ theo ngựa đã hoàn thành ngay trong mục đón hụt trước khi chốt bên chịu. Khách thanh toán số dư bổ sung qua khu vực thanh toán hiện có, kể cả khi đơn đã Đang vận chuyển.
+
+Chuyên viên ghi phí bảo hiểm được hoàn cho con đã loại trong phần bảo hiểm của màn hình thẩm định, nhập số hoàn lũy kế và số chứng từ của hãng. Hệ thống cập nhật báo giá và khoản hoàn phần dư dưới khóa đơn.
+
+## Đợt 1b bước 5 · Dời chuyến
+
+Thẻ chọn lại chuyến ẩn với đơn chạy thẳng; khách chọn **ngày đón mới** hoặc hủy ở thẻ đón hụt. Máy chủ chặn ngày quá 30 ngày kể từ lần hụt, thiếu thời gian làm lại giấy, hết bảo hiểm.

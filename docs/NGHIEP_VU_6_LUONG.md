@@ -257,7 +257,7 @@ Vì báo giá phải gửi trước mốc quyết định và sống tối đa 2
 
 Tìm thấy khi đối chiếu code để viết luồng này:
 
-1. **Báo giá hết hạn là ngõ cụt** (T7). Bảng trạng thái cho phép quay lại báo giá nhưng chưa có nút nào làm việc đó; khách phải đặt đơn mới. Hỏi: giữ vậy, hay cho quản lý mở lại nếu chuyến còn chỗ?
+1. **Đã sửa.** Quản lý mở lại báo giá hết hạn khi còn chỗ, còn hạn đặt và kịp giấy.
 2. **Đã sửa.** Báo quản lý khi đơn sang Đang báo giá và khi khách chấp nhận hoặc từ chối báo giá. Báo khách khi báo giá hết hạn và khi hệ thống xác nhận đã nhận cọc.
 3. **Đã sửa.** Khi đặt đơn liên tỉnh chạy thẳng, hệ thống kiểm số ngày làm giấy theo quy định đến ngày đón.
 4. **Đã sửa.** Nút Từ chối đơn chỉ hiện ở Chờ tiếp nhận và Đang thẩm định, theo điều kiện của máy chủ.
@@ -945,13 +945,13 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 - **Duyệt**: sự cố chuyển sang **Đang xử lý**, phương án có hiệu lực.
 - **Từ chối**: phải ghi lý do. Sự cố vẫn ở Chờ duyệt phương án, điều phối lập phiên bản tiếp theo.
 
-**Bước 5. Tổ lái thực hiện và ghi chi phí.** Ngay trong sự cố, tổ lái ghi từng khoản: loại chi (thú y, cứu hộ, sửa xe, gửi chuồng, cầu đường, nhiên liệu, chờ, khác), mô tả, số tiền, **đã hỏi ý kiến khách hay chưa**, kèm biên lai. Hệ thống tự ghi ai chịu theo nguyên nhân của sự cố (bảng 5.B).
+**Bước 5. Tổ lái thực hiện và ghi chi phí.** Tổ lái ghi loại chi, mô tả, số tiền và kèm biên lai. Người trả do hệ thống tính theo nguyên nhân đã chốt hoặc tạm tính theo nguyên nhân đề xuất. Không thu phí chờ.
 
 **Bước 6. Tổ lái xác nhận ngựa đủ sức đi tiếp.** Nút **Đủ sức đi tiếp** dùng được khi phương án đã duyệt và đã qua **ít nhất 30 phút kể từ lúc báo sự cố**. Chưa đủ 30 phút thì hệ thống từ chối.
 
 **Bước 7. Điều phối viên bấm Đã xử lý xong.** Với sự cố sức khỏe hoặc sự cố của một con, hệ thống đòi đã có xác nhận ở bước 6. Phương án chuyển **Đã xong**, sự cố chuyển **Đã xử lý**.
 
-**Bước 8. Quản lý duyệt chi phí.** Khoản khách hoặc người nhận chịu chỉ duyệt được khi **đã hỏi khách**, hoặc còn nằm trong hạn mức chi khẩn cấp (điểm 5.18).
+**Bước 8. Quản lý duyệt chi phí.** Khoản khách chịu cần chốt nguyên nhân và có phản hồi đồng ý, trừ tiền giữ theo biểu hoặc ngoại lệ trong hạn mức quy định ở phần quyết toán.
 
 **Bước 9. Điều phối viên đóng sự cố.** Đây là bước bắt buộc: **đơn còn sự cố chưa đóng thì không quyết toán được** (luồng 6).
 
@@ -1026,6 +1026,8 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 
 ## 5.E. Các điểm nghiệp vụ
 
+> **Đã chốt 25/11/2026, code chưa sửa:** phí giữ theo số lần đủ 24 giờ, chỉ tính thời gian do khách; thu cước giao lại; đơn đóng được khi còn khoản thu thêm. Xem mục 13 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md).
+
 ### Báo sự cố
 
 - **5.1** Chỉ tài xế, hộ tống **trong tổ lái của lượt đó** báo được. Người đã được rút khỏi lượt thì không.
@@ -1057,11 +1059,12 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 
 ### Chi phí
 
-- **5.18** Duyệt khoản khách hoặc người nhận chịu khi **một trong hai**:
-  - đã hỏi khách;
-  - tổng các khoản đã duyệt mà chưa hỏi của đơn, cộng khoản này, **không vượt hạn mức chi khẩn cấp**. Khách không điền hạn mức thì luôn phải hỏi.
-- **5.19** Khoản công ty chịu: duyệt không cần điều kiện trên.
-- **5.20** Người trả do hệ thống xác định theo nguyên nhân; người ghi không chọn được.
+- **5.18** Khoản khách hoặc người nhận chịu cần nguyên nhân đã chốt. Phí giữ theo biểu được miễn phản hồi. Khoản khác cần khách đồng ý trên đơn hoặc điều phối ghi nội dung khách đồng ý qua điện thoại:
+  - Hết cửa sổ phản hồi mà khách chưa trả lời thì chỉ duyệt trong hạn mức khẩn cấp còn lại.
+  - Khách đã từ chối thì chỉ duyệt khoản cấp cứu VET trong hạn mức còn lại và có lý do của quản lý.
+  - Phương án vượt hạn mức còn lại cần khách đồng ý với đúng phiên bản phương án.
+- **5.19** Công ty chịu chi phí lỗi đại lý. Quản lý đánh dấu đã đòi ở quyết toán.
+- **5.20** Tổ lái đề xuất nguyên nhân. Quản lý chốt khi duyệt phương án, hệ thống cập nhật bên chịu cho các khoản chưa duyệt.
 - **5.21** Khoản khách hoặc người nhận chịu phải gắn với một đơn. Vì vậy phải báo **sự cố của một con**, không báo cả lượt.
 - **5.22** Thêm biên lai được tới khi quản lý duyệt khoản đó.
 - **5.23** Ghi chi phí **không** tự trừ tiền khách. Khoản đã duyệt mới thành phụ phí ở luồng 6.
@@ -1069,7 +1072,7 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 ### Không gặp người nhận
 
 - **5.24** Phải bấm Bắt đầu chờ thì đồng hồ mới chạy. Chưa hết 120 phút không ghi Không gặp được.
-- **5.25** Phí giữ tính theo ngày, **lẻ ngày tính tròn một ngày**, ít nhất một ngày. Mức phí lấy lúc ngựa rời hub.
+- **5.25** Phí giữ tính theo ngày, **lẻ ngày tính tròn một ngày**, ít nhất một ngày. Mức phí lấy lúc ngựa rời hub. *(Đã chốt đổi theo mục 13 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md), code chưa sửa.)*
 - **5.26** Không có phí cho thời gian xe chờ: trong 120 phút là miễn phí, sau 120 phút xe đi.
 
 ## 5.F. Tình huống và cách hệ thống xử lý
@@ -1112,11 +1115,11 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 
 **Tiền và trách nhiệm:**
 
-9. **Tài xế chọn nguyên nhân, tức là chọn ai trả tiền, và không ai sửa được.** Ô chọn mặc định là Tình trạng ngựa (khách trả). Đề xuất: quản lý chốt nguyên nhân khi duyệt phương án.
-10. **"Đã hỏi khách" chỉ là lựa chọn của nhân viên.** Khách không có nút đồng ý hay từ chối, không lưu bằng chứng.
-11. **Duyệt phương án không xét hạn mức khẩn cấp** với chi phí dự kiến; chỉ xét khi duyệt chi phí, lúc tiền đã tiêu.
-12. **Lỗi đại lý chỉ ghi công ty chịu**, chưa theo dõi khoản phải đòi lại.
-13. **Chưa có phí chờ** dù tài liệu 59 bảng nói phí chờ và phí gửi chuồng do người nhận chịu. Hiện chỉ có phí giữ ở hub. Cần chọn một.
+9. **Đã sửa.** Tổ lái đề xuất nguyên nhân, quản lý chốt khi duyệt phương án.
+10. **Đã sửa.** Khách đồng ý hoặc từ chối trên đơn. Điều phối ghi nội dung khi khách đồng ý qua điện thoại.
+11. **Đã sửa.** Phương án vượt hạn mức còn lại cần khách đồng ý trước khi quản lý duyệt.
+12. **Đã sửa.** Quyết toán theo dõi khoản cần đòi lại đại lý.
+13. **Đã sửa.** Form chi phí bỏ phí chờ. Phí giữ tại hub theo biểu phí.
 
 **Vận hành:**
 
@@ -1168,11 +1171,11 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 - tổ lái **quét hoặc nhập số chip**; hệ thống so với chip trong hồ sơ ngựa;
 - **đúng chip**: màn hình hiện số khoang để dẫn ngựa vào;
 - **sai chip**: con đó không được nhận trong lần này. Quét lại được;
-- con không đủ điều kiện đi: bấm **Không nhận** (câu chuyện 2).
+- con không đủ điều kiện đi: bấm **Ghi đón hụt** (câu chuyện 2).
 
 **Bước 2. Nhận giấy gốc và ký biên bản.** Màn hình liệt kê các giấy đã duyệt của đơn; tổ lái đánh dấu từng giấy đã nhận hoặc không nhận bản gốc. Sau đó **chụp biên bản đã ký và tải lên**. Chưa có biên bản thì nút Hoàn tất bị khóa.
 
-**Bước 3. Hoàn tất nhận ngựa.** Cần ít nhất một con đúng chip. Từ lúc này **công ty giữ ngựa**, người bấm là người phụ trách. Khách nhận thông báo **Đã nhận ngựa**.
+**Bước 3. Hoàn tất nhận ngựa.** Cần ít nhất một con đúng chip. Mỗi con còn lại phải được ghi đón hụt trước khi hoàn tất. Từ lúc này **công ty giữ ngựa**, người bấm là người phụ trách. Khách nhận thông báo **Đã nhận ngựa**.
 
 **Bước 4. Khách trả số dư.** Cùng lúc, hệ thống lập khoản số dư và báo khách. Khách có **30 phút kể từ lúc hoàn tất nhận ngựa** để trả qua VNPAY. Đơn nhiều con nhận ở nhiều lần thì chỉ lập số dư **một lần**, ở lần nhận đầu tiên, cho cả đơn. Trong 30 phút này xe đứng chờ.
 
@@ -1202,28 +1205,21 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 
 ### Câu chuyện 2. Một con không được nhận
 
-**Bước 12.** Ngựa ốm hoặc sai chip. Tổ lái bấm **Không nhận**, ghi lý do. Hệ thống làm **cùng lúc**:
+**Bước 12.** Tổ lái ghi đón hụt cho từng con. Chọn nguyên nhân, ghi diễn giải và chụp ảnh. Nếu người gửi vắng, ghi kết quả ba cuộc gọi và chờ đủ thời gian. Hệ thống gỡ các chặng kế hoạch của con hụt, giữ chỗ trên chuyến và báo khách, điều phối, quản lý.
 
-- loại con đó khỏi đơn và nhả chỗ của nó trên chuyến;
-- hủy mọi chặng đã xếp của con đó;
-- lập báo giá mới cho các con còn lại, **giữ đơn giá đã chốt**, tự coi là đã chấp nhận, thay bản cũ;
-- số dư đang chờ thì giảm theo; khách đã trả dư thì tạo khoản hoàn chờ chuyển;
-- báo quản lý.
+Quản lý chốt bên chịu. Khách hoặc điều phối chọn A bỏ con, B đón lại, C tự chở tới hub hoặc D đổi chuyến khi đơn chưa nhận con nào. Đơn chạy thẳng có thể hẹn ngày đón mới. A loại con khỏi đơn. Các lựa chọn làm thay đổi chi phí cập nhật báo giá thay thế.
 
-Các con khác vẫn nhận bình thường. Nếu **không còn con nào** để nhận ở điểm này, lần giao nhận ghi là **Không thành** và xe được rời điểm.
-
-Được từ chối ở **nơi nhận ngựa** và chỉ khi đơn còn **Đã xác nhận** (xe chưa rời nơi nhận nào của đơn).
+Các con khác vẫn nhận bình thường. Nếu đã ghi hụt cho mọi con tại điểm và không nhận con nào, lần giao nhận kết thúc **Không thành**. Xe có thể rời khi tất cả ngựa ở điểm này đã được xử lý. Tổ lái vẫn ghi hụt được khi xe khác đã nhận ngựa của đơn.
 
 ### Câu chuyện 3. Quá 30 phút chưa trả số dư
 
-**Bước 13.** Quá 30 phút, tổ lái bấm **Trả ngựa do quá hạn thanh toán**. Khách mở trang VNPAY **trước** khi hết 30 phút mà chưa có kết quả thì hệ thống chờ thêm **5 phút**, trong lúc đó từ chối trả ngựa.
+**Bước 13.** Hệ thống nhắc số dư ở phút 0, 15 và 25. Điều phối gọi khách và người liên hệ khẩn cấp, ghi kết quả. Điều phối có thể gia hạn một lần nếu xe vẫn kịp tới hub và các con khác không vượt thời gian ngồi xe. Khách mở trang VNPAY trước khi hết hạn mà chưa có kết quả thì hệ thống chờ thêm 5 phút.
 
 **Bước 14.** Hệ thống trong một lần bấm:
 
-- ghi trả ngựa cho người gửi (đơn nhập: trả cho đại lý ở cửa khẩu). **Không quét lại chip**, lấy kết quả quét lúc nhận;
-- **hủy đơn**, lý do quá thời gian chờ trả số dư; khách **mất cọc**, gồm cả phần thu hộ;
-- nhả chỗ, hủy các khoản chưa trả, hủy các chặng sau;
-- báo khách và điều phối viên.
+- Nếu còn người nhận lại ở điểm đón, ghi trả ngựa và bàn giao giấy gốc. Dùng kết quả chip lúc nhận. Đơn sang **Cần chọn lại chuyến**, nhả chỗ và hủy các chặng kế hoạch. Số dư vẫn thanh toán được. Hết 30 ngày thì hủy đơn.
+- Nếu không có người nhận lại, điều phối xác nhận đưa ngựa về hub. Đơn nhập từ cửa khẩu vẫn về hub.
+- Tại hub, nhắc T − 3 giờ. Nếu chưa trả, nhả chỗ và gỡ khỏi lượt xe ở T − 1 giờ. Phí giữ tính từ T. Ngựa vẫn được chăm sóc sau khi hủy.
 
 Tiền VNPAY về **sau** khi đơn đã hủy: không ghi vào đơn, báo quản lý để đối soát và hoàn.
 
@@ -1282,6 +1278,8 @@ Dòng hai: loại một con thì bỏ cước trục, dịch vụ và phí bảo
 
 ## 6.E. Các điểm nghiệp vụ
 
+> **Đã chốt 25/11/2026, code chưa sửa:** phí giữ theo số lần đủ 24 giờ, chỉ tính thời gian do khách; thu cước giao lại; đơn đóng được khi còn khoản thu thêm. Xem mục 13 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md).
+
 ### Giao nhận
 
 - **6.1** Chỉ giao nhận khi xe **đang ở điểm đó**: đã bấm Tới nơi, chưa bấm Rời đi. Người bấm phải trong tổ lái.
@@ -1293,14 +1291,14 @@ Dòng hai: loại một con thì bỏ cước trục, dịch vụ và phí bảo
 
 ### Không nhận ngựa
 
-- **6.7** Chỉ ở nơi nhận ngựa, khi đơn **Đã xác nhận**; lý do bắt buộc, tối đa 500 ký tự.
+- **6.7** Ghi hụt khi đơn **Đã xác nhận** hoặc **Đang vận chuyển** và con vẫn chờ nhận. Lý do bắt buộc, tối đa 500 ký tự.
 - **6.8** Báo giá thay thế giữ đơn giá đã chốt, bỏ các dòng của con bị loại, tự chấp nhận, không cần khách bấm.
 - **6.9** Khách đã trả dư thì tạo khoản hoàn phần dư.
 
 ### Số dư
 
 - **6.10** Số dư = tổng báo giá đang có hiệu lực − số đã trả. Bằng 0 thì không lập khoản.
-- **6.11** Mỗi đơn chỉ một khoản số dư. Trả qua VNPAY.
+- **6.11** Một đơn có thể có số dư ban đầu và số dư bổ sung khi nhận ở lượt đón lại. Trả qua VNPAY.
 - **6.12** Chưa trả đủ **không** chặn xe đi đón, chỉ chặn xe **rời nơi nhận**.
 - **6.13** Trả ngựa khi: đã hết 30 phút, đơn còn Đã xác nhận, và không còn phiên VNPAY mở trước hạn đang chờ kết quả (tối đa 5 phút).
 - **6.14** Trả ngựa là một thao tác cho **mọi con** đã lên xe ở điểm đó, gồm cả các đơn khác cùng lên (cửa khẩu).
@@ -1309,7 +1307,7 @@ Dòng hai: loại một con thì bỏ cước trục, dịch vụ và phí bảo
 
 - **6.15** Đơn **Đã giao** khi mọi con còn trong đơn đã giao: giao tại nhà, trả tại hub, hoặc đại lý đã giao.
 - **6.16** Khoản thu thêm chỉ lập khi đơn **Đã giao**; chọn chi phí đã duyệt, khách hoặc người nhận chịu, cùng tiền tệ, chưa gắn khoản thu. Số tiền do hệ thống cộng, quản lý không sửa được. Chỉ thu qua VNPAY, số tiền phải tròn đồng.
-- **6.17** Còn nợ phải **đúng bằng 0**: thiếu thì chưa đóng, dư thì hoàn xong mới đóng.
+- **6.17** Còn nợ phải **đúng bằng 0**: thiếu thì chưa đóng, dư thì hoàn xong mới đóng. *(Đã chốt đổi theo mục 13 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md), code chưa sửa.)*
 - **6.18** Chi phí **công ty** chịu chưa duyệt không chặn quản lý đóng, nhưng có bất kỳ chi phí nào thì hệ thống **không tự đóng**.
 - **6.19** Không có trạng thái Đang quyết toán: trong lúc quyết toán đơn vẫn là Đã giao.
 - **6.20** Hoàn tiền: quản lý chuyển khoản ngoài, ghi mã chuyển khoản (không trùng, tối đa 100 ký tự) và ảnh chứng từ nếu có.
@@ -1343,10 +1341,12 @@ Dòng hai: loại một con thì bỏ cước trục, dịch vụ và phí bảo
 
 1. **Đã sửa** · Khách thanh toán được cả phí bên CONSIGNEE, với hạn, nhắc quá hạn và chặn gửi đơn mới.
 2. **Đã sửa** · Phí hệ thống tính theo ngày được miễn điều kiện đã hỏi và không chiếm hạn mức khẩn cấp.
-3. **Khách tự chở tới hub mà không trả số dư: không trả ngựa được.** Nút trả ngựa chỉ có ở nhà khách và cửa khẩu. Ngựa đã lên xe trục thì cả xe không rời được hub. Quản lý hủy đơn thay khách được sau 30 phút, nhưng hệ thống **không gỡ ngựa khỏi xe hay khỏi hub**: xe rời được, chở theo ngựa của đơn đã hủy.
-4. **Cửa khẩu có hai đơn nhập, một đơn trả đủ, một đơn không:** bấm trả ngựa thì bị từ chối cả hai, vì hệ thống định hủy cả đơn đã trả. Xe kẹt ở cửa khẩu.
-5. **Con sai chip ở điểm đón mà tổ lái không bấm Không nhận**, xe vẫn rời được. Con đó vẫn trong đơn, đơn không bao giờ Đã giao. Sau khi xe rời thì không loại được nữa.
-6. **Mọi con đều bị từ chối** thì đơn vẫn Đã xác nhận, không còn con nào, và báo giá còn phần cước chung. Quản lý hủy thì hoàn **100%** vì tính là công ty hủy. Cần quy tắc: ngựa không đủ điều kiện thì ai chịu.
+3. **Đã sửa** · Chặn HUB_OUT của đơn chưa trả đủ số dư. T − 1 giờ thì nhả chỗ, gỡ chặng kế hoạch và đóng HUB_OUT còn mở nếu không còn con nào chờ lên xe. Lưu trú giữ có phí, trả ngựa tại hub và các mốc nhắc, hủy, thông báo theo mục 9.
+4. **Đã sửa** · Xe nhập được rời cửa khẩu về hub khi còn đơn chưa trả số dư. Chỉ đơn đã trả đủ mới sang Đang vận chuyển.
+5. **Đã sửa** · Xe chỉ rời nơi nhận khi mọi con đã nhận hoặc ghi đón hụt. Quét sai chip còn cần ghi lý do đón hụt nếu không thể nhận.
+
+   **Đã sửa** · Hết hạn chọn của một con không nhả chỗ của đơn khi con khác vẫn chờ đón. Chọn tự chở tới hub thì gỡ lượt đón lại đã xếp cho con đó.
+6. **Đã sửa** phần ghi nhận và lựa chọn · Nếu hụt cả đơn, khách có thể chọn xử lý trong hạn hoặc chuyển sang Cần chọn lại chuyến khi hết hạn. Quản lý chốt bên chịu. Quy tắc tính tiền thay thế theo mục 8.4 thuộc bước tiếp theo.
 
 **Bằng chứng giao nhận:**
 
@@ -1367,7 +1367,9 @@ Dòng hai: loại một con thì bỏ cước trục, dịch vụ và phí bảo
 18. **Chưa có khiếu nại.** Tài liệu ghi hạn 7 ngày từ lúc giao, hệ thống không có màn và quản lý đóng đơn được ngay. Đề xuất: 7 ngày đầu chỉ đóng khi khách xác nhận nhận ngựa ổn.
 19. **Nút trả ngựa hiện ngay sau khi nhận**, dù chưa hết 30 phút (máy chủ vẫn chặn).
 20. **Từ chối nhận không báo khách.** Chỉ báo quản lý; khách chỉ thấy báo giá đổi.
-21. **Đơn nhiều con đón bằng hai xe:** xe đầu rời thì đơn Đang vận chuyển, con ở xe sau **không từ chối nhận được**.
+21. **Đã sửa** · Xe thứ hai vẫn có thể ghi đón hụt khi đơn đã Đang vận chuyển. Đơn giữ chuyến hiện tại, khách xử lý con hụt bằng A, B hoặc C theo điều kiện của lượt xe.
 22. **Ô đánh giá hiện lại sau khi đã đánh giá** (tải lại trang), bấm thì bị từ chối.
-23. **Đơn chạy thẳng loại bớt một con mà tiền gần như không giảm** (xem 6.D). Cần chốt có đúng ý không.
+23. **Đã sửa.** Báo giá chạy thẳng ghi rõ bớt ngựa không làm giảm cước xe.
 24. **Không có bước "người nhận nghiệm thu" riêng.** Nghiệm thu hiện là ảnh biên bản và việc giao xong. Nếu hội đồng hỏi "nghiệm thu ở đâu" thì chỉ vào bước 7 và bước 10.
+
+**Đã sửa** · Quản lý xác nhận dịch vụ đã làm. Báo giá thay thế giữ dịch vụ đã làm và bảo hiểm khi khách chịu, áp sàn cọc đã trả, tính phí đón lại theo lượt xe và đối soát khoản hoàn. Lượt đón lại có khoản số dư bổ sung sau khi nhận nếu số dư đầu đã trả. Xe đón lại phải chờ trả đủ.

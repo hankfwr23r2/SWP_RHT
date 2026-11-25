@@ -464,6 +464,12 @@ export const customer = {
       save: 'Save update',
       saved: 'Insurance saved.',
     },
+    balanceHold: {
+      title: 'Your horse is being cared for at the hub',
+      since: 'Stabling fees start at {{at}}.',
+      options: 'You can pay the balance and choose a later departure, collect your horse and keep the order, or cancel and collect your horse. Contact dispatch to arrange collection.',
+      cancelled: 'You can still collect your horse at the hub. Stabling fees are credited against your deposit and any excess is billed separately.',
+    },
     reschedule: {
       title: 'Choose another departure',
       none: 'No other departure now. Call us or cancel the order.',

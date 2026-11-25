@@ -22,6 +22,7 @@ async function open(page: Page, path: string, options: { status?: string; quotat
       state.calls.push({ path: api, body: type.includes('json') ? request.postDataJSON() : request.postData() })
       if (api === '/bookings/8/quotations') state.quotations = [{ id: 5, version: 1, status: 'DRAFT', totalAmount: 9_000_000, depositAmount: 3_000_000, currencyCode: 'VND', lines: [{ lineNumber: 1, description: 'Cước', amount: 9_000_000 }] }]
       if (api === '/quotations/5/send') { state.status = 'AWAITING_DEPOSIT'; state.quotations = [{ ...state.quotations![0], status: 'SENT' }] }
+      if (api === '/bookings/8/reopen-quote') state.status = 'QUOTING'
       if (api === '/bookings/8/report-document-delay') state.status = 'SCHEDULE_CHANGE_REQUIRED'
       if (api === '/bookings/8/cancel-for-customer') state.status = 'CANCELLED'
       if (api === '/departures/3/confirm-run') state.decisions = [{ ...state.decisions![0], confirmable: false, runConfirmedAt: '2099-01-01T00:00:00Z' }]
@@ -169,4 +170,16 @@ test('hoàn tiền: bắt buộc mã giao dịch', async ({ page }) => {
   expect(state.calls).toHaveLength(1)
   expect(state.calls[0].path).toBe('/refunds/4/mark-refunded')
   expect(String(state.calls[0].body)).toContain('"transferReference":"FT123"')
+})
+
+test('manager confirms reopening an expired quotation', async ({ page }) => {
+  const state = await open(page, '/manager/orders/8', {
+    status: 'QUOTE_EXPIRED',
+    quotations: [{ id: 5, version: 1, status: 'EXPIRED', currencyCode: 'VND', lines: [] }],
+  })
+  const label = 'Mở lại báo giá hết hạn'
+  await page.getByRole('button', { name: label }).click()
+  await page.getByRole('alertdialog').getByRole('button', { name: label }).click()
+  await expect(page.getByRole('button', { name: label })).toHaveCount(0)
+  expect(state.calls.filter(call => call.path === '/bookings/8/reopen-quote')).toHaveLength(1)
 })

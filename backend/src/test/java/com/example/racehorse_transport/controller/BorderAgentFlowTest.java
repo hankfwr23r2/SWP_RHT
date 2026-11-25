@@ -175,36 +175,22 @@ class BorderAgentFlowTest {
     }
 
     @Test
-    void importBalanceOverdueAtTheGateReturnsTheHorseToTheAgent() throws Exception {
+    void importBalanceOverdueAtTheGateAllowsTransportToHub() throws Exception {
         long[] received = receiveImportAtTheGate();
         long trip = received[0];
         long gateStop = received[1];
         long original = received[2];
         // Nhận ở cửa khẩu xong thì lập khoản số dư (seed có sẵn số dư đã trả nên đã bỏ đi)
         assertThat(jdbc.queryForObject("SELECT status FROM payment WHERE booking_id = ? AND payment_type = 'BALANCE'", String.class, booking)).isEqualTo("PENDING");
-        mvc.perform(post("/trip-stops/{id}/depart", gateStop).header(HttpHeaders.AUTHORIZATION, driver)).andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message", startsWith("Đơn DEV-EXPORT-001 chưa trả đủ")));
-        // Còn trong hạn: luồng A từ chối hủy
-        returnAt(gateStop).andExpect(status().isConflict());
-
         entityManager.flush();
         jdbc.update("UPDATE payment SET due_at = now() - interval '1 minute' WHERE booking_id = ? AND payment_type = 'BALANCE'", booking);
         entityManager.clear();
-        returnAt(gateStop).andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.handovers[1].handoverType").value("RETURN"))
-                .andExpect(jsonPath("$.data.handovers[1].partyName").value("Đại lý vận tải Campuchia (mẫu)"))
-                .andExpect(jsonPath("$.data.handovers[1].horses[0].scannedMicrochip").value(chip));
-        assertThat(legStatus(legOnTrip(trip))).isEqualTo("CANCELLED");
-        assertThat(bookingStatus()).isEqualTo("CANCELLED");
-        entityManager.flush();
-        assertThat(jdbc.queryForObject("""
-                SELECT d.direction FROM handover_document d JOIN handover h ON h.id = d.handover_id
-                WHERE d.document_id = ? AND h.trip_stop_id = ? AND h.handover_type = 'RETURN'
-                """, String.class, original, gateStop)).isEqualTo("RETURNED");
-        // Hành trình: ngựa đang ở đại lý
-        mvc.perform(get("/bookings/{id}/journey", booking).header(HttpHeaders.AUTHORIZATION, coordinator)).andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.horses[0].holder").value("PARTY"));
+        returnAt(gateStop).andExpect(status().isBadRequest());
         mvc.perform(post("/trip-stops/{id}/depart", gateStop).header(HttpHeaders.AUTHORIZATION, driver)).andExpect(status().isOk());
+        assertThat(legStatus(legOnTrip(trip))).isEqualTo("IN_PROGRESS");
+        assertThat(bookingStatus()).isEqualTo("CONFIRMED");
+        mvc.perform(get("/bookings/{id}/journey", booking).header(HttpHeaders.AUTHORIZATION, coordinator)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.horses[0].holder").value("COMPANY"));
     }
 
     @Test
@@ -217,7 +203,8 @@ class BorderAgentFlowTest {
         refuse(handover, legOnTrip(trip), "Ngựa sốt cao, không đủ sức khỏe đi tiếp").andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.handovers[0].status").value("FAILED"));
         entityManager.flush();
-        assertThat(jdbc.queryForObject("SELECT status FROM booking_horse WHERE id = ?", String.class, line)).isEqualTo("EXCLUDED");
+        assertThat(jdbc.queryForObject("SELECT status FROM booking_horse WHERE id = ?", String.class, line)).isEqualTo("ACTIVE");
+        assertThat(jdbc.queryForObject("SELECT pickup_missed_at IS NOT NULL FROM booking_horse WHERE id = ?", Boolean.class, line)).isTrue();
         assertThat(legStatus(legOnTrip(trip))).isEqualTo("CANCELLED");
         // Chặng đại lý đang chở kết thúc không giao: ngựa ở lại với đại lý
         assertThat(legStatus(agentLeg)).isEqualTo("CANCELLED");
@@ -285,8 +272,14 @@ class BorderAgentFlowTest {
     }
 
     private ResultActions refuse(long handoverId, long legId, String reason) throws Exception {
-        return mvc.perform(post("/handovers/{id}/refusals", handoverId).header(HttpHeaders.AUTHORIZATION, escort)
-                .contentType(MediaType.APPLICATION_JSON).content("{\"horseLegId\":%d,\"reason\":\"%s\"}".formatted(legId, reason)));
+        org.mockito.Mockito.when(cloudinary.uploadFile(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyString()))
+                .thenAnswer(call -> "https://cdn.example/pickup-miss-" + System.nanoTime() + ".jpg");
+        var request = new org.springframework.mock.web.MockMultipartFile("request", "", "application/json",
+                "{\"horseLegId\":%d,\"reason\":\"%s\",\"reasonCode\":\"HORSE_UNWELL\"}".formatted(legId, reason)
+                        .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        var photo = new org.springframework.mock.web.MockMultipartFile("photo", "pickup.jpg", "image/jpeg", new byte[] {1, 2, 3});
+        return mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart("/handovers/{id}/refusals", handoverId)
+                .file(request).file(photo).header(HttpHeaders.AUTHORIZATION, escort));
     }
 
     private ResultActions returnAt(long stopId) throws Exception {

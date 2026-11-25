@@ -95,12 +95,12 @@ class DepartureFlowTest {
 
     @Test
     void saysWhichSideHasNoHubAndWhereTheCompanyServes() throws Exception {
-        mvc.perform(suggestions("INTERPROVINCE", "VN-1", "VN-48"))
+        mvc.perform(suggestions("INTERPROVINCE", "VN-11", "VN-48"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.unavailable").value("PICKUP_NOT_SERVED"))
                 .andExpect(jsonPath("$.data.servedProvinces.length()", greaterThan(0)))
                 .andExpect(jsonPath("$.data.departures.length()").value(0));
-        mvc.perform(suggestions("IMPORT", "KH-12", "VN-1"))
+        mvc.perform(suggestions("IMPORT", "KH-12", "VN-11"))
                 .andExpect(jsonPath("$.data.unavailable").value("DELIVERY_NOT_SERVED"));
         // Hub Đà Nẵng chỉ có tuyến đi Lào
         mvc.perform(suggestions("EXPORT", "VN-48", "KH-12"))

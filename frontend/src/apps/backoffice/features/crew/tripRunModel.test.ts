@@ -73,7 +73,7 @@ describe('tripRunModel', () => {
     // Đơn nhập nhận từ đại lý ở cửa khẩu
     const gate = run({ stops: [{ id: 1, stopType: 'HUB', actualArrivalAt: 't', actualDepartureAt: 't' }, { id: 2, stopType: 'BORDER', actualArrivalAt: 't' }, { id: 3, stopType: 'HUB' }] },
       { horses: [received] })
-    expect(canReturnUnpaid(gate, gate.trip!.stops![1])).toBe(true)
+    expect(canReturnUnpaid(gate, gate.trip!.stops![1])).toBe(false)
     const pending = run({}, { horses: [received], handovers: [{ id: 5, tripStopId: 2, status: 'PENDING' }] })
     expect(canReturnUnpaid(pending, pending.trip!.stops![1])).toBe(false)
   })
@@ -86,7 +86,9 @@ describe('tripRunModel', () => {
   it('tới theo thứ tự, rời khi không còn giao nhận dở', () => {
     const r = run()
     expect(canArrive(r, r.trip!.stops![2])).toBe(false)
-    expect(canDepart(r, r.trip!.stops![1])).toBe(true)
+    expect(canDepart(r, r.trip!.stops![1])).toBe(false)
+    const resolved = run({}, { horses: [{ leg: { boardTripStopId: 2, status: 'IN_PROGRESS' } }] })
+    expect(canDepart(resolved, resolved.trip!.stops![1])).toBe(true)
     const pending = run({}, { handovers: [{ id: 5, tripStopId: 2, status: 'PENDING' }] })
     expect(canDepart(pending, pending.trip!.stops![1])).toBe(false)
     const notStarted = run({ status: 'PLANNED' })
