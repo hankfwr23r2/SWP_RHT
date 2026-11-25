@@ -23,7 +23,7 @@ function renderLabel(text: React.ReactNode) {
   if (!match) return text
   return (
     <>
-      {match[1]} <span style={{ color: 'var(--muted, #64748b)', fontWeight: 400, fontSize: '0.88em' }}>{match[2]}</span>
+      {match[1]} <span className={s.labelNote}>{match[2]}</span>
     </>
   )
 }

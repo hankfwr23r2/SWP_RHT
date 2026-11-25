@@ -76,7 +76,7 @@ export default function LoginPage() {
           </div>
         </div>
         <TurnstileWidget key={captchaGeneration} action="customer_login" onTokenChange={setCaptchaToken} />
-        <p className="text-right small" style={{ marginBottom: 16 }}><Link to="/forgot-password" className="text-orange">{t('auth.forgotPassword')}</Link></p>
+        <p className={`text-right small ${s.forgot}`}><Link to="/forgot-password" className="text-orange">{t('auth.forgotPassword')}</Link></p>
         <button type="submit" className="btn btn-primary btn-full btn-lg" disabled={loading}>
           {loading ? t('auth.loggingIn') : t('auth.signIn')}
         </button>

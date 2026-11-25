@@ -98,7 +98,9 @@ export function FormSelect({ value, onChange, children, id, className = '', styl
         <svg className={s.chevron} width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m5 8 5 5 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
       </button>
       {open && createPortal(
-        <ul id={`${uid}-list`} role="listbox" ref={menu} className={s.menu} style={{ top: box.top, bottom: box.bottom, left: box.left, width: box.width }}>
+        <ul id={`${uid}-list`} role="listbox" ref={menu} className={s.menu}
+        // check-style: dynamic vị trí danh sách tính theo ô chọn lúc mở
+        style={{ top: box.top, bottom: box.bottom, left: box.left, width: box.width }}>
           {options.map((o, i) => (
             <li
               key={o.value + i} role="option" data-i={i} aria-selected={i === current} aria-disabled={o.disabled || undefined}
