@@ -666,7 +666,7 @@ Xong thì chạy Quality Gate và báo kết quả thật.
 | B5 | Giao thất bại, giao lại | B | 4 | Xong: chờ người nhận, quá giờ thì giao thất bại, về hub, giao lại (#387). Gửi chuồng tại hub có hạn giữ, phí lưu chuồng và chăm sóc theo ngày, nhắc quá hạn (#440). Chờ luồng A: khoản thu phí khi người nhận tới hub đón lúc đơn còn IN_OPERATION | #387, #440 |
 | A8 | Quyết toán, hủy, đánh giá | A | 5 | Xong backend | #396, #397 |
 | B6 | Theo dõi, thông báo, báo cáo | B | 5 | Xong phần chính (6 PR): chuông thông báo, hành trình ngựa và tra cứu công khai, báo cáo vận hành, nhật ký hệ thống. Báo khách khi nhận, giao ngựa và qua cửa khẩu (#430). Báo cáo doanh thu `/reports/revenue` (#434). Màn Tổng quan `/manager` (#444). B6 xong | #388, #389, #390, #391, #392, #393, #430, #434, #444 |
-| E | Tích hợp, dọn dẹp, ERD, merge | A + B | 6 | Chưa làm | |
+| E | Tích hợp, dọn dẹp, ERD, merge | A + B | 6 | Đang làm. B: xóa FE cũ xong, ngoại lệ `check-style` rỗng (#458–#461). `FullFlowIntegrationTest` có phần vận hành của 3 ca M3 (#463), chờ A viết phần thương mại trong cùng file | #458, #459, #460, #461, #463 |
 
 ---
 
