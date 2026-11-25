@@ -5,18 +5,10 @@ import type { PageLoader } from '@shared/routing/pageData'
 import type { AppRoute } from '@shared/routing/types'
 import { dispatchTexts, managerTexts, reviewTexts } from '@shared/i18n/staffTexts'
 import { ManagerLoginPage, StaffLoginPage } from './features/auth/StaffLoginPage'
-import type * as Loaders from './shared/loaders'
 import type * as NetworkLoaders from './features/admin/network/loaders'
-// Loader nằm ngoài gói tải đầu: chỉ tải khi mở trang có dữ liệu
-const load = <K extends keyof typeof Loaders>(name: K): PageLoader => async ctx =>
-  (await import('./shared/loaders'))[name](ctx)
-
 // Trang đăng nhập tải ngay; các trang còn lại chỉ tải khi mở tới (lazy), mỗi vai trò chỉ tải phần mình dùng.
 // Trang có loader khai báo lazyPage: router tải file trang song song với dữ liệu rồi mới vẽ trang.
 const SitemapPage = lazy(() => import('../sitemap/SitemapPage').then(m => ({ default: m.SitemapPage })))
-const FleetPage = lazy(() => import('./features/coordinator/fleet/FleetPage'))
-const DriverPage = lazy(() => import('./features/driver/DriverPage'))
-const EscortPage = lazy(() => import('./features/escort/EscortPage'))
 const StaffProfilePage = lazy(() => import('./features/profile/StaffProfilePage'))
 const StaffForgotPasswordPage = lazy(() => import('@shared/auth/ForgotPasswordPage').then(m => ({ default: m.StaffForgotPasswordPage })))
 
@@ -104,19 +96,13 @@ export const routes: AppRoute[] = [
   },
 
   { path: '/coordinator/dispatch', lazyPage: () => Promise.all([import('./features/coordinator/dispatch/DispatchPage'), dispatchTexts()]).then(([page]) => page), roles: CO, title: 'Điều độ', layout: 'staff', catalog: false },
-  { path: '/coordinator/fleet-plan', lazyPage: () => import('./features/coordinator/fleet-plan/FleetPlanListPage'), loader: load('bookingListLoader'), roles: CO, title: 'Xe và lộ trình', layout: 'staff' },
-  { path: '/coordinator/fleet-plan/:id', lazyPage: () => import('./features/coordinator/fleet-plan/FleetPlanPage'), loader: load('fleetPlanLoader'), roles: CO, title: 'Chốt xe và lộ trình một đơn', layout: 'staff' },
-  { path: '/coordinator/monitoring', lazyPage: () => import('./features/coordinator/monitoring/MonitoringPage'), loader: load('monitoringLoader'), roles: CO, title: 'Giám sát vận chuyển', layout: 'staff' },
   { path: '/coordinator/plans', lazyPage: () => Promise.all([import('./features/coordinator/plans/PlansPage'), dispatchTexts()]).then(([page]) => page), roles: CO, title: 'Kế hoạch đơn', layout: 'staff', catalog: false },
   { path: '/coordinator/tracking', lazyPage: () => Promise.all([import('./features/coordinator/tracking/TrackingPage'), dispatchTexts()]).then(([page]) => page), roles: CO, title: 'Theo dõi', layout: 'staff', catalog: false },
   { path: '/coordinator/hub', lazyPage: () => Promise.all([import('./features/coordinator/hub/HubPage'), dispatchTexts()]).then(([page]) => page), roles: CO, title: 'Hub', layout: 'staff', catalog: false },
   { path: '/coordinator/incidents', lazyPage: () => import('./features/incidents/IncidentsBoardPage'), roles: CO, title: 'Xử lý sự cố', layout: 'staff', catalog: false },
-  { path: '/coordinator/fleet', page: FleetPage, roles: CO, title: 'Đội xe', layout: 'staff' },
 
   { path: '/my-trips/:id', lazyPage: () => import('./features/crew/TripRunPage'), roles: ['driver', 'escort'], title: 'Thực hiện lượt xe', layout: 'mobile', catalog: false },
   { path: '/my-trips', lazyPage: () => import('./features/crew/MyTripsPage'), roles: ['driver', 'escort'], title: 'Lượt xe của tôi', layout: 'mobile', catalog: false },
-  { path: '/driver', page: DriverPage, roles: ['driver'], title: 'Chuyến của tôi', layout: 'mobile' },
-  { path: '/escort', page: EscortPage, roles: ['escort'], title: 'Nhật ký sức khỏe ngựa', layout: 'mobile' },
 ]
 
 routes.push({ path: '/sitemap', page: () => <SitemapPage app="backoffice" />, roles: [], title: 'Sitemap', layout: 'staff', catalog: false })
