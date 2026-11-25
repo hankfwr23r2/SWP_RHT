@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.example.racehorse_transport.entity.enums.IncidentPlanStatus;
 import com.example.racehorse_transport.entity.enums.IncidentResolutionType;
+import com.example.racehorse_transport.entity.enums.IncidentSeverity;
 import com.example.racehorse_transport.entity.enums.IncidentStatus;
 import com.example.racehorse_transport.entity.enums.IncidentType;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
@@ -14,10 +15,33 @@ import com.example.racehorse_transport.exception.DispatchRuleException;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class IncidentPolicyTest {
 
-    private static final Instant REPORTED = Instant.parse("2031-03-05T10:00:00Z");
+    private static final Instant REST_STARTED = Instant.parse("2031-03-05T10:00:00Z");
+    private static final Instant UNLOCKED_AT = Instant.parse("2031-03-05T10:05:00Z");
+
+    @ParameterizedTest
+    @CsvSource({
+            "HEALTH, HIGH", "ACCIDENT, HIGH", "VEHICLE_BREAKDOWN, MEDIUM", "HANDOVER_TIMEOUT, MEDIUM",
+            "DOCUMENT, MEDIUM", "DELAY, LOW", "OTHER, LOW", "COMPLAINT, LOW"
+    })
+    void severityDefaultsByIncidentType(IncidentType type, IncidentSeverity severity) {
+        assertThat(IncidentPolicy.defaultSeverity(type)).isEqualTo(severity);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "HIGH, REPORTED, false, true", "HIGH, PLAN_PENDING, false, true",
+            "HIGH, PLAN_ACTIVE, false, false", "HIGH, RESOLVED, false, false", "HIGH, CLOSED, false, false",
+            "HIGH, REPORTED, true, false", "MEDIUM, REPORTED, false, false", "LOW, REPORTED, false, false"
+    })
+    void onlyOpenHighIncidentsWithoutApprovalOrAnUnlockBlockTheTrip(IncidentSeverity severity, IncidentStatus status,
+            boolean unlocked, boolean blocked) {
+        assertThat(IncidentPolicy.blocksTrip(severity, status, unlocked ? UNLOCKED_AT : null)).isEqualTo(blocked);
+    }
 
     @Test
     void tripIncidentReportRejectsComplaintsAndAllowsOperationalIncidents() {
@@ -73,10 +97,28 @@ class IncidentPolicyTest {
     }
 
     @Test
+    void restCanBeStartedOnceAndOnlyWithAnActivePlanAndPendingFitConfirmation() {
+        assertThatCode(() -> IncidentPolicy.requireCanStartRest(IncidentStatus.PLAN_ACTIVE, null, false)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> IncidentPolicy.requireCanStartRest(IncidentStatus.PLAN_PENDING, null, false))
+                .hasMessageContaining("chưa được duyệt");
+        assertThatThrownBy(() -> IncidentPolicy.requireCanStartRest(IncidentStatus.PLAN_ACTIVE, REST_STARTED, false))
+                .hasMessage("Đã bắt đầu cho ngựa nghỉ.");
+        assertThatThrownBy(() -> IncidentPolicy.requireCanStartRest(IncidentStatus.PLAN_ACTIVE, null, true))
+                .hasMessage("Đã xác nhận ngựa đủ sức đi tiếp.");
+    }
+
+    @Test
     void fitIsConfirmedAfterTheApprovedPlanAndEnoughRest() {
-        assertThatCode(() -> IncidentPolicy.requireCanConfirmFit(IncidentStatus.PLAN_ACTIVE, REPORTED, REPORTED.plusSeconds(1800), 30)).doesNotThrowAnyException();
-        assertThatThrownBy(() -> IncidentPolicy.requireCanConfirmFit(IncidentStatus.PLAN_PENDING, REPORTED, REPORTED.plusSeconds(3600), 30)).hasMessageContaining("chưa được duyệt");
-        assertThatThrownBy(() -> IncidentPolicy.requireCanConfirmFit(IncidentStatus.PLAN_ACTIVE, REPORTED, REPORTED.plusSeconds(1799), 30)).hasMessageContaining("đủ 30 phút");
+        assertThatCode(() -> IncidentPolicy.requireCanConfirmFit(IncidentStatus.PLAN_ACTIVE, REST_STARTED, REST_STARTED.plusSeconds(1800), 30))
+                .doesNotThrowAnyException();
+        assertThatThrownBy(() -> IncidentPolicy.requireCanConfirmFit(IncidentStatus.PLAN_PENDING, REST_STARTED, REST_STARTED.plusSeconds(3600), 30))
+                .hasMessageContaining("chưa được duyệt");
+        assertThatThrownBy(() -> IncidentPolicy.requireCanConfirmFit(IncidentStatus.PLAN_ACTIVE, null, REST_STARTED.plusSeconds(3600), 30))
+                .hasMessage("Chưa bắt đầu cho ngựa nghỉ.");
+        assertThatThrownBy(() -> IncidentPolicy.requireCanConfirmFit(IncidentStatus.PLAN_ACTIVE, REST_STARTED, REST_STARTED.plusSeconds(1799), 30))
+                .hasMessageContaining("đủ 30 phút");
+        assertThat(IncidentPolicy.fitEligibleAt(null, 30)).isNull();
+        assertThat(IncidentPolicy.fitEligibleAt(REST_STARTED, 45)).isEqualTo(REST_STARTED.plusSeconds(2700));
     }
 
     @Test

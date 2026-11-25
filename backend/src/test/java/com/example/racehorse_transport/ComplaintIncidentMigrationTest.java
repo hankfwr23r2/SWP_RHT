@@ -95,8 +95,8 @@ class ComplaintIncidentMigrationTest {
 
     private int insertIncident(Long bookingId, String incidentType, Long reportedBy, String causeType) {
         return jdbc.update("""
-                INSERT INTO incident (booking_id, incident_type, reported_by, cause_type, title, description, status)
-                VALUES (?, ?, ?, ?, 'Migration test', 'Test fixture', 'REPORTED')
+                INSERT INTO incident (booking_id, incident_type, severity, reported_by, cause_type, title, description, status)
+                VALUES (?, ?, 'LOW', ?, ?, 'Migration test', 'Test fixture', 'REPORTED')
                 """, bookingId, incidentType, reportedBy, causeType);
     }
 }

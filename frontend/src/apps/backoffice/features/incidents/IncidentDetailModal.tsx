@@ -1,9 +1,8 @@
-// Chi tiết sự cố: phương án theo phiên bản, chi phí. Điều phối lập phương án, xử lý xong, đóng; quản lý duyệt, từ chối, duyệt chi phí
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { incidentsApi, type Incident, type ResolutionType } from '@shared/api/incidentOps'
+import { incidentsApi, type ResolutionType } from '@shared/api/incidentOps'
 import { useAutoRefresh, useLoad } from '@shared/hooks/useLoad'
-import { formatVND } from '@shared/lib/format'
+import { formatDateTime, formatVND } from '@shared/lib/format'
 import { Button } from '@shared/ui/Button'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { Field } from '@shared/ui/Field'
@@ -16,9 +15,11 @@ import { Textarea } from '@shared/ui/Textarea'
 import { useToast } from '@shared/ui/toast'
 import { EvidencePanel } from '@backoffice/shared/EvidencePanel'
 import { IncidentCostForm } from '@backoffice/shared/IncidentCostForm'
+import { IncidentSeverityBadge } from '@backoffice/shared/IncidentSeverity'
 import { IncidentCostControls } from './IncidentCostControls'
 import { IncidentPlanApproval } from './IncidentPlanApproval'
 import { IncidentEvidenceSection } from './IncidentEvidenceSection'
+import { IncidentSeverityControls } from './IncidentSeverityControls'
 import { PlanRejectDialog } from './PlanRejectDialog'
 import { VehicleSwapControls } from './VehicleSwapControls'
 import s from './Incidents.module.css'
@@ -26,7 +27,6 @@ import s from './Incidents.module.css'
 const RESOLUTIONS: ResolutionType[] = ['CONTINUE', 'VET_TREATMENT', 'STABLE_NEARBY', 'TRANSFER_VEHICLE', 'RETURN_TO_HUB', 'CANCEL']
 
 interface Props { incidentId: number; role: 'coordinator' | 'manager'; onClose: () => void; onChanged: () => void }
-
 export function IncidentDetailModal({ incidentId, role, onClose, onChanged }: Props) {
   const { t } = useTranslation()
   const toast = useToast()
@@ -61,9 +61,9 @@ export function IncidentDetailModal({ incidentId, role, onClose, onChanged }: Pr
 
   if (!loaded) return <Modal title={t('incidents.view')} onClose={onClose} wide><Skeleton variant="block" lines={4} /></Modal>
   if (error || !data) return <Modal title={t('incidents.view')} onClose={onClose} wide><ErrorState message={error?.message} onRetry={reload} /></Modal>
-  const incident: Incident = data.incident
+  const { incident } = data
   const plans = incident.plans ?? []
-  const latest = plans[plans.length - 1]
+  const latest = plans.at(-1)
   const canReturn = incident.incidentType !== 'HANDOVER_TIMEOUT'
   const open = incident.status !== 'RESOLVED' && incident.status !== 'CLOSED'
 
@@ -78,14 +78,18 @@ export function IncidentDetailModal({ incidentId, role, onClose, onChanged }: Pr
       <div className={s.section}>
         <div className={s.row}>
           <StatusBadge tone={open ? 'warning' : 'success'} label={t(`incidents.status.${incident.status}`)} />
+          <IncidentSeverityBadge severity={incident.severity} />
           {incident.departureId && <p>{t('incidents.departure', {
             route: incident.departureRouteName, date: incident.departureDate,
           })}</p>}
           {incident.requiresFit && <StatusBadge tone={incident.fitConfirmedAt ? 'success' : 'neutral'}
             label={incident.fitConfirmedAt ? t('incidents.fitConfirmed') : t('incidents.notFit')} />}
         </div>
+        {incident.restStartedAt && <p className={s.muted}>{t('incidents.restStartedAt', { time: formatDateTime(new Date(incident.restStartedAt)) })}</p>}
         <p className={s.muted}>{[incident.vehicleTripCode, incident.horseName, incident.bookingCode].filter(Boolean).join(' · ')}</p>
         <p>{incident.description}</p>
+        <IncidentSeverityControls incidentId={incidentId} severity={incident.severity} busy={busy}
+          canUnlock={role === 'coordinator' && incident.blocksTrip} onChanged={async () => { onChanged(); await reload() }} />
         <IncidentEvidenceSection evidence={data.evidence} busy={busy}
           canConfirm={role === 'coordinator' && incident.status === 'PLAN_ACTIVE' && !!incident.requiresFit && !incident.fitConfirmedAt}
           onConfirm={() => run(() => incidentsApi.confirmFit(incidentId), t('myTrips.run.incident.fitDone'))}
@@ -120,7 +124,6 @@ export function IncidentDetailModal({ incidentId, role, onClose, onChanged }: Pr
             ))}
           </ol>
         ) : <p className={s.muted}>{t('incidents.noPlans')}</p>}
-        {/* Thực hiện phương án đã duyệt (B4): đổi xe cho lượt đang chạy, đưa ngựa về hub */}
         {role === 'coordinator' && open && latest?.status === 'APPROVED' && latest.resolutionType === 'TRANSFER_VEHICLE' && incident.vehicleTripId && (
           <VehicleSwapControls busy={busy} hasRecord={data.evidence.some(file => file.documentTypeCode === 'VEHICLE_SWAP_RECORD')}
             onSwap={vehicleId => run(() => incidentsApi.swapVehicle(incidentId, vehicleId), t('incidents.done.swapped'))} />

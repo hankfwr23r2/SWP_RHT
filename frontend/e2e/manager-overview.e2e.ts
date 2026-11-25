@@ -11,8 +11,8 @@ test('quản lý xem tổng quan vận hành tuần này', async ({ page }) => {
     if (path === '/reports/trips') return ok(route, [{ id: 9, code: 'VT-AAAA0009', tripType: 'DIRECT', status: 'IN_PROGRESS', licensePlate: '51C-12345', plannedStartAt: '2031-03-05T01:00:00Z', incidentCount: 1 }])
     if (path === '/reports/revenue') return ok(route, { revenue: 9_500_000, days: [], bookings: [] })
     if (path === '/incidents') return ok(route, [
-      { id: 5, title: 'Xe hỏng máy', status: 'PLAN_PENDING', vehicleTripCode: 'VT-AAAA0009', reportedAt: '2031-03-05T03:00:00Z' },
-      { id: 6, title: 'Ngựa bỏ ăn', status: 'REPORTED', horseName: 'Sao Mai', reportedAt: '2031-03-05T04:00:00Z' },
+      { id: 6, title: 'Ngựa bỏ ăn', severity: 'HIGH', status: 'REPORTED', horseName: 'Sao Mai', reportedAt: '2031-03-05T03:00:00Z' },
+      { id: 5, title: 'Xe hỏng máy', severity: 'MEDIUM', status: 'PLAN_PENDING', vehicleTripCode: 'VT-AAAA0009', reportedAt: '2031-03-05T04:00:00Z' },
     ])
     return ok(route, [])
   })
@@ -25,6 +25,7 @@ test('quản lý xem tổng quan vận hành tuần này', async ({ page }) => {
   await expect(cards).toContainText('80%')
   await expect(page.getByRole('heading', { name: 'Sự cố đang mở · 1 chờ duyệt phương án' })).toBeVisible()
   const incidents = page.getByRole('table', { name: 'Sự cố đang mở' })
-  await expect(incidents.getByRole('row').nth(1)).toContainText('Xe hỏng máy')
+  await expect(incidents.getByRole('row').nth(1)).toContainText('Ngựa bỏ ăn')
+  await expect(incidents.getByRole('row').nth(1)).toContainText('Nặng')
   await expect(page.getByRole('table', { name: 'Lượt xe tuần này' })).toContainText('VT-AAAA0009')
 })

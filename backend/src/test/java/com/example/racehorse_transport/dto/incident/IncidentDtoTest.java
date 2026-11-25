@@ -14,6 +14,7 @@ import com.example.racehorse_transport.entity.enums.CostPayerType;
 import com.example.racehorse_transport.entity.enums.IncidentCauseType;
 import com.example.racehorse_transport.entity.enums.IncidentPlanStatus;
 import com.example.racehorse_transport.entity.enums.IncidentResolutionType;
+import com.example.racehorse_transport.entity.enums.IncidentSeverity;
 import com.example.racehorse_transport.entity.enums.IncidentStatus;
 import com.example.racehorse_transport.entity.enums.IncidentType;
 import java.math.BigDecimal;
@@ -26,11 +27,14 @@ class IncidentDtoTest {
     @Test
     void createsIncidentPlanAndCostWithoutServerFields() {
         VehicleTrip trip = new VehicleTrip();
-        Incident incident = new IncidentReportRequestDto(1L, null, IncidentType.DELAY, IncidentCauseType.FORCE_MAJEURE, " Tắc đường ", " Lũ ",
+        Incident incident = new IncidentReportRequestDto(1L, null, IncidentType.DELAY, IncidentSeverity.HIGH,
+                IncidentCauseType.FORCE_MAJEURE, " Tắc đường ", " Lũ ",
                 new BigDecimal("11.2"), new BigDecimal("106.5")).toEntity(trip, null, null);
         assertThat(incident.getId()).isNull();
         assertThat(incident.getStatus()).isNull();
+        assertThat(incident.getSeverity()).isNull();
         assertThat(incident.getReportedBy()).isNull();
+        assertThat(incident.getRestStartedAt()).isNull();
         assertThat(incident.getVehicleTrip()).isSameAs(trip);
         assertThat(incident.getTitle()).isEqualTo("Tắc đường");
         assertThat(incident.getDescription()).isEqualTo("Lũ");
@@ -59,6 +63,24 @@ class IncidentDtoTest {
     }
 
     @Test
+    void severityAndUnlockRequestsOnlyApplyEditableFields() {
+        Incident incident = new Incident();
+        incident.setId(5L);
+        incident.setSeverity(IncidentSeverity.LOW);
+        incident.setStatus(IncidentStatus.REPORTED);
+
+        new IncidentSeverityRequestDto(IncidentSeverity.HIGH).applyTo(incident);
+        new TripUnlockRequestDto("  Đã kiểm tra an toàn  ").applyTo(incident);
+
+        assertThat(incident.getSeverity()).isEqualTo(IncidentSeverity.HIGH);
+        assertThat(incident.getTripUnlockReason()).isEqualTo("Đã kiểm tra an toàn");
+        assertThat(incident.getId()).isEqualTo(5L);
+        assertThat(incident.getStatus()).isEqualTo(IncidentStatus.REPORTED);
+        assertThat(incident.getTripUnlockedAt()).isNull();
+        assertThat(incident.getTripUnlockedBy()).isNull();
+    }
+
+    @Test
     void describesIncidentWithPlansAndCost() {
         Staff staff = new Staff();
         staff.setFullName("Điều phối Một");
@@ -67,10 +89,14 @@ class IncidentDtoTest {
         Incident incident = new Incident();
         incident.setId(5L);
         incident.setIncidentType(IncidentType.HEALTH);
+        incident.setSeverity(IncidentSeverity.HIGH);
         incident.setCauseType(IncidentCauseType.HORSE_CONDITION);
         incident.setStatus(IncidentStatus.PLAN_PENDING);
         incident.setBooking(booking);
         incident.setReportedBy(staff);
+        Instant restStartedAt = Instant.parse("2031-03-05T10:00:00Z");
+        Instant fitEligibleAt = Instant.parse("2031-03-05T10:30:00Z");
+        incident.setRestStartedAt(restStartedAt);
         Party vet = new Party();
         vet.setId(3L);
         vet.setDisplayName("Phòng khám thú y");
@@ -83,8 +109,13 @@ class IncidentDtoTest {
         plan.setDecidedBy(staff);
         plan.setRejectionReason("Đắt");
 
-        var response = IncidentResponseDto.from(incident, true, List.of(IncidentResponseDto.PlanDto.from(plan)), null);
+        var response = IncidentResponseDto.from(incident, null, true, fitEligibleAt,
+                List.of(IncidentResponseDto.PlanDto.from(plan)), null, false);
         assertThat(response.requiresFit()).isTrue();
+        assertThat(response.restStartedAt()).isEqualTo(restStartedAt);
+        assertThat(response.fitEligibleAt()).isEqualTo(fitEligibleAt);
+        assertThat(response.severity()).isEqualTo(IncidentSeverity.HIGH);
+        assertThat(response.blocksTrip()).isFalse();
         assertThat(response.bookingCode()).isEqualTo("BK-ABCDEFGH");
         assertThat(response.vehicleTripId()).isNull();
         assertThat(response.horseName()).isNull();

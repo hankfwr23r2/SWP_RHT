@@ -5,6 +5,7 @@ import com.example.racehorse_transport.entity.HorseLeg;
 import com.example.racehorse_transport.entity.Incident;
 import com.example.racehorse_transport.entity.VehicleTrip;
 import com.example.racehorse_transport.entity.enums.IncidentCauseType;
+import com.example.racehorse_transport.entity.enums.IncidentSeverity;
 import com.example.racehorse_transport.entity.enums.IncidentType;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -19,6 +20,7 @@ public record IncidentReportRequestDto(
         @NotNull @Positive Long vehicleTripId,
         @Positive Long horseLegId,
         @NotNull IncidentType incidentType,
+        IncidentSeverity severity,
         @NotNull IncidentCauseType causeType,
         @NotBlank @Size(max = 200) String title,
         @NotBlank @Size(max = 4000) String description,

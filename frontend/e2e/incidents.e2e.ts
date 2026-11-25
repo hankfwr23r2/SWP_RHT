@@ -5,8 +5,9 @@ const ok = (route: Route, data: unknown, status = 200) => route.fulfill({ status
 
 function incidentState() {
   return {
-    id: 5, title: 'Ngựa bỏ ăn', incidentType: 'HEALTH', causeType: 'HORSE_CONDITION', status: 'REPORTED', description: 'Sao Mai bỏ ăn từ sáng',
-    vehicleTripCode: 'VT-AAAA0009', horseName: 'Sao Mai', bookingCode: 'BK-AAAA0001', plans: [] as Record<string, unknown>[],
+    id: 5, title: 'Ngựa bỏ ăn', incidentType: 'HEALTH', severity: 'HIGH', blocksTrip: true,
+    causeType: 'HORSE_CONDITION', status: 'REPORTED', description: 'Sao Mai bỏ ăn từ sáng',
+    vehicleTripId: 9, vehicleTripCode: 'VT-AAAA0009', horseName: 'Sao Mai', bookingCode: 'BK-AAAA0001', plans: [] as Record<string, unknown>[],
   }
 }
 
@@ -47,6 +48,7 @@ async function mockBoard(page: Page, incident: ReturnType<typeof incidentState>)
       costs[0].payerType = 'COMPANY'
       incident.plans.find(p => p.id === Number(approve[1]))!.status = 'APPROVED'
       incident.status = 'PLAN_ACTIVE'
+      incident.blocksTrip = false
       return ok(route, incident)
     }
     if (path === '/cost-items/30/approve') { costs[0].approvedAt = '2031-03-05T10:00:00Z'; return ok(route, costs[0]) }
@@ -118,9 +120,10 @@ test('hộ tống báo sự cố cho một con và ghi chi phí', async ({ page 
     const path = new URL(request.url()).pathname.replace('/api/v1', '')
     if (path === '/crew/vehicle-trips/9') return ok(route, run)
     if (path === '/vehicle-trips/9/incidents') return ok(route, incidents)
+    if (path === '/incidents/severity-defaults') return ok(route, { HEALTH: 'HIGH', OTHER: 'LOW' })
     if (path === '/incidents' && request.method() === 'POST') {
       sent.report = request.postDataJSON()
-      incidents.push({ id: 5, title: 'Ngựa bỏ ăn', status: 'REPORTED', horseName: 'Sao Mai' })
+      incidents.push(incidentState())
       return ok(route, incidents[0], 201)
     }
     if (path === '/cost-items') { sent.cost = request.postDataJSON(); return ok(route, { id: 30 }, 201) }
@@ -129,17 +132,19 @@ test('hộ tống báo sự cố cho một con và ghi chi phí', async ({ page 
   await page.goto('/backoffice/my-trips/9')
 
   await page.getByRole('button', { name: 'Báo sự cố' }).click({ timeout: 15_000 })
-  const dialog = page.getByRole('dialog', { name: 'Báo sự cố' })
+  const dialog = page.getByRole('alertdialog', { name: 'Báo sự cố' })
   await dialog.getByRole('combobox', { name: 'Ảnh hưởng' }).click()
   await page.getByRole('option', { name: 'Sao Mai · BK-AAAA0001' }).click()
   await dialog.getByRole('combobox', { name: 'Loại' }).click()
   await page.getByRole('option', { name: 'Sức khỏe' }).click()
+  await expect(dialog.getByRole('combobox', { name: 'Mức độ' })).toHaveText('Nặng')
   await dialog.getByRole('combobox', { name: 'Nguyên nhân đề xuất' }).click()
   await page.getByRole('option', { name: 'Tình trạng ngựa' }).click()
   await dialog.getByLabel('Tiêu đề').fill('Ngựa bỏ ăn')
   await dialog.getByLabel('Mô tả').fill('Sao Mai bỏ ăn từ sáng')
   await dialog.getByRole('button', { name: 'Gửi báo cáo' }).click()
   await expect(page.getByText('Mới báo')).toBeVisible()
+  await expect(page.getByText(/Lượt xe đang có sự cố nặng chưa có phương án được duyệt/)).toBeVisible()
   expect(sent.report).toEqual({ vehicleTripId: 9, horseLegId: 70, incidentType: 'HEALTH', causeType: 'HORSE_CONDITION', title: 'Ngựa bỏ ăn', description: 'Sao Mai bỏ ăn từ sáng' })
 
   await page.getByLabel('Nội dung').fill('Thuốc hạ sốt')
@@ -183,7 +188,7 @@ test('điều phối thêm ảnh hiện trường và biên lai; quản lý xem 
 })
 
 test('điều phối cần ảnh biên bản trước khi đổi xe', async ({ page }) => {
-  const incident = { ...incidentState(), incidentType: 'VEHICLE_BREAKDOWN', vehicleTripId: 9, status: 'PLAN_ACTIVE',
+  const incident = { ...incidentState(), incidentType: 'VEHICLE_BREAKDOWN', severity: 'MEDIUM', blocksTrip: false, status: 'PLAN_ACTIVE',
     plans: [{ id: 41, version: 1, resolutionType: 'TRANSFER_VEHICLE', instructions: 'Gọi xe cứu hộ', status: 'APPROVED' }] as Record<string, unknown>[] }
   let swapped: unknown
   let evidence = [{ id: 81, documentTypeCode: 'INCIDENT_PHOTO', fileName: 'hien-truong.jpg', fileUrl: 'https://cdn.example/hien-truong.jpg' }]
@@ -224,7 +229,7 @@ test('điều phối cần ảnh biên bản trước khi đổi xe', async ({ p
 test('tổ xe tải ảnh biên bản của phương án đổi xe đã duyệt', async ({ page }) => {
   await signIn(page, 'driver')
   await page.setViewportSize({ width: 360, height: 844 })
-  const incident = { ...incidentState(), incidentType: 'VEHICLE_BREAKDOWN', status: 'PLAN_ACTIVE',
+  const incident = { ...incidentState(), incidentType: 'VEHICLE_BREAKDOWN', severity: 'MEDIUM', blocksTrip: false, status: 'PLAN_ACTIVE',
     plans: [{ id: 41, version: 1, resolutionType: 'TRANSFER_VEHICLE', status: 'APPROVED' }] }
   let submittedType: unknown
   await page.route('**/api/v1/**', async route => {
