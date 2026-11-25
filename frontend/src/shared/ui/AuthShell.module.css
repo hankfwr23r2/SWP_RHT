@@ -258,3 +258,5 @@
   outline-offset: 3px;
   border-radius: 2px;
 }
+.forgot { margin-bottom: var(--space-4); }
+:global(.btn).resend { margin-top: var(--space-2); }
