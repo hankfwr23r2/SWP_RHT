@@ -630,7 +630,7 @@ Bản viết lại đã làm mất bước quản lý giao việc của bản c�
 
 ### 15.1 Chuyên viên: giao theo đơn
 
-- Chỉ **quản lý** tiếp nhận đơn và **bắt buộc chọn chuyên viên** đang làm việc. Danh sách hiện số đơn mỗi người đang giữ (chưa báo giá hoặc còn giấy phải làm), chọn sẵn người ít việc nhất.
+- Chỉ **quản lý** tiếp nhận đơn và **bắt buộc chọn chuyên viên** đang làm việc. Danh sách hiện số đơn mỗi người đang giữ (đơn chưa hoàn thành, chưa hủy, chưa bị từ chối, báo giá chưa hết hạn), chọn sẵn người ít việc nhất.
 - Chỉ chuyên viên được giao mới thao tác: thẩm định, yêu cầu bổ sung, từ chối, duyệt giấy, bảo hiểm, hẹn thú y, chuyển báo giá. Chuyên viên khác chỉ xem. Quản lý không thẩm định thay, chỉ đổi người; quản lý vẫn từ chối được đơn **Chờ tiếp nhận**.
 - Màn chuyên viên: thẻ **Đơn của tôi** và **Tất cả** (chỉ xem).
 - Thông báo việc của đơn gửi riêng chuyên viên được giao, cả khi khách nộp lại giấy.
