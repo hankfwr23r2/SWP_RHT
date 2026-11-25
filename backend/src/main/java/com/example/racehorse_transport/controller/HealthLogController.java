@@ -29,7 +29,7 @@ public class HealthLogController {
     private final HorseStayService stays;
 
     @PostMapping("/health-logs")
-    @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT')")
+    @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT', 'COORDINATOR')")
     public ResponseEntity<ApiResponseDto<HealthLogResponseDto>> record(@Valid @RequestBody HealthLogRequestDto request, Authentication authentication) {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponseDto.success(healthLogs.record(request, authentication.getName()), "Đã ghi sức khỏe"));
     }
@@ -38,6 +38,12 @@ public class HealthLogController {
     @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT', 'COORDINATOR', 'MANAGER', 'SPECIALIST')")
     public ApiResponseDto<List<HealthLogResponseDto>> ofHorse(@PathVariable Long id) {
         return ApiResponseDto.success(healthLogs.ofHorse(id), "Sổ sức khỏe");
+    }
+
+    @GetMapping("/horse-stays/mine")
+    @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT')")
+    public ApiResponseDto<List<HorseStayResponseDto>> myStays(Authentication authentication) {
+        return ApiResponseDto.success(healthLogs.myStays(authentication.getName()), "Ngựa bạn đang phụ trách");
     }
 
     @GetMapping("/horse-stays")

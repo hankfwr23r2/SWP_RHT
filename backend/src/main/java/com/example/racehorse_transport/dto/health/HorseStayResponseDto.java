@@ -9,7 +9,8 @@ import java.time.Instant;
 public record HorseStayResponseDto(Long id, Long bookingHorseId, String bookingCode, String horseName, HorseStayType stayType,
                                    Long locationId, String locationName, Instant plannedEndAt, Instant actualStartAt, Instant actualEndAt,
                                    Instant plannedStartAt, TransferMethod pickupMethod, TransferMethod deliveryMethod,
-                                   Instant balanceHoldAt, boolean returnForBalance, Instant readyAt) {
+                                   Instant balanceHoldAt, boolean returnForBalance, Instant readyAt,
+                                   String dietNote, Short feedingsPerDay, Boolean feedSuppliedByOwner) {
 
     public static HorseStayResponseDto from(HorseStay stay) {
         return from(stay, stay.getBalanceHoldAt() != null);
@@ -20,6 +21,6 @@ public record HorseStayResponseDto(Long id, Long bookingHorseId, String bookingC
         return new HorseStayResponseDto(stay.getId(), line.getId(), line.getBooking().getCode(), line.getHorse().getName(), stay.getStayType(),
                 stay.getLocation().getId(), stay.getLocation().getName(), stay.getPlannedEndAt(), stay.getActualStartAt(), stay.getActualEndAt(),
                 stay.getPlannedStartAt(), line.getBooking().getPickupMethod(), line.getBooking().getDeliveryMethod(),
-                stay.getBalanceHoldAt(), returnForBalance, stay.getReadyAt());
+                stay.getBalanceHoldAt(), returnForBalance, stay.getReadyAt(), line.getDietNote(), line.getFeedingsPerDay(), line.getFeedSuppliedByOwner());
     }
 }

@@ -1,5 +1,22 @@
 // Ứng dụng hiện trường của tài xế và hộ tống
 export const fieldCrew = {
+  stayHealth: {
+    record: "Ghi sức khỏe",
+    reportedBy: "Người báo",
+    reportChannel: "Kênh báo (ví dụ: điện thoại)",
+    heartRateBpm: "Nhịp tim (lần/phút)",
+    respirationRatePerMinute: "Nhịp thở (lần/phút)",
+    symptoms: "Triệu chứng",
+    note: "Ghi chú",
+    history: "Sổ sức khỏe",
+    empty: "Chưa có lần ghi sức khỏe",
+    emptyHint: "Các lần ghi sẽ xuất hiện tại đây.",
+    mine: "Ngựa đang lưu trú do tôi phụ trách",
+    mineEmpty: "Không có ngựa đang lưu trú do bạn phụ trách",
+    mineHint: "Ngựa sẽ xuất hiện sau khi bạn nhận bàn giao.",
+    confirm: "Xác nhận lưu lần ghi này vào sổ sức khỏe?",
+    saveError: "Không thể ghi sức khỏe. Vui lòng thử lại.",
+  },
   myTrips: {
     "run": {
       "stayIn": {

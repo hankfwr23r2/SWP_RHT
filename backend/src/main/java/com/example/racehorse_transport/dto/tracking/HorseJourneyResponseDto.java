@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.dto.tracking;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.example.racehorse_transport.entity.BookingAddress;
 import com.example.racehorse_transport.entity.Document;
 import com.example.racehorse_transport.entity.Handover;
@@ -23,7 +24,9 @@ import java.util.List;
 public record HorseJourneyResponseDto(
         Long bookingHorseId, String horseName, String microchip, BookingHorseStatus status,
         CustodyHolder holder, String holderPartyName, Instant holderSince,
-        List<JourneyLegDto> legs, List<JourneyStayDto> stays, List<JourneyHandoverDto> handovers) {
+        List<JourneyLegDto> legs, List<JourneyStayDto> stays, List<JourneyHandoverDto> handovers,
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        List<JourneyHealthLogResponseDto> healthLogs) {
 
     public record JourneyLegDto(Long id, Integer sequenceNumber, HorseLegType legType, HorseLegStatus status, String fromName, String toName,
                          String vehicleTripCode, String agentName, Long replacedHorseLegId,

@@ -199,10 +199,16 @@ class DispatchDtoTest {
         assertThat(legDto.vehicleTripCode()).isEqualTo("VT-ABCDEFGH");
         assertThat(legDto.boardTripStopId()).isNull();
 
+        line.setDietNote("Hay only");
+        line.setFeedingsPerDay((short) 3);
+        line.setFeedSuppliedByOwner(true);
         var onTrip = TripHorseResponseDto.from(leg);
         assertThat(onTrip.bookingCode()).isEqualTo("BK-ABCDEFGH");
         assertThat(onTrip.horseName()).isEqualTo("Sao Mai");
         assertThat(onTrip.seats()).isEqualTo(2);
+        assertThat(onTrip.dietNote()).isEqualTo("Hay only");
+        assertThat(onTrip.feedingsPerDay()).isEqualTo((short) 3);
+        assertThat(onTrip.feedSuppliedByOwner()).isTrue();
 
         Country country = new Country();
         country.setCode("VN");

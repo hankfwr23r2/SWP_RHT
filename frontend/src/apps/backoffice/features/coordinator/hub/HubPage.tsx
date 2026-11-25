@@ -22,6 +22,7 @@ import { PageHeader } from '@shared/ui/PageHeader'
 import { localToIso } from '@backoffice/shared/localTime'
 import s from '@backoffice/shared/StaffPanels.module.css'
 import h from './Hub.module.css'
+import { StayHealthAction } from '@backoffice/shared/StayHealthAction'
 import { HubStablingActions } from './HubStablingActions'
 
 // Nhận, trả ngựa (quét chip); không nhận (có lý do); hẹn giờ người nhận tới; gửi chuồng khi quá giờ hẹn (phí người nhận chịu)
@@ -110,8 +111,20 @@ export default function HubPage() {
   const columns: TableColumn<HorseStay>[] = [
     { key: 'horse', header: t('dispatch.stays.colHorse'), render: stay => stay.horseName },
     { key: 'booking', header: t('dispatch.stays.colBooking'), render: stay => stay.bookingCode },
+    { key: 'feeding', header: t('horseFeeding.title'), render: stay => (
+      <div className={h.feeding}>
+        <div>{stay.dietNote?.trim() || t('horseFeeding.none')}</div>
+        <div>{stay.feedingsPerDay == null ? t('horseFeeding.mealsUnknown') : t('horseFeeding.meals', { count: stay.feedingsPerDay })}</div>
+        <div>{t(stay.feedSuppliedByOwner ? 'horseFeeding.owner' : 'horseFeeding.company')}</div>
+      </div>
+    ) },
     { key: 'type', header: t('dispatch.stays.colType'), render: stay =>
       stay.balanceHoldAt ? t('dispatch.stays.balanceHold') : t(`dispatch.stays.stayType.${stay.stayType}`) },
+    { key: 'health', header: t('myTrips.run.health.status'), render: stay =>
+      stay.id != null && stay.bookingHorseId != null && (
+        <StayHealthAction horseStayId={stay.id} bookingHorseId={stay.bookingHorseId}
+          horseName={stay.horseName} reported onSaved={reload} />
+      ) },
     { key: 'since', header: t('dispatch.stays.colSince'), render: stay => (stay.actualStartAt ? formatDateTime(new Date(stay.actualStartAt)) : '') },
     {
       key: 'until',

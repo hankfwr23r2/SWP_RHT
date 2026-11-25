@@ -53,6 +53,8 @@ export const tripExecutionApi = {
     post<CrewTrip>(`/handovers/${handoverId}/complete`, recipients ? { recipients } : undefined),
   startWaiting: (handoverId: number) => post<CrewTrip>(`/handovers/${handoverId}/start-waiting`),
   failDelivery: (handoverId: number) => post<CrewTrip>(`/handovers/${handoverId}/fail`),
-  recordHealth: (body: HealthLogCreate) => post<HealthLog>('/health-logs', body),
+  recordHealth: async (body: HealthLogCreate) =>
+    readFormResponse<HealthLog>(await apiClient.post('/health-logs', body, formResponseOptions)),
+  myHorseStays: () => get<Schemas['HorseStayResponseDto'][]>('/horse-stays/mine'),
   healthLogs: (bookingHorseId: number) => get<HealthLog[]>(`/booking-horses/${bookingHorseId}/health-logs`),
 }

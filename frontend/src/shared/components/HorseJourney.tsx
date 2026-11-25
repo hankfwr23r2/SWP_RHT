@@ -71,6 +71,26 @@ export function HorseJourney({ horse }: { horse: HorseJourneyData }) {
             ))}
           </ol>
         )}
+      {horse.healthLogs && (
+        <div>
+          <h3>{t('journey.health.title')}</h3>
+          {horse.healthLogs.length === 0 ? <p className={s.muted}>{t('journey.health.noLogs')}</p> : (
+            <ul>
+              {horse.healthLogs.map(log => (
+                <li key={log.id}>
+                  <b>{time(log.recordedAt)}</b>
+                  <div>{log.placeName ?? (log.vehicleTripCode
+                    ? t('journey.health.inTransit', { code: log.vehicleTripCode }) : t('journey.health.unknown'))}</div>
+                  {log.healthStatus && <div>{t(`journey.health.status.${log.healthStatus}`)}</div>}
+                  <div>{t('journey.health.water')} · {t(log.waterIntake ? `journey.health.intake.${log.waterIntake}` : 'journey.health.unknown')}</div>
+                  <div>{t('journey.health.feed')} · {t(log.feedIntake ? `journey.health.intake.${log.feedIntake}` : 'journey.health.unknown')}</div>
+                  {log.temperatureCelsius != null && <div>{t('journey.health.temperature', { value: log.temperatureCelsius })}</div>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </section>
   )
 }

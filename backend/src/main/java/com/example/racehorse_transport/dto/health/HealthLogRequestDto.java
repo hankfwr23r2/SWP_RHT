@@ -28,7 +28,9 @@ public record HealthLogRequestDto(
         IntakeLevel waterIntake,
         IntakeLevel feedIntake,
         @Size(max = 2000) String symptoms,
-        @Size(max = 2000) String note) {
+        @Size(max = 2000) String note,
+        @Size(max = 120) String reportedBy,
+        @Size(max = 120) String reportChannel) {
 
     // Người ghi và giờ ghi do service đặt
     public HorseHealthLog toEntity(BookingHorse bookingHorse, TripStop stop, HorseStay stay) {
