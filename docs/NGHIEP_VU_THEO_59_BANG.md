@@ -578,7 +578,7 @@ Khoản thu thêm đến hạn sau `EXTRA_CHARGE_DUE_DAYS` kể từ lúc lập.
 | Khách đánh giá một lần khi đơn ở `DELIVERED` hoặc `COMPLETED` | `booking_rating` |
 | Thông báo cho các bên | `notification`, `notification_recipient` |
 
-Hạn khiếu nại là 7 ngày kể từ `handover` DELIVERY DONE.
+Hạn khiếu nại là 7 ngày kể từ lúc đơn sang `DELIVERED` (con cuối đã giao); ngày 8–14 quản lý nhập thay. Đơn đã `COMPLETED` thì giữ nguyên.
 
 ---
 
