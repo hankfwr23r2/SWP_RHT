@@ -6,12 +6,7 @@ import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Departure;
 import com.example.racehorse_transport.entity.Party;
 import com.example.racehorse_transport.entity.TripStop;
-import com.example.racehorse_transport.entity.enums.PartyRoleType;
 import com.example.racehorse_transport.dto.health.StablePartnerResponseDto;
-import com.example.racehorse_transport.policy.DispatchPolicy;
-import com.example.racehorse_transport.repository.PartyRepository;
-import com.example.racehorse_transport.repository.PartyRoleRepository;
-import java.time.LocalDate;
 import com.example.racehorse_transport.dto.operation.HubStablingRequestDto;
 import java.time.Clock;
 import java.time.ZoneId;
@@ -33,11 +28,13 @@ import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.repository.HorseStayRepository;
 import com.example.racehorse_transport.service.CustomerNoticeService;
 import com.example.racehorse_transport.service.HorseStayService;
+import com.example.racehorse_transport.service.HubStallService;
+import com.example.racehorse_transport.service.StablePartnerService;
+import com.example.racehorse_transport.policy.HubStallPolicy;
 import com.example.racehorse_transport.service.NotificationService;
 import com.example.racehorse_transport.service.SystemConfigService;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -62,8 +59,8 @@ public class HorseStayServiceImpl implements HorseStayService {
     private final BookingHorseRepository bookingHorses;
     private final StablingChargeService stablingCharges;
     private final Clock clock;
-    private final PartyRepository parties;
-    private final PartyRoleRepository partyRoles;
+    private final StablePartnerService partners;
+    private final HubStallService hubStalls;
     private final CustomerNoticeService notices;
     private final SystemConfigService configs;
     private final NotificationService notifications;
@@ -72,10 +69,9 @@ public class HorseStayServiceImpl implements HorseStayService {
     @Transactional(propagation = Propagation.MANDATORY)
     public void openBalanceHold(Long bookingId, Instant chargedFrom, Departure missedDeparture) {
         Instant until = chargedFrom.plus(Duration.ofDays(configs.getInt(MAX_DAYS)));
-        stays.findByBookingHorse_Booking_Id(bookingId).stream()
-                .filter(stay -> stay.getStayType() == HorseStayType.ASSEMBLY && stay.getLocation().getLocationType() == LocationType.HUB)
-                .filter(stay -> stay.getActualStartAt() != null && stay.getActualEndAt() == null)
+        stays.findOpenForUpdate(bookingId, HorseStayType.ASSEMBLY, LocationType.HUB)
                 .forEach(stay -> {
+                    hubStalls.allocateOnBalanceHold(stay);
                     stay.setStayType(HorseStayType.STABLING);
                     stay.setBalanceHoldAt(chargedFrom);
                     stay.setMissedDeparture(missedDeparture);
@@ -98,6 +94,7 @@ public class HorseStayServiceImpl implements HorseStayService {
         stay.setPlannedStartAt(at);
         stay.setPlannedEndAt(plannedEnd);
         stay.setActualStartAt(at);
+        hubStalls.allocateOnArrival(stay);
         stays.save(stay);
     }
 
@@ -112,30 +109,26 @@ public class HorseStayServiceImpl implements HorseStayService {
         stay.setPlannedStartAt(at);
         stay.setPlannedEndAt(stop.getPlannedDepartureAt() != null && stop.getPlannedDepartureAt().isAfter(at) ? stop.getPlannedDepartureAt() : at.plus(OVERNIGHT));
         stay.setActualStartAt(at);
+        hubStalls.allocateOnArrival(stay);
         stays.save(stay);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Party requireStablePartner(Long partyId) {
-        Party party = parties.findById(partyId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đối tác " + partyId));
-        if (!isStable(party.getId())) {
-            throw new DispatchRuleException("partyId", party.getDisplayName() + " không có vai trò chuồng gửi còn hiệu lực.");
-        }
-        return party;
+        return partners.requireStablePartner(partyId);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<StablePartnerResponseDto> stablePartners() {
-        return parties.findAll().stream().filter(p -> isStable(p.getId()))
-                .sorted(Comparator.comparing(Party::getDisplayName)).map(StablePartnerResponseDto::from).toList();
+        return partners.stablePartners();
     }
 
-    private boolean isStable(Long partyId) {
-        LocalDate today = LocalDate.ofInstant(clock.instant(), ZoneId.of("Asia/Ho_Chi_Minh"));
-        return partyRoles.findById_PartyId(partyId).stream()
-                .anyMatch(r -> r.getId().getRoleType() == PartyRoleType.STABLE && DispatchPolicy.roleValidOn(r.getValidFrom(), r.getValidTo(), today));
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void allocateHubStallOnArrival(HorseStay stay) {
+        hubStalls.allocateOnArrival(stay);
     }
 
     @Override
@@ -148,7 +141,7 @@ public class HorseStayServiceImpl implements HorseStayService {
     @Override
     @Transactional
     public void closeActive(Long bookingHorseId, Instant at, Long actorUserId) {
-        stays.findFirstByBookingHorse_IdAndActualStartAtIsNotNullAndActualEndAtIsNull(bookingHorseId).ifPresent(stay -> {
+        stays.findFirstByBookingHorse_IdAndActualStartAtIsNotNullAndActualEndAtIsNullOrderById(bookingHorseId).ifPresent(stay -> {
             stay.setActualEndAt(at);
             stablingCharges.chargeThrough(stay, at, actorUserId);
         });
@@ -166,6 +159,7 @@ public class HorseStayServiceImpl implements HorseStayService {
         stay.setPlannedStartAt(at);
         stay.setPlannedEndAt(at.plus(Duration.ofDays(configs.getInt(MAX_DAYS))));
         stay.setActualStartAt(at);
+        hubStalls.allocateOnArrival(stay);
         stays.save(stay);
         Booking booking = failedLeg.getBookingHorse().getBooking();
         notifications.notify(List.of(booking.getCustomer().getUser().getId()), booking.getId(), "Ngựa đang được giữ tại hub",
@@ -184,6 +178,7 @@ public class HorseStayServiceImpl implements HorseStayService {
         stay.setPlannedStartAt(at);
         stay.setPlannedEndAt(at.plus(DEFAULT_ASSEMBLY));
         stay.setActualStartAt(at);
+        hubStalls.allocateOnArrival(stay);
         stays.save(stay);
     }
 
@@ -264,7 +259,9 @@ public class HorseStayServiceImpl implements HorseStayService {
         if (!now.isAfter(assembly.getPlannedEndAt())) {
             throw new DispatchRuleException("horseStayId", "Chưa quá giờ hẹn người nhận tới (" + TIME.format(assembly.getPlannedEndAt()) + ").", true);
         }
+        hubStalls.lockForTransition(assembly);
         assembly.setActualEndAt(now);
+        stays.flush();
         HorseStay stabling = new HorseStay();
         stabling.setBookingHorse(assembly.getBookingHorse());
         stabling.setStayType(HorseStayType.STABLING);
@@ -274,6 +271,8 @@ public class HorseStayServiceImpl implements HorseStayService {
         stabling.setStablingUnitPrice(java.math.BigDecimal.valueOf(configs.getInt(DAILY_FEE)));
         stabling.setPlannedEndAt(now.plus(Duration.ofDays(configs.getInt(MAX_DAYS))));
         stabling.setActualStartAt(now);
+        stabling.setHubStall(assembly.getHubStall());
+        hubStalls.allocateOnBalanceHold(stabling);
         stays.saveAndFlush(stabling);
         Booking booking = assembly.getBookingHorse().getBooking();
         String note = request.note() == null || request.note().isBlank() ? "" : " " + request.note().strip();
@@ -315,8 +314,10 @@ public class HorseStayServiceImpl implements HorseStayService {
     @Transactional(readOnly = true)
     public List<HorseStayResponseDto> activeAt(Long locationId) {
         var unpaid = java.util.Set.copyOf(stays.findUnpaidAssemblyStayIds(locationId));
+        var sick = java.util.Set.copyOf(stays.findStaysWithSickHorses(locationId));
         return stays.findByLocation_IdAndActualStartAtIsNotNullAndActualEndAtIsNullOrderByActualStartAt(locationId).stream()
-                .map(stay -> HorseStayResponseDto.from(stay, stay.getBalanceHoldAt() != null || unpaid.contains(stay.getId())))
+                .map(stay -> HorseStayResponseDto.from(stay, stay.getBalanceHoldAt() != null || unpaid.contains(stay.getId()),
+                        HubStallPolicy.isCompanyHubStay(stay), HubStallPolicy.suggestIsolation(stay, sick.contains(stay.getId()))))
                 .toList();
     }
 }

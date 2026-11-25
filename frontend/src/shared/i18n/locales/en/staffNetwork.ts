@@ -1,4 +1,33 @@
 export const staffNetwork = {
+  "hubStalls": {
+    "noHubs": "No hubs configured",
+    "noHubsHint": "Ask an administrator to add a hub.",
+    "title": "Hub stalls",
+    "code": "Stall code",
+    "type": "Stall type",
+    "add": "Add stall",
+    "deactivate": "Deactivate",
+    "deactivateHint": "Stall {{code}} will no longer be available for assignment.",
+    "inactive": "Inactive",
+    "occupied": "Occupied",
+    "available": "Available",
+    "empty": "This hub has no stalls",
+    "emptyHint": "Use the form above to add the first stall.",
+    "capacity": "{{available}} of {{total}} stalls available",
+    "unassigned": "Unassigned",
+    "suggestIsolation": "Consider moving to an isolation stall",
+    "move": "Change stall",
+    "freeStall": "Select an available stall",
+    "noFree": "No stalls available",
+    "noFreeHint": "Try again when a stall becomes available.",
+    "moved": "Stall changed",
+    "error": "Could not update the stall.",
+    "status": "Status",
+    "kind": {
+      "STANDARD": "Standard",
+      "ISOLATION": "Isolation"
+    }
+  },
   staffNetwork: {
     "invalidCoordinates": "Enter both valid coordinates, or clear the coordinates.",
     "clearCoordinates": "Clear coordinates",

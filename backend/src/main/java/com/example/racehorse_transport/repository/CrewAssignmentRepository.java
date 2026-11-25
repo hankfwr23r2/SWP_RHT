@@ -26,6 +26,14 @@ public interface CrewAssignmentRepository extends JpaRepository<CrewAssignment, 
                                            @Param("released") CrewAssignmentStatus released,
                                            @Param("cancelled") VehicleTripStatus cancelled);
 
+    @EntityGraph(attributePaths = {"staff", "vehicleTrip", "vehicleTrip.endLocation"})
+    @Query("""
+            SELECT a FROM CrewAssignment a
+            WHERE a.staff.userId IN :staffIds AND a.status <> :released AND a.vehicleTrip.status <> :cancelled
+            """)
+    List<CrewAssignment> findActiveOfStaffIds(@Param("staffIds") Collection<Long> staffIds,
+            @Param("released") CrewAssignmentStatus released, @Param("cancelled") VehicleTripStatus cancelled);
+
     // Lượt xe của tôi: phân công chưa bị gỡ, lượt chưa xong hoặc chưa hủy
     @EntityGraph(attributePaths = {"vehicleTrip", "vehicleTrip.vehicle", "vehicleTrip.startLocation", "vehicleTrip.endLocation"})
     @Query("""

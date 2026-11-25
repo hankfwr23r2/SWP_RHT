@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { dispatchApi, type HorseStay } from '@shared/api/dispatch'
+import { hubStallsApi } from '@shared/api/hubStalls'
+import { HubStallMoveDialog } from './HubStallMoveDialog'
 import { useLoad } from '@shared/hooks/useLoad'
 import { formatDateTime } from '@shared/lib/format'
 import { Button } from '@shared/ui/Button'
@@ -33,6 +35,7 @@ export default function HubPage() {
   const toast = useToast()
   const [hubChoice, setHubId] = useState('')
   const [action, setAction] = useState<Action>()
+  const [moving, setMoving] = useState<HorseStay>()
   const [photo, setPhoto] = useState<File>()
   const [record, setRecord] = useState<File>()
   const [recipientName, setRecipientName] = useState('')
@@ -44,16 +47,19 @@ export default function HubPage() {
   const [busy, setBusy] = useState(false)
   const [confirmReturn, setConfirmReturn] = useState(false)
   // Hub gốc của xe (trụ sở) đứng đầu và được chọn sẵn
-  const { data: hubs } = useLoad(async () => {
+  const { data: hubs, loaded: hubsLoaded, error: hubsError, reload: reloadHubs } = useLoad(async () => {
     const [locations, vehicles] = await Promise.all([dispatchApi.locations(), dispatchApi.vehicles()])
     const home = new Set(vehicles.map(vehicle => vehicle.homeHubLocationId))
     return locations.filter(location => location.locationType === 'HUB').sort((a, b) => Number(home.has(b.id)) - Number(home.has(a.id)))
-  }, [])
+  }, [], { toastOnError: false })
   const hubId = hubChoice || (hubs?.[0]?.id ? String(hubs[0].id) : '')
   const { data, loaded, error, reload } = useLoad(async () => {
-    if (!hubId) return { appointments: [], stays: [] }
-    const [appointments, stays] = await Promise.all([dispatchApi.hubAppointments(Number(hubId)), dispatchApi.horseStays(Number(hubId))])
-    return { appointments, stays }
+    if (!hubId) return { appointments: [], stays: [], inventory: undefined }
+    const id = Number(hubId)
+    const [appointments, stays, inventory] = await Promise.all([
+      dispatchApi.hubAppointments(id), dispatchApi.horseStays(id), hubStallsApi.inventory(id),
+    ])
+    return { appointments, stays, inventory }
   }, [hubId], { toastOnError: false })
 
   const isHubHandover = action?.kind === 'receive' || action?.kind === 'deliver' || action?.kind === 'returnHeld'
@@ -111,6 +117,13 @@ export default function HubPage() {
   const columns: TableColumn<HorseStay>[] = [
     { key: 'horse', header: t('dispatch.stays.colHorse'), render: stay => stay.horseName },
     { key: 'booking', header: t('dispatch.stays.colBooking'), render: stay => stay.bookingCode },
+    { key: 'stall', header: t('hubStalls.title'), render: stay => stay.canChangeHubStall && (
+      <div className={s.legs}>
+        <span>{stay.hubStallCode ?? t('hubStalls.unassigned')}</span>
+        {stay.suggestIsolation && <StatusBadge tone="warning" label={t('hubStalls.suggestIsolation')} />}
+        <Button size="sm" onClick={() => setMoving(stay)}>{t('hubStalls.move')}</Button>
+      </div>
+    ) },
     { key: 'feeding', header: t('horseFeeding.title'), render: stay => (
       <div className={h.feeding}>
         <div>{stay.dietNote?.trim() || t('horseFeeding.none')}</div>
@@ -161,11 +174,14 @@ export default function HubPage() {
   ]
 
   const content = () => {
-    if (!hubId) return null
+    if (!hubsLoaded) return <Skeleton variant="block" lines={3} />
+    if (hubsError) return <ErrorState message={hubsError.message} onRetry={reloadHubs} />
+    if (!hubId) return <EmptyState title={t('hubStalls.noHubs')} description={t('hubStalls.noHubsHint')} />
     if (!loaded) return <Skeleton variant="block" lines={3} />
     if (error || !data) return <ErrorState message={error?.message} onRetry={reload} />
     return (
       <>
+        {data.inventory && <p>{t('hubStalls.capacity', { available: data.inventory.available, total: data.inventory.total })}</p>}
         {data.appointments.length > 0 && (
           <Table caption={t('dispatch.stays.appointmentsCaption')} columns={appointmentColumns} rows={data.appointments} rowKey={stay => stay.id ?? 0} />
         )}
@@ -181,11 +197,13 @@ export default function HubPage() {
       <PageHeader title={t('dispatch.stays.tab')} description={t('dispatch.stays.subtitle')} />
       <div className={h.form}>
         <Field label={t('dispatch.stays.hub')}>
-          {c => <Select {...c} value={hubId} onChange={setHubId} placeholder={t('tripWords.choose')}
+          {c => <Select {...c} value={hubId} onChange={value => { setMoving(undefined); setHubId(value) }} placeholder={t('tripWords.choose')} disabled={!hubs?.length}
             options={(hubs ?? []).map(hub => ({ value: `${hub.id}`, label: hub.name ?? '' }))} />}
         </Field>
       </div>
       {content()}
+      {moving?.id != null && data?.inventory && <HubStallMoveDialog stayId={moving.id} horseName={moving.horseName}
+        stalls={data.inventory.stalls ?? []} onMoved={reload} onClose={() => setMoving(undefined)} />}
       {action && !confirmReturn && (
         <Modal title={t(`dispatch.stays.${action.kind}Title`, { horse: action.stay.horseName, code: action.stay.bookingCode })} onClose={() => setAction(undefined)}
           footer={(

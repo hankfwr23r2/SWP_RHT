@@ -1,4 +1,33 @@
 export const staffNetwork = {
+  "hubStalls": {
+    "noHubs": "Chưa có hub",
+    "noHubsHint": "Liên hệ quản trị viên để khai báo hub.",
+    "title": "Ô chuồng",
+    "code": "Mã ô",
+    "type": "Loại ô",
+    "add": "Thêm ô",
+    "deactivate": "Ngừng dùng",
+    "deactivateHint": "Ô {{code}} sẽ không còn được cấp cho ngựa.",
+    "inactive": "Đã ngừng dùng",
+    "occupied": "Có ngựa",
+    "available": "Trống",
+    "empty": "Hub chưa có ô chuồng",
+    "emptyHint": "Thêm ô đầu tiên bằng biểu mẫu trên.",
+    "capacity": "Còn {{available}}/{{total}} ô trống",
+    "unassigned": "Chưa được xếp ô",
+    "suggestIsolation": "Cân nhắc chuyển sang ô cách ly",
+    "move": "Đổi ô",
+    "freeStall": "Chọn ô trống",
+    "noFree": "Hub hết ô trống",
+    "noFreeHint": "Thử lại sau khi có ô được giải phóng.",
+    "moved": "Đã đổi ô chuồng",
+    "error": "Không thể cập nhật ô chuồng.",
+    "status": "Tình trạng",
+    "kind": {
+      "STANDARD": "Ô thường",
+      "ISOLATION": "Ô cách ly"
+    }
+  },
   staffNetwork: {
     "invalidCoordinates": "Nhập cả vĩ độ và kinh độ hợp lệ, hoặc xóa tọa độ.",
     "clearCoordinates": "Xóa tọa độ",
