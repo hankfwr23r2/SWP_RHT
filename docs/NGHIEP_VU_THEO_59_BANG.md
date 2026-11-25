@@ -516,7 +516,7 @@ Giả định của đợt này: địa chỉ giao của đơn nhập là nơi c
 
 ### GĐ8. Giao ngựa
 
-> **Đã chốt 25/11/2026, code chưa sửa:** phí giữ, cước giao lại và cách đóng đơn theo mục 13 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md).
+> **Đã chốt 25/11/2026** (phí giữ, đóng đơn, công nợ đã làm; cước giao lại đang làm): theo mục 13 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md).
 
 Với `delivery_method = SELF`, trả ngựa tại hub và ghi `handover` DELIVERY gắn với `horse_stay`. Quá giờ hẹn thì gửi chuồng, báo khách khi bắt đầu giữ và tính phí theo `STABLING_DAILY_FEE` khi rời hub.
 
@@ -575,11 +575,11 @@ Khoản thu thêm đến hạn sau `EXTRA_CHARGE_DUE_DAYS` kể từ lúc lập.
 
 ### GĐ10. Đóng đơn
 
-> **Đã chốt 25/11/2026, code chưa sửa:** phí giữ, cước giao lại và cách đóng đơn theo mục 13 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md).
+> **Đã chốt 25/11/2026** (phí giữ, đóng đơn, công nợ đã làm; cước giao lại đang làm): theo mục 13 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md).
 
 | Việc | Bảng |
 |---|---|
-| Đã trả đủ: số còn nợ theo `SettlementPolicy` bằng 0. Đơn không có khoản phát sinh tự đóng sau 7 ngày kể từ khi giao | `booking.status = COMPLETED` |
+| Đủ điều kiện đóng theo `SettlementPolicy.canClose` (khoản thu thêm chưa trả không chặn). Tự đóng sau 7 ngày kể từ khi giao | `booking.status = COMPLETED` |
 | Khách đánh giá một lần khi đơn ở `DELIVERED` hoặc `COMPLETED` | `booking_rating` |
 | Thông báo cho các bên | `notification`, `notification_recipient` |
 
@@ -936,3 +936,7 @@ Chưa làm: chia tối đa 3 kỳ; so nợ theo số điện thoại và chip ng
 ## Ngựa chưa có người nhận và các mốc liên quan
 
 Sau 45 ngày từ thông báo bằng văn bản, quản lý ghi một kết quả theo từng con còn giữ tại hub do giao hụt và đính kèm biên bản. Lần ghi tạo handover RETURN, kết thúc lưu trú và chốt phí qua luồng hiện có. Khi mọi con đã có kết quả, đơn có con đã giao chuyển DELIVERED, đơn toàn bộ con phải trả chuyển CANCELLED. Hủy đơn do quá hạn số dư tách khỏi lưu trú đang mở.
+
+## Giờ giao và xe trễ · mục 14 của phương án
+
+Đơn chỉ hẹn ngày giao. Lúc phân lượt, mọi điểm được báo giờ dự kiến. Xe rời hub và rời từng điểm thì tính lại giờ mọi điểm còn lại (`trip_stop.expected_arrival_at`), lệch quá ngưỡng thì nhắn khách và ghi `told_arrival_at`, `told_at`. Người nhận vắng thì so giờ tới thật với giờ báo gần nhất ± 30 phút: trong khung là người nhận, sau khung là công ty. Quản lý sửa kết luận trong 24 giờ. Vượt giờ giao hoặc giờ ngồi xe thì báo điều phối.

@@ -1,4 +1,4 @@
-# Danh sách nghiệm thu (24/11/2026)
+# Danh sách nghiệm thu (cập nhật 25/11/2026)
 
 Nghiệm thu trên nhánh `redesign/system-v2`, máy cá nhân, dữ liệu mẫu. Thao tác và điều kiện chặn chi tiết của từng màn: `docs/MAN_HINH_VA_TAC_DONG.md`. Sai khác với file đó là lỗi.
 
@@ -8,6 +8,7 @@ Nghiệm thu trên nhánh `redesign/system-v2`, máy cá nhân, dữ liệu mẫ
 2. Backend, trong `backend/`: đặt `FLYWAY_LOCATIONS=classpath:db/migration,classpath:db/seed-dev`, rồi `.\mvnw.cmd spring-boot:run`. Cần `TURNSTILE_SECRET_KEY`; dùng khóa thử công khai của Cloudflare thì thêm `SPRING_PROFILES_ACTIVE=local,local-turnstile-test`.
 3. Frontend, trong `frontend/`: đặt `VITE_TURNSTILE_SITE_KEY`, `npm install`, `npm run dev`. Khách ở `/`, nhân viên ở `/backoffice`.
 4. Tài khoản mẫu và mật khẩu thử: đầu file `backend/src/main/resources/db/seed-dev/R__dev_seed_base.sql`. Đăng nhập bằng email `<tên>@racehorse.test`, ví dụ `manager.dev@racehorse.test`.
+
 
 Mục tài khoản mẫu và `APP_SEED_REFERENCE_DATA` trong `README.md` là của bản cũ, không dùng.
 
@@ -49,12 +50,9 @@ Muốn chạy hết một đơn trong một buổi (tua giờ, thanh toán giả
 
 ## Chưa làm, đừng báo lỗi
 
-Lấy từ bảng tiến độ trong `KE_HOACH_TRIEN_KHAI.md`:
-
-- Gửi chuồng khi giao thất bại (quá giờ hẹn nhận ở hub thì đã có), nghỉ đêm (OVERNIGHT), bàn giao ca (SHIFT).
-- Phương án đổi xe của sự cố, về hub tự lập lượt xe, biên lai và ảnh hiện trường.
-- Báo khách khi nhận và giao ngựa.
-- Bảng điều khiển của quản lý: màn cũ đã ẩn, chưa có màn mới. Danh sách màn cũ chờ xóa ở cuối `KE_HOACH_TRIEN_KHAI.md`.
+- Cước giao lại, đồng hồ phí giữ dừng khi khách sẵn sàng, kết quả cuối của ngựa không người nhận, giờ giao tính lại sau mỗi điểm: đang làm.
+- Chia nợ nhiều kỳ, đổi nơi giao sau khi cọc.
+- Các gói G2, G3, G5 và điểm của bạn B chưa ghi Đã sửa trong `NGHIEP_VU_6_LUONG.md`.
 
 ## Báo lỗi
 

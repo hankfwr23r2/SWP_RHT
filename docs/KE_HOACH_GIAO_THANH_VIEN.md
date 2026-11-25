@@ -10,8 +10,8 @@ Ngày 25/11/2026. Các gói dưới đây lấy từ [PHUONG_AN_6_LUONG.md](PHUO
 | **G2** | Thông báo còn thiếu | Ngay | Vừa | long |
 | **G3** | Xử lý chuyến trễ | Ngay | Lớn | QuanTran-IT |
 | **G4** | Nghiệm thu bằng tay phần đã gộp (không viết code) | Ngay | Vừa | HoangPhuc-IT |
-| **G5** | Phần sửa dở: chỉ số sức khỏe lúc nhận, tệp giao nhận nhiều đơn | Sau khi 1b gộp | Nhỏ | HoangPhuc-IT |
-| *Giữ lại* | 1b đón hụt và chưa trả số dư; đợt 2 tiền và trách nhiệm sự cố; nhiều nơi giao cùng tuyến | Đang làm | | Luồng A |
+| **G5** | Phần sửa dở: chỉ số sức khỏe lúc nhận, tệp giao nhận nhiều đơn | Ngay (1b đã gộp) | Nhỏ | HoangPhuc-IT |
+| *Luồng A* | 1b, đợt 2, nhiều nơi giao, phí giữ, đóng đơn, công nợ đã gộp; cước giao lại, đơn không người nhận, giờ giao (mục 14) | Đang làm | | Luồng A |
 
 Mỗi gói một người. G1, G2, G3 làm song song được.
 

@@ -1026,7 +1026,7 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 
 ## 5.E. Các điểm nghiệp vụ
 
-> **Đã chốt 25/11/2026, code chưa sửa:** phí giữ theo số lần đủ 24 giờ, chỉ tính thời gian do khách; thu cước giao lại; đơn đóng được khi còn khoản thu thêm. Xem mục 13 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md).
+> **Đã chốt 25/11/2026, đã làm phần phí giữ, đóng đơn, công nợ; cước giao lại đang làm:** phí giữ theo số lần đủ 24 giờ, chỉ tính thời gian do khách; thu cước giao lại; đơn đóng được khi còn khoản thu thêm. Xem mục 13 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md).
 
 ### Báo sự cố
 
@@ -1072,7 +1072,7 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 ### Không gặp người nhận
 
 - **5.24** Phải bấm Bắt đầu chờ thì đồng hồ mới chạy. Chưa hết 120 phút không ghi Không gặp được.
-- **5.25** Phí giữ tính theo ngày, **lẻ ngày tính tròn một ngày**, ít nhất một ngày. Mức phí lấy lúc ngựa rời hub. *(Đã chốt đổi theo mục 13 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md), code chưa sửa.)*
+- **5.25** Phí giữ tính theo số lần **đủ 24 giờ**, phần lẻ không tính, cộng dồn, tối đa 30 lần; đơn giá chụp lúc bắt đầu giữ. Chi tiết: mục 13.2 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md).
 - **5.26** Không có phí cho thời gian xe chờ: trong 120 phút là miễn phí, sau 120 phút xe đi.
 
 ## 5.F. Tình huống và cách hệ thống xử lý
@@ -1196,8 +1196,8 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 
 | Cách đóng | Điều kiện |
 |---|---|
-| Quản lý đóng, bất kỳ lúc nào sau khi giao | Còn nợ **bằng 0**; không còn sự cố chưa đóng; không còn chi phí khách hoặc người nhận chịu chưa duyệt; không còn khoản hoàn đang chờ |
-| Hệ thống tự đóng, 00:30 mỗi ngày | Như trên, **và** đơn không có bất kỳ chi phí nào, **và** đã giao được ít nhất **7 ngày** |
+| Quản lý đóng | Số của báo giá đã trả đúng; không còn sự cố, khiếu nại mở; mọi chi phí phía khách bị từ chối, hoặc đã duyệt và thành khoản thu; không còn khoản hoàn chờ; và khách đã xác nhận ổn hoặc đã hết 7 ngày. Khoản thu thêm **chưa trả không chặn** |
+| Hệ thống tự đóng, 00:30 mỗi ngày | Như trên và đã hết **7 ngày** từ lúc Đã giao, kể cả khi đơn có chi phí |
 
 Đơn sang **Hoàn thành**, khách nhận thông báo Đã đóng đơn.
 
@@ -1278,7 +1278,7 @@ Dòng hai: loại một con thì bỏ cước trục, dịch vụ và phí bảo
 
 ## 6.E. Các điểm nghiệp vụ
 
-> **Đã chốt 25/11/2026, code chưa sửa:** phí giữ theo số lần đủ 24 giờ, chỉ tính thời gian do khách; thu cước giao lại; đơn đóng được khi còn khoản thu thêm. Xem mục 13 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md).
+> **Đã chốt 25/11/2026, đã làm phần phí giữ, đóng đơn, công nợ; cước giao lại đang làm:** phí giữ theo số lần đủ 24 giờ, chỉ tính thời gian do khách; thu cước giao lại; đơn đóng được khi còn khoản thu thêm. Xem mục 13 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md).
 
 ### Giao nhận
 
@@ -1307,7 +1307,7 @@ Dòng hai: loại một con thì bỏ cước trục, dịch vụ và phí bảo
 
 - **6.15** Đơn **Đã giao** khi mọi con còn trong đơn đã giao: giao tại nhà, trả tại hub, hoặc đại lý đã giao.
 - **6.16** Khoản thu thêm chỉ lập khi đơn **Đã giao**; chọn chi phí đã duyệt, khách hoặc người nhận chịu, cùng tiền tệ, chưa gắn khoản thu. Số tiền do hệ thống cộng, quản lý không sửa được. Chỉ thu qua VNPAY, số tiền phải tròn đồng.
-- **6.17** Còn nợ phải **đúng bằng 0**: thiếu thì chưa đóng, dư thì hoàn xong mới đóng. *(Đã chốt đổi theo mục 13 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md), code chưa sửa.)*
+- **6.17** Phần báo giá phải trả **đúng**, dư thì hoàn xong mới đóng. Khoản thu thêm chưa trả là công nợ riêng, không chặn đóng đơn. Chi tiết: mục 13.3 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md).
 - **6.18** Chi phí **công ty** chịu chưa duyệt không chặn quản lý đóng, nhưng có bất kỳ chi phí nào thì hệ thống **không tự đóng**.
 - **6.19** Không có trạng thái Đang quyết toán: trong lúc quyết toán đơn vẫn là Đã giao.
 - **6.20** Hoàn tiền: quản lý chuyển khoản ngoài, ghi mã chuyển khoản (không trùng, tối đa 100 ký tự) và ảnh chứng từ nếu có.
