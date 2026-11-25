@@ -2842,6 +2842,13 @@
           },
           "trip" : {
             "$ref" : "#/components/schemas/VehicleTripResponseDto"
+          },
+          "unpaidReturnStopIds" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "array"
           }
         },
         "type" : "object"
@@ -2915,6 +2922,10 @@
           },
           "tripCode" : {
             "type" : "string"
+          },
+          "unclaimedStayId" : {
+            "format" : "int64",
+            "type" : "integer"
           },
           "vehicleTripId" : {
             "format" : "int64",
@@ -8315,6 +8326,10 @@
           "pickupWindowStartHour" : {
             "format" : "int32",
             "type" : "integer"
+          },
+          "stablingDailyFee" : {
+            "format" : "int32",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -8561,6 +8576,21 @@
             "type" : "string"
           }
         },
+        "type" : "object"
+      },
+      "UnclaimedHorseResolutionRequestDto" : {
+        "properties" : {
+          "outcome" : {
+            "enum" : [ "RETURNED_TO_SENDER", "RETURNED_TO_AUTHORIZED_PERSON", "RELEASED_BY_LEGAL_DOCUMENT" ],
+            "type" : "string"
+          },
+          "recipientName" : {
+            "maxLength" : 120,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "outcome", "recipientName" ],
         "type" : "object"
       },
       "VehicleClassResponseDto" : {
@@ -9944,7 +9974,7 @@
     },
     "/bookings/{bookingId}/delivery-complaints/resolve" : {
       "post" : {
-        "operationId" : "resolve_1",
+        "operationId" : "resolve_2",
         "parameters" : [ {
           "in" : "path",
           "name" : "bookingId",
@@ -13881,6 +13911,52 @@
           }
         },
         "tags" : [ "hub-handover-controller" ]
+      }
+    },
+    "/horse-stays/{id}/resolve-unclaimed" : {
+      "post" : {
+        "operationId" : "resolve_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "properties" : {
+                  "proof" : {
+                    "format" : "binary",
+                    "type" : "string"
+                  },
+                  "request" : {
+                    "$ref" : "#/components/schemas/UnclaimedHorseResolutionRequestDto"
+                  }
+                },
+                "required" : [ "proof", "request" ],
+                "type" : "object"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "unclaimed-horse-controller" ]
       }
     },
     "/horse-stays/{id}/stabling" : {

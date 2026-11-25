@@ -28,6 +28,8 @@ public interface HandoverOutcomeService {
                       Instant arrivedAt, Instant at, Long actorUserId);
 
     // Quá hạn trả số dư: luồng A hủy đơn (từ chối nếu chưa quá hạn hoặc VNPAY còn chờ kết quả), rồi hủy mọi chặng còn lại của các con đã nhận
+    boolean canReturnUnpaid(List<HorseLeg> boarded);
+
     void returnUnpaid(List<HorseLeg> boarded, Instant at, Long actorUserId);
 
     // Nhận hoặc trả ngựa tại hub với khách tự chở (handover gắn horse_stay, đã DONE): nhận thì lập khoản số dư,

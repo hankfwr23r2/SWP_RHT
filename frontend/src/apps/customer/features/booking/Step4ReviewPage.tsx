@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
+import { useTransportRules } from '@shared/hooks/useTransportRules'
 import { useToast } from '@shared/ui/toast'
 import { Button } from '@shared/ui/Button'
 import { Card } from '@shared/ui/Card'
@@ -23,7 +24,8 @@ import s from './Booking.module.css'
 const PARTY_FIELDS = ['fullName', 'phone', 'address'] as const
 
 export default function Step4ReviewPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const rules = useTransportRules()
   const navigate = useNavigate()
   const toast = useToast()
   const data = useBookingData()
@@ -97,6 +99,11 @@ export default function Step4ReviewPage() {
   return (
     <BookingShell step={4} title={t('bookingForm.review.title')} subtitle={t('bookingForm.review.subtitle')}>
       <ReviewList draft={draft} />
+      {rules?.stablingDailyFee != null && (
+        <p className={s.hint}>{t('bookingForm.review.stablingFee', {
+          amount: new Intl.NumberFormat(i18n.language, { style: 'currency', currency: 'VND' }).format(rules.stablingDailyFee),
+        })}</p>
+      )}
 
       {PARTY_ROLES.map(role => (
         <PartyFields key={role} role={role} party={draft.parties[role]} errors={partyErrors(role)}

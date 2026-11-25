@@ -87,3 +87,9 @@ Chuyên viên ghi số phí bảo hiểm đã hoàn lũy kế theo chứng từ.
 ## Công nợ khoản thu thêm · mục 13.3, 13.5 (6, 8, 9)
 
 `payment` thêm cột công nợ cho `EXTRA_CHARGE` (`V202611282000`). `CustomerDebtService` chạy 08:00 cùng nhắc quá hạn.
+
+## Ngựa chưa có người nhận và các mốc liên quan
+
+G19 đọc unpaidReturnStopIds từ lượt xe. G20 gửi thông báo khách ngay khi ghi đón hụt. POST /horse-stays/{id}/resolve-unclaimed ghi handover RETURN và đính kèm biên bản, sau đó gọi HorseStayService.closeActive để kết thúc giữ và chốt phí. G1 cho quản lý ghi khiếu nại kế tiếp trong hạn sau khi lần trước đã đóng. Công nợ trùng định danh chỉ thông báo cho quản lý.
+
+Hủy do chưa trả số dư xét mốc ba ngày và điều kiện liên hệ của quy trình hiện hành. Việc trả và phí tiếp tục theo lưu trú. Đối soát cước giao chỉ dùng dòng báo giá đã chấp nhận và bằng chứng chặng chưa khởi hành; nếu giá ghi chung và đã chạy một chặng giao, không tự chia theo km. Trùng chip dựa vào đơn lịch sử của cùng hồ sơ ngựa để giữ ràng buộc chip duy nhất.

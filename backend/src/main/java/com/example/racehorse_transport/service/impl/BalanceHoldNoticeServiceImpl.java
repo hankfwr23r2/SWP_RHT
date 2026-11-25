@@ -12,7 +12,6 @@ import com.example.racehorse_transport.entity.enums.PaymentType;
 import com.example.racehorse_transport.policy.BalanceHoldPolicy;
 import com.example.racehorse_transport.repository.BookingStatusHistoryRepository;
 import com.example.racehorse_transport.repository.BookingRepository;
-import com.example.racehorse_transport.repository.AuditLogRepository;
 import com.example.racehorse_transport.repository.PaymentRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.service.BalanceHoldNoticeService;
@@ -39,7 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(propagation = Propagation.MANDATORY)
 public class BalanceHoldNoticeServiceImpl implements BalanceHoldNoticeService {
     private static final ZoneId ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
-    private static final String WRITTEN = "Thông báo bằng văn bản yêu cầu nhận lại ngựa";
+    private static final String WRITTEN = BalanceHoldPolicy.WRITTEN_NOTICE_TITLE;
     private final BookingRepository bookings;
     private final PaymentRepository payments;
     private final StaffRepository staff;
@@ -49,7 +48,7 @@ public class BalanceHoldNoticeServiceImpl implements BalanceHoldNoticeService {
     private final NotificationService notifications;
     private final MailClient mail;
     private final BookingStatusHistoryRepository history;
-    private final AuditLogRepository auditLogs;
+    private final com.example.racehorse_transport.service.UnclaimedSettlementService settlement;
 
     @Override
     public void remindBalance(Booking booking, Instant reminder, Instant cutoff, Instant now) {
@@ -124,13 +123,20 @@ public class BalanceHoldNoticeServiceImpl implements BalanceHoldNoticeService {
 
     @Override
     public void cancelExpiredPickupReturn(Booking booking, Instant now) {
+        if (booking.getStatus() == BookingStatus.CANCELLED) {
+            settleReturnedBalanceHold(booking);
+            return;
+        }
         if (booking.getStatus() != BookingStatus.SCHEDULE_CHANGE_REQUIRED) return;
         var returnedAt = bookings.findReturnedBalanceHoldAt(booking.getId()).or(() ->
                 history.findFirstByBooking_IdOrderByChangedAtDescIdDesc(booking.getId())
                 .filter(row -> BalanceHoldPolicy.RETURNED_AT_PICKUP.equals(row.getReason()))
                 .map(com.example.racehorse_transport.entity.BookingStatusHistory::getChangedAt));
         returnedAt.filter(at -> BalanceHoldPolicy.reached(now, at, config.getInt("PRICE_HOLD_DAYS"), ChronoUnit.DAYS))
-                .ifPresent(at -> cancellations.cancelUnansweredBalanceHold(booking.getId()));
+                .ifPresent(at -> {
+                    cancellations.cancelUnansweredBalanceHold(booking.getId());
+                    if (booking.getStatus() == BookingStatus.CANCELLED) settleReturnedBalanceHold(booking);
+                });
     }
 
     @Override
@@ -142,20 +148,21 @@ public class BalanceHoldNoticeServiceImpl implements BalanceHoldNoticeService {
         Instant cancelAt = base.plus(config.getInt("STABLING_MAX_DAYS"), ChronoUnit.DAYS);
         var date = now.atZone(ZONE).toLocalDate();
         Instant morning = date.atTime(LocalTime.of(config.getInt("STABLING_REMINDER_HOUR"), 0)).atZone(ZONE).toInstant();
-        if (!now.isBefore(morning) && now.isBefore(cancelAt)) {
+        // Nhắc hằng ngày sau giao hụt do lịch nhắc quá hạn lưu trú đảm nhiệm.
+        if (isBalanceHold && !now.isBefore(morning) && now.isBefore(cancelAt)) {
             remind(booking, "Liên hệ nhận ngựa tại hub", "Phí giữ tạm tính " + accrued.toPlainString()
                     + " đ. Điều phối cần liên hệ khách hôm nay.", morning, morning.plus(1, ChronoUnit.DAYS), true);
         }
         if (isBalanceHold && !paid && !now.isBefore(cancelAt) && (booking.getStatus() == BookingStatus.SCHEDULE_CHANGE_REQUIRED
                 || booking.getStatus() == BookingStatus.CONFIRMED && booking.getBookingType() == BookingType.IMPORT)) {
             Instant custodySince = held.stream().map(HorseStay::getActualStartAt).min(Instant::compareTo).orElseThrow();
-            long attempts = auditLogs.countByTargetTableAndTargetIdAndActionStartingWithAndCreatedAtGreaterThanEqual(
-                    "booking", booking.getId(), BalanceHoldPolicy.CALL_ACTION_PREFIX, custodySince);
+            long attempts = bookings.countBalanceHoldContactsSince(booking.getId(), BalanceHoldPolicy.CALL_ACTION_PREFIX, custodySince);
             if (attempts >= config.getInt("BALANCE_HOLD_MIN_CONTACTS")) {
                 cancellations.cancelUnansweredBalanceHold(booking.getId());
             } else {
                 Instant start = date.atStartOfDay(ZONE).toInstant();
-                remind(booking, "Cần tiếp tục liên hệ về ngựa đang giữ", "Đã tới hạn phản hồi. Điều phối cần ghi đủ lần gọi trước khi hệ thống hủy đơn.",
+                remind(booking, "Cần tiếp tục liên hệ về ngựa đang giữ",
+                        "Đã tới hạn phản hồi. Điều phối cần ghi đủ lần gọi trước khi hệ thống hủy đơn.",
                         start, start.plus(1, ChronoUnit.DAYS), false);
             }
         }
@@ -165,13 +172,22 @@ public class BalanceHoldNoticeServiceImpl implements BalanceHoldNoticeService {
         remind(booking, WRITTEN, "Vui lòng nhận lại ngựa tại hub. Công ty có thể chở ngựa về địa chỉ người gửi với cước một lượt đón.",
                 writtenAt, now.plusSeconds(60), true);
         Instant escalationBefore = now.minus(config.getInt("STABLING_MANAGER_NOTICE_DAYS"), ChronoUnit.DAYS);
-        if (writtenAt.isBefore(escalationBefore) && bookings.hasNotificationBetween(booking.getId(), WRITTEN, writtenAt, escalationBefore)) {
+        if (!isBalanceHold && bookings.firstNoticeSince(booking.getId(), WRITTEN, writtenAt)
+                .filter(sent -> !sent.isAfter(escalationBefore)).isPresent()) {
             String title = "Cần quản lý xử lý ngựa chưa có người nhận";
             var managers = staff.findUserIdsByRoleAndStatus("MANAGER", AppUserStatus.ACTIVE);
             if (!managers.isEmpty() && !bookings.hasNotificationBetween(booking.getId(), title, writtenAt, now.plusSeconds(60))) {
-                notifications.notify(managers, booking.getId(), title, "Ngựa còn được chăm sóc tại hub. Quản lý liên hệ để xử lý ngoài hệ thống.",
+                notifications.notify(managers, booking.getId(), title, "Ngựa còn được chăm sóc tại hub. Quản lý cần ghi kết quả bàn giao cùng tệp chứng minh.",
                         "/manager/orders/" + booking.getId());
             }
+        }
+    }
+
+    private void settleReturnedBalanceHold(Booking booking) {
+        var id = booking.getId();
+        if (bookings.hasLatestStatusReason(id, BalanceHoldPolicy.CANCELLED_AFTER_HOLD)
+                && bookings.findReturnedBalanceHoldAt(id).isPresent()) {
+            settlement.settle(id);
         }
     }
 

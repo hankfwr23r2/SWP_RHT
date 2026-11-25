@@ -113,7 +113,10 @@ public final class PaymentPolicy {
     private static boolean acceptsExistingExtraChargePayment(BookingStatus status, Payment payment) {
         return acceptsExtraChargePayment(status) || isBalanceHoldChargeStatus(status)
                 && !payment.getExtraChargeCosts().isEmpty()
-                && payment.getExtraChargeCosts().stream().allMatch(PaymentPolicy::isBalanceHoldCharge);
+                && payment.getExtraChargeCosts().stream().allMatch(cost -> isBalanceHoldCharge(cost)
+                    || status == BookingStatus.CANCELLED && CostPayerPolicy.isScheduledStablingFee(cost)
+                        && cost.getHorseStay().getBookingHorse().getStatus()
+                            == com.example.racehorse_transport.entity.enums.BookingHorseStatus.RETURNED);
     }
 
     private static boolean isBalanceHoldChargeStatus(BookingStatus status) {
@@ -145,7 +148,7 @@ public final class PaymentPolicy {
                 || !currency.equals(cost.getCurrencyCode()) || cost.getAmount().signum() <= 0)) {
             throw BookingRuleException.conflict("Chỉ thu chi phí của đơn, đã duyệt, do khách hoặc người nhận chịu và chưa gắn khoản thu.");
         }
-        return costs.stream().map(cost -> cost.getAmount().subtract(cost.getStablingDepositCredit()))
+        return costs.stream().map(cost -> cost.getAmount().subtract(cost.getStablingDepositCredit()).subtract(cost.getStablingDeliveryCredit()))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 

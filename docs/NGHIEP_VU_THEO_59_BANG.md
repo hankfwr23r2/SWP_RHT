@@ -932,3 +932,7 @@ Chi phí phía khách chưa duyệt: nhắc quản lý ngày 3, 7; đủ 14 ngà
 Nợ quá hạn từ 200.000 đ thì chưa đặt đơn mới được; nhỏ hơn chỉ nhắc. Khách khiếu nại mỗi khoản một lần: tạm dừng hạn và không chặn tới khi quản lý kết luận (chấp nhận thì hủy khoản, giữ nguyên thì hạn lùi đúng thời gian chờ). Ngày 14 báo quản lý gọi khách, gia hạn một lần tối đa 14 ngày. Ngày 30 là nợ khó thu: ngừng nhắc mỗi ngày, báo khách và quản lý một lần. Xóa nợ chỉ với nợ khó thu, cần lý do và tệp quyết định; quyền đặt đơn do quản lý mở riêng; khách muốn trả sau thì quản lý mở lại khoản.
 
 Chưa làm: chia tối đa 3 kỳ; so nợ theo số điện thoại và chip ngựa (13.5 điểm 7); điều khoản phí lúc đặt đơn (điểm 10).
+
+## Ngựa chưa có người nhận và các mốc liên quan
+
+Sau 45 ngày từ thông báo bằng văn bản, quản lý ghi một kết quả theo từng con còn giữ tại hub do giao hụt và đính kèm biên bản. Lần ghi tạo handover RETURN, kết thúc lưu trú và chốt phí qua luồng hiện có. Khi mọi con đã có kết quả, đơn có con đã giao chuyển DELIVERED, đơn toàn bộ con phải trả chuyển CANCELLED. Hủy đơn do quá hạn số dư tách khỏi lưu trú đang mở.

@@ -13,6 +13,7 @@ import { CancelPanel } from './components/CancelPanel'
 import { DeliveryComplaintPanel } from './components/DeliveryComplaintPanel'
 import { DocumentDelayPanel } from './components/DocumentDelayPanel'
 import { IntakePanel } from './components/IntakePanel'
+import { UnclaimedHorsePanel } from './components/UnclaimedHorsePanel'
 import { PaymentsPanel } from './components/PaymentsPanel'
 import { QuotePanel } from './components/QuotePanel'
 import { SettlementPanel } from './components/SettlementPanel'
@@ -47,6 +48,7 @@ export default function ManagerOrderPage() {
           <div id="order-quote" className={s.anchor}><QuotePanel data={data} /></div>
           <PaymentsPanel data={data} />
           <PickupMissPanel bookingId={data.id} mode="manager" renderAddOns={id => <PickupAddOnPanel horseId={id} />} />
+          {status === 'IN_OPERATION' && <UnclaimedHorsePanel bookingId={data.id} onChange={revalidate} />}
           {status === 'CONFIRMED' && <DocumentDelayPanel bookingId={data.id} />}
           {(status === 'DELIVERED' || status === 'COMPLETED') && (
             <DeliveryComplaintPanel key={data.id} bookingId={data.id} horses={data.detail.horses ?? []} onChange={revalidate} />

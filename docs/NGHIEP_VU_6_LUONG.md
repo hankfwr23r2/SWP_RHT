@@ -1365,8 +1365,8 @@ Dòng hai: loại một con thì bỏ cước trục, dịch vụ và phí bảo
 16. **Lập khoản thu thêm không báo khách**, không có hạn trả. **Hoàn tiền xong cũng không báo.**
 17. **Đơn sang Đã giao không báo quản lý** để quyết toán.
 18. **Chưa có khiếu nại.** Tài liệu ghi hạn 7 ngày từ lúc giao, hệ thống không có màn và quản lý đóng đơn được ngay. Đề xuất: 7 ngày đầu chỉ đóng khi khách xác nhận nhận ngựa ổn.
-19. **Nút trả ngựa hiện ngay sau khi nhận**, dù chưa hết 30 phút (máy chủ vẫn chặn).
-20. **Từ chối nhận không báo khách.** Chỉ báo quản lý; khách chỉ thấy báo giá đổi.
+19. **Đã sửa** · Nút trả ngựa chỉ hiện ở điểm đón khi máy chủ xác nhận các đơn trên xe tại điểm đó đã quá hạn trả số dư và không còn giao dịch đang xác nhận.
+20. **Đã sửa** · Mỗi lần ghi đón hụt gửi một thông báo cho khách, nêu tên ngựa, lý do, hạn chọn và mở chi tiết đơn.
 21. **Đã sửa** · Xe thứ hai vẫn có thể ghi đón hụt khi đơn đã Đang vận chuyển. Đơn giữ chuyến hiện tại, khách xử lý con hụt bằng A, B hoặc C theo điều kiện của lượt xe.
 22. **Ô đánh giá hiện lại sau khi đã đánh giá** (tải lại trang), bấm thì bị từ chối.
 23. **Đã sửa.** Báo giá chạy thẳng ghi rõ bớt ngựa không làm giảm cước xe.

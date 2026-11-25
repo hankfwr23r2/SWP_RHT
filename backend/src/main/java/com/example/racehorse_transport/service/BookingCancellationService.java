@@ -22,6 +22,8 @@ public interface BookingCancellationService {
 
     void cancelUnansweredBalanceHold(Long bookingId);
 
+    boolean canReleaseUnpaidAtPickup(Booking booking);
+
     void releaseUnpaidAtPickup(Long bookingId, Long actorUserId);
 
     void cancelAfterPickupMiss(Long bookingId, boolean customerLiable, Long actorUserId);

@@ -38,6 +38,10 @@ public class Handover {
     @Column(name = "handover_type", length = 30, nullable = false)
     private HandoverType handoverType;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "unclaimed_outcome", length = 40)
+    private com.example.racehorse_transport.entity.enums.UnclaimedHorseOutcome unclaimedOutcome;
+
     // Giao nhận tại điểm dừng của xe hoặc khi nhập/xuất nơi lưu trú, đúng một (CHECK ở DB)
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
     @JoinColumn(name = "trip_stop_id")
