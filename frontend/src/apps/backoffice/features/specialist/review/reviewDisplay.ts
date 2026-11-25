@@ -1,6 +1,7 @@
 import type { BookingDocument, ChecklistItem } from '@shared/api/bookingDocuments'
 import type { BookingSummary } from '@shared/api/bookingReviews'
 import type { BookingStatus } from '@shared/api/bookingOrders'
+import { isReusedHorseDocument } from '@shared/components/orderSteps'
 
 export const reviewStatuses = ['PENDING_INTAKE', 'UNDER_REVIEW', 'NEEDS_RESUBMISSION', 'QUOTING', 'CONFIRMED'] as const
 export const defaultReviewStatus = 'UNDER_REVIEW'
@@ -17,12 +18,15 @@ export function itemKey(item: ChecklistItem) {
 }
 
 export function documentsFor(item: ChecklistItem, documents: BookingDocument[], horseId?: number) {
-  return documents.filter(document => item.requirement?.id != null && document.requirementId === item.requirement.id
-    && (item.bookingHorseId == null
-      ? document.bookingHorseId == null && document.horseId == null
-      : document.bookingHorseId === item.bookingHorseId || (
-        document.bookingHorseId == null && horseId != null && document.horseId === horseId
-      )))
+  return documents.filter(document => {
+    if (isReusedHorseDocument(item, document)) return true
+    return item.requirement?.id != null && document.requirementId === item.requirement.id
+      && (item.bookingHorseId == null
+        ? document.bookingHorseId == null && document.horseId == null
+        : document.bookingHorseId === item.bookingHorseId || (
+          document.bookingHorseId == null && horseId != null && document.horseId === horseId
+        ))
+  })
 }
 
 function searchText(value: string) {

@@ -305,12 +305,14 @@ Hai đợt chuẩn bị giấy tờ **chạy song song với luồng 1** và k�
 ### Bước 2. Khách nộp giấy
 
 - Sau khi gửi đơn, trang chi tiết hiện "Bạn còn thiếu N giấy bắt buộc". Khách bấm **Nộp giấy** ở từng dòng, chọn tệp PDF hoặc ảnh (tối đa 5 MB), ghi ngày hết hạn nếu giấy có.
+- Giấy theo ngựa đã duyệt và còn hạn hiện là **Đã duyệt** khi quy định của đơn yêu cầu cùng loại giấy. Khách có thể mở lại tệp ở dòng đó.
 - Giấy vừa nộp ở trạng thái **Chờ duyệt**. Trong lúc chờ, khách không nộp đè được.
 - Khách nộp được khi đơn Chờ tiếp nhận, Đang thẩm định hoặc Cần bổ sung.
 
 ### Bước 3. Chuyên viên duyệt giấy
 
 - Khi tiếp nhận đơn, chuyên viên mở từng tệp và bấm **Duyệt giấy** hoặc **Từ chối giấy** kèm lý do. Từ chối thì khách được báo lý do và nộp lại giấy đó.
+- Giấy theo ngựa đủ điều kiện dùng lại hiện là **Đã đáp ứng** trong hồ sơ chuyên viên.
 - Thiếu nhiều thứ thì chuyên viên bấm **Yêu cầu khách nộp** ở dòng thiếu, hoặc **Trả lại để bổ sung** cả đơn. Đơn sang **Cần bổ sung**; khách nộp xong thì gửi lại.
 - Giấy đã kết luận (duyệt hoặc từ chối) thì **không sửa kết luận được**; muốn khác thì phải có bản mới.
 
@@ -428,7 +430,7 @@ Tiếp ví dụ chuyến chạy **05:00 thứ Ba 08/12** (liên tỉnh), khách 
 
 - **2.9** Chuyên viên **không nộp thay giấy của khách**. Chỉ chuyên viên được duyệt; quản lý và điều phối viên chỉ xem.
 - **2.10** Từ chối giấy bắt buộc ghi lý do. Kết luận rồi thì không đổi được.
-- **2.11** Giấy **theo ngựa** (hộ chiếu, sổ tiêm) đã duyệt thì **dùng lại được cho đơn sau có cùng quy định**, khách không phải nộp lại cho tới khi hết hạn.
+- **2.11** Giấy **theo ngựa** (hộ chiếu, sổ tiêm) đã duyệt và còn hạn theo mốc ở điểm 2.7 đáp ứng mọi quy định yêu cầu **cùng loại giấy của đúng con ngựa**. Giấy theo đơn hoặc theo ngựa trong đơn chỉ đáp ứng yêu cầu của đơn đã nộp.
 - **2.12** Một con bị loại khỏi đơn thì giấy của con đó không còn bị kiểm.
 
 ### Bảo hiểm
@@ -474,7 +476,7 @@ Tiếp ví dụ chuyến chạy **05:00 thứ Ba 08/12** (liên tỉnh), khách 
 6. **Đã sửa phần nhắc và danh sách.** Đơn liên tỉnh chạy thẳng được nhắc theo ngày đón và hiện trong danh sách Đơn thiếu giấy sau khi đã cọc. Thao tác báo giấy không kịp vẫn áp dụng cho đơn có chuyến.
 7. **Đã sửa.** Kiểm lại giấy bắt buộc khi hoàn tất bàn giao đơn xuất cho đại lý ở cửa khẩu. Thiếu giấy thì ngựa vẫn trên xe.
 8. **Danh sách giấy mẫu lệch giữa Campuchia và Lào**: xuất Lào thiếu sổ tiêm, nhập Lào thiếu xét nghiệm. Cần nhóm xác nhận cố ý hay thiếu.
-9. **Giấy theo ngựa chỉ dùng lại trong cùng quy định**: hộ chiếu đã duyệt cho đơn liên tỉnh vẫn phải nộp lại cho đơn xuất. Đề xuất: giấy theo ngựa dùng chung cho mọi quy định.
+9. **Đã sửa.** Hộ chiếu theo ngựa đã duyệt cho đơn liên tỉnh được dùng lại cho đơn xuất yêu cầu hộ chiếu của con đó nếu giấy còn hạn vào ngày chạy.
 10. **Đã sửa.** Khi nhận ngựa nhập từ đại lý ở cửa khẩu, kiểm bảo hiểm đã được xác nhận cho từng con, giống lượt đón và nhận ở hub.
 11. **Đã sửa.** Máy chủ kiểm chữ ký định dạng PDF, JPEG hoặc PNG trong nội dung tệp giấy tờ khi khách hoặc chuyên viên tải lên.
 

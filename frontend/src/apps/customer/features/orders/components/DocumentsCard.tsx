@@ -39,7 +39,7 @@ export function DocumentsCard({ data }: { data: OrderData }) {
         <ul className={s.items}>
           {items.map(item => {
             const document = latestDocument(item, data.checklist?.documents)
-            const key = document?.status ?? 'MISSING'
+            const key = item.satisfied ? 'APPROVED' : document?.status ?? 'MISSING'
             return (
               <li key={`${item.requirement?.id}-${item.bookingHorseId ?? ''}`} className={s.item}>
                 <div>

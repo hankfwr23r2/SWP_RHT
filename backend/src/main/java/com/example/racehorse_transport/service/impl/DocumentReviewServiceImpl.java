@@ -57,10 +57,7 @@ public class DocumentReviewServiceImpl implements DocumentReviewService {
                 : bookings.findByIdAndCustomer_User_Username(bookingId, customerUsername))
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn."));
         var resolved = completeness.resolve(booking);
-        var requirementIds = resolved.requirements().stream().map(DocumentRequirementResponseDto::id)
-                .collect(java.util.stream.Collectors.toSet());
-        List<Document> rows = documents.findForBookingReview(bookingId).stream()
-                .filter(row -> requirementIds.contains(row.getDocumentRequirement().getId())).toList();
+        List<Document> rows = completeness.findCandidateDocuments(bookingId);
         List<BookingHorse> active = horses.findForDetail(bookingId).stream()
                 .filter(horse -> horse.getStatus() == BookingHorseStatus.ACTIVE).toList();
         LocalDate requiredOn = DocumentCompletenessPolicy.requiredOn(booking, businessDate(clock.instant()));
@@ -69,7 +66,19 @@ public class DocumentReviewServiceImpl implements DocumentReviewService {
             default -> java.util.stream.Stream.of(checklistItem(requirement, bookingId, null, rows, requiredOn));
         }).toList();
         return new BookingDocumentChecklistResponseDto(resolved.requirementsDependOnGate(), items,
-                rows.stream().map(row -> BookingDocumentResponseDto.from(row, bookingHorseId(row, active))).toList());
+                rows.stream()
+                        .filter(row -> belongsToChecklist(row, resolved.requirements(), bookingId, active, requiredOn))
+                        .map(row -> BookingDocumentResponseDto.from(row, bookingHorseId(row, active))).toList());
+    }
+
+    private static boolean belongsToChecklist(Document row, List<DocumentRequirementResponseDto> requirements,
+            Long bookingId, List<BookingHorse> active, LocalDate requiredOn) {
+        DocumentRequirement source = row.getDocumentRequirement();
+        if (source != null && requirements.stream().anyMatch(requirement -> requirement.id().equals(source.getId()))) {
+            return true;
+        }
+        return row.getHorse() != null && active.stream().anyMatch(horse -> requirements.stream().anyMatch(requirement ->
+                DocumentCompletenessPolicy.satisfies(row, requirement, bookingId, horse, requiredOn)));
     }
 
     private static Long bookingHorseId(Document row, List<BookingHorse> active) {
@@ -127,10 +136,10 @@ public class DocumentReviewServiceImpl implements DocumentReviewService {
             case BOOKING_HORSE -> horse.getId();
             default -> bookingId;
         };
-        if (documents.findForBookingReview(bookingId).stream().anyMatch(document ->
-                DocumentCompletenessPolicy.matchesOwnerAndRequirement(document, requirement, bookingId, horse)
-                        && (document.getStatus() == DocumentStatus.UPLOADED
-                                || DocumentCompletenessPolicy.satisfies(document, requirement, bookingId, horse, requiredOn)))) {
+        if (completeness.findCandidateDocuments(bookingId).stream().anyMatch(document ->
+                DocumentCompletenessPolicy.satisfies(document, requirement, bookingId, horse, requiredOn)
+                        || (document.getStatus() == DocumentStatus.UPLOADED
+                                && DocumentCompletenessPolicy.matchesOwnerAndRequirement(document, requirement, bookingId, horse)))) {
             throw BookingRuleException.conflict("Giấy tờ của yêu cầu này đang chờ duyệt hoặc còn hiệu lực.");
         }
         requireSupportedFile(request.file());

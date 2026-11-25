@@ -16,6 +16,7 @@ import static com.example.racehorse_transport.policy.BookingSubmissionPolicy.bus
 import java.time.Clock;
 import java.util.Set;
 import java.util.List;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,7 +58,7 @@ public class DocumentCompletenessServiceImpl implements DocumentCompletenessServ
         RegulationPreviewResponseDto resolved = resolve(booking);
         List<BookingHorse> active = horses.findForDetail(bookingId).stream()
                 .filter(horse -> horse.getStatus() == BookingHorseStatus.ACTIVE).toList();
-        var rows = documents.findForBookingReview(bookingId);
+        var rows = findCandidateDocuments(bookingId);
         var requiredOn = DocumentCompletenessPolicy.requiredOn(booking, businessDate(clock.instant()));
         if (missing != null) {
             resolved.requirements().stream().map(requirement -> requirement.submitterType()).distinct()
@@ -79,12 +80,18 @@ public class DocumentCompletenessServiceImpl implements DocumentCompletenessServ
     }
 
     @Override
+    public List<Document> findCandidateDocuments(Long bookingId) {
+        return Stream.concat(documents.findForBookingReview(bookingId).stream(),
+                documents.findApprovedHorseDocumentsWithoutRequirement(bookingId).stream()).toList();
+    }
+
+    @Override
     public long redoLeadDays(Booking booking, RegulationPreviewResponseDto resolved, java.time.LocalDate on) {
         List<BookingHorse> active = horses.findForDetail(booking.getId()).stream()
                 .filter(horse -> horse.getStatus() == BookingHorseStatus.ACTIVE).toList();
         return com.example.racehorse_transport.policy.RegulationPolicy.redoLeadDays(resolved.rule(),
                 DocumentCompletenessPolicy.missingTypes(booking.getId(), active, resolved.requirements(),
-                        documents.findForBookingReview(booking.getId()), on));
+                        findCandidateDocuments(booking.getId()), on));
     }
 
     private static String countryOf(List<BookingAddress> rows, AddressRole role) {

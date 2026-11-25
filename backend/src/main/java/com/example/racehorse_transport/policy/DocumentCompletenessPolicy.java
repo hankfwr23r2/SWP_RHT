@@ -5,6 +5,7 @@ import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.BookingHorse;
 import com.example.racehorse_transport.entity.Document;
 import com.example.racehorse_transport.entity.enums.DocumentStatus;
+import com.example.racehorse_transport.entity.enums.DocumentSubject;
 import com.example.racehorse_transport.entity.enums.DocumentSubmitter;
 import java.time.LocalDate;
 import java.util.List;
@@ -25,14 +26,22 @@ public final class DocumentCompletenessPolicy {
             Long bookingId, BookingHorse horse, LocalDate on) {
         return document.getStatus() == DocumentStatus.APPROVED
                 && (document.getExpiryDate() == null || !document.getExpiryDate().isBefore(on))
-                && matchesOwnerAndRequirement(document, requirement, bookingId, horse);
+                && matchesOwnerAndType(document, requirement, bookingId, horse)
+                && (requirement.ownerType() == DocumentSubject.HORSE || matchesRequirement(document, requirement));
     }
 
     public static boolean matchesOwnerAndRequirement(Document document, DocumentRequirementResponseDto requirement,
             Long bookingId, BookingHorse horse) {
-        if (document.getDocumentRequirement() == null
-                || !requirement.id().equals(document.getDocumentRequirement().getId())
-                || !requirement.documentTypeId().equals(document.getDocumentType().getId())
+        return matchesRequirement(document, requirement) && matchesOwnerAndType(document, requirement, bookingId, horse);
+    }
+
+    private static boolean matchesRequirement(Document document, DocumentRequirementResponseDto requirement) {
+        return document.getDocumentRequirement() != null && requirement.id().equals(document.getDocumentRequirement().getId());
+    }
+
+    private static boolean matchesOwnerAndType(Document document, DocumentRequirementResponseDto requirement,
+            Long bookingId, BookingHorse horse) {
+        if (!requirement.documentTypeId().equals(document.getDocumentType().getId())
                 || requirement.ownerType() != document.getDocumentType().getOwnerType()) {
             return false;
         }

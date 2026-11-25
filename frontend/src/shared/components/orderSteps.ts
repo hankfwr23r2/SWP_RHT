@@ -37,16 +37,27 @@ export const currentQuotation = (quotations: Quotation[] = []) =>
 export const payable = (payments: BookingPayment[] = []) =>
   payments.filter(payment => payment.status === 'PENDING' && payment.type !== 'REFUND')
 
-// Bản giấy tờ mới nhất của một yêu cầu
-export const latestDocument = (item: ChecklistItem, documents: BookingDocument[] = []) => documents
-  .filter(doc => doc.requirementId === item.requirement?.id && (doc.bookingHorseId ?? undefined) === (item.bookingHorseId ?? undefined))
-  .sort((a, b) => (b.id ?? 0) - (a.id ?? 0))[0]
+// Checklist chỉ trả giấy từ yêu cầu khác khi backend xác nhận dùng lại được.
+export function isReusedHorseDocument(item: ChecklistItem, document: BookingDocument) {
+  const requirement = item.requirement
+  return item.satisfied === true && requirement?.ownerType === 'HORSE' && document.status === 'APPROVED'
+    && document.requirementId !== requirement.id && document.horseId != null
+    && requirement.documentTypeCode != null && document.typeCode === requirement.documentTypeCode
+    && item.bookingHorseId != null && document.bookingHorseId === item.bookingHorseId
+}
+
+export const latestDocument = (item: ChecklistItem, documents: BookingDocument[] = []) => {
+  const reused = documents.filter(doc => isReusedHorseDocument(item, doc))
+  const candidates = reused.length ? reused : documents.filter(doc =>
+    doc.requirementId === item.requirement?.id && (doc.bookingHorseId ?? undefined) === (item.bookingHorseId ?? undefined))
+  return candidates.sort((a, b) => (b.id ?? 0) - (a.id ?? 0))[0]
+}
 
 export const myItems = (checklist?: DocumentChecklist) => (checklist?.items ?? []).filter(item => item.submitterType === 'CUSTOMER')
 
 // Ẩn nút nộp khi chắc chắn không nhận; backend vẫn kiểm lại
 export const canUpload = (status: BookingStatus | undefined, item: ChecklistItem, document?: BookingDocument) => {
-  if (!status || document?.status === 'APPROVED' || document?.status === 'UPLOADED') return false
+  if (!status || item.satisfied || document?.status === 'APPROVED' || document?.status === 'UPLOADED') return false
   return REVIEWING.includes(status) || (status === 'CONFIRMED' && !!item.requiredForQuoting)
 }
 

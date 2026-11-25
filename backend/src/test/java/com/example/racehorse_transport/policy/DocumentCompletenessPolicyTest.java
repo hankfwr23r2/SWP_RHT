@@ -51,9 +51,52 @@ class DocumentCompletenessPolicyTest {
         file.setStatus(DocumentStatus.APPROVED);
         file.getDocumentType().setId(99L);
         assertThat(DocumentCompletenessPolicy.satisfies(file, requirement, 100L, row, TODAY)).isFalse();
-        file.getDocumentType().setId(10L);
-        file.getDocumentRequirement().setId(99L);
-        assertThat(DocumentCompletenessPolicy.satisfies(file, requirement, 100L, row, TODAY)).isFalse();
+    }
+
+    @Test
+    void reusesOnlyApprovedHorseDocumentsOfTheSameTypeAndHorseAcrossRequirements() {
+        var domestic = requirement(1L, 10L, DocumentSubject.HORSE);
+        var export = requirement(2L, 10L, DocumentSubject.HORSE);
+        var line = horse(11L);
+        var horse = new Horse();
+        horse.setId(7L);
+        line.setHorse(horse);
+        var file = document(domestic);
+        file.setHorse(horse);
+
+        assertThat(DocumentCompletenessPolicy.isComplete(100L, List.of(line), List.of(export), List.of(file), TODAY)).isTrue();
+        assertThat(DocumentCompletenessPolicy.satisfies(file, export, 100L, line, TODAY.plusDays(1))).isFalse();
+
+        var other = new Horse();
+        other.setId(8L);
+        file.setHorse(other);
+        assertThat(DocumentCompletenessPolicy.satisfies(file, export, 100L, line, TODAY)).isFalse();
+        file.setHorse(horse);
+        file.setStatus(DocumentStatus.UPLOADED);
+        assertThat(DocumentCompletenessPolicy.satisfies(file, export, 100L, line, TODAY)).isFalse();
+        assertThat(DocumentCompletenessPolicy.matchesOwnerAndRequirement(file, export, 100L, line)).isFalse();
+        assertThat(DocumentCompletenessPolicy.matchesOwnerAndRequirement(file, domestic, 100L, line)).isTrue();
+
+        file.setStatus(DocumentStatus.APPROVED);
+        file.setDocumentRequirement(null);
+        file.setExpiryDate(null);
+        assertThat(DocumentCompletenessPolicy.satisfies(file, export, 100L, line, TODAY)).isTrue();
+    }
+
+    @Test
+    void bookingAndBookingHorseDocumentsRequireTheExactRequirement() {
+        var booking = new Booking();
+        booking.setId(100L);
+        var line = horse(11L);
+        var bookingFile = document(requirement(1L, 10L, DocumentSubject.BOOKING));
+        bookingFile.setBooking(booking);
+        var horseFile = document(requirement(2L, 20L, DocumentSubject.BOOKING_HORSE));
+        horseFile.setBookingHorse(line);
+
+        assertThat(DocumentCompletenessPolicy.satisfies(bookingFile, requirement(3L, 10L, DocumentSubject.BOOKING),
+                booking.getId(), null, TODAY)).isFalse();
+        assertThat(DocumentCompletenessPolicy.satisfies(horseFile, requirement(4L, 20L, DocumentSubject.BOOKING_HORSE),
+                booking.getId(), line, TODAY)).isFalse();
     }
 
     private static BookingHorse horse(Long id) {
