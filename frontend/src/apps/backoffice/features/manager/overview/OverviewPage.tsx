@@ -12,6 +12,7 @@ import { PageHeader } from '@shared/ui/PageHeader'
 import { Skeleton } from '@shared/ui/Skeleton'
 import { StatusBadge } from '@shared/ui/StatusBadge'
 import { Table, type TableColumn } from '@shared/ui/Table'
+import { IncidentSeverityBadge } from '@backoffice/shared/IncidentSeverity'
 import s from './Overview.module.css'
 
 const DAY_MS = 86_400_000
@@ -38,6 +39,7 @@ export default function OverviewPage() {
 
   const incidentColumns: TableColumn<Incident>[] = [
     { key: 'title', header: t('managerOverview.colIncident'), render: i => i.title },
+    { key: 'severity', header: t('incidents.severity.label'), render: i => <IncidentSeverityBadge severity={i.severity} /> },
     { key: 'trip', header: t('managerOverview.colTrip'), render: i => [i.vehicleTripCode, i.horseName, i.bookingCode].filter(Boolean).join(' · ') },
     { key: 'status', header: t('managerOverview.colStatus'), render: i => <StatusBadge tone={i.status === 'PLAN_PENDING' ? 'warning' : 'info'} label={t(`incidents.status.${i.status}`)} /> },
     { key: 'at', header: t('managerOverview.colReported'), render: i => (i.reportedAt ? formatDateTime(new Date(i.reportedAt)) : '') },
@@ -79,7 +81,7 @@ export default function OverviewPage() {
             <Link to="/manager/incidents">{t('managerOverview.allIncidents')}</Link>
           </div>
           {incidents.length
-            ? <Table caption={t('managerOverview.incidentsCaption')} columns={incidentColumns} rows={[...waiting, ...incidents.filter(i => i.status !== 'PLAN_PENDING')]} rowKey={i => i.id ?? 0} />
+            ? <Table caption={t('managerOverview.incidentsCaption')} columns={incidentColumns} rows={incidents} rowKey={i => i.id ?? 0} />
             : <EmptyState icon={<i className="fa-solid fa-circle-check" />} title={t('managerOverview.noIncidents')} description={t('managerOverview.noIncidentsDescription')} />}
         </section>
         <section className={s.section} aria-labelledby="overview-trips">

@@ -35,6 +35,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 class TripExecutionFlowTest {
 
+    private static final String INCIDENT_BLOCK_MESSAGE =
+            "Lượt xe đang có sự cố nặng chưa có phương án được duyệt. Chờ quản lý duyệt hoặc điều phối mở khóa.";
+
     @Autowired private MockMvc mvc;
     @Autowired private JdbcTemplate jdbc;
     @Autowired private TestData testData;
@@ -45,6 +48,7 @@ class TripExecutionFlowTest {
     @org.springframework.test.context.bean.override.mockito.MockitoBean private com.cloudinary.Cloudinary cloudinary;
 
     private String coordinator;
+    private long coordinatorId;
     private String driver;
     private String escort;
     private long trip;
@@ -55,7 +59,9 @@ class TripExecutionFlowTest {
 
     @BeforeEach
     void planDirectTrip() throws Exception {
-        coordinator = token(testData.staff(testData.unique("exec.coordinator"), "COORDINATOR"), "COORDINATOR");
+        Staff coordinatorStaff = testData.staff(testData.unique("exec.coordinator"), "COORDINATOR");
+        coordinator = token(coordinatorStaff, "COORDINATOR");
+        coordinatorId = coordinatorStaff.getUserId();
         Staff driverStaff = testData.staff(testData.unique("exec.driver"), "DRIVER");
         Staff escortStaff = testData.staff(testData.unique("exec.escort"), "ESCORT");
         driver = token(driverStaff, "DRIVER");
@@ -237,6 +243,105 @@ class TripExecutionFlowTest {
         acknowledge(escort);
         act(driver, "/vehicle-trips/" + trip + "/start").andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.trip.status").value("IN_PROGRESS"));
+    }
+
+    @Test
+    void highIncidentBlocksArrivalUntilTheManagerApprovesThePlan() throws Exception {
+        startTripForIncidents();
+        long firstStop = stops.getFirst();
+        long incident = id(reportIncident(null, "ACCIDENT", null)
+                .andExpect(jsonPath("$.data.severity").value("HIGH"))
+                .andExpect(jsonPath("$.data.blocksTrip").value(true)));
+        act(driver, "/trip-stops/" + firstStop + "/arrive").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(INCIDENT_BLOCK_MESSAGE));
+
+        String proposal = mvc.perform(post("/incidents/{id}/plans", incident).header(HttpHeaders.AUTHORIZATION, coordinator)
+                .contentType(MediaType.APPLICATION_JSON).content("""
+                        {"resolutionType":"CONTINUE","instructions":"Đã kiểm tra xe, chờ duyệt để chạy tiếp"}
+                        """)).andExpect(status().isCreated()).andExpect(jsonPath("$.data.blocksTrip").value(true))
+                .andReturn().getResponse().getContentAsString();
+        long plan = ((Number) JsonPath.read(proposal, "$.data.plans[0].id")).longValue();
+        act(driver, "/trip-stops/" + firstStop + "/arrive").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(INCIDENT_BLOCK_MESSAGE));
+        act(managerToken(), "/incident-plans/" + plan + "/approve").andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("PLAN_ACTIVE")).andExpect(jsonPath("$.data.blocksTrip").value(false));
+        act(driver, "/trip-stops/" + firstStop + "/arrive").andExpect(status().isOk());
+        act(driver, "/trip-stops/" + firstStop + "/depart").andExpect(status().isOk());
+    }
+
+    @Test
+    void highIncidentBlocksDepartureUntilDispatchUnlocksItWithAReason() throws Exception {
+        startTripForIncidents();
+        long firstStop = stops.getFirst();
+        act(driver, "/trip-stops/" + firstStop + "/arrive").andExpect(status().isOk());
+        long incident = id(reportIncident(leg, "HEALTH", null).andExpect(jsonPath("$.data.severity").value("HIGH")));
+        entityManager.flush();
+        // Dữ liệu cũ có thể gắn lượt qua chặng ngựa, không có vehicle_trip_id trực tiếp.
+        jdbc.update("UPDATE incident SET vehicle_trip_id = NULL WHERE id = ?", incident);
+        entityManager.clear();
+        mvc.perform(get("/vehicle-trips/{id}/incidents", trip).header(HttpHeaders.AUTHORIZATION, driver))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data[0].blocksTrip").value(true));
+        act(driver, "/trip-stops/" + firstStop + "/depart").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(INCIDENT_BLOCK_MESSAGE));
+
+        unlockTrip(incident, managerToken(), "{\"reason\":\"Đã kiểm tra\"}").andExpect(status().isForbidden());
+        unlockTrip(incident, coordinator, "{}").andExpect(status().isBadRequest()).andExpect(jsonPath("$.data.reason").isNotEmpty());
+        unlockTrip(incident, coordinator, "{\"reason\":\"  \"}").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.data.reason").isNotEmpty());
+        act(driver, "/trip-stops/" + firstStop + "/depart").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(INCIDENT_BLOCK_MESSAGE));
+        unlockTrip(incident, coordinator, "{\"reason\":\"  Đã kiểm tra an toàn  \"}").andExpect(status().isOk());
+        unlockTrip(incident, coordinator, "{\"reason\":\"Gửi lại yêu cầu\"}").andExpect(status().isConflict());
+        entityManager.flush();
+        assertThat(jdbc.queryForObject("""
+                SELECT trip_unlocked_at IS NOT NULL AND trip_unlocked_by = ?
+                    AND trip_unlock_reason = 'Đã kiểm tra an toàn' AND status = 'REPORTED'
+                FROM incident WHERE id = ?
+                """, Boolean.class, coordinatorId, incident)).isTrue();
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM audit_log WHERE target_table = 'incident' AND target_id = ?
+                    AND action = 'UNLOCK_TRIP_FOR_INCIDENT' AND actor_user_id = ?
+                    AND new_data ->> 'reason' = 'Đã kiểm tra an toàn'
+                """, Integer.class, incident, coordinatorId)).isEqualTo(1);
+        mvc.perform(get("/vehicle-trips/{id}/incidents", trip).header(HttpHeaders.AUTHORIZATION, driver))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data[0].blocksTrip").value(false));
+        act(driver, "/trip-stops/" + firstStop + "/depart").andExpect(status().isOk());
+        act(driver, "/trip-stops/" + stops.get(1) + "/arrive").andExpect(status().isOk());
+    }
+
+    @Test
+    void crewCanReportLowSeverityForAHealthIncidentAndKeepMoving() throws Exception {
+        startTripForIncidents();
+        reportIncident(leg, "HEALTH", "LOW").andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.severity").value("LOW")).andExpect(jsonPath("$.data.blocksTrip").value(false));
+        long firstStop = stops.getFirst();
+        act(driver, "/trip-stops/" + firstStop + "/arrive").andExpect(status().isOk());
+        act(driver, "/trip-stops/" + firstStop + "/depart").andExpect(status().isOk());
+    }
+
+    private void startTripForIncidents() throws Exception {
+        makeLocal();
+        acknowledge(driver);
+        acknowledge(escort);
+        act(driver, "/vehicle-trips/" + trip + "/start").andExpect(status().isOk());
+    }
+
+    private String managerToken() {
+        return token(testData.staff(testData.unique("exec.incident.manager"), "MANAGER"), "MANAGER");
+    }
+
+    private ResultActions reportIncident(Long horseLegId, String type, String severity) throws Exception {
+        String severityJson = severity == null ? "" : ", \"severity\":\"%s\"".formatted(severity);
+        return mvc.perform(post("/incidents").header(HttpHeaders.AUTHORIZATION, escort).contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"vehicleTripId":%d,"horseLegId":%s,"incidentType":"%s","causeType":"COMPANY_FAULT",
+                         "title":"Sự cố trên đường","description":"Đã dừng để kiểm tra"%s}
+                        """.formatted(trip, horseLegId, type, severityJson)));
+    }
+
+    private ResultActions unlockTrip(long incident, String actor, String body) throws Exception {
+        return mvc.perform(post("/incidents/{id}/unlock-trip", incident).header(HttpHeaders.AUTHORIZATION, actor)
+                .contentType(MediaType.APPLICATION_JSON).content(body));
     }
 
     @Test

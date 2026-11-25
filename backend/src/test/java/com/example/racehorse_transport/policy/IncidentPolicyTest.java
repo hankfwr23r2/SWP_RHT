@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.example.racehorse_transport.entity.enums.IncidentPlanStatus;
 import com.example.racehorse_transport.entity.enums.IncidentResolutionType;
+import com.example.racehorse_transport.entity.enums.IncidentSeverity;
 import com.example.racehorse_transport.entity.enums.IncidentStatus;
 import com.example.racehorse_transport.entity.enums.IncidentType;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
@@ -14,10 +15,33 @@ import com.example.racehorse_transport.exception.DispatchRuleException;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class IncidentPolicyTest {
 
     private static final Instant REST_STARTED = Instant.parse("2031-03-05T10:00:00Z");
+    private static final Instant UNLOCKED_AT = Instant.parse("2031-03-05T10:05:00Z");
+
+    @ParameterizedTest
+    @CsvSource({
+            "HEALTH, HIGH", "ACCIDENT, HIGH", "VEHICLE_BREAKDOWN, MEDIUM", "HANDOVER_TIMEOUT, MEDIUM",
+            "DOCUMENT, MEDIUM", "DELAY, LOW", "OTHER, LOW", "COMPLAINT, LOW"
+    })
+    void severityDefaultsByIncidentType(IncidentType type, IncidentSeverity severity) {
+        assertThat(IncidentPolicy.defaultSeverity(type)).isEqualTo(severity);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "HIGH, REPORTED, false, true", "HIGH, PLAN_PENDING, false, true",
+            "HIGH, PLAN_ACTIVE, false, false", "HIGH, RESOLVED, false, false", "HIGH, CLOSED, false, false",
+            "HIGH, REPORTED, true, false", "MEDIUM, REPORTED, false, false", "LOW, REPORTED, false, false"
+    })
+    void onlyOpenHighIncidentsWithoutApprovalOrAnUnlockBlockTheTrip(IncidentSeverity severity, IncidentStatus status,
+            boolean unlocked, boolean blocked) {
+        assertThat(IncidentPolicy.blocksTrip(severity, status, unlocked ? UNLOCKED_AT : null)).isEqualTo(blocked);
+    }
 
     @Test
     void tripIncidentReportRejectsComplaintsAndAllowsOperationalIncidents() {

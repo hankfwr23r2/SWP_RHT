@@ -24,6 +24,20 @@ export const staff = {
   },
   incidents: {
     departure: 'Related departure: {{route}} · {{date}}',
+    severity: {
+      label: 'Severity',
+      LOW: 'Low',
+      MEDIUM: 'Medium',
+      HIGH: 'High',
+      default: 'Default for incident type',
+      defaultsError: 'Could not load the default severities by incident type.',
+      save: 'Save severity',
+    },
+    unlockTrip: {
+      action: 'Unlock vehicle trip',
+      reason: 'Reason for unlocking',
+      consequence: 'This releases the lock caused by this incident. The reason will be recorded in the audit log.',
+    },
     handoverCause: {
       told: "Announced time",
       arrived: "Actual arrival",

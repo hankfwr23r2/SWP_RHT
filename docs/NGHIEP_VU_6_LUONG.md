@@ -1123,7 +1123,7 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 
 **Vận hành:**
 
-14. **Sự cố không chặn xe.** Đang có sự cố, tài xế vẫn bấm Tới nơi, Rời đi được. Tài liệu có bước "mở lại thao tác chặng", nghĩa là trước đó phải khóa.
+14. **Đã sửa.** Sự cố Nặng chưa có phương án được duyệt thì khóa Tới nơi, Rời đi. Duyệt phương án tự mở; điều phối mở khóa kèm lý do.
 15. **Gửi chuồng gần, Thú y điều trị, Hủy chặng chỉ là chữ.** Duyệt xong hệ thống không mở lưu trú, không đổi chặng. Câu báo cho điều phối gợi ý "gửi chuồng hoặc đưa về hub" nhưng gửi chuồng không có thao tác.
 16. **Đã sửa theo phương án (a)** · Tổ xe tải ảnh biên bản đổi xe đã ký trước khi điều phối đổi xe. Xe cũ chuyển sang bảo dưỡng và hệ thống báo các lượt cần bố trí xe khác.
 17. **Đã sửa.** Chỉ hộ tống của lượt xác nhận đủ sức và phải tải ảnh con ngựa; điều phối xác nhận thay vẫn cần kết quả thú y.
@@ -1131,7 +1131,7 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 19. **Ghi sức khỏe Ốm hoặc Nguy cấp không mở sự cố** (đã nêu ở luồng 4).
 20. **Máy chủ không kiểm lượt đang chạy khi báo sự cố**; hiện chỉ màn hình chặn.
 21. **Quá 3 ngày giữ ngựa chỉ nhắc**, không có bước kết thúc (trả về người gửi, thanh lý hợp đồng…).
-22. **Không có mức độ nặng nhẹ** của sự cố, nên ngựa nguy kịch và trễ 10 phút nằm chung một danh sách.
+22. **Đã sửa.** Sự cố có mức Nhẹ, Vừa, Nặng; danh sách xếp Nặng lên đầu.
 23. **Loại Chậm trễ chưa nối với cách xử lý chuyến trễ** (mục 3.F đã ghi nhận, chưa làm).
 
 ---

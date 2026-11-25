@@ -74,12 +74,12 @@ Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A
 | Điểm | Đang thế nào | Gợi ý (chưa duyệt) | Xem ở | Lưu ý |
 |---|---|---|---|---|
 | **5.G5** | **Đã sửa.** Lượt đón, giao, chạy thẳng phải kết thúc ở hub; máy chủ chặn khi lập lượt, màn lập lượt báo ngay ở điểm cuối | | `DispatchPolicy`, `DispatchServiceImpl`, `CreateTripModal.tsx` | |
-| **5.G14** | Đang có sự cố, tài xế vẫn Tới nơi, Rời đi được | Chỉ khóa với sự cố nặng; có cách mở lại | `TripExecutionServiceImpl`, `IncidentPolicy` | **Chờ** 1b và đợt 2 |
+| **5.G14** | **Đã sửa.** Sự cố Nặng chưa có phương án được duyệt thì khóa Tới nơi, Rời đi; duyệt phương án tự mở, điều phối mở khóa kèm lý do | | `IncidentPolicy.blocksTrip`, `TripReadinessServiceImpl` | |
 | **5.G15** | Gửi chuồng gần, Thú y, Hủy chặng duyệt xong không có thao tác | Gửi chuồng mở lưu trú ở đối tác; hủy chặng gỡ chặng; thú y ghi nhật ký | `IncidentActionServiceImpl`, `HorseStayServiceImpl` | Đợt 2 đã gộp, làm được |
 | **5.G16** | Đổi xe không ký lại giao nhận, xe hỏng không sang bảo dưỡng | Xe hỏng sang bảo dưỡng ngay; hộ tống ký `SHIFT` tại chỗ | `IncidentActionServiceImpl`, `VehicleServiceImpl` | Đợt 2 đã gộp, làm được. Làm cùng 4.F10 |
 | **5.G17** | **Đã sửa.** Chỉ hộ tống của lượt xác nhận đủ sức và phải có ảnh xác nhận; điều phối xác nhận thay vẫn cần kết quả thú y | | `IncidentServiceImpl`, `TripIncidentPanel` | |
 | **5.G18** | **Đã sửa.** Hộ tống bấm Bắt đầu cho ngựa nghỉ; 30 phút đếm từ lúc đó | | `IncidentPolicy`, `incident.rest_started_at` | |
-| **5.G22** | Sự cố không có mức nặng nhẹ | Thêm mức, sắp danh sách theo mức | `incident` (cột mới), màn sự cố | Đợt 2 đã gộp, làm được. Cần cập nhật đặc tả |
+| **5.G22** | **Đã sửa.** Sự cố có mức Nhẹ, Vừa, Nặng (mặc định theo loại, điều phối đổi được); danh sách xếp Nặng lên đầu | | `incident.severity`, màn sự cố | |
 
 ### Luồng 6 (1 điểm)
 
@@ -100,8 +100,9 @@ Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A
 | 4.F11, 4.F12 | | | |
 | 4.F6 | Điểm nghỉ đêm phải nghỉ đủ OVERNIGHT_REST_HOURS, rời sớm ghi lý do và báo điều phối | Đã duyệt | #480 |
 | 4.F10 | Báo tình trạng xe cuối lượt, đưa vào bảo dưỡng khi cần | Đã duyệt | #482 |
-| 5.G14, 5.G15, 5.G22 | | | |
-| 5.G17, 5.G18 | Chỉ hộ tống xác nhận đủ sức, bắt buộc ảnh; 30 phút đếm từ lúc bắt đầu nghỉ | Đã duyệt | |
+| 5.G15 | | | |
+| 5.G14, 5.G22 | Mức độ sự cố; sự cố Nặng chưa duyệt phương án thì khóa xe, điều phối mở khóa có lý do | Đã duyệt | |
+| 5.G17, 5.G18 | Chỉ hộ tống xác nhận đủ sức, bắt buộc ảnh; 30 phút đếm từ lúc bắt đầu nghỉ | Đã duyệt | #486 |
 | 5.G5 | Lượt đón, giao, chạy thẳng phải kết thúc ở hub | Đã duyệt | #478 |
 | 5.G16 | Phương án (a), ảnh biên bản đã ký và đưa xe cũ vào bảo dưỡng | Đã duyệt | #482 |
 | 6.G15 | | | |

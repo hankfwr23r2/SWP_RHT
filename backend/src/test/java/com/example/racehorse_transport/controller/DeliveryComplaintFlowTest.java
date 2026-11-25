@@ -104,6 +104,8 @@ class DeliveryComplaintFlowTest {
                 .andExpect(jsonPath("$.data.photos").isNotEmpty());
         submit(photo()).andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.complaint.photos[0].documentTypeCode").value("COMPLAINT_PHOTO"));
+        assertThat(jdbc.queryForObject("SELECT severity FROM incident WHERE booking_id = ? AND incident_type = 'COMPLAINT'",
+                String.class, bookingId)).isEqualTo("LOW");
         submit(photo()).andExpect(status().isConflict());
         mvc.perform(get(PATH, bookingId).header(HttpHeaders.AUTHORIZATION, otherCustomer))
                 .andExpect(status().isNotFound());
@@ -112,6 +114,8 @@ class DeliveryComplaintFlowTest {
     @Test
     void managerCanReplyAndResolveAndCustomerCanSeeDecision() throws Exception {
         submit(photo()).andExpect(status().isOk());
+        // Mô phỏng đổi mức sau khi JPA đã nạp khiếu nại để kiểm tra phản hồi không ghi đè mức mới.
+        jdbc.update("UPDATE incident SET severity = 'HIGH' WHERE booking_id = ? AND incident_type = 'COMPLAINT'", bookingId);
         json("/reply", customer, "{\"reply\":\"Reviewed\"}").andExpect(status().isForbidden());
         json("/reply", manager, "{\"reply\":\"Reviewed\"}").andExpect(status().isOk());
         json("/resolve", manager, "{\"decision\":\"ACCEPTED\",\"reason\":\"Reviewed evidence\"}")
@@ -119,6 +123,9 @@ class DeliveryComplaintFlowTest {
         mvc.perform(get(PATH, bookingId).header(HttpHeaders.AUTHORIZATION, customer)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.complaint.reply").value("Reviewed"))
                 .andExpect(jsonPath("$.data.complaint.decision").value("ACCEPTED"));
+        entityManager.flush();
+        assertThat(jdbc.queryForObject("SELECT severity FROM incident WHERE booking_id = ? AND incident_type = 'COMPLAINT'",
+                String.class, bookingId)).isEqualTo("HIGH");
     }
 
     @Test

@@ -9,19 +9,26 @@ import com.example.racehorse_transport.dto.incident.CostItemResponseDto;
 import com.example.racehorse_transport.dto.incident.IncidentPlanRequestDto;
 import com.example.racehorse_transport.dto.incident.IncidentReportRequestDto;
 import com.example.racehorse_transport.dto.incident.IncidentResponseDto;
+import com.example.racehorse_transport.dto.incident.IncidentSeverityRequestDto;
 import com.example.racehorse_transport.dto.incident.PlanRejectRequestDto;
+import com.example.racehorse_transport.dto.incident.TripUnlockRequestDto;
 import com.example.racehorse_transport.dto.incident.VehicleSwapRequestDto;
+import com.example.racehorse_transport.entity.enums.IncidentSeverity;
+import com.example.racehorse_transport.entity.enums.IncidentType;
 import com.example.racehorse_transport.service.CostItemService;
 import com.example.racehorse_transport.service.IncidentActionService;
 import com.example.racehorse_transport.service.IncidentService;
+import com.example.racehorse_transport.service.IncidentSeverityService;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -34,6 +41,7 @@ public class IncidentController {
 
     private final IncidentService incidents;
     private final IncidentActionService actions;
+    private final IncidentSeverityService severity;
     private final CostItemService costs;
 
     @GetMapping("/incidents")
@@ -58,6 +66,27 @@ public class IncidentController {
     @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT')")
     public ResponseEntity<ApiResponseDto<IncidentResponseDto>> report(@Valid @RequestBody IncidentReportRequestDto request, Authentication authentication) {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponseDto.success(incidents.report(request, authentication.getName()), "Đã báo sự cố"));
+    }
+
+    @GetMapping("/incidents/severity-defaults")
+    @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT')")
+    public ApiResponseDto<Map<IncidentType, IncidentSeverity>> severityDefaults() {
+        return ApiResponseDto.success(severity.defaults(), "Mức độ mặc định theo loại sự cố");
+    }
+
+    @PatchMapping("/incidents/{id}/severity")
+    @PreAuthorize("hasAnyRole('COORDINATOR', 'MANAGER')")
+    public ApiResponseDto<Void> changeSeverity(@PathVariable Long id, @Valid @RequestBody IncidentSeverityRequestDto request,
+            Authentication actor) {
+        severity.changeSeverity(id, request, actor.getName());
+        return ApiResponseDto.success(null, "Đã cập nhật mức độ sự cố");
+    }
+
+    @PostMapping("/incidents/{id}/unlock-trip")
+    @PreAuthorize("hasRole('COORDINATOR')")
+    public ApiResponseDto<Void> unlockTrip(@PathVariable Long id, @Valid @RequestBody TripUnlockRequestDto request, Authentication actor) {
+        severity.unlockTrip(id, request, actor.getName());
+        return ApiResponseDto.success(null, "Đã mở khóa lượt xe");
     }
 
     @PostMapping("/incidents/{id}/plans")

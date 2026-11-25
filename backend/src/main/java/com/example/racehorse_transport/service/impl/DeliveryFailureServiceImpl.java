@@ -17,6 +17,7 @@ import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.TripExecutionPolicy;
 import com.example.racehorse_transport.policy.DeliveryEtaPolicy;
+import com.example.racehorse_transport.policy.IncidentPolicy;
 import com.example.racehorse_transport.repository.CrewAssignmentRepository;
 import com.example.racehorse_transport.repository.HandoverRepository;
 import com.example.racehorse_transport.repository.HorseLegRepository;
@@ -121,6 +122,7 @@ public class DeliveryFailureServiceImpl implements DeliveryFailureService {
             incident.setHorseLeg(leg);
             incident.setBooking(leg.getBookingHorse().getBooking());
             incident.setIncidentType(IncidentType.HANDOVER_TIMEOUT);
+            incident.setSeverity(IncidentPolicy.defaultSeverity(incident.getIncidentType()));
             incident.setCauseType(cause);
             incident.setConfirmedCauseType(cause);
             incident.setCauseConfirmedAt(now);

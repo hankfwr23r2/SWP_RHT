@@ -1,21 +1,42 @@
 package com.example.racehorse_transport.policy;
 
+import com.example.racehorse_transport.entity.Incident;
 import com.example.racehorse_transport.entity.enums.IncidentType;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import com.example.racehorse_transport.entity.enums.IncidentPlanStatus;
 import com.example.racehorse_transport.entity.enums.IncidentResolutionType;
+import com.example.racehorse_transport.entity.enums.IncidentSeverity;
 import com.example.racehorse_transport.entity.enums.IncidentStatus;
 import com.example.racehorse_transport.entity.enums.PartyRoleType;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Optional;
 
 // Quy tắc sự cố và phương án (B4), hàm thuần
 public final class IncidentPolicy {
 
+    public static final Comparator<Incident> DISPLAY_ORDER = Comparator
+            .comparing(Incident::getSeverity, Comparator.reverseOrder())
+            .thenComparing(Incident::getReportedAt, Comparator.reverseOrder())
+            .thenComparing(Incident::getId, Comparator.reverseOrder());
+
     private IncidentPolicy() {}
+
+    public static IncidentSeverity defaultSeverity(IncidentType type) {
+        return switch (type) {
+            case HEALTH, ACCIDENT -> IncidentSeverity.HIGH;
+            case VEHICLE_BREAKDOWN, HANDOVER_TIMEOUT, DOCUMENT -> IncidentSeverity.MEDIUM;
+            case DELAY, OTHER, COMPLAINT -> IncidentSeverity.LOW;
+        };
+    }
+
+    public static boolean blocksTrip(IncidentSeverity severity, IncidentStatus status, Instant tripUnlockedAt) {
+        return severity == IncidentSeverity.HIGH && isOpen(status)
+                && status != IncidentStatus.PLAN_ACTIVE && tripUnlockedAt == null;
+    }
 
     public static boolean requiresFit(IncidentType type, boolean hasHorse) {
         return type == IncidentType.HEALTH || (type == IncidentType.ACCIDENT && hasHorse);

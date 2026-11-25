@@ -82,6 +82,8 @@ export const fieldCrew = {
       "incident": {
         "report": "Report incident",
         "reportTitle": "Report an incident",
+        "reportConsequence": "Send the report to dispatch. A high-severity incident blocks arrival and departure actions.",
+        "tripBlocked": "This trip has a high-severity incident with no approved plan. Wait for manager approval or for dispatch to unlock the trip.",
         "cause": "Proposed cause",
         "scope": "Affects",
         "wholeTrip": "Whole vehicle",
