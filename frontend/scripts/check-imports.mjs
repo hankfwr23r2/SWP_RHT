@@ -14,18 +14,12 @@ const SRC = join(FRONTEND, 'src')
 
 const EXCEPTIONS = {
   R3: [
-    'src/shared/ui/CaptureField.tsx',
     'src/shared/ui/ChangePasswordModal.tsx',
-    'src/shared/ui/InsuranceDocuments.tsx',
   ],
   R4: [
-    'src/apps/backoffice/features/coordinator/fleet-plan/FleetPlanPage.tsx',
-    'src/apps/backoffice/features/coordinator/fleet/FleetPage.tsx',
-    'src/apps/backoffice/features/manager/dashboard/OrderDetailModal.tsx',
     'src/apps/customer/features/auth/LoginPage.tsx',
   ],
   R6: [
-    'src/shared/services/termsConsent.test.ts',
     'src/shared/ui/baseMap.ts',
   ],
 }

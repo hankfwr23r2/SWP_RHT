@@ -1,4 +1,4 @@
-import type { StaffRole } from '@shared/types/role'
+import type { StaffRole } from '@shared/auth/role'
 
 // Menu theo vai trò. Các màn cũ gọi API đã bỏ không có trong menu; danh sách chờ xóa ở docs/KE_HOACH_TRIEN_KHAI.md.
 export const STAFF_MENUS: Record<StaffRole, [path: string, label: string, opt?: { group?: string; icon?: string }][]> = {

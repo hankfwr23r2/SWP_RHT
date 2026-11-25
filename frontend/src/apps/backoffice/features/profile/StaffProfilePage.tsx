@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
-import { ROLE_LABEL } from '@shared/types/role'
+import { ROLE_LABEL } from '@shared/auth/role'
 import { ChangePasswordModal } from '@shared/ui/ChangePasswordModal'
 import s from './StaffProfilePage.module.css'
 

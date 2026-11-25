@@ -5,11 +5,10 @@ import { reportsApi, type RevenueReport } from '@shared/api/reports'
 import { OrderStatusBadge } from '@shared/components/OrderStatusBadge'
 import { useLoad } from '@shared/hooks/useLoad'
 import { formatDate, formatVND } from '@shared/lib/format'
-import type { DayPoint } from '@shared/lib/report'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { Skeleton } from '@shared/ui/Skeleton'
 import { useToast } from '@shared/ui/toast'
-import { MoneyChart } from './ReportCharts'
+import { MoneyChart, type DayPoint } from './ReportCharts'
 import s from './Reports.module.css'
 
 const DAY_MS = 86_400_000
@@ -40,7 +39,7 @@ function points(report: RevenueReport): DayPoint[] {
   const out: DayPoint[] = []
   for (let i = 0; i < days.length; i += size) {
     const chunk = days.slice(i, i + size)
-    out.push({ at: chunk[0].at, label: formatDate(chunk[0].at).slice(0, 5), revenue: chunk.reduce((a, d) => a + d.revenue, 0), cost: chunk.reduce((a, d) => a + d.cost, 0), trips: 0 })
+    out.push({ at: chunk[0].at, label: formatDate(chunk[0].at).slice(0, 5), revenue: chunk.reduce((a, d) => a + d.revenue, 0), cost: chunk.reduce((a, d) => a + d.cost, 0) })
   }
   return out
 }

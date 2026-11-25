@@ -1,7 +1,7 @@
 // Trang điều khoản và chính sách: mỗi văn bản là một ảnh hoặc PDF do nhà xe cung cấp (POLICY_DOCS).
 import { Link, useSearchParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { POLICY_DOCS, type PolicyDocId } from '@shared/config/business-rules'
+import { POLICY_DOCS, type PolicyDocId } from '@shared/config/site'
 
 const IDS = Object.keys(POLICY_DOCS) as PolicyDocId[]
 const isDoc = (v: string | null): v is PolicyDocId => IDS.some(id => id === v)
