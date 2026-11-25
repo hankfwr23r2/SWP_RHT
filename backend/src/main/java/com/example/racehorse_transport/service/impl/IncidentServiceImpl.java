@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.dto.incident.PlanApproveRequestDto;
 import com.example.racehorse_transport.dto.incident.IncidentPlanRequestDto;
 import com.example.racehorse_transport.dto.incident.IncidentReportRequestDto;
 import com.example.racehorse_transport.dto.incident.IncidentResponseDto;
@@ -14,7 +15,6 @@ import com.example.racehorse_transport.entity.VehicleTrip;
 import com.example.racehorse_transport.entity.enums.CrewAssignmentStatus;
 import com.example.racehorse_transport.entity.enums.IncidentPlanStatus;
 import com.example.racehorse_transport.entity.enums.IncidentStatus;
-import com.example.racehorse_transport.entity.enums.PartyRoleType;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.IncidentPolicy;
@@ -23,14 +23,12 @@ import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.repository.IncidentPlanRepository;
 import com.example.racehorse_transport.repository.IncidentRepository;
 import com.example.racehorse_transport.repository.PartyRepository;
-import com.example.racehorse_transport.repository.PartyRoleRepository;
+import com.example.racehorse_transport.service.IncidentCostDecisionService;
 import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.VehicleTripRepository;
 import com.example.racehorse_transport.service.IncidentService;
 import com.example.racehorse_transport.service.SystemConfigService;
 import java.time.Clock;
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -45,7 +43,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class IncidentServiceImpl implements IncidentService {
 
     private static final Set<IncidentStatus> OPEN = Set.of(IncidentStatus.REPORTED, IncidentStatus.PLAN_PENDING, IncidentStatus.PLAN_ACTIVE);
-    private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     private final IncidentRepository incidents;
     private final IncidentPlanRepository plans;
@@ -54,7 +51,7 @@ public class IncidentServiceImpl implements IncidentService {
     private final CrewAssignmentRepository crew;
     private final StaffRepository staff;
     private final PartyRepository parties;
-    private final PartyRoleRepository partyRoles;
+    private final IncidentCostDecisionService decisions;
     private final SystemConfigService configs;
     private final Clock clock;
 
@@ -104,7 +101,7 @@ public class IncidentServiceImpl implements IncidentService {
         IncidentPolicy.requireResolutionAvailable(incident.getIncidentType(), request.resolutionType());
         Party handler = request.handlerPartyId() == null ? null : parties.findById(request.handlerPartyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đối tác " + request.handlerPartyId()));
-        IncidentPolicy.requireHandler(request.resolutionType(), handler != null, handler == null ? List.of() : validRoles(handler.getId()));
+        IncidentPolicy.requireHandler(request.resolutionType(), handler != null, handler == null ? List.of() : decisions.validRoles(handler.getId()));
         List<IncidentPlan> existing = plans.findByIncident_IdOrderByVersion(incidentId);
         // Phương án đang chờ duyệt bị thay bởi phương án mới
         existing.stream().filter(p -> p.getStatus() == IncidentPlanStatus.PROPOSED).forEach(p -> {
@@ -124,10 +121,44 @@ public class IncidentServiceImpl implements IncidentService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<PlanDto> plansForCustomer(Long bookingId, String username) {
+        decisions.requireCustomerOwnership(bookingId, username);
+        return incidents.findByBooking_IdOrderByReportedAtDesc(bookingId).stream()
+                .filter(incident -> IncidentPolicy.isOpen(incident.getStatus()))
+                .flatMap(incident -> plans.findByIncident_IdOrderByVersion(incident.getId()).stream())
+                .filter(plan -> plan.getStatus() == IncidentPlanStatus.PROPOSED && plan.getEstimatedCost() != null
+                        && plan.getEstimatedCost().signum() > 0)
+                .map(PlanDto::from).toList();
+    }
+
+    @Override
     @Transactional
-    public IncidentResponseDto approve(Long planId, String username) {
+    public void acceptPlan(Long planId, String username) {
+        Long incidentId = plans.findIncidentId(planId)
+                .orElseThrow(() -> new ResourceNotFoundException("Plan not found."));
+        var incident = incidents.findForUpdate(incidentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Plan not found."));
+        var booking = incident.getBooking();
+        if (booking == null || !username.equals(booking.getCustomer().getUser().getUsername())) {
+            throw new ResourceNotFoundException("Plan not found.");
+        }
+        var plan = decidablePlan(planId);
+        if (plan.getEstimatedCost() == null || plan.getEstimatedCost().signum() <= 0) {
+            throw new DispatchRuleException("estimatedCost", "The proposed plan has no estimated cost.", true);
+        }
+        if (plan.getCustomerAgreedAt() == null) {
+            plan.setCustomerAgreedAt(clock.instant());
+            plan.setCustomerAgreedBy(booking.getCustomer().getUser());
+        }
+    }
+
+    @Override
+    @Transactional
+    public IncidentResponseDto approve(Long planId, PlanApproveRequestDto request, String username) {
         IncidentPlan plan = decidablePlan(planId);
-        Incident incident = openIncident(plan.getIncident().getId());
+        Incident incident = plan.getIncident();
+        decisions.confirmCause(plan, request, currentStaff(username));
         // Mỗi sự cố chỉ một phương án hiệu lực: phương án đã duyệt trước đó bị thay
         plans.findByIncident_IdOrderByVersion(incident.getId()).stream().filter(p -> p.getStatus() == IncidentPlanStatus.APPROVED)
                 .forEach(p -> p.setStatus(IncidentPlanStatus.SUPERSEDED));
@@ -210,18 +241,11 @@ public class IncidentServiceImpl implements IncidentService {
     }
 
     private IncidentPlan decidablePlan(Long planId) {
+        plans.findIncidentId(planId).ifPresent(this::openIncident);
         IncidentPlan plan = plans.findById(planId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phương án " + planId));
         int latest = plans.findByIncident_IdOrderByVersion(plan.getIncident().getId()).stream().mapToInt(IncidentPlan::getVersion).max().orElse(0);
         IncidentPolicy.requireDecidable(plan.getStatus(), plan.getVersion() == latest);
         return plan;
-    }
-
-    // Vai trò còn hiệu lực hôm nay của đối tác (quy tắc #26)
-    private List<PartyRoleType> validRoles(Long partyId) {
-        LocalDate today = LocalDate.ofInstant(clock.instant(), BUSINESS_ZONE);
-        return partyRoles.findById_PartyId(partyId).stream()
-                .filter(r -> (r.getValidFrom() == null || !r.getValidFrom().isAfter(today)) && (r.getValidTo() == null || !r.getValidTo().isBefore(today)))
-                .map(r -> r.getId().getRoleType()).toList();
     }
 
     private Staff currentStaff(String username) {

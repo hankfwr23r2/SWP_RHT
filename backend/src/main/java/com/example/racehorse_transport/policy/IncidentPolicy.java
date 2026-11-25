@@ -25,6 +25,9 @@ public final class IncidentPolicy {
         if (status != VehicleTripStatus.IN_PROGRESS) {
             throw new DispatchRuleException("vehicleTripId", "Chỉ báo sự cố khi lượt xe đang chạy.", true);
         }
+        if (type == IncidentType.HANDOVER_TIMEOUT) {
+            throw new DispatchRuleException("incidentType", "Chỉ hệ thống mở sự cố quá giờ chờ giao nhận.");
+        }
         if (type == IncidentType.HEALTH && !hasHorse) {
             throw new DispatchRuleException("horseLegId", "Sự cố sức khỏe phải chọn con ngựa.");
         }

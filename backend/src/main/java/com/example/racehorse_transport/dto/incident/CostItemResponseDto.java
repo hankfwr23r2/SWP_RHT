@@ -9,13 +9,17 @@ import java.time.Instant;
 public record CostItemResponseDto(
         Long id, CostCategory category, String description, BigDecimal amount, String currencyCode, CostPayerType payerType,
         Long incidentId, String bookingCode, Boolean customerConsulted, Instant incurredAt,
-        String recordedByName, String approvedByName, Instant approvedAt, Long extraChargePaymentId) {
+        String recordedByName, String approvedByName, Instant approvedAt, Long extraChargePaymentId,
+        Boolean customerAgreed, Instant customerResponseAt, Instant customerResponseDueAt,
+        boolean agentRecoveryRequired, Instant agentRecoveredAt) {
 
     public static CostItemResponseDto from(CostItem cost) {
         return new CostItemResponseDto(cost.getId(), cost.getCategory(), cost.getDescription(), cost.getAmount(), cost.getCurrencyCode(),
                 cost.getPayerType(), cost.getIncident() == null ? null : cost.getIncident().getId(),
                 cost.getBooking() == null ? null : cost.getBooking().getCode(), cost.getCustomerConsulted(), cost.getIncurredAt(),
                 cost.getRecordedBy().getFullName(), cost.getApprovedBy() == null ? null : cost.getApprovedBy().getFullName(),
-                cost.getApprovedAt(), cost.getExtraChargePayment() == null ? null : cost.getExtraChargePayment().getId());
+                cost.getApprovedAt(), cost.getExtraChargePayment() == null ? null : cost.getExtraChargePayment().getId(),
+                cost.getCustomerAgreed(), cost.getCustomerResponseAt(), cost.getCustomerResponseDueAt(),
+                cost.isAgentRecoveryRequired(), cost.getAgentRecoveredAt());
     }
 }

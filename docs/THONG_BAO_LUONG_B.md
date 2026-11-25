@@ -35,3 +35,9 @@
 - Luồng B gọi `DepartureService.linehaulDeparted/linehaulCompleted` theo mốc lượt trục. Luồng A giữ khóa chuyến và quyết định trạng thái.
 - Chặng giao thay thế dùng `StablingChargeService` chốt phí theo ngày. Luồng A lập khoản thu `EXTRA_CHARGE`, đặt hạn và báo khách. HUB_OUT kiểm khoản phí đã chốt. Người nhận tự tới hub vẫn lấy ngựa được.
 - Điều phối tải chứng cứ `VET_REPORT` trước khi xác nhận đủ sức thay tổ lái.
+
+## Đợt 2 · 25/11/2026
+
+- Luồng B chốt nguyên nhân và cập nhật chi phí chưa duyệt trong giao dịch duyệt phương án. Phản hồi của chủ đơn và cuộc gọi của điều phối được lưu cùng người và giờ.
+- Khoản thu thêm vẫn lấy các chi phí khách chịu đã duyệt qua hợp đồng cũ. Khoản công ty trả do đại lý có lỗi được theo dõi riêng ở quyết toán.
+- Luồng báo giá ghi chuyến vừa nhả vào lịch sử khi hết hạn. Quản lý có thể mở lại và giữ lại chỗ. Báo giá mới sử dụng bảng giá còn hiệu lực.

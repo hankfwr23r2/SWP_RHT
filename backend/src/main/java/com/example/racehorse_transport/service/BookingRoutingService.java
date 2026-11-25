@@ -12,6 +12,8 @@ public interface BookingRoutingService {
 
     Departure lockReplacement(com.example.racehorse_transport.entity.Booking booking, Long replacementId);
 
+    void validateReopenPickup(com.example.racehorse_transport.entity.Booking booking, Long departureId);
+
     boolean requiresDeparture(com.example.racehorse_transport.entity.Booking booking);
 
     record SubmissionRouting(AddressInput pickup, AddressInput delivery, Province pickupProvince,

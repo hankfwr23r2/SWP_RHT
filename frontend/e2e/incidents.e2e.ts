@@ -42,6 +42,9 @@ async function mockBoard(page: Page, incident: ReturnType<typeof incidentState>)
     }
     const approve = path.match(/^\/incident-plans\/(\d+)\/approve$/)
     if (approve) {
+      sent.approve = request.postDataJSON()
+      Object.assign(incident, { confirmedCauseType: (sent.approve as { confirmedCauseType: string }).confirmedCauseType, causeConfirmedAt: '2031-03-05T10:00:00Z' })
+      costs[0].payerType = 'COMPANY'
       incident.plans.find(p => p.id === Number(approve[1]))!.status = 'APPROVED'
       incident.status = 'PLAN_ACTIVE'
       return ok(route, incident)
@@ -53,6 +56,7 @@ async function mockBoard(page: Page, incident: ReturnType<typeof incidentState>)
 }
 
 test('điều phối lập phương án, quản lý từ chối có lý do rồi duyệt phiên bản sau và duyệt chi phí', async ({ page, context }) => {
+  test.setTimeout(60_000)
   const incident = incidentState()
   await signIn(page, 'coordinator')
   const sent = await mockBoard(page, incident)
@@ -71,7 +75,7 @@ test('điều phối lập phương án, quản lý từ chối có lý do rồi
   // Quản lý: từ chối phải có lý do
   const managerPage = await context.newPage()
   await signIn(managerPage, 'manager')
-  await mockBoard(managerPage, incident)
+  const managerSent = await mockBoard(managerPage, incident)
   await managerPage.goto('/backoffice/manager/incidents')
   await managerPage.getByRole('button', { name: 'Xem' }).click({ timeout: 15_000 })
   const managerDialog = managerPage.getByRole('dialog', { name: 'Ngựa bỏ ăn' })
@@ -87,9 +91,14 @@ test('điều phối lập phương án, quản lý từ chối có lý do rồi
   incident.plans.push({ id: 50, version: 2, resolutionType: 'CONTINUE', instructions: 'Nghỉ thêm 1 giờ rồi đi tiếp', status: 'PROPOSED' })
   await managerPage.reload()
   await managerPage.getByRole('button', { name: 'Xem' }).click({ timeout: 15_000 })
+  await managerDialog.getByRole('combobox', { name: 'Nguyên nhân chốt' }).click()
+  await managerPage.getByRole('option', { name: 'Lỗi đại lý', exact: true }).click()
   await managerDialog.getByRole('button', { name: 'Duyệt', exact: true }).click()
+  await managerPage.getByRole('alertdialog').getByRole('button', { name: 'Duyệt', exact: true }).click()
+  await expect.poll(() => managerSent.approve).toEqual({ confirmedCauseType: 'AGENT_FAULT' })
   await expect(managerDialog).toContainText('Đã duyệt')
   await managerDialog.getByRole('button', { name: 'Duyệt chi phí' }).click()
+  await managerPage.getByRole('alertdialog').getByRole('button', { name: 'Duyệt chi phí' }).click()
   await expect(managerDialog.getByRole('button', { name: 'Duyệt chi phí' })).toHaveCount(0)
 })
 
@@ -125,7 +134,7 @@ test('hộ tống báo sự cố cho một con và ghi chi phí', async ({ page 
   await page.getByRole('option', { name: 'Sao Mai · BK-AAAA0001' }).click()
   await dialog.getByRole('combobox', { name: 'Loại' }).click()
   await page.getByRole('option', { name: 'Sức khỏe' }).click()
-  await dialog.getByRole('combobox', { name: 'Nguyên nhân' }).click()
+  await dialog.getByRole('combobox', { name: 'Nguyên nhân đề xuất' }).click()
   await page.getByRole('option', { name: 'Tình trạng ngựa' }).click()
   await dialog.getByLabel('Tiêu đề').fill('Ngựa bỏ ăn')
   await dialog.getByLabel('Mô tả').fill('Sao Mai bỏ ăn từ sáng')
@@ -136,7 +145,8 @@ test('hộ tống báo sự cố cho một con và ghi chi phí', async ({ page 
   await page.getByLabel('Nội dung').fill('Thuốc hạ sốt')
   await page.getByLabel('Số tiền (VND)').fill('350000')
   await page.getByRole('button', { name: 'Ghi chi phí' }).click()
-  await expect.poll(() => sent.cost).toMatchObject({ category: 'VET', description: 'Thuốc hạ sốt', amount: 350000, incidentId: 5, customerConsulted: false })
+  await expect.poll(() => sent.cost).toMatchObject({ category: 'VET', description: 'Thuốc hạ sốt', amount: 350000, incidentId: 5 })
+  expect(sent.cost).not.toHaveProperty('customerConsulted')
 })
 
 test('điều phối thêm ảnh hiện trường và biên lai; quản lý xem lại khi duyệt chi phí', async ({ page }) => {

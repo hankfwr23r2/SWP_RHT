@@ -47,7 +47,7 @@ export const fieldCrew = {
       "incident": {
         "report": "Report incident",
         "reportTitle": "Report an incident",
-        "cause": "Cause",
+        "cause": "Proposed cause",
         "scope": "Affects",
         "wholeTrip": "Whole vehicle",
         "incidentTitle": "Title",

@@ -1174,7 +1174,10 @@ Index: `payment_id`.
 | `vehicle_trip_id` | `bigint` | có | FK → vehicle_trip | Một sự cố xe có thể ảnh hưởng nhiều đơn |
 | `horse_leg_id` | `bigint` | có | FK → horse_leg | Sự cố của riêng một con ngựa |
 | `incident_type` | `varchar(30)` | | CK `HEALTH, VEHICLE_BREAKDOWN, ACCIDENT, DELAY, DOCUMENT, HANDOVER_TIMEOUT, OTHER` | |
-| `cause_type` | `varchar(30)` | | CK `COMPANY_FAULT, HORSE_CONDITION, CUSTOMER_DOCS, AGENT_FAULT, FORCE_MAJEURE, RECIPIENT_ABSENT` | Nguyên nhân, quyết định ai chịu chi phí |
+| `cause_type` | `varchar(30)` | | CK `COMPANY_FAULT, HORSE_CONDITION, CUSTOMER_DOCS, AGENT_FAULT, FORCE_MAJEURE, RECIPIENT_ABSENT` | Nguyên nhân do tổ lái đề xuất |
+| `confirmed_cause_type` | `varchar(30)` | có | Cùng tập giá trị với `cause_type` | Nguyên nhân quản lý chốt khi duyệt phương án |
+| `cause_confirmed_by` | `bigint` | có | FK → staff.user_id | Quản lý chốt, để trống với sự cố hệ thống |
+| `cause_confirmed_at` | `timestamptz` | có | Cùng có với `confirmed_cause_type` | Giờ chốt |
 | `title` | `varchar(200)` | | | |
 | `description` | `text` | | | |
 | `latitude` | `numeric(9,6)` | có | | |
@@ -1223,7 +1226,7 @@ Index: `handler_party_id`.
 | Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
 |---|---|---|---|---|
 | `id` | `bigint` | | PK, identity | |
-| `category` | `varchar(30)` | | CK `TOLL, FUEL, STABLING, VET, RESCUE, REPAIR, WAITING, OTHER` | |
+| `category` | `varchar(30)` | | CK `TOLL, FUEL, STABLING, VET, RESCUE, REPAIR, WAITING, OTHER` | WAITING chỉ giữ cho dữ liệu cũ |
 | `stabling_days` | `bigint` | có | CK dương, chỉ với `STABLING` gắn `horse_stay` | Snapshot số ngày tính trên dòng phí, dùng để tính chênh khi ngựa rời hub |
 | `description` | `varchar(500)` | | | |
 | `amount` | `numeric(15,2)` | | CK `> 0` | |
@@ -1232,9 +1235,17 @@ Index: `handler_party_id`.
 | `booking_id` | `bigint` | có | FK → booking | |
 | `vehicle_trip_id` | `bigint` | có | FK → vehicle_trip | |
 | `incident_id` | `bigint` | có | FK → incident | |
-| `handover_id` | `bigint` | có | FK → handover | Ví dụ phí chờ khi người nhận vắng mặt |
+| `handover_id` | `bigint` | có | FK → handover | Biên bản liên quan. Không thu phí chờ |
 | `horse_stay_id` | `bigint` | có | FK → horse_stay | Ví dụ phí gửi chuồng |
-| `is_customer_consulted` | `boolean` | | default `false` | Đã hỏi ý kiến khách trước khi chi |
+| `is_customer_consulted` | `boolean` | | default `false` | Hệ thống đặt khi có phản hồi đồng ý từ khách hoặc qua điện thoại |
+| `customer_agreed` | `boolean` | có | Đồng thời có người và giờ phản hồi | Đồng ý hoặc từ chối |
+| `customer_response_by` | `bigint` | có | FK → app_user.id | Chủ đơn hoặc điều phối ghi cuộc gọi |
+| `customer_response_at` | `timestamptz` | có | | Giờ phản hồi |
+| `customer_response_due_at` | `timestamptz` | có | | Hạn phản hồi, lấy từ CUSTOMER_COST_RESPONSE_MINUTES |
+| `phone_consent_note` | `varchar(500)` | có | | Nội dung khách đồng ý qua điện thoại |
+| `emergency_override_reason` | `varchar(500)` | có | | Lý do quản lý duyệt VET khi khách từ chối |
+| `agent_recovery_required` | `boolean` | | default false | Khoản công ty chịu do đại lý có lỗi |
+| `agent_recovered_at` | `timestamptz` | có | Phải có cờ thu hồi | Giờ quản lý đánh dấu đã đòi |
 | `incurred_at` | `timestamptz` | | | |
 | `recorded_by` | `bigint` | | FK → staff(user_id) | |
 | `approved_by` | `bigint` | có | FK → staff(user_id) | |
@@ -1531,3 +1542,11 @@ Các quy tắc dưới đây cần so dữ liệu ở nhiều bảng nên CHECK 
 | 39 | Trên cùng một đoạn đường của lượt xe, hai con không trùng `stall_position`. Khoang rộng chiếm hai vị trí liền nhau **bất kỳ** (vách di động). Vị trí cuối không vượt số chỗ của xe (quy tắc #9) | horse_leg, vehicle, trip_stop |
 | 40 | Sơ đồ chốt **trước khi lượt xe bắt đầu**: mọi con của lượt xe phải có `stall_position` thì mới cho bắt đầu. Lượt xe đã bắt đầu thì khóa cả sơ đồ, kể cả các con đón ở điểm dừng sau. Lưu sơ đồ phải khóa `vehicle_trip` và lưu cả xe trong một giao dịch | horse_leg, vehicle_trip |
 | 41 | Đại lý của chặng nước ngoài phải là đối tác ở đúng nước của địa chỉ đầu đó (`party.country_code` = `booking_address.country_code`). Đơn nhập đã giữ chỗ chuyến trục thì đại lý giao ngựa ở đúng cửa khẩu chuyến đó xuất phát | horse_leg, party, booking_address, route |
+
+### Bổ sung đợt 2
+
+Các phương án đã duyệt trước đợt 2 được chuyển tiếp bằng nguyên nhân đã dùng và giờ duyệt. Khoản khách chịu chưa duyệt được mở cửa sổ phản hồi theo cấu hình. Cờ xác nhận cũ của nhân viên không mang sang chi phí chưa duyệt.
+
+- `incident_plan.customer_agreed_by` (FK tới `app_user.id`) và `customer_agreed_at` (`timestamptz`) cùng có khi chủ đơn đồng ý với phiên bản phương án.
+- `CUSTOMER_COST_RESPONSE_MINUTES` mặc định 15 phút, cấu hình từ 5 đến 1440.
+- `booking_status_history.previous_departure_id` lưu chuyến đã nhả chỗ khi báo giá hết hạn, để giữ lại chỗ khi mở lại.

@@ -15,17 +15,18 @@ public record IncidentResponseDto(
         Long id, IncidentType incidentType, IncidentCauseType causeType, IncidentStatus status, String title, String description,
         Long vehicleTripId, String vehicleTripCode, Long horseLegId, String horseName, String bookingCode,
         BigDecimal latitude, BigDecimal longitude, String reportedByName, Instant reportedAt,
-        String fitConfirmedByName, Instant fitConfirmedAt, Instant resolvedAt, boolean requiresFit, List<PlanDto> plans) {
+        String fitConfirmedByName, Instant fitConfirmedAt, Instant resolvedAt, boolean requiresFit, List<PlanDto> plans, IncidentCauseType confirmedCauseType,
+        String causeConfirmedByName, Instant causeConfirmedAt) {
 
     public record PlanDto(Long id, Integer version, IncidentResolutionType resolutionType, String instructions, BigDecimal estimatedCost,
                           Long handlerPartyId, String handlerPartyName, IncidentPlanStatus status, String proposedByName, Instant proposedAt,
-                          String decidedByName, Instant decidedAt, String rejectionReason) {
+                          String decidedByName, Instant decidedAt, String rejectionReason, Instant customerAgreedAt) {
         public static PlanDto from(IncidentPlan plan) {
             var handler = plan.getHandlerParty();
             return new PlanDto(plan.getId(), plan.getVersion(), plan.getResolutionType(), plan.getInstructions(), plan.getEstimatedCost(),
                     handler == null ? null : handler.getId(), handler == null ? null : handler.getDisplayName(), plan.getStatus(),
                     plan.getProposedBy().getFullName(), plan.getProposedAt(),
-                    plan.getDecidedBy() == null ? null : plan.getDecidedBy().getFullName(), plan.getDecidedAt(), plan.getRejectionReason());
+                    plan.getDecidedBy() == null ? null : plan.getDecidedBy().getFullName(), plan.getDecidedAt(), plan.getRejectionReason(), plan.getCustomerAgreedAt());
         }
     }
 
@@ -40,6 +41,8 @@ public record IncidentResponseDto(
                 booking == null ? null : booking.getCode(), incident.getLatitude(), incident.getLongitude(),
                 incident.getReportedBy().getFullName(), incident.getReportedAt(),
                 incident.getFitConfirmedBy() == null ? null : incident.getFitConfirmedBy().getFullName(), incident.getFitConfirmedAt(),
-                incident.getResolvedAt(), requiresFit, plans);
+                incident.getResolvedAt(), requiresFit, plans, incident.getConfirmedCauseType(),
+                incident.getCauseConfirmedBy() == null ? null : incident.getCauseConfirmedBy().getFullName(),
+                incident.getCauseConfirmedAt());
     }
 }

@@ -12,6 +12,24 @@ import org.junit.jupiter.api.Test;
 class CostPayerPolicyTest {
 
     @Test
+    void customerResponseDeadlineAndVeterinaryOverride() {
+        var cost = new com.example.racehorse_transport.entity.CostItem();
+        var deadline = java.time.Instant.parse("2030-01-01T01:15:00Z");
+        cost.setCustomerResponseDueAt(deadline);
+        cost.setCategory(com.example.racehorse_transport.entity.enums.CostCategory.REPAIR);
+        assertThatThrownBy(() -> CostPayerPolicy.requireCostResponse(cost, deadline.minusSeconds(1), null))
+                .hasMessageContaining("phản hồi");
+        assertThatCode(() -> CostPayerPolicy.requireCostResponse(cost, deadline, null)).doesNotThrowAnyException();
+        cost.setCustomerAgreed(false);
+        assertThatThrownBy(() -> CostPayerPolicy.requireCostResponse(cost, deadline, "Urgent"))
+                .hasMessageContaining("từ chối");
+        cost.setCategory(com.example.racehorse_transport.entity.enums.CostCategory.VET);
+        assertThatThrownBy(() -> CostPayerPolicy.requireCostResponse(cost, deadline, " "))
+                .hasMessageContaining("từ chối");
+        assertThatCode(() -> CostPayerPolicy.requireCostResponse(cost, deadline, "Urgent")).doesNotThrowAnyException();
+    }
+
+    @Test
     void payerFollowsTheCauseForAllSixCauses() {
         assertThat(CostPayerPolicy.payerFor(IncidentCauseType.COMPANY_FAULT)).isEqualTo(CostPayerType.COMPANY);
         assertThat(CostPayerPolicy.payerFor(IncidentCauseType.AGENT_FAULT)).isEqualTo(CostPayerType.COMPANY);

@@ -61,6 +61,17 @@ public class Incident {
     @Column(name = "cause_type", length = 30, nullable = false)
     private IncidentCauseType causeType;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "confirmed_cause_type", length = 30)
+    private IncidentCauseType confirmedCauseType;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cause_confirmed_by")
+    private Staff causeConfirmedBy;
+
+    @Column(name = "cause_confirmed_at")
+    private Instant causeConfirmedAt;
+
     @Column(name = "title", length = 200, nullable = false)
     private String title;
 

@@ -6,7 +6,7 @@ test.describe.configure({ timeout: 60_000 })
 
 type Json = Record<string, unknown>
 
-async function open(page: Page, path: string, order: { status: string; rated?: boolean; quotations?: Json[]; payments?: Json[]; items?: Json[]; documents?: Json[]; insurance?: Json; reviewReason?: string; cancellation?: Json }) {
+async function open(page: Page, path: string, order: { status: string; rated?: boolean; quotations?: Json[]; payments?: Json[]; items?: Json[]; documents?: Json[]; insurance?: Json; reviewReason?: string; cancellation?: Json; costs?: Json[]; plans?: Json[] }) {
   const calls: { path: string; body: unknown }[] = []
   const state = { ...order }
   await page.addInitScript(() => {
@@ -26,6 +26,8 @@ async function open(page: Page, path: string, order: { status: string; rated?: b
         state.payments = [{ id: 6, type: 'DEPOSIT', status: 'PENDING', amount: 3_000_000, currencyCode: 'VND', dueAt: '2099-01-01T03:00:00Z' }]
       }
       if (url === '/payments/6/checkout') return reply({ paymentUrl: 'https://pay.example.test/go', expiresAt: '2099-01-01T03:00:00Z' })
+      if (url === '/cost-items/23/decline') state.costs = [{ ...state.costs![0], customerAgreed: false }]
+      if (url === '/incident-plans/45/accept') state.plans = [{ ...state.plans![0], customerAgreedAt: '2099-01-01T01:00:00Z' }]
       if (url === '/bookings/8/cancel') state.status = 'CANCELLED'
       if (url === '/bookings/8/reschedule') state.status = 'UNDER_REVIEW'
       if (url === '/bookings/8/resubmit') state.status = 'UNDER_REVIEW'
@@ -42,6 +44,8 @@ async function open(page: Page, path: string, order: { status: string; rated?: b
       parties: [{ bookingRole: 'SHIPPER', fullName: 'Người gửi', phone: '0900' }],
       horses: [{ id: 21, horseName: 'Gió Nam', status: 'ACTIVE', stallTypeCode: 'STANDARD', insurance: state.insurance }],
     })
+    if (url === '/bookings/8/customer-cost-items') return reply(state.costs ?? [])
+    if (url === '/bookings/8/customer-incident-plans') return reply(state.plans ?? [])
     if (url === '/bookings/8/quotations') return reply(state.quotations ?? [])
     if (url === '/bookings/8/payments') return reply(state.payments ?? [])
     if (url === '/bookings/8/documents/my-checklist') return reply({ items: state.items ?? [], documents: state.documents ?? [] })
@@ -163,4 +167,26 @@ test('đánh giá sau khi giao; khoản phát sinh chưa trả thì nhắc thanh
   await expect(page.getByRole('heading', { name: 'BK-TEST' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Gửi đánh giá' })).toHaveCount(0)
   expect(calls).toEqual([{ path: '/bookings/8/ratings', body: { score: 5 } }])
+})
+
+test('customer confirms a cost refusal and accepts an incident plan from the order', async ({ page }) => {
+  const { calls } = await open(page, '/orders/8', {
+    status: 'IN_OPERATION',
+    costs: [{ id: 23, description: 'Chi phí thú y', amount: 300_000, currencyCode: 'VND', customerResponseDueAt: '2099-01-01T03:00:00Z' }],
+    plans: [{ id: 45, instructions: 'Điều trị tại chỗ', estimatedCost: 300_000 }],
+  })
+  await page.getByRole('button', { name: 'Từ chối', exact: true }).click()
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Từ chối', exact: true }).click()
+  await expect(page.getByText('Đã từ chối', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Đồng ý', exact: true }).click()
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Đồng ý', exact: true }).click()
+  await expect(page.getByText('Đã đồng ý', { exact: true })).toBeVisible()
+  expect(calls.map(call => call.path)).toEqual(expect.arrayContaining(['/cost-items/23/decline', '/incident-plans/45/accept']))
+})
+
+test('direct quotation explains that removing horses keeps the vehicle charge', async ({ page }) => {
+  await open(page, '/orders/8', { status: 'AWAITING_DEPOSIT', quotations: [{
+    ...quote, lines: [{ ...quote.lines[0], lineType: 'DIRECT' }],
+  }] })
+  await expect(page.getByText('Bớt ngựa trong đơn chạy thẳng không làm giảm cước xe.')).toBeVisible()
 })

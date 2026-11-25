@@ -62,6 +62,12 @@ public class BookingStatusServiceImpl implements BookingStatusService {
 
     @Override
     @Transactional
+    public void expireQuote(Long bookingId, Departure previousDeparture) {
+        transition(bookingId, BookingStatus.QUOTE_EXPIRED, "Báo giá đã hết hạn.", null, previousDeparture, null);
+    }
+
+    @Override
+    @Transactional
     public void requireScheduleChange(Long bookingId, Departure previousDeparture, ScheduleChangeCause cause,
                                       String reason, Long actorUserId) {
         transition(bookingId, BookingStatus.SCHEDULE_CHANGE_REQUIRED, reason, actorUserId, previousDeparture, cause);

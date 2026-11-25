@@ -257,7 +257,7 @@ Vì báo giá phải gửi trước mốc quyết định và sống tối đa 2
 
 Tìm thấy khi đối chiếu code để viết luồng này:
 
-1. **Báo giá hết hạn là ngõ cụt** (T7). Bảng trạng thái cho phép quay lại báo giá nhưng chưa có nút nào làm việc đó; khách phải đặt đơn mới. Hỏi: giữ vậy, hay cho quản lý mở lại nếu chuyến còn chỗ?
+1. **Đã sửa.** Quản lý mở lại báo giá hết hạn khi còn chỗ, còn hạn đặt và kịp giấy.
 2. **Đã sửa.** Báo quản lý khi đơn sang Đang báo giá và khi khách chấp nhận hoặc từ chối báo giá. Báo khách khi báo giá hết hạn và khi hệ thống xác nhận đã nhận cọc.
 3. **Đã sửa.** Khi đặt đơn liên tỉnh chạy thẳng, hệ thống kiểm số ngày làm giấy theo quy định đến ngày đón.
 4. **Đã sửa.** Nút Từ chối đơn chỉ hiện ở Chờ tiếp nhận và Đang thẩm định, theo điều kiện của máy chủ.
@@ -945,13 +945,13 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 - **Duyệt**: sự cố chuyển sang **Đang xử lý**, phương án có hiệu lực.
 - **Từ chối**: phải ghi lý do. Sự cố vẫn ở Chờ duyệt phương án, điều phối lập phiên bản tiếp theo.
 
-**Bước 5. Tổ lái thực hiện và ghi chi phí.** Ngay trong sự cố, tổ lái ghi từng khoản: loại chi (thú y, cứu hộ, sửa xe, gửi chuồng, cầu đường, nhiên liệu, chờ, khác), mô tả, số tiền, **đã hỏi ý kiến khách hay chưa**, kèm biên lai. Hệ thống tự ghi ai chịu theo nguyên nhân của sự cố (bảng 5.B).
+**Bước 5. Tổ lái thực hiện và ghi chi phí.** Tổ lái ghi loại chi, mô tả, số tiền và kèm biên lai. Người trả do hệ thống tính theo nguyên nhân đã chốt hoặc tạm tính theo nguyên nhân đề xuất. Không thu phí chờ.
 
 **Bước 6. Tổ lái xác nhận ngựa đủ sức đi tiếp.** Nút **Đủ sức đi tiếp** dùng được khi phương án đã duyệt và đã qua **ít nhất 30 phút kể từ lúc báo sự cố**. Chưa đủ 30 phút thì hệ thống từ chối.
 
 **Bước 7. Điều phối viên bấm Đã xử lý xong.** Với sự cố sức khỏe hoặc sự cố của một con, hệ thống đòi đã có xác nhận ở bước 6. Phương án chuyển **Đã xong**, sự cố chuyển **Đã xử lý**.
 
-**Bước 8. Quản lý duyệt chi phí.** Khoản khách hoặc người nhận chịu chỉ duyệt được khi **đã hỏi khách**, hoặc còn nằm trong hạn mức chi khẩn cấp (điểm 5.18).
+**Bước 8. Quản lý duyệt chi phí.** Khoản khách chịu cần chốt nguyên nhân và có phản hồi đồng ý, trừ tiền giữ theo biểu hoặc ngoại lệ trong hạn mức quy định ở phần quyết toán.
 
 **Bước 9. Điều phối viên đóng sự cố.** Đây là bước bắt buộc: **đơn còn sự cố chưa đóng thì không quyết toán được** (luồng 6).
 
@@ -1057,11 +1057,12 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 
 ### Chi phí
 
-- **5.18** Duyệt khoản khách hoặc người nhận chịu khi **một trong hai**:
-  - đã hỏi khách;
-  - tổng các khoản đã duyệt mà chưa hỏi của đơn, cộng khoản này, **không vượt hạn mức chi khẩn cấp**. Khách không điền hạn mức thì luôn phải hỏi.
-- **5.19** Khoản công ty chịu: duyệt không cần điều kiện trên.
-- **5.20** Người trả do hệ thống xác định theo nguyên nhân; người ghi không chọn được.
+- **5.18** Khoản khách hoặc người nhận chịu cần nguyên nhân đã chốt. Phí giữ theo biểu được miễn phản hồi. Khoản khác cần khách đồng ý trên đơn hoặc điều phối ghi nội dung khách đồng ý qua điện thoại:
+  - Hết cửa sổ phản hồi mà khách chưa trả lời thì chỉ duyệt trong hạn mức khẩn cấp còn lại.
+  - Khách đã từ chối thì chỉ duyệt khoản cấp cứu VET trong hạn mức còn lại và có lý do của quản lý.
+  - Phương án vượt hạn mức còn lại cần khách đồng ý với đúng phiên bản phương án.
+- **5.19** Công ty chịu chi phí lỗi đại lý. Quản lý đánh dấu đã đòi ở quyết toán.
+- **5.20** Tổ lái đề xuất nguyên nhân. Quản lý chốt khi duyệt phương án, hệ thống cập nhật bên chịu cho các khoản chưa duyệt.
 - **5.21** Khoản khách hoặc người nhận chịu phải gắn với một đơn. Vì vậy phải báo **sự cố của một con**, không báo cả lượt.
 - **5.22** Thêm biên lai được tới khi quản lý duyệt khoản đó.
 - **5.23** Ghi chi phí **không** tự trừ tiền khách. Khoản đã duyệt mới thành phụ phí ở luồng 6.
@@ -1112,11 +1113,11 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 
 **Tiền và trách nhiệm:**
 
-9. **Tài xế chọn nguyên nhân, tức là chọn ai trả tiền, và không ai sửa được.** Ô chọn mặc định là Tình trạng ngựa (khách trả). Đề xuất: quản lý chốt nguyên nhân khi duyệt phương án.
-10. **"Đã hỏi khách" chỉ là lựa chọn của nhân viên.** Khách không có nút đồng ý hay từ chối, không lưu bằng chứng.
-11. **Duyệt phương án không xét hạn mức khẩn cấp** với chi phí dự kiến; chỉ xét khi duyệt chi phí, lúc tiền đã tiêu.
-12. **Lỗi đại lý chỉ ghi công ty chịu**, chưa theo dõi khoản phải đòi lại.
-13. **Chưa có phí chờ** dù tài liệu 59 bảng nói phí chờ và phí gửi chuồng do người nhận chịu. Hiện chỉ có phí giữ ở hub. Cần chọn một.
+9. **Đã sửa.** Tổ lái đề xuất nguyên nhân, quản lý chốt khi duyệt phương án.
+10. **Đã sửa.** Khách đồng ý hoặc từ chối trên đơn. Điều phối ghi nội dung khi khách đồng ý qua điện thoại.
+11. **Đã sửa.** Phương án vượt hạn mức còn lại cần khách đồng ý trước khi quản lý duyệt.
+12. **Đã sửa.** Quyết toán theo dõi khoản cần đòi lại đại lý.
+13. **Đã sửa.** Form chi phí bỏ phí chờ. Phí giữ tại hub theo biểu phí.
 
 **Vận hành:**
 
@@ -1369,5 +1370,5 @@ Dòng hai: loại một con thì bỏ cước trục, dịch vụ và phí bảo
 20. **Từ chối nhận không báo khách.** Chỉ báo quản lý; khách chỉ thấy báo giá đổi.
 21. **Đơn nhiều con đón bằng hai xe:** xe đầu rời thì đơn Đang vận chuyển, con ở xe sau **không từ chối nhận được**.
 22. **Ô đánh giá hiện lại sau khi đã đánh giá** (tải lại trang), bấm thì bị từ chối.
-23. **Đơn chạy thẳng loại bớt một con mà tiền gần như không giảm** (xem 6.D). Cần chốt có đúng ý không.
+23. **Đã sửa.** Báo giá chạy thẳng ghi rõ bớt ngựa không làm giảm cước xe.
 24. **Không có bước "người nhận nghiệm thu" riêng.** Nghiệm thu hiện là ảnh biên bản và việc giao xong. Nếu hội đồng hỏi "nghiệm thu ở đâu" thì chỉ vào bước 7 và bước 10.

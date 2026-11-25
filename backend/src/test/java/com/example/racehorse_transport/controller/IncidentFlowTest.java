@@ -61,6 +61,7 @@ class IncidentFlowTest {
         Staff escortStaff = testData.staff(testData.unique("incident.escort"), "ESCORT");
         escort = token(escortStaff, "ESCORT");
         booking = jdbc.queryForObject("SELECT id FROM booking WHERE code = 'DEV-DIRECT-001'", Long.class);
+        jdbc.update("UPDATE booking SET emergency_spending_limit = 1000000 WHERE id = ?", booking);
         long pickup = jdbc.queryForObject("SELECT id FROM booking_address WHERE booking_id = ? AND address_type = 'PICKUP'", Long.class, booking);
         long delivery = jdbc.queryForObject("SELECT id FROM booking_address WHERE booking_id = ? AND address_type = 'DELIVERY'", Long.class, booking);
         long line = jdbc.queryForObject("SELECT id FROM booking_horse WHERE booking_id = ?", Long.class, booking);
@@ -141,6 +142,57 @@ class IncidentFlowTest {
     }
 
     @Test
+    void customerCanAcceptOnlyTheirPlanAndCostAndManagerCanRecoverAgentCost() throws Exception {
+        String customerName = jdbc.queryForObject("""
+                SELECT u.username FROM app_user u JOIN booking b ON b.customer_id = u.id WHERE b.id = ?
+                """, String.class, booking);
+        String customer = "Bearer " + jwtUtils.generateToken(customerName, List.of("CUSTOMER"));
+        var otherCustomer = testData.customer(testData.unique("incident.other-customer"));
+        String other = "Bearer " + jwtUtils.generateToken(otherCustomer.getUser().getUsername(), List.of("CUSTOMER"));
+        long incident = id(report(leg, "HEALTH", "HORSE_CONDITION"));
+        long declined = id(cost(incident, "VET", "500000", false).andExpect(status().isCreated()));
+        long accepted = id(cost(incident, "VET", "1500000", false).andExpect(status().isCreated()));
+        mvc.perform(get("/bookings/{id}/customer-cost-items", booking + 1000000)
+                        .header(HttpHeaders.AUTHORIZATION, customer)).andExpect(status().isNotFound());
+        mvc.perform(get("/bookings/{id}/customer-cost-items", booking)
+                        .header(HttpHeaders.AUTHORIZATION, other)).andExpect(status().isNotFound());
+        act(other, "/cost-items/" + accepted + "/accept").andExpect(status().isNotFound());
+        act(customer, "/cost-items/" + declined + "/decline").andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.customerAgreed").value(false));
+        act(customer, "/cost-items/" + accepted + "/accept").andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.customerAgreed").value(true));
+
+        entityManager.flush();
+        jdbc.update("UPDATE booking SET emergency_spending_limit = 500000 WHERE id = ?", booking);
+        entityManager.clear();
+        long plan = ((Number) JsonPath.read(propose(incident, "CONTINUE", null).andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString(), "$.data.plans[0].id")).longValue();
+        act(manager, "/incident-plans/" + plan + "/approve").andExpect(status().isConflict());
+        act(other, "/incident-plans/" + plan + "/accept").andExpect(status().isNotFound());
+        act(customer, "/incident-plans/" + plan + "/accept").andExpect(status().isOk());
+        act(manager, "/incident-plans/" + plan + "/approve").andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.confirmedCauseType").value("HORSE_CONDITION"));
+        act(manager, "/cost-items/" + accepted + "/approve").andExpect(status().isOk());
+        act(manager, "/cost-items/" + declined + "/approve").andExpect(status().isConflict());
+
+        long next = ((Number) JsonPath.read(propose(incident, "CONTINUE", null).andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString(), "$.data.plans[1].id")).longValue();
+        mvc.perform(post("/incident-plans/{id}/approve", next).header(HttpHeaders.AUTHORIZATION, manager)
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                                {"confirmedCauseType":"AGENT_FAULT"}
+                                """))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.confirmedCauseType").value("AGENT_FAULT"));
+        act(manager, "/cost-items/" + declined + "/mark-recovered").andExpect(status().isConflict());
+        act(manager, "/cost-items/" + declined + "/approve").andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.agentRecoveryRequired").value(true));
+        act(manager, "/cost-items/" + declined + "/mark-recovered").andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.agentRecoveredAt").exists());
+        mvc.perform(get("/incidents/{id}/cost-items", incident).header(HttpHeaders.AUTHORIZATION, manager))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[?(@.id == " + accepted + ")].payerType").value(List.of("CUSTOMER")));
+    }
+
+    @Test
     void costPayerFollowsTheCauseAndCustomerCostsRespectTheEmergencyLimit() throws Exception {
         long horseIncident = id(report(leg, "HEALTH", "HORSE_CONDITION"));
         long vehicleIncident = id(report(null, "VEHICLE_BREAKDOWN", "COMPANY_FAULT"));
@@ -151,16 +203,31 @@ class IncidentFlowTest {
 
         long vet = id(cost(horseIncident, "VET", "2000000", false).andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.payerType").value("CUSTOMER")).andExpect(jsonPath("$.data.bookingCode").value("DEV-DIRECT-001")));
-        // Chưa hỏi khách, đơn chưa có hạn mức khẩn cấp
+        // Chưa chốt nguyên nhân và chưa có phản hồi của khách
         mvc.perform(post("/cost-items/{id}/approve", vet).header(HttpHeaders.AUTHORIZATION, manager)).andExpect(status().isConflict());
         entityManager.flush();
         jdbc.update("UPDATE booking SET emergency_spending_limit = 5000000 WHERE id = ?", booking);
+        jdbc.update("UPDATE cost_item SET customer_response_due_at = now() - interval '1 minute' WHERE id = ?", vet);
+        entityManager.clear();
+        long costPlan = ((Number) JsonPath.read(propose(horseIncident, "CONTINUE", null).andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString(), "$.data.plans[0].id")).longValue();
+        act(manager, "/incident-plans/" + costPlan + "/approve").andExpect(status().isOk());
+
         entityManager.clear();
         mvc.perform(post("/cost-items/{id}/approve", vet).header(HttpHeaders.AUTHORIZATION, manager)).andExpect(status().isOk());
         long more = id(cost(horseIncident, "VET", "4000000", false));
+        entityManager.flush();
+        jdbc.update("UPDATE cost_item SET customer_response_due_at = now() - interval '1 minute' WHERE id = ?", more);
+        entityManager.clear();
         mvc.perform(post("/cost-items/{id}/approve", more).header(HttpHeaders.AUTHORIZATION, manager)).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Khoản này do khách chịu, chưa hỏi ý kiến khách và vượt hạn mức chi khẩn cấp của đơn."));
         long consulted = id(cost(horseIncident, "VET", "4000000", true));
+        mvc.perform(post("/cost-items/{id}/approve", consulted).header(HttpHeaders.AUTHORIZATION, manager))
+                .andExpect(status().isConflict());
+        mvc.perform(post("/cost-items/{id}/phone-consent", consulted)
+                        .header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"note\":\"Customer approved the cost by phone.\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.customerConsulted").value(true));
         mvc.perform(post("/cost-items/{id}/approve", consulted).header(HttpHeaders.AUTHORIZATION, manager)).andExpect(status().isOk());
 
         // Luồng A gắn khoản thu thêm: chỉ cho chi phí khách chịu đã duyệt
@@ -216,7 +283,14 @@ class IncidentFlowTest {
 
     @Test
     void handoverTimeoutResolvesWithoutFitAndCannotUseReturnToHub() throws Exception {
-        long incident = id(report(leg, "HANDOVER_TIMEOUT", "RECIPIENT_ABSENT").andExpect(status().isCreated()));
+        report(leg, "HANDOVER_TIMEOUT", "RECIPIENT_ABSENT").andExpect(status().isBadRequest());
+        long incident = jdbc.queryForObject("""
+                INSERT INTO incident (vehicle_trip_id, horse_leg_id, booking_id, incident_type, cause_type,
+                    confirmed_cause_type, cause_confirmed_at, title, description, reported_by, status)
+                VALUES (?, ?, ?, 'HANDOVER_TIMEOUT', 'RECIPIENT_ABSENT', 'RECIPIENT_ABSENT', now(),
+                    'Delivery timeout', 'Customer did not meet the vehicle', ?, 'REPORTED')
+                RETURNING id
+                """, Long.class, trip, leg, booking, coordinatorId);
         propose(incident, "RETURN_TO_HUB", null).andExpect(status().isConflict());
         act(coordinator, "/incidents/" + incident + "/return-to-hub").andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Xe giao thẳng vào hub, không cần bấm đưa về hub."));

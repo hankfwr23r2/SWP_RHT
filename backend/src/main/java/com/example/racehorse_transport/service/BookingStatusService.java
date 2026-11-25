@@ -19,6 +19,8 @@ public interface BookingStatusService {
 
     void transitionForUser(Long bookingId, BookingStatus toStatus, String reason, String username);
 
+    void expireQuote(Long bookingId, Departure previousDeparture);
+
     void requireScheduleChange(Long bookingId, Departure previousDeparture, ScheduleChangeCause cause,
                                String reason, Long actorUserId);
 

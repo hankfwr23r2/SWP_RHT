@@ -149,3 +149,11 @@ Công ty không vận hành nơi cách ly. Điều kiện cách ly thể hiện 
 | 6.6, 7.1–7.4 | B4, B5 |
 | 6.7–6.8, 7.6 | A8 |
 | 7.5 | A1 (đã có backend) |
+
+## Đợt 2 · Báo giá và chi phí sự cố
+
+- Báo giá hết hạn có nút **Mở lại** ở màn quản lý. Đơn đủ điều kiện về `QUOTING`. Báo giá chạy thẳng của cả khách và quản lý ghi rõ cước xe giữ nguyên khi bớt ngựa.
+- Màn tổ lái dùng nhãn **Nguyên nhân đề xuất**. Quản lý chọn nguyên nhân chốt khi duyệt phương án.
+- Chi tiết đơn của khách hiện chi phí chờ phản hồi và phương án có dự trù. Khách đồng ý hoặc từ chối từng khoản và có thể đồng ý với phương án.
+- Điều phối nhập nội dung cuộc gọi khi khách đồng ý qua điện thoại. Quản lý ghi lý do cấp cứu khi duyệt khoản VET khách đã từ chối.
+- Quyết toán hiện khoản phải đòi lại đại lý và nút đánh dấu đã đòi. Form chi phí bỏ phí chờ.

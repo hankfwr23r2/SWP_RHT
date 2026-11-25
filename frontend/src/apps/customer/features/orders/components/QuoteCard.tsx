@@ -39,6 +39,7 @@ export function QuoteCard({ data }: { data: OrderData }) {
           {quote.estimatedDeliveryDate && <div><dt>{t('myOrders.quote.delivery')}</dt><dd>{showDate(quote.estimatedDeliveryDate)}</dd></div>}
           {quote.status === 'SENT' && quote.expiresAt && <div><dt>{t('myOrders.quote.expires')}</dt><dd>{moment(quote.expiresAt)}</dd></div>}
         </dl>
+      {quote.lines?.some(line => line.lineType === 'DIRECT') && <p>{t('incidentDecisions.directNote')}</p>}
         <table className={s.lines}>
           <thead><tr><th scope="col">{t('myOrders.quote.item')}</th><th scope="col">{t('myOrders.quote.amount')}</th></tr></thead>
           <tbody>

@@ -15,6 +15,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface IncidentRepository extends JpaRepository<Incident, Long> {
+    List<Incident> findByBooking_IdOrderByReportedAtDesc(Long bookingId);
+
 
     // Con giao thất bại do không gặp người nhận (B5) thì giữ có phí; về hub do sự cố khác thì tập kết không phí
     boolean existsByHorseLeg_IdAndIncidentType(Long horseLegId, IncidentType incidentType);

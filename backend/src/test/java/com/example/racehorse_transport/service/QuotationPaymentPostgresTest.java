@@ -239,6 +239,10 @@ class QuotationPaymentPostgresTest {
         assertThat(bookedSeats(departure)).isZero();
         assertThat(jdbc.queryForObject("select departure_id from booking where id = ?", Long.class,
                 fixture.booking().getId())).isNull();
+        assertThat(jdbc.queryForObject("""
+                select previous_departure_id from booking_status_history
+                where booking_id = ? and to_status = 'QUOTE_EXPIRED'
+                """, Long.class, fixture.booking().getId())).isEqualTo(departure);
         var late = callback(reference, "804903", 4000, deadline.minusSeconds(1), true);
         var shown = results.receiveReturn(late);
         assertThat(shown.success()).isFalse();
