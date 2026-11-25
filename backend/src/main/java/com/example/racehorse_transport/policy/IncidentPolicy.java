@@ -28,6 +28,9 @@ public final class IncidentPolicy {
         if (type == IncidentType.HANDOVER_TIMEOUT) {
             throw new DispatchRuleException("incidentType", "Chỉ hệ thống mở sự cố quá giờ chờ giao nhận.");
         }
+        if (type == IncidentType.COMPLAINT) {
+            throw new DispatchRuleException("incidentType", "Khiếu nại được ghi nhận trong chi tiết đơn hàng.");
+        }
         if (type == IncidentType.HEALTH && !hasHorse) {
             throw new DispatchRuleException("horseLegId", "Sự cố sức khỏe phải chọn con ngựa.");
         }

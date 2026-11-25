@@ -80,6 +80,9 @@ public class Booking {
     @Column(name = "waybill_number", length = 30)
     private String waybillNumber;
 
+    @Column(name = "delivery_confirmed_at")
+    private Instant deliveryConfirmedAt;
+
     @Column(name = "emergency_spending_limit", precision = 15, scale = 2)
     private BigDecimal emergencySpendingLimit;
 
