@@ -28,7 +28,7 @@
 | Lưu chuồng do chậm trễ hoặc chờ thanh toán | Theo ngựa theo ngày | IRT Anh điều 5, IRT Mỹ điều 6 |
 | Cách ly kéo dài hoặc xét nghiệm lại, không do lỗi công ty | Thực chi | IRT Đức §7.3 |
 | Thú y, thuốc, an thần khẩn cấp | Thực chi | IRT Úc 6(iii), IRT Đức §6.4 |
-| Chờ người nhận quá mốc miễn phí | Theo giờ | IRT Anh điều 9 |
+| Chi phí sau khi tới nơi, trước khi giao | Người nhận trả, không trả thì khách trả | IRT Anh điều 9, IRT Mỹ điều 9 (đọc bản gốc 25/11/2026: không có phí chờ theo giờ) |
 | Đổi tuyến hoặc phương án vì lợi ích của ngựa | Thực chi | IRT Úc điều 10 |
 | Cước hoặc phí bảo hiểm tăng sau ngày báo giá | Phần chênh | IRT Anh điều 7, IRT Mỹ điều 4 |
 
