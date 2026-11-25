@@ -320,10 +320,10 @@ Hai đợt chuẩn bị giấy tờ **chạy song song với luồng 1** và k�
 
 ### Bước 3. Chuyên viên duyệt giấy
 
-- Khi tiếp nhận đơn, chuyên viên mở từng tệp và bấm **Duyệt giấy** hoặc **Từ chối giấy** kèm lý do. Từ chối thì khách được báo lý do và nộp lại giấy đó.
+- Khi tiếp nhận đơn, chuyên viên mở từng tệp và bấm **Duyệt giấy** hoặc **Từ chối giấy** kèm lý do. Khi giấy bị từ chối, hệ thống báo lý do cho bên nộp để bổ sung bản mới.
 - Giấy theo ngựa đủ điều kiện dùng lại hiện là **Đã đáp ứng** trong hồ sơ chuyên viên.
 - Thiếu nhiều thứ thì chuyên viên bấm **Yêu cầu khách nộp** ở dòng thiếu, hoặc **Trả lại để bổ sung** cả đơn. Đơn sang **Cần bổ sung**; khách nộp xong thì gửi lại.
-- Giấy đã kết luận (duyệt hoặc từ chối) thì **không sửa kết luận được**; muốn khác thì phải có bản mới.
+- Phát hiện giấy đã duyệt sai hoặc giả, chuyên viên bấm **Thu hồi** và nhập lý do. Hệ thống chuyển giấy sang **Từ chối**, lưu nhật ký kiểm toán và báo bên nộp theo luồng từ chối giấy. Khi đã nhận ngựa, kể cả lúc xe đang chờ rời điểm đón, xử lý qua sự cố giấy tờ.
 
 ### Bước 4. Bảo hiểm cho từng con
 
@@ -363,6 +363,7 @@ Hệ thống tự kiểm **giấy bắt buộc của cả bốn bên** và **xá
 | Tình huống | Kiểm lúc nào | Cần đủ | Thiếu thì |
 |---|---|---|---|
 | Xe công ty đến đón, chạy thẳng | Tài xế bấm **Xuất phát** lượt đón | Giấy bắt buộc và bảo hiểm đã xác nhận | Xe không xuất phát được, nói rõ đơn nào thiếu |
+| Xe đã xuất phát tới điểm đón | Tổ xe hoàn tất nhận ngựa | Kiểm lại giấy bắt buộc | Chặn hoàn tất nhận ngựa, nói rõ đơn nào thiếu |
 | Khách tự chở tới hub | Điều phối bấm **Nhận ngựa** ở hub | Giấy bắt buộc và bảo hiểm đã xác nhận | Không nhận ngựa |
 | Đơn nhập | Hoàn tất nhận ngựa từ đại lý **ở cửa khẩu** | Giấy bắt buộc, gồm mẫu 14a, và bảo hiểm đã xác nhận | Không nhận, ngựa ở lại với đại lý |
 | Đơn xuất | Hoàn tất bàn giao ngựa cho đại lý **ở cửa khẩu** | Giấy bắt buộc | Không bàn giao, ngựa vẫn trên xe |
@@ -436,9 +437,10 @@ Tiếp ví dụ chuyến chạy **05:00 thứ Ba 08/12** (liên tỉnh), khách 
 | Khách | Giấy bên nộp là khách | Chờ tiếp nhận, Đang thẩm định, Cần bổ sung. Đã xác nhận thì chỉ giấy **bắt buộc** |
 | Chuyên viên nộp thay | Giấy của công ty, người nhận, đại lý | Từ Đang thẩm định tới Đã xác nhận |
 | Chuyên viên duyệt, từ chối | Mọi giấy | Từ Đang thẩm định tới Đã xác nhận |
+| Chuyên viên thu hồi | Giấy đã duyệt | Từ Đang thẩm định tới Đã xác nhận và chưa nhận ngựa |
 
 - **2.9** Chuyên viên **không nộp thay giấy của khách**. Chỉ chuyên viên được duyệt; quản lý và điều phối viên chỉ xem.
-- **2.10** Từ chối giấy bắt buộc ghi lý do. Kết luận rồi thì không đổi được.
+- **2.10** Từ chối và thu hồi giấy đều bắt buộc ghi lý do. Giấy thu hồi chuyển sang Từ chối. Hệ thống tính lại các yêu cầu giấy tờ còn thiếu, bên nộp có thể bổ sung bản mới theo mục 2.8.
 - **2.11** Giấy **theo ngựa** (hộ chiếu, sổ tiêm) đã duyệt và còn hạn theo mốc ở điểm 2.7 đáp ứng mọi quy định yêu cầu **cùng loại giấy của đúng con ngựa**. Giấy theo đơn hoặc theo ngựa trong đơn chỉ đáp ứng yêu cầu của đơn đã nộp.
 - **2.12** Một con bị loại khỏi đơn thì giấy của con đó không còn bị kiểm.
 
@@ -465,7 +467,7 @@ Tiếp ví dụ chuyến chạy **05:00 thứ Ba 08/12** (liên tỉnh), khách 
 | # | Ở bước | Tình huống | Hệ thống sẽ |
 |---|---|---|---|
 | T14 | 2 | Khách nộp lại giấy đang chờ duyệt | Không nhận, báo giấy đang chờ duyệt hoặc còn hiệu lực |
-| T15 | 3 | Giấy bị từ chối | Báo khách lý do, mở lại nút Nộp giấy cho dòng đó |
+| T15 | 3 | Giấy bị từ chối hoặc thu hồi | Báo đúng bên nộp kèm lý do, cho nộp lại theo điều kiện ở mục 2.8 |
 | T16 | 4 | Hợp đồng khách tự có không phủ ngày chuyến chạy | Không cho xác nhận. Chuyên viên yêu cầu bổ sung, khách sửa hợp đồng |
 | T17 | 4 | Báo giá của hãng bảo hiểm hết hạn khi chưa gửi báo giá cho khách | Chặn lập hoặc gửi báo giá, báo tên ngựa. Chuyên viên cập nhật và xác nhận báo giá hãng, sau đó quản lý lập lại bản nháp |
 | T18 | 5 | Đơn quốc tế chưa gắn chuyến nên chưa biết cửa khẩu | Coi là chưa đủ giấy, chưa cho báo giá |
@@ -481,7 +483,7 @@ Tiếp ví dụ chuyến chạy **05:00 thứ Ba 08/12** (liên tỉnh), khách 
 2. **Không có chỗ tải tệp hợp đồng bảo hiểm.** Khách tự có chỉ khai số hợp đồng và ngày; chuyên viên không có tệp để kiểm. Loại giấy "Hợp đồng bảo hiểm" đã khai nhưng chưa dùng.
 3. **Đã sửa.** Giấy được duyệt phải còn hiệu lực đến hết mốc ngày chạy của chuyến hoặc ngày đón của đơn chạy thẳng.
 4. **Đã sửa.** Khi đơn Đang báo giá (T17), chuyên viên mở lại bảo hiểm mua hộ kèm lý do, ghi báo giá hãng mới và xác nhận. Quản lý lập lại bản nháp theo phí mới.
-5. **Không rút lại được giấy đã duyệt** nếu phát hiện giả hoặc sai.
+5. **Đã sửa.** Chuyên viên thu hồi giấy đã duyệt trước khi nhận ngựa, bắt buộc ghi lý do, lưu kiểm toán và báo bên nộp. Hệ thống chặn xuất phát hoặc nhận ngựa nếu đơn thiếu giấy bắt buộc. Giấy đã theo xe thì xử lý qua sự cố giấy tờ.
 6. **Đã sửa phần nhắc và danh sách.** Đơn liên tỉnh chạy thẳng được nhắc theo ngày đón và hiện trong danh sách Đơn thiếu giấy sau khi đã cọc. Thao tác báo giấy không kịp vẫn áp dụng cho đơn có chuyến.
 7. **Đã sửa.** Kiểm lại giấy bắt buộc khi hoàn tất bàn giao đơn xuất cho đại lý ở cửa khẩu. Thiếu giấy thì ngựa vẫn trên xe.
 8. **Danh sách giấy mẫu lệch giữa Campuchia và Lào**: xuất Lào thiếu sổ tiêm, nhập Lào thiếu xét nghiệm. Cần nhóm xác nhận cố ý hay thiếu.

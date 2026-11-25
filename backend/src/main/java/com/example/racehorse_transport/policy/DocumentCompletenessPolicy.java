@@ -26,7 +26,12 @@ public final class DocumentCompletenessPolicy {
             Long bookingId, BookingHorse horse, LocalDate on) {
         return document.getStatus() == DocumentStatus.APPROVED
                 && (document.getExpiryDate() == null || !document.getExpiryDate().isBefore(on))
-                && matchesOwnerAndType(document, requirement, bookingId, horse)
+                && matchesChecklist(document, requirement, bookingId, horse);
+    }
+
+    public static boolean matchesChecklist(Document document, DocumentRequirementResponseDto requirement,
+            Long bookingId, BookingHorse horse) {
+        return matchesOwnerAndType(document, requirement, bookingId, horse)
                 && (requirement.ownerType() == DocumentSubject.HORSE || matchesRequirement(document, requirement));
     }
 

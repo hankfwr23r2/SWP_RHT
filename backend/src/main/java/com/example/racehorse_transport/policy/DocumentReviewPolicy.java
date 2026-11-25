@@ -41,4 +41,17 @@ public final class DocumentReviewPolicy {
             throw BookingRuleException.conflict("Giấy tờ đã được kết luận.");
         }
     }
+
+    public static void requireRevocationBeforePickup(BookingStatus status, boolean received) {
+        if (received || status == IN_OPERATION || status == DELIVERED || status == COMPLETED) {
+            throw BookingRuleException.conflict("Giấy đã theo xe, xử lý qua sự cố giấy tờ.");
+        }
+        requireStaffReview(status);
+    }
+
+    public static void requireApproved(DocumentStatus status) {
+        if (status != DocumentStatus.APPROVED) {
+            throw BookingRuleException.conflict("Chỉ thu hồi được giấy tờ đã duyệt.");
+        }
+    }
 }

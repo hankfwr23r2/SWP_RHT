@@ -58,7 +58,7 @@ class BookingReviewServiceTest {
     private final DocumentCompletenessServiceImpl completeness = spy(new DocumentCompletenessServiceImpl(
             bookings, mock(BookingAddressRepository.class), horses, documents, mock(RegulationService.class), CLOCK));
     private final DocumentReviewService docs = new DocumentReviewServiceImpl(
-            bookings, horses, documents, requirements, assignments, attachments, completeness, notifications, CLOCK);
+            bookings, horses, documents, requirements, assignments, attachments, completeness, notifications, audit, CLOCK);
     private final InsuranceService insurance = new InsuranceServiceImpl(
             roles, mock(TermsAcceptanceRepository.class), insurances, bookings, assignments, notifications, audit, CLOCK,
             bookingHorses);

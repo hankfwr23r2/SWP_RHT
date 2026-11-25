@@ -1076,6 +1076,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/bookings/{id}/documents/{documentId}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["revoke"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/bookings/{id}/insurances/{insuranceId}/confirm": {
         parameters: {
             query?: never;
@@ -5850,6 +5866,9 @@ export interface components {
             /** @enum {string} */
             submitterType: "CUSTOMER" | "CONSIGNEE" | "COMPANY" | "AGENT";
         };
+        DocumentRevocationRequestDto: {
+            reason: string;
+        };
         DocumentTypeCreateRequestDto: {
             code: string;
             name: string;
@@ -9655,6 +9674,33 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["DocumentRejectionRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingDocumentResponseDto"];
+                };
+            };
+        };
+    };
+    revoke: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                documentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentRevocationRequestDto"];
             };
         };
         responses: {

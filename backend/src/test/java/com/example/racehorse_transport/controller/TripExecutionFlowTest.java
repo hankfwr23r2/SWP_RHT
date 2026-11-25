@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -655,6 +656,126 @@ class TripExecutionFlowTest {
         act(driver, "/vehicle-trips/" + trip + "/start").andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Đơn DEV-DIRECT-001 còn thiếu giấy tờ bắt buộc."));
         assertThat(jdbc.queryForObject("SELECT status FROM vehicle_trip WHERE id = ?", String.class, trip)).isEqualTo("PLANNED");
+    }
+
+    @Test
+    void revokingAReusablePassportNotifiesTheCustomerAndBlocksTripStart() throws Exception {
+        Staff specialist = assignDocumentSpecialist();
+        String specialistToken = token(specialist, "SPECIALIST");
+        long passport = approveRequiredDocuments("HORSE_PASSPORT");
+        jdbc.update("UPDATE document SET document_requirement_id = NULL WHERE id = ?", passport);
+        String customer = "Bearer " + jwtUtils.generateToken("customer1.dev", List.of("CUSTOMER"));
+        String item = "$.data.items[?(@.requirement.documentTypeCode == 'HORSE_PASSPORT')].satisfied";
+        mvc.perform(get("/bookings/{id}/documents/my-checklist", booking).header(HttpHeaders.AUTHORIZATION, customer))
+                .andExpect(status().isOk()).andExpect(jsonPath(item, contains(true)));
+
+        revokeDocument(passport, customer, "Giấy sai nội dung").andExpect(status().isForbidden());
+        Staff other = testData.staff(testData.unique("exec.doc.other"), "SPECIALIST");
+        revokeDocument(passport, token(other, "SPECIALIST"), "Giấy sai nội dung").andExpect(status().isForbidden());
+        revokeDocument(passport, specialistToken, "  ").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.data.reason").value("Phải nhập lý do."));
+        revokeDocument(passport, specialistToken, "  Giấy sai nội dung  ").andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("REJECTED"))
+                .andExpect(jsonPath("$.data.reviewNote").value("Giấy sai nội dung"));
+        revokeDocument(passport, specialistToken, "Gửi lại yêu cầu").andExpect(status().isConflict());
+        entityManager.flush();
+        assertThat(jdbc.queryForObject("""
+                SELECT old_data ->> 'status' = 'APPROVED' AND new_data ->> 'status' = 'REJECTED'
+                    AND new_data ->> 'reason' = 'Giấy sai nội dung'
+                FROM audit_log WHERE action = 'REVOKE_DOCUMENT' AND target_table = 'document'
+                    AND target_id = ? AND actor_user_id = ?
+                """, Boolean.class, passport, specialist.getUserId())).isTrue();
+        long customerId = jdbc.queryForObject("SELECT customer_id FROM booking WHERE id = ?", Long.class, booking);
+        assertThat(documentNoticeRecipients("Giấy sai nội dung", "/orders/" + booking)).containsExactly(customerId);
+        mvc.perform(get("/bookings/{id}/documents/my-checklist", booking).header(HttpHeaders.AUTHORIZATION, customer))
+                .andExpect(status().isOk()).andExpect(jsonPath(item, contains(false)));
+
+        acknowledge(driver);
+        acknowledge(escort);
+        act(driver, "/vehicle-trips/" + trip + "/start").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Đơn DEV-DIRECT-001 còn thiếu giấy tờ bắt buộc."));
+    }
+
+    @Test
+    void revokingACompanyDocumentAfterTripStartNotifiesTheSpecialistAndBlocksPickup() throws Exception {
+        Staff specialist = assignDocumentSpecialist();
+        long certificate = approveRequiredDocuments("HEALTH_CERT");
+        long pickup = startAndOpenPickup();
+
+        revokeDocument(certificate, token(specialist, "SPECIALIST"), "Giấy kiểm dịch sai").andExpect(status().isOk());
+        entityManager.flush();
+        assertThat(documentNoticeRecipients("Giấy kiểm dịch sai", "/specialist/review/" + booking))
+                .containsExactly(specialist.getUserId());
+        act(escort, "/handovers/" + pickup + "/complete").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Đơn DEV-DIRECT-001 còn thiếu giấy tờ bắt buộc."));
+    }
+
+    @Test
+    void revocationIsBlockedAfterPickupEvenBeforeTheBookingIsInOperation() throws Exception {
+        Staff specialist = assignDocumentSpecialist();
+        long passport = approveRequiredDocuments("HORSE_PASSPORT");
+        long pickup = startAndOpenPickup();
+        act(escort, "/handovers/" + pickup + "/complete").andExpect(status().isOk());
+        assertThat(bookingStatus()).isEqualTo("CONFIRMED");
+
+        revokeDocument(passport, token(specialist, "SPECIALIST"), "Giấy sai nội dung").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Giấy đã theo xe, xử lý qua sự cố giấy tờ."));
+        assertThat(jdbc.queryForObject("SELECT status FROM document WHERE id = ?", String.class, passport)).isEqualTo("APPROVED");
+    }
+
+    private Staff assignDocumentSpecialist() {
+        Staff specialist = testData.staff(testData.unique("exec.doc.specialist"), "SPECIALIST");
+        entityManager.flush();
+        jdbc.update("UPDATE booking SET specialist_id = ? WHERE id = ?", specialist.getUserId(), booking);
+        entityManager.clear();
+        return specialist;
+    }
+
+    private long approveRequiredDocuments(String code) {
+        return jdbc.queryForObject("""
+                WITH approved AS (
+                    INSERT INTO document (document_type_id, document_requirement_id, file_url, file_name, uploaded_by,
+                            status, reviewed_by, reviewed_at, booking_id, booking_horse_id, horse_id)
+                    SELECT dt.id, dr.id, 'test://approved/' || md5(random()::text), dt.code || '.pdf',
+                           CASE WHEN dr.submitter_type = 'CUSTOMER' THEN b.customer_id ELSE b.specialist_id END,
+                           'APPROVED', b.specialist_id, now(), CASE WHEN dt.owner_type = 'BOOKING' THEN b.id END,
+                           CASE WHEN dt.owner_type = 'BOOKING_HORSE' THEN bh.id END,
+                           CASE WHEN dt.owner_type = 'HORSE' THEN bh.horse_id END
+                    FROM booking b JOIN booking_horse bh ON bh.booking_id = b.id
+                    JOIN country_rule cr ON cr.country_code = 'VN' AND cr.direction = b.booking_type
+                    JOIN document_requirement dr ON dr.country_rule_id = cr.id
+                    JOIN document_type dt ON dt.id = dr.document_type_id
+                    WHERE b.id = ? AND dr.gate_location_id IS NULL
+                      AND cr.valid_from <= b.requested_pickup_date AND (cr.valid_to IS NULL OR cr.valid_to >= b.requested_pickup_date)
+                    RETURNING id, document_type_id
+                )
+                SELECT a.id FROM approved a JOIN document_type dt ON dt.id = a.document_type_id WHERE dt.code = ?
+                """, Long.class, booking, code);
+    }
+
+    private long startAndOpenPickup() throws Exception {
+        acknowledge(driver);
+        acknowledge(escort);
+        act(driver, "/vehicle-trips/" + trip + "/start").andExpect(status().isOk());
+        act(driver, "/trip-stops/" + stops.get(0) + "/arrive").andExpect(status().isOk());
+        act(driver, "/trip-stops/" + stops.get(0) + "/depart").andExpect(status().isOk());
+        act(driver, "/trip-stops/" + stops.get(1) + "/arrive").andExpect(status().isOk());
+        long pickup = handoverId(handover(escort, stops.get(1), "PICKUP").andExpect(status().isCreated()));
+        scan(escort, pickup, chip).andExpect(status().isOk());
+        return pickup;
+    }
+
+    private ResultActions revokeDocument(long documentId, String token, String reason) throws Exception {
+        return mvc.perform(post("/bookings/{id}/documents/{documentId}/revoke", booking, documentId)
+                .header(HttpHeaders.AUTHORIZATION, token).contentType(MediaType.APPLICATION_JSON)
+                .content(new ObjectMapper().writeValueAsString(java.util.Map.of("reason", reason))));
+    }
+
+    private List<Long> documentNoticeRecipients(String message, String link) {
+        return jdbc.queryForList("""
+                SELECT r.user_id FROM notification n JOIN notification_recipient r ON r.notification_id = n.id
+                WHERE n.booking_id = ? AND n.title = 'Giấy tờ cần bổ sung' AND n.message = ? AND n.link_url = ?
+                """, Long.class, booking, message, link);
     }
 
     @Test

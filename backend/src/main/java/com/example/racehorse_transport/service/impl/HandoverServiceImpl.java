@@ -177,6 +177,9 @@ public class HandoverServiceImpl implements HandoverService {
             throw new DispatchRuleException("record", "Chưa có biên bản giao nhận. Chụp biên bản đã ký trước khi hoàn tất.", true);
         }
         List<HandoverHorse> matched = results.stream().filter(r -> Boolean.TRUE.equals(r.getMicrochipMatched())).toList();
+        List<HorseLeg> matchedLegs = matched.stream().map(HandoverHorse::getHorseLeg).toList();
+        // Khóa đơn trước khi đọc giấy tờ để kiểm trên kết quả duyệt mới nhất.
+        outcomes.lockBookingsForCompletion(handover.getHandoverType(), matchedLegs);
         boolean receiving = handover.getHandoverType() == HandoverType.PICKUP
                 || handover.getHandoverType() == HandoverType.AGENT && handover.getFromParty() != null;
         if (receiving || handover.getHandoverType() == HandoverType.DELIVERY) {
@@ -195,7 +198,6 @@ public class HandoverServiceImpl implements HandoverService {
                         code -> evidence.requireRecipient(booking, request == null ? null : request.forBooking(code))));
             }
         }
-        List<HorseLeg> matchedLegs = matched.stream().map(HandoverHorse::getHorseLeg).toList();
         custody.finishStablePlan(handover, matchedLegs);
         outcomes.complete(handover, matchedLegs, clock.instant(), actorId);
         return crewTrip(tripId, username);

@@ -61,18 +61,25 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
+    public void lockBookingsForCompletion(HandoverType type, List<HorseLeg> matched) {
+        if (type == HandoverType.HUB_IN || type == HandoverType.HUB_OUT || type == HandoverType.PICKUP || type == HandoverType.AGENT) {
+            matched.stream().map(leg -> leg.getBookingHorse().getBooking().getId()).distinct().sorted()
+                    .forEach(paymentReadiness::lockBooking);
+        }
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
     public void complete(Handover handover, List<HorseLeg> matched, Instant now, Long actorUserId) {
         boolean agent = handover.getHandoverType() == HandoverType.AGENT;
         boolean boarding = TripExecutionPolicy.isBoarding(handover.getHandoverType(), handover.getFromParty() != null);
-        // Khóa đơn theo ID tăng dần khi một lần giao nhận có nhiều đơn
         List<Booking> bookings = matched.stream().map(l -> l.getBookingHorse().getBooking()).distinct()
                 .sorted(Comparator.comparing(Booking::getId)).toList();
-        if (handover.getHandoverType() == HandoverType.HUB_IN || handover.getHandoverType() == HandoverType.HUB_OUT
-                || handover.getHandoverType() == HandoverType.PICKUP || agent) {
-            bookings.forEach(booking -> paymentReadiness.lockBooking(booking.getId()));
-        }
         if (handover.getHandoverType() == HandoverType.PICKUP || (agent && boarding)) {
             matched.forEach(leg -> pickupMisses.requirePickupCanComplete(leg, now));
+        }
+        if (handover.getHandoverType() == HandoverType.PICKUP) {
+            bookings.forEach(handoverReadiness::requireDocumentsForPickup);
         }
         if (handover.getHandoverType() == HandoverType.HUB_OUT) {
             bookings.stream().filter(booking -> !paymentReadiness.isPaidInFull(booking.getId())).findFirst().ifPresent(booking -> {

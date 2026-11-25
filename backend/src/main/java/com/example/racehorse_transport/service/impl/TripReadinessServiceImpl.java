@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.HorseLeg;
 import com.example.racehorse_transport.entity.TripStop;
 import com.example.racehorse_transport.entity.VehicleTrip;
@@ -12,13 +13,13 @@ import com.example.racehorse_transport.policy.IncidentPolicy;
 import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.repository.IncidentRepository;
 import com.example.racehorse_transport.repository.TripStopRepository;
-import com.example.racehorse_transport.service.DocumentCompletenessService;
 import com.example.racehorse_transport.service.HandoverReadinessService;
+import com.example.racehorse_transport.service.PaymentReadinessService;
 import com.example.racehorse_transport.service.TripReadinessService;
 import com.example.racehorse_transport.service.VehicleService;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -30,7 +31,7 @@ public class TripReadinessServiceImpl implements TripReadinessService {
     private final TripStopRepository stops;
     private final HorseLegRepository legs;
     private final HandoverReadinessService handoverReadiness;
-    private final DocumentCompletenessService documents;
+    private final PaymentReadinessService paymentReadiness;
     private final VehicleService vehicles;
     private final IncidentRepository incidents;
 
@@ -40,7 +41,7 @@ public class TripReadinessServiceImpl implements TripReadinessService {
         if (vehicles.lockVehicle(trip.getVehicle().getId()).getStatus() != VehicleStatus.ACTIVE) {
             throw new DispatchRuleException("vehicleId", "Xe đang bảo dưỡng hoặc đã ngừng sử dụng. Liên hệ điều phối để đổi xe.", true);
         }
-        Map<Long, String> bookings = new LinkedHashMap<>();
+        Map<Long, Booking> bookings = new TreeMap<>();
         for (TripStop stop : stops.findByVehicleTrip_IdOrderBySequenceNumber(trip.getId())) {
             if (stop.getStopType() != TripStopType.PICKUP) continue;
             for (HorseLeg leg : legs.findByBoardTripStop_IdAndStatusIn(stop.getId(), Set.of(HorseLegStatus.PLANNED))) {
@@ -49,14 +50,13 @@ public class TripReadinessServiceImpl implements TripReadinessService {
                     throw new DispatchRuleException("pickup", "Còn ngựa chưa chọn cách xử lý đón hụt.", true);
                 }
                 var booking = horse.getBooking();
-                bookings.put(booking.getId(), booking.getCode());
+                bookings.put(booking.getId(), booking);
                 handoverReadiness.requireConfirmedInsurance(horse);
             }
         }
-        bookings.forEach((id, code) -> {
-            if (!documents.isComplete(id)) {
-                throw new DispatchRuleException("documents", "Đơn " + code + " còn thiếu giấy tờ bắt buộc.", true);
-            }
+        bookings.forEach((id, booking) -> {
+            paymentReadiness.lockBooking(id);
+            handoverReadiness.requireDocumentsForPickup(booking);
         });
     }
 

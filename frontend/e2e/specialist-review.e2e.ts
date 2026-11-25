@@ -74,6 +74,11 @@ async function open(page: Page, path: string, initialStatus: Status = 'UNDER_REV
         documents[0].status = 'APPROVED'
         items[0].satisfied = true
       }
+      if (path === `${documentPath}/1/revoke`) {
+        documents[0].status = 'REJECTED'
+        documents[0].reviewNote = body.reason
+        items[0].satisfied = false
+      }
       if (path === `${documentPath}/2/reject`) {
         if (body.reason === 'mờ') return fail(400, 'Dữ liệu chưa hợp lệ.', { reason: 'Vui lòng mô tả rõ hơn.' })
         documents[1].status = 'REJECTED'
@@ -196,6 +201,23 @@ test('duyệt giấy từng ngựa, từ chối kèm lý do và nộp giấy tha
   expect(submission?.body).toEqual(expect.stringContaining('name="bookingHorseId"'))
   expect(submission?.body).toEqual(expect.stringContaining('2099-02-01'))
   expect(calls[0].path).toBe(documentPath + '/1/approve')
+})
+
+test('chuyên viên thu hồi giấy đã duyệt và thấy yêu cầu giấy trở lại chưa đáp ứng', async ({ page }) => {
+  const { calls } = await open(page, detailPath, 'CONFIRMED')
+  await confirm(page, 'Duyệt giấy')
+  await expect(page.getByText('Đã đáp ứng', { exact: true })).toBeVisible()
+
+  await page.getByRole('button', { name: 'Thu hồi', exact: true }).click()
+  const dialog = page.getByRole('alertdialog', { name: 'Thu hồi' })
+  await dialog.getByRole('textbox', { name: 'Lý do' }).fill('Hộ chiếu sai thông tin')
+  await dialog.getByRole('button', { name: 'Thu hồi', exact: true }).click()
+  await expect(dialog).toHaveCount(0)
+
+  await expect(page.getByText('Hộ chiếu sai thông tin')).toBeVisible()
+  await expect(page.getByText('Đã đáp ứng', { exact: true })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Thu hồi', exact: true })).toHaveCount(0)
+  expect(calls).toContainEqual({ path: `${documentPath}/1/revoke`, body: { reason: 'Hộ chiếu sai thông tin' } })
 })
 
 test('ghi báo giá và xác nhận bảo hiểm, mở lại, yêu cầu bổ sung và thử lại khi báo giá bị chặn', async ({ page }) => {

@@ -14,6 +14,8 @@ export const bookingDocumentsApi = {
     readFormResponse<BookingDocument>(await apiClient.post(`/bookings/${id}/documents/${documentId}/approve`, {}, formResponseOptions)),
   reject: async (id: number, documentId: number, body: Schemas['DocumentRejectionRequestDto']) =>
     readFormResponse<BookingDocument>(await apiClient.post(`/bookings/${id}/documents/${documentId}/reject`, body, formResponseOptions)),
+  revoke: async (id: number, documentId: number, body: Schemas['DocumentRevocationRequestDto']) =>
+    readFormResponse<BookingDocument>(await apiClient.post(`/bookings/${id}/documents/${documentId}/revoke`, body, formResponseOptions)),
   uploadForPartner: async (id: number, item: ChecklistItem, file: File, expiryDate: string) => {
     const body = new FormData()
     body.append('requirementId', String(item.requirement?.id))

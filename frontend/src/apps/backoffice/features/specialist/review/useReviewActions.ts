@@ -9,6 +9,7 @@ export type ReviewAction = {
   label: string
   run: (reason: string) => Promise<unknown>
   reason?: boolean
+  confirm?: boolean
   danger?: boolean
   // Nút chính của bước này
   primary?: boolean
@@ -67,6 +68,10 @@ export function useReviewActions(id: number) {
     }),
     rejectDocument: (documentId: number): ReviewAction => ({
       label: 'rejectDocument', reason: true, danger: true, run: reason => bookingDocumentsApi.reject(id, documentId, { reason }),
+    }),
+    revokeDocument: (documentId: number): ReviewAction => ({
+      label: 'revokeDocument', reason: true, confirm: true, danger: true,
+      run: reason => bookingDocumentsApi.revoke(id, documentId, { reason }),
     }),
     upload: (item: ChecklistItem, file: File, expiry: string) =>
       run(() => bookingDocumentsApi.uploadForPartner(id, item, file, expiry)),
