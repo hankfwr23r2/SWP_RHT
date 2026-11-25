@@ -73,7 +73,7 @@ Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A
 
 | Điểm | Đang thế nào | Gợi ý (chưa duyệt) | Xem ở | Lưu ý |
 |---|---|---|---|---|
-| **5.G5** | Lượt giao không có hub phía sau thì con giao hụt không có chỗ vào, lượt không kết thúc được | Lượt giao phải kết thúc ở hub khi lập; hoặc cho thêm điểm hub vào lượt đang chạy | `DispatchServiceImpl`, `DispatchPolicy` | Ưu tiên. Gợi ý gom đã tự thêm hub cuối |
+| **5.G5** | **Đã sửa.** Lượt đón, giao, chạy thẳng phải kết thúc ở hub; máy chủ chặn khi lập lượt, màn lập lượt báo ngay ở điểm cuối | | `DispatchPolicy`, `DispatchServiceImpl`, `CreateTripModal.tsx` | |
 | **5.G14** | Đang có sự cố, tài xế vẫn Tới nơi, Rời đi được | Chỉ khóa với sự cố nặng; có cách mở lại | `TripExecutionServiceImpl`, `IncidentPolicy` | **Chờ** 1b và đợt 2 |
 | **5.G15** | Gửi chuồng gần, Thú y, Hủy chặng duyệt xong không có thao tác | Gửi chuồng mở lưu trú ở đối tác; hủy chặng gỡ chặng; thú y ghi nhật ký | `IncidentActionServiceImpl`, `HorseStayServiceImpl` | Đợt 2 đã gộp, làm được |
 | **5.G16** | Đổi xe không ký lại giao nhận, xe hỏng không sang bảo dưỡng | Xe hỏng sang bảo dưỡng ngay; hộ tống ký `SHIFT` tại chỗ | `IncidentActionServiceImpl`, `VehicleServiceImpl` | Đợt 2 đã gộp, làm được. Làm cùng 4.F10 |
@@ -95,7 +95,8 @@ Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A
 | 2.F2, 2.F4, 2.F5, 2.F7, 2.F8, 2.F9, 2.F10 | | | |
 | 3.G4, 3.G6, 3.G7, 3.G8, 3.G9, 3.G10, 3.G11 | | | |
 | 4.F1, 4.F2, 4.F3, 4.F6, 4.F10, 4.F11, 4.F12 | | | |
-| 5.G5, 5.G14, 5.G15, 5.G16, 5.G17, 5.G18, 5.G22 | | | |
+| 5.G14, 5.G15, 5.G16, 5.G17, 5.G18, 5.G22 | | | |
+| 5.G5 | Lượt đón, giao, chạy thẳng phải kết thúc ở hub | Đã duyệt | |
 | 6.G15 | | | |
 
 ## 6. Luồng A giữ lại (22 điểm, đừng làm)

@@ -62,7 +62,11 @@ export function CreateTripModal({ bookings, weekFrom, weekTo, returning, onClose
   const reset = (type: TripType) => { setTripType(type); setChosen([]); setStartAt(undefined); setPlan(undefined); setManual(false); setStops(type === 'TRANSFER' ? [emptyStop(), emptyStop()] : [emptyStop(), emptyStop(), emptyStop()]) }
   const toggle = (id: number) => { setPlan(undefined); setStartAt(undefined); setChosen(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id]) }
 
-  const ready = vehicleId !== '' && (tripType === 'LINEHAUL' ? departureId !== '' : byHand ? stopsReady(stops) : !!request && !!plan && !plan.blocked)
+  const finalPlace = stops.at(-1)?.place
+  const needsFinalHub = tripType === 'PICKUP' || tripType === 'DELIVERY' || tripType === 'DIRECT'
+  const invalidFinalPlace = byHand && needsFinalHub && !!finalPlace && !hubs.some(hub => `L${hub.id}` === finalPlace)
+  const manualReady = stopsReady(stops) && !invalidFinalPlace
+  const ready = vehicleId !== '' && (tripType === 'LINEHAUL' ? departureId !== '' : byHand ? manualReady : !!request && !!plan && !plan.blocked)
   const submit = async () => {
     setBusy(true)
     try {
@@ -133,7 +137,10 @@ export function CreateTripModal({ bookings, weekFrom, weekTo, returning, onClose
           </fieldset>
         )}
         {request && !byHand && <TripPlanPreview request={request} onPlan={setPlan} onStart={setStartAt} onManual={() => setManual(true)} />}
-        {tripType !== 'LINEHAUL' && byHand && <ManualStops stops={stops} onChange={setStops} bookings={bookings} locations={data.locations} />}
+        {tripType !== 'LINEHAUL' && byHand && (
+          <ManualStops stops={stops} onChange={setStops} bookings={bookings} locations={data.locations}
+            finalPlaceError={invalidFinalPlace ? t('dispatch.create.finalPlaceHub') : undefined} />
+        )}
         {manual && tripType !== 'TRANSFER' && <div><Button variant="ghost" size="sm" onClick={() => setManual(false)}>{t('dispatch.plan.backToAuto')}</Button></div>}
       </div>
     )

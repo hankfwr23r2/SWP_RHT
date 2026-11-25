@@ -1105,7 +1105,7 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 2. **Đã sửa** · Tổ lái xử lý sự cố sau khi hoàn tất lượt. Điều phối xác nhận thay với kết quả thú y.
 3. **Đã sửa** · Chỉ HEALTH và ACCIDENT có ngựa yêu cầu xác nhận đủ sức.
 4. **Đã sửa** · Điều phối có form ghi chi phí và tổ lái còn ghi được sau khi kết thúc lượt.
-5. **Không còn hub phía sau thì con giao hụt không có chỗ vào**: không đưa về hub được và lượt cũng không kết thúc được. Điều phối phải nhớ để hub là điểm dừng cuối của lượt giao.
+5. **Đã sửa.** Lượt đón, giao và chạy thẳng phải kết thúc ở hub; máy chủ chặn ngay khi lập lượt nên con giao hụt luôn có hub để về.
 6. **Đã sửa** · Máy chủ từ chối Đưa về hub cho HANDOVER_TIMEOUT. Màn hình ẩn thao tác.
 
 **Thiếu thông báo:**

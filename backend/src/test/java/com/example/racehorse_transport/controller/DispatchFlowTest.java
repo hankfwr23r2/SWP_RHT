@@ -27,6 +27,8 @@ import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
@@ -152,6 +154,24 @@ class DispatchFlowTest {
                 .andExpect(jsonPath("$.data.plannedEndAt").value("2031-03-10T09:00:00Z"));
     }
 
+    @ParameterizedTest
+    @CsvSource({"REST-NHATRANG, REST", "REST-NHATRANG, HUB", "HUB-HCM, REST"})
+    void deliveryTripRequiresAHubStopAtAHubLocation(String locationCode, String stopType) throws Exception {
+        long locationId = locations.findByCode(locationCode).orElseThrow().getId();
+        createTrip(deliveryTripEndingAt(locationId, stopType))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.data.stops").value("Lượt đón, giao, chạy thẳng phải kết thúc ở hub để ngựa giao hụt có chỗ về."));
+    }
+
+    @Test
+    void deliveryTripCanEndAtAHub() throws Exception {
+        createTrip(deliveryTripEndingAt(hcm, "HUB"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.endLocationId").value(hcm))
+                .andExpect(jsonPath("$.data.stops[2].stopType").value("HUB"))
+                .andExpect(jsonPath("$.data.stops[2].locationId").value(hcm));
+    }
+
     @Test
     void crewIsAssignedAcknowledgesAndCanBeReleased() throws Exception {
         long tripId = tripId(createLinehaul().andExpect(status().isCreated()));
@@ -268,6 +288,13 @@ class DispatchFlowTest {
     private static String localTripWith(Vehicle v, long from, long to, String start, String end) {
         return """
                 {"tripType":"DIRECT","vehicleId":%d,"stops":[%s,%s]}""".formatted(v.getId(), stopLocation(from, "HUB", start), stopLocation(to, "HUB", end));
+    }
+
+    private String deliveryTripEndingAt(long locationId, String stopType) {
+        Booking booking = testData.booking(testData.customer(testData.unique("dispatch.customer")), BookingType.INTERPROVINCE, BookingStatus.IN_OPERATION);
+        long delivery = testData.bookingAddress(booking, AddressRole.DELIVERY).getId();
+        return trip("DELIVERY", stopLocation(hcm, "HUB", "2031-03-10T06:00:00Z"),
+                stopAddress(delivery, "DELIVERY", "2031-03-10T07:00:00Z"), stopLocation(locationId, stopType, "2031-03-10T09:00:00Z"));
     }
 
     private String trip(String type, String... stops) {
