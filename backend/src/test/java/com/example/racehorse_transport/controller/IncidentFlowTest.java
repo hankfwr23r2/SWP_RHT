@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -305,6 +306,53 @@ class IncidentFlowTest {
     }
 
     @Test
+    void staffListsIncidentsBySeverityThenNewestReportAndChangesAreAudited() throws Exception {
+        mvc.perform(get("/incidents/severity-defaults").header(HttpHeaders.AUTHORIZATION, escort))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.HEALTH").value("HIGH"))
+                .andExpect(jsonPath("$.data.DOCUMENT").value("MEDIUM")).andExpect(jsonPath("$.data.DELAY").value("LOW"));
+        long olderHigh = id(report(leg, "HEALTH", "HORSE_CONDITION").andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.severity").value("HIGH")));
+        long newerHigh = id(report(leg, "ACCIDENT", "COMPANY_FAULT").andExpect(status().isCreated()));
+        long medium = id(report(leg, "DOCUMENT", "CUSTOMER_DOCS").andExpect(status().isCreated()));
+        long low = id(report(leg, "DELAY", "FORCE_MAJEURE").andExpect(status().isCreated()));
+        jdbc.update("UPDATE incident SET reported_at = now() - interval '4 minutes' WHERE id = ?", olderHigh);
+        jdbc.update("UPDATE incident SET reported_at = now() - interval '3 minutes' WHERE id = ?", newerHigh);
+        jdbc.update("UPDATE incident SET reported_at = now() - interval '2 minutes' WHERE id = ?", medium);
+        entityManager.clear();
+
+        assertIncidentOrder("/incidents", manager, newerHigh, olderHigh, medium, low);
+        assertIncidentOrder("/vehicle-trips/" + trip + "/incidents", coordinator, newerHigh, olderHigh, medium, low);
+        changeSeverity(low, escort, "{\"severity\":\"HIGH\"}").andExpect(status().isForbidden());
+        changeSeverity(low, coordinator, "{}").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.data.severity").isNotEmpty());
+        changeSeverity(low, coordinator, "{\"severity\":\"HIGH\"}").andExpect(status().isOk());
+        assertIncidentOrder("/incidents", manager, low, newerHigh, olderHigh, medium);
+
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM audit_log WHERE target_table = 'incident' AND target_id = ?
+                    AND action = 'CHANGE_INCIDENT_SEVERITY' AND actor_user_id = ?
+                    AND old_data ->> 'severity' = 'LOW' AND new_data ->> 'severity' = 'HIGH'
+                """, Integer.class, low, coordinatorId)).isEqualTo(1);
+        changeSeverity(low, manager, "{\"severity\":\"MEDIUM\"}").andExpect(status().isOk());
+        mvc.perform(get("/incidents/{id}", low).header(HttpHeaders.AUTHORIZATION, manager))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.severity").value("MEDIUM"))
+                .andExpect(jsonPath("$.data.blocksTrip").value(false));
+    }
+
+    private ResultActions changeSeverity(long incident, String token, String body) throws Exception {
+        return mvc.perform(patch("/incidents/{id}/severity", incident).header(HttpHeaders.AUTHORIZATION, token)
+                .contentType(MediaType.APPLICATION_JSON).content(body));
+    }
+
+    private void assertIncidentOrder(String path, String token, Long... expected) throws Exception {
+        String body = mvc.perform(get(path).header(HttpHeaders.AUTHORIZATION, token)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        List<Number> ids = JsonPath.read(body, "$.data[*].id");
+        List<Long> idsOnTestTrip = ids.stream().map(Number::longValue).filter(List.of(expected)::contains).toList();
+        assertThat(idsOnTestTrip).containsExactly(expected);
+    }
+
+    @Test
     void newHealthReportsNeedAHorseAndCompletedTripsRejectNewReports() throws Exception {
         report(null, "HEALTH", "HORSE_CONDITION").andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Sự cố sức khỏe phải chọn con ngựa."));
@@ -344,9 +392,9 @@ class IncidentFlowTest {
     void handoverTimeoutResolvesWithoutFitAndCannotUseReturnToHub() throws Exception {
         report(leg, "HANDOVER_TIMEOUT", "RECIPIENT_ABSENT").andExpect(status().isBadRequest());
         long incident = jdbc.queryForObject("""
-                INSERT INTO incident (vehicle_trip_id, horse_leg_id, booking_id, incident_type, cause_type,
+                INSERT INTO incident (vehicle_trip_id, horse_leg_id, booking_id, incident_type, severity, cause_type,
                     confirmed_cause_type, cause_confirmed_at, title, description, reported_by, status)
-                VALUES (?, ?, ?, 'HANDOVER_TIMEOUT', 'RECIPIENT_ABSENT', 'RECIPIENT_ABSENT', now(),
+                VALUES (?, ?, ?, 'HANDOVER_TIMEOUT', 'MEDIUM', 'RECIPIENT_ABSENT', 'RECIPIENT_ABSENT', now(),
                     'Delivery timeout', 'Customer did not meet the vehicle', ?, 'REPORTED')
                 RETURNING id
                 """, Long.class, trip, leg, booking, coordinatorId);

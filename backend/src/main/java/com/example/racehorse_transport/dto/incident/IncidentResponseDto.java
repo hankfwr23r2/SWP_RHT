@@ -2,9 +2,11 @@ package com.example.racehorse_transport.dto.incident;
 
 import com.example.racehorse_transport.entity.Incident;
 import com.example.racehorse_transport.entity.IncidentPlan;
+import com.example.racehorse_transport.entity.VehicleTrip;
 import com.example.racehorse_transport.entity.enums.IncidentCauseType;
 import com.example.racehorse_transport.entity.enums.IncidentPlanStatus;
 import com.example.racehorse_transport.entity.enums.IncidentResolutionType;
+import com.example.racehorse_transport.entity.enums.IncidentSeverity;
 import com.example.racehorse_transport.entity.enums.IncidentStatus;
 import com.example.racehorse_transport.entity.enums.IncidentType;
 import java.math.BigDecimal;
@@ -13,13 +15,13 @@ import java.time.LocalDate;
 import java.util.List;
 
 public record IncidentResponseDto(
-        Long id, IncidentType incidentType, IncidentCauseType causeType, IncidentStatus status, String title, String description,
+        Long id, IncidentType incidentType, IncidentSeverity severity, IncidentCauseType causeType, IncidentStatus status, String title, String description,
         Long vehicleTripId, String vehicleTripCode, Long horseLegId, String horseName, String bookingCode,
         BigDecimal latitude, BigDecimal longitude, String reportedByName, Instant reportedAt,
         Instant restStartedAt, Instant fitEligibleAt,
         String fitConfirmedByName, Instant fitConfirmedAt, Instant resolvedAt, boolean requiresFit, List<PlanDto> plans, IncidentCauseType confirmedCauseType,
         String causeConfirmedByName, Instant causeConfirmedAt, DeliveryFailureDto deliveryFailure, Long departureId,
-        String departureRouteName, LocalDate departureDate) {
+        String departureRouteName, LocalDate departureDate, boolean blocksTrip) {
 
     public record DeliveryFailureDto(Instant toldArrivalAt, Instant actualArrivalAt, Long delayMinutes, boolean amendable) {}
 
@@ -35,13 +37,12 @@ public record IncidentResponseDto(
         }
     }
 
-    public static IncidentResponseDto from(Incident incident, boolean requiresFit, Instant fitEligibleAt,
-                                          List<PlanDto> plans, DeliveryFailureDto deliveryFailure) {
-        var trip = incident.getVehicleTrip();
+    public static IncidentResponseDto from(Incident incident, VehicleTrip trip, boolean requiresFit, Instant fitEligibleAt,
+            List<PlanDto> plans, DeliveryFailureDto deliveryFailure, boolean blocksTrip) {
         var leg = incident.getHorseLeg();
         var booking = incident.getBooking();
         var departure = trip != null && incident.getIncidentType() == IncidentType.DELAY ? trip.getDeparture() : null;
-        return new IncidentResponseDto(incident.getId(), incident.getIncidentType(), incident.getCauseType(), incident.getStatus(),
+        return new IncidentResponseDto(incident.getId(), incident.getIncidentType(), incident.getSeverity(), incident.getCauseType(), incident.getStatus(),
                 incident.getTitle(), incident.getDescription(),
                 trip == null ? null : trip.getId(), trip == null ? null : trip.getCode(),
                 leg == null ? null : leg.getId(), leg == null ? null : leg.getBookingHorse().getHorse().getName(),
@@ -52,6 +53,6 @@ public record IncidentResponseDto(
                 incident.getResolvedAt(), requiresFit, plans, incident.getConfirmedCauseType(),
                 incident.getCauseConfirmedBy() == null ? null : incident.getCauseConfirmedBy().getFullName(),
                 incident.getCauseConfirmedAt(), deliveryFailure, departure == null ? null : departure.getId(),
-                departure == null ? null : departure.getRoute().getName(), departure == null ? null : departure.getDepartureDate());
+                departure == null ? null : departure.getRoute().getName(), departure == null ? null : departure.getDepartureDate(), blocksTrip);
     }
 }

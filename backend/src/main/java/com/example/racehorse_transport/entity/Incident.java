@@ -2,6 +2,7 @@ package com.example.racehorse_transport.entity;
 
 import com.example.racehorse_transport.entity.enums.ComplaintDecision;
 import com.example.racehorse_transport.entity.enums.IncidentCauseType;
+import com.example.racehorse_transport.entity.enums.IncidentSeverity;
 import com.example.racehorse_transport.entity.enums.IncidentStatus;
 import com.example.racehorse_transport.entity.enums.IncidentType;
 
@@ -21,6 +22,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.Generated;
 
 import java.math.BigDecimal;
@@ -31,6 +33,7 @@ import java.time.Instant;
 @Setter
 @NoArgsConstructor
 @Entity
+@DynamicUpdate
 @Table(name = "incident")
 public class Incident {
 
@@ -56,6 +59,10 @@ public class Incident {
     @Enumerated(EnumType.STRING)
     @Column(name = "incident_type", length = 30, nullable = false)
     private IncidentType incidentType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "severity", length = 10, nullable = false)
+    private IncidentSeverity severity;
 
     // Nguyên nhân, quyết định ai chịu chi phí
     @Enumerated(EnumType.STRING)
@@ -100,6 +107,16 @@ public class Incident {
 
     @Column(name = "rest_started_at")
     private Instant restStartedAt;
+
+    @Column(name = "trip_unlocked_at")
+    private Instant tripUnlockedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "trip_unlocked_by")
+    private Staff tripUnlockedBy;
+
+    @Column(name = "trip_unlock_reason", length = 1000)
+    private String tripUnlockReason;
 
     // Người xác nhận ngựa đủ sức khỏe đi tiếp
     @ManyToOne(fetch = FetchType.LAZY, optional = true)

@@ -3,28 +3,25 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import type { CrewTrip } from '@shared/api/tripExecution'
-import { incidentsApi, type CauseType, type IncidentType } from '@shared/api/incidentOps'
-import { useAutoRefresh, useLoad } from '@shared/hooks/useLoad'
+import { incidentsApi } from '@shared/api/incidentOps'
+import { useLoad } from '@shared/hooks/useLoad'
 import { formatVND } from '@shared/lib/format'
 import { Button } from '@shared/ui/Button'
 import { Card } from '@shared/ui/Card'
 import { EmptyState } from '@shared/ui/EmptyState'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { Skeleton } from '@shared/ui/Skeleton'
-import { Field } from '@shared/ui/Field'
-import { Input } from '@shared/ui/Input'
-import { Modal } from '@shared/ui/Modal'
-import { Select } from '@shared/ui/Select'
 import { StatusBadge } from '@shared/ui/StatusBadge'
-import { Textarea } from '@shared/ui/Textarea'
 import { useToast } from '@shared/ui/toast'
 import { EvidencePanel } from '@backoffice/shared/EvidencePanel'
 import { IncidentCostForm } from '@backoffice/shared/IncidentCostForm'
+import { IncidentSeverityBadge } from '@backoffice/shared/IncidentSeverity'
 import { TripIncidentEvidence } from './TripIncidentEvidence'
+import { TripIncidentReportDialog } from './TripIncidentReportDialog'
+import { useTripIncidents } from './useTripIncidents'
 import s from './MyTrips.module.css'
 
-const TYPES: IncidentType[] = ['HEALTH', 'VEHICLE_BREAKDOWN', 'ACCIDENT', 'DELAY', 'DOCUMENT', 'OTHER']
-const CAUSES: CauseType[] = ['COMPANY_FAULT', 'HORSE_CONDITION', 'CUSTOMER_DOCS', 'AGENT_FAULT', 'FORCE_MAJEURE', 'RECIPIENT_ABSENT']
+type TripIncidentQuery = ReturnType<typeof useTripIncidents>
 
 // Chi phí đã ghi của sự cố, mỗi khoản kèm biên lai; tải biên lai khi quản lý chưa duyệt
 function IncidentCosts({ incidentId }: { incidentId: number }) {
@@ -71,17 +68,25 @@ function useTripIncidentActions(reload: () => Promise<void>) {
   }
 }
 
-export function TripIncidentPanel({ run }: { run: CrewTrip }) {
+export function TripIncidentPanel({ run, query }: { run: CrewTrip; query?: TripIncidentQuery }) {
+  return query
+    ? <TripIncidentPanelContent run={run} query={query} />
+    : <StandaloneTripIncidentPanel run={run} />
+}
+
+function StandaloneTripIncidentPanel({ run }: { run: CrewTrip }) {
+  const query = useTripIncidents(run.trip?.id ?? 0, run.trip)
+  return <TripIncidentPanelContent run={run} query={query} />
+}
+
+function TripIncidentPanelContent({ run, query }: { run: CrewTrip; query: TripIncidentQuery }) {
   const { t } = useTranslation()
   const { session } = useAuth()
-  const tripId = run.trip?.id ?? 0
   const canReport = run.trip?.status === 'IN_PROGRESS'
   const [reporting, setReporting] = useState(false)
-  const [form, setForm] = useState({ scope: '', type: 'OTHER' as IncidentType, cause: 'COMPANY_FAULT' as CauseType, title: '', description: '' })
   const [costVersion, setCostVersion] = useState(0)
-  const { data: incidents, loaded, error, reload } = useLoad(() => incidentsApi.ofTrip(tripId), [tripId], { toastOnError: false })
+  const { data: incidents, loaded, error, reload, report } = query
   const { act, busy, startRest, confirmFit } = useTripIncidentActions(reload)
-  useAutoRefresh(reload)
 
   return (
     <Card title={t('incidents.title')} actions={canReport && <Button variant="danger" onClick={() => setReporting(true)}>{t('myTrips.run.incident.report')}</Button>}>
@@ -100,6 +105,7 @@ export function TripIncidentPanel({ run }: { run: CrewTrip }) {
             <li key={id} className={s.body}>
               <p className={s.line}>{incident.title}{incident.horseName ? ` · ${incident.horseName}` : ''}</p>
               <StatusBadge tone={open ? 'warning' : 'success'} label={t(`incidents.status.${incident.status}`)} />
+              <IncidentSeverityBadge severity={incident.severity} />
               {incident.status !== 'CLOSED' && (
                 <TripIncidentEvidence incident={incident}
                   fitActions={canHandleFit ? { busy, startRest: () => startRest(id), confirmFit: () => confirmFit(id) } : undefined}
@@ -117,43 +123,7 @@ export function TripIncidentPanel({ run }: { run: CrewTrip }) {
           )
         })}
       </ul>
-      {reporting && (
-        <Modal title={t('myTrips.run.incident.reportTitle')} onClose={() => setReporting(false)}
-          footer={(
-            <>
-              <Button onClick={() => setReporting(false)}>{t('ui.cancel')}</Button>
-              <Button variant="danger" disabled={!form.title.trim() || !form.description.trim() || (form.type === 'HEALTH' && !form.scope)} loading={busy}
-                onClick={() => act(() => incidentsApi.report({
-                  vehicleTripId: tripId, horseLegId: form.scope ? Number(form.scope) : undefined,
-                  incidentType: form.type, causeType: form.cause, title: form.title.trim(), description: form.description.trim(),
-                }), t('myTrips.run.incident.reported')).then(ok => { if (ok) setReporting(false) })}>
-                {t('myTrips.run.incident.send')}
-              </Button>
-            </>
-          )}>
-          <div className={s.body}>
-            <Field label={t('myTrips.run.incident.scope')} required={form.type === 'HEALTH'}>
-              {c => <Select {...c} value={form.scope} onChange={value => setForm({ ...form, scope: value })}
-                options={[{ value: '', label: t('myTrips.run.incident.wholeTrip') },
-                  ...(run.horses ?? []).map(h => ({ value: `${h.leg?.id}`, label: `${h.horseName} · ${h.bookingCode}` }))]} />}
-            </Field>
-            <Field label={t('incidents.colType')}>
-              {c => <Select {...c} value={form.type} onChange={value => setForm({ ...form, type: value as IncidentType })}
-                options={TYPES.map(v => ({ value: v, label: t(`incidents.type.${v}`) }))} />}
-            </Field>
-            <Field label={t('myTrips.run.incident.cause')}>
-              {c => <Select {...c} value={form.cause} onChange={value => setForm({ ...form, cause: value as CauseType })}
-                options={CAUSES.map(v => ({ value: v, label: t(`incidents.cause.${v}`) }))} />}
-            </Field>
-            <Field label={t('myTrips.run.incident.incidentTitle')} required>
-              {c => <Input {...c} value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} data-autofocus />}
-            </Field>
-            <Field label={t('myTrips.run.incident.incidentDescription')} required>
-              {c => <Textarea {...c} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />}
-            </Field>
-          </div>
-        </Modal>
-      )}
+      {reporting && <TripIncidentReportDialog run={run} onClose={() => setReporting(false)} onReport={report} />}
     </Card>
   )
 }

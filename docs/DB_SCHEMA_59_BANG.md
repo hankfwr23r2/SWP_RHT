@@ -1224,6 +1224,7 @@ Index: `payment_id`.
 | `vehicle_trip_id` | `bigint` | có | FK → vehicle_trip | Một sự cố xe có thể ảnh hưởng nhiều đơn |
 | `horse_leg_id` | `bigint` | có | FK → horse_leg | Sự cố của riêng một con ngựa |
 | `incident_type` | `varchar(30)` | | CK `HEALTH, VEHICLE_BREAKDOWN, ACCIDENT, DELAY, DOCUMENT, HANDOVER_TIMEOUT, OTHER, COMPLAINT` | |
+| `severity` | `varchar(10)` | | CK `LOW, MEDIUM, HIGH` | Nhẹ, Vừa, Nặng. Tổ lái có thể chọn khi báo; điều phối hoặc quản lý có thể đổi mức và ghi kiểm toán |
 | `cause_type` | `varchar(30)` | chỉ với `COMPLAINT` | CK `COMPANY_FAULT, HORSE_CONDITION, CUSTOMER_DOCS, AGENT_FAULT, FORCE_MAJEURE, RECIPIENT_ABSENT` | Nguyên nhân do tổ lái đề xuất; trống với `COMPLAINT` |
 | `confirmed_cause_type` | `varchar(30)` | có | Cùng tập giá trị với `cause_type` | Nguyên nhân quản lý chốt khi duyệt phương án |
 | `cause_confirmed_by` | `bigint` | có | FK → staff.user_id | Quản lý chốt, để trống với sự cố hệ thống |
@@ -1236,6 +1237,9 @@ Index: `payment_id`.
 | `reported_at` | `timestamptz` | | default `now()` | |
 | `status` | `varchar(30)` | | CK `REPORTED, PLAN_PENDING, PLAN_ACTIVE, RESOLVED, CLOSED` | |
 | `rest_started_at` | `timestamptz` | có | | Giờ hộ tống bắt đầu cho ngựa nghỉ khi phương án đang hiệu lực |
+| `trip_unlocked_at` | `timestamptz` | có | | Thời điểm điều phối mở khóa lượt xe |
+| `trip_unlocked_by` | `bigint` | có | FK → staff(user_id) | Điều phối viên mở khóa |
+| `trip_unlock_reason` | `varchar(1000)` | có | | Lý do mở khóa, bắt buộc khi điều phối mở khóa |
 | `fit_confirmed_by` | `bigint` | có | FK → staff(user_id) | Người xác nhận ngựa đủ sức khỏe đi tiếp |
 | `fit_confirmed_at` | `timestamptz` | có | | |
 | `resolved_at` | `timestamptz` | có | | |
@@ -1252,6 +1256,11 @@ Ràng buộc bảng:
 - Các trường riêng của khiếu nại chỉ dùng cho `COMPLAINT`. Khi có kết luận phải có lý do, người kết luận, thời điểm xử lý và trạng thái `CLOSED`.
 - Mỗi đơn có tối đa một `COMPLAINT` chưa `CLOSED` theo unique index có điều kiện. Service kiểm tra ngựa được chọn thuộc đơn, ảnh `COMPLAINT_PHOTO` và quyền khách hoặc quản lý trong cùng luồng ghi khiếu nại.
 - `CHECK ((fit_confirmed_by IS NULL) = (fit_confirmed_at IS NULL))`
+- Ba cột mở khóa lượt xe cùng trống hoặc cùng có giá trị; lý do không được chỉ có khoảng trắng.
+
+Mức mặc định khi không chọn hoặc khi hệ thống tạo sự cố: `HIGH` cho `HEALTH`, `ACCIDENT`; `MEDIUM` cho `VEHICLE_BREAKDOWN`, `HANDOVER_TIMEOUT`, `DOCUMENT`; `LOW` cho `DELAY`, `OTHER`, `COMPLAINT`. Danh sách nghiệp vụ ưu tiên Nặng, Vừa, Nhẹ rồi theo thời điểm báo mới nhất.
+
+Service chặn Tới nơi và Rời đi khi lượt xe còn sự cố `HIGH` đang mở, chưa ở `PLAN_ACTIVE` và chưa có `trip_unlocked_at`. Duyệt phương án mở khóa theo trạng thái. Khi điều phối mở khóa bằng lý do, service ghi ba cột mở khóa cùng bản ghi kiểm toán trong một giao dịch.
 
 Index: `booking_id`, `vehicle_trip_id`, `horse_leg_id`, `status`.
 

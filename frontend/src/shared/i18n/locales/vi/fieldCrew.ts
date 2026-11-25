@@ -82,6 +82,8 @@ export const fieldCrew = {
       "incident": {
         "report": "Báo sự cố",
         "reportTitle": "Báo sự cố",
+        "reportConsequence": "Gửi báo cáo để điều phối xử lý. Sự cố nặng sẽ khóa thao tác Tới nơi và Rời đi.",
+        "tripBlocked": "Lượt xe đang có sự cố nặng chưa có phương án được duyệt. Chờ quản lý duyệt hoặc điều phối mở khóa.",
         "cause": "Nguyên nhân đề xuất",
         "scope": "Ảnh hưởng",
         "wholeTrip": "Cả xe",

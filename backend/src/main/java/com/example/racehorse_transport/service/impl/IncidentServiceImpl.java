@@ -75,7 +75,7 @@ public class IncidentServiceImpl implements IncidentService {
     @Override
     @Transactional(readOnly = true)
     public List<IncidentResponseDto> ofTrip(Long vehicleTripId) {
-        return describe(incidents.findByVehicleTrip_IdOrderByReportedAtDesc(vehicleTripId));
+        return describe(incidents.findForTrip(vehicleTripId));
     }
 
     @Override
@@ -278,9 +278,9 @@ public class IncidentServiceImpl implements IncidentService {
         }
     }
 
-    private VehicleTrip tripOf(Incident incident) {
-        return incident.getVehicleTrip() != null ? incident.getVehicleTrip()
-                : incident.getHorseLeg() == null ? null : incident.getHorseLeg().getVehicleTrip();
+    private static VehicleTrip tripOf(Incident incident) {
+        VehicleTrip trip = incident.getVehicleTrip();
+        return trip == null && incident.getHorseLeg() != null ? incident.getHorseLeg().getVehicleTrip() : trip;
     }
 
     private void notifyPlanDecision(IncidentPlan plan, Incident incident, boolean approved) {
@@ -320,10 +320,13 @@ public class IncidentServiceImpl implements IncidentService {
                 .collect(Collectors.groupingBy(p -> p.getIncident().getId(), Collectors.mapping(PlanDto::from, Collectors.toList())));
         Instant now = clock.instant();
         int minRestMinutes = configs.getInt(MIN_REST_MINUTES);
-        return found.stream().map(i -> IncidentResponseDto.from(i,
-                IncidentPolicy.requiresFit(i.getIncidentType(), i.getHorseLeg() != null),
-                IncidentPolicy.fitEligibleAt(i.getRestStartedAt(), minRestMinutes),
-                byIncident.getOrDefault(i.getId(), List.of()), deliveryFailure(i, now))).toList();
+        return found.stream().sorted(IncidentPolicy.DISPLAY_ORDER).map(i -> {
+            VehicleTrip trip = tripOf(i);
+            return IncidentResponseDto.from(i, trip, IncidentPolicy.requiresFit(i.getIncidentType(), i.getHorseLeg() != null),
+                    IncidentPolicy.fitEligibleAt(i.getRestStartedAt(), minRestMinutes),
+                    byIncident.getOrDefault(i.getId(), List.of()), deliveryFailure(i, now),
+                    trip != null && IncidentPolicy.blocksTrip(i.getSeverity(), i.getStatus(), i.getTripUnlockedAt()));
+        }).toList();
     }
 
     private IncidentResponseDto.DeliveryFailureDto deliveryFailure(Incident incident, Instant now) {

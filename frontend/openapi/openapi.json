@@ -1461,6 +1461,24 @@
         },
         "type" : "object"
       },
+      "ApiResponseMapIncidentTypeIncidentSeverity" : {
+        "properties" : {
+          "data" : {
+            "additionalProperties" : {
+              "enum" : [ "LOW", "MEDIUM", "HIGH" ],
+              "type" : "string"
+            },
+            "type" : "object"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseMapStringListString" : {
         "properties" : {
           "data" : {
@@ -5243,6 +5261,10 @@
             "minimum" : -180,
             "type" : "number"
           },
+          "severity" : {
+            "enum" : [ "LOW", "MEDIUM", "HIGH" ],
+            "type" : "string"
+          },
           "title" : {
             "maxLength" : 200,
             "minLength" : 0,
@@ -5258,6 +5280,9 @@
       },
       "IncidentResponseDto" : {
         "properties" : {
+          "blocksTrip" : {
+            "type" : "boolean"
+          },
           "bookingCode" : {
             "type" : "string"
           },
@@ -5349,6 +5374,10 @@
             "format" : "date-time",
             "type" : "string"
           },
+          "severity" : {
+            "enum" : [ "LOW", "MEDIUM", "HIGH" ],
+            "type" : "string"
+          },
           "status" : {
             "enum" : [ "REPORTED", "PLAN_PENDING", "PLAN_ACTIVE", "RESOLVED", "CLOSED" ],
             "type" : "string"
@@ -5364,6 +5393,16 @@
             "type" : "integer"
           }
         },
+        "type" : "object"
+      },
+      "IncidentSeverityRequestDto" : {
+        "properties" : {
+          "severity" : {
+            "enum" : [ "LOW", "MEDIUM", "HIGH" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "severity" ],
         "type" : "object"
       },
       "IncidentTypeCountDto" : {
@@ -8932,6 +8971,17 @@
             "type" : "string"
           }
         },
+        "type" : "object"
+      },
+      "TripUnlockRequestDto" : {
+        "properties" : {
+          "reason" : {
+            "maxLength" : 1000,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
         "type" : "object"
       },
       "UnclaimedHorseResolutionRequestDto" : {
@@ -15053,6 +15103,24 @@
         "tags" : [ "incident-controller" ]
       }
     },
+    "/incidents/severity-defaults" : {
+      "get" : {
+        "operationId" : "severityDefaults",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseMapIncidentTypeIncidentSeverity"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "incident-controller" ]
+      }
+    },
     "/incidents/{id}" : {
       "get" : {
         "operationId" : "incident",
@@ -15396,6 +15464,80 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseIncidentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "incident-controller" ]
+      }
+    },
+    "/incidents/{id}/severity" : {
+      "patch" : {
+        "operationId" : "changeSeverity",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/IncidentSeverityRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "incident-controller" ]
+      }
+    },
+    "/incidents/{id}/unlock-trip" : {
+      "post" : {
+        "operationId" : "unlockTrip",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TripUnlockRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
                 }
               }
             },

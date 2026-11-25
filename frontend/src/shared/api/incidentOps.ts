@@ -1,16 +1,20 @@
 // Sự cố, phương án và chi phí (B4). Kiểu lấy từ OpenAPI sinh tự động.
 import apiClient, { type ApiResponse } from './client'
+import { formResponseOptions, readFormResponse } from './customerAddresses'
 import type { components } from './generated/schema'
 
 type Schemas = components['schemas']
-// Mở rộng kiểu trong lúc chờ xuất lại OpenAPI.
-export type Incident = Schemas['IncidentResponseDto'] & {
+// Bổ sung trường của PR A và biểu diễn mốc nghỉ có thể là null.
+export type IncidentSeverity = 'LOW' | 'MEDIUM' | 'HIGH'
+export type Incident = Omit<Schemas['IncidentResponseDto'], 'restStartedAt' | 'fitEligibleAt'> & {
+  severity?: IncidentSeverity
+  blocksTrip?: boolean
   restStartedAt?: string | null
   fitEligibleAt?: string | null
 }
 export type HandoverCauseChange = Schemas['HandoverCauseRequestDto']
 export type IncidentPlan = Schemas['PlanDto']
-export type IncidentReport = Schemas['IncidentReportRequestDto']
+export type IncidentReport = Schemas['IncidentReportRequestDto'] & { severity?: IncidentSeverity }
 export type IncidentPlanCreate = Schemas['IncidentPlanRequestDto']
 export type CostItem = Schemas['CostItemResponseDto']
 export type CostItemCreate = Schemas['CostItemRequestDto']
@@ -32,9 +36,15 @@ const upload = async (url: string, file: File, params?: Record<string, number | 
 export const incidentsApi = {
   open: () => get<Incident[]>('/incidents'),
   incident: (id: number) => get<Incident>(`/incidents/${id}`),
+  severityDefaults: () => get<Partial<Record<IncidentType, IncidentSeverity>>>('/incidents/severity-defaults'),
+  changeSeverity: async (id: number, severity: IncidentSeverity) =>
+    readFormResponse<void>(await apiClient.patch(`/incidents/${id}/severity`, { severity }, formResponseOptions)),
+  unlockTrip: async (id: number, reason: string) =>
+    readFormResponse<void>(await apiClient.post(`/incidents/${id}/unlock-trip`, { reason }, formResponseOptions)),
   amendHandoverCause: (id: number, body: HandoverCauseChange) => post<Incident>(`/incidents/${id}/handover-cause`, body),
   ofTrip: (tripId: number) => get<Incident[]>(`/vehicle-trips/${tripId}/incidents`),
-  report: (body: IncidentReport) => post<Incident>('/incidents', body),
+  report: async (body: IncidentReport) =>
+    readFormResponse<Incident>(await apiClient.post('/incidents', body, formResponseOptions)),
   propose: (incidentId: number, body: IncidentPlanCreate) => post<Incident>(`/incidents/${incidentId}/plans`, body),
   approve: (planId: number, confirmedCauseType?: CauseType) => post<Incident>(`/incident-plans/${planId}/approve`, { confirmedCauseType }),
   reject: (planId: number, reason: string) => post<Incident>(`/incident-plans/${planId}/reject`, { reason }),

@@ -24,6 +24,20 @@ export const staff = {
   },
   incidents: {
     departure: 'Chuyến liên quan: {{route}} · {{date}}',
+    severity: {
+      label: 'Mức độ',
+      LOW: 'Nhẹ',
+      MEDIUM: 'Vừa',
+      HIGH: 'Nặng',
+      default: 'Mặc định theo loại',
+      defaultsError: 'Không tải được mức mặc định theo loại sự cố.',
+      save: 'Lưu mức độ',
+    },
+    unlockTrip: {
+      action: 'Mở khóa lượt xe',
+      reason: 'Lý do mở khóa',
+      consequence: 'Thao tác gỡ khóa do sự cố này. Lý do được ghi vào nhật ký kiểm toán.',
+    },
     handoverCause: {
       told: "Giờ đã báo",
       arrived: "Giờ tới thật",
