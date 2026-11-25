@@ -91,7 +91,7 @@ class StablingPolicyTest {
     @Test
     void companyTruckTwoHoursLateDoesNotStartAClock() {
         var arrival = START.plus(Duration.ofHours(2));
-        assertThat(com.example.racehorse_transport.policy.TripExecutionPolicy.arrivedAfterWindow(START, arrival, 60)).isTrue();
+        assertThat(com.example.racehorse_transport.policy.DeliveryEtaPolicy.companyFault(START, arrival, 60)).isTrue();
         assertClock(StablingPolicy.clockRuns(null, null, null, null, null, null, arrival), arrival, 0, "0");
     }
 

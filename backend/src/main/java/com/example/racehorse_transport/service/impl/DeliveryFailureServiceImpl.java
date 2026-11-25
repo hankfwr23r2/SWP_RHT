@@ -16,6 +16,7 @@ import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.TripExecutionPolicy;
+import com.example.racehorse_transport.policy.DeliveryEtaPolicy;
 import com.example.racehorse_transport.repository.CrewAssignmentRepository;
 import com.example.racehorse_transport.repository.HandoverRepository;
 import com.example.racehorse_transport.repository.HorseLegRepository;
@@ -59,8 +60,10 @@ public class DeliveryFailureServiceImpl implements DeliveryFailureService {
         TripExecutionPolicy.requireCanStartWaiting(handover.getHandoverType(), handover.getStatus() == HandoverStatus.PENDING, handover.getWaitStartedAt() != null);
         // Tới sớm thì thời gian chờ đếm từ đầu khung giờ đã báo
         Instant now = clock.instant();
-        Instant planned = handover.getTripStop().getPlannedArrivalAt();
-        handover.setWaitStartedAt(planned != null && planned.isAfter(now) ? planned : now);
+        TripStop stop = handover.getTripStop();
+        handover.setWaitStartedAt(DeliveryEtaPolicy.waitStart(now,
+                DeliveryEtaPolicy.reference(stop.getToldArrivalAt(), stop.getPlannedArrivalAt()),
+                configs.getInt(DeliveryEtaPolicy.TOLERANCE)));
         return handover.getTripStop().getVehicleTrip().getId();
     }
 
@@ -106,8 +109,9 @@ public class DeliveryFailureServiceImpl implements DeliveryFailureService {
     private void markFailed(Handover handover) {
         Instant now = clock.instant();
         var stop = handover.getTripStop();
-        var cause = TripExecutionPolicy.arrivedAfterWindow(stop.getPlannedArrivalAt(), stop.getActualArrivalAt(),
-                configs.getInt("DELIVERY_NOTICE_WINDOW_MINUTES")) ? IncidentCauseType.COMPANY_FAULT : IncidentCauseType.RECIPIENT_ABSENT;
+        var cause = DeliveryEtaPolicy.companyFault(
+                DeliveryEtaPolicy.reference(stop.getToldArrivalAt(), stop.getPlannedArrivalAt()), stop.getActualArrivalAt(),
+                configs.getInt(DeliveryEtaPolicy.TOLERANCE)) ? IncidentCauseType.COMPANY_FAULT : IncidentCauseType.RECIPIENT_ABSENT;
         List<HorseLeg> undelivered = legs.findByAlightTripStop_IdAndStatusIn(handover.getTripStop().getId(), Set.of(HorseLegStatus.IN_PROGRESS));
         for (HorseLeg leg : undelivered) {
             leg.setStatus(HorseLegStatus.FAILED);

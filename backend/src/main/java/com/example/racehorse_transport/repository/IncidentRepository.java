@@ -32,14 +32,22 @@ public interface IncidentRepository extends JpaRepository<Incident, Long> {
 
     boolean existsByVehicleTrip_IdAndHorseLegIsNullAndStatusIn(Long vehicleTripId, Collection<IncidentStatus> statuses);
 
-    @EntityGraph(attributePaths = {"booking", "vehicleTrip", "horseLeg", "horseLeg.bookingHorse", "horseLeg.bookingHorse.horse", "reportedBy", "fitConfirmedBy"})
-    @Query("SELECT i FROM Incident i WHERE i.status IN :statuses AND i.incidentType <> com.example.racehorse_transport.entity.enums.IncidentType.COMPLAINT ORDER BY i.reportedAt DESC")
-    List<Incident> findByStatusInOrderByReportedAtDesc(Collection<IncidentStatus> statuses);
+    @EntityGraph(attributePaths = {"vehicleTrip", "booking", "horseLeg", "horseLeg.bookingHorse.horse",
+            "horseLeg.alightTripStop", "reportedBy", "fitConfirmedBy", "causeConfirmedBy"})
+    @Query("""
+            SELECT i FROM Incident i LEFT JOIN i.horseLeg leg WHERE (i.status IN :statuses
+                AND i.incidentType <> com.example.racehorse_transport.entity.enums.IncidentType.COMPLAINT)
+                OR (i.incidentType = :deliveryType AND coalesce(leg.actualEndAt, i.reportedAt) >= :since)
+            ORDER BY i.reportedAt DESC, i.id DESC
+            """)
+    List<Incident> findForBoard(Collection<IncidentStatus> statuses, IncidentType deliveryType, java.time.Instant since);
 
-    @EntityGraph(attributePaths = {"booking", "vehicleTrip", "horseLeg", "horseLeg.bookingHorse", "horseLeg.bookingHorse.horse", "reportedBy", "fitConfirmedBy"})
+    @EntityGraph(attributePaths = {"booking", "vehicleTrip", "horseLeg", "horseLeg.bookingHorse", "horseLeg.bookingHorse.horse",
+            "horseLeg.alightTripStop", "reportedBy", "fitConfirmedBy", "causeConfirmedBy"})
     List<Incident> findByVehicleTrip_IdOrderByReportedAtDesc(Long vehicleTripId);
 
-    @EntityGraph(attributePaths = {"booking", "vehicleTrip", "horseLeg", "horseLeg.bookingHorse", "horseLeg.bookingHorse.horse", "reportedBy", "fitConfirmedBy"})
+    @EntityGraph(attributePaths = {"booking", "vehicleTrip", "horseLeg", "horseLeg.bookingHorse", "horseLeg.bookingHorse.horse",
+            "horseLeg.alightTripStop", "reportedBy", "fitConfirmedBy", "causeConfirmedBy"})
     @Query("SELECT i FROM Incident i WHERE i.id = :id AND i.incidentType <> com.example.racehorse_transport.entity.enums.IncidentType.COMPLAINT")
     Optional<Incident> findOneById(Long id);
 

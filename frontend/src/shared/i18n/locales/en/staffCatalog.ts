@@ -370,7 +370,7 @@ export const staffCatalog = {
         "STABLING_MORNING_HOUR": "Charging time when 24 hours end outside opening hours",
         "STABLING_MAX_BLOCKS": "Maximum 24-hour blocks charged",
         "STABLING_WARNING_HOURS": "Notice before the next holding charge",
-        "DELIVERY_NOTICE_WINDOW_MINUTES": "Announced delivery window",
+        "DELIVERY_TOLERANCE_MINUTES": "Announced delivery time tolerance",
         "QUOTATION_VALID_HOURS": "Quotation validity after sending",
         "DEPARTURE_GENERATION_WEEKS": "Weeks of departures to generate",
         "OTP_EXPIRY_MINUTES": "Verification code lifetime",

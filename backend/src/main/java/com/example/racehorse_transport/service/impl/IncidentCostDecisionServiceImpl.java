@@ -54,8 +54,11 @@ public class IncidentCostDecisionServiceImpl implements IncidentCostDecisionServ
     public void confirmCause(IncidentPlan plan, PlanApproveRequestDto request, Staff manager) {
         var incident = plan.getIncident();
         boolean systemCause = incident.getIncidentType() == IncidentType.HANDOVER_TIMEOUT;
-        var cause = systemCause || request == null || request.confirmedCauseType() == null
-                ? incident.getCauseType() : request.confirmedCauseType();
+        var cause = systemCause && incident.getConfirmedCauseType() != null
+                ? incident.getConfirmedCauseType() : incident.getCauseType();
+        if (!systemCause && request != null && request.confirmedCauseType() != null) {
+            cause = request.confirmedCauseType();
+        }
         var payer = CostPayerPolicy.payerFor(cause);
         if (CostPayerPolicy.customerSide(payer) && plan.getEstimatedCost() != null && plan.getEstimatedCost().signum() > 0) {
             var booking = incident.getBooking();

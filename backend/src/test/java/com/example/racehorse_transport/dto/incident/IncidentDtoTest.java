@@ -83,7 +83,7 @@ class IncidentDtoTest {
         plan.setDecidedBy(staff);
         plan.setRejectionReason("Đắt");
 
-        var response = IncidentResponseDto.from(incident, true, List.of(IncidentResponseDto.PlanDto.from(plan)));
+        var response = IncidentResponseDto.from(incident, true, List.of(IncidentResponseDto.PlanDto.from(plan)), null);
         assertThat(response.requiresFit()).isTrue();
         assertThat(response.bookingCode()).isEqualTo("BK-ABCDEFGH");
         assertThat(response.vehicleTripId()).isNull();
