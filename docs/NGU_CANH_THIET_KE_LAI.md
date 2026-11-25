@@ -96,6 +96,7 @@ Kết luận: **cơ chế giao tiếp** (REST/JSON + JWT + refresh cookie) khôn
 | Khách hủy hoặc hủy theo nguyên nhân khách, cơ quan thì **không hoàn khoản thu hộ**; phí thú y (`VET_CHECK`) xử lý như cước dịch vụ; công ty hủy vẫn hoàn 100% (24/11/2026, **thay** việc quản lý xét từng dòng thu hộ chưa chi) | Người dùng chốt: đơn giản, tiền đã chi hộ cho hãng và cơ quan. Cơ quan chậm đủ số lần vẫn hoàn cọc vận chuyển. Giữ cột `quotation_line.refund_payment_id` và endpoint cũ, endpoint từ chối mọi dòng được chọn |
 | Cửa khẩu gắn nước đối diện (`location.counterpart_country_code`) (23/11/2026) | Trước đó đơn Lào vẫn chọn được Mộc Bài |
 | Phân công (kế hoạch theo lượt xe) tách khỏi phụ trách (người ký nhận gần nhất của từng con); thêm `SHIFT` (23/11/2026) | Người dùng chốt. Hộ tống đổi liên tục nhưng chuỗi ký nhận không đứt nên luôn biết ai giữ con nào, không cần bảng phân công ngựa. IRT: mục tiêu 1 groom cho 6–9 ngựa, khám 2 lần mỗi ngày khi cách ly |
+| Phí giữ ngựa ở hub do khách: mỗi **24 giờ trọn vẹn** 1.000.000 đ, đồng hồ chỉ chạy khi khách làm ngựa ở lại, cộng dồn; thu thêm một lượt giao khi giao lại do khách; người nhận tự tới hub thì không chặn; đơn đóng được khi còn khoản thu thêm (25/11/2026, **thay** lẻ ngày tròn một ngày và "còn nợ 0 mới đóng"). Chi tiết [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md) mục 13. Code chưa sửa | Người dùng chốt. Tách công nợ khỏi trạng thái đơn để đơn không treo; IRT Đức §7.3, IRT Anh 5 |
 
 ## 5. Câu hỏi còn mở
 
