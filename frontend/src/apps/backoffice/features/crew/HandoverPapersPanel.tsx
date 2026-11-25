@@ -17,9 +17,11 @@ export function HandoverPapersPanel({ handover, receiving, onTrip }: { handover:
   const [busy, setBusy] = useState(false)
   const handoverId = handover.id ?? 0
   const showOriginals = receiving || handover.handoverType === 'DELIVERY' || handover.handoverType === 'AGENT'
+  // Giấy cần trả thu hẹp theo con đã quét
+  const scanned = (handover.horses ?? []).filter(horse => horse.microchipMatched).length
   const { data: papers, updateData } = useLoad(
     () => showOriginals ? tripExecutionApi.papers(handoverId) : Promise.resolve([]),
-    [handoverId, showOriginals],
+    [handoverId, showOriginals, scanned],
     { toastOnError: false },
   )
 
@@ -65,12 +67,12 @@ export function HandoverPapersPanel({ handover, receiving, onTrip }: { handover:
               {paper.direction
                 ? <StatusBadge tone="success" label={t(paper.direction === 'NOT_RECEIVED' ? 'handoverEvidence.originalMissing' : `myTrips.run.papers.${paper.direction}`)} />
                 : null}
-              {(!paper.direction || receiving) && (
+              {(!paper.direction || paper.direction === 'NOT_RECEIVED') && (
                 <Button size="lg" fullWidth onClick={() => void mark(paper.documentId ?? 0)}>
                   {t(receiving ? 'myTrips.run.papers.receive' : 'myTrips.run.papers.return')}
                 </Button>
               )}
-              {receiving && <Button size="lg" fullWidth onClick={() => void mark(paper.documentId ?? 0, true)}>
+              {receiving && paper.direction !== 'NOT_RECEIVED' && <Button size="lg" fullWidth onClick={() => void mark(paper.documentId ?? 0, true)}>
                 {t('handoverEvidence.originalMissing')}
               </Button>}
             </li>

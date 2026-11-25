@@ -348,10 +348,10 @@ export const customer = {
       },
       CONFIRMED: {
         title: 'Đang chuẩn bị chuyến',
-        text: 'Công ty làm thủ tục và xếp xe. Bạn chưa phải làm gì.',
+        text: 'Công ty làm thủ tục, xếp xe và đón ngựa. Bạn chưa phải làm gì.',
       },
       IN_OPERATION: {
-        title: 'Ngựa đang trên đường',
+        title: 'Đơn đang vận chuyển',
         text: 'Theo dõi từng con ở phần Hành trình.',
       },
       DELIVERED: {
@@ -392,6 +392,11 @@ export const customer = {
       pay: {
         title: 'Có khoản cần thanh toán',
         text: 'Trả đúng hạn để chuyến đi không bị chậm.',
+        cta: 'Tới thanh toán',
+      },
+      payAfter: {
+        title: 'Có khoản cần thanh toán',
+        text: 'Đơn còn khoản chưa trả. Trả đúng hạn để đặt đơn mới không bị chặn.',
         cta: 'Tới thanh toán',
       },
       documents: {
@@ -620,7 +625,7 @@ export const customer = {
       horses: 'Số ngựa',
     },
     price: {
-      deliveryEstimates: 'Giờ giao dự kiến',
+      deliveryEstimates: 'Ngày giao dự kiến',
       total: 'Giá tạm tính',
       transport: 'Vận chuyển',
       required: 'Bắt buộc theo tuyến',
@@ -749,7 +754,7 @@ export const customer = {
       },
     },
     review: {
-      stablingFee: 'Phí giữ ngựa tại hub là {{amount}} mỗi con cho mỗi 24 giờ trọn vẹn.',
+      stablingFee: 'Khi người nhận vắng hoặc số dư chưa trả đúng hạn, phí giữ ngựa tại hub là {{amount}} mỗi con cho mỗi 24 giờ trọn vẹn.',
       title: 'Xem lại và gửi đơn',
       subtitle: 'Điền thông tin các bên rồi gửi. Bạn chưa phải trả tiền ở bước này.',
       route: 'Hành trình',

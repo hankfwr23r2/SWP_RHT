@@ -69,6 +69,10 @@ public class StopReadinessServiceImpl implements StopReadinessService {
                 && !legs.findByBoardTripStop_IdAndStatusIn(stop.getId(), Set.of(HorseLegStatus.PLANNED)).isEmpty()) {
             throw new DispatchRuleException("tripStopId", "Còn ngựa chưa nhận hoặc chưa ghi đón hụt.", true);
         }
+        if (stop.getStopType() == TripStopType.DELIVERY
+                && !legs.findByAlightTripStop_IdAndStatusIn(stop.getId(), Set.of(HorseLegStatus.IN_PROGRESS)).isEmpty()) {
+            throw new DispatchRuleException("tripStopId", "Còn ngựa chưa giao hoặc chưa ghi không gặp người nhận.", true);
+        }
         requireNoHorseLeftAtStable(stop);
         if (stop.getStopType() == TripStopType.PICKUP) {
             requirePaid(stop);

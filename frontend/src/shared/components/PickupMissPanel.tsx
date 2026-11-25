@@ -92,7 +92,7 @@ export function PickupMissPanel({ bookingId, mode, onChanged, renderAddOns }: {
 
   if (!loaded) return <Skeleton variant="block" lines={3} />
   if (error) return <ErrorState onRetry={reload} />
-  if (!data?.length) return mode === 'customer' ? null : <EmptyState title={t('pickupMiss.empty')} description={t('pickupMiss.emptyHint')} />
+  if (!data?.length) return mode !== 'coordinator' ? null : <EmptyState title={t('pickupMiss.empty')} description={t('pickupMiss.emptyHint')} />
   return (
     <Card title={t('pickupMiss.title')}>
       {data.map(miss => (

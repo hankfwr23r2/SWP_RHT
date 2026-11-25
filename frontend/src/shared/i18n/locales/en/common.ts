@@ -106,6 +106,8 @@ export const common = {
     stepDone: 'Done',
   },
   common: {
+    pageNotFound: 'Page not found',
+    backHome: 'Back to home',
     hotline: 'Hotline',
     brandName: 'Racehorse Transport',
     brandTagline: 'Road Racehorse Transport · Vietnam · Laos · Cambodia',

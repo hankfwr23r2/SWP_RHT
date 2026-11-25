@@ -106,6 +106,8 @@ export const common = {
     stepDone: 'Đã xong',
   },
   common: {
+    pageNotFound: 'Không tìm thấy trang',
+    backHome: 'Về trang chủ',
     hotline: 'Hotline',
     brandName: 'Vận chuyển Ngựa',
     brandTagline: 'Vận chuyển ngựa đua đường bộ · Việt Nam · Lào · Campuchia',

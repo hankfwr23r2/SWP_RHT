@@ -3,7 +3,7 @@ import { formatVND } from '@shared/lib/format'
 import { Skeleton } from '@shared/ui/Skeleton'
 import { useBookingDraft } from '../draft'
 import { findAddress, useBookingData, type BookingData } from '../loaders'
-import { showDate, showDateTime } from '../model'
+import { selectedDeliveryAddress, showDate, showDateTime } from '../model'
 import { usePricePreview } from '../usePricePreview'
 import s from './BookingSummary.module.css'
 
@@ -58,7 +58,7 @@ function PriceLines({ preview }: { preview: Preview }) {
             {preview.price.deliveryEstimates.map(place => place.arrivalAt && (
               <div key={place.customerAddressId}>
                 <dt>{findAddress(data, place.customerAddressId ?? null)?.label}</dt>
-                <dd>{showDateTime(place.arrivalAt)}</dd>
+                <dd>{showDateTime(place.arrivalAt).slice(0, 10)}</dd>
               </div>
             ))}
           </dl>
@@ -75,7 +75,8 @@ export function BookingSummary() {
   const data = useBookingData()
   const preview = usePricePreview(draft)
   const pickup = findAddress(data, draft.pickupAddressId)
-  const delivery = findAddress(data, draft.deliveryAddressId)
+  const placeIds = new Set([draft.deliveryAddressId, ...draft.horseIds.map(id => selectedDeliveryAddress(draft, id) ?? draft.deliveryAddressId)])
+  const deliveries = [...placeIds].map(id => findAddress(data, id)?.label).filter(Boolean).join(' · ')
   const total = preview.price?.total != null && preview.error == null ? formatVND(preview.price.total) : '—'
 
   return (
@@ -84,7 +85,7 @@ export function BookingSummary() {
         <h2>{t('bookingForm.summary.title')}</h2>
         <dl className={s.facts}>
           <div><dt>{t('bookingForm.summary.pickup')}</dt><dd>{pickup?.label ?? '—'}</dd></div>
-          <div><dt>{t('bookingForm.summary.delivery')}</dt><dd>{delivery?.label ?? '—'}</dd></div>
+          <div><dt>{t('bookingForm.summary.delivery')}</dt><dd>{deliveries || '—'}</dd></div>
           {draft.departure?.departureDate && (
             <div><dt>{t('bookingForm.summary.departure')}</dt><dd>{showDate(draft.departure.departureDate)}</dd></div>
           )}

@@ -33,6 +33,11 @@ describe('journeyEntries', () => {
     expect(journeyEntries(horse).map(e => e.key)).toEqual(['handover-10', 'leg-1', 'handover-11', 'leg-2', 'handover-12', 'leg-3'])
   })
 
+  it('bỏ chặng đã hủy khi chưa chạy', () => {
+    const entries = journeyEntries({ ...horse, handovers: [], legs: [{ id: 8, legType: 'DELIVERY', status: 'CANCELLED' }, { id: 9, legType: 'DELIVERY', status: 'CANCELLED', actualStartAt: '2031-03-05T02:05:00Z' }] })
+    expect(entries.map(e => e.key)).toEqual(['leg-9'])
+  })
+
   it('đánh dấu trạng thái từng mốc', () => {
     const byKey = Object.fromEntries(journeyEntries(horse).map(e => [e.key, e]))
     expect(byKey['leg-1'].state).toBe('problem')

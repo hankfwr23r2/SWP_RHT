@@ -23,8 +23,9 @@ export interface JourneyEntry {
 const LEG_STATE: Record<string, JourneyState> = { PLANNED: 'planned', IN_PROGRESS: 'current', COMPLETED: 'done', FAILED: 'problem', CANCELLED: 'problem' }
 const HANDOVER_STATE: Record<string, JourneyState> = { PENDING: 'current', DONE: 'done', TIMEOUT: 'problem', FAILED: 'problem' }
 
+// Chặng hủy khi chưa chạy là kế hoạch cũ, không hiện cho người xem
 export function journeyEntries(horse: HorseJourney): JourneyEntry[] {
-  const legs: JourneyEntry[] = (horse.legs ?? []).map(leg => ({
+  const legs: JourneyEntry[] = (horse.legs ?? []).filter(leg => leg.status !== 'CANCELLED' || leg.actualStartAt).map(leg => ({
     key: `leg-${leg.id}`, kind: 'leg', type: leg.legType ?? '', state: LEG_STATE[leg.status ?? ''] ?? 'planned',
     at: leg.actualStartAt ?? leg.plannedStartAt, endAt: leg.actualEndAt ?? leg.plannedEndAt, planned: !leg.actualStartAt,
     place: `${leg.fromName ?? ''} → ${leg.toName ?? ''}`, detail: leg.vehicleTripCode ?? leg.agentName,

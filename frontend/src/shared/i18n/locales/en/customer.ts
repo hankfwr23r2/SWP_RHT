@@ -351,7 +351,7 @@ export const customer = {
         text: 'We are handling papers and vehicles. Nothing for you to do yet.',
       },
       IN_OPERATION: {
-        title: 'Horses are on the way',
+        title: 'Transport in progress',
         text: 'Follow each horse in the Journey section.',
       },
       DELIVERED: {
@@ -392,6 +392,11 @@ export const customer = {
       pay: {
         title: 'A payment is due',
         text: 'Pay on time so the trip is not delayed.',
+        cta: 'Go to payment',
+      },
+      payAfter: {
+        title: 'A payment is due',
+        text: 'This order still has an unpaid amount. Pay on time so new bookings are not blocked.',
         cta: 'Go to payment',
       },
       documents: {
@@ -620,7 +625,7 @@ export const customer = {
       horses: 'Horses',
     },
     price: {
-      deliveryEstimates: 'Estimated delivery times',
+      deliveryEstimates: 'Estimated delivery dates',
       total: 'Estimated price',
       transport: 'Transport',
       required: 'Required on this route',
@@ -749,7 +754,7 @@ export const customer = {
       },
     },
     review: {
-      stablingFee: 'The hub holding fee is {{amount}} per horse for each full 24 hours.',
+      stablingFee: 'If the recipient is absent or the balance is not paid on time, the hub holding fee is {{amount}} per horse for each full 24 hours.',
       title: 'Review and send',
       subtitle: 'Fill in the people involved, then send. Nothing is charged at this step.',
       route: 'Journey',

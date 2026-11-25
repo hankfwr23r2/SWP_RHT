@@ -82,7 +82,8 @@ export function nextStepOf(order: {
     case 'CONFIRMED':
     case 'IN_OPERATION':
     case 'DELIVERED':
-      if (due.length) return { key: 'pay', action: true, anchor: 'payments' }
+    case 'COMPLETED':
+      if (due.length) return { key: order.status === 'DELIVERED' || order.status === 'COMPLETED' ? 'payAfter' : 'pay', action: true, anchor: 'payments' }
       if (order.status === 'CONFIRMED' && missing) return { key: 'documents', action: true, anchor: 'documents', values: { count: missing } }
       return { key: order.status, action: false, anchor: order.status === 'DELIVERED' ? 'rating' : undefined }
     case 'PENDING_INTAKE':

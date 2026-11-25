@@ -78,8 +78,9 @@ Các loại khác: **chạy thẳng** (cùng hub, ví dụ Củ Chi → Bến C�
 |---|---|
 | Trụ sở TP.HCM | TP.HCM, Đồng Nai, Tây Ninh, Vĩnh Long, Cần Thơ, An Giang, Cà Mau, Đồng Tháp, Đắk Lắk, Khánh Hòa, Lâm Đồng |
 | Hub Đà Nẵng | Đà Nẵng, Huế, Quảng Ngãi, Quảng Trị, Gia Lai |
+| Hub Hà Nội | Hà Nội và 16 tỉnh, thành phía Bắc, xa nhất về phía nam là Hà Tĩnh |
 
-Miền Bắc và các tỉnh còn lại chưa có hub: trang đặt đơn nói rõ và liệt kê các tỉnh đang phục vụ. Campuchia chỉ đi và về qua hub TP.HCM (Mộc Bài), Lào chỉ qua hub Đà Nẵng (Lao Bảo); mỗi đơn có tối đa một chặng trục.
+Các tỉnh không có trong bảng chưa có hub: trang đặt đơn nói rõ và liệt kê các tỉnh đang phục vụ. Campuchia chỉ đi và về qua hub TP.HCM (Mộc Bài), Lào chỉ qua hub Đà Nẵng (Lao Bảo); mỗi đơn có tối đa một chặng trục.
 
 ## Máy cũ không khởi động được backend
 

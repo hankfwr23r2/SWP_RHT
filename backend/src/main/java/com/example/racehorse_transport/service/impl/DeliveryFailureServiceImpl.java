@@ -126,7 +126,7 @@ public class DeliveryFailureServiceImpl implements DeliveryFailureService {
             incident.setCauseConfirmedAt(now);
             incident.setTitle("Không gặp người nhận: " + leg.getBookingHorse().getHorse().getName());
             incident.setDescription(cause == IncidentCauseType.COMPANY_FAULT
-                    ? "Xe tới sau khung giờ đã báo, không gặp người nhận. Không tính phí giữ."
+                    ? "Xe tới sau khung giờ đã báo, không gặp người nhận."
                     : "Đã chờ hết thời gian chờ miễn phí tại điểm giao, không gặp người nhận.");
             incident.setReportedBy(handover.getHandledBy());
             incident.setStatus(IncidentStatus.REPORTED);
