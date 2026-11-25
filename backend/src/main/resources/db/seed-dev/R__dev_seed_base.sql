@@ -32,12 +32,18 @@ INSERT INTO location (code, name, location_type, country_code, province_code, ad
     ('GATE-LAOBAO', 'Cửa khẩu quốc tế Lao Bảo - Densavanh', 'BORDER_GATE', 'VN', 'VN-44', 'Xã Lao Bảo, Quảng Trị', 16.620000, 106.600000, TIME '07:00', TIME '22:00', NULL, 'ACTIVE')
 ON CONFLICT (code) DO NOTHING;
 
-INSERT INTO hub_stall (location_id, code, stall_kind)
-SELECT l.id, s.code, s.kind
-FROM location l
-CROSS JOIN (VALUES ('S-01', 'STANDARD'), ('S-02', 'STANDARD'), ('S-03', 'STANDARD'), ('I-01', 'ISOLATION')) s(code, kind)
-WHERE l.location_type = 'HUB'
-ON CONFLICT (location_id, code) DO NOTHING;
+-- Kiểm thử migration cũ nạp dữ liệu mẫu khi chưa có bảng này
+DO $$
+BEGIN
+    IF to_regclass('hub_stall') IS NOT NULL THEN
+        INSERT INTO hub_stall (location_id, code, stall_kind)
+        SELECT l.id, s.code, s.kind
+        FROM location l
+        CROSS JOIN (VALUES ('S-01', 'STANDARD'), ('S-02', 'STANDARD'), ('S-03', 'STANDARD'), ('I-01', 'ISOLATION')) s(code, kind)
+        WHERE l.location_type = 'HUB'
+        ON CONFLICT (location_id, code) DO NOTHING;
+    END IF;
+END $$;
 
 -- Công ty không vận hành nơi cách ly: ngừng trại mẫu đã nạp trước đây
 UPDATE location SET status = 'INACTIVE' WHERE code = 'QF-CUCHI';
