@@ -2244,6 +2244,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/health-check-tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listHorseHealthCheckTasks"];
+        put?: never;
+        post: operations["assignHealthCheckTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/health-check-tasks/assignees": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listHealthCheckAssignees"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/health-check-tasks/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listMyHealthCheckTasks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/health-check-tasks/{id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["acceptHealthCheckTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/health-check-tasks/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["cancelHealthCheckTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health-logs": {
         parameters: {
             query?: never;
@@ -4302,6 +4382,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseHealthCheckTaskResponseDto: {
+            data?: components["schemas"]["HealthCheckTaskResponseDto"];
+            message?: string;
+            status?: string;
+        };
         ApiResponseHealthLogResponseDto: {
             data?: components["schemas"]["HealthLogResponseDto"];
             message?: string;
@@ -4439,6 +4524,16 @@ export interface components {
         };
         ApiResponseListHandoverPaperResponseDto: {
             data?: components["schemas"]["HandoverPaperResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListHealthCheckAssigneeResponseDto: {
+            data?: components["schemas"]["HealthCheckAssigneeResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListHealthCheckTaskResponseDto: {
+            data?: components["schemas"]["HealthCheckTaskResponseDto"][];
             message?: string;
             status?: string;
         };
@@ -5732,6 +5827,60 @@ export interface components {
             /** Format: int64 */
             horseLegId: number;
             microchip: string;
+        };
+        HealthCheckAssigneeResponseDto: {
+            /** Format: int64 */
+            id?: number;
+            name?: string;
+        };
+        HealthCheckTaskCancelRequestDto: {
+            reason: string;
+        };
+        HealthCheckTaskCreateRequestDto: {
+            /** Format: int64 */
+            assignedTo: number;
+            /** Format: int64 */
+            bookingHorseId: number;
+            /** @enum {string} */
+            checkType: "ROUTINE" | "FOLLOW_UP" | "BEFORE_DEPARTURE";
+            /** Format: date-time */
+            dueAt: string;
+            /** Format: int64 */
+            horseStayId?: number;
+            note?: string;
+            /** Format: int64 */
+            vehicleTripId?: number;
+        };
+        HealthCheckTaskResponseDto: {
+            /** Format: date-time */
+            acceptedAt?: string;
+            /** Format: int64 */
+            assignedTo?: number;
+            assigneeName?: string;
+            /** Format: int64 */
+            bookingHorseId?: number;
+            canCancel?: boolean;
+            cancelReason?: string;
+            /** @enum {string} */
+            checkType?: "ROUTINE" | "FOLLOW_UP" | "BEFORE_DEPARTURE";
+            /** Format: date-time */
+            doneAt?: string;
+            /** Format: date-time */
+            dueAt?: string;
+            /** Format: int64 */
+            healthLogId?: number;
+            horseName?: string;
+            /** Format: int64 */
+            horseStayId?: number;
+            /** Format: int64 */
+            id?: number;
+            note?: string;
+            overdue?: boolean;
+            place?: string;
+            /** @enum {string} */
+            status?: "ASSIGNED" | "ACCEPTED" | "DONE" | "CANCELLED";
+            /** Format: int64 */
+            vehicleTripId?: number;
         };
         HealthLogRequestDto: {
             /** Format: int64 */
@@ -11341,6 +11490,144 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseMapStringString"];
+                };
+            };
+        };
+    };
+    listHorseHealthCheckTasks: {
+        parameters: {
+            query: {
+                bookingHorseId: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListHealthCheckTaskResponseDto"];
+                };
+            };
+        };
+    };
+    assignHealthCheckTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HealthCheckTaskCreateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHealthCheckTaskResponseDto"];
+                };
+            };
+        };
+    };
+    listHealthCheckAssignees: {
+        parameters: {
+            query: {
+                bookingHorseId: number;
+                vehicleTripId?: number;
+                horseStayId?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListHealthCheckAssigneeResponseDto"];
+                };
+            };
+        };
+    };
+    listMyHealthCheckTasks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListHealthCheckTaskResponseDto"];
+                };
+            };
+        };
+    };
+    acceptHealthCheckTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHealthCheckTaskResponseDto"];
+                };
+            };
+        };
+    };
+    cancelHealthCheckTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HealthCheckTaskCancelRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHealthCheckTaskResponseDto"];
                 };
             };
         };

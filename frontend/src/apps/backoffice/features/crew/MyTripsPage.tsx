@@ -1,5 +1,7 @@
 // Lượt xe của tôi (tài xế, hộ tống): xem phân công và xác nhận nhận việc (docs/MAN_HINH_VA_TAC_DONG.md mục 3.10)
 import { useState } from 'react'
+import { useAuth } from '@shared/auth/AuthContext'
+import { MyHealthCheckTasks } from './MyHealthCheckTasks'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { dispatchApi, type MyCrewAssignment } from '@shared/api/dispatch'
@@ -19,6 +21,7 @@ import s from './MyTrips.module.css'
 
 export default function MyTripsPage() {
   const { t } = useTranslation()
+  const { session } = useAuth()
   const toast = useToast()
   const [busyId, setBusyId] = useState<number>()
   const { data, loaded, error, reload, updateData } = useLoad(dispatchApi.myAssignments, [], { toastOnError: false })
@@ -75,6 +78,7 @@ export default function MyTripsPage() {
     <div className={s.page}>
       <PageHeader title={t('myTrips.title')} description={t('myTrips.description')} />
       {content()}
+      {session?.role === 'escort' && <MyHealthCheckTasks />}
       <MyStayHealthPanel />
     </div>
   )
