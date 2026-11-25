@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { HealthCheckTaskAction } from '@backoffice/shared/HealthCheckTaskAction'
 import { HorseHealthHistory } from '@backoffice/shared/HorseHealthHistory'
 import { formatDateTime } from '@shared/lib/format'
 import { Button } from '@shared/ui/Button'
@@ -30,8 +31,10 @@ export function CoordinatorTripHorses({ tripId, code, onClose }: { tripId: numbe
           { key: 'next', header: t('coordAssignment.next'), render: row => time(row.nextCheckAt) },
           { key: 'history', header: t('stayHealth.history'), render: row => {
             const bookingHorseId = row.horse?.leg?.bookingHorseId
-            return bookingHorseId == null ? null : <Button size="sm"
-              onClick={() => setHistory({ bookingHorseId, horseName: row.horse?.horseName })}>{t('stayHealth.history')}</Button>
+            return bookingHorseId == null ? null : <>
+              <Button size="sm" onClick={() => setHistory({ bookingHorseId, horseName: row.horse?.horseName })}>{t('stayHealth.history')}</Button>
+              <HealthCheckTaskAction bookingHorseId={bookingHorseId} vehicleTripId={tripId} horseName={row.horse?.horseName} />
+            </>
           } },
         ]} />}
     {history && <HorseHealthHistory {...history} onClose={() => setHistory(undefined)} />}

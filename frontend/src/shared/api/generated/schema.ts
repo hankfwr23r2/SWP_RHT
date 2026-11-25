@@ -6428,6 +6428,7 @@ export interface components {
             causeType?: "COMPANY_FAULT" | "HORSE_CONDITION" | "CUSTOMER_DOCS" | "AGENT_FAULT" | "FORCE_MAJEURE" | "RECIPIENT_ABSENT";
             /** @enum {string} */
             confirmedCauseType?: "COMPANY_FAULT" | "HORSE_CONDITION" | "CUSTOMER_DOCS" | "AGENT_FAULT" | "FORCE_MAJEURE" | "RECIPIENT_ABSENT";
+            coordinatorStaffCode?: string;
             deliveryFailure?: components["schemas"]["DeliveryFailureDto"];
             /** Format: date */
             departureDate?: string;
@@ -7932,6 +7933,7 @@ export interface components {
             /** @enum {string} */
             status?: "PLANNED" | "DISPATCHED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
             stops?: components["schemas"]["TripStopResponseDto"][];
+            takeOverAllowed?: boolean;
             /** @enum {string} */
             tripType?: "PICKUP" | "LINEHAUL" | "DELIVERY" | "TRANSFER" | "DIRECT";
             /** Format: int64 */

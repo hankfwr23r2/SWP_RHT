@@ -137,7 +137,7 @@ Danh sách dưới đây ghi mô hình gốc. Migration `V202611292000` bổ sun
 | 6. Dịch vụ, bảng giá | `billable_service`, `price_list`, `price_item` | 3 |
 | 7. Quy định, giấy tờ yêu cầu | `country_rule`, `document_type`, `document_requirement` | 3 |
 | 8. Đơn hàng | `booking`, `booking_party`, `booking_address`, `booking_horse`, `booking_horse_service`, `booking_status_history`, `terms_acceptance`, `booking_rating` | 8 |
-| 9. Vận hành | `vehicle_trip`, `trip_stop`, `crew_assignment`, `horse_leg`, `horse_stay`, `horse_health_log`, `hub_stall`, `health_check_task` | 8 |
+| 9. Vận hành | `vehicle_trip`, `trip_stop`, `crew_assignment`, `horse_leg`, `horse_stay`, `horse_health_log`, `hub_stall`, `health_check_task`, `coordinator_assignment_history` | 9 |
 | 10. Giao nhận | `handover`, `handover_horse`, `handover_document` | 3 |
 | 11. Bảo hiểm | `horse_insurance` | 1 |
 | 12. Báo giá, thanh toán | `quotation`, `quotation_line`, `payment`, `payment_transaction` | 4 |
@@ -981,6 +981,20 @@ Ràng buộc bảng:
 Index: `booking_horse_id`, `location_id`, `operator_party_id`.
 
 Một ô chỉ được gán cho một lưu trú đã bắt đầu và chưa kết thúc (unique index từng phần).
+
+#### `coordinator_assignment_history` · lịch sử điều phối phụ trách
+
+`departure.coordinator_id` và `vehicle_trip.coordinator_id` (FK → staff, có thể trống) là người đang phụ trách. `departure.coordinator_reminded_on` là ngày đã nhắc quản lý gần nhất. Lượt trục lập mới lấy người của chuyến, lượt khác lấy người lập.
+
+| Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
+|---|---|---|---|---|
+| `id` | `bigint` | | PK, identity | |
+| `departure_id`, `vehicle_trip_id` | `bigint` | có | FK, đúng một cột có giá trị | Chuyến hoặc lượt đổi người |
+| `from_staff_id` | `bigint` | có | FK → staff(user_id) | Người trước |
+| `to_staff_id` | `bigint` | | FK → staff(user_id) | Người mới |
+| `changed_by` | `bigint` | | FK → app_user | Quản lý, điều phối nhận thay, hoặc người lập lượt |
+| `reason` | `varchar(500)` | có | | Bắt buộc khi đổi người hoặc nhận thay |
+| `changed_at` | `timestamptz` | | | |
 
 #### `health_check_task` · việc khám giao cho hộ tống
 

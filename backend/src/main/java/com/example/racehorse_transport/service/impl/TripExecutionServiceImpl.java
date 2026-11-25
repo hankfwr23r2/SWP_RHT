@@ -69,9 +69,9 @@ public class TripExecutionServiceImpl implements TripExecutionService {
                     + ". Xếp sơ đồ khoang trước khi xuất phát.", true);
         }
         tripReadiness.requireReadyToStart(trip);
-        trip.setStatus(VehicleTripStatus.IN_PROGRESS);
         var startedAt = clock.instant();
         boolean early = readiness.recordEarlyStart(trip, startedAt, earlyReason, member);
+        trip.setStatus(VehicleTripStatus.IN_PROGRESS);
         trip.setActualStartAt(startedAt);
         if (early) {
             notices.notifyEarlyStart(trip, earlyReason.strip());
