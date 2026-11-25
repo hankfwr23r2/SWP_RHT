@@ -4,9 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
+import com.example.racehorse_transport.dto.booking.BookingCancellationResponseDto;
 import com.example.racehorse_transport.dto.booking.BookingRescheduleRequestDto;
 import com.example.racehorse_transport.dto.booking.CancelBookingRequestDto;
-import com.example.racehorse_transport.dto.booking.CompanyCancelBookingRequestDto;
 import com.example.racehorse_transport.entity.AppUser;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Customer;
@@ -66,13 +66,32 @@ class BookingDelayServiceTest {
     }
 
     @Test
-    void refundUsesTheCompanyFlowAndChecksTheOwner() {
-        assertThatThrownBy(() -> service.refund(1L, "stranger", new CancelBookingRequestDto("Không đi nữa")))
+    void refundUsesTheDelayedDepartureFlowAndChecksTheOwner() {
+        var request = new CancelBookingRequestDto("Không đi nữa");
+        var preview = mock(BookingCancellationResponseDto.class);
+        when(preview.allowed()).thenReturn(true);
+        when(cancels.previewForDelayedDeparture(any(Booking.class))).thenReturn(preview);
+
+        assertThatThrownBy(() -> service.refund(1L, "stranger", request))
                 .isInstanceOf(ResourceNotFoundException.class);
-        service.refundPreview(1L, "owner");
-        service.refund(1L, "owner", new CancelBookingRequestDto("Không đi nữa"));
-        verify(cancels).previewForManager(1L, true);
-        verify(cancels).cancelForCompany(1L, "owner", new CompanyCancelBookingRequestDto("Không đi nữa"));
+        assertThat(service.view(1L, "owner")).singleElement().satisfies(options -> assertThat(options.canRefundFull()).isTrue());
+        assertThat(service.refundPreview(1L, "owner")).isSameAs(preview);
+        service.refund(1L, "owner", request);
+
+        verify(cancels, times(2)).previewForDelayedDeparture(argThat(booking -> booking.getId() == 1L));
+        verify(cancels).cancelForDelayedDeparture(1L, "owner", request);
+    }
+
+    @Test
+    void hidesRefundWhenTheCancellationPreviewDisallowsIt() {
+        var preview = mock(BookingCancellationResponseDto.class);
+        when(cancels.previewForDelayedDeparture(any(Booking.class))).thenReturn(preview);
+
+        assertThat(service.view(1L, "owner")).singleElement().satisfies(options -> {
+            assertThat(options.canRefundFull()).isFalse();
+            assertThat(options.canRescheduleFree()).isTrue();
+        });
+        assertThat(service.refundPreview(1L, "owner").allowed()).isFalse();
     }
 
     @Test

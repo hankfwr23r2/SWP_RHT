@@ -20,7 +20,6 @@ import com.example.racehorse_transport.security.JwtUtils;
 import com.example.racehorse_transport.service.DepartureDelayService;
 import com.example.racehorse_transport.support.TestData;
 import jakarta.persistence.EntityManager;
-import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -31,6 +30,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
@@ -143,20 +144,25 @@ class DepartureDelayFlowTest {
         options(notReceived).andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].canRescheduleFree").value(true))
                 .andExpect(jsonPath("$.data[0].canRefundFull").value(true));
+        mvc.perform(get("/bookings/{id}/delay/refund-preview", received.getId())
+                        .header(HttpHeaders.AUTHORIZATION, ownerToken(received)))
+                .andExpect(status().isConflict());
         mvc.perform(post("/bookings/{id}/delay/refund", received.getId())
                         .header(HttpHeaders.AUTHORIZATION, ownerToken(received)).contentType(MediaType.APPLICATION_JSON)
                         .content("{\"reason\":\"Không đi nữa\"}"))
                 .andExpect(status().isConflict());
     }
 
-    @Test
-    void automaticCancellationOnceAndCompanyRefundIncludesPassThroughAndReleasesTheStall() throws Exception {
+    @ParameterizedTest
+    @CsvSource({"0, 450000", "770000, 1220000"})
+    void automaticCancellationOnceAndCompanyRefundIncludesAllPaidAmountsAndReleasesTheStall(int balancePaid, int refundAmount)
+            throws Exception {
         var departure = departureAt(clock.instant().minus(Duration.ofHours(6)));
         var booking = attach(departure);
         departure.setBookedStallCount(1);
         long horse = horseFor(booking);
         long leg = addLeg(horse, "PLANNED");
-        payDepositIncludingPassThrough(booking.getId());
+        payBookingWithPassThrough(booking.getId(), balancePaid);
         delays.scan();
         Instant cancelled = departure.getAutoCancelledAt();
         delays.scan();
@@ -165,18 +171,33 @@ class DepartureDelayFlowTest {
         assertThat(booking.getStatus()).isEqualTo(BookingStatus.SCHEDULE_CHANGE_REQUIRED);
         assertThat(customerNotices(booking.getId(), "Chuyến đã hủy do chậm")).isEqualTo(1);
         assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE id = ?", String.class, leg)).isEqualTo("CANCELLED");
+        options(booking).andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].canRefundFull").value(true));
         mvc.perform(get("/bookings/{id}/delay/refund-preview", booking.getId())
                         .header(HttpHeaders.AUTHORIZATION, ownerToken(booking))).andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.refundable").value(450000));
-        mvc.perform(post("/bookings/{id}/delay/refund", booking.getId())
-                        .header(HttpHeaders.AUTHORIZATION, ownerToken(booking)).contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"reason\":\"Chọn hoàn do chuyến bị hủy\"}"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.data.refundable").value(450000));
+                .andExpect(jsonPath("$.data.allowed").value(true))
+                .andExpect(jsonPath("$.data.refundable").value(refundAmount));
+        var refund = post("/bookings/{id}/delay/refund", booking.getId())
+                .header(HttpHeaders.AUTHORIZATION, ownerToken(booking)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"reason\":\"Chọn hoàn do chuyến bị hủy\"}");
+        mvc.perform(refund).andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.refundable").value(refundAmount));
+        mvc.perform(refund).andExpect(status().isConflict());
         entityManager.flush();
+        assertThat(booking.getStatus()).isEqualTo(BookingStatus.CANCELLED);
         assertThat(departure.getBookedStallCount()).isZero();
         assertThat(booking.getDeparture()).isNull();
-        assertThat(jdbc.queryForObject("SELECT amount FROM payment WHERE booking_id = ? AND payment_type = 'REFUND'",
-                BigDecimal.class, booking.getId())).isEqualByComparingTo("450000");
+        var refundedTypes = jdbc.query("""
+                SELECT paid.payment_type, paid.amount AS original_amount, refund.amount
+                FROM payment refund
+                JOIN payment paid ON paid.id = refund.refunded_payment_id AND paid.booking_id = refund.booking_id
+                WHERE refund.booking_id = ? AND refund.payment_type = 'REFUND' AND refund.status = 'PENDING'
+                ORDER BY paid.id
+                """, (row, index) -> {
+                    assertThat(row.getBigDecimal("amount")).isEqualByComparingTo(row.getBigDecimal("original_amount"));
+                    return row.getString("payment_type");
+                }, booking.getId());
+        assertThat(refundedTypes).containsExactlyElementsOf(balancePaid == 0 ? List.of("DEPOSIT") : List.of("DEPOSIT", "BALANCE"));
     }
 
     @Test
@@ -362,7 +383,7 @@ class DepartureDelayFlowTest {
                 """, Integer.class, userId, title);
     }
 
-    private void payDepositIncludingPassThrough(long bookingId) {
+    private void payBookingWithPassThrough(long bookingId, int balancePaid) {
         long quote = jdbc.queryForObject("""
                 INSERT INTO quotation (booking_id, version, price_list_id, currency_code, deposit_rate, expires_at,
                                        confirmed_pickup_date, confirmed_departure_date, estimated_delivery_date,
@@ -375,5 +396,11 @@ class DepartureDelayFlowTest {
                 INSERT INTO payment (booking_id, quotation_id, payment_type, amount, currency_code, payment_method, status, paid_at)
                 VALUES (?, ?, 'DEPOSIT', 450000, 'VND', 'VNPAY', 'PAID', now())
                 """, bookingId, quote);
+        if (balancePaid > 0) {
+            jdbc.update("""
+                    INSERT INTO payment (booking_id, quotation_id, payment_type, amount, currency_code, payment_method, status, paid_at)
+                    VALUES (?, ?, 'BALANCE', ?, 'VND', 'VNPAY', 'PAID', now())
+                    """, bookingId, quote, balancePaid);
+        }
     }
 }
