@@ -27,3 +27,4 @@
 .remove { border: none; background: none; color: var(--muted); cursor: pointer; width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0; }
 .remove:hover { background: white; color: var(--red); }
 .remove:focus-visible, .swap:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
+.labelNote { color: var(--color-muted); font-weight: var(--weight-regular); font-size: 0.88em; }

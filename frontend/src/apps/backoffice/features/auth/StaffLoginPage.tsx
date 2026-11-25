@@ -88,7 +88,7 @@ function LoginForm({ managerOnly }: { managerOnly: boolean }) {
         </div>
       </div>
       <TurnstileWidget key={captchaGeneration} action="staff_login" onTokenChange={setCaptchaToken} />
-      <p className="text-right small" style={{ marginBottom: 16 }}><Link to="/forgot-password" className="text-orange">{t('staffAuth.forgotPassword', 'Quên mật khẩu?')}</Link></p>
+      <p className={`text-right small ${s.forgot}`}><Link to="/forgot-password" className="text-orange">{t('staffAuth.forgotPassword', 'Quên mật khẩu?')}</Link></p>
       <button type="submit" className="btn btn-primary btn-full btn-lg" disabled={loading}>
         {loading ? t('staffAuth.loggingIn', 'Đang đăng nhập...') : managerOnly ? t('staffAuth.loginManager', 'Đăng nhập quản lý') : t('staffAuth.loginStaff', 'Đăng nhập')}
       </button>

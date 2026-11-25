@@ -12,28 +12,8 @@ const FRONTEND = join(dirname(fileURLToPath(import.meta.url)), '..')
 const SRC = join(FRONTEND, 'src')
 
 const EXCEPTIONS = {
-  S1: [
-    'src/apps/backoffice/features/auth/StaffLoginPage.tsx',
-    'src/apps/backoffice/features/manager/reports/ReportCharts.tsx',
-    'src/apps/backoffice/features/manager/reports/ReportsPage.tsx',
-    'src/apps/customer/features/auth/LoginPage.tsx',
-    'src/apps/customer/features/auth/VerifyEmailPage.tsx',
-    'src/apps/customer/features/policies/PolicyPage.tsx',
-    'src/shared/auth/ForgotPasswordPage.tsx',
-    'src/shared/routing/RouteError.tsx',
-    'src/shared/ui/CaptureEvidenceInfo.tsx',
-    'src/shared/ui/ChangePasswordModal.tsx',
-    'src/shared/ui/FileField.tsx',
-    'src/shared/ui/FormSelect.tsx',
-    'src/shared/ui/ImageThumb.tsx',
-  ],
-  S2: [
-    'src/apps/backoffice/features/manager/reports/ReportCharts.tsx',
-    'src/apps/backoffice/features/manager/reports/ReportsPage.tsx',
-    'src/shared/ui/ChangePasswordModal.tsx',
-    'src/shared/ui/FileField.tsx',
-    'src/shared/ui/ImageThumb.tsx',
-  ],
+  S1: [],
+  S2: [],
 }
 
 const INLINE_STYLE = /style=\{\{/

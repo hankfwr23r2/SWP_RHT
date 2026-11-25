@@ -82,7 +82,7 @@ export default function ReportsPage() {
 
         <div className={s.card}>
           <h3>{t('reportsPage.revenueAndCosts', 'Doanh thu và chi phí')}</h3>
-          <div className={s.legend}><span><i style={{ background: '#1d5fa8' }} />{t('reportsPage.revenue', 'Doanh thu công ty')}</span><span><i style={{ background: '#eb6834' }} />Chi phí công ty chịu</span><span>{days > 31 ? t('reportsPage.byWeek', 'Theo tuần') : t('reportsPage.byDepositDate', 'Theo ngày đặt cọc')}</span></div>
+          <div className={s.legend}><span><i className={s.revenueKey} />{t('reportsPage.revenue', 'Doanh thu công ty')}</span><span><i className={s.costKey} />Chi phí công ty chịu</span><span>{days > 31 ? t('reportsPage.byWeek', 'Theo tuần') : t('reportsPage.byDepositDate', 'Theo ngày đặt cọc')}</span></div>
           <MoneyChart pts={points(cur)} />
         </div>
 
