@@ -1,4 +1,4 @@
-import type { Time } from './dates'
+export type Time = number | Date
 
 const pad = (n: number) => String(n).padStart(2, '0')
 

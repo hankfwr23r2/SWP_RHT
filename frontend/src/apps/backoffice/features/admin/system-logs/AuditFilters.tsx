@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ROLE_LABEL } from '@shared/types/role'
+import { ROLE_LABEL } from '@shared/auth/role'
 import { Button } from '@shared/ui/Button'
 import { Field } from '@shared/ui/Field'
 import { Input } from '@shared/ui/Input'

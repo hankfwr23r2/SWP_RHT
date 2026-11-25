@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { contactApi, type Contact } from '@shared/api/contact'
-import { HOTLINE, OFFICE_ADDRESS } from '@shared/config/business-rules'
+import { HOTLINE, OFFICE_ADDRESS } from '@shared/config/site'
 
 let cached: Promise<Contact> | undefined
 

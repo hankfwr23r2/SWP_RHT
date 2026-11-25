@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@shared/ui/Button'
 import { ChangePasswordModal } from '@shared/ui/ChangePasswordModal'
 import { Modal } from '@shared/ui/Modal'
-import { ROLE_LABEL, type Session } from '@shared/types/role'
+import { ROLE_LABEL, type Session } from '@shared/auth/role'
 import s from './StaffProfileModal.module.css'
 
 export function StaffProfileModal({ session, onClose }: { session: Session; onClose: () => void }) {
