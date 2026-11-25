@@ -87,7 +87,7 @@ public class CostItemServiceImpl implements CostItemService {
         costs.findIncidentId(costItemId).ifPresent(incidents::findForUpdate);
         costs.findBookingId(costItemId).ifPresent(bookings::findForUpdate);
         CostItem cost = costs.findForUpdate(costItemId)
-                .orElseThrow(() -> new ResourceNotFoundException("Cost not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chi phí."));
         if (cost.getApprovedAt() != null) {
             throw new DispatchRuleException("status", "Chi phí đã được duyệt.", true);
         }
@@ -115,7 +115,7 @@ public class CostItemServiceImpl implements CostItemService {
     @Transactional(readOnly = true)
     public List<CostItemResponseDto> customerCosts(Long bookingId, String username) {
         bookings.findByIdAndCustomer_User_Username(bookingId, username)
-                .orElseThrow(() -> new ResourceNotFoundException("Booking not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn."));
         return costs.findByBooking_IdOrderByIncurredAt(bookingId).stream()
                 .filter(cost -> CostPayerPolicy.customerSide(cost.getPayerType()))
                 .map(CostItemResponseDto::from).toList();
@@ -127,12 +127,9 @@ public class CostItemServiceImpl implements CostItemService {
         var cost = lockCost(costItemId);
         var customer = cost.getBooking() == null ? null : cost.getBooking().getCustomer().getUser();
         if (customer == null || !username.equals(customer.getUsername())) {
-            throw new ResourceNotFoundException("Cost not found.");
+            throw new ResourceNotFoundException("Không tìm thấy chi phí.");
         }
         requirePendingResponse(cost);
-        if (!clock.instant().isBefore(cost.getCustomerResponseDueAt())) {
-            throw new DispatchRuleException("customerResponse", "The response deadline has passed.", true);
-        }
         saveResponse(cost, agreed, customer);
         return CostItemResponseDto.from(cost);
     }
@@ -142,7 +139,7 @@ public class CostItemServiceImpl implements CostItemService {
     public CostItemResponseDto recordPhoneConsent(Long costItemId, String note, String username) {
         var cost = lockCost(costItemId);
         requirePendingResponse(cost);
-        var coordinator = staff.findByUser_Username(username).orElseThrow(() -> new AccessDeniedException("Staff not found."));
+        var coordinator = staff.findByUser_Username(username).orElseThrow(() -> new AccessDeniedException("Không tìm thấy nhân viên."));
         cost.setPhoneConsentNote(note.strip());
         saveResponse(cost, true, coordinator.getUser());
         return CostItemResponseDto.from(cost);
@@ -153,7 +150,7 @@ public class CostItemServiceImpl implements CostItemService {
     public CostItemResponseDto markRecovered(Long costItemId) {
         var cost = lockCost(costItemId);
         if (!cost.isAgentRecoveryRequired() || cost.getApprovedAt() == null) {
-            throw new DispatchRuleException("agentRecovery", "The cost is not approved for agent recovery.", true);
+            throw new DispatchRuleException("agentRecovery", "Chi phí chưa được duyệt để đòi lại đại lý.", true);
         }
         if (cost.getAgentRecoveredAt() == null) {
             cost.setAgentRecoveredAt(clock.instant());
@@ -163,13 +160,13 @@ public class CostItemServiceImpl implements CostItemService {
 
     private CostItem lockCost(Long id) {
         costs.findIncidentId(id).ifPresent(incidents::findForUpdate);
-        return costs.findForUpdate(id).orElseThrow(() -> new ResourceNotFoundException("Cost not found."));
+        return costs.findForUpdate(id).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chi phí."));
     }
 
     private static void requirePendingResponse(CostItem cost) {
         if (!CostPayerPolicy.customerSide(cost.getPayerType()) || cost.getCustomerResponseDueAt() == null
                 || cost.getApprovedAt() != null || cost.getCustomerResponseAt() != null) {
-            throw new DispatchRuleException("customerResponse", "The cost is not awaiting a response.", true);
+            throw new DispatchRuleException("customerResponse", "Chi phí không chờ khách phản hồi.", true);
         }
     }
 

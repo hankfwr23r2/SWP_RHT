@@ -189,7 +189,7 @@ class IncidentFlowTest {
                 .andExpect(jsonPath("$.data.agentRecoveredAt").exists());
         mvc.perform(get("/incidents/{id}/cost-items", incident).header(HttpHeaders.AUTHORIZATION, manager))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[?(@.id == " + accepted + ")].payerType").value(List.of("CUSTOMER")));
+                .andExpect(jsonPath("$.data[?(@.id == " + accepted + ")].payerType").value(org.hamcrest.Matchers.contains("CUSTOMER")));
     }
 
     @Test

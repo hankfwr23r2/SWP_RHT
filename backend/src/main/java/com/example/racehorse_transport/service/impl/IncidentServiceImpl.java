@@ -136,16 +136,16 @@ public class IncidentServiceImpl implements IncidentService {
     @Transactional
     public void acceptPlan(Long planId, String username) {
         Long incidentId = plans.findIncidentId(planId)
-                .orElseThrow(() -> new ResourceNotFoundException("Plan not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phương án."));
         var incident = incidents.findForUpdate(incidentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Plan not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phương án."));
         var booking = incident.getBooking();
         if (booking == null || !username.equals(booking.getCustomer().getUser().getUsername())) {
-            throw new ResourceNotFoundException("Plan not found.");
+            throw new ResourceNotFoundException("Không tìm thấy phương án.");
         }
         var plan = decidablePlan(planId);
         if (plan.getEstimatedCost() == null || plan.getEstimatedCost().signum() <= 0) {
-            throw new DispatchRuleException("estimatedCost", "The proposed plan has no estimated cost.", true);
+            throw new DispatchRuleException("estimatedCost", "Phương án chưa có chi phí dự kiến.", true);
         }
         if (plan.getCustomerAgreedAt() == null) {
             plan.setCustomerAgreedAt(clock.instant());

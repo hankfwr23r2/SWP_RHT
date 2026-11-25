@@ -41,7 +41,7 @@ public class IncidentCostDecisionServiceImpl implements IncidentCostDecisionServ
     @Transactional(readOnly = true)
     public void requireCustomerOwnership(Long bookingId, String username) {
         bookings.findByIdAndCustomer_User_Username(bookingId, username)
-                .orElseThrow(() -> new ResourceNotFoundException("Booking not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn."));
     }
 
     @Override

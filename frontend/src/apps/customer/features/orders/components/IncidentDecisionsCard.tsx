@@ -26,11 +26,11 @@ export function IncidentDecisionsCard({ bookingId }: { bookingId: number }) {
       {data && <div className={s.stack}>
         {data.costs.map(cost => (
           <div key={cost.id}>
-            <p>{cost.description} ? {money(cost.amount, cost.currencyCode)}</p>
+            <p>{cost.description} · {money(cost.amount, cost.currencyCode)}</p>
             {cost.customerAgreed != null && <Badge>{t(cost.customerAgreed ? 'incidentDecisions.agreed' : 'incidentDecisions.declined')}</Badge>}
             {cost.customerResponseDueAt && cost.customerAgreed == null && !cost.approvedAt && cost.id != null && (
               <>
-                <p>{t('incidentDecisions.deadline')} ? {moment(cost.customerResponseDueAt)}</p>
+                <p>{t('incidentDecisions.deadline')} · {moment(cost.customerResponseDueAt)}</p>
                 <div className={s.row}>
                   <Button disabled={busy} onClick={() => setDecision({ id: cost.id!, kind: 'cost', agree: true })}>{agree}</Button>
                   <Button disabled={busy} onClick={() => setDecision({ id: cost.id!, kind: 'cost', agree: false })}>{decline}</Button>
@@ -41,7 +41,7 @@ export function IncidentDecisionsCard({ bookingId }: { bookingId: number }) {
         ))}
         {data.plans.map(plan => (
           <div key={plan.id}>
-            <p>{plan.instructions} ? {money(plan.estimatedCost, 'VND')}</p>
+            <p>{plan.instructions} · {money(plan.estimatedCost, 'VND')}</p>
             {plan.customerAgreedAt ? <Badge>{t('incidentDecisions.agreed')}</Badge> : plan.id != null &&
               <Button disabled={busy} onClick={() => setDecision({ id: plan.id!, kind: 'plan', agree: true })}>{agree}</Button>}
           </div>
