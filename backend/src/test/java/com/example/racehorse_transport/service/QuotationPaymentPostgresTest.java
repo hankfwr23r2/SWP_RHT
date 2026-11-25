@@ -144,6 +144,7 @@ class QuotationPaymentPostgresTest {
         data.bookingAddress(fixture.booking(), AddressRole.DELIVERY);
         long horse = attachHorse(fixture, "STANDARD");
         var specialist = data.staff(data.unique("requote-specialist"), "SPECIALIST");
+        assignSpecialist(booking, specialist.getUserId());
         String specialistAuth = auth(specialist.getUser().getUsername(), "SPECIALIST");
         String managerAuth = auth(fixture.manager(), "MANAGER");
         long insurer = sampleInsurer();
@@ -201,6 +202,7 @@ class QuotationPaymentPostgresTest {
         long booking = fixture.booking().getId();
         long horse = attachHorse(fixture, "STANDARD");
         var specialist = data.staff(data.unique("personal-specialist"), "SPECIALIST");
+        assignSpecialist(booking, specialist.getUserId());
         String specialistAuth = auth(specialist.getUser().getUsername(), "SPECIALIST");
         long insurer = sampleInsurer();
         long insurance = jdbc.queryForObject("""
@@ -584,6 +586,7 @@ class QuotationPaymentPostgresTest {
         var fixture = fixture(BookingType.INTERPROVINCE, BookingStatus.CONFIRMED);
         long booking = fixture.booking().getId();
         long specialist = data.staff(data.unique("direct-document-specialist"), "SPECIALIST").getUserId();
+        assignSpecialist(booking, specialist);
         var now = jdbc.queryForObject("select now()", java.sql.Timestamp.class).toInstant();
         when(clock.instant()).thenReturn(now);
         jdbc.update("update booking set requested_pickup_date = ? where id = ?",
@@ -601,7 +604,11 @@ class QuotationPaymentPostgresTest {
         assertThat(jdbc.queryForList("""
                 select nr.user_id from notification_recipient nr join notification n on n.id = nr.notification_id
                 where n.booking_id = ? and n.title = 'Đơn cần bổ sung giấy tờ'
-                """, Long.class, booking)).contains(specialist);
+                """, Long.class, booking)).containsExactly(specialist);
+    }
+
+    private void assignSpecialist(long bookingId, long specialistId) {
+        jdbc.update("UPDATE booking SET specialist_id = ? WHERE id = ?", specialistId, bookingId);
     }
 
     @Test

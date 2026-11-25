@@ -14,13 +14,13 @@ import { Skeleton } from '@shared/ui/Skeleton'
 import { Tabs } from '@shared/ui/Tabs'
 import { ReviewRowActions } from './components/ReviewRowActions'
 import type { reviewListLoader } from './loaders'
-import { matchesReview, reviewStatuses, showDate, type ReviewStatus } from './reviewDisplay'
+import { defaultReviewStatus, matchesReview, reviewStatuses, showDate, type ReviewStatus } from './reviewDisplay'
 import { useReviewQueue } from './useReviewQueue'
 import s from './Review.module.css'
 
-function ReviewQueue({ status, query, initial }: { status: ReviewStatus; query: string; initial?: BookingSummary[] }) {
+function ReviewQueue({ status, query, mine, initial }: { status: ReviewStatus; query: string; mine: boolean; initial?: BookingSummary[] }) {
   const { t, i18n } = useTranslation()
-  const { data, loaded, error, reload, busy, pageError, hasMore, more } = useReviewQueue(status, initial)
+  const { data, loaded, error, reload, busy, pageError, hasMore, more } = useReviewQueue(status, mine, initial)
   const rows = (data ?? initial ?? []).filter(row => matchesReview(row, query))
   if (!loaded && !initial) return <Skeleton lines={3} />
   if (error) return <ErrorState onRetry={reload} />
@@ -32,6 +32,7 @@ function ReviewQueue({ status, query, initial }: { status: ReviewStatus; query: 
           <div>
             <h2>{row.id != null ? <Link to={`/specialist/review/${row.id}`}>{row.code}</Link> : row.code}</h2>
             {row.customerName && <p>{row.customerName}{row.customerPhone && ` · ${row.customerPhone}`}</p>}
+            <p>{row.specialistName ? t('staffReview.assigned', { name: row.specialistName }) : t('staffReview.unassigned')}</p>
             {row.routeName && <p>{row.routeName}</p>}
             {row.requestedPickupDate && <p>{t('staffReview.pickupDate', { date: showDate(row.requestedPickupDate, i18n.language) })}</p>}
             {row.horseCount != null && <p>{t('staffReview.horseCount', { count: row.horseCount })}</p>}
@@ -51,8 +52,9 @@ export default function ReviewListPage() {
   const { rows, errors, reload } = usePageData<typeof reviewListLoader>()
   const { state } = useRevalidator()
   const [params, setParams] = useSearchParams()
+  const mine = params.get('assignment') !== 'all'
   const selected = params.get('tab')
-  const status = reviewStatuses.find(value => value === selected) ?? reviewStatuses[0]
+  const status = reviewStatuses.find(value => value === selected) ?? defaultReviewStatus
   const query = params.get('q') ?? ''
   const [search, setSearch] = useState({ from: query, value: query })
   const value = search.from === query ? search.value : query
@@ -72,13 +74,17 @@ export default function ReviewListPage() {
       </Field>
       <Button type="submit">{t('staffReview.search')}</Button>
     </form>
+    <Tabs label={t('staffReview.assignmentTabs')} value={mine ? 'mine' : 'all'}
+      items={[{ value: 'mine', label: t('staffReview.mine') }, { value: 'all', label: t('staffReview.all') }]}
+      onChange={value => update('assignment', value === 'all' ? 'all' : '')}>
     <Tabs label={t('staffReview.tabs')} value={status} items={reviewStatuses.map(value => ({ value, label: t(`staffReview.tabsByStatus.${value}`) }))}
       onChange={value => update('tab', value)}>
       <div className={s.stack}>
-        {status === reviewStatuses[0] && !rows && errors.length
+        {mine && status === defaultReviewStatus && !rows && errors.length
           ? <ErrorState onRetry={reload} retrying={state !== 'idle'} />
-          : <ReviewQueue key={status} status={status} query={query} initial={status === reviewStatuses[0] ? rows : undefined} />}
+          : <ReviewQueue key={status + String(mine)} status={status} query={query} mine={mine} initial={mine && status === defaultReviewStatus ? rows : undefined} />}
       </div>
+    </Tabs>
     </Tabs>
   </div>
 }

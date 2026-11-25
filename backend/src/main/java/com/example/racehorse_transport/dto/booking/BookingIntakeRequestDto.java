@@ -1,3 +1,5 @@
 package com.example.racehorse_transport.dto.booking;
 
-public record BookingIntakeRequestDto() {}
+import jakarta.validation.constraints.NotNull;
+
+public record BookingIntakeRequestDto(@NotNull Long specialistId) {}

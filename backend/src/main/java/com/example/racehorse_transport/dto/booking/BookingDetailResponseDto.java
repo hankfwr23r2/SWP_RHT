@@ -10,7 +10,7 @@ import java.util.List;
 // intakeByName: nhân viên đã tiếp nhận đơn, chỉ trả cho nhân viên
 public record BookingDetailResponseDto(BookingResponseDto booking, List<PartySnapshot> parties,
         List<AddressSnapshot> addresses, List<HorseDetail> horses, String reviewReason,
-        TransferMethod pickupMethod, TransferMethod deliveryMethod, String intakeByName, boolean rated, Instant balanceHoldAt) {
+        TransferMethod pickupMethod, TransferMethod deliveryMethod, String intakeByName, boolean rated, Instant balanceHoldAt, boolean assignedToMe) {
 
     public static BookingDetailResponseDto from(Booking booking, List<BookingParty> parties,
                                                  List<BookingAddress> addresses, List<HorseDetail> horses) {
@@ -19,16 +19,16 @@ public record BookingDetailResponseDto(BookingResponseDto booking, List<PartySna
 
     public static BookingDetailResponseDto from(Booking booking, List<BookingParty> parties,
             List<BookingAddress> addresses, List<HorseDetail> horses, String reviewReason, String intakeByName, boolean rated) {
-        return from(booking, parties, addresses, horses, reviewReason, intakeByName, rated, null);
+        return from(booking, parties, addresses, horses, reviewReason, intakeByName, rated, null, false);
     }
 
     public static BookingDetailResponseDto from(Booking booking, List<BookingParty> parties,
             List<BookingAddress> addresses, List<HorseDetail> horses, String reviewReason, String intakeByName, boolean rated,
-            Instant balanceHoldAt) {
+            Instant balanceHoldAt, boolean assignedToMe) {
         return new BookingDetailResponseDto(BookingResponseDto.from(booking),
                 parties.stream().map(PartySnapshot::from).toList(),
                 addresses.stream().map(AddressSnapshot::from).toList(), List.copyOf(horses), reviewReason,
-                booking.getPickupMethod(), booking.getDeliveryMethod(), intakeByName, rated, balanceHoldAt);
+                booking.getPickupMethod(), booking.getDeliveryMethod(), intakeByName, rated, balanceHoldAt, assignedToMe);
     }
 
     public record PartySnapshot(BookingPartyRole bookingRole, String fullName, String phone,

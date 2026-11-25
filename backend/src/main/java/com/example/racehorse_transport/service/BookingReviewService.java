@@ -3,7 +3,7 @@ package com.example.racehorse_transport.service;
 import com.example.racehorse_transport.dto.booking.BookingResponseDto;
 
 public interface BookingReviewService {
-    BookingResponseDto intake(Long id, String username);
+    BookingResponseDto intake(Long id, String username, Long specialistId);
     BookingResponseDto returnToCustomer(Long id, String username, String reason);
     BookingResponseDto resubmit(Long id, String username);
     BookingResponseDto reject(Long id, String username, String reason);

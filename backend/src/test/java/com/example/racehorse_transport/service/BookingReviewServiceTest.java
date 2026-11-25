@@ -47,7 +47,7 @@ class BookingReviewServiceTest {
     private final BookingHorseRepository horses = mock(BookingHorseRepository.class);
     private final DocumentRepository documents = mock(DocumentRepository.class);
     private final DocumentRequirementRepository requirements = mock(DocumentRequirementRepository.class);
-    private final StaffRepository staff = mock(StaffRepository.class);
+    private final BookingAssignmentService assignments = mock(BookingAssignmentService.class);
     private final DocumentService attachments = mock(DocumentService.class);
     private final HorseInsuranceRepository insurances = mock(HorseInsuranceRepository.class);
     private final PartyRoleRepository roles = mock(PartyRoleRepository.class);
@@ -58,9 +58,9 @@ class BookingReviewServiceTest {
     private final DocumentCompletenessServiceImpl completeness = spy(new DocumentCompletenessServiceImpl(
             bookings, mock(BookingAddressRepository.class), horses, documents, mock(RegulationService.class), CLOCK));
     private final DocumentReviewService docs = new DocumentReviewServiceImpl(
-            bookings, horses, documents, requirements, staff, attachments, completeness, notifications, CLOCK);
+            bookings, horses, documents, requirements, assignments, attachments, completeness, notifications, CLOCK);
     private final InsuranceService insurance = new InsuranceServiceImpl(
-            roles, mock(TermsAcceptanceRepository.class), insurances, bookings, staff, notifications, audit, CLOCK,
+            roles, mock(TermsAcceptanceRepository.class), insurances, bookings, assignments, notifications, audit, CLOCK,
             bookingHorses);
     private final BookingStatusHistoryRepository history = mock(BookingStatusHistoryRepository.class);
     private final BookingStatusService statuses = mock(BookingStatusService.class);
@@ -127,18 +127,17 @@ class BookingReviewServiceTest {
         when(horses.findForDetail(BOOKING_ID)).thenReturn(List.of(horse));
         when(insurances.findForDetail(List.of(HORSE_ID))).thenReturn(List.of(cover));
         when(insurances.findById(INSURANCE_ID)).thenReturn(Optional.of(cover));
-        when(staff.findByUser_Username("specialist")).thenReturn(Optional.of(specialist));
+        when(assignments.requireAssigned(booking, "specialist")).thenReturn(specialist);
         when(documents.findForBookingReview(BOOKING_ID)).thenReturn(files);
 
         AppUser actor = new AppUser();
         actor.setId(STAFF_ID);
-        AppUserRepository users = mock(AppUserRepository.class);
-        when(users.findByUsername("specialist")).thenReturn(Optional.of(actor));
+        when(assignments.actor(anyString())).thenReturn(actor);
         doAnswer(call -> {
             booking.setStatus(call.getArgument(1));
             return null;
         }).when(statuses).transition(BOOKING_ID, QUOTING, null, STAFF_ID);
-        review = new BookingReviewServiceImpl(bookings, users, horses, insurance, statuses, routing,
+        review = new BookingReviewServiceImpl(bookings, assignments, horses, insurance, statuses, routing,
                 departures, completeness, notifications, history);
         resolve(false);
     }
@@ -219,7 +218,8 @@ class BookingReviewServiceTest {
         var passport = requirement(20L, CUSTOMER, true);
         var certificate = requirement(21L, COMPANY, true);
         resolve(false, passport, certificate);
-        when(staff.findUserIdsByRoleAndStatus("SPECIALIST", AppUserStatus.ACTIVE)).thenReturn(List.of(STAFF_ID));
+        when(assignments.recipients(booking)).thenReturn(List.of(STAFF_ID));
+        when(assignments.reviewLink(booking)).thenReturn("/specialist/review/" + BOOKING_ID);
         prepareUpload(passport, CUSTOMER_ID);
         prepareUpload(certificate, STAFF_ID);
         docs.attach(BOOKING_ID, "customer", customerUpload(passport));
@@ -334,7 +334,7 @@ class BookingReviewServiceTest {
         insurance.revise(BOOKING_ID, INSURANCE_ID, "customer",
                 new PersonalInsuranceRevisionRequestDto(8L, "new-policy", PICKUP, replacement.getDepartureDate()));
         insurance.recordEvidence(BOOKING_ID, INSURANCE_ID,
-                new InsuranceEvidenceRequestDto(8L, BigDecimal.TEN, null, "VND", null));
+                new InsuranceEvidenceRequestDto(8L, BigDecimal.TEN, null, "VND", null), "specialist");
         insurance.confirm(BOOKING_ID, INSURANCE_ID, "specialist");
         assertThat(review.startQuoting(BOOKING_ID, "specialist").status()).isEqualTo(QUOTING);
     }

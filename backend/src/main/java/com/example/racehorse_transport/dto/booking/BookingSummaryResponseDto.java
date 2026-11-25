@@ -9,7 +9,8 @@ import java.time.LocalDate;
 // Một dòng trên danh sách đơn của nhân viên. Số ngựa đang đi do service đếm.
 public record BookingSummaryResponseDto(Long id, String code, BookingType bookingType, BookingStatus status,
         String customerName, String customerPhone, int horseCount, Long departureId, String routeName,
-        LocalDate departureDate, LocalDate requestedPickupDate, String waybillNumber, Instant createdAt) {
+        LocalDate departureDate, LocalDate requestedPickupDate, String waybillNumber, Instant createdAt,
+        Long specialistId, String specialistName) {
 
     public static BookingSummaryResponseDto from(Booking booking, int horseCount) {
         var departure = booking.getDeparture();
@@ -18,6 +19,8 @@ public record BookingSummaryResponseDto(Long id, String code, BookingType bookin
                 departure == null ? null : departure.getId(),
                 departure == null ? null : departure.getRoute().getName(),
                 departure == null ? null : departure.getDepartureDate(),
-                booking.getRequestedPickupDate(), booking.getWaybillNumber(), booking.getCreatedAt());
+                booking.getRequestedPickupDate(), booking.getWaybillNumber(), booking.getCreatedAt(),
+                booking.getSpecialist() == null ? null : booking.getSpecialist().getUserId(),
+                booking.getSpecialist() == null ? null : booking.getSpecialist().getFullName());
     }
 }

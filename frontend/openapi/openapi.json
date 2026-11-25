@@ -1311,6 +1311,23 @@
         },
         "type" : "object"
       },
+      "ApiResponseListStaffWorkloadResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/StaffWorkloadResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListStallTypeResponseDto" : {
         "properties" : {
           "data" : {
@@ -2162,6 +2179,9 @@
             },
             "type" : "array"
           },
+          "assignedToMe" : {
+            "type" : "boolean"
+          },
           "balanceHoldAt" : {
             "format" : "date-time",
             "type" : "string"
@@ -2266,7 +2286,16 @@
         },
         "type" : "object"
       },
-      "BookingIntakeRequestDto" : { },
+      "BookingIntakeRequestDto" : {
+        "properties" : {
+          "specialistId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "specialistId" ],
+        "type" : "object"
+      },
       "BookingJourneyResponseDto" : {
         "properties" : {
           "bookingCode" : {
@@ -2290,6 +2319,21 @@
         "type" : "object"
       },
       "BookingQuotingRequestDto" : { },
+      "BookingReassignmentRequestDto" : {
+        "properties" : {
+          "reason" : {
+            "maxLength" : 1000,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "specialistId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "reason", "specialistId" ],
+        "type" : "object"
+      },
       "BookingRejectionRequestDto" : {
         "properties" : {
           "reason" : {
@@ -2340,6 +2384,13 @@
           },
           "requestedPickupDate" : {
             "format" : "date",
+            "type" : "string"
+          },
+          "specialistId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "specialistName" : {
             "type" : "string"
           },
           "status" : {
@@ -2403,6 +2454,13 @@
             "type" : "string"
           },
           "routeName" : {
+            "type" : "string"
+          },
+          "specialistId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "specialistName" : {
             "type" : "string"
           },
           "status" : {
@@ -8312,6 +8370,10 @@
             "format" : "date",
             "type" : "string"
           },
+          "employmentStatus" : {
+            "enum" : [ "ACTIVE", "ON_LEAVE", "TERMINATED" ],
+            "type" : "string"
+          },
           "fullName" : {
             "maxLength" : 200,
             "minLength" : 0,
@@ -8338,6 +8400,25 @@
           }
         },
         "required" : [ "fullName", "hireDate", "homeHubLocationId", "phone", "staffCode" ],
+        "type" : "object"
+      },
+      "StaffWorkloadResponseDto" : {
+        "properties" : {
+          "assignedCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "role" : {
+            "type" : "string"
+          },
+          "staffId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "staffName" : {
+            "type" : "string"
+          }
+        },
         "type" : "object"
       },
       "StallAssignmentDto" : {
@@ -10186,6 +10267,15 @@
     "/bookings/review-queue" : {
       "get" : {
         "operationId" : "queue",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "mine",
+          "required" : false,
+          "schema" : {
+            "default" : false,
+            "type" : "boolean"
+          }
+        } ],
         "responses" : {
           "200" : {
             "content" : {
@@ -10224,6 +10314,14 @@
             "default" : 0,
             "format" : "int32",
             "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "mine",
+          "required" : false,
+          "schema" : {
+            "default" : false,
+            "type" : "boolean"
           }
         } ],
         "responses" : {
@@ -11785,7 +11883,8 @@
                 "$ref" : "#/components/schemas/BookingIntakeRequestDto"
               }
             }
-          }
+          },
+          "required" : true
         },
         "responses" : {
           "200" : {
@@ -11888,6 +11987,43 @@
           }
         },
         "tags" : [ "pickup-miss-controller" ]
+      }
+    },
+    "/bookings/{id}/reassign-specialist" : {
+      "post" : {
+        "operationId" : "reassign",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/BookingReassignmentRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBookingResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-assignment-controller" ]
       }
     },
     "/bookings/{id}/refund-review" : {
@@ -13416,7 +13552,7 @@
     },
     "/dispatch/bookings" : {
       "get" : {
-        "operationId" : "bookings",
+        "operationId" : "bookings_1",
         "parameters" : [ {
           "in" : "query",
           "name" : "from",
@@ -17491,6 +17627,59 @@
           }
         },
         "tags" : [ "account-controller" ]
+      }
+    },
+    "/staff-workloads" : {
+      "get" : {
+        "operationId" : "workloads",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "role",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListStaffWorkloadResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-assignment-controller" ]
+      }
+    },
+    "/staff-workloads/{staffId}/bookings" : {
+      "get" : {
+        "operationId" : "bookings",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "staffId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListBookingResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-assignment-controller" ]
       }
     },
     "/stall-types" : {

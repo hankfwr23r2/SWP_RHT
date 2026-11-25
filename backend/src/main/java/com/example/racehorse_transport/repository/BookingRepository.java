@@ -24,12 +24,26 @@ import java.util.Optional;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
-    @EntityGraph(attributePaths = "departure")
+    long countBySpecialist_UserIdAndStatusNotIn(Long staffId, Collection<BookingStatus> statuses);
+
+    @EntityGraph(attributePaths = {"departure", "specialist"})
+    List<Booking> findBySpecialist_UserIdAndStatusNotInOrderByCreatedAtAscIdAsc(
+            Long staffId, Collection<BookingStatus> statuses);
+
+    @EntityGraph(attributePaths = {"departure", "specialist"})
+    List<Booking> findBySpecialist_User_UsernameAndStatusInOrderByCreatedAtAscIdAsc(
+            String username, Collection<BookingStatus> statuses);
+
+    @EntityGraph(attributePaths = {"departure", "specialist"})
     List<Booking> findByStatusInOrderByCreatedAtAscIdAsc(
             Collection<BookingStatus> statuses);
 
-    @EntityGraph(attributePaths = {"customer", "departure", "departure.route"})
+    @EntityGraph(attributePaths = {"customer", "departure", "departure.route", "specialist"})
     List<Booking> findByStatusInOrderByCreatedAtDescIdDesc(Collection<BookingStatus> statuses, Pageable page);
+
+    @EntityGraph(attributePaths = {"customer", "departure", "departure.route", "specialist"})
+    List<Booking> findBySpecialist_User_UsernameAndStatusInOrderByCreatedAtDescIdDesc(
+            String username, Collection<BookingStatus> statuses, Pageable page);
 
     interface HorseCount {
         Long getBookingId();
@@ -43,15 +57,18 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             GROUP BY h.booking.id""")
     List<HorseCount> countActiveHorses(@Param("bookingIds") Collection<Long> bookingIds);
 
+    @EntityGraph(attributePaths = {"departure", "specialist", "specialist.user"})
+    Optional<Booking> findOneById(Long id);
+
     Optional<Booking> findByCode(String code);
 
     // Tra cứu công khai bằng số vận đơn
     Optional<Booking> findByWaybillNumber(String waybillNumber);
 
-    @EntityGraph(attributePaths = "departure")
+    @EntityGraph(attributePaths = {"departure", "specialist"})
     List<Booking> findByCustomer_User_UsernameOrderByCreatedAtDescIdDesc(String username);
 
-    @EntityGraph(attributePaths = "departure")
+    @EntityGraph(attributePaths = {"departure", "specialist"})
     Optional<Booking> findByIdAndCustomer_User_Username(Long id, String username);
 
     @Query("""

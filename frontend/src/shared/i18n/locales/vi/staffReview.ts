@@ -1,5 +1,10 @@
 export const staffReview = {
   "staffReview": {
+    assignmentTabs: 'Phân công đơn',
+    mine: 'Đơn của tôi',
+    all: 'Tất cả',
+    assigned: 'Phụ trách: {{name}}',
+    unassigned: 'Chưa phân công chuyên viên',
     "recordPremiumRefund": "Ghi phí bảo hiểm được hoàn",
     "refundedPremiumAmount": "Tổng phí bảo hiểm hãng đã hoàn",
     "premiumRefundReceipt": "Số chứng từ hoàn phí",

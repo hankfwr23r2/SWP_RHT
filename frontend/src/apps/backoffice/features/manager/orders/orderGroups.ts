@@ -30,4 +30,4 @@ const CLOSED: BookingStatus[] = ['COMPLETED', 'CANCELLED', 'REJECTED', 'QUOTE_EX
 // Ẩn nút chắc chắn không dùng được; backend vẫn kiểm lại
 export const canCancel = (status?: BookingStatus) => !!status && !CLOSED.includes(status)
 export const canSettle = (status?: BookingStatus) => status === 'IN_OPERATION' || status === 'DELIVERED' || status === 'COMPLETED'
-export const canReject = (status?: BookingStatus) => status === 'PENDING_INTAKE' || status === 'UNDER_REVIEW'
+export const canReject = (status?: BookingStatus) => status === 'PENDING_INTAKE'

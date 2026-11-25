@@ -623,3 +623,41 @@ Tính lại mà điểm nào rơi ngoài giờ giao (18:00) hoặc con nào ng�
 | 14a | Không hẹn giờ cứng, chỉ hẹn ngày; báo giờ khi phân lượt | Người dùng |
 | 14b | Tính lại sau mỗi điểm, báo tất cả điểm còn lại | Người dùng |
 | 14c | Dung sai 30 phút, sửa kết luận 24 giờ | Tự đề xuất |
+
+## 15. Giao việc và người phụ trách (25/11/2026)
+
+Bản viết lại đã làm mất bước quản lý giao việc của bản cũ. Người dùng duyệt khôi phục ngày 25/11/2026. Nguồn: bản cũ (`main`); phần "tự đề xuất" ghi rõ.
+
+### 15.1 Chuyên viên: giao theo đơn
+
+- Chỉ **quản lý** tiếp nhận đơn và **bắt buộc chọn chuyên viên** đang làm việc. Danh sách hiện số đơn mỗi người đang giữ (đơn chưa hoàn thành, chưa hủy, chưa bị từ chối, báo giá chưa hết hạn), chọn sẵn người ít việc nhất.
+- Chỉ chuyên viên được giao mới thao tác: thẩm định, yêu cầu bổ sung, từ chối, duyệt giấy, bảo hiểm, hẹn thú y, chuyển báo giá. Chuyên viên khác chỉ xem. Quản lý không thẩm định thay, chỉ đổi người; quản lý vẫn từ chối được đơn **Chờ tiếp nhận**.
+- Màn chuyên viên: thẻ **Đơn của tôi** và **Tất cả** (chỉ xem).
+- Thông báo việc của đơn gửi riêng chuyên viên được giao, cả khi khách nộp lại giấy.
+- Đơn cũ chưa có người: quản lý phải giao trước khi chuyên viên thao tác tiếp.
+
+### 15.2 Điều phối: giao theo lượt
+
+- **Lượt trục:** quản lý giao điều phối ở **chuyến** (`departure`); lượt trục lập ra theo người đó.
+- **Lượt khác** (đón, giao, chạy thẳng, chuyển xe, về rỗng): người lập lượt phụ trách, quản lý đổi được.
+- Chỉ người phụ trách sửa lượt: tổ lái, ngựa, giờ, sơ đồ khoang, hủy, xử lý sự cố của lượt. Người khác xem.
+- Việc của lượt (trễ, ngựa ốm, sự cố, giao hụt) báo người phụ trách; chưa có người thì báo mọi điều phối.
+- **Ngựa ở hub:** người phụ trách lượt vừa đưa ngựa vào hub lo tới khi lượt sau nhận. Ngựa khách tự chở tới thì theo điều phối của chuyến; không có chuyến thì chung.
+- **Đơn chưa vào lượt:** danh sách chung.
+
+### 15.3 Quản lý: màn Phân công
+
+- Theo chuyên viên: đơn đang giữ. Theo điều phối: lượt đang giữ, lượt trễ, sự cố chưa xử lý.
+- Chuyến chưa có điều phối hiện đỏ; từ 48 giờ trước giờ chạy nhắc quản lý (`COORDINATOR_ASSIGN_REMIND_HOURS`, tự đề xuất).
+- Đổi người ghi lý do, có lịch sử. Không khóa tài khoản và không cho nghỉ việc khi còn giữ việc.
+
+### 15.4 Nhận thay
+
+Điều phối khác bấm **Nhận thay** ở lượt đang chạy hoặc có sự cố, ghi lý do; người đó thành người phụ trách, quản lý và người cũ được báo.
+
+### 15.5 Các phần kèm theo
+
+- **Lượt của tôi** (điều phối): mỗi lượt một dòng; mở ra thấy từng con: đơn, khoang, đã lên xe chưa, giấy, lần khám gần nhất, hạn khám, sổ sức khỏe.
+- **Việc khám:** điều phối giao một hộ tống khám một con (nơi, hạn, loại khám). Chờ nhận, Đã nhận, Xong, Quá hạn. Ghi sức khỏe đúng con thì tự xong; quá hạn báo người phụ trách. Đối tác thú y vẫn do chuyên viên hẹn.
+- **Vị trí nhân viên:** suy ra từ lượt gần nhất, không GPS; chặn xếp người đang ở nơi khác điểm xuất phát.
+- **Ô chuồng hub:** mỗi hub khai số ô, có ô cách ly; ngựa vào hub được gán ô; hết ô thì cảnh báo, trùng ô thì chặn. Không quản ô của đối tác.

@@ -1204,6 +1204,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/bookings/{id}/reassign-specialist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reassign"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/bookings/{id}/refund-review": {
         parameters: {
             query?: never;
@@ -1883,7 +1899,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["bookings"];
+        get: operations["bookings_1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3636,6 +3652,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/staff-workloads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["workloads"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/staff-workloads/{staffId}/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["bookings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/stall-types": {
         parameters: {
             query?: never;
@@ -4461,6 +4509,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListStaffWorkloadResponseDto: {
+            data?: components["schemas"]["StaffWorkloadResponseDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseListStallTypeResponseDto: {
             data?: components["schemas"]["StallTypeResponseDto"][];
             message?: string;
@@ -4757,6 +4810,7 @@ export interface components {
         };
         BookingDetailResponseDto: {
             addresses?: components["schemas"]["AddressSnapshot"][];
+            assignedToMe?: boolean;
             /** Format: date-time */
             balanceHoldAt?: string;
             booking?: components["schemas"]["BookingResponseDto"];
@@ -4795,7 +4849,10 @@ export interface components {
             status?: "UPLOADED" | "APPROVED" | "REJECTED" | "EXPIRED";
             typeCode?: string;
         };
-        BookingIntakeRequestDto: unknown;
+        BookingIntakeRequestDto: {
+            /** Format: int64 */
+            specialistId: number;
+        };
         BookingJourneyResponseDto: {
             bookingCode?: string;
             /** Format: int64 */
@@ -4805,6 +4862,11 @@ export interface components {
             status?: "PENDING_INTAKE" | "UNDER_REVIEW" | "NEEDS_RESUBMISSION" | "QUOTING" | "AWAITING_DEPOSIT" | "QUOTE_EXPIRED" | "CONFIRMED" | "SCHEDULE_CHANGE_REQUIRED" | "IN_OPERATION" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED";
         };
         BookingQuotingRequestDto: unknown;
+        BookingReassignmentRequestDto: {
+            reason: string;
+            /** Format: int64 */
+            specialistId: number;
+        };
         BookingRejectionRequestDto: {
             reason: string;
         };
@@ -4827,6 +4889,9 @@ export interface components {
             id?: number;
             /** Format: date */
             requestedPickupDate?: string;
+            /** Format: int64 */
+            specialistId?: number;
+            specialistName?: string;
             /** @enum {string} */
             status?: "PENDING_INTAKE" | "UNDER_REVIEW" | "NEEDS_RESUBMISSION" | "QUOTING" | "AWAITING_DEPOSIT" | "QUOTE_EXPIRED" | "CONFIRMED" | "SCHEDULE_CHANGE_REQUIRED" | "IN_OPERATION" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED";
             waybillNumber?: string;
@@ -4854,6 +4919,9 @@ export interface components {
             /** Format: date */
             requestedPickupDate?: string;
             routeName?: string;
+            /** Format: int64 */
+            specialistId?: number;
+            specialistName?: string;
             /** @enum {string} */
             status?: "PENDING_INTAKE" | "UNDER_REVIEW" | "NEEDS_RESUBMISSION" | "QUOTING" | "AWAITING_DEPOSIT" | "QUOTE_EXPIRED" | "CONFIRMED" | "SCHEDULE_CHANGE_REQUIRED" | "IN_OPERATION" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED";
             waybillNumber?: string;
@@ -7059,6 +7127,8 @@ export interface components {
             driverLicenseClass?: string;
             /** Format: date */
             driverLicenseExpiryDate?: string;
+            /** @enum {string} */
+            employmentStatus?: "ACTIVE" | "ON_LEAVE" | "TERMINATED";
             fullName: string;
             /** Format: date */
             hireDate: string;
@@ -7066,6 +7136,14 @@ export interface components {
             homeHubLocationId: number;
             phone: string;
             staffCode: string;
+        };
+        StaffWorkloadResponseDto: {
+            /** Format: int64 */
+            assignedCount?: number;
+            role?: string;
+            /** Format: int64 */
+            staffId?: number;
+            staffName?: string;
         };
         StallAssignmentDto: {
             /** Format: int32 */
@@ -8104,7 +8182,9 @@ export interface operations {
     };
     queue: {
         parameters: {
-            query?: never;
+            query?: {
+                mine?: boolean;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -8127,6 +8207,7 @@ export interface operations {
             query: {
                 statuses: ("PENDING_INTAKE" | "UNDER_REVIEW" | "NEEDS_RESUBMISSION" | "QUOTING" | "AWAITING_DEPOSIT" | "QUOTE_EXPIRED" | "CONFIRMED" | "SCHEDULE_CHANGE_REQUIRED" | "IN_OPERATION" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED")[];
                 page?: number;
+                mine?: boolean;
             };
             header?: never;
             path?: never;
@@ -9252,7 +9333,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": components["schemas"]["BookingIntakeRequestDto"];
             };
@@ -9333,6 +9414,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListPickupMissResponseDto"];
+                };
+            };
+        };
+    };
+    reassign: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookingReassignmentRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingResponseDto"];
                 };
             };
         };
@@ -10537,7 +10644,7 @@ export interface operations {
             };
         };
     };
-    bookings: {
+    bookings_1: {
         parameters: {
             query: {
                 from: string;
@@ -13704,6 +13811,50 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseStaffAccountResponseDto"];
+                };
+            };
+        };
+    };
+    workloads: {
+        parameters: {
+            query: {
+                role: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListStaffWorkloadResponseDto"];
+                };
+            };
+        };
+    };
+    bookings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                staffId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListBookingResponseDto"];
                 };
             };
         };

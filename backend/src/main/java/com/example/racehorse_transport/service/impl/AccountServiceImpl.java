@@ -15,6 +15,7 @@ import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.repository.RoleRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.service.AccountService;
+import com.example.racehorse_transport.service.BookingAssignmentService;
 import com.example.racehorse_transport.service.AuditService;
 import java.util.List;
 import java.util.Locale;
@@ -41,6 +42,7 @@ public class AccountServiceImpl implements AccountService {
     private final LocationRepository locations;
     private final PasswordEncoder passwordEncoder;
     private final AuditService audit;
+    private final BookingAssignmentService assignments;
 
     @Override
     @Transactional(readOnly = true)
@@ -89,6 +91,13 @@ public class AccountServiceImpl implements AccountService {
         var profile = staff.findForUpdate(id).orElseThrow(this::missingStaff);
         StaffAccountPolicy.requireValidLicense(profile.getUser().getRole().getCode(),
                 request.driverLicenseClass(), request.driverLicenseExpiryDate());
+        var nextEmploymentStatus = request.employmentStatus();
+        if (nextEmploymentStatus != null && nextEmploymentStatus != profile.getEmploymentStatus()) {
+            if (nextEmploymentStatus != EmploymentStatus.ACTIVE) {
+                assignments.requireNoWork(profile);
+            }
+            profile.setEmploymentStatus(nextEmploymentStatus);
+        }
         request.applyTo(profile, headquarters(request.homeHubLocationId()));
         try {
             staff.flush();
@@ -119,6 +128,9 @@ public class AccountServiceImpl implements AccountService {
         var user = profile.getUser();
         AppUserStatus previous = user.getStatus();
         StaffAccountPolicy.requireStatusTransition(previous, next, actor.getId().equals(user.getId()));
+        if (next == AppUserStatus.LOCKED) {
+            assignments.requireNoWork(profile);
+        }
         user.setStatus(next);
         audit.record(actor.getId(), action, "app_user", user.getId(), Map.of("status", previous),
                 Map.of("status", next, "reason", request.reason().strip()));

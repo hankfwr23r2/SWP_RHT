@@ -12,6 +12,7 @@ import com.example.racehorse_transport.policy.CustomerNoticePolicy.Notice;
 import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.repository.HorseStayRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
+import com.example.racehorse_transport.service.BookingAssignmentService;
 import com.example.racehorse_transport.service.CustomerNoticeService;
 import com.example.racehorse_transport.service.NotificationService;
 import com.example.racehorse_transport.service.SystemConfigService;
@@ -33,6 +34,7 @@ public class CustomerNoticeServiceImpl implements CustomerNoticeService {
 
     private final NotificationService notifications;
     private final StaffRepository staff;
+    private final BookingAssignmentService assignments;
     private final HorseLegRepository legs;
     private final HorseStayRepository stays;
     private final SystemConfigService configs;
@@ -43,10 +45,10 @@ public class CustomerNoticeServiceImpl implements CustomerNoticeService {
     public void bookingSubmitted(Booking booking) {
         notifyCustomer(booking, CustomerNoticePolicy.orderReceived(booking.getCode()));
         notifyManagersOfLinkedDebt(booking);
-        List<Long> specialists = staff.findUserIdsByRoleAndStatus("SPECIALIST", AppUserStatus.ACTIVE);
+        List<Long> specialists = assignments.recipients(booking);
         if (!specialists.isEmpty()) {
             Notice notice = CustomerNoticePolicy.orderWaitingIntake(booking.getCode());
-            notifications.notify(specialists, booking.getId(), notice.title(), notice.message(), "/specialist/review/" + booking.getId());
+            notifications.notify(specialists, booking.getId(), notice.title(), notice.message(), assignments.reviewLink(booking));
         }
     }
 

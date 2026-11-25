@@ -24,6 +24,22 @@ export const staffManager = {
     resolveEffect: 'Khách sẽ thấy kết luận và lý do. Khiếu nại sẽ được đóng.',
   },
   mgr: {
+    assignments: {
+      noStaffHint: 'Thử lại khi có chuyên viên đang làm việc.',
+      noBookingsHint: 'Chọn chuyên viên khác để xem đơn đang giữ.',
+      unassigned: 'Chưa phân công chuyên viên',
+      title: 'Phân công',
+      specialist: 'Chuyên viên',
+      option: '{{name}} · {{count}} đơn',
+      noStaff: 'Hiện không có chuyên viên đang làm việc.',
+      change: 'Đổi chuyên viên',
+      changeHint: 'Chuyên viên mới được giao đơn và người cũ sẽ nhận thông báo.',
+      saved: 'Đã cập nhật phân công.',
+      intakeHint: 'Đơn sẽ chuyển sang thẩm định và chuyên viên được chọn sẽ nhận thông báo.',
+      bookings: 'Đơn đang giữ',
+      noBookings: 'Chuyên viên chưa giữ đơn nào.',
+      showBookings: 'Xem đơn đang giữ',
+    },
     unclaimed: {
       title: 'Kết quả ngựa chưa có người nhận',
       outcome: 'Kết quả bàn giao',

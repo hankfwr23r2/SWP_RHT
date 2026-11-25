@@ -8,12 +8,15 @@ import java.time.Instant;
 import java.time.LocalDate;
 
 public record BookingResponseDto(Long id, String code, BookingType bookingType, BookingStatus status, Long departureId,
-        LocalDate requestedPickupDate, String waybillNumber, BigDecimal emergencySpendingLimit, Instant createdAt) {
+        LocalDate requestedPickupDate, String waybillNumber, BigDecimal emergencySpendingLimit, Instant createdAt,
+        Long specialistId, String specialistName) {
 
     public static BookingResponseDto from(Booking booking) {
         Long departureId = booking.getDeparture() == null ? null : booking.getDeparture().getId();
         return new BookingResponseDto(booking.getId(), booking.getCode(), booking.getBookingType(), booking.getStatus(),
                 departureId, booking.getRequestedPickupDate(), booking.getWaybillNumber(),
-                booking.getEmergencySpendingLimit(), booking.getCreatedAt());
+                booking.getEmergencySpendingLimit(), booking.getCreatedAt(),
+                booking.getSpecialist() == null ? null : booking.getSpecialist().getUserId(),
+                booking.getSpecialist() == null ? null : booking.getSpecialist().getFullName());
     }
 }
