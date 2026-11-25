@@ -15,6 +15,37 @@ import org.junit.jupiter.api.Test;
 
 class PricingPolicyTest {
     @Test
+    void choosesTheCheaperDeliveryIncludingFuelForBothExamplesInSectionTwelve() {
+        var pickup = service(1, ServiceLayer.PICKUP, BillingUnit.PER_KM, false);
+        var delivery = service(2, ServiceLayer.DELIVERY, BillingUnit.PER_KM, false);
+        var linehaul = service(3, ServiceLayer.LINEHAUL, BillingUnit.PER_STALL, false);
+        var fuel = service(4, ServiceLayer.FUEL, BillingUnit.PER_KM, false);
+        var documents = service(5, ServiceLayer.DOCS, BillingUnit.PER_BOOKING, true);
+        var small = new VehicleClass();
+        small.setId(2L);
+        var shortDistance = item(6, delivery, "30000", "0", "30");
+        shortDistance.setVehicleClass(small);
+        var prices = List.of(item(1, pickup, "25000", null, null),
+                item(2, delivery, "25000", null, null), item(3, linehaul, "12000000", null, null),
+                item(4, fuel, "9000", null, null), item(5, documents, "500000", null, null), shortDistance);
+        var catalog = List.of(pickup, delivery, linehaul, fuel, documents);
+        var priceList = list();
+        priceList.setMarginRate(new BigDecimal("0.05"));
+
+        var separate = List.of(new RoadLeg(ServiceLayer.DELIVERY, 2L, new BigDecimal("27")),
+                new RoadLeg(ServiceLayer.DELIVERY, 2L, new BigDecimal("100")));
+        for (var example : Map.of("105", "31376300", "154", "32303450").entrySet()) {
+            var loop = List.of(new RoadLeg(ServiceLayer.PICKUP, 1L, new BigDecimal("54")),
+                    new RoadLeg(ServiceLayer.DELIVERY, 1L, new BigDecimal(example.getKey())));
+            var input = new PricingInput("VND", LocalDate.of(2026, 11, 25), BookingType.INTERPROVINCE,
+                    4L, BigDecimal.ONE, loop, Map.of("STANDARD", 2), 2, List.of(), 0, separate);
+            var result = PricingPolicy.calculate(priceList, prices, catalog, input);
+            assertThat(result.total()).isEqualByComparingTo(example.getValue());
+            assertThat(result.selectedRoads()).hasSize(example.getKey().equals("105") ? 2 : 3);
+        }
+    }
+
+    @Test
     void pricesRoadLinehaulDocumentsAndChosenServiceWithoutQuarantine() {
         List<BillableService> catalog = List.of(
                 service(1, ServiceLayer.PICKUP, BillingUnit.PER_KM, false),

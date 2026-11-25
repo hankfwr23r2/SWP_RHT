@@ -22,7 +22,14 @@ public final class PricingPolicy {
     public record PricingInput(String currencyCode, LocalDate quotationDate, BookingType bookingType,
                                Long routeId, BigDecimal linehaulKm, List<RoadLeg> roadLegs,
                                Map<String, Integer> stallsByType, int horseCount,
-                               List<AddOn> addOns, long earlyPickupDays) {
+                               List<AddOn> addOns, long earlyPickupDays, List<RoadLeg> separateDelivery) {
+        public PricingInput(String currencyCode, LocalDate quotationDate, BookingType bookingType,
+                            Long routeId, BigDecimal linehaulKm, List<RoadLeg> roadLegs,
+                            Map<String, Integer> stallsByType, int horseCount, List<AddOn> addOns, long earlyPickupDays) {
+            this(currencyCode, quotationDate, bookingType, routeId, linehaulKm, roadLegs,
+                    stallsByType, horseCount, addOns, earlyPickupDays, List.of());
+        }
+
         public PricingInput(String currencyCode, LocalDate quotationDate, BookingType bookingType,
                             Long routeId, BigDecimal linehaulKm, List<RoadLeg> roadLegs,
                             Map<String, Integer> stallsByType, int horseCount, List<AddOn> addOns) {
@@ -32,6 +39,7 @@ public final class PricingPolicy {
 
         public PricingInput {
             roadLegs = List.copyOf(roadLegs);
+            separateDelivery = List.copyOf(separateDelivery);
             stallsByType = Collections.unmodifiableMap(new TreeMap<>(stallsByType));
             addOns = List.copyOf(addOns);
         }
@@ -42,7 +50,11 @@ public final class PricingPolicy {
                        BigDecimal unitPrice, BigDecimal amount, boolean passThrough) {}
 
     public record PricingResult(Long priceListId, String currencyCode, BigDecimal depositRate,
-                                List<Line> lines, BigDecimal total) {}
+                                List<Line> lines, BigDecimal total, List<RoadLeg> selectedRoads) {
+        public PricingResult(Long priceListId, String currencyCode, BigDecimal depositRate, List<Line> lines, BigDecimal total) {
+            this(priceListId, currencyCode, depositRate, lines, total, null);
+        }
+    }
 
     private record Match(Long routeId, Long vehicleClassId, String stallType, BigDecimal km) {}
 
@@ -144,13 +156,60 @@ public final class PricingPolicy {
     public static PricingResult calculate(PriceList list, List<PriceItem> items,
                                           List<BillableService> catalog, PricingInput input) {
         validateInput(input);
-        List<Line> lines = new ArrayList<>();
-        for (RoadLeg leg : input.roadLegs()) {
-            if (leg.km().signum() > 0) {
-                addLayer(lines, list, items, catalog, leg.layer(),
-                        new Match(input.routeId(), leg.vehicleClassId(), null, leg.km()), leg.km());
+        RoadPricing chosen = chooseRoadPricing(list, items, catalog, input.routeId(), input.roadLegs(), input.separateDelivery());
+        List<Line> lines = new ArrayList<>(chosen.lines());
+        BigDecimal roadKm = roadKm(chosen.roads());
+        addOtherLines(lines, list, items, catalog, input, roadKm);
+        return new PricingResult(list.getId(), list.getCurrencyCode(), list.getDepositRate(), List.copyOf(lines), money(sum(lines)), chosen.roads());
+    }
+
+    public record RoadPricing(List<RoadLeg> roads, List<Line> lines) {}
+
+    public static RoadPricing chooseRoadPricing(PriceList list, List<PriceItem> items, List<BillableService> catalog,
+                                                Long routeId, List<RoadLeg> loopRoads, List<RoadLeg> separateDelivery) {
+        List<Line> loopLines = roadLines(list, items, catalog, routeId, loopRoads);
+        if (!separateDelivery.isEmpty()) {
+            List<RoadLeg> separateRoads = new ArrayList<>(loopRoads.stream().filter(leg -> leg.layer() != ServiceLayer.DELIVERY).toList());
+            separateRoads.addAll(separateDelivery);
+            List<Line> separateLines = roadLines(list, items, catalog, routeId, separateRoads);
+            if (sum(separateLines).compareTo(sum(loopLines)) < 0) {
+                return new RoadPricing(List.copyOf(separateRoads), List.copyOf(separateLines));
             }
         }
+        return new RoadPricing(List.copyOf(loopRoads), List.copyOf(loopLines));
+    }
+
+    private static BigDecimal sum(List<Line> lines) {
+        return lines.stream().map(Line::amount).reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private static BigDecimal roadKm(List<RoadLeg> roads) {
+        return roads.stream().map(RoadLeg::km).reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private static List<Line> roadLines(PriceList list, List<PriceItem> items, List<BillableService> catalog,
+                                        Long routeId, List<RoadLeg> roads) {
+        List<Line> lines = new ArrayList<>();
+        for (RoadLeg leg : roads) {
+            if (leg.km().signum() > 0) {
+                addLayer(lines, list, items, catalog, leg.layer(),
+                        new Match(routeId, leg.vehicleClassId(), null, leg.km()), leg.km());
+            }
+        }
+        BigDecimal roadKm = roadKm(roads);
+        Set<Long> roadClasses = new HashSet<>();
+        roads.forEach(leg -> roadClasses.add(leg.vehicleClassId()));
+        if (roadKm.signum() > 0) {
+            Long fuelClass = roadClasses.size() == 1 ? roadClasses.iterator().next() : null;
+            addLayer(lines, list, items, catalog, ServiceLayer.FUEL,
+                    new Match(routeId, fuelClass, null, roadKm), roadKm);
+        }
+        return lines;
+    }
+
+    private static void addOtherLines(List<Line> lines, PriceList list, List<PriceItem> items,
+                                      List<BillableService> catalog, PricingInput input, BigDecimal roadKm) {
+        Line fuel = roadKm.signum() > 0 ? lines.removeLast() : null;
         if (input.routeId() != null) {
             input.stallsByType().forEach((stall, count) -> addLayer(lines, list, items, catalog,
                     ServiceLayer.LINEHAUL, new Match(input.routeId(), null, stall, input.linehaulKm()),
@@ -162,14 +221,7 @@ public final class PricingPolicy {
                         new Match(null, null, WIDE_STALL_CODE, null), BigDecimal.valueOf(wideHorseCount));
             }
         }
-        BigDecimal roadKm = input.roadLegs().stream().map(RoadLeg::km).reduce(BigDecimal.ZERO, BigDecimal::add);
-        Set<Long> roadClasses = new HashSet<>();
-        input.roadLegs().forEach(leg -> roadClasses.add(leg.vehicleClassId()));
-        if (roadKm.signum() > 0) {
-            Long fuelClass = roadClasses.size() == 1 ? roadClasses.iterator().next() : null;
-            addLayer(lines, list, items, catalog, ServiceLayer.FUEL,
-                    new Match(input.routeId(), fuelClass, null, roadKm), roadKm);
-        }
+        if (fuel != null) lines.add(fuel);
         Match booking = new Match(input.routeId(), null, null, null);
         if (input.earlyPickupDays() > 0) {
             BillableService stay = catalog.stream()
@@ -205,8 +257,6 @@ public final class PricingPolicy {
                     ? new Match(input.routeId(), null, null, roadKm) : booking;
             lines.add(line(list, items, service, criteria, quantity));
         }
-        BigDecimal total = money(lines.stream().map(Line::amount).reduce(BigDecimal.ZERO, BigDecimal::add));
-        return new PricingResult(list.getId(), list.getCurrencyCode(), list.getDepositRate(), List.copyOf(lines), total);
     }
 
     private static void validateInput(PricingInput input) {

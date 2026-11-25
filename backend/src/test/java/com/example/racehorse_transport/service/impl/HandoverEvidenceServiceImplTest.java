@@ -35,8 +35,13 @@ class HandoverEvidenceServiceImplTest {
     private final DocumentRepository documents = mock(DocumentRepository.class);
     private final HandoverDocumentRepository papers = mock(HandoverDocumentRepository.class);
     private final CollectionCodeService codes = mock(CollectionCodeService.class);
+    private final com.example.racehorse_transport.repository.HandoverHorseRepository handoverHorses =
+            mock(com.example.racehorse_transport.repository.HandoverHorseRepository.class);
+    private final com.example.racehorse_transport.repository.HorseLegRepository legs =
+            mock(com.example.racehorse_transport.repository.HorseLegRepository.class);
     private final HandoverEvidenceServiceImpl evidence = new HandoverEvidenceServiceImpl(
-            files, documents, papers, codes, mock(NotificationService.class));
+            files, documents, papers, codes, mock(NotificationService.class),
+            handoverHorses, legs);
 
     @Test
     void conditionAndPhotoAreCheckedForTheSameHorse() {
@@ -92,6 +97,61 @@ class HandoverEvidenceServiceImplTest {
         verify(papers).save(saved.capture());
         assertThat(saved.getValue().getDirection()).isEqualTo(HandoverDocumentDirection.NOT_RECEIVED);
         assertThat(saved.getValue().getDocument()).isSameAs(document);
+    }
+
+    @Test
+    void returnsHorsePapersAtTheirOwnStopAndBookingPapersAtTheLastStop() {
+        var booking = new Booking();
+        booking.setId(11L);
+        var trip = new com.example.racehorse_transport.entity.VehicleTrip();
+        trip.setId(21L);
+        var first = deliveryLeg(booking, trip, 31L, 2);
+        var second = deliveryLeg(booking, trip, 32L, 3);
+        var firstPaper = new Document();
+        firstPaper.setId(41L);
+        firstPaper.setBookingHorse(first.getBookingHorse());
+        var secondPaper = new Document();
+        secondPaper.setId(42L);
+        secondPaper.setBookingHorse(second.getBookingHorse());
+        var bookingPaper = new Document();
+        bookingPaper.setId(43L);
+        bookingPaper.setBooking(booking);
+
+        when(handoverHorses.findById_HandoverId(1L)).thenReturn(List.of(handoverHorse(first)));
+        when(handoverHorses.findById_HandoverId(2L)).thenReturn(List.of(handoverHorse(second)));
+        when(legs.findActiveOnTrip(21L, java.util.Set.of(com.example.racehorse_transport.entity.enums.HorseLegStatus.CANCELLED)))
+                .thenReturn(List.of(first, second));
+        when(documents.findOriginalsEverReceived(11L)).thenReturn(List.of(firstPaper, secondPaper, bookingPaper));
+        var received = new HandoverDocument();
+        received.setDirection(HandoverDocumentDirection.RECEIVED);
+        for (long id : List.of(41L, 42L, 43L)) {
+            when(papers.findById_DocumentIdAndHandover_StatusOrderByHandover_HandedAtDescHandover_IdDesc(
+                    id, com.example.racehorse_transport.entity.enums.HandoverStatus.DONE)).thenReturn(List.of(received));
+        }
+
+        assertThat(evidence.originals(1L, java.util.Set.of(11L), false)).containsExactly(firstPaper);
+        assertThat(evidence.originals(2L, java.util.Set.of(11L), false)).containsExactly(secondPaper, bookingPaper);
+    }
+
+    private static HorseLeg deliveryLeg(Booking booking, com.example.racehorse_transport.entity.VehicleTrip trip,
+                                        long horseId, int sequence) {
+        var horse = new com.example.racehorse_transport.entity.BookingHorse();
+        horse.setId(horseId);
+        horse.setBooking(booking);
+        var stop = new com.example.racehorse_transport.entity.TripStop();
+        stop.setSequenceNumber(sequence);
+        var leg = new HorseLeg();
+        leg.setLegType(com.example.racehorse_transport.entity.enums.HorseLegType.DELIVERY);
+        leg.setBookingHorse(horse);
+        leg.setVehicleTrip(trip);
+        leg.setAlightTripStop(stop);
+        return leg;
+    }
+
+    private static HandoverHorse handoverHorse(HorseLeg leg) {
+        var row = new HandoverHorse();
+        row.setHorseLeg(leg);
+        return row;
     }
 
     @Test

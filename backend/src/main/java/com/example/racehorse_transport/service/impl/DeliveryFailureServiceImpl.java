@@ -32,6 +32,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.racehorse_transport.entity.enums.TripStopType;
+import com.example.racehorse_transport.repository.TripStopRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -47,6 +49,7 @@ public class DeliveryFailureServiceImpl implements DeliveryFailureService {
     private final NotificationService notifications;
     private final SystemConfigService configs;
     private final Clock clock;
+    private final TripStopRepository stops;
 
     @Override
     @Transactional
@@ -64,7 +67,7 @@ public class DeliveryFailureServiceImpl implements DeliveryFailureService {
         if (handover.getStatus() != HandoverStatus.PENDING) {
             throw new DispatchRuleException("handoverId", "Lần giao nhận đã kết thúc.", true);
         }
-        TripExecutionPolicy.requireFreeWaitOver(handover.getWaitStartedAt(), clock.instant(), configs.getInt(FREE_WAIT));
+        TripExecutionPolicy.requireFreeWaitOver(handover.getWaitStartedAt(), clock.instant(), waitMinutes(handover));
         markFailed(handover);
         return handover.getTripStop().getVehicleTrip().getId();
     }
@@ -72,10 +75,21 @@ public class DeliveryFailureServiceImpl implements DeliveryFailureService {
     @Override
     @Transactional
     public int timeoutExpired() {
-        Instant before = clock.instant().minusSeconds(60L * configs.getInt(FREE_WAIT));
-        List<Handover> expired = handovers.findWaitingSince(HandoverStatus.PENDING, before);
+        Instant now = clock.instant();
+        int shortestWait = Math.min(configs.getInt(FREE_WAIT), configs.getInt("INTERMEDIATE_WAIT_MINUTES"));
+        List<Handover> expired = handovers.findWaitingSince(HandoverStatus.PENDING, now.minusSeconds(60L * shortestWait))
+                .stream().filter(handover -> !now.isBefore(handover.getWaitStartedAt().plusSeconds(60L * waitMinutes(handover))))
+                .toList();
         expired.forEach(this::markFailed);
         return expired.size();
+    }
+
+    private int waitMinutes(Handover handover) {
+        var current = handover.getTripStop();
+        boolean intermediate = stops.findByVehicleTrip_IdOrderBySequenceNumber(current.getVehicleTrip().getId()).stream()
+                .anyMatch(stop -> stop.getSequenceNumber() > current.getSequenceNumber()
+                        && stop.getStopType() == TripStopType.DELIVERY);
+        return configs.getInt(intermediate ? "INTERMEDIATE_WAIT_MINUTES" : FREE_WAIT);
     }
 
     // Con chưa giao được: chặng FAILED; mỗi con một sự cố HANDOVER_TIMEOUT (người nhận vắng nên chi phí do người nhận chịu); báo điều phối

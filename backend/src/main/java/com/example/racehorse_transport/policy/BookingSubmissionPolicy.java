@@ -38,10 +38,20 @@ public final class BookingSubmissionPolicy {
                 .equals(Set.of(BookingPartyRole.values()))) {
             throw new BookingRuleException("Cần khai đúng bốn vai trò trong đơn.");
         }
-        if (request.addresses().size() != AddressRole.values().length
-                || !new HashSet<>(request.addresses().stream().map(AddressInput::addressType).toList())
-                .equals(Set.of(AddressRole.values()))) {
-            throw new BookingRuleException("Cần một địa chỉ đón và một địa chỉ giao.");
+        long destinations = request.addresses().stream().filter(a -> a.addressType() == AddressRole.DELIVERY).count();
+        if (destinations == 0 || request.addresses().size() - destinations != 1) {
+            throw new BookingRuleException("Cần đúng một nơi đón và ít nhất một nơi giao.");
+        }
+        Set<Integer> places = new HashSet<>();
+        for (HorseInput horse : request.horses()) {
+            int place = horse.selectedDeliveryPlace();
+            if (place < 0 || place >= destinations) {
+                throw new BookingRuleException("Nơi giao đã chọn cho ngựa không có trong đơn.");
+            }
+            places.add(place);
+        }
+        if (places.size() != destinations) {
+            throw new BookingRuleException("Mỗi nơi giao phải có ít nhất một con ngựa.");
         }
         requireDistinct(request.horses().stream().map(HorseInput::horseId).toList(), "Ngựa bị trùng trong đơn.");
         for (HorseInput horse : request.horses()) {

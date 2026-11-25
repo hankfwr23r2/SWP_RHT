@@ -1905,7 +1905,7 @@
             "items" : {
               "$ref" : "#/components/schemas/AddressInput"
             },
-            "maxItems" : 2,
+            "maxItems" : 2147483647,
             "minItems" : 2,
             "type" : "array"
           },
@@ -2865,6 +2865,19 @@
           }
         },
         "required" : [ "countryCode", "customerType", "fullName" ],
+        "type" : "object"
+      },
+      "DeliveryEstimate" : {
+        "properties" : {
+          "arrivalAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "customerAddressId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
         "type" : "object"
       },
       "DeliveryRecipientRequestDto" : {
@@ -4030,6 +4043,10 @@
             },
             "type" : "array"
           },
+          "deliveryAddressId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
           "dietNote" : {
             "type" : "string"
           },
@@ -4069,6 +4086,9 @@
           "bookingHorseId" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "deliveryAddress" : {
+            "$ref" : "#/components/schemas/AddressDto"
           },
           "horseName" : {
             "type" : "string"
@@ -4110,6 +4130,10 @@
               "$ref" : "#/components/schemas/AddOnInput"
             },
             "type" : "array"
+          },
+          "deliveryPlaceIndex" : {
+            "format" : "int32",
+            "type" : "integer"
           },
           "dietNote" : {
             "maxLength" : 2000,
@@ -4348,6 +4372,10 @@
               "type" : "integer"
             },
             "type" : "array"
+          },
+          "deliveryAddressId" : {
+            "format" : "int64",
+            "type" : "integer"
           },
           "horseId" : {
             "format" : "int64",
@@ -6254,6 +6282,12 @@
           },
           "currencyCode" : {
             "type" : "string"
+          },
+          "deliveryEstimates" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DeliveryEstimate"
+            },
+            "type" : "array"
           },
           "depositRate" : {
             "type" : "number"

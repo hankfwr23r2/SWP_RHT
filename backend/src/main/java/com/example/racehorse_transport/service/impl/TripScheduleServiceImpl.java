@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import java.time.Duration;
 
 @Service
 @RequiredArgsConstructor
@@ -101,7 +102,9 @@ public class TripScheduleServiceImpl implements TripScheduleService {
     private static Set<Warning> warnings(VehicleTripType type, TripInput input, List<Long> drives, List<StopTime> times, boolean direct) {
         Set<Warning> result = EnumSet.noneOf(Warning.class);
         long limit = TripSchedulePolicy.rideLimitSeconds(direct, input.rules());
-        if (input.horses().stream().anyMatch(h -> TripSchedulePolicy.rideSeconds(drives, h.board(), h.alight()) > limit)) {
+        if (input.horses().stream().anyMatch(h -> (input.multiPlaceDelivery()
+                ? Duration.between(times.get(h.board()).departure(), times.get(h.alight()).arrival()).getSeconds()
+                : TripSchedulePolicy.rideSeconds(drives, h.board(), h.alight())) > limit)) {
             result.add(Warning.RIDE_TOO_LONG);
         }
         if (type == VehicleTripType.PICKUP && input.hubDeadline() != null && times.getLast().arrival().isAfter(input.hubDeadline())) {
@@ -109,7 +112,8 @@ public class TripScheduleServiceImpl implements TripScheduleService {
         }
         long dayLimit = input.rules().maxDriveHoursPerDay() * 3600L;
         List<Interval> intervals = times.stream().map(t -> new Interval(t.arrival(), t.departure())).toList();
-        if (TripSchedulePolicy.drivingByDay(List.of(intervals), BUSINESS_ZONE, input.rules()).values().stream().anyMatch(s -> s > dayLimit)) {
+        if ((input.multiPlaceDelivery() && drives.stream().mapToLong(Long::longValue).sum() > dayLimit)
+                || TripSchedulePolicy.drivingByDay(List.of(intervals), BUSINESS_ZONE, input.rules()).values().stream().anyMatch(s -> s > dayLimit)) {
             result.add(Warning.DRIVER_DAY_LIMIT);
         }
         for (int i = 0; i < times.size(); i++) {

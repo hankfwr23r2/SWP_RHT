@@ -9,6 +9,7 @@ export type CoverageOption = BookingCreateRequest['horses'][number]['insurance']
 export type Departure = NonNullable<DepartureSuggestion['departures']>[number]
 
 export interface HorseChoice {
+  deliveryAddressId?: number
   stallTypeCode: string
   dietNote: string
   feedingsPerDay: string
@@ -44,6 +45,7 @@ export interface BookingDraft {
   parties: Record<PartyRole, PartyDraft>
   pickupNote: string
   deliveryNote: string
+  deliveryContacts: Record<number, { fullName: string; phone: string }>
   emergencySpendingLimit: string
   acceptedTerms: boolean
 }
@@ -62,7 +64,7 @@ export const emptyDraft = (): BookingDraft => ({
   pickupMethod: 'COMPANY', deliveryMethod: 'COMPANY', departure: null, pickupDate: '',
   horseIds: [], horses: {},
   parties: { SHIPPER: blankParty(), CONSIGNEE: blankParty(), PAYER: blankParty(), EMERGENCY_CONTACT: blankParty() },
-  pickupNote: '', deliveryNote: '', emergencySpendingLimit: '', acceptedTerms: false,
+  pickupNote: '', deliveryNote: '', deliveryContacts: {}, emergencySpendingLimit: '', acceptedTerms: false,
 })
 
 const draftKey = () => `SWP_RHT_BOOKING_DRAFT_${readSession('customer')?.username ?? ''}`

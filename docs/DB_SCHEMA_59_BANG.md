@@ -730,7 +730,7 @@ Index: `customer_id`, `departure_id`, `original_booking_id`, `(status, created_a
 | `location_id` | `bigint` | có | FK → location | Nếu điểm này trùng một location của mạng lưới, ví dụ trường đua |
 | `source_customer_address_id` | `bigint` | có | FK → customer_address, ON DELETE SET NULL | Chép từ sổ địa chỉ nào |
 
-Ràng buộc bảng: `UNIQUE (booking_id, address_type)`.
+Ràng buộc bảng: chỉ một `PICKUP` mỗi đơn (unique index theo điều kiện), cho phép nhiều `DELIVERY`. `UNIQUE (booking_id, id)` làm đích FK tổ hợp từ `booking_horse`.
 Index: `province_code`, `location_id`.
 
 ### 8.4 `booking_horse`: dòng đơn (mỗi con ngựa một dòng)
@@ -740,6 +740,7 @@ Index: `province_code`, `location_id`.
 | `id` | `bigint` | | PK, identity | |
 | `booking_id` | `bigint` | | FK → booking, CASCADE | |
 | `horse_id` | `bigint` | | FK → horse | |
+| `delivery_address_id` | `bigint` | có với dòng thiếu địa chỉ trước migration | FK `(booking_id, delivery_address_id)` → `booking_address(booking_id, id)` | Nơi giao của từng con. Service gán địa chỉ DELIVERY khi đặt đơn. |
 | `stall_type_code` | `varchar(30)` | | FK → stall_type | Loại khoang cần đặt |
 | `diet_note` | `text` | có | | |
 | `feedings_per_day` | `smallint` | có | CK `1..10` | |

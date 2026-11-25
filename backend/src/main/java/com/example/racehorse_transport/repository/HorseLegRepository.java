@@ -81,4 +81,23 @@ public interface HorseLegRepository extends JpaRepository<HorseLeg, Long> {
     // Báo cáo chuyến: chặng của các lượt xe
     @EntityGraph(attributePaths = {"bookingHorse", "bookingHorse.horse", "bookingHorse.booking"})
     List<HorseLeg> findByVehicleTrip_IdIn(Collection<Long> vehicleTripIds);
+    @Query("""
+            SELECT COUNT(h) > 0 FROM BookingHorse h
+            WHERE h.status = com.example.racehorse_transport.entity.enums.BookingHorseStatus.ACTIVE
+              AND h.booking.id IN (
+                SELECT underway.bookingHorse.booking.id FROM HorseLeg underway
+                WHERE underway.vehicleTrip.id = :tripId
+                  AND underway.status = com.example.racehorse_transport.entity.enums.HorseLegStatus.PLANNED
+              )
+              AND (SELECT COUNT(DISTINCT sibling.deliveryAddress.id) FROM BookingHorse sibling
+                   WHERE sibling.booking = h.booking
+                     AND sibling.status = com.example.racehorse_transport.entity.enums.BookingHorseStatus.ACTIVE) > 1
+              AND NOT EXISTS (SELECT own FROM HorseLeg own
+                  WHERE own.bookingHorse = h AND own.vehicleTrip.id = :tripId
+                    AND own.status = com.example.racehorse_transport.entity.enums.HorseLegStatus.PLANNED)
+              AND NOT EXISTS (SELECT failed FROM HorseLeg failed WHERE failed.bookingHorse = h
+                  AND failed.legType = com.example.racehorse_transport.entity.enums.HorseLegType.DELIVERY
+                  AND failed.status = com.example.racehorse_transport.entity.enums.HorseLegStatus.FAILED)
+            """)
+    boolean hasIncompleteMultiPlaceDelivery(Long tripId);
 }

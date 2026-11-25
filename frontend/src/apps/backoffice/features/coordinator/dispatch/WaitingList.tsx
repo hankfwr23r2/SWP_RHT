@@ -52,7 +52,7 @@ export function WaitingList({ bookings, onJourney, onAgent, onHub, next, onWeek 
             <ul className={s.horses}>
               {(booking.horses ?? []).map(horse => (
                 <li key={horse.bookingHorseId}>
-                  <span><i className="fa-solid fa-horse-head" aria-hidden="true" /> {horse.horseName}{horse.seats === 2 && ` · ${t('dispatch.stall.wide')}`}</span>
+                  <span><i className="fa-solid fa-horse-head" aria-hidden="true" /> {horse.horseName}{horse.deliveryAddress?.addressLine && ` · ${horse.deliveryAddress.addressLine}`}{horse.seats === 2 && ` · ${t('dispatch.stall.wide')}`}</span>
                   {(booking.bookingType === 'EXPORT' || booking.bookingType === 'IMPORT')
                     && <Button size="sm" variant="ghost" onClick={() => onAgent(booking, horse)}>{t('dispatch.agent.open')}</Button>}
                   {booking.pickupMethod === 'SELF' && booking.departureId

@@ -73,6 +73,7 @@ export function pricingRequest(draft: BookingDraft): PricingPreviewRequest | nul
       horseId,
       stallTypeCode: draft.horses[horseId].stallTypeCode,
       addOnServiceIds: draft.horses[horseId].addOnServiceIds,
+      deliveryAddressId: selectedDeliveryAddress(draft, horseId),
     })),
   }
 }
@@ -85,7 +86,7 @@ export function transferRequest(draft: BookingDraft): TransferOptionsRequest | n
 
 const text = (value: string) => value.trim() || undefined
 
-function addressInput(kind: AddressKind, address: CustomerAddress, contact: PartyDraft, note: string) {
+function addressInput(kind: AddressKind, address: CustomerAddress, contact: Pick<PartyDraft, "fullName" | "phone">, note: string) {
   return {
     addressType: kind,
     addressLine: [address.addressLine, address.ward].filter(Boolean).join(', ').slice(0, 500),
@@ -112,7 +113,15 @@ function insuranceInput(horse: HorseChoice): BookingCreateRequest['horses'][numb
   }
 }
 
-export function createRequest(draft: BookingDraft, pickup: CustomerAddress, delivery: CustomerAddress): BookingCreateRequest {
+export function selectedDeliveryAddress(draft: BookingDraft, horseId: number) {
+  return draft.routing === 'LINEHAUL' && draft.deliveryMethod === 'COMPANY'
+    ? draft.horses[horseId]?.deliveryAddressId : undefined
+}
+
+export function createRequest(draft: BookingDraft, pickup: CustomerAddress, delivery: CustomerAddress,
+  addressBook: CustomerAddress[] = []): BookingCreateRequest {
+  const selectedIds = [...new Set(draft.horseIds.map(id => selectedDeliveryAddress(draft, id) ?? delivery.id))]
+  const destinations = selectedIds.map(id => id === delivery.id ? delivery : addressBook.find(address => address.id === id)!)
   return {
     bookingType: bookingTypeOf(pickup, delivery)!,
     departureId: draft.routing === 'LINEHAUL' ? draft.departure?.id : undefined,
@@ -137,7 +146,9 @@ export function createRequest(draft: BookingDraft, pickup: CustomerAddress, deli
     }),
     addresses: [
       addressInput('PICKUP', pickup, draft.parties.SHIPPER, draft.pickupNote),
-      addressInput('DELIVERY', delivery, draft.parties.CONSIGNEE, draft.deliveryNote),
+      ...destinations.map(address => address.id === delivery.id
+        ? addressInput('DELIVERY', address, draft.parties.CONSIGNEE, draft.deliveryNote)
+        : addressInput('DELIVERY', address, draft.deliveryContacts[address.id!], '')),
     ],
     horses: draft.horseIds.map(horseId => {
       const horse = draft.horses[horseId]
@@ -149,6 +160,7 @@ export function createRequest(draft: BookingDraft, pickup: CustomerAddress, deli
         feedSuppliedByOwner: horse.feedSuppliedByOwner,
         addOns: horse.addOnServiceIds.map(serviceId => ({ serviceId, quantity: 1 })),
         insurance: insuranceInput(horse),
+        deliveryPlaceIndex: destinations.length > 1 ? selectedIds.indexOf(selectedDeliveryAddress(draft, horseId) ?? delivery.id) : undefined,
       }
     }),
   }

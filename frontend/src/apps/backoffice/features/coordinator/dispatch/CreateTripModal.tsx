@@ -123,7 +123,7 @@ export function CreateTripModal({ bookings, weekFrom, weekTo, returning, onClose
                   <label className={b.pick}>
                     <input type="checkbox" checked={chosen.includes(booking.id ?? 0)} onChange={() => toggle(booking.id ?? 0)} />
                     <span><strong>{booking.code}</strong> · {(booking.horses ?? []).map(horse => horse.horseName).join(', ')}<br />
-                      {tripType === 'DELIVERY' ? booking.deliveryAddress?.addressLine : booking.pickupAddress?.addressLine}
+                      {tripType === 'DELIVERY' ? (booking.horses ?? []).map(horse => horse.deliveryAddress?.addressLine).filter(Boolean).filter((line, index, all) => all.indexOf(line) === index).join(' · ') || booking.deliveryAddress?.addressLine : booking.pickupAddress?.addressLine}
                       {booking.requestedPickupDate && ` · ${formatDate(new Date(booking.requestedPickupDate))}`}</span>
                   </label>
                 </li>

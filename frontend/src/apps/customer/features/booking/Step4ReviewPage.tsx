@@ -91,7 +91,7 @@ export default function Step4ReviewPage() {
 
   const send = async () => {
     setConfirming(false)
-    if (pickup && delivery) await submit(draft, pickup, delivery)
+    if (pickup && delivery) await submit(draft, pickup, delivery, data.addresses)
   }
 
   return (

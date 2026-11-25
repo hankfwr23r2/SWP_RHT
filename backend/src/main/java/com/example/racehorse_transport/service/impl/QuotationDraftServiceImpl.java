@@ -62,10 +62,13 @@ public class QuotationDraftServiceImpl implements QuotationDraftService {
         for (int i = 0; i < estimates.size(); i++) {
             roads.add(new RoadLeg(data.roads().get(i).layer(), data.vehicleClassId(), estimates.get(i).km()));
         }
+        var delivery = data.destinations().isEmpty() ? null : pricing.deliveryPricing(data.deliveryHubId(), data.destinations());
+        if (delivery != null) roads.add(delivery.loop());
         var loaded = data.input();
         var input = new PricingInput(loaded.currencyCode(), loaded.quotationDate(), loaded.bookingType(), loaded.routeId(),
-                loaded.linehaulKm(), roads, loaded.stallsByType(), loaded.horseCount(), loaded.addOns(), loaded.earlyPickupDays());
-        long deliverySeconds = 0;
+                loaded.linehaulKm(), roads, loaded.stallsByType(), loaded.horseCount(), loaded.addOns(), loaded.earlyPickupDays(),
+                delivery == null ? List.of() : delivery.separate());
+        long deliverySeconds = delivery == null ? 0 : delivery.deliverySeconds();
         for (int i = 0; i < data.roads().size(); i++) {
             if (data.roads().get(i).layer() != ServiceLayer.PICKUP) {
                 deliverySeconds += estimates.get(i).driveSeconds();
@@ -198,9 +201,10 @@ public class QuotationDraftServiceImpl implements QuotationDraftService {
         replacement.setEstimatedDeliveryDate(previous.getEstimatedDeliveryDate());
         replacement.setExpiresAt(previous.getExpiresAt());
 
-        List<QuotationLine> keep = lines.findByQuotation_IdOrderByLineNumber(previous.getId()).stream()
+        List<QuotationLine> keep = new ArrayList<>(lines.findByQuotation_IdOrderByLineNumber(previous.getId()).stream()
                 .filter(line -> line.getBookingHorse() == null || !line.getBookingHorse().getId().equals(excluded.getId()))
-                .map(line -> copyLine(line, replacement)).toList();
+                .map(line -> copyLine(line, replacement)).toList());
+        repriceDeliveryAfterExclusion(excluded, replacement, keep);
         QuotationPolicy.cappedDiscounts(keep).forEach(QuotationLine::setUnitPrice);
         setTotals(replacement, keep);
         quotations.save(replacement);
@@ -215,6 +219,34 @@ public class QuotationDraftServiceImpl implements QuotationDraftService {
         QuotationPolicy.requireTransition(replacement.getStatus(), QuotationStatus.ACCEPTED);
         replacement.setStatus(QuotationStatus.ACCEPTED);
         return Optional.of(replacement);
+    }
+
+    private void repriceDeliveryAfterExclusion(BookingHorse excluded, Quotation replacement, List<QuotationLine> linesToKeep) {
+        var booking = excluded.getBooking();
+        if (booking.getDeparture() == null || booking.getDeliveryMethod() != TransferMethod.COMPANY) return;
+        var pickup = linesToKeep.stream().filter(line -> line.getLineType() == QuotationLineType.PICKUP).findFirst();
+        var changed = snapshots.deliveryAfterExclusion(excluded, pickup.isPresent());
+        if (changed.isEmpty()) return;
+
+        var route = booking.getDeparture().getRoute();
+        var destinations = changed.get();
+        var delivery = pricing.deliveryPricing(route.getDestination().getId(), destinations.destinations());
+        List<RoadLeg> roadLegs = new ArrayList<>();
+        pickup.ifPresent(line -> roadLegs.add(new RoadLeg(ServiceLayer.PICKUP, destinations.pickupVehicleClass(), line.getQuantity())));
+        roadLegs.add(delivery.loop());
+        var priceList = replacement.getPriceList();
+        var availableItems = priceItems.findByPriceList_Id(priceList.getId());
+        var catalog = availableItems.stream().map(PriceItem::getBillableService).distinct().toList();
+        var updated = PricingPolicy.chooseRoadPricing(priceList, availableItems, catalog, route.getId(), roadLegs, delivery.separate());
+        linesToKeep.removeIf(line -> line.getLineType() == QuotationLineType.DELIVERY || line.getLineType() == QuotationLineType.FUEL);
+        for (var price : updated.lines()) {
+            var item = availableItems.stream().filter(candidate -> candidate.getId().equals(price.priceItemId())).findFirst().orElseThrow();
+            var service = item.getBillableService();
+            if (service.getLayer() != ServiceLayer.PICKUP) {
+                linesToKeep.add(line(replacement, lineType(service.getLayer()), service, item, null,
+                        service.getName(), price.quantity(), price.unitPrice(), price.passThrough()));
+            }
+        }
     }
 
     private List<QuotationLine> storeLines(List<QuotationLine> rows) {

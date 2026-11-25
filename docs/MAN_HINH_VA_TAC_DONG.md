@@ -149,3 +149,7 @@ Công ty không vận hành nơi cách ly. Điều kiện cách ly thể hiện 
 | 6.6, 7.1–7.4 | B4, B5 |
 | 6.7–6.8, 7.6 | A8 |
 | 7.5 | A1 (đã có backend) |
+
+### Đơn nhiều nơi giao cùng hub
+
+Bước chọn ngựa cho chọn nơi giao và nhập người nhận cho địa chỉ khác địa chỉ giao chung. Bước xem lại và chi tiết đơn hiện nơi giao theo con. Bảng điều độ dùng nơi của từng con để gợi ý các điểm dừng và điểm xuống. Màn hiện trường tiếp tục thao tác theo điểm dừng.

@@ -61,6 +61,9 @@ public class TripExecutionServiceImpl implements TripExecutionService {
         requireCrew(trip.getId(), username);
         TripExecutionPolicy.requireStartable(trip.getStatus(),
                 crew.existsByVehicleTrip_IdAndCrewRoleAndStatus(trip.getId(), CrewRole.DRIVER, CrewAssignmentStatus.ACKNOWLEDGED));
+        if (trip.getTripType() == VehicleTripType.DELIVERY && legs.hasIncompleteMultiPlaceDelivery(trip.getId())) {
+            throw new DispatchRuleException("bookingHorseIds", "Cần xếp đủ ngựa của đơn nhiều nơi giao trước khi xuất phát.", true);
+        }
         // Quy tắc #40: sơ đồ khoang chốt trước khi lượt xe bắt đầu, mọi con (kể cả con đón ở điểm sau) phải có vị trí
         List<String> unplaced = legs.findActiveOnTrip(trip.getId(), Set.of(HorseLegStatus.CANCELLED, HorseLegStatus.FAILED)).stream()
                 .filter(leg -> leg.getStallPosition() == null).map(leg -> leg.getBookingHorse().getHorse().getName()).toList();

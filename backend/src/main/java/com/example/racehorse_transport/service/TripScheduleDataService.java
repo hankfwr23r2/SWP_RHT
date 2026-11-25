@@ -25,7 +25,7 @@ public interface TripScheduleDataService {
 
     // hubDeadline: hạn có mặt ở hub (lượt đón). readyAt: lúc xe trục tới hub (lượt giao)
     record TripInput(List<PlaceInput> places, List<HorseInput> horses, LocalDate pickupDate, Instant hubDeadline, Instant readyAt,
-                     Rules rules, Window pickupWindow, Window deliveryWindow, int weightTons, int topSpeedKmh) {
+                     Rules rules, Window pickupWindow, Window deliveryWindow, int weightTons, int topSpeedKmh, boolean multiPlaceDelivery) {
 
         public List<Integer> horsesAtStops() {
             return java.util.stream.IntStream.range(0, places.size())

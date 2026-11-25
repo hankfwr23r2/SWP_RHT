@@ -96,6 +96,17 @@ public final class TripSchedulePolicy {
         return direct ? day : day / 2;
     }
 
+    public static void requireMultiPlaceWindow(Instant board, Instant alight, List<Interval> stops, Rules rules) {
+        if (Duration.between(board, alight).getSeconds() > rideLimitSeconds(false, rules)) {
+            throw new DispatchRuleException("alightTripStopId", "Thời gian trên xe của ngựa vượt giới hạn một chiều.", true);
+        }
+        long driving = drivingByDay(List.of(stops), ZoneId.of("Asia/Ho_Chi_Minh"), rules).values()
+                .stream().mapToLong(Long::longValue).sum();
+        if (driving > rideLimitSeconds(true, rules)) {
+            throw new DispatchRuleException("places", "Lượt giao và quay về vượt giới hạn giờ lái.", true);
+        }
+    }
+
     // Giờ lái mỗi ngày của một lượt xe theo kế hoạch: khoảng giữa hai điểm dừng trừ giờ nghỉ bắt buộc, qua nửa đêm thì chia theo ngày
     public static Map<LocalDate, Long> drivingByDay(Collection<List<Interval>> trips, ZoneId zone, Rules rules) {
         Map<LocalDate, Long> result = new TreeMap<>();

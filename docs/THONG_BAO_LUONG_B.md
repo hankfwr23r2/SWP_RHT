@@ -35,3 +35,7 @@
 - Luồng B gọi `DepartureService.linehaulDeparted/linehaulCompleted` theo mốc lượt trục. Luồng A giữ khóa chuyến và quyết định trạng thái.
 - Chặng giao thay thế dùng `StablingChargeService` chốt phí theo ngày. Luồng A lập khoản thu `EXTRA_CHARGE`, đặt hạn và báo khách. HUB_OUT kiểm khoản phí đã chốt. Người nhận tự tới hub vẫn lấy ngựa được.
 - Điều phối tải chứng cứ `VET_REPORT` trước khi xác nhận đủ sức thay tổ lái.
+
+### Đơn nhiều nơi giao cùng hub
+
+Địa chỉ giao vận hành đọc từ `booking_horse.delivery_address_id`. API điều độ trả thêm địa chỉ giao của từng con. Đơn nhiều nơi phải có đủ ngựa trên cùng một lượt giao trước khi xuất phát. Tính thời gian đợi theo vị trí điểm giao trong lượt. Khi giao thất bại, chỉ xử lý các chặng xuống tại điểm đang giao.

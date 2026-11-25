@@ -19,7 +19,7 @@ public record BookingCreateRequestDto(
         @NotNull LocalDate requestedPickupDate,
         @DecimalMin("0") @Digits(integer = 13, fraction = 2) BigDecimal emergencySpendingLimit,
         @NotNull @Size(min = 4, max = 4) List<@NotNull @Valid PartyInput> parties,
-        @NotNull @Size(min = 2, max = 2) List<@NotNull @Valid AddressInput> addresses,
+        @NotNull @Size(min = 2) List<@NotNull @Valid AddressInput> addresses,
         @NotEmpty List<@NotNull @Valid HorseInput> horses,
         @NotNull Boolean acceptedServiceTerms,
         TransferMethod pickupMethod,
@@ -108,7 +108,17 @@ public record BookingCreateRequestDto(
             @Min(1) @Max(10) Short feedingsPerDay,
             Boolean feedSuppliedByOwner,
             List<@NotNull @Valid AddOnInput> addOns,
-            @NotNull @Valid InsuranceDeclarationRequestDto insurance) {
+            @NotNull @Valid InsuranceDeclarationRequestDto insurance,
+            @PositiveOrZero Integer deliveryPlaceIndex) {
+
+        public HorseInput(Long horseId, String stallTypeCode, String dietNote, Short feedingsPerDay,
+                          Boolean feedSuppliedByOwner, List<AddOnInput> addOns, InsuranceDeclarationRequestDto insurance) {
+            this(horseId, stallTypeCode, dietNote, feedingsPerDay, feedSuppliedByOwner, addOns, insurance, null);
+        }
+
+        public int selectedDeliveryPlace() {
+            return deliveryPlaceIndex == null ? 0 : deliveryPlaceIndex;
+        }
 
         public BookingHorse toEntity(Booking booking, Horse horse, StallType stallType) {
             BookingHorse row = new BookingHorse();

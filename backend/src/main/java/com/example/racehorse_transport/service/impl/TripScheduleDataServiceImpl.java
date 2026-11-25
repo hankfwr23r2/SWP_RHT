@@ -38,6 +38,8 @@ import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.racehorse_transport.entity.enums.BookingHorseStatus;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -59,6 +61,7 @@ public class TripScheduleDataServiceImpl implements TripScheduleDataService {
         List<PlaceInput> places = request.places().stream().map(this::place).toList();
         List<BookingHorse> lines = request.bookingHorseIds().stream().distinct().map(id -> bookingHorses.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngựa trong đơn " + id))).toList();
+        boolean multiPlace = request.tripType() == VehicleTripType.DELIVERY && requireCompleteDelivery(lines);
         List<HorseInput> horses = lines.stream().map(line -> horse(request.tripType(), line, places)).toList();
         List<Booking> found = lines.stream().map(BookingHorse::getBooking).distinct().toList();
         return new TripInput(places, horses,
@@ -66,7 +69,7 @@ public class TripScheduleDataServiceImpl implements TripScheduleDataService {
                 request.tripType() == VehicleTripType.PICKUP ? hubDeadline(found) : null,
                 request.tripType() == VehicleTripType.DELIVERY ? readyAt(found) : null,
                 rules(), window("PICKUP"), window("DELIVERY"),
-                configs.getInt("TRUCK_WEIGHT_TONS"), configs.getInt("TRUCK_TOP_SPEED_KMH"));
+                configs.getInt("TRUCK_WEIGHT_TONS"), configs.getInt("TRUCK_TOP_SPEED_KMH"), multiPlace);
     }
 
     @Override
@@ -80,6 +83,22 @@ public class TripScheduleDataServiceImpl implements TripScheduleDataService {
             horseLegs.assign(trip.id(), new HorseLegRequestDto(horse.bookingHorseId(), stops.get(horse.board()).id(), stops.get(horse.alight()).id()), username);
         }
         return dispatch.trip(trip.id());
+    }
+
+    private boolean requireCompleteDelivery(List<BookingHorse> lines) {
+        boolean multiPlace = false;
+        var selected = lines.stream().map(BookingHorse::getId).collect(Collectors.toSet());
+        for (Booking booking : lines.stream().map(BookingHorse::getBooking).distinct().toList()) {
+            var active = bookingHorses.findForDetail(booking.getId()).stream()
+                    .filter(horse -> horse.getStatus() == BookingHorseStatus.ACTIVE).toList();
+            boolean multiple = active.stream().map(BookingHorse::getDeliveryAddress).filter(Objects::nonNull)
+                    .map(BookingAddress::getId).distinct().count() > 1;
+            if (multiple && active.stream().anyMatch(horse -> !selected.contains(horse.getId()))) {
+                throw new DispatchRuleException("bookingHorseIds", "Chọn tất cả ngựa còn hoạt động của đơn nhiều nơi giao.");
+            }
+            multiPlace |= multiple;
+        }
+        return multiPlace;
     }
 
     private PlaceInput place(PlaceDto place) {
@@ -107,7 +126,8 @@ public class TripScheduleDataServiceImpl implements TripScheduleDataService {
         Booking booking = line.getBooking();
         List<BookingAddress> own = addresses.findByBooking_Id(booking.getId());
         int pickup = indexOf(places, own, AddressRole.PICKUP);
-        int delivery = indexOf(places, own, AddressRole.DELIVERY);
+        int delivery = line.getDeliveryAddress() == null ? indexOf(places, own, AddressRole.DELIVERY)
+                : indexOf(places, line.getDeliveryAddress().getId());
         int board = type == VehicleTripType.PICKUP || type == VehicleTripType.DIRECT ? pickup : 0;
         int alight = type == VehicleTripType.DELIVERY || type == VehicleTripType.DIRECT ? delivery : places.size() - 1;
         if (board < 0 || alight < 0 || board >= alight) {
@@ -118,6 +138,10 @@ public class TripScheduleDataServiceImpl implements TripScheduleDataService {
 
     private static int indexOf(List<PlaceInput> places, List<BookingAddress> own, AddressRole role) {
         Long id = own.stream().filter(address -> address.getAddressType() == role).map(BookingAddress::getId).findFirst().orElse(null);
+        return indexOf(places, id);
+    }
+
+    private static int indexOf(List<PlaceInput> places, Long id) {
         List<Long> ids = new ArrayList<>();
         places.forEach(place -> ids.add(place.bookingAddressId()));
         return id == null ? -1 : ids.indexOf(id);

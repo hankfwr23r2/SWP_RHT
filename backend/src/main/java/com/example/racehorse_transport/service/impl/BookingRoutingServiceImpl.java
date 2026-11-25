@@ -23,12 +23,19 @@ import com.example.racehorse_transport.repository.ProvinceRepository;
 import com.example.racehorse_transport.repository.RouteRepository;
 import com.example.racehorse_transport.service.BookingRoutingService;
 import com.example.racehorse_transport.service.RegulationService;
+import com.example.racehorse_transport.service.SystemConfigService;
+import com.example.racehorse_transport.service.DeliveryRouteService;
+import com.example.racehorse_transport.dto.route.GeoPointDto;
+import com.example.racehorse_transport.entity.enums.TransferMethod;
 import java.time.Clock;
+import java.util.Objects;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.racehorse_transport.policy.StallSeatPolicy;
+import java.util.stream.IntStream;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +47,8 @@ public class BookingRoutingServiceImpl implements BookingRoutingService {
     private final BookingAddressRepository bookingAddresses;
     private final RegulationService regulations;
     private final Clock clock;
+    private final SystemConfigService configs;
+    private final DeliveryRouteService deliveryRoutes;
 
     @Override
     @Transactional(readOnly = true)
@@ -120,7 +129,30 @@ public class BookingRoutingServiceImpl implements BookingRoutingService {
             BookingSubmissionPolicy.validateRoute(route, type, pickupHub, deliveryHub,
                     DepartureRoutePolicy.counterpartCountryCode(type, pickup.countryCode(), delivery.countryCode()));
         }
-        return new SubmissionRouting(pickup, delivery, pickupProvince, deliveryProvince, pickupHub, deliveryHub);
+        List<DeliveryPlace> places = request.addresses().stream()
+                .filter(address -> address.addressType() == AddressRole.DELIVERY)
+                .map(address -> new DeliveryPlace(address, province(address))).toList();
+        if (places.size() > 1) {
+            if (type != BookingType.INTERPROVINCE || routing != HubResolutionPolicy.Routing.LINEHAUL
+                    || request.deliveryMethod() != TransferMethod.COMPANY) {
+                throw new BookingRuleException("Chỉ đơn liên tỉnh đi trục do công ty giao mới có nhiều nơi giao. Vui lòng đặt đơn riêng.");
+            }
+            int limit = configs.getInt("MAX_DELIVERY_PLACES");
+            if (places.size() > limit) {
+                throw new BookingRuleException("Đơn có tối đa " + limit + " nơi giao. Vui lòng đặt đơn riêng.");
+            }
+            if (places.stream().anyMatch(place -> !Objects.equals(deliveryHub, hubOf(place.province())))) {
+                throw new BookingRuleException("Các nơi giao phải cùng hub đích. Vui lòng đặt đơn riêng.");
+            }
+            deliveryRoutes.plan(deliveryHub, places.stream().map(DeliveryPlace::address)
+                    .map(address -> new GeoPointDto(address.latitude().doubleValue(), address.longitude().doubleValue())).toList(),
+                    IntStream.range(0, places.size())
+                            .mapToObj(index -> (int) request.horses().stream().filter(horse -> horse.selectedDeliveryPlace() == index).count())
+                            .toList(),
+                    StallSeatPolicy.total(
+                            request.horses().stream().map(BookingCreateRequestDto.HorseInput::stallTypeCode).toList()));
+        }
+        return new SubmissionRouting(pickup, delivery, pickupProvince, deliveryProvince, pickupHub, deliveryHub, places);
     }
 
     @Override

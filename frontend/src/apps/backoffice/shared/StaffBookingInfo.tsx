@@ -5,7 +5,6 @@ import { day, money, showDate } from './staffFormat'
 import s from './StaffPanels.module.css'
 
 const ROLES = ['SHIPPER', 'CONSIGNEE', 'PAYER', 'EMERGENCY_CONTACT'] as const
-const PLACES = ['PICKUP', 'DELIVERY'] as const
 
 // Thông tin đơn để nhân viên đọc: hành trình, ngựa, các bên
 export function StaffBookingInfo({ detail }: { detail: BookingDetail }) {
@@ -18,11 +17,11 @@ export function StaffBookingInfo({ detail }: { detail: BookingDetail }) {
           {booking.bookingType && <div><dt>{t('mgr.info.type')}</dt><dd>{t(`bookingForm.types.${booking.bookingType}`)}</dd></div>}
           {booking.requestedPickupDate && <div><dt>{t('mgr.info.pickup')}</dt><dd>{showDate(booking.requestedPickupDate)}</dd></div>}
           {booking.createdAt && <div><dt>{t('mgr.info.created')}</dt><dd>{day(booking.createdAt)}</dd></div>}
-          {PLACES.map(type => {
-            const address = detail.addresses?.find(item => item.addressType === type)
+          {detail.addresses?.map(address => {
+            const type = address.addressType
             const method = type === 'PICKUP' ? detail.pickupMethod : detail.deliveryMethod
             return address && (
-              <div key={type}>
+              <div key={address.id}>
                 <dt>{t(`mgr.info.${type}`)}</dt>
                 <dd>{address.addressLine}<br />{address.contactName} · {address.contactPhone}
                   {address.countryCode === 'VN' && method && <><br />{t(`bookingForm.methods.${type === 'PICKUP' ? 'pickup' : 'delivery'}.${method}`)}</>}
@@ -41,6 +40,7 @@ export function StaffBookingInfo({ detail }: { detail: BookingDetail }) {
               <dd>{[
                 horse.stallTypeCode && t(`mgr.info.stall.${horse.stallTypeCode}`, horse.stallTypeCode),
                 horse.insurance?.coverageOption && t(`bookingForm.services.coverage.${horse.insurance.coverageOption}`),
+                detail.addresses?.find(item => item.id === horse.deliveryAddressId)?.addressLine,
                 ...(horse.addOns ?? []).map(addOn => addOn.serviceName),
               ].filter(Boolean).join(' · ')}</dd>
             </div>

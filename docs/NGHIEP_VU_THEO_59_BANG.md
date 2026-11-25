@@ -875,3 +875,7 @@ Các class migration một lần sẽ **bỏ** khi chuyển sang Flyway: `Bookin
 | **Sửa** | Các service CRUD, bảo hiểm, thanh toán, sự cố, quyết toán, báo cáo, scheduler, seeder (thành dữ liệu Flyway) |
 | **Viết lại** | Lập lịch và giữ xe (`FleetService`, `BookingScheduleService`), tiến trình chuyến (`TripProgressService`), giao nhận, yêu cầu giấy tờ, chia chi phí sự cố, theo dõi ngựa |
 | **Bỏ** | `DetailsJson`, `quote_lines_json`, tính giá ở frontend, khóa giá trong `system_config`, ModelMapper, các class migration một lần |
+
+### Đơn liên tỉnh có nhiều nơi giao
+
+Khách chọn nơi giao và người nhận tại từng nơi. Mọi nơi thuộc cùng hub đích, đơn đi trục và công ty giao. Service kiểm `MAX_DELIVERY_PLACES` (mặc định 3, cấu hình 1–5), hạng xe đủ khoang, tuyến xe tải và giới hạn giờ vận chuyển. Một lượt giao đi qua các nơi của đơn. Tính cước giao và nhiên liệu theo phương án rẻ hơn giữa vòng giao thực tế và tính riêng từng nơi. Giấy của từng con trả tại nơi của con đó và giấy chung trả tại điểm giao cuối của đơn. Nơi giao trung gian áp dụng `INTERMEDIATE_WAIT_MINUTES` (mặc định 60). Nơi giao cuối của lượt xe áp dụng `HANDOVER_FREE_WAIT_MINUTES`.

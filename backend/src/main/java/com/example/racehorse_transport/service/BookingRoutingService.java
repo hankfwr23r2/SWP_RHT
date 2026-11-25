@@ -4,6 +4,7 @@ import com.example.racehorse_transport.dto.booking.BookingCreateRequestDto;
 import com.example.racehorse_transport.dto.booking.BookingCreateRequestDto.AddressInput;
 import com.example.racehorse_transport.entity.Departure;
 import com.example.racehorse_transport.entity.Province;
+import java.util.List;
 
 public interface BookingRoutingService {
     SubmissionRouting resolve(BookingCreateRequestDto request);
@@ -14,7 +15,9 @@ public interface BookingRoutingService {
 
     boolean requiresDeparture(com.example.racehorse_transport.entity.Booking booking);
 
+    record DeliveryPlace(AddressInput address, Province province) {}
+
     record SubmissionRouting(AddressInput pickup, AddressInput delivery, Province pickupProvince,
-                             Province deliveryProvince, Long pickupHub, Long deliveryHub) {
+                             Province deliveryProvince, Long pickupHub, Long deliveryHub, List<DeliveryPlace> deliveryPlaces) {
     }
 }

@@ -22,29 +22,52 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.racehorse_transport.service.DeliveryRouteService.DeliveryPricing;
+import com.example.racehorse_transport.service.DeliveryRouteService.Destination;
+import com.example.racehorse_transport.service.DeliveryRouteService;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class PricingServiceImpl implements PricingService {
     private final PricingDataService data;
     private final PricingRouteService routing;
+    private final DeliveryRouteService deliveryRoutes;
+
+    @Override
+    public DeliveryPricing deliveryPricing(
+            Long hubId, List<Destination> destinations) {
+        return deliveryRoutes.pricing(hubId, destinations);
+    }
 
     @Override
     @Transactional(propagation = Propagation.NEVER)
     public PricingPreviewResponseDto preview(PricingPreviewRequestDto request, String username) {
         var preview = data.loadPreview(request, username);
-        var roadLegs = preview.segments().stream()
+        var roadLegs = new ArrayList<>(preview.segments().stream()
                 .map(segment -> {
                     var estimate = routing.route(segment, preview.pickupTime(), preview.weightTons(), preview.topSpeedKmh());
                     PricingPolicy.validateDriveTime(segment.layer(), estimate.driveSeconds(), segment.maxDriveHoursPerDay());
                     return new RoadLeg(segment.layer(), preview.vehicleClassId(), estimate.km());
                 })
-                .toList();
+                .toList());
+        var delivery = preview.destinations().isEmpty() ? null : deliveryPricing(preview.deliveryHubId(), preview.destinations());
+        if (delivery != null) roadLegs.add(delivery.loop());
         PricingInput loaded = preview.input();
         PricingInput input = new PricingInput(loaded.currencyCode(), loaded.quotationDate(), loaded.bookingType(),
                 loaded.routeId(), loaded.linehaulKm(), roadLegs, loaded.stallsByType(), loaded.horseCount(),
-                loaded.addOns(), loaded.earlyPickupDays());
-        return PricingPreviewResponseDto.from(input, data.calculate(input));
+                loaded.addOns(), loaded.earlyPickupDays(),
+                delivery == null ? List.of() : delivery.separate());
+        var estimates = new ArrayList<PricingPreviewResponseDto.DeliveryEstimate>();
+        if (delivery != null) {
+            var times = deliveryRoutes.arrivalTimes(delivery.plan(), preview.destinations(), preview.deliveryReadyAt());
+            for (int i = 0; i < times.size(); i++) {
+                int index = delivery.plan().order().get(i) - 1;
+                estimates.add(new PricingPreviewResponseDto.DeliveryEstimate(preview.deliveryAddressIds().get(index), times.get(i)));
+            }
+        }
+        return PricingPreviewResponseDto.from(input, data.calculate(input), estimates);
     }
 
     @Override

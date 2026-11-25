@@ -93,6 +93,18 @@ describe('yêu cầu gửi backend', () => {
     expect(body.horses[0]).toMatchObject({ addOns: [{ serviceId: 31, quantity: 1 }], insurance: { coverageOption: 'ARRANGED' } })
     expect(createRequest({ ...draft, routing: 'DIRECT' }, hcm, dn).departureId).toBeUndefined()
   })
+  it('dùng địa chỉ giao chung mặc định và gửi địa chỉ cùng người nhận riêng cho con thứ hai', () => {
+    const destination = place(4, 'VN', 'VN-48')
+    const draft = ready()
+    draft.horseIds.push(12)
+    draft.horses[12] = { ...draft.horses[11], deliveryAddressId: destination.id }
+    draft.deliveryContacts[4] = { fullName: 'Người nhận B', phone: '091' }
+    expect(pricingRequest(draft)?.horses).toMatchObject([{ horseId: 11 }, { horseId: 12, deliveryAddressId: 4 }])
+    const result = createRequest(draft, hcm, dn, [destination])
+    expect(result.horses).toMatchObject([{ horseId: 11, deliveryPlaceIndex: 0 }, { horseId: 12, deliveryPlaceIndex: 1 }])
+    expect(result.addresses[2]).toMatchObject({ addressType: 'DELIVERY', sourceCustomerAddressId: 4, contactName: 'Người nhận B', contactPhone: '091' })
+  })
+
   it('chỉ gửi phần bảo hiểm của lựa chọn cuối cùng', () => {
     const draft = ready()
     draft.horses[11] = { ...draft.horses[11], coverage: 'PERSONAL', policyNumber: ' P1 ', validFrom: '2099-01-01', validTo: '2099-02-01', insurerPartyId: '5', acceptedWaiver: true }

@@ -589,6 +589,7 @@ export const customer = {
       horses: 'Số ngựa',
     },
     price: {
+      deliveryEstimates: 'Giờ giao dự kiến',
       total: 'Giá tạm tính',
       transport: 'Vận chuyển',
       required: 'Bắt buộc theo tuyến',
@@ -642,6 +643,7 @@ export const customer = {
       next: 'Tiếp tục: chọn ngựa',
     },
     horses: {
+      deliveryPlace: 'Nơi giao ngựa', deliveryContact: { fullName: 'Tên người nhận', phone: 'Điện thoại người nhận', required: 'Nhập thông tin người nhận.' },
       title: 'Chọn ngựa',
       subtitle: 'Chọn những con đi cùng chuyến và cho biết cách chăm từng con.',
       selected: 'Đã chọn {{count}} con',
