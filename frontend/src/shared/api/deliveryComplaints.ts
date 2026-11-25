@@ -19,6 +19,7 @@ export class DeliveryComplaintValidationError extends Error {
 
 async function send(url: string, body: unknown) {
   const { data, status } = await apiClient.post<ApiResponse<DeliveryComplaint>>(url, body, {
+    headers: body instanceof FormData ? { 'Content-Type': 'multipart/form-data' } : undefined,
     validateStatus: code => code === 400 || (code >= 200 && code < 300),
   })
   if (status === 400) {

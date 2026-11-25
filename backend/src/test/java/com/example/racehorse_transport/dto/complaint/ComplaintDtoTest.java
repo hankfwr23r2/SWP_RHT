@@ -7,11 +7,29 @@ import com.example.racehorse_transport.entity.BookingHorse;
 import com.example.racehorse_transport.entity.Incident;
 import com.example.racehorse_transport.entity.enums.ComplaintDecision;
 import com.example.racehorse_transport.entity.enums.IncidentStatus;
+import jakarta.validation.Validation;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.multipart.MultipartFile;
 
 class ComplaintDtoTest {
+
+    @Test
+    void managerRequestRequiresPhotosAndReportsThePhotoField() {
+        try (var factory = Validation.buildDefaultValidatorFactory()) {
+            var validator = factory.getValidator();
+            for (var request : List.of(new ComplaintOnBehalfRequestDto("Phone complaint", null, null),
+                    new ComplaintOnBehalfRequestDto("Phone complaint", null, List.of()))) {
+                assertThat(validator.validate(request)).extracting(violation -> violation.getPropertyPath().toString())
+                        .containsExactly("photos");
+            }
+            MultipartFile photo = new MockMultipartFile("photos", "evidence.png", "image/png", new byte[] {1});
+            assertThat(validator.validate(new ComplaintOnBehalfRequestDto("Phone complaint", null, List.of(photo))))
+                    .isEmpty();
+        }
+    }
 
     @Test
     void complaintRequestsSetOnlyDescriptionAndLoadedRelationships() {
