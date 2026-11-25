@@ -14,8 +14,8 @@ import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.service.BookingCancellationService;
 import com.example.racehorse_transport.service.PickupMissService;
 import com.example.racehorse_transport.service.BookingStatusService;
-import com.example.racehorse_transport.service.DocumentCompletenessService;
 import com.example.racehorse_transport.service.HandoverOutcomeService;
+import com.example.racehorse_transport.service.HandoverReadinessService;
 import com.example.racehorse_transport.service.HorseStayService;
 import com.example.racehorse_transport.service.MissedDeliveryService;
 import com.example.racehorse_transport.service.NotificationService;
@@ -42,7 +42,7 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
     private final PickupMissService pickupMisses;
     private final PaymentService payments;
     private final BookingCancellationService cancellations;
-    private final DocumentCompletenessService documents;
+    private final HandoverReadinessService handoverReadiness;
     private final NotificationService notifications;
     private final MissedDeliveryService missedDeliveries;
     private final PaymentReadinessService paymentReadiness;
@@ -68,7 +68,7 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
         List<Booking> bookings = matched.stream().map(l -> l.getBookingHorse().getBooking()).distinct()
                 .sorted(Comparator.comparing(Booking::getId)).toList();
         if (handover.getHandoverType() == HandoverType.HUB_IN || handover.getHandoverType() == HandoverType.HUB_OUT
-                || handover.getHandoverType() == HandoverType.PICKUP || (agent && boarding)) {
+                || handover.getHandoverType() == HandoverType.PICKUP || agent) {
             bookings.forEach(booking -> paymentReadiness.lockBooking(booking.getId()));
         }
         if (handover.getHandoverType() == HandoverType.PICKUP || (agent && boarding)) {
@@ -81,12 +81,11 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
             });
             matched.forEach(leg -> horseStays.requireStablingPaid(leg.getBookingHorse().getId()));
         }
-        if (agent && boarding) {
-            // Quy tắc #35: đơn nhập chỉ nhận ngựa ở cửa khẩu khi đủ giấy bắt buộc, gồm giấy vận chuyển mẫu 14a
-            bookings.stream().filter(b -> !documents.isComplete(b.getId())).findFirst().ifPresent(b -> {
-                throw new DispatchRuleException("documents", "Đơn " + b.getCode()
-                        + " còn thiếu giấy bắt buộc (gồm giấy vận chuyển mẫu 14a). Không nhận ngựa ở cửa khẩu.", true);
-            });
+        if (agent) {
+            bookings.forEach(booking -> handoverReadiness.requireDocumentsAtBorder(booking, boarding));
+            if (boarding) {
+                matched.forEach(leg -> handoverReadiness.requireConfirmedInsurance(leg.getBookingHorse()));
+            }
         }
         handover.setStatus(HandoverStatus.DONE);
         handover.setHandedAt(now);

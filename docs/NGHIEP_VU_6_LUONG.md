@@ -269,10 +269,10 @@ Tìm thấy khi đối chiếu code để viết luồng này:
 
 # Luồng 2. Thủ tục hồ sơ pháp lý
 
-**Từ lúc** khách chọn hành trình (hệ thống biết cần giấy gì) **đến lúc** đủ giấy và bảo hiểm để công ty được phép **nhận ngựa**.
+**Từ lúc** khách chọn hành trình (hệ thống biết cần giấy gì) **đến lúc** công ty kiểm đủ điều kiện nhận ngựa và bàn giao đơn xuất ở cửa khẩu.
 **Người tham gia:** khách hàng, chuyên viên, quản lý; công ty bảo hiểm, đại lý, người nhận (không có tài khoản, chuyên viên làm thay trên hệ thống).
 
-Luồng này **chạy song song với luồng 1**, rồi kéo dài tới lúc xe đi đón:
+Hai đợt chuẩn bị giấy tờ **chạy song song với luồng 1** và kết thúc trước khi công ty nhận ngựa:
 
 | Chặng giấy tờ | Nằm ở đâu trong đơn | Cần xong gì |
 |---|---|---|
@@ -287,7 +287,7 @@ Luồng này **chạy song song với luồng 1**, rồi kéo dài tới lúc xe
 |---|---|
 | **Quy định của hành trình** | Bộ giấy phải có và số ngày làm giấy, theo nước và chiều (liên tỉnh, xuất, nhập). Quản trị khai, có ngày hiệu lực |
 | **Bên nộp** | Ai chịu trách nhiệm có giấy đó: khách, công ty, người nhận hoặc đại lý |
-| **Giấy bắt buộc** | Thiếu thì không được nhận ngựa. Giấy không bắt buộc chỉ để tham khảo |
+| **Giấy bắt buộc** | Thiếu thì công ty không được nhận ngựa hoặc bàn giao đơn xuất ở cửa khẩu. Giấy không bắt buộc chỉ để tham khảo |
 | **Giấy theo ngựa** | Hộ chiếu, sổ tiêm: gắn với hồ sơ con ngựa |
 | **Giấy theo ngựa trong đơn** | Phiếu xét nghiệm, giấy kiểm dịch: làm riêng cho từng con của đơn này |
 | **Giấy theo đơn** | Tờ khai hải quan, giấy phép nhập: một bản cho cả đơn |
@@ -345,15 +345,16 @@ Lúc đặt đơn khách đã chọn một trong ba cách cho mỗi con. Chuyên
 - Từ **mốc quyết định (48 giờ trước giờ chạy)**, nếu đơn đã cọc vẫn thiếu giấy và công ty chưa nhận ngựa, **quản lý** bấm **báo giấy không kịp**, chọn nguyên nhân và ghi lý do.
 - Đơn nhả chỗ, sang **Cần chọn lại chuyến**, khách được báo lý do. Khách đổi chuyến hoặc hủy; được miễn phí hay mất tiền tùy nguyên nhân (bảng ở 2.C).
 
-### Bước 8. Kiểm lần cuối trước khi nhận ngựa
+### Bước 8. Kiểm khi nhận ngựa và bàn giao tại cửa khẩu
 
-Không ai bấm được cho qua. Hệ thống tự kiểm **mọi giấy bắt buộc của cả bốn bên** và **bảo hiểm từng con** ở đúng nơi công ty nhận ngựa (đơn nhập chỉ kiểm giấy, xem điểm còn hở 10):
+Hệ thống tự kiểm **giấy bắt buộc của cả bốn bên** và **xác nhận bảo hiểm từng con** theo từng mốc.
 
-| Cách đưa ngựa | Kiểm lúc nào | Thiếu thì |
-|---|---|---|
-| Xe công ty đến đón, chạy thẳng | Tài xế bấm **Xuất phát** lượt đón | Xe không xuất phát được, nói rõ đơn nào thiếu |
-| Khách tự chở tới hub | Điều phối bấm **Nhận ngựa** ở hub | Không nhận ngựa |
-| Đơn nhập | Hoàn tất nhận ngựa từ đại lý **ở cửa khẩu** | Không nhận, ngựa ở lại với đại lý |
+| Tình huống | Kiểm lúc nào | Cần đủ | Thiếu thì |
+|---|---|---|---|
+| Xe công ty đến đón, chạy thẳng | Tài xế bấm **Xuất phát** lượt đón | Giấy bắt buộc và bảo hiểm đã xác nhận | Xe không xuất phát được, nói rõ đơn nào thiếu |
+| Khách tự chở tới hub | Điều phối bấm **Nhận ngựa** ở hub | Giấy bắt buộc và bảo hiểm đã xác nhận | Không nhận ngựa |
+| Đơn nhập | Hoàn tất nhận ngựa từ đại lý **ở cửa khẩu** | Giấy bắt buộc, gồm mẫu 14a, và bảo hiểm đã xác nhận | Không nhận, ngựa ở lại với đại lý |
+| Đơn xuất | Hoàn tất bàn giao ngựa cho đại lý **ở cửa khẩu** | Giấy bắt buộc | Không bàn giao, ngựa vẫn trên xe |
 
 - Lúc nhận ngựa, hộ tống nhận **bản gốc** từng giấy và đánh dấu; lúc giao thì trả lại (luồng 6).
 
@@ -443,7 +444,7 @@ Tiếp ví dụ chuyến chạy **05:00 thứ Ba 08/12** (liên tỉnh), khách 
 
 ### Chặn và nhắc
 
-- **2.21** Hai cửa chặn: **trước báo giá** chỉ cần giấy của khách và bảo hiểm; **trước khi nhận ngựa** cần giấy của cả bốn bên và bảo hiểm.
+- **2.21** **Trước báo giá**, cần giấy của khách và bảo hiểm đã xác nhận. **Trước khi nhận ngựa**, cần đủ giấy bắt buộc của cả bốn bên và bảo hiểm đã xác nhận. Khi bàn giao đơn xuất ở cửa khẩu, hệ thống kiểm lại đủ giấy bắt buộc.
 - **2.22** Chưa trả đủ tiền **không** chặn xe đi đón; thiếu giấy thì chặn.
 - **2.23** Nhắc thiếu giấy áp dụng cho đơn **đã cọc, có chuyến hoặc liên tỉnh chạy thẳng**, trong cửa sổ **5 ngày** (cấu hình), mỗi bên nhận nhiều nhất một lần mỗi ngày.
 - **2.24** Quản lý chỉ báo giấy không kịp khi đủ cả bốn: đơn đã cọc, còn thiếu giấy, chưa nhận ngựa, đã tới mốc quyết định. Bắt buộc chọn nguyên nhân và ghi lý do.
@@ -460,7 +461,7 @@ Tiếp ví dụ chuyến chạy **05:00 thứ Ba 08/12** (liên tỉnh), khách 
 | T19 | 6 | Sổ tiêm của khách hết hạn sau khi đã cọc | Đơn hiện lại ở Đơn thiếu giấy; khách nộp bản mới, chuyên viên duyệt |
 | T20 | 7 | Tới mốc quyết định vẫn thiếu giấy | Quản lý báo không kịp, đơn nhả chỗ, sang Cần chọn lại chuyến |
 | T21 | 8 | Tới ngày đón vẫn thiếu giấy mà quản lý chưa báo | Tài xế bấm Xuất phát bị chặn, hệ thống nói đơn nào thiếu. Một xe gom nhiều đơn thì **cả lượt bị chặn** cho tới khi gỡ đơn thiếu ra |
-| T22 | 8 | Đơn nhập thiếu giấy vận chuyển mẫu 14a tại cửa khẩu | Không nhận ngựa, ngựa ở lại với đại lý |
+| T22 | 8 | Đơn nhập ở cửa khẩu thiếu giấy bắt buộc, như giấy vận chuyển mẫu 14a, hoặc bảo hiểm chưa xác nhận | Không nhận ngựa, ngựa ở lại với đại lý |
 | T23 | 8 | Khách tự chở tới hub nhưng thiếu giấy hoặc chưa xác nhận bảo hiểm | Không nhận ngựa tại hub |
 
 ## 2.F. Điểm còn hở, cần nhóm quyết
@@ -471,10 +472,10 @@ Tiếp ví dụ chuyến chạy **05:00 thứ Ba 08/12** (liên tỉnh), khách 
 4. **Đã sửa.** Khi đơn Đang báo giá (T17), chuyên viên mở lại bảo hiểm mua hộ kèm lý do, ghi báo giá hãng mới và xác nhận. Quản lý lập lại bản nháp theo phí mới.
 5. **Không rút lại được giấy đã duyệt** nếu phát hiện giả hoặc sai.
 6. **Đã sửa phần nhắc và danh sách.** Đơn liên tỉnh chạy thẳng được nhắc theo ngày đón và hiện trong danh sách Đơn thiếu giấy sau khi đã cọc. Thao tác báo giấy không kịp vẫn áp dụng cho đơn có chuyến.
-7. **Sau khi xe trục rời hub, giấy không được kiểm lại** ở cửa khẩu đơn xuất. Tài liệu có nêu cán bộ cửa khẩu xác nhận giấy, code chưa có.
+7. **Đã sửa.** Kiểm lại giấy bắt buộc khi hoàn tất bàn giao đơn xuất cho đại lý ở cửa khẩu. Thiếu giấy thì ngựa vẫn trên xe.
 8. **Danh sách giấy mẫu lệch giữa Campuchia và Lào**: xuất Lào thiếu sổ tiêm, nhập Lào thiếu xét nghiệm. Cần nhóm xác nhận cố ý hay thiếu.
 9. **Giấy theo ngựa chỉ dùng lại trong cùng quy định**: hộ chiếu đã duyệt cho đơn liên tỉnh vẫn phải nộp lại cho đơn xuất. Đề xuất: giấy theo ngựa dùng chung cho mọi quy định.
-10. **Đơn nhập không kiểm bảo hiểm ở cửa khẩu**, trong khi xe đón và hub có kiểm. Ít rủi ro vì bảo hiểm đã xác nhận trước báo giá, nhưng nên thống nhất.
+10. **Đã sửa.** Khi nhận ngựa nhập từ đại lý ở cửa khẩu, kiểm bảo hiểm đã được xác nhận cho từng con, giống lượt đón và nhận ở hub.
 11. **Đã sửa.** Máy chủ kiểm chữ ký định dạng PDF, JPEG hoặc PNG trong nội dung tệp giấy tờ khi khách hoặc chuyên viên tải lên.
 
 ---
@@ -774,8 +775,8 @@ Ba lớp trạng thái không trộn vào nhau:
 
 ### Bước 8. Qua cửa khẩu (đơn quốc tế)
 
-- **Đơn xuất:** tổ xe bàn giao ngựa cho đại lý ở cửa khẩu. Chặng của đại lý tự bắt đầu, khách được báo "Đã qua cửa khẩu". Khi đại lý báo đã giao, **điều phối viên** bấm **Đại lý đã giao** ở trang Theo dõi.
-- **Đơn nhập:** điều phối ghi đại lý đã nhận ngựa ở nước ngoài; tới cửa khẩu tổ xe nhận ngựa từ đại lý, chặng đại lý tự kết thúc, khách được báo.
+- **Đơn xuất:** tổ xe bàn giao ngựa cho đại lý ở cửa khẩu khi đủ giấy bắt buộc. Thiếu giấy thì ngựa vẫn trên xe. Bàn giao xong, chặng của đại lý tự bắt đầu và khách được báo "Đã qua cửa khẩu". Khi đại lý báo đã giao, **điều phối viên** bấm **Đại lý đã giao** ở trang Theo dõi.
+- **Đơn nhập:** điều phối ghi đại lý đã nhận ngựa ở nước ngoài. Ở cửa khẩu, tổ xe chỉ nhận ngựa khi đủ giấy bắt buộc và bảo hiểm từng con đã xác nhận. Nhận xong, chặng đại lý tự kết thúc và khách được báo.
 - Sau khi bàn giao cho đại lý, công ty **vẫn chịu trách nhiệm với khách**.
 
 ### Bước 9. Kết thúc lượt xe
@@ -798,8 +799,8 @@ Ba lớp trạng thái không trộn vào nhau:
 | Giao vào hub | | Đón: xong; tập kết ở hub | Công ty (hub) | |
 | Nhận từ hub | | Trục: đang chạy | Công ty | |
 | Gửi chuồng đêm, nhận lại | | Trục: vẫn đang chạy | Chuồng đối tác, rồi công ty | |
-| Bàn giao đại lý (xuất) | | Trục: xong; đại lý: đang chạy | Đại lý | Đã qua cửa khẩu |
-| Nhận từ đại lý (nhập) | Đã xác nhận | Đại lý: xong; trục: đang chạy | Công ty | Đã nhận ngựa ở cửa khẩu |
+| Bàn giao đại lý (xuất, đủ giấy bắt buộc) | | Trục: xong; đại lý: đang chạy | Đại lý | Đã qua cửa khẩu |
+| Nhận từ đại lý (nhập, đủ giấy bắt buộc và bảo hiểm đã xác nhận) | Đã xác nhận | Đại lý: xong; trục: đang chạy | Công ty | Đã nhận ngựa ở cửa khẩu |
 | Giao người nhận | **Đã giao**, khi là con cuối | Giao: xong | Người nhận | Đã giao ngựa |
 
 ## 4.C. Các hạn trong luồng 4
@@ -880,7 +881,7 @@ Ba lớp trạng thái không trộn vào nhau:
 9. **Khách không được báo** khi ngựa tới hub, khi xe trục chạy, khi tới hub đích; chỉ báo lúc nhận, qua cửa khẩu và giao.
 10. **Đã sửa** · Tổ xe báo tình trạng khi kết thúc lượt. Xe cần bảo dưỡng được khóa xếp lượt mới và xuất phát, đồng thời hệ thống báo các lượt cần bố trí xe khác.
 11. **Không có vị trí xe theo thời gian thực**; vị trí là điểm dừng gần nhất đã bấm Tới nơi.
-12. **Giấy không được kiểm lại ở cửa khẩu đơn xuất** (cũng nêu ở luồng 2).
+12. **Đã sửa.** Chỉ hoàn tất bàn giao ngựa cho đại lý ở cửa khẩu khi đơn xuất đủ giấy bắt buộc (2.F7).
 
 ---
 
@@ -1235,9 +1236,9 @@ Tiền VNPAY về **sau** khi đơn đã hủy: không ghi vào đơn, báo qu�
 
 ### Câu chuyện 5. Đơn quốc tế
 
-**Bước 17. Đơn xuất.** Ở cửa khẩu, tổ lái bấm **Bàn giao với đại lý**, quét chip và tải biên bản đã ký để hoàn tất. Chặng của đại lý tự chạy, khách được báo. Đại lý giao xong ở nước ngoài thì **điều phối bấm Đại lý đã giao**; đủ các con thì đơn Đã giao.
+**Bước 17. Đơn xuất.** Ở cửa khẩu, tổ lái bấm **Bàn giao với đại lý**, quét chip và tải biên bản đã ký. Hệ thống kiểm đủ giấy bắt buộc khi hoàn tất. Thiếu giấy thì ngựa vẫn trên xe. Bàn giao xong, chặng của đại lý tự chạy và khách được báo. Đại lý giao xong ở nước ngoài thì **điều phối bấm Đại lý đã giao**. Giao đủ các con thì đơn Đã giao.
 
-**Bước 18. Đơn nhập.** Tổ lái nhận ngựa từ đại lý ở cửa khẩu, quét chip, đánh dấu bản gốc đã nhận và tải biên bản đã ký. Hệ thống **kiểm lại đủ giấy bắt buộc**, gồm giấy vận chuyển mẫu 14a; thiếu thì không nhận. Sau đó lập số dư, chờ 30 phút như bước 4.
+**Bước 18. Đơn nhập.** Tổ lái nhận ngựa từ đại lý ở cửa khẩu, quét chip, đánh dấu bản gốc đã nhận và tải biên bản đã ký. Hệ thống **kiểm đủ giấy bắt buộc**, gồm giấy vận chuyển mẫu 14a, và **kiểm bảo hiểm đã xác nhận** cho từng con. Thiếu thì ngựa ở lại với đại lý. Nhận xong, hệ thống lập số dư và chờ 30 phút như bước 4.
 
 ## 6.B. Bảng các lần giao nhận
 
@@ -1248,8 +1249,8 @@ Tiền VNPAY về **sau** khi đơn đã hủy: không ghi vào đơn, báo qu�
 | Vào hub, ra hub | Hub | Tổ lái | Từng con | Không | Không | Mở, đóng lưu trú |
 | Gửi chuồng, nhận lại | Trạm nghỉ, cửa khẩu, hoặc điểm dừng mạng lưới theo phương án Gửi chuồng gần | Tổ lái | Từng con hoặc các con thuộc phương án | Không | Không | Đổi bên giữ (luồng 4 và 5) |
 | Bàn giao ca | Điểm dừng bất kỳ | Hộ tống mới | Từng con | Không | Không | Đổi người phụ trách |
-| Bàn giao đại lý (xuất) | Cửa khẩu | Tổ lái | Từng con | **Bắt buộc** | Không | Chặng đại lý chạy |
-| Nhận từ đại lý (nhập) | Cửa khẩu | Tổ lái | Từng con | **Bắt buộc** | Đánh dấu đã nhận | Lập số dư |
+| Bàn giao đại lý (xuất) | Cửa khẩu | Tổ lái | Từng con | **Bắt buộc** | Không | Đủ giấy bắt buộc thì hoàn tất và bắt đầu chặng đại lý |
+| Nhận từ đại lý (nhập) | Cửa khẩu | Tổ lái | Từng con | **Bắt buộc** | Đánh dấu đã nhận | Đủ giấy bắt buộc và bảo hiểm đã xác nhận thì hoàn tất và lập số dư |
 | Giao người nhận | Điểm giao | Tổ lái | Từng con | **Bắt buộc** | Đánh dấu đã trả | Con cuối: Đã giao |
 | Trả tại hub (tự tới lấy) | Hub | Điều phối | Từng con | Không | Không | Con cuối: Đã giao |
 | Đại lý đã giao | Nước ngoài | Điều phối ghi thay | Không | Không | Không | Con cuối: Đã giao |
@@ -1333,7 +1334,7 @@ Dòng hai: loại một con thì bỏ cước trục, dịch vụ và phí bảo
 | T71 | 12 | Khách đã trả số dư cả hai con, rồi một con bị loại | Thay báo giá, tạo khoản hoàn phần dư, báo quản lý |
 | T72 | 15 | Khách chở ngựa tới hub khi chưa xếp lượt xe trục | Từ chối nhận, nói xếp xe trước |
 | T73 | 15 | Khách tới hub, đơn thiếu giấy | Từ chối nhận |
-| T74 | 18 | Đơn nhập thiếu giấy 14a ở cửa khẩu | Không cho nhận |
+| T74 | 18 | Đơn nhập ở cửa khẩu thiếu giấy bắt buộc, như mẫu 14a, hoặc bảo hiểm chưa xác nhận | Không cho nhận, ngựa ở lại với đại lý |
 | T75 | 8 | Đơn hai con, mới giao một con | Đơn vẫn Đang vận chuyển |
 | T76 | 10 | Đóng đơn khi còn nợ hoặc còn sự cố chưa đóng | Từ chối |
 | T77 | 10 | Đơn không phát sinh, giao 7 ngày trước, quản lý quên đóng | Tự đóng lúc 00:30 |

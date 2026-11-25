@@ -17,7 +17,6 @@ import com.example.racehorse_transport.entity.enums.BookingHorseStatus;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.HandoverStatus;
 import com.example.racehorse_transport.entity.enums.HandoverType;
-import com.example.racehorse_transport.entity.enums.HorseInsuranceStatus;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
 import com.example.racehorse_transport.entity.enums.HorseStayType;
 import com.example.racehorse_transport.entity.enums.TransferMethod;
@@ -26,14 +25,13 @@ import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.TripExecutionPolicy;
 import com.example.racehorse_transport.repository.HandoverHorseRepository;
 import com.example.racehorse_transport.repository.HandoverRepository;
-import com.example.racehorse_transport.repository.HorseInsuranceRepository;
 import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.repository.HorseStayRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
-import com.example.racehorse_transport.service.DocumentCompletenessService;
 import com.example.racehorse_transport.service.HubHandoverService;
 import com.example.racehorse_transport.service.HandoverOutcomeService;
 import com.example.racehorse_transport.service.HandoverEvidenceService;
+import com.example.racehorse_transport.service.HandoverReadinessService;
 import java.time.Clock;
 import java.time.Instant;
 import com.example.racehorse_transport.dto.operation.HandoverPaperResponseDto;
@@ -54,8 +52,7 @@ public class HubHandoverServiceImpl implements HubHandoverService {
     private final HandoverRepository handovers;
     private final HandoverHorseRepository scans;
     private final StaffRepository staff;
-    private final HorseInsuranceRepository insurances;
-    private final DocumentCompletenessService documents;
+    private final HandoverReadinessService handoverReadiness;
     private final HandoverOutcomeService outcomes;
     private final Clock clock;
     private final HandoverEvidenceService evidence;
@@ -78,21 +75,13 @@ public class HubHandoverServiceImpl implements HubHandoverService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lưu trú " + horseStayId));
         bookings.findForUpdate(bookingId).orElseThrow();
         HorseStay stay = awaitingSelfDropOff(horseStayId);
-        Booking booking = stay.getBookingHorse().getBooking();
         outcomes.requireSelfDeliveryBeforeCheckIn(stay.getBookingHorse().getId());
         // Đầu SELF không có chặng đón: ngựa được ghi vào chặng trục sẽ lên xe ở chính hub này
         HorseLeg next = chain(stay).stream().findFirst()
                 .filter(l -> l.getStatus() == HorseLegStatus.PLANNED && l.getBoardTripStop() != null
                         && Objects.equals(l.getBoardTripStop().getLocation() == null ? null : l.getBoardTripStop().getLocation().getId(), stay.getLocation().getId()))
                 .orElseThrow(() -> new DispatchRuleException("horseStayId", "Con ngựa chưa được xếp lượt xe trục đi từ hub này. Xếp xe trước khi nhận.", true));
-        boolean insured = insurances.findByBookingHorse_Id(stay.getBookingHorse().getId())
-                .map(i -> i.getStatus() == HorseInsuranceStatus.CONFIRMED).orElse(false);
-        if (!insured) {
-            throw new DispatchRuleException("insurance", "Bảo hiểm của " + stay.getBookingHorse().getHorse().getName() + " chưa được xác nhận.", true);
-        }
-        if (!documents.isComplete(booking.getId())) {
-            throw new DispatchRuleException("documents", "Đơn " + booking.getCode() + " còn thiếu giấy tờ bắt buộc. Không nhận ngựa tại hub.", true);
-        }
+        handoverReadiness.requireReadyToReceiveAtHub(stay.getBookingHorse());
         requireChip(stay, request);
         Instant now = clock.instant();
         Handover handover = record(stay, next, HandoverType.PICKUP, request, photo, signedRecord, username, now);
