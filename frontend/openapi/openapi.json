@@ -7658,6 +7658,9 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "canClose" : {
+            "type" : "boolean"
+          },
           "chargeableCostIds" : {
             "items" : {
               "format" : "int64",

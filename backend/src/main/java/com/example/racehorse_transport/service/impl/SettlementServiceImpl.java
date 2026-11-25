@@ -19,6 +19,7 @@ import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.CostPayerPolicy;
 import com.example.racehorse_transport.policy.DeliveryComplaintPolicy;
 import com.example.racehorse_transport.policy.PaymentPolicy;
+import com.example.racehorse_transport.policy.SettlementPolicy;
 import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.service.PaymentService;
 import com.example.racehorse_transport.repository.BookingStatusHistoryRepository;
@@ -76,7 +77,7 @@ public class SettlementServiceImpl implements SettlementService {
         var booking = bookings.findForUpdate(bookingId).orElseThrow(SettlementServiceImpl::notFound);
         var snapshot = snapshot(booking).orElseThrow(SettlementServiceImpl::noQuotation);
         if (booking.getStatus() != BookingStatus.DELIVERED || !snapshot.canClose()) {
-            throw BookingRuleException.conflict("Chỉ đóng đơn đã giao, đã quyết toán và không còn sự cố mở.");
+            throw BookingRuleException.conflict("Chỉ đóng đơn đã giao, đã lập đủ khoản thu, không còn khoản hoàn chờ và không còn sự cố mở.");
         }
         if (!deliveryWindowAllowsClosure(booking, booking.getDeliveryConfirmedAt() != null)) {
             throw BookingRuleException.conflict("Chỉ đóng đơn khi khách đã xác nhận nhận ngựa hoặc đã hết hạn khiếu nại trên ứng dụng.");
@@ -99,10 +100,10 @@ public class SettlementServiceImpl implements SettlementService {
             return false;
         }
         var snapshot = snapshot(booking);
-        if (snapshot.isEmpty() || !snapshot.get().costs().isEmpty() || !snapshot.get().canClose()) {
+        if (snapshot.isEmpty() || !snapshot.get().canClose()) {
             return false;
         }
-        statuses.transition(bookingId, BookingStatus.COMPLETED, "Hệ thống hoàn tất đơn không có chi phí phát sinh.", null);
+        statuses.transition(bookingId, BookingStatus.COMPLETED, "Hệ thống hoàn tất đơn đã quyết toán sau hạn khiếu nại.", null);
         return true;
     }
 
@@ -140,18 +141,16 @@ public class SettlementServiceImpl implements SettlementService {
     private record Snapshot(Quotation quotation, List<CostItem> costs, List<Payment> payments, BigDecimal approvedCosts,
                             BigDecimal outstanding, boolean openIncident) {
         boolean canClose() {
-            return outstanding.signum() == 0 && !openIncident
-                    && costs.stream().noneMatch(cost -> CostPayerPolicy.customerSide(cost.getPayerType())
-                            && cost.getApprovedAt() == null)
-                    && payments.stream().noneMatch(payment -> payment.getPaymentType() == PaymentType.REFUND
-                            && payment.getStatus() == PaymentStatus.PENDING);
+            return SettlementPolicy.canClose(PaymentPolicy.outstanding(quotation, payments), openIncident, costs,
+                    payments.stream().anyMatch(payment -> payment.getPaymentType() == PaymentType.REFUND
+                            && payment.getStatus() == PaymentStatus.PENDING));
         }
 
         SettlementResponseDto toResponse(Booking booking) {
             var chargeable = costs.stream().filter(cost -> PaymentPolicy.canSelectExtraChargeCost(booking.getStatus(), cost))
                     .map(CostItem::getId).toList();
             return SettlementResponseDto.from(booking, quotation.getCurrencyCode(), quotation.getTotalAmount(),
-                    approvedCosts, outstanding, openIncident, chargeable, costs.stream().map(CostItemResponseDto::from).toList(),
+                    approvedCosts, outstanding, openIncident, canClose(), chargeable, costs.stream().map(CostItemResponseDto::from).toList(),
                     payments.stream().map(PaymentResponseDto::from).toList());
         }
     }

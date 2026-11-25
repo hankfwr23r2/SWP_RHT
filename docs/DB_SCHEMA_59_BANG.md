@@ -1461,6 +1461,8 @@ Giá trị khởi đầu của các tham số chốt ngày 23/11/2026, thêm b�
 | `COMPLAINT_MANAGER_DEADLINE_DAYS` | 14 | Hạn quản lý nhập khiếu nại thay khách kể từ lúc đơn sang `DELIVERED` |
 | `SCHEDULE_CHOICE_REMINDER_1..4_DAYS` | 3, 7, 14, 25 | Nhắc chọn lại lịch sau đón hụt |
 | `EXTRA_CHARGE_DUE_DAYS` | 7 | Hạn khoản thu thêm từ lúc lập, 1–30 ngày |
+| `COST_APPROVAL_REMINDER_1_DAYS`, `_2_DAYS`, `COST_APPROVAL_DAYS` | 3, 7, 14 | Nhắc duyệt chi phí; quá hạn thì công ty chịu |
+| `LATE_INVOICE_DAYS`, `INCIDENT_AUTO_CLOSE_DAYS`, `REFUND_DUE_DAYS` | 30, 7, 7 | Hóa đơn muộn; tự đóng sự cố đã xử lý; hạn chuyển khoản hoàn |
 | `STABLING_DAILY_FEE` | 1.000.000 đ | Phí giữ cho mỗi 24 giờ trọn vẹn, phần lẻ không tính |
 | `STABLING_OPEN_HOUR`, `STABLING_CLOSE_HOUR`, `STABLING_MORNING_HOUR` | 6, 18, 8 | Mốc 24 giờ rơi ngoài giờ mở cửa thì dời tới 08:00 |
 | `STABLING_MAX_BLOCKS` | 30 | Số lần 24 giờ tối đa tính phí |

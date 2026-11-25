@@ -6418,6 +6418,7 @@ export interface components {
             approvedCustomerCosts?: number;
             /** Format: int64 */
             bookingId?: number;
+            canClose?: boolean;
             chargeableCostIds?: number[];
             costs?: components["schemas"]["CostItemResponseDto"][];
             currencyCode?: string;

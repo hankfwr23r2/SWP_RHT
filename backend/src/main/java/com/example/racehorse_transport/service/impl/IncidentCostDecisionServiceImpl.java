@@ -14,7 +14,11 @@ import com.example.racehorse_transport.entity.IncidentPlan;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.enums.IncidentType;
 import com.example.racehorse_transport.entity.enums.PartyRoleType;
+import com.example.racehorse_transport.entity.BookingStatusHistory;
+import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.policy.CostPayerPolicy;
+import com.example.racehorse_transport.policy.SettlementPolicy;
+import com.example.racehorse_transport.repository.BookingStatusHistoryRepository;
 import com.example.racehorse_transport.repository.CostItemRepository;
 import com.example.racehorse_transport.repository.PartyRoleRepository;
 import com.example.racehorse_transport.service.IncidentCostDecisionService;
@@ -36,6 +40,7 @@ public class IncidentCostDecisionServiceImpl implements IncidentCostDecisionServ
     private final NotificationService notifications;
     private final SystemConfigService config;
     private final BookingRepository bookings;
+    private final BookingStatusHistoryRepository history;
 
     @Override
     @Transactional(readOnly = true)
@@ -79,6 +84,12 @@ public class IncidentCostDecisionServiceImpl implements IncidentCostDecisionServ
     @Transactional(propagation = Propagation.MANDATORY)
     public void assignPayer(CostItem cost, IncidentCauseType cause) {
         var payer = cause == null ? CostPayerType.COMPANY : CostPayerPolicy.payerFor(cause);
+        // Hóa đơn tới quá hạn sau khi giao thì công ty chịu (mục 13.5 điểm 2)
+        if (CostPayerPolicy.customerSide(payer) && cost.getBooking() != null && SettlementPolicy.elapsed(
+                history.findFirstByBooking_IdAndToStatusOrderByChangedAtDescIdDesc(cost.getBooking().getId(), BookingStatus.DELIVERED)
+                        .map(BookingStatusHistory::getChangedAt).orElse(null), clock.instant(), config.getInt("LATE_INVOICE_DAYS"))) {
+            payer = CostPayerType.COMPANY;
+        }
         CostPayerPolicy.requireBookingForCustomerSide(payer, cost.getBooking() != null);
         cost.setPayerType(payer);
         cost.setAgentRecoveryRequired(cause == IncidentCauseType.AGENT_FAULT);
