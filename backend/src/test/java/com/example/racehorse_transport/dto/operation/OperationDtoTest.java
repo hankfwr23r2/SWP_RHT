@@ -55,7 +55,8 @@ class OperationDtoTest {
         scan.setMicrochipMatched(true);
         scan.setConditionNote("Khỏe");
 
-        var response = HandoverResponseDto.from(handover, List.of(scannedLeg, waitingLeg), Map.of(1L, scan), false);
+        var response = HandoverResponseDto.from(handover, List.of(scannedLeg, waitingLeg), Map.of(1L, scan), false, java.util.Set.of(1L));
+        assertThat(response.horses()).extracting(HandoverResponseDto.HandoverHorseDto::photoAttached).containsExactly(true, false);
 
         assertThat(response.tripStopId()).isEqualTo(5L);
         assertThat(response.handledByName()).isEqualTo("Hộ tống Một");

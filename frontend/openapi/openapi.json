@@ -4245,6 +4245,9 @@
           "microchipMatched" : {
             "type" : "boolean"
           },
+          "photoAttached" : {
+            "type" : "boolean"
+          },
           "scannedMicrochip" : {
             "type" : "string"
           }
