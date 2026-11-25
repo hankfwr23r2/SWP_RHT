@@ -106,6 +106,32 @@ class DispatchFlowTest {
     }
 
     @Test
+    void coordinatorPlansAnEmptyReturnUsingTheReverseRouteWithoutAConfirmedDeparture() throws Exception {
+        createLinehaul().andExpect(status().isCreated());
+        testData.departure("DN-HCM", DAY.plusDays(1), 9);
+        String body = returnPlan(List.of());
+
+        postPlan("/dispatch/trip-plans", body).andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.startAt").value(LINEHAUL_END.toString()))
+                .andExpect(jsonPath("$.data.endAt").value("2031-03-05T17:23:00Z"))
+                .andExpect(jsonPath("$.data.stops[4].departureAt").value("2031-03-05T09:19:00Z"));
+
+        long tripId = tripId(postPlan("/vehicle-trips/planned", body).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.tripType").value("TRANSFER"))
+                .andExpect(jsonPath("$.data.status").value("PLANNED"))
+                .andExpect(jsonPath("$.data.departureId").doesNotExist())
+                .andExpect(jsonPath("$.data.startLocationId").value(danang))
+                .andExpect(jsonPath("$.data.endLocationId").value(hcm))
+                .andExpect(jsonPath("$.data.plannedStartAt").value(LINEHAUL_END.toString()))
+                .andExpect(jsonPath("$.data.plannedEndAt").value("2031-03-05T17:23:00Z"))
+                .andExpect(jsonPath("$.data.stops.length()").value(8))
+                .andExpect(jsonPath("$.data.stops[4].plannedDepartureAt").value("2031-03-05T09:19:00Z")));
+
+        mvc.perform(get("/vehicle-trips/{id}/horse-legs", tripId).header(HttpHeaders.AUTHORIZATION, coordinator))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data").isEmpty());
+    }
+
+    @Test
     void vehicleCannotRunTwoOverlappingTripsOrStartAwayFromWhereItIs() throws Exception {
         createLinehaul().andExpect(status().isCreated());
 
@@ -300,6 +326,17 @@ class DispatchFlowTest {
 
     private ResultActions createTrip(String body) throws Exception {
         return mvc.perform(post("/vehicle-trips").header(HttpHeaders.AUTHORIZATION, coordinator)
+                .contentType(MediaType.APPLICATION_JSON).content(body));
+    }
+
+    private String returnPlan(List<Long> horseIds) {
+        return """
+                {"tripType":"TRANSFER","vehicleId":%d,"places":[{"locationId":%d},{"locationId":%d}],"bookingHorseIds":%s}
+                """.formatted(vehicle.getId(), danang, hcm, horseIds);
+    }
+
+    private ResultActions postPlan(String path, String body) throws Exception {
+        return mvc.perform(post(path).header(HttpHeaders.AUTHORIZATION, coordinator)
                 .contentType(MediaType.APPLICATION_JSON).content(body));
     }
 

@@ -1,5 +1,5 @@
 // Xem trước giờ hệ thống tính cho một lượt xe; điều phối chỉ sửa giờ xuất phát, các mốc sau tự dời
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { dispatchApi, type PlannedTrip, type PlannedTripCreate } from '@shared/api/dispatch'
 import { useLoad } from '@shared/hooks/useLoad'
@@ -26,12 +26,11 @@ export function TripPlanPreview({ request, onPlan, onStart, onManual }: {
   const [draft, setDraft] = useState('')
   const key = JSON.stringify(request)
   const { data, loaded, error, reload } = useLoad(async () => {
-    onPlan(undefined)
     const plan = await dispatchApi.planTrip(JSON.parse(key) as PlannedTripCreate)
-    onPlan(plan)
     return { key, plan }
   }, [key], { toastOnError: false })
-  const plan = data?.key === key ? data.plan : undefined
+  const plan = loaded && !error && data?.key === key ? data.plan : undefined
+  useEffect(() => { onPlan(plan) }, [onPlan, plan])
   const stops = useMemo(() => (plan?.stops ?? []).map(stop => ({
     name: stop.bookingCode ? `${stop.bookingCode}: ${stop.name}` : stop.name ?? '', latitude: stop.point?.lat, longitude: stop.point?.lng, path: stop.path,
   })), [plan])
@@ -43,7 +42,8 @@ export function TripPlanPreview({ request, onPlan, onStart, onManual }: {
     </div>
   }
   if (!loaded || !plan) return <Skeleton variant="block" lines={4} />
-  const start = plan.stops?.[0]?.departureAt
+  const transfer = request.tripType === 'TRANSFER'
+  const start = transfer ? plan.startAt : plan.stops?.[0]?.departureAt
   return (
     <div className={s.waiting}>
       <p className={s.line}>{t('dispatch.plan.summary', { km: plan.km, minutes: plan.driveMinutes })}</p>
@@ -58,7 +58,7 @@ export function TripPlanPreview({ request, onPlan, onStart, onManual }: {
         <TripMap stops={stops} />
       </div>
       <div className={s.chips}>
-        <Field label={t('dispatch.plan.start')}>
+        <Field label={t(transfer ? 'dispatch.plan.returnStart' : 'dispatch.plan.start')}>
           {c => <Input {...c} type="datetime-local" value={draft || (start ? isoToLocal(start) : '')} onChange={e => setDraft(e.target.value)} />}
         </Field>
         <Button disabled={!draft} onClick={() => { onStart(localToIso(draft)); setDraft('') }}>{t('dispatch.plan.recalculate')}</Button>

@@ -16,7 +16,7 @@ public interface TripScheduleDataService {
 
     TripInput load(PlannedTripRequestDto request);
 
-    VehicleTripResponseDto save(PlannedTripRequestDto request, TripInput input, PlannedTripResponseDto plan, String username);
+    VehicleTripResponseDto save(PlannedTripRequestDto request, List<HorseInput> horses, PlannedTripResponseDto plan, String username);
 
     // Con ngựa lên ở điểm board, xuống ở điểm alight
     record HorseInput(Long bookingHorseId, int board, int alight) {}

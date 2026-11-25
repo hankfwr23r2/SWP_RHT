@@ -507,7 +507,7 @@ Năm loại lượt xe:
 | **Trục** | Hub → hub hoặc cửa khẩu, theo tuyến có sẵn trạm nghỉ | Mọi đơn đi trục |
 | **Giao** | Hub → các nhà khách → hub | Đơn đi trục, khách chọn xe công ty giao |
 | **Chạy thẳng** | Trụ sở → nhà đón → nhà giao → trụ sở | Đơn chung hub |
-| **Chuyển xe** | Giữa hai điểm, không chở ngựa | Đưa xe về khi không có chuyến chiều ngược |
+| **Chuyển xe** | Giữa hai điểm, không chở ngựa | Điều phối đưa xe về hub gốc độc lập với chuyến bán |
 
 ## 3.A. Đi từng bước
 
@@ -567,7 +567,8 @@ Năm loại lượt xe:
 
 ### Bước 10. Đưa xe về trụ sở
 
-- Xe trục giao xong ở hub vệ tinh thì lịch tuần ghi "Đang ở Hub Đà Nẵng". Điều phối bấm **Lập lượt về**: hệ thống mở sẵn lượt trục chiều ngược Đà Nẵng – TP.HCM. Chuyến đó phải được quản lý xác nhận chạy, kể cả không có ngựa.
+- Xe trục giao xong ở hub vệ tinh thì lịch tuần ghi "Đang ở Hub Đà Nẵng". Điều phối bấm **Lập lượt về** để lập lượt **Chuyển xe** rỗng từ đó về hub gốc. Lượt này không gắn chuyến bán và không cần quản lý xác nhận chạy.
+- Hệ thống gợi ý giờ bắt đầu theo lịch xe và lấy mốc giờ từng điểm từ tuyến chiều về đang hoạt động. Khi chưa có tuyến, giờ dự kiến được tính theo bản đồ. Điều phối có thể đổi giờ bắt đầu rồi tính lại. Lượt về lập rỗng và vẫn cần tài xế nhận việc để xuất phát.
 
 ## 3.B. Ví dụ lịch của một đơn, từ đơn đã chạy thật
 
@@ -668,7 +669,7 @@ Cùng chuyến 05:00 ngày 08/12:
 | T25 | 2 | Quản lý quên bấm Chạy tới giờ xuất phát | Không xác nhận được nữa, đơn đã cọc **đứng yên** (điểm còn hở 1) |
 | T26 | 3 | Nhà khách quá xa, ngựa ngồi xe quá 5 giờ | Chặn lập lượt, đề nghị bỏ bớt điểm hoặc tách lượt |
 | T27 | 3 | Lượt đón tính ra tới hub sau hạn có mặt | Chặn, đề nghị xuất phát sớm hơn |
-| T28 | 4 | Xe trục còn ở Đà Nẵng | Không cho lập, nói xe đang ở đâu. Điều phối bấm Lập lượt về hoặc chọn xe khác |
+| T28 | 4, 10 | Xe trục còn ở Đà Nẵng | Từ chối lượt có điểm đầu khác nơi xe đang ở và báo vị trí xe. Điều phối lập lượt Chuyển xe rỗng về hub gốc hoặc chọn xe khác |
 | T29 | 4 | Xếp trục khi chưa xếp đón | Từ chối, nhắc xếp lần lượt đón, trục, giao |
 | T30 | 5 | Xe trục tới hub 17:00, không kịp giao trong ngày | Cả lượt giao dời sang 06:00 hôm sau, ngựa nghỉ ở hub, công ty chịu chi phí |
 | T31 | 7 | Chọn tài xế đã lái 8 giờ hôm đó | Từ chối, nói sẽ lái bao nhiêu giờ |
@@ -700,7 +701,7 @@ Theo cách hàng không, đã trình bày và chờ duyệt cuối:
 7. **Đã sửa.** Nhập giờ tay cũng kiểm thời gian ngồi xe theo kế hoạch: đón, giao tối đa 5 giờ, chạy thẳng tối đa 10 giờ.
 8. **Đã sửa.** Màn đặt hẹn khách tự chở hiện hạn có mặt ở hub và hệ thống từ chối giờ hẹn muộn hơn hạn.
 9. **Dồn chuyến, chạy xe nhỏ hơn, một khách thuê cả chuyến**: tài liệu có nêu, chưa có nút riêng. Hiện chỉ có Chạy, Hủy, Tạo chuyến đột xuất.
-10. **Đưa xe về phải nhờ quản lý xác nhận một chuyến không có ngựa.** Hỏi: cho điều phối tự lập lượt về rỗng?
+10. **Đã sửa.** Điều phối tự lập lượt `TRANSFER` rỗng về hub gốc, không gắn chuyến bán và không cần quản lý xác nhận chạy.
 11. **Giờ lái mỗi ngày tính theo ngày lịch**, không theo 24 giờ liên tục: lái 8 giờ tối hôm trước và 8 giờ sáng hôm sau vẫn hợp lệ.
 
 ---

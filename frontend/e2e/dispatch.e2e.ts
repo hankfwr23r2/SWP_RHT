@@ -18,6 +18,19 @@ const linehaul = {
   crew: [] as unknown[],
 }
 
+const returnStart = '2031-03-06T20:00:00Z'
+const returnEnd = '2031-03-08T01:42:00Z'
+const returnTrip = {
+  id: 10, code: 'VT-RETURN', tripType: 'TRANSFER', status: 'PLANNED', vehicleId: 3, licensePlate: '51C-12345',
+  coordinatorId: 12, coordinatorName: 'Nhân viên Test', coordinatorStaffCode: 'STF-CO', vehicleSeats: 6,
+  startLocationName: 'Hub Đà Nẵng', endLocationName: 'Hub HCM', plannedStartAt: returnStart, plannedEndAt: returnEnd,
+  stops: [
+    { id: 30, sequenceNumber: 1, stopType: 'HUB', locationId: 2, locationName: 'Hub Đà Nẵng', plannedArrivalAt: returnStart },
+    { id: 31, sequenceNumber: 2, stopType: 'HUB', locationId: 1, locationName: 'Hub HCM', plannedArrivalAt: returnEnd },
+  ],
+  crew: [],
+}
+
 const ok = (route: Route, data: unknown, status = 200) => route.fulfill({ status, json: { status: 'success', message: '', data } })
 
 async function signIn(page: Page, role: 'coordinator' | 'driver') {
@@ -27,7 +40,7 @@ async function signIn(page: Page, role: 'coordinator' | 'driver') {
 }
 
 // failBookings: danh sách đơn lỗi cho tới khi test đặt lại false (StrictMode gọi effect hai lần nên không dùng "lỗi một lần")
-async function mockDispatch(page: Page, control: { failBookings?: boolean } = {}) {
+async function mockDispatch(page: Page, control: { failBookings?: boolean; vehicleAway?: boolean } = {}) {
   const sent: Record<string, unknown> = {}
   let horses: unknown[] = []
   await page.route('**/api/v1/**', async route => {
@@ -42,6 +55,8 @@ async function mockDispatch(page: Page, control: { failBookings?: boolean } = {}
     }
     if (method === 'GET' && path === '/vehicle-trips') return ok(route, [linehaul])
     if (method === 'GET' && path === '/vehicle-trips/9') return ok(route, linehaul)
+    if (method === 'GET' && path === '/vehicle-trips/10') return ok(route, returnTrip)
+    if (method === 'GET' && path === '/vehicle-trips/10/horse-legs') return ok(route, [])
     if (method === 'GET' && path === '/coordinator/vehicle-trips') {
       return ok(route, [{ trip: linehaul, currentPoint: 'Hub HCM', late: false, horseCount: horses.length }])
     }
@@ -62,6 +77,8 @@ async function mockDispatch(page: Page, control: { failBookings?: boolean } = {}
       return ok(route, linehaul, 201)
     }
     if (method === 'GET' && path === '/dispatch/vehicles') {
+      if (control.vehicleAway) return ok(route, [{ id: 3, licensePlate: '51C-12345', status: 'ACTIVE', standardStallCount: 6,
+        currentLocationId: 2, currentLocationName: 'Hub Đà Nẵng', homeHubLocationId: 1, homeHubLocationCode: 'HUB-HCM', freeFrom: returnStart }])
       return ok(route, [{ id: 3, licensePlate: '51C-12345', status: 'ACTIVE', standardStallCount: 6 }, { id: 4, licensePlate: '51C-99999', status: 'MAINTENANCE' }])
     }
     if (method === 'GET' && path === '/departures') return ok(route, [{ id: 7, routeCode: 'HCM-DN', plannedDepartureAt: '2031-03-05T23:00:00Z', status: 'OPEN', runConfirmed: true }])
@@ -73,6 +90,15 @@ async function mockDispatch(page: Page, control: { failBookings?: boolean } = {}
     if (method === 'POST' && path === '/vehicle-trips') {
       sent.trip = request.postDataJSON()
       return ok(route, { ...linehaul, id: 9, code: 'VT-NEW00001' }, 201)
+    }
+    if (method === 'POST' && path === '/dispatch/trip-plans') {
+      return ok(route, { startAt: returnStart, endAt: returnEnd, blocked: false, km: 982, driveMinutes: 1002,
+        stops: returnTrip.stops.map(stop => ({ locationId: stop.locationId, name: stop.locationName,
+          arrivalAt: stop.plannedArrivalAt, departureAt: stop.plannedArrivalAt })) })
+    }
+    if (method === 'POST' && path === '/vehicle-trips/planned') {
+      sent.returnTrip = request.postDataJSON()
+      return ok(route, returnTrip, 201)
     }
     return ok(route, [])
   })
@@ -128,6 +154,25 @@ test('điều phối lập lượt xe trục từ chuyến; xe bảo dưỡng b�
 
   await expect(page.getByText('Đã lập lượt xe VT-NEW00001')).toBeVisible()
   expect(sent.trip).toEqual({ tripType: 'LINEHAUL', vehicleId: 3, departureId: 7 })
+})
+
+test('điều phối lập lượt về rỗng từ lịch xe', async ({ page }) => {
+  await signIn(page, 'coordinator')
+  const sent = await mockDispatch(page, { vehicleAway: true })
+  await page.goto('/backoffice/coordinator/dispatch')
+
+  await page.getByRole('button', { name: 'Lập lượt về' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Lập lượt về' })
+  await expect(dialog.getByRole('list', { name: 'Giờ từng điểm' })).toContainText('Hub HCM')
+  await expect(dialog.getByRole('combobox', { name: 'Chuyến trục' })).toHaveCount(0)
+  await dialog.getByRole('button', { name: 'Lập lượt về' }).click()
+
+  await expect(page.getByText('Đã lập lượt xe VT-RETURN')).toBeVisible()
+  expect(sent.returnTrip).toEqual({ tripType: 'TRANSFER', vehicleId: 3, startAt: returnStart,
+    places: [{ locationId: 2 }, { locationId: 1 }], bookingHorseIds: [] })
+  const detail = page.getByRole('dialog', { name: /VT-RETURN/ })
+  await expect(detail).toContainText('Lượt chuyển xe chạy rỗng.')
+  await expect(detail.getByRole('button', { name: 'Xếp ngựa' })).toHaveCount(0)
 })
 
 test('không tải được dữ liệu thì hiện lý do và thử lại được', async ({ page }) => {

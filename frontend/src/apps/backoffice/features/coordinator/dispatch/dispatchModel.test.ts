@@ -35,6 +35,11 @@ describe('dispatchModel', () => {
     expect(eligibleHorses(linehaul, [booking({ departureId: 8 })], [])).toEqual([])
   })
 
+  it('không gợi ý xếp ngựa vào lượt chuyển xe', () => {
+    const transfer: VehicleTrip = { tripType: 'TRANSFER', stops: [stop(20, 1), stop(22, 2)] }
+    expect(eligibleHorses(transfer, [booking()], [])).toEqual([])
+  })
+
   it('đề xuất hai điểm giao và đúng điểm xuống cho từng con trong cùng đơn', () => {
     const multi = booking({ horses: [
       { bookingHorseId: 50, status: 'ACTIVE', deliveryAddress: { id: 101 }, missingLegs: ['DELIVERY'] },
