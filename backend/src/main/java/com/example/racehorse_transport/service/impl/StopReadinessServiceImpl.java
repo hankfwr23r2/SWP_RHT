@@ -7,6 +7,7 @@ import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.HandoverStatus;
 import com.example.racehorse_transport.entity.enums.HandoverType;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
+import com.example.racehorse_transport.entity.enums.PickupMissChoice;
 import com.example.racehorse_transport.entity.enums.TripStopType;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.policy.HealthLogPolicy;
@@ -104,16 +105,21 @@ public class StopReadinessServiceImpl implements StopReadinessService {
 
     // Quy tắc #32: mọi đơn có ngựa đã nhận lên xe ở điểm đón này phải trả đủ
     private void requirePaid(TripStop stop) {
-        Map<Long, String> boarded = new TreeMap<>();
+        Map<Long, HorseLeg> boarded = new TreeMap<>();
         for (HorseLeg leg : legs.findByBoardTripStop_IdAndStatusIn(stop.getId(), Set.of(HorseLegStatus.IN_PROGRESS))) {
-            // Đơn đã IN_OPERATION là đã trả đủ khi rời nơi nhận trước đó
-            if (leg.getBookingHorse().getBooking().getStatus() != BookingStatus.CONFIRMED) continue;
-            boarded.put(leg.getBookingHorse().getBooking().getId(), leg.getBookingHorse().getBooking().getCode());
+            var horse = leg.getBookingHorse();
+            if (horse.getPickupMissChoice() == PickupMissChoice.RETRY_PICKUP) {
+                boarded.put(horse.getBooking().getId(), leg);
+            } else if (horse.getBooking().getStatus() == BookingStatus.CONFIRMED) {
+                boarded.putIfAbsent(horse.getBooking().getId(), leg);
+            }
         }
-        if (boarded.isEmpty()) return;
-        boarded.forEach((id, code) -> {
-            if (!isPaidInFullForDeparture(id) && !pickupBalances.canLeaveForHub(id)) {
-                throw new DispatchRuleException("payment", "Đơn " + code + " chưa trả đủ. Xe chưa rời nơi nhận được.", true);
+        boarded.forEach((id, leg) -> {
+            var horse = leg.getBookingHorse();
+            if (!isPaidInFullForDeparture(id) && (horse.getPickupMissChoice() == PickupMissChoice.RETRY_PICKUP
+                    || !pickupBalances.canLeaveForHub(id))) {
+                throw new DispatchRuleException("payment", "Đơn " + horse.getBooking().getCode()
+                        + " chưa trả đủ. Xe chưa rời nơi nhận được.", true);
             }
         });
     }

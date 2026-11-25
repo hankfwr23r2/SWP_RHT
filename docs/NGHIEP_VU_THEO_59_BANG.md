@@ -890,3 +890,11 @@ Quản lý chốt khách, công ty hoặc bất khả kháng chịu trách nhi�
 Hạn mặc định 12 giờ khi ghi sớm, 1 giờ sát chuyến và chặn tại mốc tập kết. Hết hạn chọn hoặc qua hạn tập kết mà B/C vẫn chưa nhận được ngựa, nếu đã nhận con khác thì bỏ con hụt. Nếu chưa nhận con nào và mọi con còn trong đơn đều đã hết hạn xử lý đón hụt, nhả chỗ và chuyển đơn sang Cần chọn lại chuyến. Khi chọn C, hệ thống hủy chặng đón lại đã xếp cho con đó. Khi nhận theo B, máy chủ kiểm lại hạn tập kết và giờ tới hub của lượt xe.
 
 Khách có thể chọn A cho con cuối cùng khi quản lý chưa chốt trách nhiệm. Hệ thống lưu quyết định, chặn xếp xe và chờ kết luận trước khi hủy đơn và xử lý tiền.
+
+## Đợt 1b bước 4 · Tiền sau đón hụt
+
+Đơn giữ lịch sử báo giá. Thao tác loại ngựa, tính phí lượt đón lại hoặc miễn cước đón tạo phiên bản thay thế. Nếu do khách, bỏ cước theo con và dịch vụ chưa làm, giữ phí bảo hiểm và dịch vụ đã xác nhận làm, rồi áp sàn bằng cọc đã trả. Do công ty hoặc bất khả kháng, bỏ các dòng theo con và tính lại các chặng đường bộ theo hạng xe nhỏ nhất đủ chỗ. Khi toàn bộ ngựa tự vào hub do công ty đón hụt, bỏ dòng cước đón.
+
+Phí lượt đón lại dùng bảng giá trên báo giá đã chốt và quãng đường đón đã báo. Mỗi lượt xe chỉ có một nhóm dòng thu cho đơn. Nếu số dư trước đã trả, lần nhận tiếp theo lập một khoản số dư bổ sung còn thiếu với hạn từ giờ nhận. Nếu khách trả dư, ghi khoản hoàn chờ xử lý. Hủy khi chưa nhận con nào giữ cọc nếu khách chịu trách nhiệm, hoàn hết phần chưa hoàn nếu do công ty hoặc bất khả kháng.
+
+Phí bảo hiểm giữ lại chỉ gồm phần hãng chưa hoàn. Chuyên viên ghi tổng hoàn theo chứng từ, hệ thống trừ phần đó trên báo giá thay thế và kiểm phần khách đã trả dư.

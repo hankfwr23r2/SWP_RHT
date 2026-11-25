@@ -145,3 +145,7 @@ Tại nhà khách, trả tại chỗ khi hết giờ nếu có người nhận l
 ## Điều chỉnh đợt 1b bước 3 ngày 25/11/2026
 
 Khi không đón được con nào, đơn đã xác nhận tiếp tục chờ quyết định của khách. Khi mọi con còn trong đơn đều hết hạn xử lý đón hụt, đơn sang Cần chọn lại chuyến, giải phóng chỗ cũ và gỡ chặng kế hoạch. Xe khác vẫn có thể đang trên đường tới điểm đón, nên hết hạn của một con không làm mất lịch của các con còn lại. Ghi đón hụt là một mốc vận hành của từng con, giữ tư cách ACTIVE cho đến khi áp dụng quyết định bỏ con. Quản lý chốt bên chịu. Khi chỉ hụt một phần, các con đã nhận tiếp tục đi theo lịch.
+
+## Đợt 1b bước 4 · Quyết định về số dư
+
+Thay quy tắc một khoản số dư mỗi đơn bằng một khoản số dư ban đầu và khoản bổ sung phát sinh khi nhận ngựa của lượt đón lại. Số đã trả luôn đối chiếu với lịch sử thanh toán. Việc đổi lịch lần đầu không có phí đổi lịch riêng. Nếu do khách và đã có lượt xe đến đón, chi phí của lượt đón lại được báo riêng theo ví dụ 8.5 của phương án.

@@ -760,6 +760,8 @@ Index: `horse_id`.
 
 ### 8.5 `booking_horse_service`: dịch vụ thêm cho từng con
 
+`completed_at timestamptz` có thể trống. Quản lý xác nhận dịch vụ thuộc đúng con đang hoạt động, dưới khóa đơn. Thử lại giữ nguyên thời điểm hoàn thành.
+
 | Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
 |---|---|---|---|---|
 | `booking_horse_id` | `bigint` | | PK, FK → booking_horse, CASCADE | |
@@ -1037,6 +1039,8 @@ Index: `document_id`.
 
 ### 11.1 `horse_insurance`: bảo hiểm cho từng con trong đơn (1–1 với booking_horse)
 
+`refunded_premium_amount numeric(15,2)` ghi tổng phí hãng đã hoàn theo chứng từ chuyên viên xác nhận khi đón hụt do khách. Giá trị NULL nếu chưa ghi nhận, nếu có thì dương và không vượt phí bảo hiểm xác nhận. Ghi nhận lại cùng tổng không lập thêm khoản hoàn.
+
 | Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
 |---|---|---|---|---|
 | `id` | `bigint` | | PK, identity | |
@@ -1102,6 +1106,8 @@ Index: `price_list_id`.
 
 ### 12.2 `quotation_line`: dòng báo giá
 
+`pickup_deposit_floor boolean NOT NULL DEFAULT false` đánh dấu dòng điều chỉnh dương theo sàn cọc đã trả. Dòng này phải là `ADJUSTMENT` và không phải khoản thu hộ. Khi loại thêm ngựa, báo giá thay thế bỏ dòng sàn cũ và tính lại. Dòng cước đón lại và nhiên liệu gắn `horse_leg_id` để xác định lượt xe đã tính phí.
+
 | Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
 |---|---|---|---|---|
 | `id` | `bigint` | | PK, identity | |
@@ -1130,6 +1136,8 @@ Index: `billable_service_id`, `price_item_id`, `booking_horse_id`, `horse_leg_id
 Tổng tiền lưu ở `quotation.total_amount`, do `QuotationService` tính từ các dòng (mục 5).
 
 ### 12.3 `payment`: khoản phải thu hoặc phải hoàn
+
+Một đơn có thể có nhiều khoản `BALANCE` đã trả. Service giữ khóa đơn và chỉ lập thêm khoản chờ khi vẫn còn thiếu so với báo giá đã chấp nhận. Hạn trả tính từ lần giao nhận kích hoạt khoản đó.
 
 | Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
 |---|---|---|---|---|

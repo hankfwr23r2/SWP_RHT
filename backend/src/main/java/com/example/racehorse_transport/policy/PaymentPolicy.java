@@ -78,7 +78,7 @@ public final class PaymentPolicy {
                     && payment.getDueAt() != null
                     && now.isBefore(DepositPaymentWindowPolicy.expiresAt(payment.getDueAt()));
             case BALANCE -> (booking.getStatus() == BookingStatus.CONFIRMED
-                    || booking.getStatus() == BookingStatus.SCHEDULE_CHANGE_REQUIRED)
+                    || booking.getStatus() == BookingStatus.SCHEDULE_CHANGE_REQUIRED || booking.getStatus() == BookingStatus.IN_OPERATION)
                     && payment.getQuotation().getStatus() == QuotationStatus.ACCEPTED;
             case EXTRA_CHARGE -> acceptsExistingExtraChargePayment(booking.getStatus(), payment)
                     && payment.getQuotation() != null && payment.getQuotation().getStatus() == QuotationStatus.ACCEPTED;
@@ -159,6 +159,12 @@ public final class PaymentPolicy {
     public static BigDecimal committedRefunds(List<Payment> payments) {
         return payments.stream().filter(PaymentPolicy::isCommittedRefund).map(Payment::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    public static BigDecimal paidDeposit(List<Payment> payments) {
+        return payments.stream().filter(payment -> payment.getPaymentType() == PaymentType.DEPOSIT
+                        && payment.getStatus() == PaymentStatus.PAID)
+                .map(Payment::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     public static BigDecimal unallocatedOverpayment(Quotation quotation, List<Payment> payments) {

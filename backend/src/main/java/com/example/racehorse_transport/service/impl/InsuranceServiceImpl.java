@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.dto.booking.InsuranceDeclarationRequestDto;
+import com.example.racehorse_transport.dto.booking.InsurancePremiumRefundRequestDto;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.BookingHorse;
 import com.example.racehorse_transport.entity.HorseInsurance;
@@ -24,12 +25,15 @@ import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.enums.BookingHorseStatus;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.InsuranceCoverageOption;
+import com.example.racehorse_transport.entity.enums.PickupMissLiability;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.BookingReviewPolicy;
 import com.example.racehorse_transport.policy.InsuranceReviewPolicy;
+import com.example.racehorse_transport.policy.PickupMissPricingPolicy;
 import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.service.AuditService;
+import com.example.racehorse_transport.service.BookingHorseService;
 import com.example.racehorse_transport.service.NotificationService;
 import static com.example.racehorse_transport.policy.BookingSubmissionPolicy.businessDate;
 import java.time.Clock;
@@ -56,6 +60,28 @@ public class InsuranceServiceImpl implements InsuranceService {
     private final NotificationService notifications;
     private final AuditService audit;
     private final Clock clock;
+    private final BookingHorseService bookingHorses;
+
+    @Override
+    @Transactional
+    public void recordPremiumRefund(Long bookingId, Long insuranceId, InsurancePremiumRefundRequestDto request, String username) {
+        lockBooking(bookingId);
+        var actor = reviewer(username);
+        var insurance = insurances.findById(insuranceId)
+                .filter(row -> bookingId.equals(row.getBookingHorse().getBooking().getId()))
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bảo hiểm của đơn."));
+        var horse = insurance.getBookingHorse();
+        if (horse.getPickupMissLiability() != PickupMissLiability.CUSTOMER) {
+            throw BookingRuleException.conflict("Chỉ đối soát phí hoàn cho trường hợp đón hụt do khách.");
+        }
+        if (!PickupMissPricingPolicy.newPremiumRefund(insurance, request.refundedPremiumAmount())) return;
+        insurance.setRefundedPremiumAmount(request.refundedPremiumAmount());
+        audit.record(actor.getUserId(), "RECORD_INSURANCE_PREMIUM_REFUND", "horse_insurance", insuranceId, null,
+                Map.of("refundedPremiumAmount", request.refundedPremiumAmount(), "receiptReference", request.receiptReference().strip()));
+        if (horse.getStatus() == BookingHorseStatus.EXCLUDED && horse.getBooking().getStatus() != BookingStatus.CANCELLED) {
+            bookingHorses.reviseExcludedInsurance(horse);
+        }
+    }
 
     @Override
     @Transactional

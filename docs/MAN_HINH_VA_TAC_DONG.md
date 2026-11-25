@@ -161,3 +161,9 @@ Công ty không vận hành nơi cách ly. Điều kiện cách ly thể hiện 
 | Chi tiết đơn của khách | Xem lý do, bên chịu và hạn. Chọn A/B/C/D theo lựa chọn máy chủ, hoặc hẹn ngày mới cho đơn chạy thẳng | Lựa chọn được xử lý dưới khóa đơn |
 | Điều phối, Điều độ → Hành trình của đơn | Chọn theo xác nhận qua điện thoại, nhập nội dung cuộc gọi | Cùng hợp đồng lựa chọn với khách, nhật ký ghi tài khoản điều phối và bảng điều độ tải lại sau khi lưu |
 | Chi tiết đơn của quản lý | Chốt bên chịu | Ghi kết luận và nhật ký, xem lại trên chi tiết đơn |
+
+## Đợt 1b bước 4 · Số tiền khi xử lý đón hụt
+
+Khách và điều phối thấy tổng báo giá, số còn phải trả và số dự kiến hoàn khi xác nhận lựa chọn đã có bên chịu. Với hủy, hộp xác nhận hiện khoản hoàn và cọc bị giữ. Khi chưa chốt bên chịu, hộp xác nhận ghi số tiền đang chờ xác định. Quản lý có thể xác nhận dịch vụ theo ngựa đã hoàn thành ngay trong mục đón hụt trước khi chốt bên chịu. Khách thanh toán số dư bổ sung qua khu vực thanh toán hiện có, kể cả khi đơn đã Đang vận chuyển.
+
+Chuyên viên ghi phí bảo hiểm được hoàn cho con đã loại trong phần bảo hiểm của màn hình thẩm định, nhập số hoàn lũy kế và số chứng từ của hãng. Hệ thống cập nhật báo giá và khoản hoàn phần dư dưới khóa đơn.

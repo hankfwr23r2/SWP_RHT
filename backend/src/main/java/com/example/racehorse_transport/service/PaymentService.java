@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.util.List;
 
 public interface PaymentService {
+    BigDecimal outstanding(Quotation quotation);
     List<PaymentResponseDto> payments(Long bookingId, String username);
 
     List<PaymentResponseDto> paymentsForManager(Long bookingId);

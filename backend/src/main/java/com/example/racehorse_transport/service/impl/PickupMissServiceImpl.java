@@ -17,6 +17,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -124,10 +125,33 @@ public class PickupMissServiceImpl implements PickupMissService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<PickupAddOnResponseDto> addOns(Long horseId, String username) {
+        requireManager(username);
+        return bookingHorses.pickupAddOns(horseId);
+    }
+
+    @Override
     @Transactional
-    public PickupMissResponseDto assignLiability(Long horseId, PickupMissLiabilityRequestDto request, String username) {
+    public PickupAddOnResponseDto completeAddOn(Long horseId, CompletePickupAddOnRequestDto request, String username) {
+        requireManager(username);
+        var horse = lockHorse(horseId);
+        if (horse.getStatus() != BookingHorseStatus.ACTIVE || !OPEN.contains(horse.getBooking().getStatus())) {
+            throw BookingRuleException.conflict("Ngựa không còn hoạt động trong đơn.");
+        }
+        return bookingHorses.completePickupAddOn(horseId, request.serviceId(), clock.instant());
+    }
+
+    private com.example.racehorse_transport.entity.AppUser requireManager(String username) {
         var actor = users.findByUsername(username).orElseThrow(() -> missing());
         if (!"MANAGER".equals(actor.getRole().getCode())) throw denied();
+        return actor;
+    }
+
+    @Override
+    @Transactional
+    public PickupMissResponseDto assignLiability(Long horseId, PickupMissLiabilityRequestDto request, String username) {
+        var actor = requireManager(username);
         BookingHorse horse = lockHorse(horseId);
         if (horse.getPickupMissedAt() == null) throw missing();
         if (horse.getPickupMissLiability() != null && horse.getPickupMissLiability() != request.liability()) {
@@ -138,6 +162,19 @@ public class PickupMissServiceImpl implements PickupMissService {
             evidence.audit(actor.getId(), "CONFIRM_PICKUP_MISS_LIABILITY", horseId, java.util.Map.of("liability", request.liability().name()));
             if (horse.getPickupMissChoice() == PickupMissChoice.DROP_HORSE
                     && horse.getStatus() == BookingHorseStatus.ACTIVE && OPEN.contains(horse.getBooking().getStatus())) {
+                drop(horse, actor.getId());
+            }
+            if (horse.getPickupMissChoice() == PickupMissChoice.RETRY_PICKUP
+                    && request.liability() == PickupMissLiability.CUSTOMER) {
+                var receivedRetry = legs.findByBookingHorse_IdOrderBySequenceNumber(horseId).stream()
+                        .filter(leg -> leg.getLegType() == HorseLegType.PICKUP && leg.getVehicleTrip() != null
+                                && leg.getActualStartAt() != null && !leg.getActualStartAt().isBefore(horse.getPickupMissedAt()))
+                        .findFirst();
+                receivedRetry.or(() -> legs.findPickupRetryPlans(horseId).stream().findFirst())
+                        .ifPresent(leg -> chargeRetry(horse, leg));
+            }
+            if (horse.getPickupMissChoice() == null && request.liability() == PickupMissLiability.CUSTOMER
+                    && horse.getPickupRetryDeparture() != null && hasReceived(horse.getBooking())) {
                 drop(horse, actor.getId());
             }
         }
@@ -204,13 +241,23 @@ public class PickupMissServiceImpl implements PickupMissService {
         } else if (request.choice() == PickupMissChoice.CANCEL_BOOKING) {
             cancellations.cancelAfterPickupMiss(booking.getId(), horse.getPickupMissLiability() == PickupMissLiability.CUSTOMER, actorId);
         } else if (request.choice() == PickupMissChoice.CHANGE_DEPARTURE) {
+            var origin = reschedulePickupCharge(horse);
+            if (origin != null) {
+                bookingHorses.repricePickup(horse, origin, activeHorses(booking), false);
+            }
             moveOffDeparture(horse, actorId);
         } else if (request.choice() == PickupMissChoice.RETRY_PICKUP) {
             horse.setPickupRetryDeparture(booking.getDeparture());
+            if (horse.getPickupMissLiability() == PickupMissLiability.CUSTOMER) {
+                chargeRetry(horse, retryPlan(horse));
+            }
         } else if (request.choice() == PickupMissChoice.SELF_DELIVERY) {
             var arrival = request.hubArrivalAt();
             if (arrival == null || !arrival.isAfter(clock.instant()) || !arrival.isBefore(checkInAt(booking))) {
                 throw BookingRuleException.conflict("Giờ hẹn phải trước hạn tập kết.");
+            }
+            if (waivePickupForSelfDelivery(horse)) {
+                bookingHorses.repricePickup(horse, null, List.of(), true);
             }
             legs.findByBookingHorse_IdOrderBySequenceNumber(horse.getId()).stream()
                     .filter(leg -> leg.getLegType() == HorseLegType.PICKUP && leg.getStatus() == HorseLegStatus.PLANNED)
@@ -238,11 +285,11 @@ public class PickupMissServiceImpl implements PickupMissService {
         var booking = horse.getBooking();
         boolean last = horses.findByBooking_Id(booking.getId()).stream()
                 .noneMatch(line -> !line.getId().equals(horse.getId()) && line.getStatus() == BookingHorseStatus.ACTIVE);
+        if (horse.getPickupMissLiability() == null && (last || actorId != null)) {
+            horse.setPickupMissChoice(PickupMissChoice.DROP_HORSE);
+            return;
+        }
         if (last) {
-            if (horse.getPickupMissLiability() == null) {
-                horse.setPickupMissChoice(PickupMissChoice.DROP_HORSE);
-                return;
-            }
             cancellations.cancelAfterPickupMiss(booking.getId(), horse.getPickupMissLiability() == PickupMissLiability.CUSTOMER, actorId);
             horse.setStatus(BookingHorseStatus.EXCLUDED);
         } else {
@@ -309,9 +356,51 @@ public class PickupMissServiceImpl implements PickupMissService {
         if (horse.getPickupRetryDeparture() != null && horse.getPickupRetryDeparture().getId().equals(booking.getDeparture().getId())) {
             return false;
         }
+        return retryPlan(horse) != null;
+    }
+
+    private HorseLeg retryPlan(BookingHorse horse) {
         var readyAt = clock.instant().plus(Duration.ofHours(configs.getInt("PICKUP_RETRY_PREPARATION_HOURS")));
-        return legs.findPickupRetryPlans(horse.getId()).stream().anyMatch(leg -> PickupMissPolicy.retryFits(readyAt,
-                leg.getVehicleTrip().getPlannedStartAt(), leg.getAlightTripStop().getPlannedArrivalAt(), checkInAt(booking)));
+        return legs.findPickupRetryPlans(horse.getId()).stream().filter(leg -> PickupMissPolicy.retryFits(readyAt,
+                leg.getVehicleTrip().getPlannedStartAt(), leg.getAlightTripStop().getPlannedArrivalAt(),
+                checkInAt(horse.getBooking()))).findFirst().orElse(null);
+    }
+
+    private List<BookingHorse> retryHorses(BookingHorse horse, HorseLeg retry) {
+        var tripId = retry.getVehicleTrip().getId();
+        return horses.findByBooking_Id(horse.getBooking().getId()).stream()
+                .filter(line -> line.getStatus() == BookingHorseStatus.ACTIVE && line.getPickupMissedAt() != null)
+                .filter(line -> line.getId().equals(horse.getId())
+                        || legs.findByBookingHorse_IdOrderBySequenceNumber(line.getId()).stream()
+                        .anyMatch(leg -> leg.getLegType() == HorseLegType.PICKUP && leg.getVehicleTrip() != null
+                                && leg.getStatus() != HorseLegStatus.CANCELLED
+                                && java.util.Objects.equals(leg.getVehicleTrip().getId(), tripId)))
+                .toList();
+    }
+
+    private List<BookingHorse> activeHorses(Booking booking) {
+        return horses.findByBooking_Id(booking.getId()).stream()
+                .filter(line -> line.getStatus() == BookingHorseStatus.ACTIVE).toList();
+    }
+
+    private boolean waivePickupForSelfDelivery(BookingHorse horse) {
+        return horse.getPickupMissLiability() == PickupMissLiability.COMPANY && !hasReceived(horse.getBooking())
+                && activeHorses(horse.getBooking()).stream().allMatch(line -> line.getId().equals(horse.getId())
+                        || line.getPickupMissChoice() == PickupMissChoice.SELF_DELIVERY);
+    }
+
+    private HorseLeg reschedulePickupCharge(BookingHorse horse) {
+        if (horse.getPickupMissLiability() != PickupMissLiability.CUSTOMER) return null;
+        return legs.findByBookingHorse_IdOrderBySequenceNumber(horse.getId()).stream()
+                .filter(leg -> leg.getLegType() == HorseLegType.PICKUP && leg.getVehicleTrip() != null
+                        && leg.getBoardTripStop() != null && leg.getBoardTripStop().getActualArrivalAt() != null)
+                .reduce((earlier, latest) -> latest).orElse(null);
+    }
+
+    private void chargeRetry(BookingHorse horse, HorseLeg retry) {
+        if (retry != null) {
+            bookingHorses.repricePickup(horse, retry, retryHorses(horse, retry), false);
+        }
     }
 
     private boolean hasReceived(Booking booking) {
@@ -328,7 +417,33 @@ public class PickupMissServiceImpl implements PickupMissService {
     }
 
     private PickupMissResponseDto response(BookingHorse horse) {
-        return PickupMissResponseDto.from(horse, choices(horse));
+        var choices = choices(horse);
+        var prices = new EnumMap<PickupMissChoice, PickupMissPriceResponseDto>(PickupMissChoice.class);
+        if (horse.getPickupMissLiability() != null) {
+            for (var choice : choices) {
+                boolean exclude = choice == PickupMissChoice.DROP_HORSE;
+                if (choice == PickupMissChoice.CANCEL_BOOKING || exclude && horses.findByBooking_Id(horse.getBooking().getId())
+                        .stream().noneMatch(line -> !line.getId().equals(horse.getId()) && line.getStatus() == BookingHorseStatus.ACTIVE)) {
+                    var cancellation = cancellations.previewAfterPickupMiss(horse.getBooking(),
+                            horse.getPickupMissLiability() == PickupMissLiability.CUSTOMER);
+                    if (cancellation != null && cancellation.allowed()) {
+                        prices.put(choice, PickupMissPriceResponseDto.fromCancellation(cancellation));
+                    }
+                    continue;
+                }
+                HorseLeg retry = choice == PickupMissChoice.RETRY_PICKUP && horse.getPickupMissLiability() == PickupMissLiability.CUSTOMER
+                        ? retryPlan(horse) : null;
+                var riding = retry == null ? List.<BookingHorse>of() : retryHorses(horse, retry);
+                if (choice == PickupMissChoice.CHANGE_DEPARTURE) {
+                    retry = reschedulePickupCharge(horse);
+                    if (retry != null) riding = activeHorses(horse.getBooking());
+                }
+                boolean waive = choice == PickupMissChoice.SELF_DELIVERY && waivePickupForSelfDelivery(horse);
+                bookingHorses.previewPickup(horse, retry, riding, waive, exclude)
+                        .ifPresent(price -> prices.put(choice, price));
+            }
+        }
+        return PickupMissResponseDto.from(horse, choices, prices);
     }
 
     private BookingHorse lockHorse(Long horseId) {

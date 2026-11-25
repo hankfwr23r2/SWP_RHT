@@ -92,4 +92,7 @@ public class QuotationLine {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "refund_payment_id")
     private Payment refundPayment;
+
+    @Column(name = "pickup_deposit_floor", nullable = false)
+    private boolean pickupDepositFloor;
 }

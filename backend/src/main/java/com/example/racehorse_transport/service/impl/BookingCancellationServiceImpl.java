@@ -150,8 +150,25 @@ public class BookingCancellationServiceImpl implements BookingCancellationServic
     public void cancelAfterPickupMiss(Long bookingId, boolean customerLiable, Long actorUserId) {
         var booking = lock(bookingId);
         if (booking.getStatus() == BookingStatus.CANCELLED) return;
-        cancel(booking, evaluate(booking, !customerLiable, false),
+        cancel(booking, evaluatePickupMiss(booking, customerLiable),
                 "Hủy đơn sau khi không đón được ngựa.", null, actorUserId, List.of());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BookingCancellationResponseDto previewAfterPickupMiss(Booking booking, boolean customerLiable) {
+        return evaluatePickupMiss(booking, customerLiable).response(booking);
+    }
+
+    private Cancellation evaluatePickupMiss(Booking booking, boolean customerLiable) {
+        Long id = booking.getId();
+        var entries = payments.findByBooking_IdOrderById(id);
+        var quote = quotations.findByBooking_IdAndStatus(id, QuotationStatus.ACCEPTED).orElse(null);
+        if (!BookingCancellationPolicy.companyCanCancel(booking.getStatus()) || bookings.hasReceivedHorses(id)) {
+            return new Cancellation(Outcome.NOT_ALLOWED, quote, entries, BookingCancellationPolicy.refundAll(BigDecimal.ZERO));
+        }
+        return new Cancellation(customerLiable ? Outcome.FORFEIT_DEPOSIT : Outcome.FREE, quote, entries,
+                BookingCancellationPolicy.pickupMissAmounts(customerLiable, quote, entries));
     }
 
     @Override

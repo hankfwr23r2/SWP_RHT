@@ -59,6 +59,9 @@ public class HorseInsurance {
     @Column(name = "premium_amount", precision = 15, scale = 2)
     private BigDecimal premiumAmount;
 
+    @Column(name = "refunded_premium_amount", precision = 15, scale = 2)
+    private BigDecimal refundedPremiumAmount;
+
     @JdbcTypeCode(SqlTypes.CHAR)
     @Column(name = "currency_code", length = 3)
     private String currencyCode;

@@ -1204,7 +1204,7 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 
 **Bước 12.** Tổ lái ghi đón hụt cho từng con. Chọn nguyên nhân, ghi diễn giải và chụp ảnh. Nếu người gửi vắng, ghi kết quả ba cuộc gọi và chờ đủ thời gian. Hệ thống gỡ các chặng kế hoạch của con hụt, giữ chỗ trên chuyến và báo khách, điều phối, quản lý.
 
-Quản lý chốt bên chịu. Khách hoặc điều phối chọn A bỏ con, B đón lại, C tự chở tới hub hoặc D đổi chuyến khi đơn chưa nhận con nào. Đơn chạy thẳng có thể hẹn ngày đón mới. Chỉ khi áp dụng A mới loại con và xử lý báo giá.
+Quản lý chốt bên chịu. Khách hoặc điều phối chọn A bỏ con, B đón lại, C tự chở tới hub hoặc D đổi chuyến khi đơn chưa nhận con nào. Đơn chạy thẳng có thể hẹn ngày đón mới. A loại con khỏi đơn. Các lựa chọn làm thay đổi chi phí cập nhật báo giá thay thế.
 
 Các con khác vẫn nhận bình thường. Nếu đã ghi hụt cho mọi con tại điểm và không nhận con nào, lần giao nhận kết thúc **Không thành**. Xe có thể rời khi tất cả ngựa ở điểm này đã được xử lý. Tổ lái vẫn ghi hụt được khi xe khác đã nhận ngựa của đơn.
 
@@ -1293,7 +1293,7 @@ Dòng hai: loại một con thì bỏ cước trục, dịch vụ và phí bảo
 ### Số dư
 
 - **6.10** Số dư = tổng báo giá đang có hiệu lực − số đã trả. Bằng 0 thì không lập khoản.
-- **6.11** Mỗi đơn chỉ một khoản số dư. Trả qua VNPAY.
+- **6.11** Một đơn có thể có số dư ban đầu và số dư bổ sung khi nhận ở lượt đón lại. Trả qua VNPAY.
 - **6.12** Chưa trả đủ **không** chặn xe đi đón, chỉ chặn xe **rời nơi nhận**.
 - **6.13** Trả ngựa khi: đã hết 30 phút, đơn còn Đã xác nhận, và không còn phiên VNPAY mở trước hạn đang chờ kết quả (tối đa 5 phút).
 - **6.14** Trả ngựa là một thao tác cho **mọi con** đã lên xe ở điểm đó, gồm cả các đơn khác cùng lên (cửa khẩu).
@@ -1366,3 +1366,5 @@ Dòng hai: loại một con thì bỏ cước trục, dịch vụ và phí bảo
 22. **Ô đánh giá hiện lại sau khi đã đánh giá** (tải lại trang), bấm thì bị từ chối.
 23. **Đơn chạy thẳng loại bớt một con mà tiền gần như không giảm** (xem 6.D). Cần chốt có đúng ý không.
 24. **Không có bước "người nhận nghiệm thu" riêng.** Nghiệm thu hiện là ảnh biên bản và việc giao xong. Nếu hội đồng hỏi "nghiệm thu ở đâu" thì chỉ vào bước 7 và bước 10.
+
+**Đã sửa** · Quản lý xác nhận dịch vụ đã làm. Báo giá thay thế giữ dịch vụ đã làm và bảo hiểm khi khách chịu, áp sàn cọc đã trả, tính phí đón lại theo lượt xe và đối soát khoản hoàn. Lượt đón lại có khoản số dư bổ sung sau khi nhận nếu số dư đầu đã trả. Xe đón lại phải chờ trả đủ.

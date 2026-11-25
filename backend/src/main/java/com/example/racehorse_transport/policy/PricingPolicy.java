@@ -234,6 +234,20 @@ public final class PricingPolicy {
         }
     }
 
+    public static List<Line> roadCharges(PriceList list, List<PriceItem> items, List<BillableService> catalog,
+                                         ServiceLayer layer, Long routeId, Long classId, BigDecimal km) {
+        List<Line> result = new ArrayList<>();
+        var match = new Match(routeId, classId, null, km);
+        addLayer(result, list, items, catalog, layer, match, km);
+        addLayer(result, list, items, catalog, ServiceLayer.FUEL, match, km);
+        return result;
+    }
+
+    public static Line repriceRoad(PriceList list, List<PriceItem> items, BillableService service,
+                                   Long routeId, Long classId, BigDecimal km) {
+        return line(list, items, service, new Match(routeId, classId, null, km), km);
+    }
+
     private static void addLayer(List<Line> lines, PriceList list, List<PriceItem> items,
                                  List<BillableService> catalog, ServiceLayer layer, Match match, BigDecimal quantity) {
         List<BillableService> services = catalog.stream().filter(service -> service.getLayer() == layer).toList();

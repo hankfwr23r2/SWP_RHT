@@ -1,6 +1,14 @@
 // Dùng chung mọi trang: thành phần giao diện, điều hướng, trạng thái, vai trò, đăng nhập
 export const common = {
   pickupMiss: {
+    price: 'Updated total {{total}}. Balance due {{balance}}. Expected refund {{refund}}.',
+    cancellationPrice: 'Expected refund {{refund}}. Deposit retained {{forfeited}}.',
+    pricePending: 'The amount will be confirmed once the required information is available.',
+    completeService: 'Confirm completion',
+    serviceCompleted: 'Completed',
+    noServices: 'There are no services to confirm for this horse.',
+    noServicesHint: 'You can confirm who was responsible for the missed pickup.',
+    completeServiceHint: 'Confirm that {{service}} was completed. Its charge may be retained if the customer was responsible for the missed pickup.',
     emptyHint: "Missed pickups will appear here.",
     title: "Missed pickup",
     empty: "No missed pickups for this booking",

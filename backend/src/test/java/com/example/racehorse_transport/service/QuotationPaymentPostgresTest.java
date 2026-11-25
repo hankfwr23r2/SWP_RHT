@@ -312,6 +312,35 @@ class QuotationPaymentPostgresTest {
     }
 
     @Test
+    void supplementalBalanceIsIssuedOnceAtSecondReceptionAndCanBePaidInOperation() {
+        var fixture = fixture(BookingType.LOCAL, BookingStatus.AWAITING_DEPOSIT);
+        long booking = fixture.booking().getId();
+        long quote = quote(fixture, QuotationStatus.SENT, START.plusSeconds(120), "10000", "4000");
+        long deposit = acceptTwice(fixture, quote);
+        assertThat(results.receive(callback(checkout(deposit, fixture), "804971", 4000, START, true)).code()).isEqualTo("00");
+        payments.requestBalance(booking, START);
+        var initial = payments.payments(booking, fixture.customer()).getLast();
+        assertThat(results.receive(callback(checkout(initial.id(), fixture), "804972", 6000, START, true)).code()).isEqualTo("00");
+        jdbc.update("update booking set status = 'IN_OPERATION' where id = ?", booking);
+        jdbc.update("update quotation set total_amount = 11900 where id = ?", quote);
+
+        var secondReceipt = START.plusSeconds(60);
+        payments.requestBalance(booking, secondReceipt);
+        payments.requestBalance(booking, secondReceipt.plusSeconds(10));
+
+        var rows = payments.payments(booking, fixture.customer());
+        assertThat(rows).filteredOn(row -> row.type() == PaymentType.BALANCE).hasSize(2);
+        var supplemental = rows.getLast();
+        assertThat(supplemental.amount()).isEqualByComparingTo("1900");
+        assertThat(supplemental.dueAt()).isEqualTo(secondReceipt.plusSeconds(1800));
+        assertThat(readiness.isPaidInFull(booking)).isFalse();
+        assertThat(results.receive(callback(checkout(supplemental.id(), fixture), "804973", 1900, START, true)).code()).isEqualTo("00");
+        assertThat(readiness.isPaidInFull(booking)).isTrue();
+        payments.requestBalance(booking, secondReceipt.plusSeconds(20));
+        assertThat(payments.payments(booking, fixture.customer())).hasSize(3);
+    }
+
+    @Test
     void validatesHttpRolesOwnershipStateAndSignatureAndHandlesFailedResultWithoutTransactionNumber() throws Exception {
         var fixture = fixture(BookingType.LOCAL, BookingStatus.AWAITING_DEPOSIT);
         long quote = quote(fixture, QuotationStatus.SENT, START.plusSeconds(120), "9000", "3000");

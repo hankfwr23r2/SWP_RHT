@@ -4,6 +4,7 @@ import com.example.racehorse_transport.dto.booking.BookingCancellationResponseDt
 import com.example.racehorse_transport.dto.booking.CancelBookingRequestDto;
 import com.example.racehorse_transport.dto.booking.CompanyCancelBookingRequestDto;
 import com.example.racehorse_transport.dto.booking.ManagerCancelBookingRequestDto;
+import com.example.racehorse_transport.entity.Booking;
 
 public interface BookingCancellationService {
     BookingCancellationResponseDto preview(Long bookingId, String username);
@@ -24,6 +25,8 @@ public interface BookingCancellationService {
     void releaseUnpaidAtPickup(Long bookingId, Long actorUserId);
 
     void cancelAfterPickupMiss(Long bookingId, boolean customerLiable, Long actorUserId);
+
+    BookingCancellationResponseDto previewAfterPickupMiss(Booking booking, boolean customerLiable);
 
     void rebookDirectAfterPickupMiss(Long bookingId, Long actorUserId);
 

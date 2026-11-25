@@ -1,6 +1,14 @@
 // Dùng chung mọi trang: thành phần giao diện, điều hướng, trạng thái, vai trò, đăng nhập
 export const common = {
   pickupMiss: {
+    price: 'Tổng sau khi chọn {{total}}. Còn phải trả {{balance}}. Dự kiến hoàn {{refund}}.',
+    cancellationPrice: 'Dự kiến hoàn {{refund}}. Cọc bị giữ {{forfeited}}.',
+    pricePending: 'Số tiền sẽ được xác định khi có đủ thông tin.',
+    completeService: 'Xác nhận đã làm',
+    serviceCompleted: 'Đã làm',
+    noServices: 'Không có dịch vụ theo ngựa để xác nhận.',
+    noServicesHint: 'Có thể chốt bên chịu trách nhiệm.',
+    completeServiceHint: 'Xác nhận đã thực hiện {{service}}. Phí có thể được giữ lại nếu việc đón hụt do khách.',
     emptyHint: "Các bản ghi đón hụt sẽ hiện ở đây.",
     title: "Đón hụt",
     empty: "Đơn này chưa ghi đón hụt",

@@ -292,6 +292,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/booking-horses/{id}/complete-pickup-add-on": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["completePickupAddOn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/booking-horses/{id}/confirm-pickup-liability": {
         parameters: {
             query?: never;
@@ -334,6 +350,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["appoint"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/booking-horses/{id}/pickup-add-ons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["pickupAddOns"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -846,6 +878,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["recordEvidence"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/insurances/{insuranceId}/record-premium-refund": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["recordPremiumRefund"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3730,6 +3778,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListPickupAddOnResponseDto: {
+            data?: components["schemas"]["PickupAddOnResponseDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseListPickupMissResponseDto: {
             data?: components["schemas"]["PickupMissResponseDto"][];
             message?: string;
@@ -3871,6 +3924,11 @@ export interface components {
         };
         ApiResponsePaymentResultResponseDto: {
             data?: components["schemas"]["PaymentResultResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponsePickupAddOnResponseDto: {
+            data?: components["schemas"]["PickupAddOnResponseDto"];
             message?: string;
             status?: string;
         };
@@ -4166,6 +4224,10 @@ export interface components {
         };
         CompanyCancelBookingRequestDto: {
             reason: string;
+        };
+        CompletePickupAddOnRequestDto: {
+            /** Format: int64 */
+            serviceId: number;
         };
         ContactResponseDto: {
             hotline?: string;
@@ -5134,6 +5196,7 @@ export interface components {
             premiumAmount?: number;
             /** Format: date-time */
             quoteExpiresAt?: string;
+            refundedPremiumAmount?: number;
             revisionReason?: string;
             /** @enum {string} */
             status?: "DRAFT" | "REVISION_REQUESTED" | "CONFIRMED";
@@ -5152,6 +5215,10 @@ export interface components {
             premiumAmount?: number;
             /** Format: date-time */
             quoteExpiresAt?: string;
+        };
+        InsurancePremiumRefundRequestDto: {
+            receiptReference: string;
+            refundedPremiumAmount: number;
         };
         InsuranceReopenRequestDto: {
             reason: string;
@@ -5487,6 +5554,13 @@ export interface components {
             /** Format: date */
             validTo: string;
         };
+        PickupAddOnResponseDto: {
+            /** Format: date-time */
+            completedAt?: string;
+            name?: string;
+            /** Format: int64 */
+            serviceId?: number;
+        };
         PickupHubTransferRequestDto: {
             reason: string;
         };
@@ -5503,6 +5577,13 @@ export interface components {
             /** @enum {string} */
             liability: "CUSTOMER" | "COMPANY" | "FORCE_MAJEURE";
         };
+        PickupMissPriceResponseDto: {
+            balanceDue?: number;
+            currencyCode?: string;
+            forfeited?: number;
+            refund?: number;
+            total?: number;
+        };
         PickupMissResponseDto: {
             availableChoices?: ("DROP_HORSE" | "RETRY_PICKUP" | "SELF_DELIVERY" | "CHANGE_DEPARTURE" | "RESCHEDULE_PICKUP" | "CANCEL_BOOKING")[];
             /** Format: int64 */
@@ -5516,6 +5597,9 @@ export interface components {
             liability?: "CUSTOMER" | "COMPANY" | "FORCE_MAJEURE";
             /** Format: date-time */
             missedAt?: string;
+            prices?: {
+                [key: string]: components["schemas"]["PickupMissPriceResponseDto"];
+            };
             reason?: string;
         };
         PickupWaitExtensionRequestDto: {
@@ -6892,6 +6976,32 @@ export interface operations {
             };
         };
     };
+    completePickupAddOn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompletePickupAddOnRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePickupAddOnResponseDto"];
+                };
+            };
+        };
+    };
     confirmPickupLiability: {
         parameters: {
             query?: never;
@@ -6962,6 +7072,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseHorseStayResponseDto"];
+                };
+            };
+        };
+    };
+    pickupAddOns: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListPickupAddOnResponseDto"];
                 };
             };
         };
@@ -7761,6 +7893,33 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["InsuranceEvidenceRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    recordPremiumRefund: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                insuranceId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InsurancePremiumRefundRequestDto"];
             };
         };
         responses: {

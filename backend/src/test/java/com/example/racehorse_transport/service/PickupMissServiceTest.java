@@ -249,6 +249,28 @@ class PickupMissServiceTest {
     }
 
     @Test
+    void repeatsOfCustomerRetryDoNotRepriceTheSameChoice() {
+        trunk();
+        service.record(3L, "Did not board", NOW, 4L);
+        horse.setPickupMissLiability(PickupMissLiability.CUSTOMER);
+        var retry = new HorseLeg();
+        var trip = new VehicleTrip();
+        trip.setId(12L);
+        trip.setPlannedStartAt(NOW.plus(Duration.ofHours(3)));
+        retry.setVehicleTrip(trip);
+        var hub = new TripStop();
+        hub.setPlannedArrivalAt(NOW.plus(Duration.ofHours(6)));
+        retry.setAlightTripStop(hub);
+        when(legs.findPickupRetryPlans(3L)).thenReturn(List.of(retry));
+        var request = new PickupMissChoiceRequestDto(PickupMissChoice.RETRY_PICKUP, null, null, null);
+
+        service.decide(3L, request, "owner");
+        service.decide(3L, request, "owner");
+
+        verify(bookingHorses).repricePickup(horse, retry, List.of(horse), false);
+    }
+
+    @Test
     void confirmedRetryCannotBoardWhenTheRevisedPlanMissesCheckIn() {
         trunk();
         horse.setPickupMissChoice(PickupMissChoice.RETRY_PICKUP);

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { PickupChoice, PickupLiability, PickupMiss } from '@shared/api/pickupMisses'
 import { usePickupMisses } from '@shared/hooks/usePickupMisses'
@@ -18,8 +18,13 @@ type Mode = 'customer' | 'coordinator' | 'manager'
 type Action = { id: number; choice: PickupChoice['choice'] } | { id: number; liability: PickupLiability }
 const liabilities: PickupLiability[] = ['CUSTOMER', 'COMPANY', 'FORCE_MAJEURE']
 
-export function PickupMissPanel({ bookingId, mode, onChanged }: { bookingId: number; mode: Mode; onChanged?: () => void }) {
-  const { t } = useTranslation()
+export function PickupMissPanel({ bookingId, mode, onChanged, renderAddOns }: {
+  bookingId: number
+  mode: Mode
+  onChanged?: () => void
+  renderAddOns?: (id: number) => ReactNode
+}) {
+  const { t, i18n } = useTranslation()
   const toast = useToast()
   const { data, loaded, error, reload, choose, confirmLiability } = usePickupMisses(bookingId)
   const [action, setAction] = useState<Action>()
@@ -31,7 +36,21 @@ export function PickupMissPanel({ bookingId, mode, onChanged }: { bookingId: num
   const needsDate = selfDelivery || choice === 'RESCHEDULE_PICKUP'
   const needsPhone = mode === 'coordinator' && Boolean(choice)
   const label = action && t('pickupMiss.' + ('choice' in action ? action.choice : action.liability))
-  const consequence = choice ? t('pickupMiss.consequence.' + choice) : t('pickupMiss.confirmLiability')
+  const price = choice && data?.find(miss => miss.bookingHorseId === action?.id)?.prices?.[choice]
+  const formatter = price?.currencyCode && new Intl.NumberFormat(i18n.language, {
+    style: 'currency', currency: price.currencyCode,
+  })
+  const costs = formatter && price
+    ? t(price.total == null ? 'pickupMiss.cancellationPrice' : 'pickupMiss.price', {
+      total: price.total == null ? undefined : formatter.format(price.total),
+      balance: formatter.format(price.balanceDue ?? 0),
+      refund: formatter.format(price.refund ?? 0),
+      forfeited: formatter.format(price.forfeited ?? 0),
+    })
+    : choice && t('pickupMiss.pricePending')
+  const consequence = choice
+    ? [t('pickupMiss.consequence.' + choice), costs].filter(Boolean).join(' ')
+    : t('pickupMiss.confirmLiability')
 
   const open = (next: Action) => {
     setDate('')
@@ -83,6 +102,7 @@ export function PickupMissPanel({ bookingId, mode, onChanged }: { bookingId: num
           <p>{t('pickupMiss.liability', { party: t('pickupMiss.' + (miss.liability ?? 'pending')) })}</p>
           {!miss.choice && miss.choiceDueAt && <p>{t('pickupMiss.due', { at: formatDateTime(new Date(miss.choiceDueAt)) })}</p>}
           {miss.choice && <p>{t('pickupMiss.chosen', { choice: t('pickupMiss.' + miss.choice) })}</p>}
+          {miss.bookingHorseId != null && !miss.liability && renderAddOns?.(miss.bookingHorseId)}
           {actions(miss)}
         </section>
       ))}

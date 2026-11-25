@@ -75,7 +75,7 @@ public record BookingDetailResponseDto(BookingResponseDto booking, List<PartySna
     public record InsuranceDetail(Long id, InsuranceCoverageOption coverageOption, HorseInsuranceStatus status,
             Long insurerPartyId, String policyNumber, LocalDate validFrom, LocalDate validTo, Long waiverTermsAcceptanceId,
             BigDecimal coverageAmount, BigDecimal premiumAmount, String currencyCode, Instant quoteExpiresAt,
-            String revisionReason) {
+            String revisionReason, BigDecimal refundedPremiumAmount) {
 
         public static InsuranceDetail from(HorseInsurance insurance) {
             return new InsuranceDetail(insurance.getId(), insurance.getCoverageOption(), insurance.getStatus(),
@@ -83,7 +83,7 @@ public record BookingDetailResponseDto(BookingResponseDto booking, List<PartySna
                     insurance.getPolicyNumber(), insurance.getValidFrom(), insurance.getValidTo(),
                     insurance.getWaiverTermsAcceptance() == null ? null : insurance.getWaiverTermsAcceptance().getId(),
                     insurance.getCoverageAmount(), insurance.getPremiumAmount(), insurance.getCurrencyCode(),
-                    insurance.getQuoteExpiresAt(), insurance.getRevisionReason());
+                    insurance.getQuoteExpiresAt(), insurance.getRevisionReason(), insurance.getRefundedPremiumAmount());
         }
     }
 }

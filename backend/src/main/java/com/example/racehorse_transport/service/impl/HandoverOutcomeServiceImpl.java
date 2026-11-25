@@ -140,7 +140,7 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
         legs.flush();
         if (handover.getHandoverType() == HandoverType.PICKUP || agent && boarding) {
             // Nhận ngựa từ khách xong thì lập khoản số dư; xe chỉ rời nơi nhận khi đã trả đủ (#32)
-            bookings.stream().filter(b -> b.getStatus() == BookingStatus.CONFIRMED)
+            bookings.stream().filter(b -> b.getStatus() == BookingStatus.CONFIRMED || b.getStatus() == BookingStatus.IN_OPERATION)
                     .forEach(b -> payments.requestBalance(b.getId(), now));
         } else if (!boarding) {
             // Quy tắc #16: con ACTIVE cuối cùng của đơn giao xong thì đơn DELIVERED

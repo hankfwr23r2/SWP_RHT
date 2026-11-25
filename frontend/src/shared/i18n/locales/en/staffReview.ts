@@ -1,5 +1,9 @@
 export const staffReview = {
   "staffReview": {
+    "recordPremiumRefund": "Record insurer refund",
+    "refundedPremiumAmount": "Total premium refunded by the insurer",
+    "premiumRefundReceipt": "Refund receipt reference",
+    "premiumRefundHint": "Enter the cumulative refund shown on the insurer’s receipt. This can reduce the quotation and trigger a refund to the customer.",
     "open": "View order",
     "reviewNow": "Review",
     "askReason": "Please submit: {{name}}",
