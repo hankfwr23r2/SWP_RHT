@@ -32,7 +32,7 @@ class IncidentSeverityMigrationTest {
                     """)).isEqualTo(8);
 
             Flyway.configure().dataSource(source).locations("classpath:db/migration", "classpath:db/seed-dev")
-                    .target("202611291400").load().migrate();
+                    .target("202611291600").load().migrate();
 
             assertThat(jdbc.queryForList("""
                     SELECT incident_type || ':' || severity
