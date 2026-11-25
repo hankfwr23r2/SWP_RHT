@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useParams, Link } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
-import { tripExecutionApi, type CrewTrip, type Handover, type StablePartner } from '@shared/api/tripExecution'
+import { tripExecutionApi, type CrewTrip, type Handover, type StablePartner, type DeliveryRecipient } from '@shared/api/tripExecution'
 import { useLoad } from '@shared/hooks/useLoad'
 import { formatDateTime } from '@shared/lib/format'
 import { Button } from '@shared/ui/Button'
@@ -24,7 +24,7 @@ import { PickupMissDialog } from './PickupMissDialog'
 import { HandoverPapersPanel } from './HandoverPapersPanel'
 import { StopHealthPanel } from './StopHealthPanel'
 import { TripIncidentPanel } from './TripIncidentPanel'
-import { canArrive, canComplete, canDepart, canRefuse, canReturnUnpaid, canStart, needsRecord, handoverTypesAt, isRestStop, pendingAt, stopState, type StopState } from './tripRunModel'
+import { canArrive, canComplete, canDepart, canRefuse, canReturnUnpaid, canStart, needsRecord, handoverTypesAt, isRestStop, pendingAt, receivesOriginals, stopState, type StopState } from './tripRunModel'
 import s from './MyTrips.module.css'
 
 const STATE_TONE: Record<StopState, StatusTone> = { waiting: 'neutral', here: 'info', left: 'success' }
@@ -36,6 +36,8 @@ export default function TripRunPage() {
   const toast = useToast()
   const { session } = useAuth()
   const [busy, setBusy] = useState(false)
+  const [deliveryRecipients, setDeliveryRecipients] = useState<Record<number, Record<string, DeliveryRecipient>>>({})
+  const [conditions, setConditions] = useState<Record<string, string>>({})
   const [chips, setChips] = useState<Record<number, string>>({})
   const [earlyReasons, setEarlyReasons] = useState<Record<number, string>>({})
   const [failing, setFailing] = useState<number>()
@@ -73,13 +75,26 @@ export default function TripRunPage() {
     try { setPartners(await tripExecutionApi.stablePartners()) } catch (e) { toast(e instanceof Error ? e.message : String(e), 'error') }
   }
   const stallOf = (legId: number) => (data.horses ?? []).find(h => h.leg?.id === legId)?.leg?.stallPosition
-  const handoverPanel = (handover: Handover) => (
+  const handoverPanel = (handover: Handover) => {
+    const handoverId = handover.id ?? 0
+    const recipients = deliveryRecipients[handoverId] ?? {}
+    const deliveryCodes = handover.handoverType === 'DELIVERY' ? [...new Set(
+      (handover.horses ?? []).filter(horse => horse.microchipMatched).map(horse => horse.bookingCode ?? ''),
+    )] : []
+    const setRecipient = (code: string, change: Partial<DeliveryRecipient>) =>
+      setDeliveryRecipients(current => ({
+        ...current, [handoverId]: { ...current[handoverId], [code]: { ...current[handoverId]?.[code], ...change } },
+      }))
+    return (
     <div className={s.body}>
       <StatusBadge tone="info" label={`${t(`myTrips.run.handover.${handover.handoverType}`)} · ${t(`myTrips.run.handoverStatus.${handover.status}`)}`} />
       {handover.partyName && <p className={s.line}>{t('myTrips.run.agentParty', { name: handover.partyName })}</p>}
       <ul className={s.list}>
         {(handover.horses ?? []).map(horse => {
           const legId = horse.horseLegId ?? 0
+          const conditionKey = `${handoverId}:${legId}`
+          const needsPhoto = handover.handoverType === 'PICKUP' || handover.handoverType === 'DELIVERY'
+            || handover.handoverType === 'AGENT' && receivesOriginals(data, handover)
           return (
             <li key={legId} className={s.body}>
               <p className={s.line}>{horse.horseName} · {horse.bookingCode}</p>
@@ -93,10 +108,20 @@ export default function TripRunPage() {
               <Field label={t('myTrips.run.chip', { name: horse.horseName })}>
                 {c => <Input {...c} inputMode="numeric" value={chips[legId] ?? ''} onChange={e => setChips(current => ({ ...current, [legId]: e.target.value }))} />}
               </Field>
-              <Button size="lg" fullWidth disabled={!chips[legId]?.trim()} loading={busy}
-                onClick={() => run(() => tripExecutionApi.scan(handover.id ?? 0, legId, chips[legId].trim()), t('myTrips.run.done.scanned'))}>
+              {needsPhoto && <Field label={t('handoverEvidence.condition')} required>
+                {c => <Textarea {...c} maxLength={1000} value={conditions[conditionKey] ?? horse.conditionNote ?? ''}
+                  onChange={e => setConditions(current => ({ ...current, [conditionKey]: e.target.value }))} />}
+              </Field>}
+              <Button size="lg" fullWidth disabled={!chips[legId]?.trim() || needsPhoto && !(conditions[conditionKey] ?? horse.conditionNote)?.trim()} loading={busy}
+                onClick={() => run(() => tripExecutionApi.scan(handover.id ?? 0, legId, chips[legId].trim(), conditions[conditionKey] ?? horse.conditionNote), t('myTrips.run.done.scanned'))}>
                 {t('myTrips.run.scan')}
               </Button>
+              {needsPhoto && horse.microchipMatched && <Field label={t('handoverEvidence.photo')} required>
+                {c => <Input {...c} type="file" accept="image/*" disabled={busy} onChange={e => {
+                  const photo = e.target.files?.[0]
+                  if (photo) void run(() => tripExecutionApi.uploadHorsePhoto(handover.id ?? 0, legId, photo), t('handoverEvidence.photoSaved'))
+                }} />}
+              </Field>}
               {canRefuse(data, handover, legId) && (
                 <Button variant="danger" size="lg" fullWidth
                   onClick={() => setRefusing({ handoverId: handover.id ?? 0, legId, name: horse.horseName ?? '' })}>
@@ -107,10 +132,20 @@ export default function TripRunPage() {
           )
         })}
       </ul>
-      {needsRecord(handover) && <HandoverPapersPanel handover={handover} onTrip={next => updateData(() => next)} />}
+      {deliveryCodes.map(code => <div key={code} className={s.body}>
+        <Field label={`${t('handoverEvidence.recipient')} · ${code}`} required>
+          {c => <Input {...c} maxLength={120} value={recipients[code]?.recipientName ?? ''}
+            onChange={e => setRecipient(code, { recipientName: e.target.value })} />}
+        </Field>
+        <Field label={t('handoverEvidence.code')}>
+          {c => <Input {...c} inputMode="numeric" maxLength={6} value={recipients[code]?.collectionCode ?? ''}
+            onChange={e => setRecipient(code, { collectionCode: e.target.value || undefined })} />}
+        </Field>
+      </div>)}
+      {needsRecord(handover) && <HandoverPapersPanel handover={handover} receiving={receivesOriginals(data, handover)} onTrip={next => updateData(() => next)} />}
       {needsRecord(handover) && !handover.recordAttached && <p className={s.muted}>{t('myTrips.run.papers.needRecord')}</p>}
       <Button variant="primary" size="lg" fullWidth loading={busy} disabled={needsRecord(handover) && !handover.recordAttached}
-        onClick={() => run(() => tripExecutionApi.completeHandover(handover.id ?? 0), t('myTrips.run.done.handed'))}>
+        onClick={() => run(() => tripExecutionApi.completeHandover(handoverId, handover.handoverType === 'DELIVERY' ? recipients : undefined), t('myTrips.run.done.handed'))}>
         {t('myTrips.run.completeHandover')}
       </Button>
       {handover.handoverType === 'DELIVERY' && (handover.waitStartedAt
@@ -127,7 +162,8 @@ export default function TripRunPage() {
           </Button>
         ))}
     </div>
-  )
+    )
+  }
 
   return (
     <div className={s.page}>

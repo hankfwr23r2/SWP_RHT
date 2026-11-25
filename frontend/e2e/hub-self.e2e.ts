@@ -40,20 +40,34 @@ test('tại hub điều phối nhận ngựa khách tự chở tới và trả n
   const stays = [{ id: 7, bookingHorseId: 51, bookingCode: 'BK-AAAA0005', horseName: 'Gió Bấc', stayType: 'ASSEMBLY', actualStartAt: '2031-03-05T05:00:00Z', deliveryMethod: 'SELF' }] as Record<string, unknown>[]
   const sent: Record<string, unknown>[] = []
   let documentsComplete = false
+  const photo = { name: 'horse.jpg', mimeType: 'image/jpeg', buffer: Buffer.from([1, 2, 3]) }
+  const record = { name: 'record.pdf', mimeType: 'application/pdf', buffer: Buffer.from([4, 5, 6]) }
+  const evidence = async (route: Route) => {
+    const request = route.request()
+    const form = await new Response(request.postDataBuffer(), { headers: { 'Content-Type': request.headers()['content-type'] } }).formData()
+    return {
+      request: JSON.parse(await (form.get('request') as File).text()),
+      photo: (form.get('photo') as File).name,
+      record: (form.get('record') as File).name,
+    }
+  }
   await page.route('**/api/v1/**', async route => {
     const request = route.request()
     const path = new URL(request.url()).pathname.replace('/api/v1', '')
     if (path === '/locations') return ok(route, [{ id: 1, name: 'Hub HCM', locationType: 'HUB' }])
     if (path === '/horse-stays/appointments') return ok(route, appointments)
     if (path === '/horse-stays') return ok(route, stays)
+    if (path === '/horse-stays/6/handover-papers' || path === '/horse-stays/7/handover-papers') {
+      return ok(route, [{ documentId: 900, documentTypeName: 'Hộ chiếu ngựa', ownerLabel: path.includes('/6/') ? 'Sao Mai' : 'Gió Bấc' }])
+    }
     if (path === '/horse-stays/6/receipts') {
-      sent.push({ receipt: request.postDataJSON() })
+      sent.push({ receipt: await evidence(route) })
       if (!documentsComplete) return route.fulfill({ status: 409, json: { status: 'error', message: 'Đơn BK-AAAA0002 còn thiếu giấy tờ bắt buộc. Không nhận ngựa tại hub.' } })
       stays.push({ ...appointments[0], actualStartAt: '2031-03-05T08:05:00Z', deliveryMethod: 'COMPANY' })
       appointments.length = 0
       return ok(route, stays[1])
     }
-    if (path === '/horse-stays/7/deliveries') { sent.push({ delivery: request.postDataJSON() }); stays.splice(0, 1); return ok(route, {}) }
+    if (path === '/horse-stays/7/deliveries') { sent.push({ delivery: await evidence(route) }); stays.splice(0, 1); return ok(route, {}) }
     return ok(route, [])
   })
   await page.goto('/backoffice/coordinator/hub')
@@ -65,6 +79,11 @@ test('tại hub điều phối nhận ngựa khách tự chở tới và trả n
   const receive = page.getByRole('dialog', { name: 'Nhận ngựa Sao Mai · BK-AAAA0002' })
   await expect(receive.getByRole('button', { name: 'Nhận ngựa' })).toBeDisabled()
   await receive.getByLabel('Chip đọc được').fill('985000000100002')
+  await receive.getByLabel('Tình trạng lúc giao nhận').fill('Khỏe')
+  await receive.getByLabel('Ảnh tình trạng ngựa').setInputFiles(photo)
+  await receive.getByLabel('Biên bản giao nhận đã ký').setInputFiles(record)
+  await receive.getByRole('combobox', { name: 'Hộ chiếu ngựa · Sao Mai' }).click()
+  await page.getByRole('option', { name: 'Đã nhận bản gốc' }).click()
   await receive.getByRole('button', { name: 'Nhận ngựa' }).click()
   // Backend từ chối thì hiện đúng lý do, hộp vẫn mở
   await expect(page.getByText('Đơn BK-AAAA0002 còn thiếu giấy tờ bắt buộc. Không nhận ngựa tại hub.')).toBeVisible()
@@ -81,12 +100,24 @@ test('tại hub điều phối nhận ngựa khách tự chở tới và trả n
   const deliver = page.getByRole('dialog', { name: 'Trả ngựa Gió Bấc · BK-AAAA0005' })
   await deliver.getByLabel('Chip đọc được').fill('985000000100005')
   await deliver.getByLabel('Tình trạng lúc giao nhận').fill('Khỏe')
+  await deliver.getByLabel('Ảnh tình trạng ngựa').setInputFiles(photo)
+  await deliver.getByLabel('Biên bản giao nhận đã ký').setInputFiles(record)
+  await deliver.getByRole('combobox', { name: 'Hộ chiếu ngựa · Gió Bấc' }).click()
+  await page.getByRole('option', { name: 'Đã trả bản gốc' }).click()
+  await deliver.getByLabel('Họ tên người nhận').fill('Nguyễn Văn An')
+  await deliver.getByLabel('Mã nhận ngựa 6 số').fill('123456')
   await deliver.getByRole('button', { name: 'Trả ngựa' }).click()
   await expect(present.getByRole('row', { name: /Gió Bấc/ })).toHaveCount(0)
+  const files = { photo: photo.name, record: record.name }
+  const papers = [{ documentId: 900, originalMissing: false }]
+  const receipt = { ...files, request: { microchip: '985000000100002', conditionNote: 'Khỏe', papers } }
   expect(sent).toEqual([
-    { receipt: { microchip: '985000000100002' } },
-    { receipt: { microchip: '985000000100002' } },
-    { delivery: { microchip: '985000000100005', conditionNote: 'Khỏe' } },
+    { receipt },
+    { receipt },
+    { delivery: { ...files, request: {
+      microchip: '985000000100005', conditionNote: 'Khỏe', papers,
+      recipient: { recipientName: 'Nguyễn Văn An', collectionCode: '123456' },
+    } } },
   ])
 })
 

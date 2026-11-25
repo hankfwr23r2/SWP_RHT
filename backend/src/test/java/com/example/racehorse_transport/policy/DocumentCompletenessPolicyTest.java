@@ -79,4 +79,16 @@ class DocumentCompletenessPolicyTest {
         document.setExpiryDate(TODAY);
         return document;
     }
+
+    @Test
+    void checksPapersAgainstThePlannedDayOrTodayWhenLate() {
+        var booking = new Booking();
+        booking.setRequestedPickupDate(LocalDate.of(2026, 12, 8));
+        assertThat(DocumentCompletenessPolicy.requiredOn(booking, LocalDate.of(2026, 12, 1))).isEqualTo(LocalDate.of(2026, 12, 8));
+        assertThat(DocumentCompletenessPolicy.requiredOn(booking, LocalDate.of(2026, 12, 9))).isEqualTo(LocalDate.of(2026, 12, 9));
+        var departure = new Departure();
+        departure.setDepartureDate(LocalDate.of(2026, 12, 10));
+        booking.setDeparture(departure);
+        assertThat(DocumentCompletenessPolicy.requiredOn(booking, LocalDate.of(2026, 12, 9))).isEqualTo(LocalDate.of(2026, 12, 10));
+    }
 }

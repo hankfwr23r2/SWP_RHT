@@ -58,6 +58,12 @@ public class RegulationServiceImpl implements RegulationService {
         RegulationPreviewResponseDto resolved = resolve(request.bookingType(), request.pickupCountryCode(),
                 request.deliveryCountryCode(), request.requestedPickupDate(), request.gateLocationId());
         if (request.departureId() == null) {
+            if (request.bookingType() == BookingType.INTERPROVINCE) {
+                return new RegulationPreviewResponseDto(resolved.rule(), resolved.leadDays(), resolved.requirements(),
+                        resolved.requirementsDependOnGate(), null, RegulationPolicy.feasible(resolved.leadDays(),
+                                com.example.racehorse_transport.policy.BookingSubmissionPolicy.businessDate(clock.instant()),
+                                request.requestedPickupDate()));
+            }
             return resolved;
         }
         Instant cutoff = departures.findById(request.departureId())

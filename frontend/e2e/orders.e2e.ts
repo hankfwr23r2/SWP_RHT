@@ -6,7 +6,7 @@ test.describe.configure({ timeout: 60_000 })
 
 type Json = Record<string, unknown>
 
-async function open(page: Page, path: string, order: { status: string; quotations?: Json[]; payments?: Json[]; items?: Json[]; documents?: Json[]; insurance?: Json; reviewReason?: string; cancellation?: Json }) {
+async function open(page: Page, path: string, order: { status: string; rated?: boolean; quotations?: Json[]; payments?: Json[]; items?: Json[]; documents?: Json[]; insurance?: Json; reviewReason?: string; cancellation?: Json }) {
   const calls: { path: string; body: unknown }[] = []
   const state = { ...order }
   await page.addInitScript(() => {
@@ -29,12 +29,15 @@ async function open(page: Page, path: string, order: { status: string; quotation
       if (url === '/bookings/8/cancel') state.status = 'CANCELLED'
       if (url === '/bookings/8/reschedule') state.status = 'UNDER_REVIEW'
       if (url === '/bookings/8/resubmit') state.status = 'UNDER_REVIEW'
-      if (url === '/bookings/8/ratings') return reply({ bookingId: 8, score: 5 })
+      if (url === '/bookings/8/ratings') {
+        state.rated = true
+        return reply({ bookingId: 8, score: 5 })
+      }
       return reply({})
     }
     if (url === '/bookings') return reply([{ ...booking, horseCount: 2, routeName: 'TP.HCM – Đà Nẵng', departureDate: '2099-01-12' }, { ...booking, id: 9, code: 'BK-XONG', status: 'COMPLETED' }, { ...booking, id: 10, code: 'BK-CHAY', status: 'IN_OPERATION' }])
     if (url === '/bookings/8') return reply({
-      booking, pickupMethod: 'COMPANY', deliveryMethod: 'COMPANY', reviewReason: state.reviewReason,
+      booking, rated: state.rated ?? false, pickupMethod: 'COMPANY', deliveryMethod: 'COMPANY', reviewReason: state.reviewReason,
       addresses: [{ addressType: 'PICKUP', addressLine: 'Trại A', provinceCode: 'VN-79', countryCode: 'VN' }, { addressType: 'DELIVERY', addressLine: 'Trại B', provinceCode: 'VN-48', countryCode: 'VN' }],
       parties: [{ bookingRole: 'SHIPPER', fullName: 'Người gửi', phone: '0900' }],
       horses: [{ id: 21, horseName: 'Gió Nam', status: 'ACTIVE', stallTypeCode: 'STANDARD', insurance: state.insurance }],
@@ -155,6 +158,9 @@ test('đánh giá sau khi giao; khoản phát sinh chưa trả thì nhắc thanh
   await expect(page.getByRole('button', { name: 'Hủy đơn' })).toHaveCount(0)
   await page.getByRole('radio', { name: '5' }).check({ force: true })
   await page.getByRole('button', { name: 'Gửi đánh giá' }).click()
-  await expect(page.getByText('Cảm ơn bạn đã chấm 5/5.')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Gửi đánh giá' })).toHaveCount(0)
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'BK-TEST' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Gửi đánh giá' })).toHaveCount(0)
   expect(calls).toEqual([{ path: '/bookings/8/ratings', body: { score: 5 } }])
 })

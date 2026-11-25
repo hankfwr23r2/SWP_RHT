@@ -1,11 +1,15 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.dto.tracking.HorseJourneyResponseDto.HandoverEvidenceResponseDto;
+import com.example.racehorse_transport.repository.DocumentRepository;
+
 import com.example.racehorse_transport.dto.tracking.BookingJourneyResponseDto;
 import com.example.racehorse_transport.policy.TrackingPolicy.CustodyHolder;
 import com.example.racehorse_transport.dto.tracking.HorseJourneyResponseDto;
 import com.example.racehorse_transport.dto.tracking.PublicTrackingRequestDto;
 import com.example.racehorse_transport.dto.tracking.PublicTrackingResponseDto;
 import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.entity.Document;
 import com.example.racehorse_transport.entity.BookingHorse;
 import com.example.racehorse_transport.entity.BookingParty;
 import com.example.racehorse_transport.entity.BookingPartyId;
@@ -58,6 +62,7 @@ public class TrackingServiceImpl implements TrackingService {
     private final HorseStayRepository stays;
     private final HandoverHorseRepository handoverHorses;
     private final HandoverRepository handovers;
+    private final DocumentRepository documents;
     private final PublicTrackingGuard guard;
 
     // Dữ liệu thô của một đơn, gom theo con ngựa
@@ -133,11 +138,17 @@ public class TrackingServiceImpl implements TrackingService {
 
     private BookingJourneyResponseDto journeyOf(Booking booking) {
         Journey journey = load(booking);
+        List<Long> handoverIds = journey.handovers().values().stream().flatMap(List::stream)
+                .map(row -> row.getHandover().getId()).distinct().toList();
+        Map<Long, List<Document>> evidence = handoverIds.isEmpty() ? Map.of()
+                : documents.findHandoverEvidenceForBooking(booking.getId(), handoverIds).stream()
+                        .collect(Collectors.groupingBy(document -> document.getHandover().getId()));
         return new BookingJourneyResponseDto(booking.getId(), booking.getCode(), booking.getStatus(),
-                journey.lines().stream().map(line -> horseJourney(line, journey)).toList());
+                journey.lines().stream().map(line -> horseJourney(line, journey, evidence)).toList());
     }
 
-    private HorseJourneyResponseDto horseJourney(BookingHorse line, Journey journey) {
+    private HorseJourneyResponseDto horseJourney(BookingHorse line, Journey journey,
+                                                 Map<Long, List<Document>> evidence) {
         List<HandoverHorse> rows = journey.of(journey.handovers(), line);
         HandoverHorse last = lastDone(rows);
         CustodyHolder holder = holder(last);
@@ -146,7 +157,7 @@ public class TrackingServiceImpl implements TrackingService {
                 last == null ? null : last.getHandover().getHandedAt(),
                 journey.of(journey.legs(), line).stream().map(TrackingServiceImpl::journeyLeg).toList(),
                 journey.of(journey.stays(), line).stream().map(HorseJourneyResponseDto.JourneyStayDto::from).toList(),
-                handoversOf(line, journey));
+                handoversOf(line, journey, evidence));
     }
 
     // Chặng đã gỡ khỏi lượt xe thì khung giờ không còn đúng
@@ -158,17 +169,22 @@ public class TrackingServiceImpl implements TrackingService {
     }
 
     // Giao nhận đã có dòng của con này, cộng các lần chưa xong ở điểm lên, xuống xe của nó, xếp theo thứ tự lập
-    private static List<HorseJourneyResponseDto.JourneyHandoverDto> handoversOf(BookingHorse line, Journey journey) {
+    private static List<HorseJourneyResponseDto.JourneyHandoverDto> handoversOf(
+            BookingHorse line, Journey journey, Map<Long, List<Document>> evidence) {
         List<HandoverHorse> rows = journey.of(journey.handovers(), line);
         Set<Long> withRow = rows.stream().map(row -> row.getHandover().getId()).collect(Collectors.toSet());
         Stream<HorseJourneyResponseDto.JourneyHandoverDto> scanned = rows.stream()
-                .map(row -> HorseJourneyResponseDto.JourneyHandoverDto.from(row.getHandover(), row.getMicrochipMatched()));
+                .map(row -> HorseJourneyResponseDto.JourneyHandoverDto.from(row.getHandover(), row.getMicrochipMatched(),
+                        Boolean.TRUE.equals(row.getMicrochipMatched()) ? evidence.getOrDefault(row.getHandover().getId(), List.of()).stream()
+                                .filter(document -> document.getEvidenceHorseLeg() == null
+                                        || document.getEvidenceHorseLeg().getId().equals(row.getHorseLeg().getId()))
+                                .map(HandoverEvidenceResponseDto::from).toList() : List.of()));
         Stream<HorseJourneyResponseDto.JourneyHandoverDto> open = journey.of(journey.legs(), line).stream()
                 .flatMap(leg -> Stream.concat(
                         stopHandovers(journey, leg.getBoardTripStop() == null ? null : leg.getBoardTripStop().getId(), true),
                         stopHandovers(journey, leg.getAlightTripStop() == null ? null : leg.getAlightTripStop().getId(), false)))
                 .filter(handover -> !withRow.contains(handover.getId())).distinct()
-                .map(handover -> HorseJourneyResponseDto.JourneyHandoverDto.from(handover, null));
+                .map(handover -> HorseJourneyResponseDto.JourneyHandoverDto.from(handover, null, List.of()));
         return Stream.concat(scanned, open).sorted(Comparator.comparing(HorseJourneyResponseDto.JourneyHandoverDto::id)).toList();
     }
 

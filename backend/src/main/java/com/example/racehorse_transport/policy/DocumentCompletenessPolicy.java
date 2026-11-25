@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.policy;
 
 import com.example.racehorse_transport.dto.regulation.DocumentRequirementResponseDto;
+import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.BookingHorse;
 import com.example.racehorse_transport.entity.Document;
 import com.example.racehorse_transport.entity.enums.DocumentStatus;
@@ -10,6 +11,13 @@ import java.util.List;
 
 public final class DocumentCompletenessPolicy {
     private DocumentCompletenessPolicy() {}
+
+    public static LocalDate requiredOn(Booking booking, LocalDate today) {
+        LocalDate planned = booking.getDeparture() == null ? booking.getRequestedPickupDate()
+                : booking.getDeparture().getDepartureDate();
+        // Lịch đã qua (đi trễ) thì giấy phải còn hạn hôm nay
+        return planned.isBefore(today) ? today : planned;
+    }
 
     public static boolean satisfies(Document document, DocumentRequirementResponseDto requirement,
             Long bookingId, BookingHorse horse, LocalDate on) {

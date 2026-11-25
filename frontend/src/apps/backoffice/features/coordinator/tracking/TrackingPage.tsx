@@ -8,7 +8,7 @@ import { useLoad } from '@shared/hooks/useLoad'
 import { formatDateTime } from '@shared/lib/format'
 import { Badge } from '@shared/ui/Badge'
 import { Button } from '@shared/ui/Button'
-import { ConfirmDialog } from '@shared/ui/ConfirmDialog'
+import { Field } from '@shared/ui/Field'
 import { EmptyState } from '@shared/ui/EmptyState'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { Input } from '@shared/ui/Input'
@@ -28,6 +28,8 @@ export default function TrackingPage() {
   const { t } = useTranslation()
   const [query, setQuery] = useState('')
   const toast = useToast()
+  const [proof, setProof] = useState<File>()
+  const [savingProof, setSavingProof] = useState(false)
   const [delivered, setDelivered] = useState<CustodyRow>()
   const [journey, setJourney] = useState<CustodyRow>()
   const [balance, setBalance] = useState<CustodyRow>()
@@ -67,7 +69,7 @@ export default function TrackingPage() {
               <p className={s.line}><i className="fa-solid fa-heart-pulse" aria-hidden="true" /> {row.lastCheckAt ? t('tracking.lastCheck', { at: formatDateTime(new Date(row.lastCheckAt)) }) : t('tracking.noCheck')}
                 {row.nextCheckAt && row.holder === 'COMPANY' && ` · ${t('tracking.nextCheck', { at: formatDateTime(new Date(row.nextCheckAt)) })}`}</p>
               <div className={s.chips}>
-                {row.agentLegId && <Button size="sm" variant="primary" onClick={() => setDelivered(row)}>{t('dispatch.agent.complete')}</Button>}
+                {row.agentLegId && <Button size="sm" variant="primary" onClick={() => { setProof(undefined); setDelivered(row) }}>{t('dispatch.agent.complete')}</Button>}
                 <Button size="sm" onClick={() => setJourney(row)}>{t('dispatch.board.journey')}</Button>
                 {row.balanceContactAllowed && (
                   <Button size="sm" onClick={() => setBalance(row)}>{t('tracking.balance.open')}</Button>
@@ -87,14 +89,26 @@ export default function TrackingPage() {
       <Input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={t('tracking.search')} aria-label={t('tracking.search')} />
       {content()}
       {delivered && (
-        <ConfirmDialog title={t('dispatch.agent.complete')} message={t('tracking.agentDeliveredMessage', { horse: delivered.horseName, agent: delivered.holderName })}
-          confirmLabel={t('dispatch.agent.complete')} onCancel={() => setDelivered(undefined)}
-          onConfirm={async () => {
-            await dispatchApi.completeAgentLeg(delivered.agentLegId!).catch(e => { toast(e instanceof Error ? e.message : String(e), 'error'); throw e })
-            toast(t('tracking.agentDelivered'), 'success')
-            setDelivered(undefined)
-            await reload()
-          }} />
+        <Modal title={t('dispatch.agent.complete')} onClose={() => setDelivered(undefined)}
+          footer={<Button variant="primary" disabled={!proof} loading={savingProof} onClick={async () => {
+            if (!proof || !delivered.agentLegId) return
+            setSavingProof(true)
+            try {
+              await dispatchApi.completeAgentLeg(delivered.agentLegId, proof)
+              toast(t('tracking.agentDelivered'), 'success')
+              setDelivered(undefined)
+              await reload()
+            } catch (e) {
+              toast(e instanceof Error ? e.message : String(e), 'error')
+            } finally {
+              setSavingProof(false)
+            }
+          }}>{t('dispatch.agent.complete')}</Button>}>
+          <p>{t('tracking.agentDeliveredMessage', { horse: delivered.horseName, agent: delivered.holderName })}</p>
+          <Field label={t('handoverEvidence.agentProof')} required>
+            {c => <Input {...c} type="file" accept="image/*,application/pdf" onChange={e => setProof(e.target.files?.[0])} />}
+          </Field>
+        </Modal>
       )}
       {journey && (
         <Modal title={t('dispatch.bookings.journeyTitle', { code: journey.bookingCode })} onClose={() => setJourney(undefined)}>

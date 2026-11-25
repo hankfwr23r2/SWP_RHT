@@ -2,11 +2,14 @@ package com.example.racehorse_transport.controller;
 
 import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.dto.dispatch.AgentLegRequestDto;
+import org.springframework.web.multipart.MultipartFile;
 import com.example.racehorse_transport.dto.dispatch.HorseLegResponseDto;
 import com.example.racehorse_transport.service.AgentLegService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -39,8 +42,9 @@ public class AgentLegController {
         return ApiResponseDto.success(agentLegs.start(id), "Đã ghi đại lý nhận ngựa");
     }
 
-    @PostMapping("/agent-legs/{id}/complete")
-    public ApiResponseDto<HorseLegResponseDto> complete(@PathVariable Long id, Authentication authentication) {
-        return ApiResponseDto.success(agentLegs.complete(id, authentication.getName()), "Đã ghi đại lý giao ngựa");
+    @PostMapping(value = "/agent-legs/{id}/complete", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponseDto<HorseLegResponseDto> complete(@PathVariable Long id, Authentication authentication,
+                                                      @RequestPart(value = "proof", required = false) MultipartFile proof) {
+        return ApiResponseDto.success(agentLegs.complete(id, proof, authentication.getName()), "Đã ghi đại lý giao ngựa");
     }
 }

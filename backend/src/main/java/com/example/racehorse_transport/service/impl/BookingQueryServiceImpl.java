@@ -18,6 +18,7 @@ import com.example.racehorse_transport.repository.BookingHorseAddOnRepository;
 import com.example.racehorse_transport.repository.BookingHorseRepository;
 import com.example.racehorse_transport.repository.BookingPartyRepository;
 import com.example.racehorse_transport.repository.BookingRepository;
+import com.example.racehorse_transport.repository.BookingRatingRepository;
 import com.example.racehorse_transport.repository.BookingStatusHistoryRepository;
 import com.example.racehorse_transport.entity.BookingStatusHistory;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
@@ -48,6 +49,7 @@ public class BookingQueryServiceImpl implements BookingQueryService {
     private final HorseInsuranceRepository insurances;
     private final BookingStatusHistoryRepository history;
     private final StaffRepository staff;
+    private final BookingRatingRepository ratings;
 
     @Override
     public List<BookingSummaryResponseDto> list(String username) {
@@ -112,7 +114,7 @@ public class BookingQueryServiceImpl implements BookingQueryService {
                         || row.getToStatus() == BookingStatus.REJECTED)
                 .map(BookingStatusHistory::getReason).orElse(null);
         return BookingDetailResponseDto.from(booking, parties.findById_BookingId(id),
-                addresses.findAddressesForDetail(id), horseDetails(rows), reason, intakeByName,
+                addresses.findAddressesForDetail(id), horseDetails(rows), reason, intakeByName, ratings.existsById(id),
                 bookings.findActiveBalanceHoldAt(id).orElse(null));
     }
 

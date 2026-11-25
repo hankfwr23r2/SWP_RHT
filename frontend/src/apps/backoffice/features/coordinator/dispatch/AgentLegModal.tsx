@@ -27,6 +27,7 @@ export function AgentLegModal({ booking, horse, onClose, onChanged }: Props) {
   const [gateId, setGateId] = useState('')
   const [start, setStart] = useState('')
   const [end, setEnd] = useState('')
+  const [proofs, setProofs] = useState<Record<number, File | undefined>>({})
   const [busy, setBusy] = useState(false)
   const { data, loaded, error, reload } = useLoad(async () => {
     const [parties, locations] = await Promise.all([dispatchApi.parties(), dispatchApi.locations()])
@@ -61,8 +62,17 @@ export function AgentLegModal({ booking, horse, onClose, onChanged }: Props) {
         <Button size="sm" loading={busy} onClick={() => run(() => dispatchApi.startAgentLeg(leg.id ?? 0), t('dispatch.agent.started'))}>{t('dispatch.agent.start')}</Button>
       )}
       {leg.status === 'IN_PROGRESS' && leg.legType === 'DELIVERY' && (
-        <Button size="sm" variant="primary" loading={busy}
-          onClick={() => run(() => dispatchApi.completeAgentLeg(leg.id ?? 0), t('dispatch.agent.completed'))}>{t('dispatch.agent.complete')}</Button>
+        <>
+          <Field label={t('handoverEvidence.agentProof')} required>
+            {c => <Input {...c} type="file" accept="image/*,application/pdf"
+              onChange={e => setProofs(current => ({ ...current, [leg.id ?? 0]: e.target.files?.[0] }))} />}
+          </Field>
+          <Button size="sm" variant="primary" loading={busy} disabled={!proofs[leg.id ?? 0]}
+            onClick={() => {
+              const proof = proofs[leg.id ?? 0]
+              if (proof) void run(() => dispatchApi.completeAgentLeg(leg.id ?? 0, proof), t('dispatch.agent.completed'))
+            }}>{t('dispatch.agent.complete')}</Button>
+        </>
       )}
       {leg.status === 'PLANNED' && (
         <Button size="sm" variant="ghost" loading={busy} onClick={() => run(() => dispatchApi.cancelAgentLeg(leg.id ?? 0), t('dispatch.agent.cancelled'))}>{t('dispatch.agent.cancel')}</Button>

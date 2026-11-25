@@ -1,5 +1,5 @@
 // Dựng các mốc timeline của một con ngựa từ chặng, lưu trú, giao nhận; xếp theo thời gian (thực tế trước, kế hoạch sau)
-import type { HorseJourney, JourneyLeg } from '@shared/api/tracking'
+import type { HorseJourney, JourneyHandover, JourneyLeg } from '@shared/api/tracking'
 
 export type JourneyState = 'done' | 'current' | 'planned' | 'problem'
 
@@ -17,6 +17,7 @@ export interface JourneyEntry {
   place: string
   detail?: string
   windows?: ExpectedWindow[]
+  evidence?: JourneyHandover['evidence']
 }
 
 const LEG_STATE: Record<string, JourneyState> = { PLANNED: 'planned', IN_PROGRESS: 'current', COMPLETED: 'done', FAILED: 'problem', CANCELLED: 'problem' }
@@ -40,6 +41,7 @@ export function journeyEntries(horse: HorseJourney): JourneyEntry[] {
     state: handover.microchipMatched === false ? 'problem' : HANDOVER_STATE[handover.status ?? ''] ?? 'current',
     at: handover.handedAt ?? handover.waitStartedAt, planned: false, place: handover.placeName ?? '',
     detail: handover.toPartyName ?? handover.fromPartyName,
+    evidence: handover.evidence,
   }))
   return [...legs, ...stays, ...handovers].sort(byTime)
 }

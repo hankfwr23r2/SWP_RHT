@@ -72,7 +72,13 @@ export function canRefuse(run: CrewTrip, handover: Handover, legId: number): boo
 }
 
 // Nhận và giao ngựa phải có biên bản đã ký trước khi hoàn tất (MAN_HINH 4.3, 6.5)
-export const needsRecord = (handover: Handover) => handover.handoverType === 'PICKUP' || handover.handoverType === 'DELIVERY'
+export const needsRecord = (handover: Handover) =>
+  handover.handoverType === 'PICKUP' || handover.handoverType === 'DELIVERY' || handover.handoverType === 'AGENT'
+
+export function receivesOriginals(run: CrewTrip, handover: Handover): boolean {
+  return handover.handoverType === 'PICKUP' || (handover.handoverType === 'AGENT'
+    && (handover.horses ?? []).some(horse => horse.horseLegId != null && canRefuse(run, handover, horse.horseLegId)))
+}
 
 export const canStart = (run: CrewTrip) => run.trip?.status === 'PLANNED' || run.trip?.status === 'DISPATCHED'
 

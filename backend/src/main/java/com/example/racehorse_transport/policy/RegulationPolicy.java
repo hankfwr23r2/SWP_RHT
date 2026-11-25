@@ -64,7 +64,11 @@ public final class RegulationPolicy {
     public static boolean feasible(long leadDays, Instant now, Instant bookingCutoffAt) {
         LocalDate today = now.atZone(BUSINESS_ZONE).toLocalDate();
         LocalDate cutoffDate = bookingCutoffAt.atZone(BUSINESS_ZONE).toLocalDate();
-        return bookingCutoffAt.isAfter(now) && !cutoffDate.isBefore(today.plusDays(leadDays));
+        return bookingCutoffAt.isAfter(now) && feasible(leadDays, today, cutoffDate);
+    }
+
+    public static boolean feasible(long leadDays, LocalDate today, LocalDate cutoffDate) {
+        return !cutoffDate.isBefore(today.plusDays(leadDays));
     }
 
     public static List<DocumentRequirement> requirementsForGate(List<DocumentRequirement> requirements, Long gateId) {

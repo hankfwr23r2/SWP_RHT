@@ -2,6 +2,7 @@ package com.example.racehorse_transport.controller;
 
 import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.dto.operation.CrewTripResponseDto;
+import com.example.racehorse_transport.dto.operation.HandoverCompleteRequestDto;
 import com.example.racehorse_transport.dto.operation.HandoverCreateRequestDto;
 import com.example.racehorse_transport.dto.operation.HandoverRefusalRequestDto;
 import com.example.racehorse_transport.dto.operation.HandoverScanRequestDto;
@@ -83,8 +84,9 @@ public class TripExecutionController {
     }
 
     @PostMapping("/handovers/{id}/complete")
-    public ApiResponseDto<CrewTripResponseDto> completeHandover(@PathVariable Long id, Authentication authentication) {
-        return ApiResponseDto.success(handovers.complete(id, authentication.getName()), "Đã hoàn tất giao nhận");
+    public ApiResponseDto<CrewTripResponseDto> completeHandover(@PathVariable Long id, Authentication authentication,
+            @Valid @RequestBody(required = false) HandoverCompleteRequestDto request) {
+        return ApiResponseDto.success(handovers.complete(id, request, authentication.getName()), "Đã hoàn tất giao nhận");
     }
 
     @PostMapping("/handovers/{id}/start-waiting")

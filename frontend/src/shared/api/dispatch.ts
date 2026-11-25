@@ -31,6 +31,17 @@ export type StallAssignment = Schemas['StallAssignmentDto']
 
 const get = async <T>(url: string, params?: Record<string, string>) => (await apiClient.get<ApiResponse<T>>(url, { params })).data.data
 const post = async <T>(url: string, body?: unknown) => (await apiClient.post<ApiResponse<T>>(url, body)).data.data
+const postEvidence = async <T>(url: string, body: FormData) =>
+  (await apiClient.post<ApiResponse<T>>(url, body, { headers: { 'Content-Type': 'multipart/form-data' } })).data.data
+
+export type HubHandoverInput = Schemas['HubHandoverRequestDto']
+function hubHandover(stayId: number, endpoint: 'receipts' | 'deliveries', request: HubHandoverInput, photo: File, record: File) {
+  const body = new FormData()
+  body.append('request', new Blob([JSON.stringify(request)], { type: 'application/json' }))
+  body.append('photo', photo)
+  body.append('record', record)
+  return postEvidence<HorseStay>(`/horse-stays/${stayId}/${endpoint}`, body)
+}
 
 export const dispatchApi = {
   trips: (from: string, to: string) => get<VehicleTrip[]>('/vehicle-trips', { from, to }),
@@ -59,15 +70,21 @@ export const dispatchApi = {
   applyStallPlan: (tripId: number, horses: StallAssignment[]) => post<StallPlan>(`/vehicle-trips/${tripId}/stall-plan/apply`, { horses }),
   hubAppointments: (locationId: number) => get<HorseStay[]>('/horse-stays/appointments', { locationId: String(locationId) }),
   appointAtHub: (bookingHorseId: number, plannedStartAt: string) => post<HorseStay>(`/booking-horses/${bookingHorseId}/hub-appointments`, { plannedStartAt }),
-  receiveAtHub: (stayId: number, microchip: string, conditionNote?: string) => post<HorseStay>(`/horse-stays/${stayId}/receipts`, { microchip, conditionNote }),
+  hubHandoverPapers: (stayId: number, receiving: boolean) => get<Schemas['HandoverPaperResponseDto'][]>(
+    `/horse-stays/${stayId}/handover-papers?receiving=${receiving}`),
+  receiveAtHub: (stayId: number, request: HubHandoverInput, photo: File, record: File) => hubHandover(stayId, 'receipts', request, photo, record),
   refuseAtHub: (stayId: number, reason: string) => post<null>(`/horse-stays/${stayId}/refusals`, { reason }),
   setCollectionTime: (stayId: number, collectAt: string) => post<HorseStay>(`/horse-stays/${stayId}/collection-time`, { collectAt }),
   stableAtHub: (stayId: number, note?: string) => post<HorseStay>(`/horse-stays/${stayId}/stabling`, { note }),
-  deliverAtHub: (stayId: number, microchip: string, conditionNote?: string) => post<HorseStay>(`/horse-stays/${stayId}/deliveries`, { microchip, conditionNote }),
+  deliverAtHub: (stayId: number, request: HubHandoverInput, photo: File, record: File) => hubHandover(stayId, 'deliveries', request, photo, record),
   parties: () => get<Partner[]>('/parties'),
   createAgentLeg: (bookingHorseId: number, body: AgentLegCreate) => post<HorseLeg>(`/booking-horses/${bookingHorseId}/agent-legs`, body),
   cancelAgentLeg: (legId: number) => post<null>(`/agent-legs/${legId}/cancel`),
   startAgentLeg: (legId: number) => post<HorseLeg>(`/agent-legs/${legId}/start`),
-  completeAgentLeg: (legId: number) => post<HorseLeg>(`/agent-legs/${legId}/complete`),
+  completeAgentLeg: (legId: number, proof: File) => {
+    const body = new FormData()
+    body.append('proof', proof)
+    return postEvidence<HorseLeg>(`/agent-legs/${legId}/complete`, body)
+  },
   acknowledge: (assignmentId: number) => post<MyCrewAssignment>(`/crew-assignments/${assignmentId}/acknowledge`),
 }

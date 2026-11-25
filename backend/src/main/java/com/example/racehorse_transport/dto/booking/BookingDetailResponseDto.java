@@ -10,25 +10,25 @@ import java.util.List;
 // intakeByName: nhân viên đã tiếp nhận đơn, chỉ trả cho nhân viên
 public record BookingDetailResponseDto(BookingResponseDto booking, List<PartySnapshot> parties,
         List<AddressSnapshot> addresses, List<HorseDetail> horses, String reviewReason,
-        TransferMethod pickupMethod, TransferMethod deliveryMethod, String intakeByName, Instant balanceHoldAt) {
+        TransferMethod pickupMethod, TransferMethod deliveryMethod, String intakeByName, boolean rated, Instant balanceHoldAt) {
 
     public static BookingDetailResponseDto from(Booking booking, List<BookingParty> parties,
                                                  List<BookingAddress> addresses, List<HorseDetail> horses) {
-        return from(booking, parties, addresses, horses, null, null);
+        return from(booking, parties, addresses, horses, null, null, false);
     }
 
     public static BookingDetailResponseDto from(Booking booking, List<BookingParty> parties,
-            List<BookingAddress> addresses, List<HorseDetail> horses, String reviewReason, String intakeByName) {
-        return from(booking, parties, addresses, horses, reviewReason, intakeByName, null);
+            List<BookingAddress> addresses, List<HorseDetail> horses, String reviewReason, String intakeByName, boolean rated) {
+        return from(booking, parties, addresses, horses, reviewReason, intakeByName, rated, null);
     }
 
     public static BookingDetailResponseDto from(Booking booking, List<BookingParty> parties,
-            List<BookingAddress> addresses, List<HorseDetail> horses, String reviewReason, String intakeByName,
+            List<BookingAddress> addresses, List<HorseDetail> horses, String reviewReason, String intakeByName, boolean rated,
             Instant balanceHoldAt) {
         return new BookingDetailResponseDto(BookingResponseDto.from(booking),
                 parties.stream().map(PartySnapshot::from).toList(),
                 addresses.stream().map(AddressSnapshot::from).toList(), List.copyOf(horses), reviewReason,
-                booking.getPickupMethod(), booking.getDeliveryMethod(), intakeByName, balanceHoldAt);
+                booking.getPickupMethod(), booking.getDeliveryMethod(), intakeByName, rated, balanceHoldAt);
     }
 
     public record PartySnapshot(BookingPartyRole bookingRole, String fullName, String phone,

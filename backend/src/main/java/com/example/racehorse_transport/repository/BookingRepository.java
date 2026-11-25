@@ -3,6 +3,7 @@ package com.example.racehorse_transport.repository;
 import org.springframework.data.domain.Pageable;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
+import com.example.racehorse_transport.entity.enums.BookingType;
 import com.example.racehorse_transport.entity.enums.DepartureStatus;
 
 import jakarta.persistence.LockModeType;
@@ -84,16 +85,20 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                                          @Param("threshold") Instant threshold);
 
     @Query("""
-            SELECT b FROM Booking b JOIN FETCH b.departure d
-            WHERE b.status = :status ORDER BY d.plannedDepartureAt, b.id
+            SELECT b FROM Booking b LEFT JOIN FETCH b.departure d
+            WHERE b.status = :status AND (d.id IS NOT NULL OR b.bookingType = :directType)
+            ORDER BY d.plannedDepartureAt, b.requestedPickupDate, b.id
             """)
-    List<Booking> findWithDeparture(BookingStatus status);
+    List<Booking> findForDocumentCheck(BookingStatus status, BookingType directType);
 
     @Query("""
-            SELECT b.id FROM Booking b JOIN b.departure d
-            WHERE b.status = :status AND d.plannedDepartureAt BETWEEN :now AND :cutoff ORDER BY b.id
+            SELECT b.id FROM Booking b LEFT JOIN b.departure d
+            WHERE b.status = :status AND (d.plannedDepartureAt BETWEEN :now AND :cutoff
+                OR (d.id IS NULL AND b.bookingType = :directType AND b.requestedPickupDate BETWEEN :today AND :lastDate))
+            ORDER BY b.id
             """)
-    List<Long> findIdsForDocumentReminder(BookingStatus status, Instant now, Instant cutoff);
+    List<Long> findIdsForDocumentReminder(BookingStatus status, Instant now, Instant cutoff,
+            BookingType directType, java.time.LocalDate today, java.time.LocalDate lastDate);
 
     @Query("""
             SELECT count(n) > 0 FROM Notification n

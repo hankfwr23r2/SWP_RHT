@@ -52,6 +52,52 @@ class TrackingFlowTest {
     }
 
     @Test
+    void ownerSeesCompletedEvidenceButSharedAndPublicJourneysDoNotExposeIt() throws Exception {
+        long location = jdbc.queryForObject("SELECT id FROM location WHERE code = 'HUB-HCM'", Long.class);
+        long staff = jdbc.queryForObject("SELECT id FROM app_user WHERE username = 'manager.dev'", Long.class);
+        long horse = jdbc.queryForObject("SELECT min(id) FROM booking_horse WHERE booking_id = ?", Long.class, booking);
+        long stay = jdbc.queryForObject("""
+                INSERT INTO horse_stay (booking_horse_id, stay_type, location_id, planned_start_at, planned_end_at)
+                VALUES (?, 'ASSEMBLY', ?, now(), now() + interval '1 hour') RETURNING id
+                """, Long.class, horse, location);
+        long handover = jdbc.queryForObject("""
+                INSERT INTO handover (handover_type, horse_stay_id, handled_by, status, handed_at)
+                VALUES ('PICKUP', ?, ?, 'DONE', now()) RETURNING id
+                """, Long.class, stay, staff);
+        addHandoverHorse(handover, horse, location);
+        jdbc.update("""
+                INSERT INTO document (document_type_id, file_url, file_name, uploaded_by, status, handover_id)
+                SELECT id, 'https://example.test/' || code, code, ?, 'UPLOADED', ?
+                FROM document_type WHERE code IN ('HANDOVER_RECORD', 'HANDOVER_PHOTO')
+                """, staff, handover);
+
+        journey("customer1.dev", "CUSTOMER").andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.horses[0].handovers[0].evidence.length()").value(2));
+        String stranger = testData.customer(testData.unique("tracking.evidence")).getUser().getUsername();
+        journey(stranger, "CUSTOMER").andExpect(status().isNotFound());
+        track("[\"dev-direct-001\"]", "0001").andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].horses[0].evidence").doesNotExist());
+
+        long otherHorse = jdbc.queryForObject("""
+                SELECT min(bh.id) FROM booking_horse bh JOIN booking b ON b.id = bh.booking_id
+                WHERE b.code = 'DEV-DOMESTIC-001'
+                """, Long.class);
+        addHandoverHorse(handover, otherHorse, location);
+        journey("customer1.dev", "CUSTOMER").andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.horses[0].handovers[0].evidence.length()").value(0));
+    }
+
+    private void addHandoverHorse(long handover, long horse, long location) {
+        long leg = jdbc.queryForObject("""
+                INSERT INTO horse_leg (booking_horse_id, sequence_number, leg_type, from_location_id, to_location_id,
+                                       agent_party_id, planned_start_at, planned_end_at, status)
+                VALUES (?, 1, 'PICKUP', ?, ?, (SELECT min(id) FROM party), now(), now() + interval '1 hour', 'COMPLETED')
+                RETURNING id
+                """, Long.class, horse, location, location);
+        jdbc.update("INSERT INTO handover_horse (handover_id, horse_leg_id, is_microchip_matched) VALUES (?, ?, true)", handover, leg);
+    }
+
+    @Test
     void publicLookupNeedsTheShipperPhoneAndHidesTheReason() throws Exception {
         track("[\"dev-direct-001\", \"BK-KHONGCO\"]", "0001").andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].code").value("DEV-DIRECT-001"))

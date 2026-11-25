@@ -32,6 +32,12 @@ public class HandoverPaperController {
         return ApiResponseDto.success(papers.attachRecord(id, file, authentication.getName()), "Đã lưu biên bản giao nhận");
     }
 
+    @PostMapping(value = "/handovers/{id}/horses/{horseLegId}/photos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponseDto<CrewTripResponseDto> photo(@PathVariable Long id, @PathVariable Long horseLegId,
+                                                      Authentication authentication, @RequestPart("file") MultipartFile file) {
+        return ApiResponseDto.success(papers.attachPhoto(id, horseLegId, file, authentication.getName()), "Đã lưu ảnh tình trạng ngựa");
+    }
+
     @GetMapping("/handovers/{id}/papers")
     public ApiResponseDto<List<HandoverPaperResponseDto>> papers(@PathVariable Long id, Authentication authentication) {
         return ApiResponseDto.success(papers.papers(id, authentication.getName()), "Giấy tờ gốc");
@@ -40,6 +46,6 @@ public class HandoverPaperController {
     @PostMapping("/handovers/{id}/papers")
     public ApiResponseDto<List<HandoverPaperResponseDto>> mark(@PathVariable Long id, Authentication authentication,
                                                                @Valid @RequestBody HandoverPaperRequestDto request) {
-        return ApiResponseDto.success(papers.markPaper(id, request.documentId(), authentication.getName()), "Đã ghi giấy tờ gốc");
+        return ApiResponseDto.success(papers.markPaper(id, request.documentId(), request.originalMissing(), authentication.getName()), "Đã ghi giấy tờ gốc");
     }
 }

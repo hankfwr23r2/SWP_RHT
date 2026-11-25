@@ -5,18 +5,23 @@ import { tripExecutionApi, type CrewTrip, type Handover } from '@shared/api/trip
 import { useLoad } from '@shared/hooks/useLoad'
 import { Button } from '@shared/ui/Button'
 import { Field } from '@shared/ui/Field'
+import { Input } from '@shared/ui/Input'
 import { StatusBadge } from '@shared/ui/StatusBadge'
 import { useToast } from '@shared/ui/toast'
 import s from './MyTrips.module.css'
 
-export function HandoverPapersPanel({ handover, onTrip }: { handover: Handover; onTrip: (next: CrewTrip) => void }) {
+export function HandoverPapersPanel({ handover, receiving, onTrip }: { handover: Handover; receiving: boolean; onTrip: (next: CrewTrip) => void }) {
   const { t } = useTranslation()
   const toast = useToast()
   const [file, setFile] = useState<File>()
   const [busy, setBusy] = useState(false)
   const handoverId = handover.id ?? 0
-  const { data: papers, updateData } = useLoad(() => tripExecutionApi.papers(handoverId), [handoverId], { toastOnError: false })
-  const receiving = handover.handoverType === 'PICKUP'
+  const showOriginals = receiving || handover.handoverType === 'DELIVERY' || handover.handoverType === 'AGENT'
+  const { data: papers, updateData } = useLoad(
+    () => showOriginals ? tripExecutionApi.papers(handoverId) : Promise.resolve([]),
+    [handoverId, showOriginals],
+    { toastOnError: false },
+  )
 
   const upload = async () => {
     if (!file) return
@@ -31,9 +36,9 @@ export function HandoverPapersPanel({ handover, onTrip }: { handover: Handover; 
       setBusy(false)
     }
   }
-  const mark = async (documentId: number) => {
+  const mark = async (documentId: number, originalMissing = false) => {
     try {
-      const next = await tripExecutionApi.markPaper(handoverId, documentId)
+      const next = await tripExecutionApi.markPaper(handoverId, documentId, originalMissing)
       updateData(() => next)
     } catch (e) {
       toast(e instanceof Error ? e.message : String(e), 'error')
@@ -47,7 +52,7 @@ export function HandoverPapersPanel({ handover, onTrip }: { handover: Handover; 
         : (
           <>
             <Field label={t('myTrips.run.papers.record')}>
-              {c => <input {...c} type="file" accept="image/*,application/pdf" capture="environment" onChange={e => setFile(e.target.files?.[0])} />}
+              {c => <Input {...c} type="file" accept="image/*,application/pdf" capture="environment" onChange={e => setFile(e.target.files?.[0])} />}
             </Field>
             <Button size="lg" fullWidth disabled={!file} loading={busy} onClick={() => void upload()}>{t('myTrips.run.papers.upload')}</Button>
           </>
@@ -58,10 +63,16 @@ export function HandoverPapersPanel({ handover, onTrip }: { handover: Handover; 
             <li key={paper.documentId} className={s.body}>
               <p className={s.line}>{paper.documentTypeName} · {paper.ownerLabel}</p>
               {paper.direction
-                ? <StatusBadge tone="success" label={t(`myTrips.run.papers.${paper.direction}`)} />
-                : <Button size="lg" fullWidth onClick={() => void mark(paper.documentId ?? 0)}>
-                    {t(receiving ? 'myTrips.run.papers.receive' : 'myTrips.run.papers.return')}
-                  </Button>}
+                ? <StatusBadge tone="success" label={t(paper.direction === 'NOT_RECEIVED' ? 'handoverEvidence.originalMissing' : `myTrips.run.papers.${paper.direction}`)} />
+                : null}
+              {(!paper.direction || receiving) && (
+                <Button size="lg" fullWidth onClick={() => void mark(paper.documentId ?? 0)}>
+                  {t(receiving ? 'myTrips.run.papers.receive' : 'myTrips.run.papers.return')}
+                </Button>
+              )}
+              {receiving && <Button size="lg" fullWidth onClick={() => void mark(paper.documentId ?? 0, true)}>
+                {t('handoverEvidence.originalMissing')}
+              </Button>}
             </li>
           ))}
         </ul>

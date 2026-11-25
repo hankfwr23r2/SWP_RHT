@@ -31,6 +31,11 @@ export default function HubPage() {
   const toast = useToast()
   const [hubChoice, setHubId] = useState('')
   const [action, setAction] = useState<Action>()
+  const [photo, setPhoto] = useState<File>()
+  const [record, setRecord] = useState<File>()
+  const [recipientName, setRecipientName] = useState('')
+  const [collectionCode, setCollectionCode] = useState('')
+  const [marked, setMarked] = useState<Record<number, boolean>>({})
   const [chip, setChip] = useState('')
   const [note, setNote] = useState('')
   const [collectAt, setCollectAt] = useState('')
@@ -49,7 +54,16 @@ export default function HubPage() {
     return { appointments, stays }
   }, [hubId], { toastOnError: false })
 
-  const open = (stay: HorseStay, kind: Action['kind']) => { setChip(''); setNote(''); setCollectAt(''); setAction({ stay, kind }) }
+  const isHubHandover = action?.kind === 'receive' || action?.kind === 'deliver' || action?.kind === 'returnHeld'
+  const { data: papers, loaded: papersLoaded, error: papersError, reload: reloadPapers } = useLoad(
+    () => isHubHandover && action?.stay.id
+      ? dispatchApi.hubHandoverPapers(action.stay.id, action.kind === 'receive')
+      : Promise.resolve([]),
+    [action?.stay.id, action?.kind], { toastOnError: false },
+  )
+  const papersMarked = papersLoaded && !papersError && (papers ?? []).every(paper => paper.documentId !== undefined && paper.documentId in marked)
+
+  const open = (stay: HorseStay, kind: Action['kind']) => { setMarked({}); setRecipientName(''); setCollectionCode(''); setPhoto(undefined); setRecord(undefined); setChip(''); setNote(''); setCollectAt(''); setAction({ stay, kind }) }
   const submit = async () => {
     if (!action) return
     setBusy(true)
@@ -58,7 +72,14 @@ export default function HubPage() {
       if (action.kind === 'collect') await dispatchApi.setCollectionTime(stayId, localToIso(collectAt))
       else if (action.kind === 'refuse') await dispatchApi.refuseAtHub(stayId, note.trim())
       else if (action.kind === 'stable') await dispatchApi.stableAtHub(stayId, note.trim() || undefined)
-      else await (action.kind === 'receive' ? dispatchApi.receiveAtHub : dispatchApi.deliverAtHub)(stayId, chip.trim(), note.trim() || undefined)
+      else {
+        if (!photo || !record) return
+        await (action.kind === 'receive' ? dispatchApi.receiveAtHub : dispatchApi.deliverAtHub)(stayId, {
+          microchip: chip.trim(), conditionNote: note.trim(),
+          recipient: action.kind === 'deliver' ? { recipientName: recipientName.trim(), collectionCode: collectionCode || undefined } : undefined,
+          papers: Object.entries(marked).map(([id, originalMissing]) => ({ documentId: Number(id), originalMissing })),
+        }, photo, record)
+      }
       toast(t(`dispatch.stays.${action.kind}Done`), 'success')
       setConfirmReturn(false)
       setAction(undefined)
@@ -156,7 +177,7 @@ export default function HubPage() {
               <Button onClick={() => setAction(undefined)}>{t('ui.cancel')}</Button>
               <Button variant={action.kind === 'refuse' ? 'danger' : 'primary'} loading={busy}
                 onClick={() => action.kind === 'returnHeld' ? setConfirmReturn(true) : void submit()}
-                disabled={action.kind === 'collect' ? !collectAt : action.kind === 'stable' ? false : action.kind === 'refuse' ? !note.trim() : !chip.trim()}>
+                disabled={action.kind === 'collect' ? !collectAt : action.kind === 'stable' ? false : action.kind === 'refuse' ? !note.trim() : !chip.trim() || !note.trim() || !photo || !record || !papersMarked || action.kind === 'deliver' && !recipientName.trim()}>
                 {t(`dispatch.stays.${action.kind}`)}
               </Button>
             </>
@@ -166,6 +187,39 @@ export default function HubPage() {
             <Field label={t('dispatch.stays.chip')} required>
               {c => <Input {...c} inputMode="numeric" value={chip} onChange={e => setChip(e.target.value)} data-autofocus />}
             </Field>
+          )}
+          {isHubHandover && (
+            <>
+              <Field label={t('handoverEvidence.photo')} required>
+                {c => <Input {...c} type="file" accept="image/*" onChange={e => setPhoto(e.target.files?.[0])} />}
+              </Field>
+              <Field label={t('handoverEvidence.record')} required>
+                {c => <Input {...c} type="file" accept="image/*,application/pdf" onChange={e => setRecord(e.target.files?.[0])} />}
+              </Field>
+            </>
+          )}
+          {isHubHandover && !papersLoaded && <Skeleton variant="block" lines={2} />}
+          {isHubHandover && papersError && <ErrorState message={papersError.message} onRetry={reloadPapers} />}
+          {isHubHandover && (papers ?? []).map(paper => {
+            const id = paper.documentId ?? 0
+            return <Field key={id} label={`${paper.documentTypeName} · ${paper.ownerLabel}`} required>
+              {c => <Select {...c} value={id in marked ? String(marked[id]) : ''} placeholder={t('tripWords.choose')}
+                onChange={value => setMarked(current => ({ ...current, [id]: value === 'true' }))}
+                options={action.kind === 'receive' ? [
+                  { value: 'false', label: t('myTrips.run.papers.receive') },
+                  { value: 'true', label: t('handoverEvidence.originalMissing') },
+                ] : [{ value: 'false', label: t('myTrips.run.papers.return') }]} />}
+            </Field>
+          })}
+          {action.kind === 'deliver' && (
+            <>
+              <Field label={t('handoverEvidence.recipient')} required>
+                {c => <Input {...c} maxLength={120} value={recipientName} onChange={e => setRecipientName(e.target.value)} />}
+              </Field>
+              <Field label={t('handoverEvidence.code')}>
+                {c => <Input {...c} inputMode="numeric" maxLength={6} value={collectionCode} onChange={e => setCollectionCode(e.target.value)} />}
+              </Field>
+            </>
           )}
           {action.kind === 'collect' && (
             <Field label={t('dispatch.stays.collectAt')} required>

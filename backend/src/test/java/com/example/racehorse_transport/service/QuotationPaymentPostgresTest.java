@@ -70,6 +70,7 @@ class QuotationPaymentPostgresTest {
     @Autowired private ExtraChargeService extraCharges;
     @Autowired private SettlementScheduler settlementScheduler;
     @Autowired private DocumentReminderScheduler reminderScheduler;
+    @Autowired private ScheduleChangeService schedule;
     @MockitoSpyBean private DocumentCompletenessService documentCompleteness;
     @Autowired private PaymentCheckoutService checkout;
     @Autowired private PaymentResultService results;
@@ -185,6 +186,7 @@ class QuotationPaymentPostgresTest {
         quotations.reject(quote, new QuotationRejectRequestDto("Cần đổi lịch"), fixture.customer());
         assertThat(bookingStatus(fixture)).isEqualTo("QUOTING");
         assertThat(bookedSeats(departure)).isEqualTo(2);
+        assertThat(noticeCount(fixture, "Khách từ chối báo giá")).isEqualTo(1);
     }
 
     @Test
@@ -216,6 +218,8 @@ class QuotationPaymentPostgresTest {
         var codes = race(() -> results.receive(callback).code(), () -> results.receive(callback).code());
         assertThat(codes).containsExactlyInAnyOrder("00", "02");
         assertThat(gatewayRows(payment)).isEqualTo(1);
+        assertThat(noticeCount(fixture, "Khách chấp nhận báo giá")).isEqualTo(1);
+        assertThat(noticeCount(fixture, "Đặt cọc thành công")).isEqualTo(1);
         assertThat(jdbc.queryForObject("""
                 select count(*) from booking_status_history where booking_id = ? and to_status = 'CONFIRMED'
                 """, Integer.class, fixture.booking().getId())).isEqualTo(1);
@@ -248,6 +252,7 @@ class QuotationPaymentPostgresTest {
                 """, Integer.class, fixture.booking().getId())).isGreaterThanOrEqualTo(1);
         assertThat(gatewayRows(payment)).isEqualTo(1);
         assertThat(bookingStatus(fixture)).isEqualTo("QUOTE_EXPIRED");
+        assertThat(noticeCount(fixture, "Báo giá hết hạn")).isEqualTo(1);
     }
 
     @Test
@@ -445,7 +450,7 @@ class QuotationPaymentPostgresTest {
         when(clock.instant()).thenReturn(now);
         jdbc.update("update departure set booking_cutoff_at = ?, planned_departure_at = ? where id = ?",
                 java.sql.Timestamp.from(now.minusSeconds(3600)), java.sql.Timestamp.from(now.plusSeconds(2 * 86400L)), departure);
-        doReturn(false).when(documentCompleteness).isComplete(booking);
+        doReturn(java.util.Set.of(DocumentSubmitter.CUSTOMER)).when(documentCompleteness).missingSubmitters(booking);
 
         reminderScheduler.sendReminders();
         reminderScheduler.sendReminders();
@@ -456,11 +461,38 @@ class QuotationPaymentPostgresTest {
     }
 
     @Test
+    void confirmedDirectBookingIsListedAndRemindsOnlyTheSpecialistForPartnerDocuments() {
+        var fixture = fixture(BookingType.INTERPROVINCE, BookingStatus.CONFIRMED);
+        long booking = fixture.booking().getId();
+        long specialist = data.staff(data.unique("direct-document-specialist"), "SPECIALIST").getUserId();
+        var now = jdbc.queryForObject("select now()", java.sql.Timestamp.class).toInstant();
+        when(clock.instant()).thenReturn(now);
+        jdbc.update("update booking set requested_pickup_date = ? where id = ?",
+                LocalDate.ofInstant(now, QuotationPolicy.BUSINESS_ZONE).plusDays(1), booking);
+        doReturn(true).when(documentCompleteness).isComplete(anyLong());
+        doReturn(false).when(documentCompleteness).isComplete(booking);
+        doReturn(java.util.Set.of(DocumentSubmitter.CONSIGNEE)).when(documentCompleteness).missingSubmitters(booking);
+
+        assertThat(schedule.reminderCandidates()).contains(booking);
+        assertThat(schedule.missingDocuments()).extracting(row -> row.id()).contains(booking);
+        assertThat(schedule.remind(booking)).isTrue();
+        assertThat(schedule.remind(booking)).isFalse();
+        assertThat(noticeCount(fixture, "Bổ sung giấy tờ trước chuyến")).isZero();
+        assertThat(noticeCount(fixture, "Đơn cần bổ sung giấy tờ")).isEqualTo(1);
+        assertThat(jdbc.queryForList("""
+                select nr.user_id from notification_recipient nr join notification n on n.id = nr.notification_id
+                where n.booking_id = ? and n.title = 'Đơn cần bổ sung giấy tờ'
+                """, Long.class, booking)).contains(specialist);
+    }
+
+    @Test
     void ratingApiChecksRoleOwnerAndDuplicate() throws Exception {
         var fixture = fixture(BookingType.LOCAL, BookingStatus.DELIVERED);
         long booking = fixture.booking().getId();
         String other = data.customer(data.unique("rating-other")).getUser().getUsername();
         String input = "{\"score\":5,\"comment\":\"Đã nhận ngựa\"}";
+        var detail = get("/bookings/{id}", booking).header(HttpHeaders.AUTHORIZATION, auth(fixture.customer(), "CUSTOMER"));
+        mvc.perform(detail).andExpect(status().isOk()).andExpect(jsonPath("$.data.rated").value(false));
 
         mvc.perform(post("/bookings/{id}/ratings", booking).contentType("application/json").content(input)
                 .header(HttpHeaders.AUTHORIZATION, auth(fixture.manager(), "MANAGER"))).andExpect(status().isForbidden());
@@ -470,6 +502,7 @@ class QuotationPaymentPostgresTest {
                 .header(HttpHeaders.AUTHORIZATION, auth(fixture.customer(), "CUSTOMER"))).andExpect(status().isOk());
         mvc.perform(post("/bookings/{id}/ratings", booking).contentType("application/json").content(input)
                 .header(HttpHeaders.AUTHORIZATION, auth(fixture.customer(), "CUSTOMER"))).andExpect(status().isConflict());
+        mvc.perform(detail).andExpect(status().isOk()).andExpect(jsonPath("$.data.rated").value(true));
     }
 
     @org.junit.jupiter.params.ParameterizedTest
@@ -706,6 +739,11 @@ class QuotationPaymentPostgresTest {
                 insert into booking_horse (booking_id, horse_id, stall_type_code, status)
                 values (?, ?, ?, 'ACTIVE') returning id
                 """, Long.class, fixture.booking().getId(), horse, stall);
+    }
+
+    private int noticeCount(Fixture fixture, String title) {
+        return jdbc.queryForObject("select count(*) from notification where booking_id = ? and title = ?",
+                Integer.class, fixture.booking().getId(), title);
     }
 
     private void confirmWaiver(Fixture fixture, long horse) {
