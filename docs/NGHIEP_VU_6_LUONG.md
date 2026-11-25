@@ -1069,7 +1069,7 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 ### Không gặp người nhận
 
 - **5.24** Phải bấm Bắt đầu chờ thì đồng hồ mới chạy. Chưa hết 120 phút không ghi Không gặp được.
-- **5.25** Phí giữ tính theo ngày, **lẻ ngày tính tròn một ngày**, ít nhất một ngày. Mức phí lấy lúc ngựa rời hub.
+- **5.25** Phí giữ tính theo ngày, **lẻ ngày tính tròn một ngày**, ít nhất một ngày. Mức phí lấy lúc ngựa rời hub. *(Sắp đổi theo mục 13 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md), code chưa sửa.)*
 - **5.26** Không có phí cho thời gian xe chờ: trong 120 phút là miễn phí, sau 120 phút xe đi.
 
 ## 5.F. Tình huống và cách hệ thống xử lý
@@ -1309,7 +1309,7 @@ Dòng hai: loại một con thì bỏ cước trục, dịch vụ và phí bảo
 
 - **6.15** Đơn **Đã giao** khi mọi con còn trong đơn đã giao: giao tại nhà, trả tại hub, hoặc đại lý đã giao.
 - **6.16** Khoản thu thêm chỉ lập khi đơn **Đã giao**; chọn chi phí đã duyệt, khách hoặc người nhận chịu, cùng tiền tệ, chưa gắn khoản thu. Số tiền do hệ thống cộng, quản lý không sửa được. Chỉ thu qua VNPAY, số tiền phải tròn đồng.
-- **6.17** Còn nợ phải **đúng bằng 0**: thiếu thì chưa đóng, dư thì hoàn xong mới đóng.
+- **6.17** Còn nợ phải **đúng bằng 0**: thiếu thì chưa đóng, dư thì hoàn xong mới đóng. *(Sắp đổi theo mục 13 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md), code chưa sửa.)*
 - **6.18** Chi phí **công ty** chịu chưa duyệt không chặn quản lý đóng, nhưng có bất kỳ chi phí nào thì hệ thống **không tự đóng**.
 - **6.19** Không có trạng thái Đang quyết toán: trong lúc quyết toán đơn vẫn là Đã giao.
 - **6.20** Hoàn tiền: quản lý chuyển khoản ngoài, ghi mã chuyển khoản (không trùng, tối đa 100 ký tự) và ảnh chứng từ nếu có.
