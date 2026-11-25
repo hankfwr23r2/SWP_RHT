@@ -27,6 +27,7 @@ import com.example.racehorse_transport.service.BookingStatusService;
 import com.example.racehorse_transport.service.DocumentCompletenessService;
 import com.example.racehorse_transport.service.StopReadinessService;
 import com.example.racehorse_transport.service.TripExecutionService;
+import com.example.racehorse_transport.service.NotificationService;
 import java.time.Clock;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -53,6 +54,7 @@ public class TripExecutionServiceImpl implements TripExecutionService {
     private final BookingStatusService bookingStatus;
     private final Clock clock;
     private final DepartureService departures;
+    private final NotificationService notifications;
 
     @Override
     @Transactional
@@ -97,6 +99,24 @@ public class TripExecutionServiceImpl implements TripExecutionService {
         });
         trip.setStatus(VehicleTripStatus.IN_PROGRESS);
         trip.setActualStartAt(clock.instant());
+        if (trip.getTripType() == VehicleTripType.LINEHAUL) {
+            notifyLinehaulDeparted(trip);
+        }
+    }
+
+    private void notifyLinehaulDeparted(VehicleTrip trip) {
+        Map<Long, HorseLeg> oneLegPerBooking = new LinkedHashMap<>();
+        for (HorseLeg leg : legs.findActiveOnTrip(trip.getId(),
+                Set.of(HorseLegStatus.CANCELLED, HorseLegStatus.FAILED, HorseLegStatus.COMPLETED))) {
+            oneLegPerBooking.putIfAbsent(leg.getBookingHorse().getBooking().getId(), leg);
+        }
+        oneLegPerBooking.forEach((bookingId, leg) -> {
+            var booking = leg.getBookingHorse().getBooking();
+            notifications.notify(List.of(booking.getCustomer().getUser().getId()), bookingId,
+                    "Xe trục đã xuất phát",
+                    "Xe trục của đơn " + booking.getCode() + " đã xuất phát.",
+                    "/orders/" + bookingId);
+        });
     }
 
     @Override

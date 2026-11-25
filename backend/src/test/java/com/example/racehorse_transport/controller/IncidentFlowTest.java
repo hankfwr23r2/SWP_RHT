@@ -124,6 +124,13 @@ class IncidentFlowTest {
     void horseIncidentNeedsRestAndFitConfirmationBeforeItIsResolved() throws Exception {
         long incident = id(report(leg, "HEALTH", "HORSE_CONDITION").andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.horseName").value("Sao Mai")).andExpect(jsonPath("$.data.bookingCode").value("DEV-DIRECT-001")));
+        mvc.perform(get("/notifications/mine").header(HttpHeaders.AUTHORIZATION,
+                        "Bearer " + jwtUtils.generateToken("customer1.dev", List.of("CUSTOMER"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[?(@.title == 'Sự cố vận chuyển')]").isNotEmpty());
+        mvc.perform(get("/notifications/mine").header(HttpHeaders.AUTHORIZATION, coordinator))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[?(@.title == 'Sự cố mới')]").isNotEmpty());
         act(escort, "/incidents/" + incident + "/fit-confirmation").andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Phương án xử lý chưa được duyệt."));
         long plan = ((Number) JsonPath.read(propose(incident, "VET_TREATMENT", party("Phòng khám thú y ngựa (mẫu)")).andExpect(status().isCreated())

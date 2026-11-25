@@ -110,6 +110,12 @@ public class BookingStatusServiceImpl implements BookingStatusService {
         } else if (toStatus == BookingStatus.QUOTE_EXPIRED) {
             notifications.notify(List.of(booking.getCustomer().getUser().getId()), bookingId, "Báo giá hết hạn",
                     "Báo giá của đơn " + booking.getCode() + " đã hết hạn.", "/orders/" + bookingId);
+        } else if (toStatus == BookingStatus.DELIVERED) {
+            var managers = staff.findUserIdsByRoleAndStatus("MANAGER", AppUserStatus.ACTIVE);
+            if (!managers.isEmpty()) {
+                notifications.notify(managers, bookingId, "Đơn đã giao",
+                        "Đơn " + booking.getCode() + " đã chuyển sang Đã giao.", "/manager/orders/" + bookingId);
+            }
         } else if (toStatus == BookingStatus.COMPLETED) {
             notifications.notify(List.of(booking.getCustomer().getUser().getId()), bookingId, "Đã đóng đơn",
                     "Đơn đã hoàn tất quyết toán.", null);

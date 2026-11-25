@@ -6,15 +6,17 @@ import com.example.racehorse_transport.dto.incident.IncidentReportRequestDto;
 import com.example.racehorse_transport.dto.incident.IncidentResponseDto;
 import com.example.racehorse_transport.dto.incident.IncidentResponseDto.PlanDto;
 import com.example.racehorse_transport.dto.incident.PlanRejectRequestDto;
+import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.HorseLeg;
 import com.example.racehorse_transport.entity.Incident;
 import com.example.racehorse_transport.entity.IncidentPlan;
 import com.example.racehorse_transport.entity.Party;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.VehicleTrip;
-import com.example.racehorse_transport.entity.enums.CrewAssignmentStatus;
 import com.example.racehorse_transport.entity.enums.IncidentPlanStatus;
 import com.example.racehorse_transport.entity.enums.IncidentStatus;
+import com.example.racehorse_transport.entity.enums.AppUserStatus;
+import com.example.racehorse_transport.entity.enums.CrewAssignmentStatus;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.IncidentPolicy;
@@ -27,6 +29,7 @@ import com.example.racehorse_transport.service.IncidentCostDecisionService;
 import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.VehicleTripRepository;
 import com.example.racehorse_transport.service.IncidentService;
+import com.example.racehorse_transport.service.NotificationService;
 import com.example.racehorse_transport.service.SystemConfigService;
 import java.time.Clock;
 import java.util.List;
@@ -53,6 +56,7 @@ public class IncidentServiceImpl implements IncidentService {
     private final PartyRepository parties;
     private final IncidentCostDecisionService decisions;
     private final SystemConfigService configs;
+    private final NotificationService notifications;
     private final Clock clock;
 
     @Override
@@ -91,7 +95,9 @@ public class IncidentServiceImpl implements IncidentService {
         Incident incident = request.toEntity(trip, leg, leg == null ? null : leg.getBookingHorse().getBooking());
         incident.setReportedBy(reporter);
         incident.setStatus(IncidentStatus.REPORTED);
-        return incident(incidents.saveAndFlush(incident).getId());
+        Incident saved = incidents.saveAndFlush(incident);
+        notifyIncidentReported(saved);
+        return incident(saved.getId());
     }
 
     @Override
@@ -116,6 +122,13 @@ public class IncidentServiceImpl implements IncidentService {
         plans.saveAndFlush(plan);
         if (incident.getStatus() == IncidentStatus.REPORTED) {
             incident.setStatus(IncidentStatus.PLAN_PENDING);
+        }
+        List<Long> managers = staff.findUserIdsByRoleAndStatus("MANAGER", AppUserStatus.ACTIVE);
+        if (!managers.isEmpty()) {
+            notifications.notify(managers, incident.getBooking() == null ? null : incident.getBooking().getId(),
+                    "Phương án sự cố chờ duyệt",
+                    "Sự cố " + incident.getTitle() + " có phương án mới chờ duyệt.",
+                    "/manager/incidents");
         }
         return incident(incidentId);
     }
@@ -167,6 +180,7 @@ public class IncidentServiceImpl implements IncidentService {
         plan.setDecidedBy(currentStaff(username));
         plan.setDecidedAt(clock.instant());
         incident.setStatus(IncidentStatus.PLAN_ACTIVE);
+        notifyPlanDecision(plan, incident, true);
         return incident(incident.getId());
     }
 
@@ -179,6 +193,7 @@ public class IncidentServiceImpl implements IncidentService {
         plan.setRejectionReason(request.reason().strip());
         plan.setDecidedBy(currentStaff(username));
         plan.setDecidedAt(clock.instant());
+        notifyPlanDecision(plan, plan.getIncident(), false);
         return incident(plan.getIncident().getId());
     }
 
@@ -250,6 +265,56 @@ public class IncidentServiceImpl implements IncidentService {
 
     private Staff currentStaff(String username) {
         return staff.findByUser_Username(username).orElseThrow(() -> new AccessDeniedException("Không tìm thấy hồ sơ nhân viên."));
+    }
+
+    private void notifyIncidentReported(Incident incident) {
+        List<Long> coordinators = staff.findUserIdsByRoleAndStatus("COORDINATOR", AppUserStatus.ACTIVE);
+        if (!coordinators.isEmpty()) {
+            notifications.notify(coordinators,
+                    incident.getBooking() == null ? null : incident.getBooking().getId(),
+                    "Sự cố mới",
+                    "Có sự cố mới: " + incident.getTitle() + ".",
+                    "/coordinator/incidents");
+        }
+        if (incident.getHorseLeg() != null) {
+            Booking booking = incident.getHorseLeg().getBookingHorse().getBooking();
+            notifications.notify(List.of(booking.getCustomer().getUser().getId()), booking.getId(),
+                    "Sự cố vận chuyển",
+                    "Đơn " + booking.getCode() + " có sự cố: " + incident.getTitle() + ".",
+                    "/orders/" + booking.getId());
+        }
+    }
+
+    private void notifyPlanDecision(IncidentPlan plan, Incident incident, boolean approved) {
+        VehicleTrip trip = incident.getVehicleTrip() != null ? incident.getVehicleTrip()
+                : incident.getHorseLeg() == null ? null : incident.getHorseLeg().getVehicleTrip();
+        List<Long> recipients = crew.findByVehicleTrip_IdInOrderById(trip == null ? List.of() : List.of(trip.getId())).stream()
+                .filter(a -> a.getStatus() != CrewAssignmentStatus.RELEASED)
+                .map(a -> a.getStaff().getUserId())
+                .distinct()
+                .toList();
+        recipients = recipients.isEmpty() ? List.of() : recipients;
+        if (!recipients.isEmpty()) {
+            notifications.notify(recipients, null,
+                    approved ? "Phương án sự cố được duyệt" : "Phương án sự cố bị từ chối",
+                    approved ? "Phương án cho sự cố " + incident.getTitle() + " đã được duyệt."
+                            : "Phương án cho sự cố " + incident.getTitle() + " đã bị từ chối.",
+                    trip == null ? "/coordinator/incidents" : "/my-trips/" + trip.getId());
+        }
+        List<Long> coordinators = staff.findUserIdsByRoleAndStatus("COORDINATOR", AppUserStatus.ACTIVE);
+        if (!coordinators.isEmpty()) {
+            notifications.notify(coordinators, incident.getBooking() == null ? null : incident.getBooking().getId(),
+                    approved ? "Phương án sự cố được duyệt" : "Phương án sự cố bị từ chối",
+                    (approved ? "Đã duyệt" : "Đã từ chối") + " phương án cho sự cố " + incident.getTitle() + ".",
+                    "/coordinator/incidents");
+        }
+        if (approved && incident.getHorseLeg() != null) {
+            Booking booking = incident.getHorseLeg().getBookingHorse().getBooking();
+            notifications.notify(List.of(booking.getCustomer().getUser().getId()), booking.getId(),
+                    "Phương án sự cố được duyệt",
+                    "Phương án xử lý sự cố của đơn " + booking.getCode() + " đã được duyệt.",
+                    "/orders/" + booking.getId());
+        }
     }
 
     private List<IncidentResponseDto> describe(List<Incident> found) {
