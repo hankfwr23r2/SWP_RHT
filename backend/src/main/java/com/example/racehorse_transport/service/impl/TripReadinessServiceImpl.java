@@ -3,18 +3,17 @@ package com.example.racehorse_transport.service.impl;
 import com.example.racehorse_transport.entity.HorseLeg;
 import com.example.racehorse_transport.entity.TripStop;
 import com.example.racehorse_transport.entity.VehicleTrip;
-import com.example.racehorse_transport.entity.enums.HorseInsuranceStatus;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
 import com.example.racehorse_transport.entity.enums.IncidentSeverity;
 import com.example.racehorse_transport.entity.enums.TripStopType;
 import com.example.racehorse_transport.entity.enums.VehicleStatus;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.policy.IncidentPolicy;
-import com.example.racehorse_transport.repository.HorseInsuranceRepository;
 import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.repository.IncidentRepository;
 import com.example.racehorse_transport.repository.TripStopRepository;
 import com.example.racehorse_transport.service.DocumentCompletenessService;
+import com.example.racehorse_transport.service.HandoverReadinessService;
 import com.example.racehorse_transport.service.TripReadinessService;
 import com.example.racehorse_transport.service.VehicleService;
 import java.util.LinkedHashMap;
@@ -30,7 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class TripReadinessServiceImpl implements TripReadinessService {
     private final TripStopRepository stops;
     private final HorseLegRepository legs;
-    private final HorseInsuranceRepository insurances;
+    private final HandoverReadinessService handoverReadiness;
     private final DocumentCompletenessService documents;
     private final VehicleService vehicles;
     private final IncidentRepository incidents;
@@ -51,12 +50,7 @@ public class TripReadinessServiceImpl implements TripReadinessService {
                 }
                 var booking = horse.getBooking();
                 bookings.put(booking.getId(), booking.getCode());
-                boolean insured = insurances.findByBookingHorse_Id(leg.getBookingHorse().getId())
-                        .map(i -> i.getStatus() == HorseInsuranceStatus.CONFIRMED).orElse(false);
-                if (!insured) {
-                    throw new DispatchRuleException("insurance", "Bảo hiểm của " + leg.getBookingHorse().getHorse().getName()
-                            + " (đơn " + booking.getCode() + ") chưa được xác nhận.", true);
-                }
+                handoverReadiness.requireConfirmedInsurance(horse);
             }
         }
         bookings.forEach((id, code) -> {

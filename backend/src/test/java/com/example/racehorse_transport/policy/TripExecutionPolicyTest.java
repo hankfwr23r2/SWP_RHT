@@ -61,6 +61,16 @@ class TripExecutionPolicyTest {
     }
 
     @Test
+    void borderHandoverRequiresCompleteDocumentsInBothDirections() {
+        assertThatThrownBy(() -> TripExecutionPolicy.requireBorderDocuments(false, "XUAT-01", false))
+                .hasMessage("Đơn XUAT-01 còn thiếu giấy bắt buộc. Chưa bàn giao cho đại lý được.");
+        assertThatThrownBy(() -> TripExecutionPolicy.requireBorderDocuments(false, "NHAP-01", true))
+                .hasMessage("Đơn NHAP-01 còn thiếu giấy bắt buộc (gồm giấy vận chuyển mẫu 14a). Không nhận ngựa ở cửa khẩu.");
+        assertThatCode(() -> TripExecutionPolicy.requireBorderDocuments(true, "XUAT-01", false)).doesNotThrowAnyException();
+        assertThatCode(() -> TripExecutionPolicy.requireBorderDocuments(true, "NHAP-01", true)).doesNotThrowAnyException();
+    }
+
+    @Test
     void chipIsComparedAfterNormalizing() {
         assertThat(TripExecutionPolicy.chipMatches("985 000-000 100002", "985000000100002")).isTrue();
         assertThat(TripExecutionPolicy.chipMatches("985000000100003", "985000000100002")).isFalse();

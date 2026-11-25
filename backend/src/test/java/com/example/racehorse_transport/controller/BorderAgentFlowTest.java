@@ -13,9 +13,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.example.racehorse_transport.PostgresIntegrationTest;
 import com.example.racehorse_transport.support.HandoverEvidenceFixtures;
+import com.example.racehorse_transport.entity.BookingHorse;
 import com.example.racehorse_transport.entity.Staff;
+import com.example.racehorse_transport.entity.enums.DocumentSubject;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.security.JwtUtils;
+import com.example.racehorse_transport.service.DocumentCompletenessService;
 import com.example.racehorse_transport.support.TestData;
 import com.jayway.jsonpath.JsonPath;
 import jakarta.persistence.EntityManager;
@@ -36,7 +39,7 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
 // B2 (GĐ7.4): chặng đại lý và bàn giao AGENT ở cửa khẩu. Đơn xuất: tổ xe giao cho đại lý, điều phối nhập hộ mốc đại lý giao.
-// Đơn nhập: đại lý giao cho tổ xe, chỉ nhận khi đủ giấy (#35), rời cửa khẩu khi đã trả đủ (#32)
+// Cả hai chiều kiểm đủ giấy (#35). Đơn nhập kiểm thêm bảo hiểm trước khi nhận.
 @PostgresIntegrationTest
 @AutoConfigureMockMvc
 @Transactional
@@ -48,6 +51,7 @@ class BorderAgentFlowTest {
     @Autowired private TestData testData;
     @Autowired private JwtUtils jwtUtils;
     @Autowired private LocationRepository locations;
+    @Autowired private DocumentCompletenessService documents;
     @Autowired private EntityManager entityManager;
 
     private String coordinator;
@@ -105,7 +109,16 @@ class BorderAgentFlowTest {
         act(escort, "/handovers/" + handover + "/complete").andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message", startsWith("Chưa có biên bản giao nhận")));
         attachRecord(handover);
+        act(escort, "/handovers/" + handover + "/complete").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Đơn DEV-EXPORT-001 còn thiếu giấy bắt buộc. Chưa bàn giao cho đại lý được."));
+        assertThat(handoverStatus(handover)).isEqualTo("PENDING");
+        assertThat(legStatus(legOnTrip(trip))).isEqualTo("IN_PROGRESS");
+        assertThat(legStatus(agentLeg)).isEqualTo("PLANNED");
+        assertThat(customerNotices(booking)).doesNotContain("Đã qua cửa khẩu");
+
+        approveRequiredDocuments();
         act(escort, "/handovers/" + handover + "/complete").andExpect(status().isOk());
+        assertThat(handoverStatus(handover)).isEqualTo("DONE");
         assertThat(legStatus(legOnTrip(trip))).isEqualTo("COMPLETED");
         assertThat(legStatus(agentLeg)).isEqualTo("IN_PROGRESS");
         assertThat(customerNotices(booking)).contains("Đã qua cửa khẩu");
@@ -175,6 +188,26 @@ class BorderAgentFlowTest {
     }
 
     @Test
+    void importHorseWithUnconfirmedInsuranceCannotBeReceivedAtTheGate() throws Exception {
+        long[] arrival = openImportHandoverAtTheGate();
+        long handover = arrival[2];
+        approveRequiredDocuments();
+        entityManager.flush();
+        jdbc.update("UPDATE horse_insurance SET status = 'DRAFT', confirmed_by = NULL, confirmed_at = NULL WHERE booking_horse_id = ?", line);
+        entityManager.clear();
+        attachRecord(handover);
+
+        act(escort, "/handovers/" + handover + "/complete").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.data.insurance", startsWith("Bảo hiểm của")));
+        assertThat(handoverStatus(handover)).isEqualTo("PENDING");
+        assertThat(legStatus(legOnTrip(arrival[0]))).isEqualTo("PLANNED");
+        assertThat(legStatus(arrival[3])).isEqualTo("IN_PROGRESS");
+        assertThat(customerNotices(booking)).doesNotContain("Đã nhận ngựa ở cửa khẩu");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM payment WHERE booking_id = ? AND payment_type = 'BALANCE'",
+                Long.class, booking)).isZero();
+    }
+
+    @Test
     void importBalanceOverdueAtTheGateAllowsTransportToHub() throws Exception {
         long[] received = receiveImportAtTheGate();
         long trip = received[0];
@@ -241,6 +274,15 @@ class BorderAgentFlowTest {
 
     // Đơn nhập đủ giấy, chưa trả số dư: xe tới cửa khẩu, mở lần nhận từ đại lý và quét chip. Trả về {lượt xe, điểm cửa khẩu, lần giao nhận, chặng đại lý}
     private long[] arriveWithImportAtTheGate() throws Exception {
+        long[] arrival = openImportHandoverAtTheGate();
+        // Đủ giấy: giả lập bằng đơn không cần giấy như các test khác
+        entityManager.flush();
+        jdbc.update("UPDATE booking SET booking_type = 'LOCAL' WHERE id = ?", booking);
+        entityManager.clear();
+        return arrival;
+    }
+
+    private long[] openImportHandoverAtTheGate() throws Exception {
         java.time.LocalDate pickup = jdbc.queryForObject("SELECT requested_pickup_date FROM booking WHERE id = ?", java.sql.Date.class, booking).toLocalDate();
         long departure = testData.departure("MOCBAI-HCM", pickup.plusDays(1), 9).getId();
         entityManager.flush();
@@ -264,10 +306,6 @@ class BorderAgentFlowTest {
         act(driver, "/trip-stops/" + stops.getFirst() + "/arrive").andExpect(status().isOk());
         long handover = handoverId(handover(stops.getFirst(), agent).andExpect(status().isCreated()));
         scan(handover, legOnTrip(trip)).andExpect(status().isOk());
-        // Đủ giấy: giả lập bằng đơn không cần giấy như các test khác
-        entityManager.flush();
-        jdbc.update("UPDATE booking SET booking_type = 'LOCAL' WHERE id = ?", booking);
-        entityManager.clear();
         return new long[] {trip, stops.getFirst(), handover, agentLeg};
     }
 
@@ -341,6 +379,25 @@ class BorderAgentFlowTest {
                 .contentType(MediaType.APPLICATION_JSON).content("{\"handoverType\":\"AGENT\",\"partyId\":%s}".formatted(partyId)));
     }
 
+    // Cấp giấy theo quy định của đúng chiều và cửa khẩu cho đơn mẫu một ngựa.
+    private void approveRequiredDocuments() {
+        BookingHorse horse = entityManager.find(BookingHorse.class, line);
+        long reviewer = horse.getBooking().getSpecialist().getUserId();
+        for (var requirement : documents.resolve(horse.getBooking()).requirements()) {
+            if (!Boolean.TRUE.equals(requirement.mandatory())) continue;
+            DocumentSubject owner = requirement.ownerType();
+            jdbc.update("""
+                    INSERT INTO document (document_type_id, document_requirement_id, file_url, file_name,
+                                          uploaded_by, status, reviewed_by, reviewed_at, booking_id, horse_id, booking_horse_id)
+                    VALUES (?, ?, ?, 'giay.pdf', ?, 'APPROVED', ?, now(), ?, ?, ?)
+                    """, requirement.documentTypeId(), requirement.id(), "https://example.test/gate-paper/" + requirement.id() + ".pdf",
+                    reviewer, reviewer, owner == DocumentSubject.BOOKING ? booking : null,
+                    owner == DocumentSubject.HORSE ? horse.getHorse().getId() : null,
+                    owner == DocumentSubject.BOOKING_HORSE ? line : null);
+        }
+        assertThat(documents.isComplete(booking)).isTrue();
+    }
+
     private void attachRecord(long handoverId) {
         jdbc.update("""
                 INSERT INTO document (document_type_id, file_url, file_name, uploaded_by, status, handover_id)
@@ -365,6 +422,10 @@ class BorderAgentFlowTest {
 
     private String legStatus(long legId) {
         return jdbc.queryForObject("SELECT status FROM horse_leg WHERE id = ?", String.class, legId);
+    }
+
+    private String handoverStatus(long handoverId) {
+        return jdbc.queryForObject("SELECT status FROM handover WHERE id = ?", String.class, handoverId);
     }
 
     private void acknowledge() throws Exception {

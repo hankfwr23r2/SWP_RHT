@@ -99,6 +99,15 @@ public final class TripExecutionPolicy {
         return type == HandoverType.PICKUP || type == HandoverType.HUB_OUT || type == HandoverType.AGENT && fromPartner;
     }
 
+    public static void requireBorderDocuments(boolean complete, String bookingCode, boolean fromAgent) {
+        if (complete) return;
+        // Quy tắc #35: giấy bắt buộc của đơn nhập gồm giấy vận chuyển mẫu 14a.
+        String detail = fromAgent
+                ? " còn thiếu giấy bắt buộc (gồm giấy vận chuyển mẫu 14a). Không nhận ngựa ở cửa khẩu."
+                : " còn thiếu giấy bắt buộc. Chưa bàn giao cho đại lý được.";
+        throw new DispatchRuleException("documents", "Đơn " + bookingCode + detail, true);
+    }
+
     // Chip đọc được khớp chip trong hồ sơ ngựa, sau khi chuẩn hóa
     public static boolean chipMatches(String scanned, String expected) {
         String normalized = MicrochipPolicy.normalize(scanned);
