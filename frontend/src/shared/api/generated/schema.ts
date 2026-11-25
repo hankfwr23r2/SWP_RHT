@@ -4733,6 +4733,12 @@ export interface components {
         DeliveryConfirmationRequestDto: {
             confirmed: boolean;
         };
+        DeliveryEstimate: {
+            /** Format: date-time */
+            arrivalAt?: string;
+            /** Format: int64 */
+            customerAddressId?: number;
+        };
         DeliveryRecipientRequestDto: {
             collectionCode?: string;
             recipientName: string;
@@ -5183,6 +5189,8 @@ export interface components {
         };
         HorseDetail: {
             addOns?: components["schemas"]["AddOn"][];
+            /** Format: int64 */
+            deliveryAddressId?: number;
             dietNote?: string;
             feedSuppliedByOwner?: boolean;
             /** Format: int32 */
@@ -5200,6 +5208,7 @@ export interface components {
         HorseDto: {
             /** Format: int64 */
             bookingHorseId?: number;
+            deliveryAddress?: components["schemas"]["AddressDto"];
             horseName?: string;
             legs?: components["schemas"]["HorseLegResponseDto"][];
             microchip?: string;
@@ -5212,6 +5221,8 @@ export interface components {
         };
         HorseInput: {
             addOns?: components["schemas"]["AddOnInput"][];
+            /** Format: int32 */
+            deliveryPlaceIndex?: number;
             dietNote?: string;
             feedSuppliedByOwner?: boolean;
             /** Format: int32 */
@@ -5304,6 +5315,8 @@ export interface components {
         };
         HorseSelection: {
             addOnServiceIds: number[];
+            /** Format: int64 */
+            deliveryAddressId?: number;
             /** Format: int64 */
             horseId: number;
             stallTypeCode: string;
@@ -6089,6 +6102,7 @@ export interface components {
             /** @enum {string} */
             bookingType?: "LOCAL" | "INTERPROVINCE" | "EXPORT" | "IMPORT";
             currencyCode?: string;
+            deliveryEstimates?: components["schemas"]["DeliveryEstimate"][];
             depositRate?: number;
             legs?: components["schemas"]["LegDistance"][];
             lines?: components["schemas"]["PriceLineResponseDto"][];

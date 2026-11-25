@@ -18,4 +18,8 @@ public interface DocumentCompletenessService {
 
     // Khi sang QUOTING, chỉ kiểm giấy bắt buộc do CUSTOMER nộp.
     boolean isCompleteForQuoting(Long bookingId);
+
+    /** Số ngày làm lại các giấy không còn dùng được vào ngày mới. */
+    long redoLeadDays(Booking booking, com.example.racehorse_transport.dto.regulation.RegulationPreviewResponseDto resolved,
+            java.time.LocalDate on);
 }

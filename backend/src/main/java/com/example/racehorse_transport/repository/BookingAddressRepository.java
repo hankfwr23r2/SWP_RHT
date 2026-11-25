@@ -13,7 +13,7 @@ public interface BookingAddressRepository extends JpaRepository<BookingAddress, 
 
     @Query("""
             SELECT a FROM BookingAddress a JOIN FETCH a.province JOIN FETCH a.country
-            LEFT JOIN FETCH a.sourceAddress WHERE a.booking.id = :bookingId ORDER BY a.addressType
+            LEFT JOIN FETCH a.sourceAddress WHERE a.booking.id = :bookingId ORDER BY a.addressType, a.id
             """)
     List<BookingAddress> findAddressesForDetail(Long bookingId);
 }

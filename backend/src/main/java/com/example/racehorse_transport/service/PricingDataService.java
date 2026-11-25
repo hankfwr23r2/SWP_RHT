@@ -19,5 +19,6 @@ public interface PricingDataService {
     record TransferData(List<RoadSegment> segments, int weightTons, int topSpeedKmh, LocalDateTime pickupTime) {}
 
     record PreviewData(PricingInput input, List<RoadSegment> segments, Long vehicleClassId,
-                       int weightTons, int topSpeedKmh, LocalDateTime pickupTime) {}
+                       int weightTons, int topSpeedKmh, LocalDateTime pickupTime, Long deliveryHubId,
+                       List<DeliveryRouteService.Destination> destinations, List<Long> deliveryAddressIds, java.time.Instant deliveryReadyAt) {}
 }

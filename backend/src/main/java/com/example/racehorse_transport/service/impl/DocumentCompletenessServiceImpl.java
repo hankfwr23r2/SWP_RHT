@@ -78,6 +78,15 @@ public class DocumentCompletenessServiceImpl implements DocumentCompletenessServ
                 countryOf(rows, AddressRole.DELIVERY), booking.getRequestedPickupDate(), gate);
     }
 
+    @Override
+    public long redoLeadDays(Booking booking, RegulationPreviewResponseDto resolved, java.time.LocalDate on) {
+        List<BookingHorse> active = horses.findForDetail(booking.getId()).stream()
+                .filter(horse -> horse.getStatus() == BookingHorseStatus.ACTIVE).toList();
+        return com.example.racehorse_transport.policy.RegulationPolicy.redoLeadDays(resolved.rule(),
+                DocumentCompletenessPolicy.missingTypes(booking.getId(), active, resolved.requirements(),
+                        documents.findForBookingReview(booking.getId()), on));
+    }
+
     private static String countryOf(List<BookingAddress> rows, AddressRole role) {
         return rows.stream().filter(row -> row.getAddressType() == role).findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy địa chỉ của đơn."))

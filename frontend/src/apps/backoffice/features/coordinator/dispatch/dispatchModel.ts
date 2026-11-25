@@ -24,12 +24,12 @@ const stopWithAddress = (trip: VehicleTrip, addressId?: number) =>
   addressId === undefined ? undefined : trip.stops?.find(stop => stop.bookingAddressId === addressId)
 
 // Điểm lên và điểm xuống gợi ý cho một con của đơn trên lượt xe; undefined nếu lượt không hợp với đơn
-export function suggestedStops(trip: VehicleTrip, booking: DispatchBooking): { board: number; alight: number } | undefined {
+export function suggestedStops(trip: VehicleTrip, booking: DispatchBooking, horse?: DispatchHorse): { board: number; alight: number } | undefined {
   const stops = trip.stops ?? []
   const first = stops[0]
   const last = stops[stops.length - 1]
   const pickup = stopWithAddress(trip, booking.pickupAddress?.id)
-  const delivery = stopWithAddress(trip, booking.deliveryAddress?.id)
+  const delivery = stopWithAddress(trip, horse?.deliveryAddress?.id ?? booking.deliveryAddress?.id)
   const pair = (board?: { id?: number }, alight?: { id?: number }) =>
     board?.id !== undefined && alight?.id !== undefined ? { board: board.id, alight: alight.id } : undefined
   switch (trip.tripType) {
@@ -48,11 +48,12 @@ export interface HorseOption { booking: DispatchBooking; horse: DispatchHorse; b
 export function eligibleHorses(trip: VehicleTrip, bookings: DispatchBooking[], onTrip: TripHorse[]): HorseOption[] {
   const taken = new Set(onTrip.map(item => item.leg?.bookingHorseId))
   return bookings.flatMap(booking => {
-    const stops = suggestedStops(trip, booking)
-    if (!stops) return []
     return (booking.horses ?? [])
       .filter(horse => horse.status === 'ACTIVE' && !taken.has(horse.bookingHorseId))
-      .map(horse => ({ booking, horse, ...stops }))
+      .flatMap(horse => {
+        const stops = suggestedStops(trip, booking, horse)
+        return stops ? [{ booking, horse, ...stops }] : []
+      })
   })
 }
 
@@ -117,9 +118,16 @@ export const lacksDriver = (trip: VehicleTrip) =>
 // Danh sách điểm của một lượt đón, giao hoặc chạy thẳng: hub, địa chỉ các đơn đã chọn, hub
 export function placesFor(type: TripType, hubId: number, bookings: DispatchBooking[]): PlannedTripCreate['places'] {
   const pickups = bookings.map(booking => ({ bookingAddressId: booking.pickupAddress?.id }))
-  const deliveries = bookings.map(booking => ({ bookingAddressId: booking.deliveryAddress?.id }))
+  const deliveries = bookings.flatMap(booking => deliveryAddresses(booking).map(address => ({ bookingAddressId: address.id })))
   const middle = type === 'PICKUP' ? pickups : type === 'DELIVERY' ? deliveries : [...pickups, ...deliveries]
   return [{ locationId: hubId }, ...middle, { locationId: hubId }]
+}
+
+export function deliveryAddresses(booking: DispatchBooking) {
+  const addresses = (booking.horses ?? []).filter(horse => horse.missingLegs?.includes('DELIVERY'))
+    .flatMap(horse => horse.deliveryAddress ? [horse.deliveryAddress] : [])
+  if (!addresses.length && booking.deliveryAddress) addresses.push(booking.deliveryAddress)
+  return [...new Map(addresses.map(address => [address.id, address])).values()]
 }
 
 export const horsesNeeding = (type: TripType, bookings: DispatchBooking[]) =>

@@ -66,7 +66,7 @@ class PricingServiceTest {
             new PricingDataServiceImpl(lists, items, addresses, horses, departures, hubs, classes, clock,
                     regulations, config));
     private final PricingService service = transactional(PricingService.class,
-            new PricingServiceImpl(data, transactional(PricingRouteService.class, new PricingRouteServiceImpl(routing, mock(EntityManagerFactory.class)))));
+            new PricingServiceImpl(data, transactional(PricingRouteService.class, new PricingRouteServiceImpl(routing, mock(EntityManagerFactory.class))), mock(DeliveryRouteService.class)));
 
     private <T> T transactional(Class<T> contract, T target) {
         var proxy = new ProxyFactory(target);

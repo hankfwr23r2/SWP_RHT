@@ -44,6 +44,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.racehorse_transport.policy.TripSchedulePolicy;
 
 @Service
 @RequiredArgsConstructor
@@ -73,7 +74,7 @@ public class HorseLegServiceImpl implements HorseLegService {
         List<DispatchBookingResponseDto> result = new ArrayList<>();
         for (Booking booking : dispatchBookings.findDispatchable(DISPATCHABLE, from, to)) {
             Map<AddressRole, BookingAddress> addresses = bookingAddresses.findByBooking_Id(booking.getId()).stream()
-                    .collect(Collectors.toMap(BookingAddress::getAddressType, a -> a));
+                    .collect(Collectors.toMap(BookingAddress::getAddressType, a -> a, (first, next) -> first));
             List<BookingHorse> lines = bookingHorses.findForDetail(booking.getId());
             Map<Long, List<HorseLegResponseDto>> legsByHorse = legs.findByBookingHorse_IdInOrderByBookingHorse_IdAscSequenceNumberAsc(
                             lines.stream().map(BookingHorse::getId).toList()).stream()
@@ -134,7 +135,10 @@ public class HorseLegServiceImpl implements HorseLegService {
             throw new DispatchRuleException("bookingHorseId", "Khách đã chọn tự chở con này tới hub.", true);
         }
         Map<AddressRole, Long> addressIds = bookingAddresses.findByBooking_Id(booking.getId()).stream()
-                .collect(Collectors.toMap(BookingAddress::getAddressType, BookingAddress::getId));
+                .collect(Collectors.toMap(BookingAddress::getAddressType, BookingAddress::getId, (first, next) -> first));
+        if (line.getDeliveryAddress() != null) {
+            addressIds.put(AddressRole.DELIVERY, line.getDeliveryAddress().getId());
+        }
         requireLegFitsBooking(legType, trip, booking, line, tripStops, board, alight, addressIds);
 
         List<HorseLeg> chain = legs.findByBookingHorse_IdOrderBySequenceNumber(line.getId());
@@ -152,6 +156,9 @@ public class HorseLegServiceImpl implements HorseLegService {
         HorseLeg last = chain.stream().filter(existing -> existing.getStatus() != HorseLegStatus.CANCELLED)
                 .reduce((first, next) -> next).orElse(null);
         HorseLeg failed = last != null && last.getStatus() == HorseLegStatus.FAILED ? last : null;
+        if (legType == HorseLegType.DELIVERY && failed == null) {
+            requireSharedDeliveryTrip(booking, trip, tripStops, board, alight);
+        }
         if (failed != null) {
             // Giao thất bại: xe đưa ngựa về nơi lượt đó kết thúc (về hub); chặng mới đi tiếp từ đó (B5)
             DispatchPolicy.requireContinuous("L" + failed.getVehicleTrip().getEndLocation().getId(), placeKey(board));
@@ -290,6 +297,36 @@ public class HorseLegServiceImpl implements HorseLegService {
     }
 
     // Khóa so sánh nơi chốn: "L<id>" điểm mạng lưới, "A<id>" địa chỉ của đơn
+    private void requireSharedDeliveryTrip(Booking booking, VehicleTrip trip, List<TripStop> tripStops, TripStop board, TripStop alight) {
+        List<BookingHorse> active = bookingHorses.findForDetail(booking.getId()).stream()
+                .filter(horse -> horse.getStatus() == BookingHorseStatus.ACTIVE).toList();
+        var destinations = active.stream().map(BookingHorse::getDeliveryAddress).filter(Objects::nonNull)
+                .map(BookingAddress::getId).collect(Collectors.toSet());
+        if (destinations.size() < 2) return;
+        var plannedDestinations = tripStops.stream().map(TripStop::getBookingAddress).filter(Objects::nonNull)
+                .map(BookingAddress::getId).collect(Collectors.toSet());
+        if (!plannedDestinations.containsAll(destinations)) {
+            throw new DispatchRuleException("bookingHorseId", "Lượt giao phải có đủ nơi giao của đơn.", true);
+        }
+        Long destinationHub = booking.getDeparture().getRoute().getDestination().getId();
+        if (board.getLocation() == null || !destinationHub.equals(board.getLocation().getId())
+                || trip.getEndLocation() == null || !destinationHub.equals(trip.getEndLocation().getId())) {
+            throw new DispatchRuleException("places", "Lượt giao nhiều nơi phải xuất phát và quay về hub đích.", true);
+        }
+        var rules = new TripSchedulePolicy.Rules(
+                configs.getInt("MAX_CONTINUOUS_HOURS"), configs.getInt("MIN_REST_MINUTES"), configs.getInt("MAX_DRIVE_HOURS_PER_DAY"), 0, 0);
+        TripSchedulePolicy.requireMultiPlaceWindow(
+                board.getPlannedDepartureAt(), alight.getPlannedArrivalAt(),
+                tripStops.stream().map(stop -> new DispatchPolicy.Interval(stop.getPlannedArrivalAt(), stop.getPlannedDepartureAt())).toList(), rules);
+        boolean alreadyAssigned = legs.findByBookingHorse_IdInOrderByBookingHorse_IdAscSequenceNumberAsc(
+                        active.stream().map(BookingHorse::getId).toList()).stream()
+                .anyMatch(leg -> leg.getLegType() == HorseLegType.DELIVERY && !INACTIVE.contains(leg.getStatus())
+                        && leg.getVehicleTrip() != null && !leg.getVehicleTrip().getId().equals(trip.getId()));
+        if (alreadyAssigned) {
+            throw new DispatchRuleException("bookingHorseId", "Các con trong đơn nhiều nơi giao phải đi chung một lượt giao.", true);
+        }
+    }
+
     private static String placeKey(TripStop stop) {
         return stop.getLocation() != null ? "L" + stop.getLocation().getId() : "A" + stop.getBookingAddress().getId();
     }

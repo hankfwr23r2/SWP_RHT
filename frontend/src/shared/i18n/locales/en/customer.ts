@@ -615,6 +615,7 @@ export const customer = {
       horses: 'Horses',
     },
     price: {
+      deliveryEstimates: 'Estimated delivery times',
       total: 'Estimated price',
       transport: 'Transport',
       required: 'Required on this route',
@@ -668,6 +669,7 @@ export const customer = {
       next: 'Continue: horses',
     },
     horses: {
+      deliveryPlace: 'Delivery address', deliveryContact: { fullName: 'Recipient name', phone: 'Recipient phone', required: 'Enter the recipient details.' },
       title: 'Choose horses',
       subtitle: 'Pick the horses travelling together and how to care for each.',
       selected: 'Selected: {{count}}',

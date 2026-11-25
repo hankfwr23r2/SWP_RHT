@@ -27,6 +27,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import com.example.racehorse_transport.entity.enums.HorseLegStatus;
+import com.example.racehorse_transport.entity.enums.HorseLegType;
+import com.example.racehorse_transport.repository.HandoverHorseRepository;
+import com.example.racehorse_transport.repository.HorseLegRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +43,8 @@ public class HandoverEvidenceServiceImpl implements HandoverEvidenceService {
     private final HandoverDocumentRepository papers;
     private final CollectionCodeService codes;
     private final NotificationService notifications;
+    private final HandoverHorseRepository handoverHorses;
+    private final HorseLegRepository legs;
 
     @Override
     @Transactional
@@ -81,10 +87,30 @@ public class HandoverEvidenceServiceImpl implements HandoverEvidenceService {
     @Override
     @Transactional(readOnly = true)
     public List<Document> originals(Long handoverId, Set<Long> bookingIds, boolean receiving) {
+        var deliveryLegs = receiving || handoverId == null ? List.<HorseLeg>of()
+                : handoverHorses.findById_HandoverId(handoverId).stream().map(HandoverHorse::getHorseLeg)
+                        .filter(leg -> leg.getLegType() == HorseLegType.DELIVERY
+                                && leg.getVehicleTrip() != null && leg.getAlightTripStop() != null).toList();
         return bookingIds.stream().flatMap(id -> (receiving
                         ? documents.findForBookingReview(id) : documents.findOriginalsEverReceived(id)).stream())
                 .distinct().filter(document -> receiving ? document.getStatus() == DocumentStatus.APPROVED
-                        : heldOrReturnedHere(document, handoverId)).toList();
+                        : dueAtStop(document, deliveryLegs) && heldOrReturnedHere(document, handoverId)).toList();
+    }
+
+    private boolean dueAtStop(Document document, List<HorseLeg> deliveryLegs) {
+        if (deliveryLegs.isEmpty()) return true;
+        if (document.getBookingHorse() != null) {
+            return deliveryLegs.stream().anyMatch(leg -> leg.getBookingHorse().getId().equals(document.getBookingHorse().getId()));
+        }
+        if (document.getHorse() != null) {
+            return deliveryLegs.stream().anyMatch(leg -> leg.getBookingHorse().getHorse().getId().equals(document.getHorse().getId()));
+        }
+        if (document.getBooking() == null) return true;
+        return deliveryLegs.stream().filter(leg -> leg.getBookingHorse().getBooking().getId().equals(document.getBooking().getId()))
+                .anyMatch(current -> legs.findActiveOnTrip(current.getVehicleTrip().getId(),
+                                Set.of(HorseLegStatus.CANCELLED)).stream()
+                        .noneMatch(later -> later.getBookingHorse().getBooking().getId().equals(document.getBooking().getId())
+                                && later.getAlightTripStop().getSequenceNumber() > current.getAlightTripStop().getSequenceNumber()));
     }
 
     private boolean heldOrReturnedHere(Document document, Long handoverId) {

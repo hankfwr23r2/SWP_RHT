@@ -37,7 +37,7 @@ export function OrderFacts({ detail, stallTypes }: { detail: BookingDetail; stal
     </Card>
     <Card title={t('staffReview.horses')}>
       {horses?.length ? <dl className={s.facts}>{horses.map(horse => <div key={horse.id}>
-        <dt><strong>{horse.horseName}</strong>{horse.status && ` · ${t(`myOrders.horseStatus.${horse.status}`)}`}</dt>
+        <dt><strong>{horse.horseName}</strong>{horse.deliveryAddressId != null && ` · ${addresses?.find(address => address.id === horse.deliveryAddressId)?.addressLine ?? ""}`}{horse.status && ` · ${t(`myOrders.horseStatus.${horse.status}`)}`}</dt>
         <dd>{stallTypes?.find(type => type.code === horse.stallTypeCode)?.name}</dd>
         {horse.dietNote && <dd>{horse.dietNote}</dd>}
         {!!horse.addOns?.length && <dd>{t('staffReview.addOns')}

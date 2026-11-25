@@ -47,8 +47,7 @@ class BookingRoutingServiceTest {
     @Mock private DepartureRepository departures;
     @Mock private BookingAddressRepository bookingAddresses;
     @Mock private RegulationService regulations;
-    @Mock private com.example.racehorse_transport.repository.BookingHorseRepository horses;
-    @Mock private com.example.racehorse_transport.repository.DocumentRepository documents;
+    @Mock private DocumentCompletenessService completeness;
     @Mock private Clock clock;
     @InjectMocks private BookingRoutingServiceImpl routing;
 

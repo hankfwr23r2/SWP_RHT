@@ -75,9 +75,10 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = insertBooking(request, customer, departure, now);
         details.saveParties(request, booking);
         details.saveAddress(resolved.pickup(), resolved.pickupProvince(), booking);
-        details.saveAddress(resolved.delivery(), resolved.deliveryProvince(), booking);
+        List<BookingAddress> deliveryPlaces = resolved.deliveryPlaces().stream()
+                .map(place -> details.saveAddress(place.address(), place.province(), booking)).toList();
         for (HorseInput input : request.horses()) {
-            details.saveHorse(input, selectedHorses.get(input.horseId()), booking, ipAddress,
+            details.saveHorse(input, selectedHorses.get(input.horseId()), booking, deliveryPlaces.get(input.selectedDeliveryPlace()), ipAddress,
                     BookingSubmissionPolicy.businessDate(now));
         }
         details.acceptServiceTerms(booking, ipAddress);

@@ -65,10 +65,13 @@ public class QuotationDraftServiceImpl implements QuotationDraftService {
         for (int i = 0; i < estimates.size(); i++) {
             roads.add(new RoadLeg(data.roads().get(i).layer(), data.vehicleClassId(), estimates.get(i).km()));
         }
+        var delivery = data.destinations().isEmpty() ? null : pricing.deliveryPricing(data.deliveryHubId(), data.destinations());
+        if (delivery != null) roads.add(delivery.loop());
         var loaded = data.input();
         var input = new PricingInput(loaded.currencyCode(), loaded.quotationDate(), loaded.bookingType(), loaded.routeId(),
-                loaded.linehaulKm(), roads, loaded.stallsByType(), loaded.horseCount(), loaded.addOns(), loaded.earlyPickupDays());
-        long deliverySeconds = 0;
+                loaded.linehaulKm(), roads, loaded.stallsByType(), loaded.horseCount(), loaded.addOns(), loaded.earlyPickupDays(),
+                delivery == null ? List.of() : delivery.separate());
+        long deliverySeconds = delivery == null ? 0 : delivery.deliverySeconds();
         for (int i = 0; i < data.roads().size(); i++) {
             if (data.roads().get(i).layer() != ServiceLayer.PICKUP) {
                 deliverySeconds += estimates.get(i).driveSeconds();
@@ -249,8 +252,9 @@ public class QuotationDraftServiceImpl implements QuotationDraftService {
             }
             keep.add(copy);
         }
+        boolean deliveryRepriced = exclusion && repriceDeliveryAfterExclusion(horse, replacement, keep);
         if (exclusion && horse.getPickupMissLiability() != null && !customer) {
-            repriceRemainingRoads(horse, previous, keep);
+            repriceRemainingRoads(horse, previous, keep, deliveryRepriced);
         }
         if (retry != null) {
             addRetryCharges(previous, replacement, originalLines, retry, riding, keep);
@@ -294,11 +298,46 @@ public class QuotationDraftServiceImpl implements QuotationDraftService {
         return Optional.of(replacement);
     }
 
-    private void repriceRemainingRoads(BookingHorse excluded, Quotation previous, List<QuotationLine> rows) {
+    // Đơn giao nhiều nơi: bỏ một con thì tính lại vòng giao của các con còn lại
+    private boolean repriceDeliveryAfterExclusion(BookingHorse excluded, Quotation replacement, List<QuotationLine> linesToKeep) {
+        var booking = excluded.getBooking();
+        if (booking.getDeparture() == null || booking.getDeliveryMethod() != TransferMethod.COMPANY
+                || replacement.getPriceList() == null) return false;
+        var pickup = linesToKeep.stream().filter(line -> line.getLineType() == QuotationLineType.PICKUP
+                && line.getHorseLeg() == null).findFirst();
+        var changed = snapshots.deliveryAfterExclusion(excluded, pickup.isPresent());
+        if (changed.isEmpty()) return false;
+
+        var route = booking.getDeparture().getRoute();
+        var destinations = changed.get();
+        var delivery = pricing.deliveryPricing(route.getDestination().getId(), destinations.destinations());
+        List<RoadLeg> roadLegs = new ArrayList<>();
+        pickup.ifPresent(line -> roadLegs.add(new RoadLeg(ServiceLayer.PICKUP, destinations.pickupVehicleClass(), line.getQuantity())));
+        roadLegs.add(delivery.loop());
+        var priceList = replacement.getPriceList();
+        var availableItems = priceItems.findByPriceList_Id(priceList.getId());
+        var catalog = availableItems.stream().map(PriceItem::getBillableService).distinct().toList();
+        var updated = PricingPolicy.chooseRoadPricing(priceList, availableItems, catalog, route.getId(), roadLegs, delivery.separate());
+        linesToKeep.removeIf(line -> line.getHorseLeg() == null && (line.getLineType() == QuotationLineType.DELIVERY
+                || line.getLineType() == QuotationLineType.FUEL));
+        for (var price : updated.lines()) {
+            var item = availableItems.stream().filter(candidate -> candidate.getId().equals(price.priceItemId())).findFirst().orElseThrow();
+            var service = item.getBillableService();
+            if (service.getLayer() != ServiceLayer.PICKUP) {
+                linesToKeep.add(line(replacement, lineType(service.getLayer()), service, item, null,
+                        service.getName(), price.quantity(), price.unitPrice(), price.passThrough()));
+            }
+        }
+        return true;
+    }
+
+    private void repriceRemainingRoads(BookingHorse excluded, Quotation previous, List<QuotationLine> rows,
+                                       boolean deliveryRepriced) {
         var remaining = snapshots.remainingAfter(excluded);
         if (remaining.isEmpty() || previous.getPriceList() == null) return;
         var roadTypes = EnumSet.of(QuotationLineType.PICKUP, QuotationLineType.DELIVERY,
                 QuotationLineType.DIRECT, QuotationLineType.FUEL);
+        if (deliveryRepriced) roadTypes.retainAll(EnumSet.of(QuotationLineType.PICKUP));
         var roadRows = rows.stream().filter(row -> roadTypes.contains(row.getLineType())
                 && row.getHorseLeg() == null && row.getPriceItem() != null
                 && row.getBillableService().getBillingUnit() == BillingUnit.PER_KM).toList();

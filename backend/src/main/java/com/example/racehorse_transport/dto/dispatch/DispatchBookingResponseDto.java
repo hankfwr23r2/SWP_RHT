@@ -28,11 +28,11 @@ public record DispatchBookingResponseDto(
     }
 
     public record HorseDto(Long bookingHorseId, String horseName, String microchip, String stallTypeCode, Integer seats,
-                           BookingHorseStatus status, List<HorseLegResponseDto> legs, List<HorseLegType> missingLegs) {
+                           BookingHorseStatus status, List<HorseLegResponseDto> legs, List<HorseLegType> missingLegs, AddressDto deliveryAddress) {
         // missingLegs do service tính từ LegNeedsPolicy
         public static HorseDto from(BookingHorse line, List<HorseLegResponseDto> legs, List<HorseLegType> missingLegs) {
             return new HorseDto(line.getId(), line.getHorse().getName(), line.getHorse().getMicrochip(), line.getStallType().getCode(),
-                    StallSeatPolicy.seats(line.getStallType().getCode()), line.getStatus(), legs, missingLegs);
+                    StallSeatPolicy.seats(line.getStallType().getCode()), line.getStatus(), legs, missingLegs, AddressDto.from(line.getDeliveryAddress()));
         }
     }
 

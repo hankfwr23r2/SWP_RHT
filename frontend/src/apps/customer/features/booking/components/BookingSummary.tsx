@@ -3,7 +3,7 @@ import { formatVND } from '@shared/lib/format'
 import { Skeleton } from '@shared/ui/Skeleton'
 import { useBookingDraft } from '../draft'
 import { findAddress, useBookingData, type BookingData } from '../loaders'
-import { showDate } from '../model'
+import { showDate, showDateTime } from '../model'
 import { usePricePreview } from '../usePricePreview'
 import s from './BookingSummary.module.css'
 
@@ -51,6 +51,19 @@ function PriceLines({ preview }: { preview: Preview }) {
           </dl>
         </section>
       ))}
+      {!!preview.price.deliveryEstimates?.length && (
+        <section>
+          <h3>{t('bookingForm.price.deliveryEstimates')}</h3>
+          <dl>
+            {preview.price.deliveryEstimates.map(place => place.arrivalAt && (
+              <div key={place.customerAddressId}>
+                <dt>{findAddress(data, place.customerAddressId ?? null)?.label}</dt>
+                <dd>{showDateTime(place.arrivalAt)}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      )}
       <p className={s.hint}>{t('bookingForm.price.note')}{depositPercent != null && ` ${t('bookingForm.price.deposit', { rate: depositPercent })}`}</p>
     </div>
   )

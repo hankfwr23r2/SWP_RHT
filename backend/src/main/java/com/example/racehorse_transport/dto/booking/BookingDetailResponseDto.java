@@ -55,13 +55,14 @@ public record BookingDetailResponseDto(BookingResponseDto booking, List<PartySna
 
     public record HorseDetail(Long id, Long horseId, String horseName, String stallTypeCode, String dietNote,
             Short feedingsPerDay, Boolean feedSuppliedByOwner, BookingHorseStatus status,
-            List<AddOn> addOns, InsuranceDetail insurance) {
+            List<AddOn> addOns, InsuranceDetail insurance, Long deliveryAddressId) {
 
         public static HorseDetail from(BookingHorse row, List<BookingHorseAddOn> addOns, HorseInsurance insurance) {
             return new HorseDetail(row.getId(), row.getHorse().getId(), row.getHorse().getName(),
                     row.getStallType().getCode(), row.getDietNote(), row.getFeedingsPerDay(),
                     row.getFeedSuppliedByOwner(), row.getStatus(), addOns.stream().map(AddOn::from).toList(),
-                    insurance == null ? null : InsuranceDetail.from(insurance));
+                    insurance == null ? null : InsuranceDetail.from(insurance),
+                    row.getDeliveryAddress() == null ? null : row.getDeliveryAddress().getId());
         }
     }
 

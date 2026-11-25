@@ -48,7 +48,7 @@ public interface BookingHorseRepository extends JpaRepository<BookingHorse, Long
     Optional<Long> findBookingId(Long id);
 
     @Query("""
-            SELECT h FROM BookingHorse h JOIN FETCH h.horse JOIN FETCH h.stallType
+            SELECT h FROM BookingHorse h JOIN FETCH h.horse JOIN FETCH h.stallType LEFT JOIN FETCH h.deliveryAddress a LEFT JOIN FETCH a.country
             WHERE h.booking.id = :bookingId ORDER BY h.id
             """)
     List<BookingHorse> findForDetail(Long bookingId);
