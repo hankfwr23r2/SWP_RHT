@@ -100,6 +100,12 @@ Công ty không vận hành nơi cách ly. Điều kiện cách ly thể hiện 
 
 ## 7. Ngoại lệ
 
+### Xác nhận giao ngựa và khiếu nại (G1)
+
+- Chi tiết đơn của khách hiện phần xác nhận giao ngựa và khiếu nại sau khi đơn đã giao. Khách chọn xác nhận nhận ngựa ổn hoặc gửi khiếu nại kèm ảnh cho một con hoặc cả đơn. Khách xem được phản hồi và kết luận của quản lý tại cùng vị trí.
+- Chi tiết đơn của quản lý hiển thị xác nhận, khiếu nại và ảnh. Trong hạn nhập thay, quản lý ghi nhận khiếu nại đã tiếp nhận qua điện thoại. Quản lý có thể trả lời và ghi kết luận có lý do.
+- Backend trả quyền thao tác theo mốc `DELIVERED`. Khiếu nại mở chặn đóng đơn. Sau khi khách xác nhận hoặc hết hạn trên ứng dụng, đơn được xét đóng theo điều kiện quyết toán. Khiếu nại nhập muộn trên đơn đã hoàn thành được xử lý riêng.
+
 | # | Màn hình (vai trò) | Thao tác | Ghi | Chặn khi | Tác động | Khách thấy |
 |---|---|---|---|---|---|---|
 | 7.1 | Báo sự cố (tài xế, hộ tống) | Chọn cả xe hoặc từng con, ảnh, vị trí | `incident`, `document` | Lượt chưa chạy hoặc đã kết thúc, HEALTH chưa chọn ngựa, hoặc lượt có sự cố cả xe chưa đóng khi báo cả xe | Điều phối nhận ngay. Không đổi `booking.status` | Con nào bị ảnh hưởng |

@@ -4,6 +4,7 @@ import com.example.racehorse_transport.dto.incident.CostItemResponseDto;
 import com.example.racehorse_transport.dto.payment.PaymentResponseDto;
 import com.example.racehorse_transport.dto.payment.SettlementResponseDto;
 import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.entity.BookingStatusHistory;
 import com.example.racehorse_transport.entity.CostItem;
 import com.example.racehorse_transport.entity.Payment;
 import com.example.racehorse_transport.entity.Quotation;
@@ -16,6 +17,7 @@ import com.example.racehorse_transport.entity.enums.QuotationStatus;
 import com.example.racehorse_transport.exception.BookingRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.CostPayerPolicy;
+import com.example.racehorse_transport.policy.DeliveryComplaintPolicy;
 import com.example.racehorse_transport.policy.PaymentPolicy;
 import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.service.PaymentService;
@@ -29,8 +31,8 @@ import com.example.racehorse_transport.service.SettlementService;
 import com.example.racehorse_transport.service.SystemConfigService;
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -76,6 +78,9 @@ public class SettlementServiceImpl implements SettlementService {
         if (booking.getStatus() != BookingStatus.DELIVERED || !snapshot.canClose()) {
             throw BookingRuleException.conflict("Chỉ đóng đơn đã giao, đã quyết toán và không còn sự cố mở.");
         }
+        if (!deliveryWindowAllowsClosure(booking, booking.getDeliveryConfirmedAt() != null)) {
+            throw BookingRuleException.conflict("Chỉ đóng đơn khi khách đã xác nhận nhận ngựa hoặc đã hết hạn khiếu nại trên ứng dụng.");
+        }
         statuses.transitionForUser(bookingId, BookingStatus.COMPLETED, "Quản lý hoàn tất quyết toán.", username);
         return snapshot.toResponse(booking);
     }
@@ -83,19 +88,14 @@ public class SettlementServiceImpl implements SettlementService {
     @Override
     @Transactional(readOnly = true)
     public List<Long> autoCloseCandidates() {
-        return history.findBookingIdsWithStatusBefore(BookingStatus.DELIVERED, autoCloseCutoff());
+        return history.findBookingIdsWithStatusBefore(BookingStatus.DELIVERED, clock.instant().minus(deliveryWindow()));
     }
 
     @Override
     @Transactional
     public boolean autoClose(Long bookingId) {
         var booking = bookings.findForUpdate(bookingId).orElse(null);
-        if (booking == null || booking.getStatus() != BookingStatus.DELIVERED) {
-            return false;
-        }
-        var cutoff = autoCloseCutoff();
-        var delivered = history.findFirstByBooking_IdAndToStatusOrderByChangedAtDescIdDesc(bookingId, BookingStatus.DELIVERED);
-        if (delivered.isEmpty() || delivered.get().getChangedAt().isAfter(cutoff)) {
+        if (booking == null || booking.getStatus() != BookingStatus.DELIVERED || !deliveryWindowAllowsClosure(booking, false)) {
             return false;
         }
         var snapshot = snapshot(booking);
@@ -106,8 +106,19 @@ public class SettlementServiceImpl implements SettlementService {
         return true;
     }
 
-    private Instant autoCloseCutoff() {
-        return clock.instant().minus(configs.getInt("SETTLEMENT_AUTO_CLOSE_DAYS"), ChronoUnit.DAYS);
+    private boolean deliveryWindowAllowsClosure(Booking booking, boolean customerConfirmed) {
+        return DeliveryComplaintPolicy.canClose(booking.getStatus(), deliveredAt(booking), clock.instant(),
+                deliveryWindow(), customerConfirmed, false);
+    }
+
+    private Instant deliveredAt(Booking booking) {
+        return history.findFirstByBooking_IdAndToStatusOrderByChangedAtDescIdDesc(booking.getId(), BookingStatus.DELIVERED)
+                .map(BookingStatusHistory::getChangedAt)
+                .orElse(null);
+    }
+
+    private Duration deliveryWindow() {
+        return Duration.ofDays(configs.getInt("SETTLEMENT_AUTO_CLOSE_DAYS"));
     }
 
     private Optional<Snapshot> snapshot(Booking booking) {
