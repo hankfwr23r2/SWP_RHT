@@ -98,6 +98,9 @@ public class Incident {
     @Column(name = "status", length = 30, nullable = false)
     private IncidentStatus status;
 
+    @Column(name = "rest_started_at")
+    private Instant restStartedAt;
+
     // Người xác nhận ngựa đủ sức khỏe đi tiếp
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
     @JoinColumn(name = "fit_confirmed_by")

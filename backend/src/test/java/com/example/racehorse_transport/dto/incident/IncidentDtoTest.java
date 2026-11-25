@@ -31,6 +31,7 @@ class IncidentDtoTest {
         assertThat(incident.getId()).isNull();
         assertThat(incident.getStatus()).isNull();
         assertThat(incident.getReportedBy()).isNull();
+        assertThat(incident.getRestStartedAt()).isNull();
         assertThat(incident.getVehicleTrip()).isSameAs(trip);
         assertThat(incident.getTitle()).isEqualTo("Tắc đường");
         assertThat(incident.getDescription()).isEqualTo("Lũ");
@@ -71,6 +72,9 @@ class IncidentDtoTest {
         incident.setStatus(IncidentStatus.PLAN_PENDING);
         incident.setBooking(booking);
         incident.setReportedBy(staff);
+        Instant restStartedAt = Instant.parse("2031-03-05T10:00:00Z");
+        Instant fitEligibleAt = Instant.parse("2031-03-05T10:30:00Z");
+        incident.setRestStartedAt(restStartedAt);
         Party vet = new Party();
         vet.setId(3L);
         vet.setDisplayName("Phòng khám thú y");
@@ -83,8 +87,10 @@ class IncidentDtoTest {
         plan.setDecidedBy(staff);
         plan.setRejectionReason("Đắt");
 
-        var response = IncidentResponseDto.from(incident, true, List.of(IncidentResponseDto.PlanDto.from(plan)), null);
+        var response = IncidentResponseDto.from(incident, true, fitEligibleAt, List.of(IncidentResponseDto.PlanDto.from(plan)), null);
         assertThat(response.requiresFit()).isTrue();
+        assertThat(response.restStartedAt()).isEqualTo(restStartedAt);
+        assertThat(response.fitEligibleAt()).isEqualTo(fitEligibleAt);
         assertThat(response.bookingCode()).isEqualTo("BK-ABCDEFGH");
         assertThat(response.vehicleTripId()).isNull();
         assertThat(response.horseName()).isNull();

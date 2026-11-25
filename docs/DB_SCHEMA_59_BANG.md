@@ -1235,6 +1235,7 @@ Index: `payment_id`.
 | `reported_by` | `bigint` | chỉ với `COMPLAINT` | FK → staff(user_id) | Có thể trống khi khách tự gửi khiếu nại |
 | `reported_at` | `timestamptz` | | default `now()` | |
 | `status` | `varchar(30)` | | CK `REPORTED, PLAN_PENDING, PLAN_ACTIVE, RESOLVED, CLOSED` | |
+| `rest_started_at` | `timestamptz` | có | | Giờ hộ tống bắt đầu cho ngựa nghỉ khi phương án đang hiệu lực |
 | `fit_confirmed_by` | `bigint` | có | FK → staff(user_id) | Người xác nhận ngựa đủ sức khỏe đi tiếp |
 | `fit_confirmed_at` | `timestamptz` | có | | |
 | `resolved_at` | `timestamptz` | có | | |
@@ -1253,6 +1254,8 @@ Ràng buộc bảng:
 - `CHECK ((fit_confirmed_by IS NULL) = (fit_confirmed_at IS NULL))`
 
 Index: `booking_id`, `vehicle_trip_id`, `horse_leg_id`, `status`.
+
+Service ghi `rest_started_at` một lần cho sự cố cần xác nhận đủ sức. Khi xác nhận, service kiểm ngựa đã nghỉ đủ `MIN_REST_MINUTES` kể từ mốc này.
 
 ### 13.2 `incident_plan`: phương án xử lý sự cố (có phiên bản)
 
@@ -1334,6 +1337,8 @@ Phí giữ sau giao hụt thuộc `CONSIGNEE`. Phí giữ do chưa trả số d�
 `document_type` có mã `VET_REPORT` với chủ thể `INCIDENT`. Điều phối dùng mã này để xác nhận đủ sức thay tổ lái.
 
 `VEHICLE_SWAP_RECORD` có chủ thể `INCIDENT`. Tổ xe tải ảnh biên bản đã ký trước khi điều phối thực hiện phương án đổi xe.
+
+`FIT_CHECK_PHOTO` có chủ thể `INCIDENT`. Hộ tống của lượt xe tải ảnh con ngựa trước khi tự xác nhận đủ sức đi tiếp.
 
 ### 14.1 `document`: tệp chứng từ
 

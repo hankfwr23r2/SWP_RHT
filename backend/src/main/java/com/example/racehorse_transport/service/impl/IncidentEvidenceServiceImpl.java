@@ -8,10 +8,12 @@ import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.VehicleTrip;
 import com.example.racehorse_transport.entity.enums.CostCategory;
 import com.example.racehorse_transport.entity.enums.CrewAssignmentStatus;
+import com.example.racehorse_transport.entity.enums.CrewRole;
 import com.example.racehorse_transport.entity.enums.DocumentSubject;
 import com.example.racehorse_transport.entity.enums.IncidentStatus;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
+import com.example.racehorse_transport.policy.IncidentPolicy;
 import com.example.racehorse_transport.repository.CostItemRepository;
 import com.example.racehorse_transport.repository.CrewAssignmentRepository;
 import com.example.racehorse_transport.repository.DocumentRepository;
@@ -81,9 +83,11 @@ public class IncidentEvidenceServiceImpl implements IncidentEvidenceService {
         String role = uploader.getUser().getRole().getCode();
         if (VEHICLE_SWAP_RECORD.equals(code)) {
             requireVehicleSwapRecordUploader(incident, uploader, role);
-            if (file.getContentType() == null || !file.getContentType().startsWith("image/")) {
-                throw new DispatchRuleException("file", "Chọn ảnh biên bản đổi xe đã ký.");
-            }
+            requireImage(file, "Chọn ảnh biên bản đổi xe đã ký.");
+        } else if (FIT_CHECK_PHOTO.equals(code)) {
+            requireFitCheckPhotoUploader(incident, username, role);
+            IncidentPolicy.requireFitConfirmation(incident.getIncidentType(), incident.getHorseLeg() != null);
+            requireImage(file, "Chọn ảnh con ngựa để xác nhận đủ sức.");
         } else if (!INCIDENT_PHOTO.equals(code) && !("VET_REPORT".equals(code) && "COORDINATOR".equals(role))) {
             throw new DispatchRuleException("documentType", "Loại tệp chứng cứ không phù hợp.");
         }
@@ -96,13 +100,31 @@ public class IncidentEvidenceServiceImpl implements IncidentEvidenceService {
     }
 
     private void requireVehicleSwapRecordUploader(Incident incident, Staff uploader, String role) {
-        VehicleTrip trip = incident.getVehicleTrip();
-        if (trip == null && incident.getHorseLeg() != null) {
-            trip = incident.getHorseLeg().getVehicleTrip();
-        }
+        VehicleTrip trip = tripOf(incident);
         if (!("DRIVER".equals(role) || "ESCORT".equals(role)) || trip == null
                 || !crew.existsByVehicleTrip_IdAndStaff_UserIdAndStatusNot(trip.getId(), uploader.getUserId(), CrewAssignmentStatus.RELEASED)) {
             throw new AccessDeniedException("Chỉ tổ lái của lượt xe được tải biên bản đổi xe.");
+        }
+    }
+
+    private void requireFitCheckPhotoUploader(Incident incident, String username, String role) {
+        VehicleTrip trip = tripOf(incident);
+        if (!"ESCORT".equals(role) || trip == null || crew.findFirstByVehicleTrip_IdAndStaff_User_UsernameAndStatusNot(
+                trip.getId(), username, CrewAssignmentStatus.RELEASED)
+                .filter(assignment -> assignment.getCrewRole() == CrewRole.ESCORT).isEmpty()) {
+            throw new AccessDeniedException("Chỉ hộ tống của lượt xe được tải ảnh xác nhận đủ sức.");
+        }
+    }
+
+    private VehicleTrip tripOf(Incident incident) {
+        return incident.getVehicleTrip() != null ? incident.getVehicleTrip()
+                : incident.getHorseLeg() == null ? null : incident.getHorseLeg().getVehicleTrip();
+    }
+
+    private void requireImage(MultipartFile file, String message) {
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new DispatchRuleException("file", message);
         }
     }
 

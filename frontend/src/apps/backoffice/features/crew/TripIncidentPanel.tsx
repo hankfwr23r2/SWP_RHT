@@ -1,8 +1,9 @@
 // Sự cố của lượt xe nhìn từ tổ xe: báo sự cố, xác nhận ngựa đủ sức đi tiếp, ghi chi phí (docs/MAN_HINH_VA_TAC_DONG.md mục 7.1, 7.4)
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useAuth } from '@shared/auth/AuthContext'
 import type { CrewTrip } from '@shared/api/tripExecution'
-import { incidentsApi, type CauseType, type Evidence, type IncidentType } from '@shared/api/incidentOps'
+import { incidentsApi, type CauseType, type IncidentType } from '@shared/api/incidentOps'
 import { useAutoRefresh, useLoad } from '@shared/hooks/useLoad'
 import { formatVND } from '@shared/lib/format'
 import { Button } from '@shared/ui/Button'
@@ -19,17 +20,11 @@ import { Textarea } from '@shared/ui/Textarea'
 import { useToast } from '@shared/ui/toast'
 import { EvidencePanel } from '@backoffice/shared/EvidencePanel'
 import { IncidentCostForm } from '@backoffice/shared/IncidentCostForm'
+import { TripIncidentEvidence } from './TripIncidentEvidence'
 import s from './MyTrips.module.css'
 
 const TYPES: IncidentType[] = ['HEALTH', 'VEHICLE_BREAKDOWN', 'ACCIDENT', 'DELAY', 'DOCUMENT', 'OTHER']
 const CAUSES: CauseType[] = ['COMPANY_FAULT', 'HORSE_CONDITION', 'CUSTOMER_DOCS', 'AGENT_FAULT', 'FORCE_MAJEURE', 'RECIPIENT_ABSENT']
-
-// Vị trí hiện tại cho ảnh hiện trường; máy không cho lấy vị trí thì gửi ảnh không kèm tọa độ
-const currentPosition = () => new Promise<{ latitude: number; longitude: number } | undefined>(resolve => {
-  if (!navigator.geolocation) return resolve(undefined)
-  navigator.geolocation.getCurrentPosition(({ coords }) => resolve({ latitude: Number(coords.latitude.toFixed(6)), longitude: Number(coords.longitude.toFixed(6)) }),
-    () => resolve(undefined), { timeout: 5000, maximumAge: 60_000 })
-})
 
 // Chi phí đã ghi của sự cố, mỗi khoản kèm biên lai; tải biên lai khi quản lý chưa duyệt
 function IncidentCosts({ incidentId }: { incidentId: number }) {
@@ -48,49 +43,10 @@ function IncidentCosts({ incidentId }: { incidentId: number }) {
   )
 }
 
-function useTripIncidentEvidence(incidentId: number) {
-  const query = useLoad(() => incidentsApi.photos(incidentId), [incidentId], { toastOnError: false })
-  const save = async (upload: Promise<Evidence[]>) => {
-    const evidence = await upload
-    query.updateData(() => evidence)
-    return evidence
-  }
-  return {
-    ...query,
-    uploadPhoto: async (file: File) => save(incidentsApi.attachPhoto(incidentId, file, await currentPosition())),
-    uploadRecord: (file: File) => save(incidentsApi.attachPhoto(incidentId, file, undefined, 'VEHICLE_SWAP_RECORD')),
-  }
-}
-
-function TripIncidentEvidence({ incidentId, canUploadRecord }: { incidentId: number; canUploadRecord: boolean }) {
-  const { t } = useTranslation()
-  const { data, loaded, error, reload, uploadPhoto, uploadRecord } = useTripIncidentEvidence(incidentId)
-  if (!loaded) return <Skeleton variant="block" lines={2} />
-  if (error) return <ErrorState message={error.message} onRetry={reload} />
-  const records = (data ?? []).filter(file => file.documentTypeCode === 'VEHICLE_SWAP_RECORD')
-
-  return (
-    <>
-      <EvidencePanel title={t('incidents.photos')} evidence={(data ?? []).filter(file => file.documentTypeCode !== 'VEHICLE_SWAP_RECORD')}
-        upload={uploadPhoto} />
-      {(canUploadRecord || records.length > 0) && <EvidencePanel title={t('incidents.vehicleSwapRecord')} evidence={records}
-        accept="image/*" fileLabel={t('incidents.vehicleSwapRecordFile')} uploadLabel={t('incidents.uploadVehicleSwapRecord')}
-        upload={canUploadRecord ? uploadRecord : undefined} />}
-    </>
-  )
-}
-
-export function TripIncidentPanel({ run }: { run: CrewTrip }) {
+function useTripIncidentActions(reload: () => Promise<void>) {
   const { t } = useTranslation()
   const toast = useToast()
-  const tripId = run.trip?.id ?? 0
-  const canReport = run.trip?.status === 'IN_PROGRESS'
-  const [reporting, setReporting] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [form, setForm] = useState({ scope: '', type: 'OTHER' as IncidentType, cause: 'COMPANY_FAULT' as CauseType, title: '', description: '' })
-  const [costVersion, setCostVersion] = useState(0)
-  const { data: incidents, loaded, error, reload } = useLoad(() => incidentsApi.ofTrip(tripId), [tripId], { toastOnError: false })
-  useAutoRefresh(reload)
 
   const act = async (action: () => Promise<unknown>, done: string) => {
     setBusy(true)
@@ -107,6 +63,26 @@ export function TripIncidentPanel({ run }: { run: CrewTrip }) {
     }
   }
 
+  return {
+    act,
+    busy,
+    startRest: (id: number) => act(() => incidentsApi.startRest(id), t('myTrips.run.incident.restStarted')),
+    confirmFit: (id: number) => act(() => incidentsApi.confirmFit(id), t('myTrips.run.incident.fitDone')),
+  }
+}
+
+export function TripIncidentPanel({ run }: { run: CrewTrip }) {
+  const { t } = useTranslation()
+  const { session } = useAuth()
+  const tripId = run.trip?.id ?? 0
+  const canReport = run.trip?.status === 'IN_PROGRESS'
+  const [reporting, setReporting] = useState(false)
+  const [form, setForm] = useState({ scope: '', type: 'OTHER' as IncidentType, cause: 'COMPANY_FAULT' as CauseType, title: '', description: '' })
+  const [costVersion, setCostVersion] = useState(0)
+  const { data: incidents, loaded, error, reload } = useLoad(() => incidentsApi.ofTrip(tripId), [tripId], { toastOnError: false })
+  const { act, busy, startRest, confirmFit } = useTripIncidentActions(reload)
+  useAutoRefresh(reload)
+
   return (
     <Card title={t('incidents.title')} actions={canReport && <Button variant="danger" onClick={() => setReporting(true)}>{t('myTrips.run.incident.report')}</Button>}>
       {!loaded && <Skeleton variant="block" lines={3} />}
@@ -119,16 +95,14 @@ export function TripIncidentPanel({ run }: { run: CrewTrip }) {
           const id = incident.id ?? 0
           const open = incident.status !== 'RESOLVED' && incident.status !== 'CLOSED'
           const latest = incident.plans?.at(-1)
+          const canHandleFit = session?.role === 'escort' && incident.status === 'PLAN_ACTIVE' && incident.requiresFit && !incident.fitConfirmedAt
           return (
             <li key={id} className={s.body}>
               <p className={s.line}>{incident.title}{incident.horseName ? ` · ${incident.horseName}` : ''}</p>
               <StatusBadge tone={open ? 'warning' : 'success'} label={t(`incidents.status.${incident.status}`)} />
-              {incident.status === 'PLAN_ACTIVE' && incident.requiresFit && !incident.fitConfirmedAt && (
-                <Button variant="primary" size="lg" fullWidth loading={busy}
-                  onClick={() => act(() => incidentsApi.confirmFit(id), t('myTrips.run.incident.fitDone'))}>{t('myTrips.run.incident.confirmFit')}</Button>
-              )}
               {incident.status !== 'CLOSED' && (
-                <TripIncidentEvidence incidentId={id}
+                <TripIncidentEvidence incident={incident}
+                  fitActions={canHandleFit ? { busy, startRest: () => startRest(id), confirmFit: () => confirmFit(id) } : undefined}
                   canUploadRecord={open && latest?.status === 'APPROVED' && latest.resolutionType === 'TRANSFER_VEHICLE'} />
               )}
               <IncidentCosts key={`${id}-${costVersion}`} incidentId={id} />

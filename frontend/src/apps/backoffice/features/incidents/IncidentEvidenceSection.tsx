@@ -20,6 +20,7 @@ export function IncidentEvidenceSection({ evidence, busy, canConfirm, onConfirm,
   const { t } = useTranslation()
   const [type, setType] = useState<EvidenceType>('INCIDENT_PHOTO')
   const hasVetReport = evidence.some(file => file.documentTypeCode === 'VET_REPORT')
+  const fitPhotos = evidence.filter(file => file.documentTypeCode === 'FIT_CHECK_PHOTO')
 
   return (
     <>
@@ -29,8 +30,9 @@ export function IncidentEvidenceSection({ evidence, busy, canConfirm, onConfirm,
             options={[{ value: 'INCIDENT_PHOTO', label: t('incidents.photos') }, { value: 'VET_REPORT', label: t('incidents.vetReport') }]} />}
         </Field>
       )}
-      <EvidencePanel title={t('incidents.evidence')} evidence={evidence}
+      <EvidencePanel title={t('incidents.evidence')} evidence={evidence.filter(file => file.documentTypeCode !== 'FIT_CHECK_PHOTO')}
         upload={onUpload ? file => onUpload(file, type) : undefined} />
+      {fitPhotos.length > 0 && <EvidencePanel title={t('incidents.fitCheckPhoto')} evidence={fitPhotos} />}
       {canConfirm && (
         <Button disabled={!hasVetReport} loading={busy} onClick={() => void onConfirm()}>{t('incidents.confirmOnBehalf')}</Button>
       )}

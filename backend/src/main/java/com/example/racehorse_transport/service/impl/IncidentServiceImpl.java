@@ -1,5 +1,7 @@
 package com.example.racehorse_transport.service.impl;
 
+import static com.example.racehorse_transport.service.IncidentEvidenceService.FIT_CHECK_PHOTO;
+
 import com.example.racehorse_transport.dto.incident.PlanApproveRequestDto;
 import com.example.racehorse_transport.dto.incident.IncidentPlanRequestDto;
 import com.example.racehorse_transport.dto.incident.IncidentReportRequestDto;
@@ -16,6 +18,7 @@ import com.example.racehorse_transport.entity.enums.IncidentPlanStatus;
 import com.example.racehorse_transport.entity.enums.IncidentStatus;
 import com.example.racehorse_transport.entity.enums.AppUserStatus;
 import com.example.racehorse_transport.entity.enums.CrewAssignmentStatus;
+import com.example.racehorse_transport.entity.enums.CrewRole;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.IncidentPolicy;
@@ -49,6 +52,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class IncidentServiceImpl implements IncidentService {
 
     private static final Set<IncidentStatus> OPEN = Set.of(IncidentStatus.REPORTED, IncidentStatus.PLAN_PENDING, IncidentStatus.PLAN_ACTIVE);
+    private static final String MIN_REST_MINUTES = "MIN_REST_MINUTES";
 
     private final IncidentRepository incidents;
     private final IncidentPlanRepository plans;
@@ -185,27 +189,38 @@ public class IncidentServiceImpl implements IncidentService {
 
     @Override
     @Transactional
+    public IncidentResponseDto startRest(Long incidentId, String username) {
+        Incident incident = openIncident(incidentId);
+        requireEscort(incident, currentStaff(username), "Chỉ hộ tống của lượt xe được bắt đầu cho ngựa nghỉ.");
+        IncidentPolicy.requireFitConfirmation(incident.getIncidentType(), incident.getHorseLeg() != null);
+        IncidentPolicy.requireCanStartRest(incident.getStatus(), incident.getRestStartedAt(), incident.getFitConfirmedAt() != null);
+        incident.setRestStartedAt(clock.instant());
+        return incident(incidentId);
+    }
+
+    @Override
+    @Transactional
     public IncidentResponseDto confirmFit(Long incidentId, String username) {
         Incident incident = openIncident(incidentId);
         Staff member = currentStaff(username);
-        if ("COORDINATOR".equals(member.getUser().getRole().getCode())) {
+        boolean onBehalf = "COORDINATOR".equals(member.getUser().getRole().getCode());
+        if (onBehalf) {
             if (!incidents.hasDocumentType(incidentId, "VET_REPORT")) {
                 throw new DispatchRuleException("documentType", "Cần tải kết quả thú y trước khi xác nhận thay.", true);
             }
         } else {
-            VehicleTrip trip = incident.getVehicleTrip() != null ? incident.getVehicleTrip()
-                    : incident.getHorseLeg() == null ? null : incident.getHorseLeg().getVehicleTrip();
-            if (trip == null || crew.findFirstByVehicleTrip_IdAndStaff_User_UsernameAndStatusNot(
-                    trip.getId(), username, CrewAssignmentStatus.RELEASED).isEmpty()) {
-                throw new AccessDeniedException("Bạn không ở trong tổ lái của lượt xe này.");
-            }
+            requireEscort(incident, member, "Chỉ hộ tống của lượt xe được xác nhận ngựa đủ sức đi tiếp.");
         }
-        if (!IncidentPolicy.requiresFit(incident.getIncidentType(), incident.getHorseLeg() != null)) {
-            throw new DispatchRuleException("incidentType", "Sự cố này không yêu cầu xác nhận đủ sức.", true);
+        IncidentPolicy.requireFitConfirmation(incident.getIncidentType(), incident.getHorseLeg() != null);
+        Instant now = clock.instant();
+        // Điều phối xác nhận thay (có kết quả thú y) khi tổ lái không còn trên lượt: chưa bấm bắt đầu nghỉ thì đếm từ lúc báo
+        Instant restFrom = incident.getRestStartedAt() != null || !onBehalf ? incident.getRestStartedAt() : incident.getReportedAt();
+        IncidentPolicy.requireCanConfirmFit(incident.getStatus(), restFrom, now, configs.getInt(MIN_REST_MINUTES));
+        if (!onBehalf && !incidents.hasDocumentType(incidentId, FIT_CHECK_PHOTO)) {
+            throw new DispatchRuleException("documentType", "Cần ảnh con ngựa trước khi xác nhận đủ sức.", true);
         }
-        IncidentPolicy.requireCanConfirmFit(incident.getStatus(), incident.getReportedAt(), clock.instant(), configs.getInt("MIN_REST_MINUTES"));
         incident.setFitConfirmedBy(member);
-        incident.setFitConfirmedAt(clock.instant());
+        incident.setFitConfirmedAt(now);
         return incident(incidentId);
     }
 
@@ -253,9 +268,23 @@ public class IncidentServiceImpl implements IncidentService {
         return staff.findByUser_Username(username).orElseThrow(() -> new AccessDeniedException("Không tìm thấy hồ sơ nhân viên."));
     }
 
-    private void notifyPlanDecision(IncidentPlan plan, Incident incident, boolean approved) {
-        VehicleTrip trip = incident.getVehicleTrip() != null ? incident.getVehicleTrip()
+    private void requireEscort(Incident incident, Staff member, String message) {
+        var trip = tripOf(incident);
+        if (!"ESCORT".equals(member.getUser().getRole().getCode()) || trip == null
+                || crew.findFirstByVehicleTrip_IdAndStaff_User_UsernameAndStatusNot(
+                        trip.getId(), member.getUser().getUsername(), CrewAssignmentStatus.RELEASED)
+                        .filter(assignment -> assignment.getCrewRole() == CrewRole.ESCORT).isEmpty()) {
+            throw new AccessDeniedException(message);
+        }
+    }
+
+    private VehicleTrip tripOf(Incident incident) {
+        return incident.getVehicleTrip() != null ? incident.getVehicleTrip()
                 : incident.getHorseLeg() == null ? null : incident.getHorseLeg().getVehicleTrip();
+    }
+
+    private void notifyPlanDecision(IncidentPlan plan, Incident incident, boolean approved) {
+        VehicleTrip trip = tripOf(incident);
         List<Long> recipients = crew.findByVehicleTrip_IdInOrderById(trip == null ? List.of() : List.of(trip.getId())).stream()
                 .filter(a -> a.getStatus() != CrewAssignmentStatus.RELEASED)
                 .map(a -> a.getStaff().getUserId())
@@ -290,8 +319,10 @@ public class IncidentServiceImpl implements IncidentService {
         Map<Long, List<PlanDto>> byIncident = plans.findByIncident_IdInOrderByIncident_IdAscVersionAsc(found.stream().map(Incident::getId).toList()).stream()
                 .collect(Collectors.groupingBy(p -> p.getIncident().getId(), Collectors.mapping(PlanDto::from, Collectors.toList())));
         Instant now = clock.instant();
+        int minRestMinutes = configs.getInt(MIN_REST_MINUTES);
         return found.stream().map(i -> IncidentResponseDto.from(i,
                 IncidentPolicy.requiresFit(i.getIncidentType(), i.getHorseLeg() != null),
+                IncidentPolicy.fitEligibleAt(i.getRestStartedAt(), minRestMinutes),
                 byIncident.getOrDefault(i.getId(), List.of()), deliveryFailure(i, now))).toList();
     }
 

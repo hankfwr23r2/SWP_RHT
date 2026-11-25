@@ -2740,6 +2740,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/incidents/{id}/rest-start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["startRest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/incidents/{id}/return-to-hub": {
         parameters: {
             query?: never;
@@ -5808,6 +5824,8 @@ export interface components {
             /** Format: date-time */
             fitConfirmedAt?: string;
             fitConfirmedByName?: string;
+            /** Format: date-time */
+            fitEligibleAt?: string;
             /** Format: int64 */
             horseLegId?: number;
             horseName?: string;
@@ -5824,6 +5842,8 @@ export interface components {
             requiresFit?: boolean;
             /** Format: date-time */
             resolvedAt?: string;
+            /** Format: date-time */
+            restStartedAt?: string;
             /** @enum {string} */
             status?: "REPORTED" | "PLAN_PENDING" | "PLAN_ACTIVE" | "RESOLVED" | "CLOSED";
             title?: string;
@@ -11854,6 +11874,28 @@ export interface operations {
         };
     };
     resolve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIncidentResponseDto"];
+                };
+            };
+        };
+    };
+    startRest: {
         parameters: {
             query?: never;
             header?: never;
