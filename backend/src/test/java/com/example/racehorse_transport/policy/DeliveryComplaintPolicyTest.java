@@ -40,17 +40,31 @@ class DeliveryComplaintPolicyTest {
     }
 
     @Test
-    void managerCanSubmitAfterCustomerDeadlineThroughDayFourteenIncludingForCompletedOrders() {
+    void managerCanSubmitFromDeliveryThroughDayFourteenIncludingForCompletedOrders() {
+        assertThat(DeliveryComplaintPolicy.canManagerSubmit(DELIVERED, DELIVERED_AT, DELIVERED_AT,
+                MANAGER_WINDOW, false)).isTrue();
+        assertThat(DeliveryComplaintPolicy.canManagerSubmit(DELIVERED, DELIVERED_AT, DELIVERED_AT.plus(Duration.ofDays(5)),
+                MANAGER_WINDOW, false)).isTrue();
         assertThat(DeliveryComplaintPolicy.canManagerSubmit(DELIVERED, DELIVERED_AT, CUSTOMER_DEADLINE,
-                CUSTOMER_WINDOW, MANAGER_WINDOW, false)).isFalse();
+                MANAGER_WINDOW, false)).isTrue();
         assertThat(DeliveryComplaintPolicy.canManagerSubmit(DELIVERED, DELIVERED_AT, CUSTOMER_DEADLINE.plusSeconds(1),
-                CUSTOMER_WINDOW, MANAGER_WINDOW, false)).isTrue();
+                MANAGER_WINDOW, false)).isTrue();
         assertThat(DeliveryComplaintPolicy.canManagerSubmit(COMPLETED, DELIVERED_AT, MANAGER_DEADLINE,
-                CUSTOMER_WINDOW, MANAGER_WINDOW, false)).isTrue();
+                MANAGER_WINDOW, false)).isTrue();
         assertThat(DeliveryComplaintPolicy.canManagerSubmit(COMPLETED, DELIVERED_AT, MANAGER_DEADLINE.plusSeconds(1),
-                CUSTOMER_WINDOW, MANAGER_WINDOW, false)).isFalse();
+                MANAGER_WINDOW, false)).isFalse();
         assertThat(DeliveryComplaintPolicy.canManagerSubmit(COMPLETED, DELIVERED_AT, MANAGER_DEADLINE,
-                CUSTOMER_WINDOW, MANAGER_WINDOW, true)).isFalse();
+                MANAGER_WINDOW, true)).isFalse();
+    }
+
+    @Test
+    void managerCannotSubmitBeforeDeliveryOrForAnUndeliveredOrder() {
+        assertThat(DeliveryComplaintPolicy.canManagerSubmit(DELIVERED, DELIVERED_AT, DELIVERED_AT.minusSeconds(1),
+                MANAGER_WINDOW, false)).isFalse();
+        assertThat(DeliveryComplaintPolicy.canManagerSubmit(IN_OPERATION, DELIVERED_AT, DELIVERED_AT,
+                MANAGER_WINDOW, false)).isFalse();
+        assertThat(DeliveryComplaintPolicy.canManagerSubmit(DELIVERED, null, DELIVERED_AT,
+                MANAGER_WINDOW, false)).isFalse();
     }
 
     @Test

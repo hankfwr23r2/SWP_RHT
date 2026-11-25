@@ -135,6 +135,20 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(ApiResponseDto.error("API không hỗ trợ phương thức " + ex.getMethod()), HttpStatus.METHOD_NOT_ALLOWED);
     }
 
+    @ExceptionHandler(BookingRuleException.class)
+    public ResponseEntity<ApiResponseDto<Object>> handleBookingRule(BookingRuleException ex) {
+        String message = ex.getReason() != null ? ex.getReason() : HttpStatus.valueOf(ex.getStatusCode().value()).getReasonPhrase();
+        if (ex.getField() != null) {
+            return ResponseEntity.status(ex.getStatusCode())
+                    .body(ApiResponseDto.builder()
+                            .status("error")
+                            .message(message)
+                            .data(Map.of(ex.getField(), message))
+                            .build());
+        }
+        return ResponseEntity.status(ex.getStatusCode()).body(ApiResponseDto.error(message));
+    }
+
     // Controller tự chọn mã lỗi (VD: NotificationController trả 404/403): giữ đúng mã đó
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<ApiResponseDto<Object>> handleResponseStatus(ResponseStatusException ex) {

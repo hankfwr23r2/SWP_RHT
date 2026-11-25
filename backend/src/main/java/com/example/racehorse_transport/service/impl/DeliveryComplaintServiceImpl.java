@@ -12,6 +12,7 @@ import com.example.racehorse_transport.entity.BookingHorse;
 import com.example.racehorse_transport.entity.BookingStatusHistory;
 import com.example.racehorse_transport.entity.Incident;
 import com.example.racehorse_transport.entity.Staff;
+import com.example.racehorse_transport.entity.enums.BookingHorseStatus;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.DocumentSubject;
 import com.example.racehorse_transport.entity.enums.IncidentStatus;
@@ -83,9 +84,6 @@ public class DeliveryComplaintServiceImpl implements DeliveryComplaintService {
     public DeliveryComplaintResponseDto submit(Long bookingId, ComplaintCreateRequestDto request, String username) {
         var state = state(lockOwnedBooking(bookingId, username));
         requireCustomerWindow(state);
-        if (request.photos() == null || request.photos().isEmpty()) {
-            throw new BookingRuleException("Khiếu nại phải có ít nhất một ảnh.");
-        }
         var incident = request.toEntity(state.booking(), horse(bookingId, request.bookingHorseId()));
         save(incident, null, request.photos(), state.booking().getCustomer().getUserId());
         return response(state.withComplaint(incident), false);
@@ -100,7 +98,7 @@ public class DeliveryComplaintServiceImpl implements DeliveryComplaintService {
             throw BookingRuleException.conflict("Đơn đã có khiếu nại hoặc ngoài hạn quản lý ghi nhận thay khách.");
         }
         var incident = request.toEntity(state.booking(), horse(bookingId, request.bookingHorseId()));
-        save(incident, actor, request.photos() == null ? List.of() : request.photos(), actor.getUserId());
+        save(incident, actor, request.photos(), actor.getUserId());
         return response(state.withComplaint(incident), true);
     }
 
@@ -149,12 +147,19 @@ public class DeliveryComplaintServiceImpl implements DeliveryComplaintService {
         if (bookingHorseId == null) {
             return null;
         }
-        return bookingHorses.findById(bookingHorseId)
-                .filter(selected -> selected.getBooking().getId().equals(bookingId))
-                .orElseThrow(() -> new BookingRuleException("Ngựa được chọn không thuộc đơn này."));
+        var selected = bookingHorses.findById(bookingHorseId)
+                .filter(horse -> horse.getBooking().getId().equals(bookingId))
+                .orElseThrow(() -> new BookingRuleException("bookingHorseId", "Ngựa được chọn không thuộc đơn này."));
+        if (selected.getStatus() == BookingHorseStatus.EXCLUDED || selected.getStatus() == BookingHorseStatus.CANCELLED) {
+            throw new BookingRuleException("bookingHorseId", "Ngựa đã bị loại hoặc hủy khỏi đơn.");
+        }
+        return selected;
     }
 
     private void save(Incident complaint, Staff reporter, List<MultipartFile> photos, Long uploaderId) {
+        if (photos == null || photos.isEmpty()) {
+            throw new BookingRuleException("photos", "Khiếu nại phải có ít nhất một ảnh.");
+        }
         photos.forEach(DeliveryComplaintServiceImpl::requirePhoto);
         complaint.setTitle("Khiếu nại giao ngựa");
         complaint.setIncidentType(IncidentType.COMPLAINT);
@@ -168,16 +173,16 @@ public class DeliveryComplaintServiceImpl implements DeliveryComplaintService {
 
     private static void requirePhoto(MultipartFile photo) {
         if (photo == null || photo.isEmpty()) {
-            throw new BookingRuleException("Ảnh khiếu nại đang trống.");
+            throw new BookingRuleException("photos", "Ảnh khiếu nại đang trống.");
         }
         try (var stream = photo.getInputStream(); var image = ImageIO.createImageInputStream(stream)) {
             if (image != null && ImageIO.getImageReaders(image).hasNext()) {
                 return;
             }
         } catch (IOException ignored) {
-            throw new BookingRuleException("Không đọc được ảnh khiếu nại.");
+            throw new BookingRuleException("photos", "Không đọc được ảnh khiếu nại.");
         }
-        throw new BookingRuleException("Tệp khiếu nại phải là ảnh hợp lệ.");
+        throw new BookingRuleException("photos", "Tệp khiếu nại phải là ảnh hợp lệ.");
     }
 
     private ComplaintState state(Booking booking) {
@@ -226,7 +231,7 @@ public class DeliveryComplaintServiceImpl implements DeliveryComplaintService {
         }
 
         boolean managerCanSubmit() {
-            return DeliveryComplaintPolicy.canManagerSubmit(booking.getStatus(), deliveredAt, now, customerWindow,
+            return DeliveryComplaintPolicy.canManagerSubmit(booking.getStatus(), deliveredAt, now,
                     managerWindow, complaint.isPresent());
         }
 

@@ -16,7 +16,7 @@ import { Textarea } from '@shared/ui/Textarea'
 
 interface Props {
   bookingId: number
-  horses: { id?: number; horseName?: string }[]
+  horses: { id?: number; horseName?: string; status?: string }[]
 }
 
 export function DeliveryComplaintCard({ bookingId, horses }: Props) {
@@ -25,11 +25,15 @@ export function DeliveryComplaintCard({ bookingId, horses }: Props) {
   const [showForm, setShowForm] = useState(false)
   const [horseId, setHorseId] = useState('')
   const [confirmation, setConfirmation] = useState<'confirm' | FormData>()
+  const selectableHorses = horses.filter(horse => horse.id != null && horse.status !== 'EXCLUDED' && horse.status !== 'CANCELLED')
 
   function prepareComplaint(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const body = new FormData(event.currentTarget)
     if (horseId) body.set('bookingHorseId', horseId)
+    const photos = body.getAll('photos').filter(photo => photo instanceof File && photo.size > 0)
+    body.delete('photos')
+    photos.forEach(photo => body.append('photos', photo))
     setConfirmation(body)
   }
 
@@ -37,9 +41,10 @@ export function DeliveryComplaintCard({ bookingId, horses }: Props) {
     const saved = confirmation === 'confirm'
       ? await delivery.confirm()
       : confirmation && await delivery.submit(confirmation)
+    setConfirmation(undefined)
     if (saved) {
-      setConfirmation(undefined)
       setShowForm(false)
+      setHorseId('')
     }
   }
 
@@ -65,7 +70,7 @@ export function DeliveryComplaintCard({ bookingId, horses }: Props) {
             <Field label={t('deliveryComplaint.horse')} error={delivery.fieldErrors.bookingHorseId}>{field => (
               <FormSelect id={field.id} value={horseId} onChange={event => setHorseId(event.target.value)}>
                 <option value="">{t('deliveryComplaint.wholeBooking')}</option>
-                {horses.filter(horse => horse.id != null).map(horse => <option key={horse.id} value={horse.id}>{horse.horseName}</option>)}
+                {selectableHorses.map(horse => <option key={horse.id} value={horse.id}>{horse.horseName}</option>)}
               </FormSelect>
             )}</Field>
             <Field label={t('deliveryComplaint.description')} required error={delivery.fieldErrors.description}>{field => (

@@ -4453,7 +4453,7 @@ export interface components {
             /** Format: int64 */
             bookingHorseId?: number;
             description: string;
-            photos?: string[];
+            photos: string[];
         };
         ComplaintReplyRequestDto: {
             reply: string;
