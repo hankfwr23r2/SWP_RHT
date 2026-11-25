@@ -689,9 +689,9 @@ Theo cách hàng không, đã trình bày và chờ duyệt cuối:
 
 ## 3.G. Điểm còn hở, cần nhóm quyết
 
-1. **Đơn rời chuyến nhưng chặng xe không bị gỡ (lỗi).** Khi đơn bị hủy, đổi chuyến, chuyến bị hủy hoặc báo giấy không kịp, các chặng đã xếp **vẫn nằm trên lượt xe**, vẫn chiếm chỗ và chặn hủy lượt; lịch hẹn ở hub cũng không bị bỏ. Luồng B đã viết hàm gỡ, luồng A chưa gọi. Nên sửa đầu tiên.
+1. **Đã sửa** · Đơn rời chuyến được gỡ chặng chưa chạy, vị trí khoang và lịch hẹn hub.
 2. **Quên xác nhận chạy thì đơn đứng yên** (T25). Đã có đề xuất ở 3.F.
-3. **Chuyến không chuyển sang Đang chạy hay Đã xong** khi xe trục chạy, nên màn quản lý vẫn hiện nút Hủy chuyến cho chuyến đã qua.
+3. **Đã sửa** · Chuyến cập nhật khi xe trục đầu tiên rời điểm đầu và khi các lượt trục hoàn tất.
 4. **Không sửa được giờ của lượt đã lập**: muốn đổi giờ hoặc đổi xe phải gỡ ngựa, hủy lượt, lập lại.
 5. **Hủy lượt xe hoặc gỡ người thì tổ lái không được báo.**
 6. **Không bắt buộc có hộ tống**: chỉ cần một tài xế nhận việc là xe chạy được, dù chở ngựa.
@@ -1097,12 +1097,12 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 
 **Gây kẹt đơn thật, nên sửa trước:**
 
-1. **Sự cố sức khỏe báo cho cả lượt không bao giờ xử lý xong được.** Hệ thống đòi xác nhận đủ sức, nhưng nút Đủ sức đi tiếp chỉ hiện với sự cố của một con. Hậu quả: mọi đơn trên xe không quyết toán được. Đây lại là **lựa chọn mặc định** khi mở ô báo sự cố. Đề xuất: sự cố sức khỏe bắt buộc chọn con ngựa.
-2. **Quên xác nhận đủ sức trước khi kết thúc lượt thì kẹt.** Lượt xong thì phần sự cố của tổ lái biến mất, điều phối không xác nhận thay được. Đề xuất: giữ phần sự cố khi còn sự cố chưa đóng.
-3. **Sự cố người nhận vắng cũng đòi xác nhận ngựa đủ sức**, dù ngựa không bệnh. Dễ rơi vào lỗi 2. Đề xuất: chỉ đòi với loại Sức khỏe và Tai nạn.
-4. **Chỉ tổ lái có màn ghi chi phí**, và chỉ khi lượt đang chạy. Hóa đơn thú y gửi sau vài ngày không có chỗ nhập, dù máy chủ cho điều phối ghi.
+1. **Đã sửa** · HEALTH mới phải chọn ngựa. HEALTH cũ vẫn xác nhận được.
+2. **Đã sửa** · Tổ lái xử lý sự cố sau khi hoàn tất lượt. Điều phối xác nhận thay với kết quả thú y.
+3. **Đã sửa** · Chỉ HEALTH và ACCIDENT có ngựa yêu cầu xác nhận đủ sức.
+4. **Đã sửa** · Điều phối có form ghi chi phí và tổ lái còn ghi được sau khi kết thúc lượt.
 5. **Không còn hub phía sau thì con giao hụt không có chỗ vào**: không đưa về hub được và lượt cũng không kết thúc được. Điều phối phải nhớ để hub là điểm dừng cuối của lượt giao.
-6. **Nút Đưa về hub vẫn hiện với sự cố người nhận vắng nhưng bấm thì báo lỗi** "không có con ngựa nào đang trên xe", vì chặng đã thất bại sẵn. Đề xuất: ẩn nút trong trường hợp này.
+6. **Đã sửa** · Máy chủ từ chối Đưa về hub cho HANDOVER_TIMEOUT. Màn hình ẩn thao tác.
 
 **Thiếu thông báo:**
 
@@ -1340,8 +1340,8 @@ Dòng hai: loại một con thì bỏ cước trục, dịch vụ và phí bảo
 
 **Gây kẹt đơn thật, nên sửa trước:**
 
-1. **Không thu được phí người nhận chịu.** Màn quyết toán chỉ cho chọn chi phí **khách** chịu. Phí giữ ngựa và phí gửi chuồng ở luồng 5 do **người nhận** chịu nên không lập được khoản thu thêm, còn nợ không về 0, đơn **không đóng được**. Máy chủ thì cho phép.
-2. **Phí giữ ngựa tự ghi luôn là "chưa hỏi khách"** và không có chỗ sửa. Khách không điền hạn mức khẩn cấp, hoặc phí vượt hạn mức, thì quản lý **không bao giờ duyệt được**, đơn kẹt. Đề xuất: phí giữ ngựa, gửi chuồng không cần hỏi vì đã báo trước giá.
+1. **Đã sửa** · Khách thanh toán được cả phí bên CONSIGNEE, với hạn, nhắc quá hạn và chặn gửi đơn mới.
+2. **Đã sửa** · Phí hệ thống tính theo ngày được miễn điều kiện đã hỏi và không chiếm hạn mức khẩn cấp.
 3. **Khách tự chở tới hub mà không trả số dư: không trả ngựa được.** Nút trả ngựa chỉ có ở nhà khách và cửa khẩu. Ngựa đã lên xe trục thì cả xe không rời được hub. Quản lý hủy đơn thay khách được sau 30 phút, nhưng hệ thống **không gỡ ngựa khỏi xe hay khỏi hub**: xe rời được, chở theo ngựa của đơn đã hủy.
 4. **Cửa khẩu có hai đơn nhập, một đơn trả đủ, một đơn không:** bấm trả ngựa thì bị từ chối cả hai, vì hệ thống định hủy cả đơn đã trả. Xe kẹt ở cửa khẩu.
 5. **Con sai chip ở điểm đón mà tổ lái không bấm Không nhận**, xe vẫn rời được. Con đó vẫn trong đơn, đơn không bao giờ Đã giao. Sau khi xe rời thì không loại được nữa.

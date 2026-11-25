@@ -1,5 +1,9 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.service.SystemConfigService;
+import com.example.racehorse_transport.service.NotificationService;
+import com.example.racehorse_transport.repository.NotificationRecipientRepository;
+import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.client.VnpayClient;
 import com.example.racehorse_transport.entity.Payment;
 import com.example.racehorse_transport.entity.enums.AppUserStatus;
@@ -21,6 +25,10 @@ import com.example.racehorse_transport.repository.QuotationRepository;
 import com.example.racehorse_transport.service.CostItemService;
 import com.example.racehorse_transport.service.ExtraChargeService;
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -41,6 +49,36 @@ public class ExtraChargeServiceImpl implements ExtraChargeService {
     private final PaymentRepository payments;
     private final AppUserRepository users;
     private final ObjectProvider<CostItemService> costItemServices;
+    private final Clock clock;
+    private final SystemConfigService configs;
+    private final NotificationService notifications;
+    private final NotificationRecipientRepository recipients;
+
+    private static final String OVERDUE_TITLE = "Khoản thu thêm quá hạn";
+    private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+
+    @Override
+    @Transactional(readOnly = true)
+    public void requireNoOverdue(Long customerId) {
+        if (payments.hasOverdue(customerId, PaymentType.EXTRA_CHARGE, PaymentStatus.PENDING, clock.instant())) {
+            throw BookingRuleException.conflict("Bạn còn khoản thu thêm quá hạn. Vui lòng thanh toán trước khi gửi đơn mới.");
+        }
+    }
+
+    @Override
+    @Transactional
+    public void remindOverdue() {
+        var now = clock.instant();
+        var startOfDay = LocalDate.ofInstant(now, BUSINESS_ZONE).atStartOfDay(BUSINESS_ZONE).toInstant();
+        for (Long customerId : payments.findCustomersWithOverdue(PaymentType.EXTRA_CHARGE, PaymentStatus.PENDING, now)) {
+            users.lockForExtraChargeReminder(customerId);
+            if (!recipients.hasNoticeSince(customerId, OVERDUE_TITLE, startOfDay)
+                    && payments.hasOverdue(customerId, PaymentType.EXTRA_CHARGE, PaymentStatus.PENDING, now)) {
+                notifications.notify(List.of(customerId), null, OVERDUE_TITLE,
+                        "Bạn có khoản thu thêm quá hạn. Vui lòng kiểm tra và thanh toán trong đơn hàng.", "/orders");
+            }
+        }
+    }
 
     @Override
     @Transactional
@@ -58,11 +96,18 @@ public class ExtraChargeServiceImpl implements ExtraChargeService {
                 .isEmpty()) {
             throw new AccessDeniedException("Chỉ quản lý được lập khoản thu thêm.");
         }
-        var booking = bookings.findForUpdate(bookingId)
+        return create(bookingId, costItemIds, false);
+    }
+
+    @Override
+    @Transactional
+    public Long createStablingCharge(Long bookingId, Long costItemId) {
+        return create(bookingId, List.of(costItemId), true);
+    }
+
+    private Long create(Long bookingId, List<Long> costItemIds, boolean stablingOnly) {
+        Booking booking = bookings.findForUpdate(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn."));
-        if (booking.getStatus() != BookingStatus.DELIVERED) {
-            throw BookingRuleException.conflict("Chỉ lập khoản thu thêm khi đơn đang quyết toán.");
-        }
         if (costItemIds == null || costItemIds.isEmpty() || costItemIds.stream().anyMatch(id -> id == null || id <= 0)
                 || new HashSet<>(costItemIds).size() != costItemIds.size()) {
             throw new BookingRuleException("Chọn ít nhất một chi phí hợp lệ và không chọn trùng.");
@@ -70,11 +115,15 @@ public class ExtraChargeServiceImpl implements ExtraChargeService {
         var quotation = quotations.findByBooking_IdAndStatus(bookingId, QuotationStatus.ACCEPTED)
                 .orElseThrow(() -> BookingRuleException.conflict("Đơn chưa có báo giá đã chấp nhận."));
         var selected = costs.findAllById(costItemIds);
+        PaymentPolicy.requireExtraChargeAllowed(booking.getStatus(), selected);
+        if (stablingOnly && !selected.stream().allMatch(CostPayerPolicy::isScheduledStablingFee)) {
+            throw BookingRuleException.conflict("Chỉ lập khoản thu tự động cho phí giữ ngựa.");
+        }
         var amount = PaymentPolicy.extraChargeAmount(bookingId, quotation.getCurrencyCode(), costItemIds.size(), selected);
         if (!"VND".equals(quotation.getCurrencyCode()) || !VnpayClient.isPayable(amount)) {
             throw BookingRuleException.conflict("Khoản thu thêm phải có số tiền thanh toán được qua VNPAY.");
         }
-        if (selected.stream().anyMatch(cost -> !Boolean.TRUE.equals(cost.getCustomerConsulted()))) {
+        if (selected.stream().anyMatch(CostPayerPolicy::countsAgainstEmergencyLimit)) {
             var approvedUnconsulted = costs.sumApprovedWithoutConsulting(bookingId, CUSTOMER_SIDE);
             CostPayerPolicy.requireConsultedOrWithinEmergencyLimit(CostPayerType.CUSTOMER, false, BigDecimal.ZERO,
                     approvedUnconsulted, booking.getEmergencySpendingLimit());
@@ -92,8 +141,11 @@ public class ExtraChargeServiceImpl implements ExtraChargeService {
         payment.setStatus(PaymentStatus.PENDING);
         payment.setCurrencyCode(quotation.getCurrencyCode());
         payment.setAmount(amount);
+        payment.setDueAt(clock.instant().plus(configs.getInt("EXTRA_CHARGE_DUE_DAYS"), ChronoUnit.DAYS));
         Long paymentId = payments.save(payment).getId();
         linker.linkExtraPayment(costItemIds, paymentId);
+        notifications.notify(List.of(booking.getCustomer().getUser().getId()), bookingId, "Có khoản thu thêm",
+                "Đơn " + booking.getCode() + " có khoản thu thêm. Xem hạn và thanh toán trong đơn hàng.", "/orders/" + bookingId);
         return paymentId;
     }
 }

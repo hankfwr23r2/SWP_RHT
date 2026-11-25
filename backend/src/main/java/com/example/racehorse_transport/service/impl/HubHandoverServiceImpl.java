@@ -1,5 +1,7 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.repository.BookingRepository;
+import com.example.racehorse_transport.entity.Location;
 import com.example.racehorse_transport.dto.health.HorseStayResponseDto;
 import com.example.racehorse_transport.dto.operation.HubHandoverRequestDto;
 import com.example.racehorse_transport.dto.operation.HubRefusalRequestDto;
@@ -52,6 +54,7 @@ public class HubHandoverServiceImpl implements HubHandoverService {
     private final DocumentCompletenessService documents;
     private final HandoverOutcomeService outcomes;
     private final Clock clock;
+    private final BookingRepository bookings;
 
     @Override
     @Transactional
@@ -91,30 +94,46 @@ public class HubHandoverServiceImpl implements HubHandoverService {
     @Override
     @Transactional
     public HorseStayResponseDto deliver(Long horseStayId, HubHandoverRequestDto request, String username) {
+        Long bookingId = stays.findBookingId(horseStayId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lưu trú " + horseStayId));
+        bookings.findForUpdate(bookingId).orElseThrow();
         // Người nhận tới trễ: ngựa đang gửi chuồng tại hub vẫn trả được
-        HorseStay stay = stays.findById(horseStayId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lưu trú " + horseStayId));
+        HorseStay stay = stays.findForUpdate(horseStayId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lưu trú " + horseStayId));
         if (stay.getStayType() != HorseStayType.ASSEMBLY && stay.getStayType() != HorseStayType.STABLING) {
             throw new DispatchRuleException("horseStayId", "Chỉ giao nhận với khách ở lưu trú tập kết hoặc gửi chuồng tại hub.", true);
         }
         Booking booking = stay.getBookingHorse().getBooking();
-        if (booking.getDeliveryMethod() != TransferMethod.SELF || stay.getActualStartAt() == null || stay.getActualEndAt() != null) {
+        if ((booking.getDeliveryMethod() != TransferMethod.SELF && stay.getStayType() != HorseStayType.STABLING)
+                || stay.getActualStartAt() == null || stay.getActualEndAt() != null) {
             throw new DispatchRuleException("horseStayId", "Con ngựa này không chờ người nhận tới hub.", true);
         }
         if (booking.getStatus() != BookingStatus.IN_OPERATION) {
             throw new DispatchRuleException("horseStayId", "Đơn " + booking.getCode() + " không ở trạng thái giao ngựa được.", true);
         }
         // Ngựa đã tới hub này bằng chặng cuối, không còn chặng nào phía sau
-        List<HorseLeg> chain = chain(stay);
-        HorseLeg last = chain.isEmpty() ? null : chain.getLast();
-        if (last == null || last.getStatus() != HorseLegStatus.COMPLETED || last.getAlightTripStop() == null
-                || last.getAlightTripStop().getLocation() == null || !last.getAlightTripStop().getLocation().getId().equals(stay.getLocation().getId())) {
+        List<HorseLeg> journey = legs.findByBookingHorse_IdOrderBySequenceNumber(stay.getBookingHorse().getId()).stream()
+                .filter(leg -> leg.getStatus() != HorseLegStatus.CANCELLED).toList();
+        HorseLeg last = journey.stream().filter(leg -> leg.getStatus() != HorseLegStatus.PLANNED)
+                .reduce((first, next) -> next).orElse(null);
+        boolean selfCollection = booking.getDeliveryMethod() == TransferMethod.SELF && last != null
+                && last == journey.getLast() && last.getStatus() == HorseLegStatus.COMPLETED && last.getAlightTripStop() != null
+                && sameLocation(stay, last.getAlightTripStop().getLocation());
+        boolean collectionAfterFailure = stay.getStayType() == HorseStayType.STABLING && last != null
+                && last.getStatus() == HorseLegStatus.FAILED && last.getVehicleTrip() != null
+                && sameLocation(stay, last.getVehicleTrip().getEndLocation());
+        if (!selfCollection && !collectionAfterFailure) {
             throw new DispatchRuleException("horseStayId", "Con ngựa chưa tới hub này bằng chặng cuối.", true);
         }
         requireChip(stay, request);
         Instant now = clock.instant();
         Handover handover = record(stay, last, HandoverType.DELIVERY, request, username, now);
-        stay.setActualEndAt(now);
-        stays.flush();
+        if (collectionAfterFailure) {
+            journey.stream().filter(leg -> leg.getStatus() == HorseLegStatus.PLANNED && leg.getReplacedHorseLeg() != null)
+                    .forEach(leg -> {
+                        leg.setStatus(HorseLegStatus.CANCELLED);
+                        leg.setStallPosition(null);
+                    });
+        }
         // Con cuối của đơn giao xong thì đơn DELIVERED (#16); báo khách
         outcomes.atHub(handover, last, handover.getHandledBy().getUserId());
         return HorseStayResponseDto.from(stay);
@@ -144,6 +163,10 @@ public class HubHandoverServiceImpl implements HubHandoverService {
     private List<HorseLeg> chain(HorseStay stay) {
         return legs.findByBookingHorse_IdOrderBySequenceNumber(stay.getBookingHorse().getId()).stream()
                 .filter(l -> l.getStatus() != HorseLegStatus.CANCELLED && l.getStatus() != HorseLegStatus.FAILED).toList();
+    }
+
+    private static boolean sameLocation(HorseStay stay, Location location) {
+        return location != null && location.getId().equals(stay.getLocation().getId());
     }
 
     private static void requireChip(HorseStay stay, HubHandoverRequestDto request) {

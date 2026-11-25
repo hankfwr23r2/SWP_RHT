@@ -40,8 +40,9 @@ public class IncidentEvidenceController {
     @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT', 'COORDINATOR')")
     public ApiResponseDto<List<EvidenceResponseDto>> attachPhoto(@PathVariable Long id, @RequestPart("file") MultipartFile file,
                                                               @RequestParam(required = false) BigDecimal latitude,
-                                                              @RequestParam(required = false) BigDecimal longitude, Authentication authentication) {
-        return ApiResponseDto.success(evidence.attachPhoto(id, file, latitude, longitude, authentication.getName()), "Đã thêm ảnh hiện trường");
+                                                              @RequestParam(required = false) BigDecimal longitude,
+                                                              @RequestParam(required = false) String documentType, Authentication authentication) {
+        return ApiResponseDto.success(evidence.attachPhoto(id, file, latitude, longitude, documentType, authentication.getName()), "Đã thêm ảnh hiện trường");
     }
 
     @GetMapping("/incidents/{id}/photos")

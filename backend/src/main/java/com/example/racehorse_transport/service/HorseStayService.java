@@ -18,10 +18,12 @@ public interface HorseStayService {
 
     // Nhận ra khỏi hub hoặc chuồng: đóng lưu trú đang diễn ra của con ngựa. Gửi chuồng sau giao thất bại thì
     // ghi phí lưu chuồng và chăm sóc theo số ngày (người nhận chịu, chờ quản lý duyệt)
+    void requireStablingPaid(Long bookingHorseId);
+
     void closeActive(Long bookingHorseId, Instant at, Long actorUserId);
 
     // Giao thất bại, xe về hub: giữ ngựa tại hub (STABLING) tới hạn STABLING_MAX_DAYS, báo khách hạn và phí mỗi ngày
-    void openFailedDeliveryStabling(HorseLeg failedLeg, Location hub, Instant at);
+    void openFailedDeliveryStabling(HorseLeg failedLeg, Location hub, Instant at, Long actorUserId);
 
     // Về hub do sự cố (B4, RETURN_TO_HUB): tập kết tại hub chờ lượt giao lại, không tính phí
     void openReturnAssembly(HorseLeg failedLeg, Location hub, Instant at);
@@ -52,5 +54,5 @@ public interface HorseStayService {
     HorseStayResponseDto setCollectionTime(Long horseStayId, Instant collectAt);
 
     // Quá giờ hẹn mà người nhận chưa tới: kết thúc tập kết, mở lưu trú gửi chuồng tại hub, ghi phí gửi chuồng người nhận chịu
-    HorseStayResponseDto stableOverdue(Long horseStayId, HubStablingRequestDto request, String username);
+    HorseStayResponseDto stableOverdue(Long horseStayId, HubStablingRequestDto request);
 }

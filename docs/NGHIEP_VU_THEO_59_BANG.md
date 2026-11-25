@@ -511,7 +511,7 @@ Giả định của đợt này: địa chỉ giao của đơn nhập là nơi c
 
 ### GĐ8. Giao ngựa
 
-Với `delivery_method = SELF`, trả ngựa tại hub và ghi `handover` DELIVERY gắn với `horse_stay`. Quá giờ hẹn thì gửi chuồng, người nhận trả phí.
+Với `delivery_method = SELF`, trả ngựa tại hub và ghi `handover` DELIVERY gắn với `horse_stay`. Quá giờ hẹn thì gửi chuồng, báo khách khi bắt đầu giữ và tính phí theo `STABLING_DAILY_FEE` khi rời hub.
 
 Giao ngựa **đối xứng với đón ngựa**. **Ai:** tài xế và hộ tống (giao trong nước), hoặc đại lý (giao ở nước ngoài). **Trạng thái:** `IN_OPERATION` → `DELIVERED`.
 
@@ -527,17 +527,17 @@ Giao ngựa **đối xứng với đón ngựa**. **Ai:** tài xế và hộ t�
 
 **Người nhận vắng mặt (hết thời gian chờ miễn phí, mặc định 120 phút trong `system_config`):**
 1. `handover.status = TIMEOUT`. Ghi `incident` loại HANDOVER_TIMEOUT, nguyên nhân RECIPIENT_ABSENT.
-2. Điều phối viên lập `incident_plan`: gửi chuồng gần đó (STABLE_NEARBY) hoặc đưa về hub giao của đơn (RETURN_TO_HUB). Hub giao có thể là hub vệ tinh.
-3. Chặng giao hiện tại chuyển `FAILED`. Tạo `horse_leg` mới (RETURN hoặc TRANSFER) để đưa ngựa đi gửi.
-4. Ngựa được giữ ở nơi gửi: `horse_stay` STABLING.
-5. Giao lại bằng một `horse_leg` DELIVERY mới có `replaced_horse_leg_id` trỏ về chặng thất bại.
-6. Phí chờ và phí gửi chuồng ghi vào `cost_item`, payer_type CONSIGNEE (người nhận không trả thì khách trả). Ghi `handover_id` hoặc `horse_stay_id` tương ứng.
+2. Chặng giao chuyển `FAILED`. Xe đi thẳng tới hub cuối lượt, không cần thao tác Đưa về hub.
+3. Khi giao ngựa vào hub, mở `horse_stay` STABLING và thông báo mức thu theo ngày. Không thu phí chờ tại nhà.
+4. Giao lại bằng chặng DELIVERY có `replaced_horse_leg_id` trỏ về chặng thất bại. Khi lập, chốt phí đến giờ lên xe dự kiến, tự duyệt và lập khoản thu thêm. Chặn HUB_OUT nếu còn phí đã chốt chưa trả.
+5. Lúc rời hub, lập thêm khoản chênh nếu số ngày thực tế lớn hơn số đã tính. Người nhận tự tới hub nhận thì giao ngựa được ngay. Khách trả phần còn thiếu qua khoản thu thêm.
+6. Gắn phí vào `horse_stay_id`, đặt bên chịu `CONSIGNEE`. Trong hệ thống khách thanh toán khoản thu thêm.
 
 ---
 
 ### GĐ9. Quyết toán
 
-**Ai:** quản lý. **Trạng thái:** vẫn `DELIVERED`.
+**Ai:** quản lý. Có thể lập và thanh toán khoản thu thêm tại `DELIVERED`, `COMPLETED` và, riêng phí giữ ngựa, tại `IN_OPERATION`. Hóa đơn muộn giữ nguyên trạng thái đơn.
 
 | Việc | Bảng |
 |---|---|
@@ -560,7 +560,9 @@ Giao ngựa **đối xứng với đón ngựa**. **Ai:** tài xế và hộ t�
 
 Khoản khách chịu luôn gắn với một con hoặc một đơn, nên **không chia chi phí theo đầu ngựa**. Quản lý chọn các khoản đã duyệt chưa gắn khoản thu, backend lấy tổng theo chi phí đã ghi và khách trả `EXTRA_CHARGE` qua VNPAY.
 
-Phải hỏi khách trước khi chi khoản khách chịu (`is_customer_consulted = true`). Ngoại lệ: trường hợp khẩn cấp có số tiền nằm trong `booking.emergency_spending_limit`.
+Phải hỏi khách trước khi chi khoản khách chịu (`is_customer_consulted = true`). Ngoại lệ gồm chi trong hạn mức khẩn cấp và phí hệ thống tính theo biểu phí gắn lưu trú STABLING. Phí biểu phí đã báo khi bắt đầu giữ và không chiếm hạn mức khẩn cấp.
+
+Khoản thu thêm đến hạn sau `EXTRA_CHARGE_DUE_DAYS` kể từ lúc lập. Hệ thống báo khách khi lập, nhắc mỗi khách lúc 08:00 giờ Việt Nam mỗi ngày còn nợ quá hạn và chặn gửi đơn mới tới khi trả.
 
 ---
 
@@ -584,12 +586,12 @@ Quy trình theo bản cũ của nhóm. Khác bản cũ: sự cố gắn lượt 
 
 | Bước | Ai | Bảng |
 |---|---|---|
-| Báo sự cố, kèm vị trí và ảnh | Tài xế/hộ tống | `incident` (REPORTED). Gắn `vehicle_trip_id` nếu cả xe bị ảnh hưởng, `horse_leg_id` nếu chỉ một con. `document` ảnh |
+| Báo sự cố, kèm vị trí và ảnh | Tài xế/hộ tống | Chỉ báo khi lượt IN_PROGRESS. HEALTH bắt buộc chọn chặng ngựa. ACCIDENT có thể gắn cả xe hoặc một con. |
 | Lập phương án | Điều phối viên | `incident_plan` (PROPOSED, version 1): loại xử lý, chỉ đạo, chi phí dự kiến, bên xử lý (`handler_party_id`) |
 | Duyệt hoặc từ chối | Quản lý | `incident_plan` APPROVED / REJECTED (bắt buộc ghi lý do). Từ chối thì lập version 2 |
 | Thực hiện phương án | Tổ xe | Nghỉ và chăm sóc ≥ 30 phút. Tùy loại: VET_TREATMENT thì ghi `horse_health_log`; TRANSFER_VEHICLE thì tạo `vehicle_trip` mới và đổi `horse_leg`; RETURN_TO_HUB thì tạo chặng RETURN |
-| Ghi chi phí | Tổ xe | `cost_item` gắn `incident_id`, `payer_type` theo `cause_type` |
-| Xác nhận từng con bị ảnh hưởng đủ sức khỏe đi tiếp, kèm ảnh | Thú y hoặc hộ tống | `incident.fit_confirmed_by`, `fit_confirmed_at`, `document` ảnh |
+| Ghi chi phí | Tổ xe và điều phối | Tổ xe vẫn ghi chi phí và tải ảnh sau khi lượt kết thúc nếu sự cố chưa đóng. `cost_item` gắn `incident_id`, bên chịu theo `cause_type`. |
+| Xác nhận đủ sức (HEALTH và ACCIDENT có chặng ngựa) | Tổ xe hoặc điều phối xác nhận thay | Điều phối cần tải kết quả thú y `VET_REPORT`. HEALTH cũ thiếu chặng vẫn xác nhận được. |
 | Tiếp tục hành trình | Tài xế | Mở lại thao tác chặng |
 | Đóng sự cố | Điều phối viên | `incident.status = RESOLVED` → CLOSED, `incident_plan` DONE |
 
@@ -597,8 +599,10 @@ Quy trình theo bản cũ của nhóm. Khác bản cũ: sự cố gắn lượt 
 
 1. Quản lý hủy hoặc dồn chuyến kèm lý do: `departure.status = CANCELLED`.
 2. Các đơn trên chuyến chuyển sang `SCHEDULE_CHANGE_REQUIRED`.
-3. Không hủy được chuyến khi còn đơn `IN_OPERATION` (đã nhận ngựa): xử lý bằng sự cố.
+3. Xe trục đầu tiên rời điểm đầu thì chuyến sang `IN_PROGRESS`. Mọi lượt trục chưa hủy hoàn thành thì chuyến sang `COMPLETED`. Cấm hủy ở cả hai trạng thái hoặc khi còn đơn `IN_OPERATION`.
 4. Lịch sử ghi nguyên nhân COMPANY và chuyến vừa hủy. Khách chọn chuyến khác (miễn phí; đơn đã cọc thì giữ giá trong `PRICE_HOLD_DAYS`) hoặc hủy và được **hoàn 100%**. Đổi chuyến thì trừ `booked_stall_count` của chuyến cũ và cộng vào chuyến mới, giữ `FOR UPDATE` trên cả hai dòng.
+
+Khi đơn rời chuyến, gỡ các chặng PLANNED gồm cả chặng đại lý, trả vị trí khoang và bỏ lịch hẹn hub chưa bắt đầu trong cùng giao dịch. Nếu có gỡ, báo điều phối.
 
 ### 5.3 Ngựa không đủ điều kiện
 

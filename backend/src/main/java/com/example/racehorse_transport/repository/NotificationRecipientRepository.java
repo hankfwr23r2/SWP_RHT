@@ -15,6 +15,12 @@ public interface NotificationRecipientRepository extends JpaRepository<Notificat
 
     List<NotificationRecipient> findById_UserId(Long userId);
 
+    @Query("""
+            SELECT count(r) > 0 FROM NotificationRecipient r JOIN r.notification n
+            WHERE r.id.userId = :userId AND n.title = :title AND n.createdAt >= :since
+            """)
+    boolean hasNoticeSince(Long userId, String title, java.time.Instant since);
+
     // Hộp thư của một người: mới nhất trước
     @Query("select r from NotificationRecipient r join fetch r.notification n where r.id.userId = :userId order by n.createdAt desc, n.id desc")
     List<NotificationRecipient> findInbox(Long userId, Pageable page);

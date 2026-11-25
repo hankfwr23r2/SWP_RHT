@@ -41,6 +41,7 @@ export function EvidencePanel({ title, load, upload }: Props) {
           {(data ?? []).map(item => (
             <li key={item.id} className={s.muted}>
               <a href={item.fileUrl} target="_blank" rel="noreferrer">{item.fileName}</a>
+              {item.documentTypeCode === 'VET_REPORT' && <> · {t('incidents.vetReport')}</>}
               {' · '}{item.uploadedByName}
               {item.capturedAt || item.uploadedAt ? ` · ${formatDateTime(new Date(item.capturedAt ?? item.uploadedAt ?? ''))}` : ''}
               {item.latitude != null && item.longitude != null ? ` · ${item.latitude}, ${item.longitude}` : ''}

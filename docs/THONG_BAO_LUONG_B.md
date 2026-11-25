@@ -26,3 +26,10 @@
 - **B4 · Sự cố.** Theo quy trình của nhóm. Công ty chịu chi phí `FORCE_MAJEURE`. Khoản khách chịu gắn với một con hoặc một đơn. A8 đọc tổng chi phí phía khách đã duyệt qua `CostItemRepository.sumApprovedForBooking(bookingId, payers)` và kiểm sự cố chưa đóng qua `IncidentRepository.hasIncidentForBookingOtherThan(bookingId, IncidentStatus.CLOSED)`.
 - **Giao diện.** Hiện “Hệ thống” khi `booking_status_history.changed_by` là NULL.
 - **Chờ B xác nhận.** Có thể xóa `QUARANTINE`, `QUARANTINE_FARM` và cột `quarantine_result` khỏi DB không? A6b đã thêm `water_intake`, `feed_intake`. B xác nhận việc dùng hai cột này và việc bổ sung `SHIFT` vào `handover_type` qua migration do B phụ trách.
+
+## Đợt 1a · 25/11/2026
+
+- Luồng A gọi `HorseLegService.cancelPlannedLegsOfBooking` qua `BookingStatusService`. Luồng B bỏ cả lịch hẹn tập kết chưa bắt đầu và báo điều phối trong cùng giao dịch.
+- Luồng B gọi `DepartureService.linehaulDeparted/linehaulCompleted` theo mốc lượt trục. Luồng A giữ khóa chuyến và quyết định trạng thái.
+- Chặng giao thay thế dùng `StablingChargeService` chốt phí theo ngày. Luồng A lập khoản thu `EXTRA_CHARGE`, đặt hạn và báo khách. HUB_OUT kiểm khoản phí đã chốt. Người nhận tự tới hub vẫn lấy ngựa được.
+- Điều phối tải chứng cứ `VET_REPORT` trước khi xác nhận đủ sức thay tổ lái.

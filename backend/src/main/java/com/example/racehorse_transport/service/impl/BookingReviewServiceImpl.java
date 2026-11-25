@@ -96,6 +96,7 @@ public class BookingReviewServiceImpl implements BookingReviewService {
         if (oldId != null) {
             departures.release(oldId, stalls);
         }
+        statuses.clearPlannedTransport(booking.getId());
         booking.setDeparture(replacement);
         notifyCustomer(booking, "Đơn đã đổi chuyến", "Kiểm tra thông tin chuyến mới trong chi tiết đơn.");
         return BookingResponseDto.from(booking);

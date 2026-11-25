@@ -8,12 +8,12 @@ import java.util.List;
 
 public record SettlementResponseDto(Long bookingId, BookingStatus status, String currencyCode,
         BigDecimal quotationTotal, BigDecimal approvedCustomerCosts, BigDecimal outstanding,
-        boolean hasOpenIncident, List<CostItemResponseDto> costs, List<PaymentResponseDto> payments) {
+        boolean hasOpenIncident, List<Long> chargeableCostIds, List<CostItemResponseDto> costs, List<PaymentResponseDto> payments) {
 
     public static SettlementResponseDto from(Booking booking, String currency, BigDecimal quotationTotal,
-            BigDecimal approvedCosts, BigDecimal outstanding, boolean hasOpenIncident,
+            BigDecimal approvedCosts, BigDecimal outstanding, boolean hasOpenIncident, List<Long> chargeableCostIds,
             List<CostItemResponseDto> costs, List<PaymentResponseDto> payments) {
         return new SettlementResponseDto(booking.getId(), booking.getStatus(), currency, quotationTotal,
-                approvedCosts, outstanding, hasOpenIncident, costs, payments);
+                approvedCosts, outstanding, hasOpenIncident, chargeableCostIds, costs, payments);
     }
 }

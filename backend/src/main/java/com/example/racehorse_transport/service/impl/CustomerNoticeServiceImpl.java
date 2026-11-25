@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.entity.enums.HorseStayType;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.HorseLeg;
 import com.example.racehorse_transport.entity.HorseStay;
@@ -87,6 +88,18 @@ public class CustomerNoticeServiceImpl implements CustomerNoticeService {
                 .anyMatch(other -> !other.getId().equals(stay.getId()) && other.getStayType() == stay.getStayType()
                         && other.getLocation().getId().equals(stay.getLocation().getId())
                         && other.getActualEndAt() == null && time.apply(other).equals(time.apply(stay)));
+    }
+
+    @Override
+    @Transactional
+    public void clearHubAppointmentsAndNotify(Long bookingId, int removedLegs) {
+        long removedAppointments = stays.deleteByBookingHorse_Booking_IdAndStayTypeAndActualStartAtIsNull(bookingId, HorseStayType.ASSEMBLY);
+        if (removedLegs == 0 && removedAppointments == 0) return;
+        List<Long> coordinators = staff.findUserIdsByRoleAndStatus("COORDINATOR", AppUserStatus.ACTIVE);
+        if (!coordinators.isEmpty()) {
+            notifications.notify(coordinators,
+                    bookingId, "Đã gỡ lịch vận chuyển", "Đã gỡ các chặng hoặc lịch hẹn hub chưa bắt đầu của đơn.", null);
+        }
     }
 
     private void notifyCustomer(Booking booking, Notice notice) {

@@ -10,11 +10,17 @@ public final class StablingPolicy {
     private StablingPolicy() {}
 
     public static long days(Instant from, Instant to) {
-        long minutes = Math.max(0, Duration.between(from, to).toMinutes());
-        return Math.max(1, (minutes + Duration.ofDays(1).toMinutes() - 1) / Duration.ofDays(1).toMinutes());
+        Duration elapsed = Duration.between(from, to);
+        if (elapsed.isNegative() || elapsed.isZero()) return 1;
+        long fullDays = elapsed.toDays();
+        return elapsed.minusDays(fullDays).isZero() ? fullDays : fullDays + 1;
     }
 
     public static BigDecimal fee(Instant from, Instant to, int dailyFee) {
-        return BigDecimal.valueOf(dailyFee).multiply(BigDecimal.valueOf(days(from, to)));
+        return feeForDays(days(from, to), dailyFee);
+    }
+
+    public static BigDecimal feeForDays(long days, int dailyFee) {
+        return BigDecimal.valueOf(dailyFee).multiply(BigDecimal.valueOf(days));
     }
 }

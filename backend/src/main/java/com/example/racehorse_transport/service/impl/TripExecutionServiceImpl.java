@@ -1,5 +1,7 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.service.DepartureService;
+import com.example.racehorse_transport.entity.enums.VehicleTripType;
 import com.example.racehorse_transport.entity.CrewAssignment;
 import com.example.racehorse_transport.entity.HorseLeg;
 import com.example.racehorse_transport.entity.TripStop;
@@ -50,6 +52,7 @@ public class TripExecutionServiceImpl implements TripExecutionService {
     private final StopReadinessService readiness;
     private final BookingStatusService bookingStatus;
     private final Clock clock;
+    private final DepartureService departures;
 
     @Override
     @Transactional
@@ -113,6 +116,9 @@ public class TripExecutionServiceImpl implements TripExecutionService {
         if (stop.getStopType() == TripStopType.PICKUP || stop.getStopType() == TripStopType.BORDER || stop.getStopType() == TripStopType.HUB) {
             leavePickup(stop, member.getStaff().getUserId());
         }
+        if (trip.getTripType() == VehicleTripType.LINEHAUL && previousOf(stop) == null) {
+            departures.linehaulDeparted(trip.getDeparture().getId());
+        }
         stop.setActualDepartureAt(clock.instant());
         return trip.getId();
     }
@@ -129,6 +135,9 @@ public class TripExecutionServiceImpl implements TripExecutionService {
                         + legs.countFailedNotInHub(trip.getId(), HorseLegStatus.FAILED, HandoverType.HUB_IN, HandoverStatus.DONE));
         trip.setStatus(VehicleTripStatus.COMPLETED);
         trip.setActualEndAt(clock.instant());
+        if (trip.getTripType() == VehicleTripType.LINEHAUL) {
+            departures.linehaulCompleted(trip.getDeparture().getId());
+        }
     }
 
     // Đã qua kiểm thanh toán (#32): đơn có ngựa đã nhận lên xe ở điểm đón này sang IN_OPERATION
