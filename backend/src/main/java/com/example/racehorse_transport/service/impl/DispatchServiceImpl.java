@@ -128,7 +128,7 @@ public class DispatchServiceImpl implements DispatchService {
         }
         Instant start = DepartureDelayPolicy.effectiveTime(departure);
         RouteStop last = route.getLast();
-        Instant end = start.plusSeconds(60L * (last.getArrivalOffsetMinutes() + last.getDwellMinutes()));
+        Instant end = DispatchPolicy.routeStopWindow(start, last.getArrivalOffsetMinutes(), last.getDwellMinutes()).end();
         DispatchPolicy.requirePlannedWindow(start, end);
         return request.toEntity(vehicle, departure, departure.getRoute().getOrigin(), departure.getRoute().getDestination(), start, end);
     }
@@ -142,9 +142,9 @@ public class DispatchServiceImpl implements DispatchService {
             stop.setLocation(routeStop.getLocation());
             stop.setStopType(TripStopType.valueOf(routeStop.getStopType().name()));
             stop.setRouteStop(routeStop);
-            Instant arrival = start.plusSeconds(60L * routeStop.getArrivalOffsetMinutes());
-            stop.setPlannedArrivalAt(arrival);
-            stop.setPlannedDepartureAt(arrival.plusSeconds(60L * routeStop.getDwellMinutes()));
+            Interval time = DispatchPolicy.routeStopWindow(start, routeStop.getArrivalOffsetMinutes(), routeStop.getDwellMinutes());
+            stop.setPlannedArrivalAt(time.start());
+            stop.setPlannedDepartureAt(time.end());
             return stop;
         }).toList();
     }

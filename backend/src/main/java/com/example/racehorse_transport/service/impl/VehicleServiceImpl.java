@@ -114,11 +114,21 @@ public class VehicleServiceImpl implements VehicleService {
     @Override
     @Transactional(readOnly = true)
     public List<DispatchVehicleResponseDto> vehiclesForDispatch() {
-        return vehicles.findAllByOrderByLicensePlateAsc().stream().map(vehicle -> trips
-                .findByVehicle_IdAndStatusNot(vehicle.getId(), VehicleTripStatus.CANCELLED).stream()
+        return vehicles.findAllByOrderByLicensePlateAsc().stream().map(this::describeForDispatch).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DispatchVehicleResponseDto vehicleForDispatch(Long id) {
+        return vehicles.findOneById(id).map(this::describeForDispatch)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy xe " + id));
+    }
+
+    private DispatchVehicleResponseDto describeForDispatch(Vehicle vehicle) {
+        return trips.findByVehicle_IdAndStatusNot(vehicle.getId(), VehicleTripStatus.CANCELLED).stream()
                 .max(Comparator.comparing(VehicleTrip::getPlannedEndAt))
                 .map(last -> DispatchVehicleResponseDto.from(vehicle, last.getEndLocation(), last.getPlannedEndAt()))
-                .orElseGet(() -> DispatchVehicleResponseDto.from(vehicle, vehicle.getHomeHubLocation(), null))).toList();
+                .orElseGet(() -> DispatchVehicleResponseDto.from(vehicle, vehicle.getHomeHubLocation(), null));
     }
 
     @Override

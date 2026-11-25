@@ -30,6 +30,8 @@ public interface VehicleService {
 
     List<DispatchVehicleResponseDto> vehiclesForDispatch();
 
+    DispatchVehicleResponseDto vehicleForDispatch(Long id);
+
     Vehicle lockVehicle(Long id);
 
     // Gọi trong giao dịch đã khóa xe khi tổ lái báo xe cần bảo dưỡng hoặc đã thay xe do sự cố.

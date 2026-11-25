@@ -133,6 +133,23 @@ class TripScheduleFlowTest {
         plan("null").andExpect(status().isForbidden());
     }
 
+    @Test
+    void previewsAnEmptyReturnByRoadWhenNoReverseRouteExists() throws Exception {
+        long gate = locations.findByCode("GATE-LAOBAO").orElseThrow().getId();
+        mvc.perform(post("/dispatch/trip-plans").header(HttpHeaders.AUTHORIZATION, coordinator)
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                                {"tripType":"TRANSFER","vehicleId":%d,"places":[{"locationId":%d},{"locationId":%d}],
+                                "bookingHorseIds":[],"startAt":"2031-03-04T11:41:00Z"}
+                                """.formatted(vehicle, gate, hub)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.blocked").value(false))
+                .andExpect(jsonPath("$.data.driveMinutes").value(60))
+                .andExpect(jsonPath("$.data.stops.length()").value(2))
+                .andExpect(jsonPath("$.data.stops[0].stopType").value("BORDER"))
+                .andExpect(jsonPath("$.data.stops[1].locationId").value(hub))
+                .andExpect(jsonPath("$.data.endAt").value("2031-03-04T12:41:00Z"));
+    }
+
     private void drive(long seconds) {
         when(routing.truckRoute(anyList(), anyDouble(), anyInt(), any())).thenAnswer(invocation -> {
             List<GeoPointDto> points = invocation.getArgument(0);

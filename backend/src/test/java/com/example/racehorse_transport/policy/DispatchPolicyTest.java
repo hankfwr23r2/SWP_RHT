@@ -38,6 +38,11 @@ class DispatchPolicyTest {
     }
 
     @Test
+    void routeStopWindowUsesTheArrivalOffsetAndDwell() {
+        assertThat(DispatchPolicy.routeStopWindow(at("06:00"), 90, 30)).isEqualTo(window("07:30", "08:00"));
+    }
+
+    @Test
     void stopsMustBeOrderedInsideTheTrip() {
         Interval trip = window("06:00", "12:00");
         assertThatCode(() -> DispatchPolicy.requireStopsInOrder(trip,

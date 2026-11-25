@@ -7,27 +7,34 @@ import com.example.racehorse_transport.dto.dispatch.PlannedTripResponseDto.Warni
 import com.example.racehorse_transport.dto.dispatch.VehicleTripResponseDto;
 import com.example.racehorse_transport.dto.route.GeoPointDto;
 import com.example.racehorse_transport.dto.route.RoadRouteDto;
+import com.example.racehorse_transport.entity.RouteStop;
+import com.example.racehorse_transport.entity.enums.ActiveStatus;
+import com.example.racehorse_transport.entity.enums.TripStopType;
 import com.example.racehorse_transport.entity.enums.VehicleTripType;
 import com.example.racehorse_transport.exception.DispatchRuleException;
+import com.example.racehorse_transport.policy.DispatchPolicy;
 import com.example.racehorse_transport.policy.DispatchPolicy.Interval;
 import com.example.racehorse_transport.policy.TripSchedulePolicy;
 import com.example.racehorse_transport.policy.TripSchedulePolicy.StopTime;
+import com.example.racehorse_transport.repository.RouteStopRepository;
 import com.example.racehorse_transport.service.PricingRouteService;
 import com.example.racehorse_transport.service.TripScheduleDataService;
 import com.example.racehorse_transport.service.TripScheduleDataService.PlaceInput;
 import com.example.racehorse_transport.service.TripScheduleDataService.TripInput;
 import com.example.racehorse_transport.service.TripScheduleService;
+import com.example.racehorse_transport.service.VehicleService;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import java.time.Duration;
 
 @Service
 @RequiredArgsConstructor
@@ -39,11 +46,13 @@ public class TripScheduleServiceImpl implements TripScheduleService {
 
     private final TripScheduleDataService data;
     private final PricingRouteService roads;
+    private final RouteStopRepository routeStops;
+    private final VehicleService vehicles;
     private final Clock clock;
 
     @Override
     public PlannedTripResponseDto plan(PlannedTripRequestDto request) {
-        return compute(request, data.load(request));
+        return configuredTransferPlan(request).orElseGet(() -> compute(request, data.load(request)));
     }
 
     @Override
@@ -51,18 +60,66 @@ public class TripScheduleServiceImpl implements TripScheduleService {
         if (request.vehicleId() == null) {
             throw new DispatchRuleException("vehicleId", "Vui lòng chọn xe.");
         }
+        var configured = configuredTransferPlan(request);
+        if (configured.isPresent()) {
+            return data.save(request, List.of(), configured.get(), username);
+        }
         TripInput input = data.load(request);
         PlannedTripResponseDto plan = compute(request, input);
         if (plan.blocked()) {
             throw new DispatchRuleException("places", message(plan.warnings(), input), true);
         }
-        return data.save(request, input, plan, username);
+        return data.save(request, input.horses(), plan, username);
+    }
+
+    private Optional<PlannedTripResponseDto> configuredTransferPlan(PlannedTripRequestDto request) {
+        // Lượt về rỗng theo tuyến cấu hình; lượt chuyển có ngựa tính theo bản đồ như cũ
+        if (request.tripType() != VehicleTripType.TRANSFER || !request.bookingHorseIds().isEmpty()) {
+            return Optional.empty();
+        }
+        var places = request.places();
+        if (places.size() != 2 || places.stream().anyMatch(place -> place.locationId() == null || place.bookingAddressId() != null)) {
+            return Optional.empty();
+        }
+        Long originId = places.getFirst().locationId();
+        Long destinationId = places.getLast().locationId();
+        List<RouteStop> route = routeStops.findBetween(originId, destinationId, ActiveStatus.ACTIVE);
+        if (route.size() < 2 || !originId.equals(route.getFirst().getLocation().getId())
+                || !destinationId.equals(route.getLast().getLocation().getId())) {
+            return Optional.empty();
+        }
+        Instant start = transferStart(request);
+        Instant previousDeparture = start;
+        long totalDriveMinutes = 0;
+        List<PlannedStopDto> stops = new ArrayList<>();
+        for (RouteStop routeStop : route) {
+            var location = routeStop.getLocation();
+            Interval time = DispatchPolicy.routeStopWindow(start, routeStop.getArrivalOffsetMinutes(), routeStop.getDwellMinutes());
+            long driveMinutes = Duration.between(previousDeparture, time.start()).toMinutes();
+            GeoPointDto point = location.getLatitude() == null || location.getLongitude() == null ? null
+                    : new GeoPointDto(location.getLatitude().doubleValue(), location.getLongitude().doubleValue());
+            stops.add(new PlannedStopDto(location.getId(), null, TripStopType.valueOf(routeStop.getStopType().name()),
+                    location.getName(), null, point, 0, time.start(), time.end(), driveMinutes, 0, 0, List.of()));
+            totalDriveMinutes += driveMinutes;
+            previousDeparture = time.end();
+        }
+        return Optional.of(new PlannedTripResponseDto(start, previousDeparture, totalDriveMinutes,
+                route.getFirst().getRoute().getDistanceKm().doubleValue(), false, List.of(), stops));
+    }
+
+    private Instant transferStart(PlannedTripRequestDto request) {
+        if (request.startAt() != null) {
+            return request.startAt();
+        }
+        Instant freeFrom = request.vehicleId() == null ? null : vehicles.vehicleForDispatch(request.vehicleId()).freeFrom();
+        return freeFrom == null ? clock.instant() : notPast(freeFrom);
     }
 
     private PlannedTripResponseDto compute(PlannedTripRequestDto request, TripInput input) {
         boolean direct = request.tripType() == VehicleTripType.DIRECT;
         List<GeoPointDto> points = input.places().stream().map(PlaceInput::point).toList();
-        Instant around = request.startAt() != null ? request.startAt()
+        Instant start = request.tripType() == VehicleTripType.TRANSFER ? transferStart(request) : request.startAt();
+        Instant around = start != null ? start
                 : input.readyAt() != null ? notPast(input.readyAt())
                 : input.pickupDate() != null ? input.pickupDate().atTime(input.pickupWindow().startHour(), 0).atZone(BUSINESS_ZONE).toInstant()
                 : clock.instant();
@@ -70,7 +127,6 @@ public class TripScheduleServiceImpl implements TripScheduleService {
         List<Long> drives = legs.stream().map(RoadRouteDto.Leg::driveSeconds).toList();
         List<Integer> horses = input.horsesAtStops();
 
-        Instant start = request.startAt();
         if (start == null) {
             start = switch (request.tripType()) {
                 case PICKUP, DIRECT -> TripSchedulePolicy.pickupDeparture(requirePickupDate(input), input.pickupWindow(), BUSINESS_ZONE, drives, input.rules());

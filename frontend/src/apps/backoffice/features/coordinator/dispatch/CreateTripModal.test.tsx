@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeAll, expect, it, vi } from 'vitest'
 import apiClient from '@shared/api/client'
 import { dispatchTexts } from '@shared/i18n/staffTexts'
@@ -57,4 +57,53 @@ it('blocks a manual delivery ending at a rest stop until the final stop is a hub
 
   expect(submit.disabled).toBe(false)
   expect(screen.queryByRole('alert')).toBeNull()
+})
+
+it('plans and saves an empty return from the current location to the home hub', async () => {
+  const startAt = '2031-03-10T06:00:00Z'
+  const endAt = '2031-03-11T09:00:00Z'
+  const request = { tripType: 'TRANSFER', vehicleId: 1, places: [{ locationId: 2 }, { locationId: 1 }], bookingHorseIds: [] }
+  const trip = { id: 10, code: 'VT-RETURN', tripType: 'TRANSFER' }
+  vi.mocked(apiClient.post).mockImplementation(async (url, body) => {
+    const requestedStart = (body as { startAt?: string }).startAt ?? startAt
+    const data = url === '/dispatch/trip-plans' ? {
+      startAt: requestedStart, endAt, blocked: false, km: 982, driveMinutes: 950,
+      stops: [
+        { locationId: 2, name: 'Hub Đà Nẵng', arrivalAt: requestedStart },
+        { locationId: 1, name: 'Trụ sở', arrivalAt: endAt, departureAt: endAt },
+      ],
+    } : trip
+    return { data: { data } }
+  })
+  const onCreated = vi.fn()
+  render(<CreateTripModal bookings={[]} weekFrom="2031-03-10" weekTo="2031-03-16"
+    returning={{ id: 1, licensePlate: 'TV01', status: 'ACTIVE', currentLocationId: 2, currentLocationName: 'Hub Đà Nẵng', homeHubLocationId: 1, homeHubLocationCode: 'HUB-HCM' }}
+    onClose={vi.fn()} onCreated={onCreated} />)
+
+  const save = screen.getByRole<HTMLButtonElement>('button', { name: 'Lập lượt về' })
+  expect(save.disabled).toBe(true)
+  await screen.findByRole('list', { name: 'Giờ từng điểm' })
+  expect(screen.getByLabelText('Giờ bắt đầu lượt về')).toBeTruthy()
+  expect(screen.queryByRole('combobox', { name: 'Chuyến trục' })).toBeNull()
+  expect(apiClient.get).not.toHaveBeenCalled()
+  expect(apiClient.post).toHaveBeenCalledWith('/dispatch/trip-plans', request)
+
+  const startField = () => screen.getByLabelText('Giờ bắt đầu lượt về')
+  const recalculate = () => fireEvent.click(screen.getByRole('button', { name: 'Tính lại' }))
+  const localStart = '2031-03-10T20:15'
+  const changedStart = new Date(localStart).toISOString()
+  fireEvent.change(startField(), { target: { value: localStart } })
+  recalculate()
+  expect(save.disabled).toBe(true)
+  await waitFor(() => expect(save.disabled).toBe(false))
+  expect(apiClient.post).toHaveBeenLastCalledWith('/dispatch/trip-plans', { ...request, startAt: changedStart })
+
+  fireEvent.change(startField(), { target: { value: '2031-03-10T20:45' } })
+  fireEvent.change(startField(), { target: { value: localStart } })
+  recalculate()
+  expect(save.disabled).toBe(false)
+
+  fireEvent.click(save)
+  await waitFor(() => expect(onCreated).toHaveBeenCalledWith(trip))
+  expect(apiClient.post).toHaveBeenCalledWith('/vehicle-trips/planned', { ...request, startAt: changedStart })
 })

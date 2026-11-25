@@ -37,7 +37,6 @@ export function suggestedStops(trip: VehicleTrip, booking: DispatchBooking, hors
     case 'PICKUP': return pair(pickup, last)
     case 'DELIVERY': return pair(first, delivery)
     case 'DIRECT': return booking.departureId === undefined || booking.departureId === null ? pair(pickup, delivery) : undefined
-    case 'TRANSFER': return pair(first, last)
     default: return undefined
   }
 }

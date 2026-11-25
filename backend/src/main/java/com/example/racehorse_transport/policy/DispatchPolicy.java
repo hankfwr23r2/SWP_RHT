@@ -36,6 +36,11 @@ public final class DispatchPolicy {
         }
     }
 
+    public static Interval routeStopWindow(Instant tripStart, int arrivalOffsetMinutes, int dwellMinutes) {
+        Instant arrival = tripStart.plusSeconds(60L * arrivalOffsetMinutes);
+        return new Interval(arrival, arrival.plusSeconds(60L * dwellMinutes));
+    }
+
     // Điểm dừng nằm trong lượt xe, theo đúng thứ tự, rời đi không sớm hơn lúc tới
     public static void requireStopsInOrder(Interval trip, List<Interval> stops) {
         if (stops.size() < 2) {

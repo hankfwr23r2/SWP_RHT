@@ -74,6 +74,7 @@ export function TripDetailModal({ tripId, bookings, onClose, onChanged }: Props)
   const readOnly = trip.coordinatorId != null && !owner
   const canTakeOver = !owner && trip.takeOverAllowed
   const editable = !readOnly && (trip.status === 'PLANNED' || trip.status === 'DISPATCHED')
+  const transfer = trip.tripType === 'TRANSFER'
   const options = eligibleHorses(trip, bookings, horses)
   const chosen = options.find(option => `${option.horse.bookingHorseId}` === horseKey)
 
@@ -130,8 +131,8 @@ export function TripDetailModal({ tripId, bookings, onClose, onChanged }: Props)
               </li>
             ))}
           </ul>
-        ) : <p className={s.muted}>{t('dispatch.detail.noHorses')}</p>}
-        {editable && (options.length ? (
+        ) : <p className={s.muted}>{t(transfer ? 'dispatch.detail.emptyTransfer' : 'dispatch.detail.noHorses')}</p>}
+        {editable && !transfer && (options.length ? (
           <div className={s.form}>
             <Field label={t('dispatch.detail.horse')}>
               {c => <Select {...c} value={horseKey} onChange={setHorseKey} placeholder={t('tripWords.choose')}
@@ -146,7 +147,7 @@ export function TripDetailModal({ tripId, bookings, onClose, onChanged }: Props)
         ) : <p className={s.muted}>{t('dispatch.detail.noEligible')}</p>)}
       </section>
 
-      <StallPlanSection tripId={tripId} readOnly={readOnly} refreshKey={horses.map(item => `${item.leg?.id}:${item.leg?.stallPosition}`).join(',')} />
+      {(!transfer || horses.length > 0) && <StallPlanSection tripId={tripId} readOnly={readOnly} refreshKey={horses.map(item => `${item.leg?.id}:${item.leg?.stallPosition}`).join(',')} />}
 
       {pending?.kind === 'release' && (
         <ConfirmDialog

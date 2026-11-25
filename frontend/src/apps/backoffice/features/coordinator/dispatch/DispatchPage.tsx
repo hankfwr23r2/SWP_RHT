@@ -95,8 +95,7 @@ export default function DispatchPage() {
         <CreateTripModal
           bookings={data.bookings}
           weekFrom={range.fromDate}
-          // Chuyến chiều ngược có thể nằm ở tuần sau
-          weekTo={typeof creating === 'object' ? addDays(range.toDate, 7) : range.toDate}
+          weekTo={range.toDate}
           returning={typeof creating === 'object' ? creating : undefined}
           onClose={() => setCreating(false)}
           onCreated={trip => { setCreating(false); void reload(); setOpenTripId(trip.id) }}

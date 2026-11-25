@@ -10,10 +10,11 @@ import { Field } from '@shared/ui/Field'
 import { Modal } from '@shared/ui/Modal'
 import { Select } from '@shared/ui/Select'
 import { Skeleton } from '@shared/ui/Skeleton'
-import { useToast } from '@shared/ui/toast'
 import { horsesNeeding, hubsOf, placesFor } from './dispatchModel'
 import { emptyStop, ManualStops, stopsReady, toStops, type StopDraft } from './ManualStops'
+import { ReturnTripModal } from './ReturnTripModal'
 import { TripPlanPreview } from './TripPlanPreview'
+import { useCreateTrip } from './useCreateTrip'
 import b from './Board.module.css'
 import s from './Dispatch.module.css'
 
@@ -21,7 +22,7 @@ interface Props {
   bookings: DispatchBooking[]
   weekFrom: string
   weekTo: string
-  // Lập lượt đưa xe này về: xe về bằng chuyến trục chiều ngược (docs/NGHIEP_VU_THEO_59_BANG.md mục 4)
+  // Lập lượt chuyển xe rỗng đưa xe này về hub gốc
   returning?: DispatchVehicle
   onClose: () => void
   onCreated: (trip: VehicleTrip) => void
@@ -29,11 +30,15 @@ interface Props {
 
 const TRIP_TYPES: TripType[] = ['PICKUP', 'LINEHAUL', 'DELIVERY', 'DIRECT', 'TRANSFER']
 
-export function CreateTripModal({ bookings, weekFrom, weekTo, returning, onClose, onCreated }: Props) {
+export function CreateTripModal({ returning, ...props }: Props) {
+  return returning ? <ReturnTripModal vehicle={returning} onClose={props.onClose} onCreated={props.onCreated} /> : <NewTripModal {...props} />
+}
+
+function NewTripModal({ bookings, weekFrom, weekTo, onClose, onCreated }: Omit<Props, 'returning'>) {
   const { t } = useTranslation()
-  const toast = useToast()
-  const [tripType, setTripType] = useState<TripType>(returning ? 'LINEHAUL' : 'PICKUP')
-  const [vehicleId, setVehicleId] = useState(returning ? String(returning.id) : '')
+  const { busy, create } = useCreateTrip(onCreated)
+  const [tripType, setTripType] = useState<TripType>('PICKUP')
+  const [vehicleId, setVehicleId] = useState('')
   const [departureId, setDepartureId] = useState('')
   const [hubChoice, setHubChoice] = useState('')
   const [chosen, setChosen] = useState<number[]>([])
@@ -41,7 +46,6 @@ export function CreateTripModal({ bookings, weekFrom, weekTo, returning, onClose
   const [plan, setPlan] = useState<PlannedTrip>()
   const [manual, setManual] = useState(false)
   const [stops, setStops] = useState<StopDraft[]>([emptyStop(), emptyStop(), emptyStop()])
-  const [busy, setBusy] = useState(false)
   const { data, loaded, error, reload } = useLoad(async () => {
     const [vehicles, departures, locations] = await Promise.all([dispatchApi.vehicles(), dispatchApi.departures(weekFrom, weekTo), dispatchApi.locations()])
     return { vehicles, departures, locations }
@@ -49,10 +53,7 @@ export function CreateTripModal({ bookings, weekFrom, weekTo, returning, onClose
 
   const vehicle = data?.vehicles.find(item => String(item.id) === vehicleId)
   // Chuyến không xuất phát từ nơi xe đang ở thì xe không chạy được (quy tắc #20)
-  const fromHere = (data?.departures ?? []).filter(departure => !vehicle?.currentLocationCode || departure.originCode === vehicle.currentLocationCode)
-  // Đưa xe về: ưu tiên chuyến về thẳng hub gốc; không có thì hiện mọi chuyến đi từ đây (xe ở cửa khẩu Lào về qua Đà Nẵng)
-  const homeward = returning ? fromHere.filter(departure => departure.destinationCode === returning.homeHubLocationCode) : []
-  const departures = homeward.length ? homeward : fromHere
+  const departures = (data?.departures ?? []).filter(departure => !vehicle?.currentLocationCode || departure.originCode === vehicle.currentLocationCode)
   const hubs = hubsOf(data?.locations ?? [], data?.vehicles ?? [])
   const hubId = Number(hubChoice || hubs[0]?.id || 0)
   const byHand = manual || tripType === 'TRANSFER'
@@ -67,20 +68,9 @@ export function CreateTripModal({ bookings, weekFrom, weekTo, returning, onClose
   const invalidFinalPlace = byHand && needsFinalHub && !!finalPlace && !hubs.some(hub => `L${hub.id}` === finalPlace)
   const manualReady = stopsReady(stops) && !invalidFinalPlace
   const ready = vehicleId !== '' && (tripType === 'LINEHAUL' ? departureId !== '' : byHand ? manualReady : !!request && !!plan && !plan.blocked)
-  const submit = async () => {
-    setBusy(true)
-    try {
-      const trip = tripType === 'LINEHAUL' ? await dispatchApi.createTrip({ tripType, vehicleId: Number(vehicleId), departureId: Number(departureId) })
-        : byHand ? await dispatchApi.createTrip({ tripType, vehicleId: Number(vehicleId), stops: toStops(stops, data?.locations ?? []) })
-          : await dispatchApi.createPlannedTrip({ ...request!, vehicleId: Number(vehicleId) })
-      toast(t('dispatch.done.created', { code: trip.code }), 'success')
-      onCreated(trip)
-    } catch (e) {
-      toast(e instanceof Error ? e.message : String(e), 'error')
-    } finally {
-      setBusy(false)
-    }
-  }
+  const submit = () => create(tripType === 'LINEHAUL' ? { tripType, vehicleId: Number(vehicleId), departureId: Number(departureId) }
+    : byHand ? { tripType, vehicleId: Number(vehicleId), stops: toStops(stops, data?.locations ?? []) }
+      : { ...request!, vehicleId: Number(vehicleId) })
 
   const body = () => {
     if (!loaded) return <Skeleton variant="block" lines={3} />
