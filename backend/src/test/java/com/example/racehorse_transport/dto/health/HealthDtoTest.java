@@ -75,9 +75,14 @@ class HealthDtoTest {
         assertThat(response.tripStopId()).isNull();
         assertThat(response.recordedByName()).isEqualTo("Hộ tống Một");
 
+        line.setDietNote("Hay only");
+        line.setFeedSuppliedByOwner(true);
         var stayDto = HorseStayResponseDto.from(stay);
         assertThat(stayDto.bookingCode()).isEqualTo("BK-ABCDEFGH");
         assertThat(stayDto.locationName()).isEqualTo("Hub HCM");
         assertThat(stayDto.actualEndAt()).isNull();
+        assertThat(stayDto.dietNote()).isEqualTo("Hay only");
+        assertThat(stayDto.feedingsPerDay()).isNull();
+        assertThat(stayDto.feedSuppliedByOwner()).isTrue();
     }
 }
