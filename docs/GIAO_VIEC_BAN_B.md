@@ -91,27 +91,27 @@ Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A
 
 | Điểm | Phương án | Duyệt | PR |
 |---|---|---|---|
-| 1.F5 | Đặt hạn theo giờ cho tiếp nhận, thẩm định, gửi báo giá. Quét mỗi giờ, nhắc theo vai trò và giữ trạng thái đơn | Đã duyệt | |
+| 1.F5 | Đặt hạn theo giờ cho tiếp nhận, thẩm định, gửi báo giá. Quét mỗi giờ, nhắc theo vai trò và giữ trạng thái đơn | Đã duyệt | #504 |
 | 2.F2, 2.F5, 2.F8 | | | |
-| 2.F9 | Dùng lại giấy theo ngựa đã duyệt và còn hạn khi yêu cầu cùng loại giấy | Đã duyệt | |
-| 2.F7 | Kiểm đủ giấy bắt buộc khi bàn giao đơn xuất cho đại lý ở cửa khẩu | Đã duyệt | |
-| 2.F10 | Kiểm bảo hiểm đã xác nhận khi nhận ngựa nhập từ đại lý ở cửa khẩu | Đã duyệt | |
+| 2.F9 | Dùng lại giấy theo ngựa đã duyệt và còn hạn khi yêu cầu cùng loại giấy | Đã duyệt | #503 |
+| 2.F7 | Kiểm đủ giấy bắt buộc khi bàn giao đơn xuất cho đại lý ở cửa khẩu | Đã duyệt | #496 |
+| 2.F10 | Kiểm bảo hiểm đã xác nhận khi nhận ngựa nhập từ đại lý ở cửa khẩu | Đã duyệt | #496 |
 | 2.F4 | Cập nhật và xác nhận bảo hiểm mua hộ khi đơn Đang báo giá | Đã duyệt | #479 |
 | 3.G4, 3.G9, 3.G11 | | | |
-| 3.G10 | Điều phối lập lượt `TRANSFER` về hub gốc, tính giờ theo tuyến chiều về hoặc theo bản đồ | Đã duyệt | |
+| 3.G10 | Điều phối lập lượt `TRANSFER` về hub gốc, tính giờ theo tuyến chiều về hoặc theo bản đồ | Đã duyệt | #501 |
 | 3.G6, 3.G7 | Bắt buộc hộ tống đã nhận việc; kiểm giờ ngồi xe khi nhập giờ tay | Đã duyệt | #480 |
-| 3.G8 | Hiện hạn có mặt ở hub bằng giờ xuất phát hiệu lực trừ `HUB_CHECKIN_HOURS` và từ chối giờ hẹn muộn hơn hạn | Đã duyệt | |
+| 3.G8 | Hiện hạn có mặt ở hub bằng giờ xuất phát hiệu lực trừ `HUB_CHECKIN_HOURS` và từ chối giờ hẹn muộn hơn hạn | Đã duyệt | #500 |
 | 4.F1, 4.F2, 4.F3 | Luồng A làm thay theo yêu cầu người dùng | Đã duyệt | |
 | 4.F11 | | | |
-| 4.F12 | Kiểm đủ giấy bắt buộc khi bàn giao đơn xuất cho đại lý ở cửa khẩu | Đã duyệt | |
+| 4.F12 | Kiểm đủ giấy bắt buộc khi bàn giao đơn xuất cho đại lý ở cửa khẩu | Đã duyệt | #496 |
 | 4.F6 | Điểm nghỉ đêm phải nghỉ đủ OVERNIGHT_REST_HOURS, rời sớm ghi lý do và báo điều phối | Đã duyệt | #480 |
 | 4.F10 | Báo tình trạng xe cuối lượt, đưa vào bảo dưỡng khi cần | Đã duyệt | #482 |
-| 5.G15 | Thực hiện một lần theo phiên bản mới nhất đã duyệt. Ghi kết quả thú y, gửi cho đúng chuồng tại điểm mạng lưới, hoặc đưa ngựa về hub và hủy các chặng phía sau chưa chạy. | Đã duyệt | |
-| 5.G14, 5.G22 | Mức độ sự cố; sự cố Nặng chưa duyệt phương án thì khóa xe, điều phối mở khóa có lý do | Đã duyệt | |
+| 5.G15 | Thực hiện một lần theo phiên bản mới nhất đã duyệt. Ghi kết quả thú y, gửi cho đúng chuồng tại điểm mạng lưới, hoặc đưa ngựa về hub và hủy các chặng phía sau chưa chạy. | Đã duyệt | #490 |
+| 5.G14, 5.G22 | Mức độ sự cố; sự cố Nặng chưa duyệt phương án thì khóa xe, điều phối mở khóa có lý do | Đã duyệt | #487, #488 |
 | 5.G17, 5.G18 | Chỉ hộ tống xác nhận đủ sức, bắt buộc ảnh; 30 phút đếm từ lúc bắt đầu nghỉ | Đã duyệt | #486 |
 | 5.G5 | Lượt đón, giao, chạy thẳng phải kết thúc ở hub | Đã duyệt | #478 |
 | 5.G16 | Phương án (a), ảnh biên bản đã ký và đưa xe cũ vào bảo dưỡng | Đã duyệt | #482 |
-| 6.G15 | Lưu `SCAN` hoặc `MANUAL` cho từng con, yêu cầu lý do gõ tay và hiển thị trong hành trình của điều phối. Request cũ mặc định `SCAN` | Đã duyệt | |
+| 6.G15 | Lưu `SCAN` hoặc `MANUAL` cho từng con, yêu cầu lý do gõ tay và hiển thị trong hành trình của điều phối. Request cũ mặc định `SCAN` | Đã duyệt | #502 |
 
 ## 6. Luồng A giữ lại (22 điểm, đừng làm)
 
