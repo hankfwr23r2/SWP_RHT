@@ -16,6 +16,13 @@ import org.springframework.data.repository.query.Param;
 // Truy vấn chỉ đọc trên đơn cho điều độ (luồng B). Bảng booking do luồng A sở hữu; ở đây không ghi.
 public interface DispatchBookingRepository extends Repository<Booking, Long> {
 
+    @Query("""
+            SELECT count(p) > 0 FROM Payment p WHERE p.booking.id = :bookingId
+                AND p.paymentType = com.example.racehorse_transport.entity.enums.PaymentType.BALANCE
+                AND p.status = com.example.racehorse_transport.entity.enums.PaymentStatus.PENDING
+            """)
+    boolean hasPendingBalance(Long bookingId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT b FROM Booking b WHERE b.id = :bookingId")
     Optional<Booking> findForUpdate(Long bookingId);

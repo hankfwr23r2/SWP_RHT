@@ -501,6 +501,12 @@ Sau khi bàn giao cho đại lý, công ty **vẫn chịu trách nhiệm với k
 | Tại cửa khẩu | Công ty giao cho đại lý: `handover` AGENT, `to_party_id` = đại lý | Đại lý giao cho công ty: `handover` AGENT, `from_party_id` = đại lý. **Thiếu giấy vận chuyển mẫu 14a (`IMPORT_TRANSPORT_CERT`) thì không cho nhận** |
 | Sau đó | Nước đến tự xử lý, không nằm trong trách nhiệm nơi cách ly của công ty | Xe trục chở về hub rồi giao tới địa chỉ chủ ngựa |
 
+**Chờ số dư sau khi nhận ngựa.** Tại nhà khách, nhắc phút 0, 15 và 25. Điều phối ghi kết quả gọi khách và liên hệ khẩn cấp vào nhật ký đơn. Nếu còn đủ thời gian tới hub và thời gian ngồi xe của ngựa khác, điều phối có thể gia hạn 30 phút một lần. Quá hạn, trả ngựa và giấy tờ cho người gửi nếu có người nhận lại, nhả chỗ và chuyển đơn sang Cần chọn lại chuyến trong 30 ngày. Nếu vắng người nhận lại, điều phối xác nhận đưa ngựa về hub bằng điểm dừng an toàn của lượt xe.
+
+Tại hub, nhắc cuối ở T − 3 giờ. Ở T − 1 giờ, nếu chưa trả đủ thì nhả chỗ, hủy chặng kế hoạch và kết thúc HUB_OUT còn mở khi điểm dừng hết ngựa chờ lên xe. Phiên VNPAY còn hiệu lực được chờ kết quả tối đa 5 phút. Với đơn nhập, xe cửa khẩu vẫn đưa ngựa về hub và chỉ lập lượt giao tiếp sau khi khách trả số dư. Mốc T của đơn nhập là 24 giờ sau lúc ngựa vào hub.
+
+Ngựa còn tại hub tiếp tục được chăm sóc hai lần mỗi ngày. Lưu trú STABLING tính phí từ T theo biểu phí phía máy chủ. Nhắc lúc 8:00 trong thời gian chờ phản hồi. Đơn không phản hồi hết hạn ba ngày thì hủy nếu điều phối đã ghi ít nhất ba lần gọi. Phí giữ được cấn vào cọc khi chốt phí. Gửi yêu cầu nhận lại bằng văn bản sau bảy ngày và báo quản lý 45 ngày kể từ văn bản. Khách có thể trả số dư và chọn lịch sau, nhận lại ngựa rồi chọn lịch trong 30 ngày, hoặc hủy và nhận lại. Bàn giao ngựa trực tiếp vẫn thực hiện khi còn nợ.
+
 Giả định của đợt này: địa chỉ giao của đơn nhập là nơi chủ ngựa cách ly. Luật yêu cầu niêm phong xe về nơi cách ly nên ghé hub là đơn giản hóa; quy tắc niêm phong đã bỏ qua (`NGU_CANH_THIET_KE_LAI.md` mục 4).
 
 #### 7.5 Ở nước đến (đơn EXPORT)

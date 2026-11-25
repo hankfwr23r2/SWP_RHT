@@ -211,7 +211,7 @@ class TripExecutionFlowTest {
     }
 
     @Test
-    void overdueBalanceReturnsTheHorseAndCancelsTheBooking() throws Exception {
+    void overdueBalanceReturnsTheHorseAndLeavesTheBookingAvailableForRescheduling() throws Exception {
         makeLocal();
         entityManager.flush();
         jdbc.update("DELETE FROM payment WHERE booking_id = ? AND payment_type = 'BALANCE'", booking);
@@ -228,13 +228,13 @@ class TripExecutionFlowTest {
         scan(escort, pickup, chip).andExpect(status().isOk());
         act(escort, "/handovers/" + pickup + "/complete").andExpect(status().isOk());
 
-        // Còn trong hạn trả số dư: luồng A từ chối hủy, không có gì thay đổi
+        // Còn trong hạn trả số dư: chưa được trả ngựa do quá hạn
         handover(escort, stops.get(1), "RETURN").andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Đơn chưa đủ điều kiện hủy do quá thời gian chờ trả số dư."));
+                .andExpect(jsonPath("$.message").value("Đơn chưa đủ điều kiện trả ngựa vì quá thời gian chờ thanh toán."));
         assertThat(jdbc.queryForObject("SELECT count(*) FROM handover WHERE trip_stop_id = ? AND handover_type = 'RETURN'", Long.class, stops.get(1))).isZero();
         assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE id = ?", String.class, leg)).isEqualTo("IN_PROGRESS");
 
-        // Quá hạn: trả ngựa cho người gửi, đơn bị hủy, khoản số dư bị hủy, xe rời đi không cần kiểm thanh toán
+        // Trả ngựa tại chỗ, vẫn giữ khoản số dư để khách thanh toán khi chọn lại lịch
         entityManager.flush();
         jdbc.update("UPDATE payment SET due_at = now() - interval '1 minute' WHERE booking_id = ? AND payment_type = 'BALANCE'", booking);
         entityManager.clear();
@@ -243,9 +243,12 @@ class TripExecutionFlowTest {
                 .andExpect(jsonPath("$.data.handovers[1].status").value("DONE"))
                 .andExpect(jsonPath("$.data.handovers[1].horses[0].scannedMicrochip").value(chip));
         assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE id = ?", String.class, leg)).isEqualTo("CANCELLED");
-        assertThat(bookingStatus()).isEqualTo("CANCELLED");
+        assertThat(bookingStatus()).isEqualTo("SCHEDULE_CHANGE_REQUIRED");
         assertThat(jdbc.queryForObject("SELECT status FROM payment WHERE booking_id = ? AND payment_type = 'BALANCE'", String.class, booking))
-                .isEqualTo("CANCELLED");
+                .isEqualTo("PENDING");
+        handover(escort, stops.get(1), "RETURN").andExpect(status().isConflict());
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM handover WHERE trip_stop_id = ? AND handover_type = 'RETURN'",
+                Long.class, stops.get(1))).isEqualTo(1L);
         act(driver, "/trip-stops/" + stops.get(1) + "/depart").andExpect(status().isOk());
     }
 

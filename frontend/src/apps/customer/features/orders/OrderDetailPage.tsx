@@ -6,6 +6,7 @@ import { OrderStatusBadge } from '@shared/components/OrderStatusBadge'
 import { CANCELLABLE, HAS_JOURNEY, RATEABLE } from '@shared/components/orderSteps'
 import { Card } from '@shared/ui/Card'
 import { ErrorState } from '@shared/ui/ErrorState'
+import { formatDateTime } from '@shared/lib/format'
 import { CancelOrder } from './components/CancelOrder'
 import { DocumentsCard } from './components/DocumentsCard'
 import { InsuranceCard } from './components/InsuranceCard'
@@ -42,12 +43,19 @@ export default function OrderDetailPage() {
       <div className={s.layout}>
         <div className={s.stack}>
           <NextStepBanner data={data} />
+          {data.detail?.balanceHoldAt && (
+            <Card title={t('myOrders.balanceHold.title')}>
+              <p>{t('myOrders.balanceHold.since', { at: formatDateTime(new Date(data.detail.balanceHoldAt)) })}</p>
+              <p>{t(status === 'CANCELLED' ? 'myOrders.balanceHold.cancelled' : 'myOrders.balanceHold.options')}</p>
+            </Card>
+          )}
           {status === 'SCHEDULE_CHANGE_REQUIRED' && <section id="reschedule" className={s.section}><RescheduleCard data={data} /></section>}
           <section id="quote" className={s.section}><QuoteCard data={data} /></section>
           <section id="payments" className={s.section}><PaymentsCard data={data} /></section>
           <InsuranceCard data={data} />
           <section id="documents" className={s.section}><DocumentsCard data={data} /></section>
-          {HAS_JOURNEY.includes(status) && <Card title={t('myOrders.journey')}><BookingJourney bookingId={data.id} /></Card>}
+          {(HAS_JOURNEY.includes(status) || data.detail?.balanceHoldAt)
+            && <Card title={t('myOrders.journey')}><BookingJourney bookingId={data.id} /></Card>}
           {RATEABLE.includes(status) && <section id="rating" className={s.section}><RatingCard bookingId={data.id} /></section>}
         </div>
         <aside className={s.side}>

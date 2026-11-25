@@ -23,4 +23,12 @@ public final class StablingPolicy {
     public static BigDecimal feeForDays(long days, int dailyFee) {
         return BigDecimal.valueOf(dailyFee).multiply(BigDecimal.valueOf(days));
     }
+
+    public static long holdDays(Instant chargedFrom, Instant through) {
+        return through.isAfter(chargedFrom) ? days(chargedFrom, through) : 0;
+    }
+
+    public static BigDecimal depositCredit(BigDecimal fee, BigDecimal deposit, BigDecimal alreadyCredited) {
+        return fee.min(deposit.subtract(alreadyCredited).max(BigDecimal.ZERO));
+    }
 }

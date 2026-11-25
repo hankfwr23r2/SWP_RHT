@@ -68,6 +68,20 @@ public class HorseStayServiceImpl implements HorseStayService {
     private final NotificationService notifications;
 
     @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void openBalanceHold(Long bookingId, Instant chargedFrom) {
+        Instant until = chargedFrom.plus(Duration.ofDays(configs.getInt(MAX_DAYS)));
+        stays.findByBookingHorse_Booking_Id(bookingId).stream()
+                .filter(stay -> stay.getStayType() == HorseStayType.ASSEMBLY && stay.getLocation().getLocationType() == LocationType.HUB)
+                .filter(stay -> stay.getActualStartAt() != null && stay.getActualEndAt() == null)
+                .forEach(stay -> {
+                    stay.setStayType(HorseStayType.STABLING);
+                    stay.setBalanceHoldAt(chargedFrom);
+                    if (until.isAfter(stay.getPlannedStartAt())) stay.setPlannedEndAt(until);
+                });
+    }
+
+    @Override
     @Transactional
     public void openAssembly(HorseLeg alightedLeg, Instant at) {
         Instant plannedEnd = legs.findByBookingHorse_IdOrderBySequenceNumber(alightedLeg.getBookingHorse().getId()).stream()
@@ -289,7 +303,9 @@ public class HorseStayServiceImpl implements HorseStayService {
     @Override
     @Transactional(readOnly = true)
     public List<HorseStayResponseDto> activeAt(Long locationId) {
+        var unpaid = java.util.Set.copyOf(stays.findUnpaidAssemblyStayIds(locationId));
         return stays.findByLocation_IdAndActualStartAtIsNotNullAndActualEndAtIsNullOrderByActualStartAt(locationId).stream()
-                .map(HorseStayResponseDto::from).toList();
+                .map(stay -> HorseStayResponseDto.from(stay, stay.getBalanceHoldAt() != null || unpaid.contains(stay.getId())))
+                .toList();
     }
 }

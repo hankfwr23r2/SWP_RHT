@@ -1814,6 +1814,21 @@
         },
         "type" : "object"
       },
+      "BalanceHoldContactRequestDto" : {
+        "properties" : {
+          "result" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "target" : {
+            "enum" : [ "CUSTOMER", "EMERGENCY_CONTACT" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "result", "target" ],
+        "type" : "object"
+      },
       "BillableServiceResponseDto" : {
         "properties" : {
           "autoApplied" : {
@@ -1955,6 +1970,10 @@
               "$ref" : "#/components/schemas/AddressSnapshot"
             },
             "type" : "array"
+          },
+          "balanceHoldAt" : {
+            "format" : "date-time",
+            "type" : "string"
           },
           "booking" : {
             "$ref" : "#/components/schemas/BookingResponseDto"
@@ -2561,6 +2580,13 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "balanceContactAllowed" : {
+            "type" : "boolean"
+          },
+          "balanceHoldAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
           "bookingCode" : {
             "type" : "string"
           },
@@ -2621,6 +2647,9 @@
           "vehicleTripId" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "waitingPickupBalance" : {
+            "type" : "boolean"
           }
         },
         "type" : "object"
@@ -4297,6 +4326,10 @@
             "format" : "date-time",
             "type" : "string"
           },
+          "balanceHoldAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
           "bookingCode" : {
             "type" : "string"
           },
@@ -4333,6 +4366,9 @@
           "plannedStartAt" : {
             "format" : "date-time",
             "type" : "string"
+          },
+          "returnForBalance" : {
+            "type" : "boolean"
           },
           "stayType" : {
             "enum" : [ "ASSEMBLY", "QUARANTINE", "OVERNIGHT", "STABLING" ],
@@ -5659,6 +5695,28 @@
           }
         },
         "required" : [ "insurerPartyId", "policyNumber", "validFrom", "validTo" ],
+        "type" : "object"
+      },
+      "PickupHubTransferRequestDto" : {
+        "properties" : {
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
+        "type" : "object"
+      },
+      "PickupWaitExtensionRequestDto" : {
+        "properties" : {
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
         "type" : "object"
       },
       "PlaceDto" : {
@@ -8902,6 +8960,80 @@
         "tags" : [ "booking-review-controller" ]
       }
     },
+    "/bookings/{bookingId}/balance-hold-contacts" : {
+      "post" : {
+        "operationId" : "recordContact",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "bookingId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/BalanceHoldContactRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "balance-hold-controller" ]
+      }
+    },
+    "/bookings/{bookingId}/extend-pickup-payment-wait" : {
+      "post" : {
+        "operationId" : "extend",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "bookingId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PickupWaitExtensionRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "balance-hold-controller" ]
+      }
+    },
     "/bookings/{bookingId}/payments" : {
       "get" : {
         "operationId" : "payments",
@@ -9016,6 +9148,43 @@
           }
         },
         "tags" : [ "rating-controller" ]
+      }
+    },
+    "/bookings/{bookingId}/send-unclaimed-pickup-to-hub" : {
+      "post" : {
+        "operationId" : "sendToHub",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "bookingId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PickupHubTransferRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "balance-hold-controller" ]
       }
     },
     "/bookings/{bookingId}/settlement" : {

@@ -30,7 +30,9 @@
 ## Đợt 1b · Thanh toán tại nơi nhận
 
 - Kiểm số dư dưới khóa đơn khi hoàn tất HUB_OUT. Xe nhập được rời cửa khẩu về hub và đơn giữ CONFIRMED nếu chưa trả đủ. Thao tác RETURN do nợ số dư chỉ dùng tại địa chỉ đón.
-- Khoản số dư VNPAY còn mở có thể thanh toán khi đơn đang SCHEDULE_CHANGE_REQUIRED. Lịch giữ và trả ngựa theo mục 9 cần kiểm tra riêng.
+- Khoản số dư VNPAY còn mở có thể thanh toán khi đơn đang SCHEDULE_CHANGE_REQUIRED. Sau khi trả ngựa tại nhà, đơn sang trạng thái này và giữ 30 ngày chọn lịch.
+- `BalanceHoldScheduler` gọi service nhắc khách, nhả chỗ ở T − 1 giờ và đóng HUB_OUT rỗng. Giữ nguyên các lượt quét và biên bản. Mốc tính phí `horse_stay.balance_hold_at` dùng chung loại STABLING. Theo dõi vẫn hiện ngựa đang giữ sau khi đơn hủy. Điều phối ghi cuộc gọi, gia hạn hoặc xác nhận đưa ngựa về hub ở bảng Theo dõi.
+- Phí giữ do chưa thanh toán thuộc CUSTOMER. Phí giao hụt thuộc CONSIGNEE. RETURN tại hub đóng lưu trú ngay. Scheduler chốt phí dưới khóa đơn, ghi riêng phần cấn cọc và dùng nhật ký để chống chốt lặp. Bàn giao ngựa cho người đến nhận thực hiện độc lập với thanh toán.
 
 ## Đợt 1a · 25/11/2026
 

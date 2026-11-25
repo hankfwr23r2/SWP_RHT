@@ -79,6 +79,17 @@ public class PaymentCheckoutServiceImpl implements PaymentCheckoutService {
 
     @Override
     @Transactional(readOnly = true)
+    public boolean hasPendingBalanceConfirmationAt(Long bookingId, java.time.Instant cutoff) {
+        return transactions.findByPayment_Booking_IdAndPayment_PaymentTypeAndGatewayCodeAndStatus(
+                        bookingId, PaymentType.BALANCE, SESSION_GATEWAY, PaymentTransactionStatus.PENDING)
+                .stream().filter(session -> session.getPayment().getStatus() == PaymentStatus.PENDING)
+                .map(session -> PaymentPolicy.parseReference(session.getGatewayTransactionNumber()))
+                .anyMatch(session -> session != null && !session.createdAt().isAfter(cutoff)
+                        && !session.createdAt().plus(vnpay.defaultExpireMinutes(), ChronoUnit.MINUTES).isBefore(cutoff));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public boolean isBalanceOverdue(List<Payment> entries) {
         return PaymentPolicy.isBalanceOverdue(entries, clock.instant());
     }

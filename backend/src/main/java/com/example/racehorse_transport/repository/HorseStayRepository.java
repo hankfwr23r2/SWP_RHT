@@ -6,6 +6,7 @@ import jakarta.persistence.LockModeType;
 import com.example.racehorse_transport.entity.enums.HorseStayType;
 
 import com.example.racehorse_transport.entity.HorseStay;
+import com.example.racehorse_transport.entity.Handover;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -15,6 +16,48 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.Lock;
 
 public interface HorseStayRepository extends JpaRepository<HorseStay, Long> {
+
+    @Query("""
+            SELECT DISTINCT s.bookingHorse.booking.id FROM HorseStay s
+            WHERE s.actualStartAt IS NOT NULL AND s.actualEndAt IS NULL
+                AND (s.stayType = com.example.racehorse_transport.entity.enums.HorseStayType.STABLING OR
+                    (s.stayType = com.example.racehorse_transport.entity.enums.HorseStayType.ASSEMBLY
+                     AND s.bookingHorse.booking.status = com.example.racehorse_transport.entity.enums.BookingStatus.CONFIRMED))
+            ORDER BY s.bookingHorse.booking.id
+            """)
+    List<Long> findBalanceHoldCandidates();
+
+    @Query("""
+            SELECT s.id FROM HorseStay s WHERE s.location.id = :locationId AND s.actualStartAt IS NOT NULL AND s.actualEndAt IS NULL
+                AND s.stayType = com.example.racehorse_transport.entity.enums.HorseStayType.ASSEMBLY
+                AND s.bookingHorse.booking.status = com.example.racehorse_transport.entity.enums.BookingStatus.CONFIRMED
+                AND EXISTS (SELECT p.id FROM Payment p WHERE p.booking = s.bookingHorse.booking
+                    AND p.paymentType = com.example.racehorse_transport.entity.enums.PaymentType.BALANCE
+                    AND p.status = com.example.racehorse_transport.entity.enums.PaymentStatus.PENDING)
+            """)
+    List<Long> findUnpaidAssemblyStayIds(Long locationId);
+
+    @Query("""
+            SELECT DISTINCT h.horseStay.bookingHorse.booking.id FROM Handover h
+            WHERE h.horseStay.balanceHoldAt IS NOT NULL AND h.horseStay.actualEndAt IS NOT NULL
+                AND h.handoverType = com.example.racehorse_transport.entity.enums.HandoverType.RETURN
+                AND h.status = com.example.racehorse_transport.entity.enums.HandoverStatus.DONE
+                AND NOT EXISTS (SELECT a.id FROM AuditLog a WHERE a.targetTable = 'horse_stay'
+                    AND a.targetId = h.horseStay.id AND a.action = 'BALANCE_HOLD_BILLED')
+            ORDER BY h.horseStay.bookingHorse.booking.id
+            """)
+    List<Long> findUnbilledReturnedBalanceHoldIds();
+
+    @Query("""
+            SELECT h FROM Handover h JOIN FETCH h.horseStay s JOIN FETCH h.handledBy
+            WHERE s.bookingHorse.booking.id = :bookingId AND s.balanceHoldAt IS NOT NULL AND s.actualEndAt IS NOT NULL
+                AND h.handoverType = com.example.racehorse_transport.entity.enums.HandoverType.RETURN
+                AND h.status = com.example.racehorse_transport.entity.enums.HandoverStatus.DONE
+                AND NOT EXISTS (SELECT a.id FROM AuditLog a WHERE a.targetTable = 'horse_stay'
+                    AND a.targetId = s.id AND a.action = 'BALANCE_HOLD_BILLED')
+            ORDER BY h.id
+            """)
+    List<Handover> findUnbilledBalanceHoldReturns(Long bookingId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT s FROM HorseStay s WHERE s.id = :stayId")

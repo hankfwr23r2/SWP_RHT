@@ -388,6 +388,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/bookings/{bookingId}/balance-hold-contacts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["recordContact"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{bookingId}/extend-pickup-payment-wait": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["extend"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/bookings/{bookingId}/payments": {
         parameters: {
             query?: never;
@@ -430,6 +462,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["rate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{bookingId}/send-unclaimed-pickup-to-hub": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["sendToHub"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3822,6 +3870,11 @@ export interface components {
             userId?: number;
             username?: string;
         };
+        BalanceHoldContactRequestDto: {
+            result: string;
+            /** @enum {string} */
+            target: "CUSTOMER" | "EMERGENCY_CONTACT";
+        };
         BillableServiceResponseDto: {
             autoApplied?: boolean;
             /** @enum {string} */
@@ -3871,6 +3924,8 @@ export interface components {
         };
         BookingDetailResponseDto: {
             addresses?: components["schemas"]["AddressSnapshot"][];
+            /** Format: date-time */
+            balanceHoldAt?: string;
             booking?: components["schemas"]["BookingResponseDto"];
             /** @enum {string} */
             deliveryMethod?: "COMPANY" | "SELF";
@@ -4109,6 +4164,9 @@ export interface components {
         CustodyRowResponseDto: {
             /** Format: int64 */
             agentLegId?: number;
+            balanceContactAllowed?: boolean;
+            /** Format: date-time */
+            balanceHoldAt?: string;
             bookingCode?: string;
             /** Format: int64 */
             bookingHorseId?: number;
@@ -4136,6 +4194,7 @@ export interface components {
             tripCode?: string;
             /** Format: int64 */
             vehicleTripId?: number;
+            waitingPickupBalance?: boolean;
         };
         CustomerAddressCreateRequestDto: {
             addressLine: string;
@@ -4758,6 +4817,8 @@ export interface components {
             actualEndAt?: string;
             /** Format: date-time */
             actualStartAt?: string;
+            /** Format: date-time */
+            balanceHoldAt?: string;
             bookingCode?: string;
             /** Format: int64 */
             bookingHorseId?: number;
@@ -4775,6 +4836,7 @@ export interface components {
             plannedEndAt?: string;
             /** Format: date-time */
             plannedStartAt?: string;
+            returnForBalance?: boolean;
             /** @enum {string} */
             stayType?: "ASSEMBLY" | "QUARANTINE" | "OVERNIGHT" | "STABLING";
         };
@@ -5267,6 +5329,12 @@ export interface components {
             validFrom: string;
             /** Format: date */
             validTo: string;
+        };
+        PickupHubTransferRequestDto: {
+            reason: string;
+        };
+        PickupWaitExtensionRequestDto: {
+            reason: string;
         };
         PlaceDto: {
             /** Format: int64 */
@@ -6787,6 +6855,58 @@ export interface operations {
             };
         };
     };
+    recordContact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BalanceHoldContactRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    extend: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PickupWaitExtensionRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
     payments: {
         parameters: {
             query?: never;
@@ -6875,6 +6995,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseRatingResponseDto"];
+                };
+            };
+        };
+    };
+    sendToHub: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PickupHubTransferRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
                 };
             };
         };

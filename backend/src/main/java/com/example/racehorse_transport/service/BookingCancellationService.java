@@ -18,4 +18,10 @@ public interface BookingCancellationService {
     BookingCancellationResponseDto cancelForCustomer(Long bookingId, String username, ManagerCancelBookingRequestDto request);
 
     void cancelUnpaidAtPickup(Long bookingId, Long actorUserId);
+
+    void cancelUnansweredBalanceHold(Long bookingId);
+
+    void releaseUnpaidAtPickup(Long bookingId, Long actorUserId);
+
+    void releaseUnpaidAtHub(Long bookingId);
 }

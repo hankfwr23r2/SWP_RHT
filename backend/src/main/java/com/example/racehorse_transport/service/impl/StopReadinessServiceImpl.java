@@ -17,6 +17,7 @@ import com.example.racehorse_transport.repository.HorseHealthLogRepository;
 import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.service.AuditService;
 import com.example.racehorse_transport.service.PaymentReadinessService;
+import com.example.racehorse_transport.service.PickupBalanceService;
 import com.example.racehorse_transport.service.StopReadinessService;
 import com.example.racehorse_transport.service.SystemConfigService;
 import java.time.Clock;
@@ -47,6 +48,7 @@ public class StopReadinessServiceImpl implements StopReadinessService {
     private final SystemConfigService configs;
     private final AuditService audit;
     private final Clock clock;
+    private final PickupBalanceService pickupBalances;
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
@@ -58,6 +60,7 @@ public class StopReadinessServiceImpl implements StopReadinessService {
     @Override
     @Transactional
     public void requireCanLeave(TripStop stop, String earlyReason, Long actorUserId) {
+        closeEmptyHubOut(stop);
         TripExecutionPolicy.requireCanDepart(stop.getActualArrivalAt() != null, stop.getActualDepartureAt() != null,
                 handovers.countByTripStop_IdAndStatus(stop.getId(), HandoverStatus.PENDING));
         requireNoHorseLeftAtStable(stop);
@@ -65,6 +68,20 @@ public class StopReadinessServiceImpl implements StopReadinessService {
             requirePaid(stop);
         } else if (REST_STOPS.contains(stop.getStopType())) {
             requireRestStopDone(stop, earlyReason, actorUserId);
+        }
+    }
+
+    private void closeEmptyHubOut(TripStop stop) {
+        if (stop.getStopType() != TripStopType.HUB) return;
+        for (var open : handovers.findByTripStop_IdAndHandoverTypeAndStatusOrderById(
+                stop.getId(), HandoverType.HUB_OUT, HandoverStatus.PENDING)) {
+            handovers.findForUpdate(open.getId()).filter(row -> row.getStatus() == HandoverStatus.PENDING)
+                    .filter(row -> legs.findByBoardTripStop_IdAndStatusIn(stop.getId(),
+                            Set.of(HorseLegStatus.PLANNED, HorseLegStatus.IN_PROGRESS)).isEmpty())
+                    .ifPresent(row -> {
+                        row.setStatus(HandoverStatus.FAILED);
+                        row.setHandedAt(clock.instant());
+                    });
         }
     }
 
@@ -91,7 +108,7 @@ public class StopReadinessServiceImpl implements StopReadinessService {
         }
         if (boarded.isEmpty()) return;
         boarded.forEach((id, code) -> {
-            if (!isPaidInFullForDeparture(id)) {
+            if (!isPaidInFullForDeparture(id) && !pickupBalances.canLeaveForHub(id)) {
                 throw new DispatchRuleException("payment", "Đơn " + code + " chưa trả đủ. Xe chưa rời nơi nhận được.", true);
             }
         });

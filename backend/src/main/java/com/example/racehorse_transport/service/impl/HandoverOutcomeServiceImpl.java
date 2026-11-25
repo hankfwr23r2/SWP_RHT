@@ -49,6 +49,17 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
+    public void prepareUnpaidHubReturn(com.example.racehorse_transport.entity.HorseStay stay, Instant at) {
+        Booking booking = stay.getBookingHorse().getBooking();
+        Instant chargedFrom = booking.getDeparture() == null || booking.getBookingType()
+                == com.example.racehorse_transport.entity.enums.BookingType.IMPORT
+                ? at : booking.getDeparture().getPlannedDepartureAt();
+        horseStays.openBalanceHold(booking.getId(), chargedFrom);
+        cancellations.releaseUnpaidAtHub(booking.getId());
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
     public void complete(Handover handover, List<HorseLeg> matched, Instant now, Long actorUserId) {
         boolean agent = handover.getHandoverType() == HandoverType.AGENT;
         boolean boarding = TripExecutionPolicy.isBoarding(handover.getHandoverType(), handover.getFromParty() != null);
@@ -151,6 +162,8 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
         Booking booking = leg.getBookingHorse().getBooking();
         if (handover.getHandoverType() == HandoverType.PICKUP) {
             payments.requestBalance(booking.getId(), handover.getHandedAt());
+        } else if (handover.getHandoverType() == HandoverType.RETURN) {
+            handover.getHorseStay().setActualEndAt(handover.getHandedAt());
         } else if (handover.getHandoverType() == HandoverType.DELIVERY) {
             horseStays.closeActive(leg.getBookingHorse().getId(), handover.getHandedAt(), actorUserId);
             if (booking.getStatus() == BookingStatus.IN_OPERATION && legs.countActiveHorsesNotDelivered(booking.getId()) == 0) {
@@ -171,6 +184,7 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
                     String[] notice = switch (handover.getHandoverType()) {
                         case PICKUP -> new String[] {"Đã nhận ngựa", "Công ty đã nhận " + names + " tại " + place + "."};
                         case DELIVERY -> new String[] {"Đã giao ngựa", names + " đã được giao cho người nhận tại " + place + "."};
+                        case RETURN -> new String[] {"Đã trả ngựa", names + " đã được trả tại " + place + "."};
                         case AGENT -> handover.getToParty() != null
                                 ? new String[] {"Đã qua cửa khẩu", names + " đã được bàn giao cho đại lý " + party + " tại " + place + " để chở tiếp tới nơi nhận."}
                                 : new String[] {"Đã nhận ngựa ở cửa khẩu", "Công ty đã nhận " + names + " từ đại lý " + party + " tại " + place + "."};
@@ -214,7 +228,7 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
     public void returnUnpaid(List<HorseLeg> boarded, Instant at, Long actorUserId) {
         // Hủy đơn trước mọi thao tác ghi: luồng A từ chối thì không có gì thay đổi. Khóa đơn theo ID tăng dần
         boarded.stream().map(l -> l.getBookingHorse().getBooking().getId()).distinct().sorted()
-                .forEach(id -> cancellations.cancelUnpaidAtPickup(id, actorUserId));
+                .forEach(id -> cancellations.releaseUnpaidAtPickup(id, actorUserId));
         for (HorseLeg leg : boarded) {
             leg.setStatus(HorseLegStatus.CANCELLED);
             leg.setActualEndAt(at);

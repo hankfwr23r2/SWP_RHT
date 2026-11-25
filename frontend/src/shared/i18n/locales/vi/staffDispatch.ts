@@ -1,6 +1,22 @@
 // Chữ các trang kế hoạch, điều độ, theo dõi, hub của điều phối viên; tải khi mở trang
 export const staffDispatch = {
   "tracking": {
+    "balance": {
+      "open": "Xử lý chờ số dư",
+      "title": "Xử lý chờ số dư · {{code}}",
+      "action": "Thao tác",
+      "contact": "Ghi lần gọi",
+      "extend": "Gia hạn giờ chờ",
+      "transfer": "Đưa ngựa về hub",
+      "transferConfirm": "Xác nhận không có người nhận lại ngựa tại nơi đón. Xe sẽ đưa ngựa tới hub an toàn tiếp theo để chăm sóc.",
+      "target": "Người được gọi",
+      "CUSTOMER": "Khách hàng",
+      "EMERGENCY_CONTACT": "Người liên hệ khẩn cấp",
+      "result": "Kết quả cuộc gọi",
+      "reason": "Lý do",
+      "saved": "Đã ghi xử lý",
+      "failed": "Không ghi được xử lý"
+    },
     "title": "Theo dõi",
     "subtitle": "Mọi con công ty hoặc đối tác đang giữ. Con trễ khám đứng đầu.",
     "list": "Ngựa đang được giữ",
@@ -99,6 +115,12 @@ export const staffDispatch = {
       }
     },
     "stays": {
+      "balanceHold": "Giữ tại hub do chưa thanh toán số dư",
+      "returnHeld": "Trả ngựa đang giữ",
+      "returnHeldTitle": "Trả {{horse}} · {{code}}",
+      "returnHeldHint": "Kiểm tra chip, xác nhận người nhận và bàn giao giấy tờ gốc.",
+      "returnHeldDone": "Đã trả ngựa",
+      "confirmReturnHeld": "Lưu trú kết thúc khi giao ngựa cho khách. Phí phát sinh được xử lý theo đơn.",
       "subtitle": "Lịch hẹn khách tự chở và ngựa đang ở hub.",
       "collect": "Hẹn giờ nhận",
       "collectTitle": "Hẹn người nhận tới · {{horse}} · {{code}}",

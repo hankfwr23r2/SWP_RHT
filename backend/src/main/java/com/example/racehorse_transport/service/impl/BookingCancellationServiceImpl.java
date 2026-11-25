@@ -16,6 +16,7 @@ import com.example.racehorse_transport.entity.enums.QuotationStatus;
 import com.example.racehorse_transport.exception.BookingRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.BookingCancellationPolicy;
+import com.example.racehorse_transport.policy.BalanceHoldPolicy;
 import com.example.racehorse_transport.policy.BookingCancellationPolicy.Breakdown;
 import com.example.racehorse_transport.policy.BookingCancellationPolicy.Outcome;
 import com.example.racehorse_transport.policy.PaymentPolicy;
@@ -100,6 +101,49 @@ public class BookingCancellationServiceImpl implements BookingCancellationServic
         cancel(booking, cancellation, "Quá thời gian chờ thanh toán số dư tại nơi nhận ngựa.", null, actorUserId, List.of());
     }
 
+    @Override
+    @Transactional
+    public void cancelUnansweredBalanceHold(Long bookingId) {
+        var booking = lock(bookingId);
+        if (booking.getStatus() != BookingStatus.SCHEDULE_CHANGE_REQUIRED
+                && !(booking.getStatus() == BookingStatus.CONFIRMED
+                        && booking.getBookingType() == com.example.racehorse_transport.entity.enums.BookingType.IMPORT
+                        && bookings.findActiveBalanceHoldAt(bookingId).isPresent())) return;
+        if (checkout.hasPendingBalanceConfirmation(bookingId)) return;
+        var cancellation = evaluate(booking, false, true);
+        if (cancellation.outcome() == Outcome.FORFEIT_DEPOSIT) {
+            cancel(booking, cancellation, "Hết hạn chọn phương án sau khi ngựa được giữ tại hub.", null, null, List.of());
+        }
+    }
+
+    @Override
+    @Transactional
+    public void releaseUnpaidAtPickup(Long bookingId, Long actorUserId) {
+        var booking = lock(bookingId);
+        if (actorUserId == null || booking.getStatus() != BookingStatus.CONFIRMED
+                || !checkout.isBalanceOverdue(payments.findByBooking_IdOrderById(bookingId))
+                || checkout.hasPendingBalanceConfirmation(bookingId)) {
+            throw BookingRuleException.conflict("Đơn chưa đủ điều kiện trả ngựa vì quá thời gian chờ thanh toán.");
+        }
+        var previous = booking.getDeparture();
+        releaseSpace(booking);
+        statuses.requireScheduleChange(bookingId, previous,
+                com.example.racehorse_transport.entity.enums.ScheduleChangeCause.CUSTOMER,
+                BalanceHoldPolicy.RETURNED_AT_PICKUP, actorUserId);
+    }
+
+    @Override
+    @Transactional
+    public void releaseUnpaidAtHub(Long bookingId) {
+        var booking = lock(bookingId);
+        if (booking.getStatus() != BookingStatus.CONFIRMED) return;
+        var previous = booking.getDeparture();
+        releaseSpace(booking);
+        statuses.requireScheduleChange(bookingId, previous,
+                com.example.racehorse_transport.entity.enums.ScheduleChangeCause.CUSTOMER,
+                "Lỡ chuyến do chưa trả số dư tại hub.", null);
+    }
+
     private Cancellation evaluate(Booking booking, boolean company, boolean allowPickupCancellation) {
         Long bookingId = booking.getId();
         var entries = payments.findByBooking_IdOrderById(bookingId);
@@ -121,7 +165,20 @@ public class BookingCancellationServiceImpl implements BookingCancellationServic
         }
         // Link bỏ dở không chặn hủy đơn; tiền về sau khi hủy được ghi nhận để quản lý đối soát
         boolean awaitingVnpay = received && allowPickupCancellation && checkout.hasPendingBalanceConfirmation(bookingId);
-        if ((received && (!allowPickupCancellation || !checkout.isBalanceOverdue(entries)))
+        boolean heldAtHub = (booking.getStatus() == BookingStatus.SCHEDULE_CHANGE_REQUIRED
+                || booking.getStatus() == BookingStatus.CONFIRMED)
+                && bookings.findActiveBalanceHoldAt(bookingId).isPresent();
+        boolean returnedFromHold = booking.getStatus() == BookingStatus.SCHEDULE_CHANGE_REQUIRED
+                && bookings.findReturnedBalanceHoldAt(bookingId).isPresent();
+        boolean returnedAtPickup = booking.getStatus() == BookingStatus.SCHEDULE_CHANGE_REQUIRED
+                && bookings.hasLatestStatusReason(bookingId, BalanceHoldPolicy.RETURNED_AT_PICKUP);
+        if (heldAtHub && !company && depositPaid) {
+            outcome = Outcome.FORFEIT_DEPOSIT;
+            refundTransport = false;
+        }
+        if ((received && !heldAtHub && !returnedFromHold && !returnedAtPickup
+                    && (!allowPickupCancellation || !checkout.isBalanceOverdue(entries)))
+                || ((heldAtHub || returnedFromHold || returnedAtPickup) && (company || checkout.hasPendingBalanceConfirmation(bookingId)))
                 || awaitingVnpay || booking.getStatus() == BookingStatus.CONFIRMED && !depositPaid && !company) {
             outcome = Outcome.NOT_ALLOWED;
         }
@@ -129,7 +186,8 @@ public class BookingCancellationServiceImpl implements BookingCancellationServic
                 ? List.<QuotationLine>of() : quotations.findLinesForCancellation(quotation.getId());
         var amounts = outcome == Outcome.NOT_ALLOWED
                 ? BookingCancellationPolicy.refundAll(BigDecimal.ZERO)
-                : BookingCancellationPolicy.amounts(outcome, refundTransport, quotation, lines, entries);
+                : BookingCancellationPolicy.amounts(outcome, refundTransport, quotation, lines,
+                        returnedFromHold || heldAtHub ? entries.stream().filter(row -> row.getPaymentType() != PaymentType.EXTRA_CHARGE).toList() : entries);
         return new Cancellation(outcome, quotation, entries, amounts);
     }
 
@@ -143,14 +201,7 @@ public class BookingCancellationServiceImpl implements BookingCancellationServic
         }
         BookingCancellationPolicy.requireNoLineRefund(selectedLines);
         Long bookingId = booking.getId();
-        if (booking.getDeparture() != null) {
-            var active = horses.findForDetail(bookingId).stream().filter(horse -> horse.getStatus() == BookingHorseStatus.ACTIVE)
-                    .map(horse -> horse.getStallType().getCode()).toList();
-            if (!active.isEmpty()) {
-                departures.release(booking.getDeparture().getId(), StallSeatPolicy.total(active));
-            }
-            booking.setDeparture(null);
-        }
+        releaseSpace(booking);
         cancellation.payments().stream()
                 .filter(row -> row.getStatus() == PaymentStatus.PENDING && row.getPaymentType() != PaymentType.REFUND)
                 .forEach(row -> row.setStatus(PaymentStatus.CANCELLED));
@@ -163,6 +214,16 @@ public class BookingCancellationServiceImpl implements BookingCancellationServic
             statuses.transitionForUser(bookingId, BookingStatus.CANCELLED, reason, username);
         }
         return cancellation.response(booking);
+    }
+
+    private void releaseSpace(Booking booking) {
+        if (booking.getDeparture() == null) return;
+        var active = horses.findForDetail(booking.getId()).stream().filter(horse -> horse.getStatus() == BookingHorseStatus.ACTIVE)
+                .map(horse -> horse.getStallType().getCode()).toList();
+        if (!active.isEmpty()) {
+            departures.release(booking.getDeparture().getId(), StallSeatPolicy.total(active));
+        }
+        booking.setDeparture(null);
     }
 
     private Booking lock(Long id) {

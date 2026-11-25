@@ -138,4 +138,6 @@ Khi có mâu thuẫn, **`DB_SCHEMA_59_BANG.md` là nguồn đúng**.
 
 ### Quyết định 25/11/2026 về số dư tại nơi nhận
 
-Tại hub, kiểm số dư khi đưa ngựa lên xe. Đơn nhập chưa thanh toán đi từ cửa khẩu về hub và giữ trạng thái Đã xác nhận. Đơn Cần chọn lại chuyến được thanh toán số dư còn mở. Xem phương án đã duyệt, mục 9 và 10.
+Tại hub, kiểm số dư khi đưa ngựa lên xe. T − 1 giờ thì nhả chỗ của đơn còn thiếu số dư và đóng HUB_OUT nếu điểm dừng hết ngựa cần lên xe. Đơn nhập chưa thanh toán đi từ cửa khẩu về hub và giữ trạng thái Đã xác nhận. Đơn Cần chọn lại chuyến được thanh toán số dư còn mở.
+
+Tại nhà khách, trả tại chỗ khi hết giờ nếu có người nhận lại, rồi giữ cơ hội chọn lại lịch 30 ngày. Mốc 30 ngày theo mục 9.1 thay mốc ba ngày ghi trong bảng tóm tắt mục 10. Ba ngày áp dụng khi ngựa còn do công ty chăm sóc ở hub. Phí giữ phát sinh theo biểu phí STABLING và cấn cọc khi đơn đã hủy. Khách được nhận lại ngựa khi tới hub, kể cả còn thiếu tiền.

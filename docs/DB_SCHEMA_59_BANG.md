@@ -918,12 +918,14 @@ Index: `vehicle_trip_id`, `agent_party_id`, `board_trip_stop_id`, `alight_trip_s
 | `planned_end_at` | `timestamptz` | | | |
 | `actual_start_at` | `timestamptz` | có | | |
 | `actual_end_at` | `timestamptz` | có | | |
+| `balance_hold_at` | `timestamptz` | có | Chỉ trên `STABLING` đã bắt đầu | Mốc T bắt đầu tính phí do giữ sau khi chưa trả số dư. Có thể muộn hơn lúc công ty nhận ngựa |
 | `quarantine_result` | `varchar(30)` | có | CK `PASSED, FAILED` | Ngừng dùng cùng `QUARANTINE` |
 
 Ràng buộc bảng:
 - `CHECK (planned_end_at > planned_start_at)`
 - `CHECK (quarantine_result IS NULL OR stay_type = 'QUARANTINE')`
 - `CHECK (actual_end_at IS NULL OR actual_start_at IS NOT NULL)`
+- `CHECK (balance_hold_at IS NULL OR (stay_type = 'STABLING' AND actual_start_at IS NOT NULL))`
 
 Index: `booking_horse_id`, `location_id`, `operator_party_id`.
 
@@ -1217,6 +1219,7 @@ Index: `handler_party_id`.
 | `id` | `bigint` | | PK, identity | |
 | `category` | `varchar(30)` | | CK `TOLL, FUEL, STABLING, VET, RESCUE, REPAIR, WAITING, OTHER` | |
 | `stabling_days` | `bigint` | có | CK dương, chỉ với `STABLING` gắn `horse_stay` | Snapshot số ngày tính trên dòng phí, dùng để tính chênh khi ngựa rời hub |
+| `stabling_deposit_credit` | `numeric(15,2)` | | Mặc định 0, từ 0 tới `amount`, chỉ khác 0 cho `STABLING` gắn `horse_stay` | Phần phí giữ được cấn cọc trên đơn đã hủy |
 | `description` | `varchar(500)` | | | |
 | `amount` | `numeric(15,2)` | | CK `> 0` | |
 | `currency_code` | `char(3)` | | | |
@@ -1393,6 +1396,12 @@ Giá trị khởi đầu của các tham số chốt ngày 23/11/2026, thêm b�
 | `DEPARTURE_MIN_FILL_PERCENT` | 30 | Ngưỡng cảnh báo số chỗ đã cọc trên `stall_capacity` |
 | `HUB_CHECKIN_HOURS` | 3 | Ngựa phải tới hub trước giờ chuyến trục xuất phát |
 | `BALANCE_WAIT_MINUTES` | 30 | Thời gian chờ khách trả số dư (tổng trừ số đã trả) sau khi nhận ngựa |
+| `BALANCE_PICKUP_REMINDER_MID_MINUTES`, `BALANCE_PICKUP_REMINDER_LAST_MINUTES` | 15, 25 | Nhắc sau khi nhận tại nhà |
+| `BALANCE_HUB_FINAL_REMINDER_HOURS`, `BALANCE_HUB_LOADING_HOURS` | 3, 1 | Mốc nhắc cuối và mốc nhả chỗ, tính trước giờ chạy |
+| `BALANCE_HUB_GATEWAY_GRACE_MINUTES` | 5 | Giới hạn chờ xác nhận phiên thanh toán đã mở ở mốc xếp ngựa |
+| `BALANCE_IMPORT_HUB_HOURS` | 24 | Hạn giữ miễn phí sau khi ngựa nhập về hub |
+| `STABLING_MAX_DAYS`, `STABLING_WRITTEN_NOTICE_DAYS`, `STABLING_MANAGER_NOTICE_DAYS` | 3, 7, 45 | Hạn phản hồi, mốc gửi văn bản và số ngày sau văn bản để báo quản lý |
+| `STABLING_REMINDER_HOUR`, `BALANCE_HOLD_MIN_CONTACTS` | 8, 3 | Giờ nhắc hằng ngày và số lần ghi đã liên hệ trước khi tự hủy |
 | `MAX_CONTINUOUS_HOURS` | 4 | Thời gian chạy liên tục tối đa |
 | `MIN_REST_MINUTES` | 30 | Thời gian nghỉ tối thiểu ở trạm |
 | `MAX_DRIVE_HOURS_PER_DAY` | 10 | Giờ lái tối đa mỗi ngày |
@@ -1435,6 +1444,7 @@ Có hai cách xử lý giá trị dẫn xuất:
 | `quotation.pass_through_amount` | Phần thu hộ (bảo hiểm, lệ phí nhà nước) | Như trên | `CHECK (pass_through_amount BETWEEN 0 AND total_amount)` |
 | `quotation.deposit_amount` | Tiền cọc, gồm **toàn bộ** phần thu hộ | Như trên, tính bằng `DepositPolicy` | `CHECK (deposit_amount BETWEEN pass_through_amount AND total_amount)` |
 | `cost_item.stabling_days` | Snapshot số ngày của từng dòng phí giữ đã tính | `StablingChargeService`, khi tạo dòng phí theo biểu | Dương, chỉ áp dụng với khoản STABLING có `horse_stay_id` |
+| `cost_item.stabling_deposit_credit` | Snapshot phần phí đã cấn vào tiền cọc | `StablingChargeService`, khi chốt phí trên đơn đã hủy dưới khóa đơn | Tổng phần đã cấn của đơn không vượt tiền cọc thực nhận |
 | `departure.booked_stall_count` | Số chỗ đã được đặt (khoang rộng 2 chỗ) | `DepartureService`, cộng khi đặt chỗ, trừ khi nhả chỗ (hủy, từ chối, báo giá hết hạn, loại ngựa). Luôn giữ `SELECT … FOR UPDATE` trên dòng `departure` | `CHECK (booked_stall_count BETWEEN 0 AND stall_capacity)`: DB chặn bán quá chỗ |
 
 Công thức:

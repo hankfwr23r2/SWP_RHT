@@ -59,6 +59,9 @@ public class HubHandoverServiceImpl implements HubHandoverService {
     @Override
     @Transactional
     public HorseStayResponseDto receive(Long horseStayId, HubHandoverRequestDto request, String username) {
+        Long bookingId = stays.findBookingId(horseStayId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lưu trú " + horseStayId));
+        bookings.findForUpdate(bookingId).orElseThrow();
         HorseStay stay = awaitingSelfDropOff(horseStayId);
         Booking booking = stay.getBookingHorse().getBooking();
         // Đầu SELF không có chặng đón: ngựa được ghi vào chặng trục sẽ lên xe ở chính hub này
@@ -103,9 +106,22 @@ public class HubHandoverServiceImpl implements HubHandoverService {
             throw new DispatchRuleException("horseStayId", "Chỉ giao nhận với khách ở lưu trú tập kết hoặc gửi chuồng tại hub.", true);
         }
         Booking booking = stay.getBookingHorse().getBooking();
-        if ((booking.getDeliveryMethod() != TransferMethod.SELF && stay.getStayType() != HorseStayType.STABLING)
+        boolean unpaidAssembly = stay.getStayType() == HorseStayType.ASSEMBLY && booking.getStatus() == BookingStatus.CONFIRMED
+                && bookings.hasReceivedHorses(bookingId) && !outcomes.canBoardAtHub(bookingId);
+        if ((booking.getDeliveryMethod() != TransferMethod.SELF && stay.getStayType() != HorseStayType.STABLING && !unpaidAssembly)
                 || stay.getActualStartAt() == null || stay.getActualEndAt() != null) {
             throw new DispatchRuleException("horseStayId", "Con ngựa này không chờ người nhận tới hub.", true);
+        }
+        if (stay.getBalanceHoldAt() != null || unpaidAssembly) {
+            requireChip(stay, request);
+            var leg = legs.findByBookingHorse_IdOrderBySequenceNumber(stay.getBookingHorse().getId()).stream()
+                    .reduce((first, next) -> next)
+                    .orElseThrow(() -> new DispatchRuleException("horseStayId", "Không tìm thấy chặng gắn với lần nhận ngựa.", true));
+            Instant now = clock.instant();
+            if (unpaidAssembly) outcomes.prepareUnpaidHubReturn(stay, now);
+            Handover handover = record(stay, leg, HandoverType.RETURN, request, username, now);
+            outcomes.atHub(handover, leg, handover.getHandledBy().getUserId());
+            return HorseStayResponseDto.from(stay);
         }
         if (booking.getStatus() != BookingStatus.IN_OPERATION) {
             throw new DispatchRuleException("horseStayId", "Đơn " + booking.getCode() + " không ở trạng thái giao ngựa được.", true);

@@ -1215,14 +1215,13 @@ Các con khác vẫn nhận bình thường. Nếu **không còn con nào** đ�
 
 ### Câu chuyện 3. Quá 30 phút chưa trả số dư
 
-**Bước 13.** Quá 30 phút, tổ lái bấm **Trả ngựa do quá hạn thanh toán**. Khách mở trang VNPAY **trước** khi hết 30 phút mà chưa có kết quả thì hệ thống chờ thêm **5 phút**, trong lúc đó từ chối trả ngựa.
+**Bước 13.** Hệ thống nhắc số dư ở phút 0, 15 và 25. Điều phối gọi khách và người liên hệ khẩn cấp, ghi kết quả. Điều phối có thể gia hạn một lần nếu xe vẫn kịp tới hub và các con khác không vượt thời gian ngồi xe. Khách mở trang VNPAY trước khi hết hạn mà chưa có kết quả thì hệ thống chờ thêm 5 phút.
 
 **Bước 14.** Hệ thống trong một lần bấm:
 
-- ghi trả ngựa cho người gửi (đơn nhập: trả cho đại lý ở cửa khẩu). **Không quét lại chip**, lấy kết quả quét lúc nhận;
-- **hủy đơn**, lý do quá thời gian chờ trả số dư; khách **mất cọc**, gồm cả phần thu hộ;
-- nhả chỗ, hủy các khoản chưa trả, hủy các chặng sau;
-- báo khách và điều phối viên.
+- Nếu còn người nhận lại ở điểm đón, ghi trả ngựa và bàn giao giấy gốc. Dùng kết quả chip lúc nhận. Đơn sang **Cần chọn lại chuyến**, nhả chỗ và hủy các chặng kế hoạch. Số dư vẫn thanh toán được. Hết 30 ngày thì hủy đơn.
+- Nếu không có người nhận lại, điều phối xác nhận đưa ngựa về hub. Đơn nhập từ cửa khẩu vẫn về hub.
+- Tại hub, nhắc T − 3 giờ. Nếu chưa trả, nhả chỗ và gỡ khỏi lượt xe ở T − 1 giờ. Phí giữ tính từ T. Ngựa vẫn được chăm sóc sau khi hủy.
 
 Tiền VNPAY về **sau** khi đơn đã hủy: không ghi vào đơn, báo quản lý để đối soát và hoàn.
 
@@ -1342,7 +1341,7 @@ Dòng hai: loại một con thì bỏ cước trục, dịch vụ và phí bảo
 
 1. **Đã sửa** · Khách thanh toán được cả phí bên CONSIGNEE, với hạn, nhắc quá hạn và chặn gửi đơn mới.
 2. **Đã sửa** · Phí hệ thống tính theo ngày được miễn điều kiện đã hỏi và không chiếm hạn mức khẩn cấp.
-3. **Đã sửa một phần** · Chặn hoàn tất lên xe ở hub khi chưa trả đủ số dư. Còn thiếu lịch giữ, gỡ khỏi chuyến và thao tác trả ngựa tại hub.
+3. **Đã sửa** · Chặn HUB_OUT của đơn chưa trả đủ số dư. T − 1 giờ thì nhả chỗ, gỡ chặng kế hoạch và đóng HUB_OUT còn mở nếu không còn con nào chờ lên xe. Lưu trú giữ có phí, trả ngựa tại hub và các mốc nhắc, hủy, thông báo theo mục 9.
 4. **Đã sửa** · Xe nhập được rời cửa khẩu về hub khi còn đơn chưa trả số dư. Chỉ đơn đã trả đủ mới sang Đang vận chuyển.
 5. **Con sai chip ở điểm đón mà tổ lái không bấm Không nhận**, xe vẫn rời được. Con đó vẫn trong đơn, đơn không bao giờ Đã giao. Sau khi xe rời thì không loại được nữa.
 6. **Mọi con đều bị từ chối** thì đơn vẫn Đã xác nhận, không còn con nào, và báo giá còn phần cước chung. Quản lý hủy thì hoàn **100%** vì tính là công ty hủy. Cần quy tắc: ngựa không đủ điều kiện thì ai chịu.

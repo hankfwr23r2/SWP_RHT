@@ -14,6 +14,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 import lombok.Getter;
@@ -25,6 +26,8 @@ import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 // Khoản phải thu hoặc phải hoàn. Số tiền luôn dương, chiều tiền xác định bằng paymentType.
 @Getter
@@ -77,4 +80,7 @@ public class Payment {
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
     @JoinColumn(name = "refunded_payment_id")
     private Payment refundedPayment;
+
+    @OneToMany(mappedBy = "extraChargePayment")
+    private List<CostItem> extraChargeCosts = new ArrayList<>();
 }

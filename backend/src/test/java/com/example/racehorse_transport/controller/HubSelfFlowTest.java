@@ -11,6 +11,7 @@ import com.example.racehorse_transport.PostgresIntegrationTest;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.security.JwtUtils;
+import com.example.racehorse_transport.service.BalanceHoldService;
 import com.example.racehorse_transport.support.TestData;
 import com.jayway.jsonpath.JsonPath;
 import jakarta.persistence.EntityManager;
@@ -40,6 +41,7 @@ class HubSelfFlowTest {
     @Autowired private JwtUtils jwtUtils;
     @Autowired private LocationRepository locations;
     @Autowired private EntityManager entityManager;
+    @Autowired private BalanceHoldService balanceHolds;
 
     private String coordinator;
     private Staff driverStaff;
@@ -140,6 +142,67 @@ class HubSelfFlowTest {
 
         act(driver, "/trip-stops/" + stops.getFirst() + "/depart").andExpect(status().isOk());
         assertThat(bookingStatus()).isEqualTo("IN_OPERATION");
+    }
+
+    @Test
+    void loadingCutoffIsRepeatableAndClosesAnEmptyHandoverWithoutBlockingReturn() throws Exception {
+        sql("UPDATE booking SET pickup_method = 'SELF', booking_type = 'LOCAL' WHERE id = " + booking);
+        sql("DELETE FROM payment WHERE booking_id = " + booking + " AND payment_type = 'BALANCE'");
+        List<Long> stays = new ArrayList<>();
+        for (long line : lines) stays.add(id(appoint(line, departAt.minusSeconds(4 * 3600))));
+        long trip = linehaulTrip();
+        List<Long> stops = stopIds(trip);
+        for (int i = 0; i < lines.size(); i++) {
+            long line = lines.get(i);
+            assign(trip, line, stops.getFirst(), stops.getLast());
+            receive(stays.get(i), chip(line)).andExpect(status().isOk());
+        }
+        long handover = jdbc.queryForObject("""
+                INSERT INTO handover (handover_type, trip_stop_id, handled_by, status)
+                VALUES ('HUB_OUT', ?, ?, 'PENDING') RETURNING id
+                """, Long.class, stops.getFirst(), escortStaff.getUserId());
+        int stalls = jdbc.queryForObject("SELECT booked_stall_count FROM departure WHERE id = ?", Integer.class, departure);
+        sql("UPDATE departure SET planned_departure_at = now() + interval '30 minutes', booking_cutoff_at = now() WHERE id = " + departure);
+        entityManager.clear();
+
+        balanceHolds.process(booking);
+        entityManager.flush();
+        assertThat(bookingStatus()).isEqualTo("SCHEDULE_CHANGE_REQUIRED");
+        int left = jdbc.queryForObject("SELECT booked_stall_count FROM departure WHERE id = ?", Integer.class, departure);
+        assertThat(left).isLessThan(stalls);
+        balanceHolds.process(booking);
+        entityManager.flush();
+        assertThat(jdbc.queryForObject("SELECT booked_stall_count FROM departure WHERE id = ?", Integer.class, departure)).isEqualTo(left);
+        assertThat(jdbc.queryForObject("SELECT status FROM handover WHERE id = ?", String.class, handover)).isEqualTo("FAILED");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM horse_stay WHERE balance_hold_at IS NOT NULL AND id IN (" + join(stays) + ")",
+                Long.class)).isEqualTo(lines.size());
+
+        deliver(stays.getFirst(), "985000000999999").andExpect(status().isConflict());
+        deliver(stays.getFirst(), chip(lines.getFirst())).andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.balanceHoldAt").isNotEmpty());
+        deliver(stays.getFirst(), chip(lines.getFirst())).andExpect(status().isConflict());
+
+        sql("UPDATE horse_stay SET balance_hold_at = now() - interval '8 days' WHERE id = " + stays.getLast());
+        entityManager.clear();
+        balanceHolds.process(booking);
+        entityManager.flush();
+        assertThat(bookingStatus()).isEqualTo("SCHEDULE_CHANGE_REQUIRED");
+        for (String target : List.of("CUSTOMER", "EMERGENCY_CONTACT", "CUSTOMER")) {
+            jdbc.update("INSERT INTO audit_log (target_table, target_id, action, created_at) VALUES ('booking', ?, ?, clock_timestamp())",
+                    booking, "BALANCE_HOLD_CALL_" + target);
+        }
+        balanceHolds.process(booking);
+        entityManager.flush();
+        assertThat(bookingStatus()).isEqualTo("CANCELLED");
+        assertThat(customerNotices(booking)).containsOnlyOnce("Thông báo bằng văn bản yêu cầu nhận lại ngựa");
+        deliver(stays.getLast(), chip(lines.getLast())).andExpect(status().isOk());
+        deliver(stays.getLast(), chip(lines.getLast())).andExpect(status().isConflict());
+        balanceHolds.process(booking);
+        balanceHolds.process(booking);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM cost_item WHERE horse_stay_id = ?", Long.class, stays.getLast()))
+                .isEqualTo(1L);
+        assertThat(jdbc.queryForObject("SELECT stabling_deposit_credit FROM cost_item WHERE horse_stay_id = ?", java.math.BigDecimal.class,
+                stays.getLast())).isPositive();
     }
 
     @Test

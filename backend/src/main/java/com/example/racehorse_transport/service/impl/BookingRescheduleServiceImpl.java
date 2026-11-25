@@ -13,6 +13,7 @@ import com.example.racehorse_transport.entity.enums.ScheduleChangeCause;
 import com.example.racehorse_transport.exception.BookingRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.BookingSubmissionPolicy;
+import com.example.racehorse_transport.policy.BalanceHoldPolicy;
 import com.example.racehorse_transport.policy.DepartureDecisionPolicy;
 import com.example.racehorse_transport.policy.InsuranceReviewPolicy;
 import com.example.racehorse_transport.policy.StallSeatPolicy;
@@ -59,6 +60,22 @@ public class BookingRescheduleServiceImpl implements BookingRescheduleService {
         if (booking.getStatus() != BookingStatus.SCHEDULE_CHANGE_REQUIRED) {
             throw BookingRuleException.conflict("Chỉ đổi chuyến khi đơn đang chờ chọn lại lịch.");
         }
+        bookings.findReturnedBalanceHoldAt(bookingId).or(() ->
+                history.findFirstByBooking_IdOrderByChangedAtDescIdDesc(bookingId)
+                .filter(row -> BalanceHoldPolicy.RETURNED_AT_PICKUP.equals(row.getReason()))
+                .map(com.example.racehorse_transport.entity.BookingStatusHistory::getChangedAt))
+                .ifPresent(returnedAt -> {
+                    if (BalanceHoldPolicy.reached(clock.instant(), returnedAt, config.getInt("PRICE_HOLD_DAYS"),
+                            java.time.temporal.ChronoUnit.DAYS)) {
+                        throw BookingRuleException.conflict("Đã hết hạn chọn lịch sau khi nhận lại ngựa.");
+                    }
+                    if (bookings.hasUnbilledHoldingReturn(bookingId)) {
+                        throw BookingRuleException.conflict("Phí giữ đang được chốt. Vui lòng kiểm tra lại trước khi chọn lịch đón.");
+                    }
+                    if (bookings.hasOutstandingPickupReturnPayments(bookingId)) {
+                        throw BookingRuleException.conflict("Vui lòng thanh toán đủ số dư và phí giữ trước khi chọn lịch đón lại.");
+                    }
+                });
         // Vận đơn chỉ được cấp sau khi khách đặt cọc.
         boolean deposited = booking.getWaybillNumber() != null;
         LocalDate pickupDate = request.requestedPickupDate();
