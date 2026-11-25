@@ -1,8 +1,10 @@
 // Biểu đồ SVG của báo cáo doanh thu: đường + vùng (doanh thu, chi phí theo ngày hoặc theo tuần).
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { DayPoint } from '@shared/lib/report'
 import s from './Reports.module.css'
+
+// Một điểm trên biểu đồ: một ngày, hoặc một tuần khi kỳ dài hơn 31 ngày
+export interface DayPoint { label: string; at: number; revenue: number; cost: number }
 
 const H = 260, PAD = { l: 52, r: 12, t: 14, b: 28 }
 const nice = (max: number) => { if (max <= 0) return 1; const p = 10 ** Math.floor(Math.log10(max)); return Math.ceil(max / p) * p }

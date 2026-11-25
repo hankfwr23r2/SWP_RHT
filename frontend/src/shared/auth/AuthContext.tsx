@@ -1,6 +1,6 @@
 // Quản lý phiên làm việc người dùng: lưu session trong React State & sessionStorage, kết hợp JWT Token trong localStorage qua apiClient.
 import { createContext, useContext, useState, type ReactNode } from 'react'
-import type { Session } from '../types/role'
+import type { Session } from './role'
 import { readSession, SESSION_KEY as KEY } from './session'
 
 import { tokenStorage } from '../api/client'

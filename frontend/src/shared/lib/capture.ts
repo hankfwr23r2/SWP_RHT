@@ -1,4 +1,14 @@
-import type { CaptureEvidence } from '../types/capture'
+export type CapturePurpose = 'ARRIVE_PICKUP' | 'ARRIVE_CHECKPOINT' | 'UPLOAD_HANDOVER' | 'CUSTOMS_CLEARED' | 'CONFIRM_HOME' | 'TOLL' | 'RETURN_HORSES' | 'STABLE_HANDOVER' | 'EXCLUDE_UNFIT_HORSE' | 'SUBMIT_WELFARE' | 'SOS' | 'EXPENSE'
+export interface CaptureEvidence {
+  id: number
+  url: string
+  tripId: string
+  purpose: CapturePurpose
+  target: string
+  capturedBy: string
+  capturedAt: number
+  recordedAt: number
+}
 
 // Metadata comes from the backend, never inferred from a filename or EXIF.
 const evidence = new Map<string, CaptureEvidence>()

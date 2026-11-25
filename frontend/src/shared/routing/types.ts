@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react'
-import type { Role } from '../types/role'
+import type { Role } from '../auth/role'
 import type { PageLoader } from './pageData'
 
 // Một dòng = một trang: URL, component, vai trò được vào (rỗng = công khai), tiêu đề.
