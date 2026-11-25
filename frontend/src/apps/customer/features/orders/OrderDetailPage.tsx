@@ -29,6 +29,9 @@ import { useOrderData } from './loaders'
 import { useBookingDelay } from './useBookingDelay'
 import s from './Orders.module.css'
 
+// Các lý do khách cần biết khi đơn vốn đổi được nơi giao; loại đơn không áp dụng thì không nhắc tới
+const SHOWN_REASONS = ['BALANCE_PAID', 'DELIVERY_PLANNED', 'LIMIT']
+
 export default function OrderDetailPage() {
   const { t } = useTranslation()
   const data = useOrderData()
@@ -91,7 +94,7 @@ export default function OrderDetailPage() {
           {data.detail?.canChangeDelivery && (
             <Button onClick={() => setChangingDelivery(true)}>{t('myOrders.deliveryChange.title')}</Button>
           )}
-          {data.detail?.deliveryChangeDisabledReason && data.detail.deliveryChangeDisabledReason !== 'NOT_CONFIRMED' && (
+          {data.detail?.deliveryChangeDisabledReason && SHOWN_REASONS.includes(data.detail.deliveryChangeDisabledReason) && (
             <p className={s.hint}>{t(`myOrders.deliveryChange.reasons.${data.detail.deliveryChangeDisabledReason}`)}</p>
           )}
           {changingDelivery && data.detail && <DeliveryChangeDialog id={data.id} detail={data.detail}

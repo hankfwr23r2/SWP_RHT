@@ -330,10 +330,10 @@ export const customer = {
         "SELF": "Khách tự nhận ngựa tại hub.",
         "NOT_CONFIRMED": "Đơn phải ở trạng thái đã xác nhận.",
         "NO_HUB": "Đơn này không có hub giao.",
-        "BALANCE_PAID": "Đơn đã thanh toán số dư.",
+        "BALANCE_PAID": "Không đổi được nơi giao: đơn đã thanh toán số dư.",
         "NO_DEPOSIT": "Đơn chưa thanh toán cọc.",
-        "DELIVERY_PLANNED": "Chặng giao đã được lập hoặc đang chạy.",
-        "LIMIT": "Đơn đã hết số lần đổi nơi giao.",
+        "DELIVERY_PLANNED": "Không đổi được nơi giao: chặng giao đã được lập hoặc đang chạy.",
+        "LIMIT": "Không đổi được nơi giao: đơn đã hết số lần đổi nơi giao.",
         "NO_DESTINATION": "Đơn không có nơi giao đang dùng.",
         "NO_QUOTATION": "Đơn chưa có báo giá đã chấp nhận."
       }

@@ -330,10 +330,10 @@ export const customer = {
         "SELF": "You are collecting the horses at the hub.",
         "NOT_CONFIRMED": "The order must be confirmed.",
         "NO_HUB": "This order has no delivery hub.",
-        "BALANCE_PAID": "The balance has already been paid.",
+        "BALANCE_PAID": "The delivery address cannot be changed: the balance has already been paid.",
         "NO_DEPOSIT": "The deposit has not been paid.",
-        "DELIVERY_PLANNED": "The delivery leg has already been planned or is underway.",
-        "LIMIT": "This order has reached its destination change limit.",
+        "DELIVERY_PLANNED": "The delivery address cannot be changed: the delivery leg has already been planned or is underway.",
+        "LIMIT": "The delivery address cannot be changed: this order has reached its destination change limit.",
         "NO_DESTINATION": "This order has no active delivery destination.",
         "NO_QUOTATION": "There is no accepted quotation."
       }

@@ -15,6 +15,9 @@ export const coordinatorAssignment = {
     point: "Điểm hiện tại",
     horses: "Số ngựa",
     view: "Xem ngựa",
+    onTrip: "Ngựa trên lượt",
+    coordinators: "Điều phối",
+    ownedBy: "Điều phối phụ trách: {{name}}",
     empty: "Chưa có lượt phụ trách",
     emptyHint: "Các lượt được giao sẽ xuất hiện ở đây.",
     horse: "Ngựa",
@@ -27,6 +30,6 @@ export const coordinatorAssignment = {
     yes: "Có",
     no: "Không",
     noHorses: "Chưa có ngựa trên lượt",
-    earlyReason: "Lý do xuất phát sớm",
+    earlyReason: "Lý do xuất phát sớm (chỉ khi đi trước giờ kế hoạch)",
   },
 } as const

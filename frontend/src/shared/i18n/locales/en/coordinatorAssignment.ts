@@ -14,6 +14,9 @@ export const coordinatorAssignment = {
     crew: "Crew",
     point: "Current point",
     horses: "Horses",
+    onTrip: "Horses on this trip",
+    coordinators: "Coordinators",
+    ownedBy: "Coordinator: {{name}}",
     view: "View horses",
     empty: "No assigned trips",
     emptyHint: "Assigned trips will appear here.",
@@ -27,6 +30,6 @@ export const coordinatorAssignment = {
     yes: "Yes",
     no: "No",
     noHorses: "No horses on this trip",
-    earlyReason: "Early start reason",
+    earlyReason: "Reason for leaving early (only before the planned time)",
   },
 } as const

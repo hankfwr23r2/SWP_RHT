@@ -17,8 +17,8 @@ function CoordinatorWorkloads() {
   const { data, error, reload } = useLoad(() => staffWorkloadsApi.list('COORDINATOR'))
   if (!data) return error ? <ErrorState onRetry={reload} /> : <Skeleton lines={3} />
   if (!data.length) return <EmptyState title={t('mgr.assignments.noStaff')} description={t('mgr.assignments.noStaffHint')} />
-  return <Table caption={t('coordAssignment.owner')} rows={data} rowKey={row => String(row.staffId)} columns={[
-    { key: 'name', header: t('coordAssignment.owner'), render: row => row.staffName },
+  return <Table caption={t('coordAssignment.coordinators')} rows={data} rowKey={row => String(row.staffId)} columns={[
+    { key: 'name', header: t('coordAssignment.coordinators'), render: row => row.staffName },
     { key: 'active', header: t('coordAssignment.active'), render: row => row.assignedCount },
     { key: 'late', header: t('coordAssignment.late'), render: row => row.lateTripCount },
     { key: 'incidents', header: t('coordAssignment.incidents'), render: row => row.openIncidentCount },
@@ -55,7 +55,7 @@ export default function AssignmentsPage() {
             <Button size="sm" aria-expanded={selected === row.staffId}
               onClick={() => setSelected(selected === row.staffId ? undefined : row.staffId)}>{t('mgr.assignments.showBookings')}</Button> },
         ]} />}
-    <Card title={t('coordAssignment.owner')}><CoordinatorWorkloads /></Card>
+    <Card title={t('coordAssignment.coordinators')}><CoordinatorWorkloads /></Card>
     {selected != null && person && <Card title={person.staffName}>
       <AssignedBookings key={selected} staffId={selected} onDone={reload} />
     </Card>}
