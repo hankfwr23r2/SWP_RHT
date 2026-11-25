@@ -1,7 +1,7 @@
 import { staffAccountsApi, type StaffAccount, type StaffAccountUpdate } from '@shared/api/staffAccounts'
 import { useCatalogAction } from '@backoffice/shared/useCatalogAction'
 import { useCatalogForm } from '@backoffice/shared/useCatalogForm'
-import { ROLE_LABEL } from '@shared/types/role'
+import { ROLE_LABEL } from '@shared/auth/role'
 
 export const staffRoles = Object.keys(ROLE_LABEL).filter(role => role !== 'customer').map(role => role.toUpperCase())
 
