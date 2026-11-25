@@ -16,6 +16,7 @@ import com.example.racehorse_transport.entity.enums.QuotationStatus;
 import com.example.racehorse_transport.exception.BookingRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.CostPayerPolicy;
+import com.example.racehorse_transport.policy.CustomerDebtPolicy;
 import com.example.racehorse_transport.policy.PaymentPolicy;
 import com.example.racehorse_transport.repository.AppUserRepository;
 import com.example.racehorse_transport.repository.BookingRepository;
@@ -60,7 +61,8 @@ public class ExtraChargeServiceImpl implements ExtraChargeService {
     @Override
     @Transactional(readOnly = true)
     public void requireNoOverdue(Long customerId) {
-        if (payments.hasOverdue(customerId, PaymentType.EXTRA_CHARGE, PaymentStatus.PENDING, clock.instant())) {
+        if (CustomerDebtPolicy.blocksSubmission(payments.findByBooking_Customer_UserIdAndPaymentType(customerId, PaymentType.EXTRA_CHARGE),
+                clock.instant(), BigDecimal.valueOf(configs.getInt("DEBT_BLOCK_MIN_AMOUNT")))) {
             throw BookingRuleException.conflict("Bạn còn khoản thu thêm quá hạn. Vui lòng thanh toán trước khi gửi đơn mới.");
         }
     }
@@ -70,10 +72,13 @@ public class ExtraChargeServiceImpl implements ExtraChargeService {
     public void remindOverdue() {
         var now = clock.instant();
         var startOfDay = LocalDate.ofInstant(now, BUSINESS_ZONE).atStartOfDay(BUSINESS_ZONE).toInstant();
-        for (Long customerId : payments.findCustomersWithOverdue(PaymentType.EXTRA_CHARGE, PaymentStatus.PENDING, now)) {
+        // Nợ khó thu thì ngừng nhắc mỗi ngày
+        var badBefore = now.minus(configs.getInt("DEBT_BAD_DAYS"), ChronoUnit.DAYS);
+        for (Long customerId : payments.findCustomersWithOverdue(PaymentType.EXTRA_CHARGE, PaymentStatus.PENDING, now, badBefore)) {
             users.lockForExtraChargeReminder(customerId);
             if (!recipients.hasNoticeSince(customerId, OVERDUE_TITLE, startOfDay)
-                    && payments.hasOverdue(customerId, PaymentType.EXTRA_CHARGE, PaymentStatus.PENDING, now)) {
+                    && payments.findByBooking_Customer_UserIdAndPaymentType(customerId, PaymentType.EXTRA_CHARGE).stream()
+                            .anyMatch(row -> CustomerDebtPolicy.isOverdue(row, now))) {
                 notifications.notify(List.of(customerId), null, OVERDUE_TITLE,
                         "Bạn có khoản thu thêm quá hạn. Vui lòng kiểm tra và thanh toán trong đơn hàng.", "/orders");
             }
@@ -141,6 +146,7 @@ public class ExtraChargeServiceImpl implements ExtraChargeService {
         payment.setStatus(PaymentStatus.PENDING);
         payment.setCurrencyCode(quotation.getCurrencyCode());
         payment.setAmount(amount);
+        payment.setIssuedAt(clock.instant());
         payment.setDueAt(clock.instant().plus(configs.getInt("EXTRA_CHARGE_DUE_DAYS"), ChronoUnit.DAYS));
         Long paymentId = payments.save(payment).getId();
         linker.linkExtraPayment(costItemIds, paymentId);

@@ -9,6 +9,8 @@ import { ErrorState } from '@shared/ui/ErrorState'
 import { StatusBadge } from '@shared/ui/StatusBadge'
 import { money, moment } from '../format'
 import type { OrderData } from '../loaders'
+import { ReasonDialog } from './ReasonDialog'
+import { useOrderAction } from '../useOrderAction'
 import s from '../Orders.module.css'
 
 const TONE = { PENDING: 'warning', PAID: 'success', FAILED: 'danger', CANCELLED: 'neutral' } as const
@@ -48,7 +50,10 @@ export function PaymentsCard({ data }: { data: OrderData }) {
 
 function PaymentRow({ payment, opening, onPay }: { payment: BookingPayment; opening?: number; onPay: (id: number) => void }) {
   const { t } = useTranslation()
+  const { run, busy, error } = useOrderAction()
+  const [disputing, setDisputing] = useState(false)
   const pending = payment.status === 'PENDING' && payment.type !== 'REFUND'
+  const canDispute = pending && payment.type === 'EXTRA_CHARGE' && !payment.disputedAt
   return (
     <li className={s.item}>
       <div>
@@ -56,12 +61,22 @@ function PaymentRow({ payment, opening, onPay }: { payment: BookingPayment; open
         {payment.paidAt && <p className={s.hint}>{t('myOrders.payments.paidAt', { at: moment(payment.paidAt) })}</p>}
         {pending && payment.dueAt && <p className={s.hint}>{t('myOrders.payments.dueAt', { at: moment(payment.dueAt) })}</p>}
         {pending && payment.confirmationUntil && <p className={s.hint}>{t('myOrders.payments.confirming', { at: moment(payment.confirmationUntil) })}</p>}
+        {payment.disputedAt && !payment.disputeDecision && <p className={s.hint}>{t('myOrders.payments.disputePending')}</p>}
+        {payment.disputeDecision && <p className={s.hint}>{t(`myOrders.payments.dispute.${payment.disputeDecision}`, { response: payment.disputeResponse })}</p>}
         {payment.type === 'REFUND' && payment.status === 'PENDING' && <p className={s.hint}>{t('myOrders.payments.refundPending')}</p>}
       </div>
       <span className={s.amount}>{money(payment.amount, payment.currencyCode)}</span>
       {payment.status && <StatusBadge tone={TONE[payment.status]} label={t(`myOrders.payments.status.${payment.status}`)} />}
       {pending && payment.id != null && (
         <Button variant="primary" loading={opening === payment.id} disabled={opening != null} onClick={() => onPay(payment.id!)}>{t('myOrders.payments.pay')}</Button>
+      )}
+      {canDispute && <Button onClick={() => setDisputing(true)}>{t('myOrders.payments.disputeButton')}</Button>}
+      {disputing && payment.id != null && (
+        <ReasonDialog title={t('myOrders.payments.disputeButton')} message={<p className={s.hint}>{t('myOrders.payments.disputeHint')}</p>}
+          confirmLabel={t('myOrders.payments.disputeButton')} busy={busy} error={error} onCancel={() => setDisputing(false)}
+          onConfirm={async reason => {
+            if (await run(() => bookingPaymentsApi.dispute(payment.id!, reason), t('myOrders.payments.disputeSent'))) setDisputing(false)
+          }} />
       )}
     </li>
   )

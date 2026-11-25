@@ -1154,6 +1154,17 @@ Một đơn có thể có nhiều khoản `BALANCE` đã trả. Service giữ kh
 | `status` | `varchar(30)` | | CK `PENDING, PAID, FAILED, CANCELLED` | |
 | `due_at` | `timestamptz` | có | | |
 | `paid_at` | `timestamptz` | có | | |
+| `issued_at` | `timestamptz` | có | Chỉ `EXTRA_CHARGE` | Lúc lập khoản thu thêm |
+| `extended_at` | `timestamptz` | có | Chỉ `EXTRA_CHARGE` | Đã gia hạn, một lần |
+| `disputed_at` | `timestamptz` | có | Chỉ `EXTRA_CHARGE` | Khách khiếu nại khoản |
+| `dispute_reason` | `varchar(500)` | có | Chỉ `EXTRA_CHARGE` | Có cùng `disputed_at` |
+| `dispute_resolved_at` | `timestamptz` | có | Chỉ `EXTRA_CHARGE` | Có cùng `dispute_decision` |
+| `dispute_decision` | `varchar(20)` | có | Chỉ `EXTRA_CHARGE` | CK `ACCEPTED, REJECTED` |
+| `dispute_response` | `varchar(500)` | có | Chỉ `EXTRA_CHARGE` | Trả lời của quản lý |
+| `written_off_at` | `timestamptz` | có | Chỉ `EXTRA_CHARGE` | Xóa nợ, `status` là `CANCELLED` |
+| `written_off_by` | `bigint` | có | Chỉ `EXTRA_CHARGE` | FK → app_user |
+| `write_off_reason` | `varchar(500)` | có | Chỉ `EXTRA_CHARGE` | Bắt buộc khi xóa nợ |
+| `block_released_at` | `timestamptz` | có | Chỉ `EXTRA_CHARGE` | Quản lý cho đặt đơn lại |
 | `refunded_payment_id` | `bigint` | có | FK → payment | |
 
 Ràng buộc bảng:
@@ -1463,6 +1474,7 @@ Giá trị khởi đầu của các tham số chốt ngày 23/11/2026, thêm b�
 | `EXTRA_CHARGE_DUE_DAYS` | 7 | Hạn khoản thu thêm từ lúc lập, 1–30 ngày |
 | `COST_APPROVAL_REMINDER_1_DAYS`, `_2_DAYS`, `COST_APPROVAL_DAYS` | 3, 7, 14 | Nhắc duyệt chi phí; quá hạn thì công ty chịu |
 | `LATE_INVOICE_DAYS`, `INCIDENT_AUTO_CLOSE_DAYS`, `REFUND_DUE_DAYS` | 30, 7, 7 | Hóa đơn muộn; tự đóng sự cố đã xử lý; hạn chuyển khoản hoàn |
+| `DEBT_CALL_DAYS`, `DEBT_BAD_DAYS`, `DEBT_EXTENSION_MAX_DAYS`, `DEBT_BLOCK_MIN_AMOUNT` | 14, 30, 14, 200.000 đ | Công nợ khoản thu thêm |
 | `STABLING_DAILY_FEE` | 1.000.000 đ | Phí giữ cho mỗi 24 giờ trọn vẹn, phần lẻ không tính |
 | `STABLING_OPEN_HOUR`, `STABLING_CLOSE_HOUR`, `STABLING_MORNING_HOUR` | 6, 18, 8 | Mốc 24 giờ rơi ngoài giờ mở cửa thì dời tới 08:00 |
 | `STABLING_MAX_BLOCKS` | 30 | Số lần 24 giờ tối đa tính phí |

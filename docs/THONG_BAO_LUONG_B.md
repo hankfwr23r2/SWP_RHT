@@ -83,3 +83,7 @@ Chuyên viên ghi số phí bảo hiểm đã hoàn lũy kế theo chứng từ.
 ## Đóng đơn tách khỏi công nợ · mục 13.3, 13.5 (1–5)
 
 `SettlementFollowUpService` chạy 00:30 cùng tự đóng đơn: đóng sự cố Đã xử lý quá 7 ngày, chuyển chi phí quá hạn duyệt cho công ty. `IncidentCostDecisionService.assignPayer` trả về công ty khi quá `LATE_INVOICE_DAYS` sau khi giao.
+
+## Công nợ khoản thu thêm · mục 13.3, 13.5 (6, 8, 9)
+
+`payment` thêm cột công nợ cho `EXTRA_CHARGE` (`V202611282000`). `CustomerDebtService` chạy 08:00 cùng nhắc quá hạn.

@@ -435,6 +435,11 @@ export const customer = {
       rejectMessage: 'We will read your reason and quote again. Your places are kept.',
     },
     payments: {
+      disputeButton: 'Dispute this charge',
+      disputeHint: 'Each charge can be disputed once. The due date is paused while we review, and you can still book.',
+      disputeSent: 'Dispute sent.',
+      disputePending: 'We are reviewing your dispute.',
+      dispute: { ACCEPTED: 'Dispute accepted, the charge was cancelled. {{response}}', REJECTED: 'The charge stands. {{response}}' },
       title: 'Payments',
       pay: 'Pay with VNPAY',
       openError: 'The payment page could not be opened.',

@@ -926,3 +926,9 @@ Chưa làm ở phần này: đồng hồ dừng khi khách báo sẵn sàng, cư
 Đơn đóng khi: số của báo giá đã trả đúng; không còn sự cố, khiếu nại mở; mọi chi phí phía khách bị từ chối hoặc đã duyệt và thành khoản thu; không còn khoản hoàn chờ; và khách xác nhận ổn hoặc đã hết 7 ngày. Khoản thu thêm chưa trả không chặn. Hệ thống tự đóng sau 7 ngày kể cả khi có chi phí.
 
 Chi phí phía khách chưa duyệt: nhắc quản lý ngày 3, 7; đủ 14 ngày sau khi giao thì công ty chịu. Chi phí lập quá 30 ngày sau khi giao thì công ty chịu. Sự cố Đã xử lý quá 7 ngày, không còn chi phí chờ thì tự đóng; sự cố chưa xử lý của đơn đã giao nhắc mỗi ngày. Khoản hoàn có hạn 7 ngày, quá hạn nhắc mỗi ngày.
+
+## Công nợ khoản thu thêm · mục 13.3, 13.5 (6, 8, 9)
+
+Nợ quá hạn từ 200.000 đ thì chưa đặt đơn mới được; nhỏ hơn chỉ nhắc. Khách khiếu nại mỗi khoản một lần: tạm dừng hạn và không chặn tới khi quản lý kết luận (chấp nhận thì hủy khoản, giữ nguyên thì hạn lùi đúng thời gian chờ). Ngày 14 báo quản lý gọi khách, gia hạn một lần tối đa 14 ngày. Ngày 30 là nợ khó thu: ngừng nhắc mỗi ngày, báo khách và quản lý một lần. Xóa nợ chỉ với nợ khó thu, cần lý do và tệp quyết định; quyền đặt đơn do quản lý mở riêng; khách muốn trả sau thì quản lý mở lại khoản.
+
+Chưa làm: chia tối đa 3 kỳ; so nợ theo số điện thoại và chip ngựa (13.5 điểm 7); điều khoản phí lúc đặt đơn (điểm 10).

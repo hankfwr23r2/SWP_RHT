@@ -3140,6 +3140,42 @@
         "required" : [ "countryCode", "customerType", "fullName" ],
         "type" : "object"
       },
+      "DebtDisputeDecisionRequestDto" : {
+        "properties" : {
+          "decision" : {
+            "enum" : [ "ACCEPTED", "REJECTED" ],
+            "type" : "string"
+          },
+          "response" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "decision", "response" ],
+        "type" : "object"
+      },
+      "DebtDisputeRequestDto" : {
+        "properties" : {
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
+        "type" : "object"
+      },
+      "DebtExtensionRequestDto" : {
+        "properties" : {
+          "days" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "days" ],
+        "type" : "object"
+      },
       "DeliveryComplaintResponseDto" : {
         "properties" : {
           "bookingId" : {
@@ -6051,6 +6087,10 @@
           "amount" : {
             "type" : "number"
           },
+          "blockReleasedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
           "bookingId" : {
             "format" : "int64",
             "type" : "integer"
@@ -6062,13 +6102,35 @@
           "currencyCode" : {
             "type" : "string"
           },
+          "disputeDecision" : {
+            "enum" : [ "ACCEPTED", "REJECTED" ],
+            "type" : "string"
+          },
+          "disputeReason" : {
+            "type" : "string"
+          },
+          "disputeResponse" : {
+            "type" : "string"
+          },
+          "disputedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
           "dueAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "extendedAt" : {
             "format" : "date-time",
             "type" : "string"
           },
           "id" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "issuedAt" : {
+            "format" : "date-time",
+            "type" : "string"
           },
           "paidAt" : {
             "format" : "date-time",
@@ -6084,6 +6146,10 @@
           },
           "type" : {
             "enum" : [ "DEPOSIT", "BALANCE", "EXTRA_CHARGE", "REFUND" ],
+            "type" : "string"
+          },
+          "writtenOffAt" : {
+            "format" : "date-time",
             "type" : "string"
           }
         },
@@ -9951,7 +10017,7 @@
     },
     "/bookings/{bookingId}/extend-pickup-payment-wait" : {
       "post" : {
-        "operationId" : "extend",
+        "operationId" : "extend_1",
         "parameters" : [ {
           "in" : "path",
           "name" : "bookingId",
@@ -10941,7 +11007,7 @@
     },
     "/bookings/{id}/insurances/{insuranceId}/reopen" : {
       "post" : {
-        "operationId" : "reopen",
+        "operationId" : "reopen_1",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -12940,6 +13006,217 @@
           }
         },
         "tags" : [ "document-type-controller" ]
+      }
+    },
+    "/extra-charges/{id}/dispute" : {
+      "post" : {
+        "operationId" : "dispute",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DebtDisputeRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePaymentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "customer-debt-controller" ]
+      }
+    },
+    "/extra-charges/{id}/dispute-decision" : {
+      "post" : {
+        "operationId" : "decideDispute",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DebtDisputeDecisionRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePaymentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "customer-debt-controller" ]
+      }
+    },
+    "/extra-charges/{id}/extend" : {
+      "post" : {
+        "operationId" : "extend",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DebtExtensionRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePaymentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "customer-debt-controller" ]
+      }
+    },
+    "/extra-charges/{id}/release-block" : {
+      "post" : {
+        "operationId" : "releaseBlock",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePaymentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "customer-debt-controller" ]
+      }
+    },
+    "/extra-charges/{id}/reopen" : {
+      "post" : {
+        "operationId" : "reopen",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePaymentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "customer-debt-controller" ]
+      }
+    },
+    "/extra-charges/{id}/write-off" : {
+      "post" : {
+        "operationId" : "writeOff",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "properties" : {
+                  "decision" : {
+                    "format" : "binary",
+                    "type" : "string"
+                  },
+                  "request" : {
+                    "$ref" : "#/components/schemas/DebtDisputeRequestDto"
+                  }
+                },
+                "required" : [ "decision", "request" ],
+                "type" : "object"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePaymentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "customer-debt-controller" ]
       }
     },
     "/handovers/{id}/complete" : {

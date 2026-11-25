@@ -193,3 +193,7 @@ Thẻ chọn lại chuyến ẩn với đơn chạy thẳng; khách chọn **ng�
 ## Đóng đơn tách khỏi công nợ · mục 13.3, 13.5 (1–5)
 
 Quyết toán: nút đóng đơn theo `canClose` của máy chủ, không theo số còn nợ.
+
+## Công nợ khoản thu thêm · mục 13.3, 13.5 (6, 8, 9)
+
+Khách: nút **Khiếu nại khoản này** ở khoản thu thêm chưa trả. Quản lý: ở khoản thu của đơn có kết luận khiếu nại, gia hạn, xóa nợ, mở lại khoản, cho đặt đơn lại; mọi thao tác ghi `audit_log`.
