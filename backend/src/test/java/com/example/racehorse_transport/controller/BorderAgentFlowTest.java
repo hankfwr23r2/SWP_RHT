@@ -368,8 +368,10 @@ class BorderAgentFlowTest {
     }
 
     private void acknowledge() throws Exception {
-        long assignment = ((Number) JsonPath.read(content(get("/crew-assignments/mine"), driver), "$.data[0].id")).longValue();
-        act(driver, "/crew-assignments/" + assignment + "/acknowledge").andExpect(status().isOk());
+        for (String member : List.of(driver, escort)) {
+            long assignment = ((Number) JsonPath.read(content(get("/crew-assignments/mine"), member), "$.data[0].id")).longValue();
+            act(member, "/crew-assignments/" + assignment + "/acknowledge").andExpect(status().isOk());
+        }
     }
 
     private List<Long> stopIds(long trip) throws Exception {

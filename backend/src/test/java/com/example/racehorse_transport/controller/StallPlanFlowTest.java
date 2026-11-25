@@ -110,11 +110,16 @@ class StallPlanFlowTest {
     void planIsLockedOnceTheVehicleDeparts() throws Exception {
         assign(lines.get(0)).andExpect(status().isCreated());
         long standard = legOf(lines.get(0));
-        mvc.perform(post("/vehicle-trips/{id}/crew-assignments", trip).header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"staffId\":%d,\"crewRole\":\"DRIVER\"}".formatted(driverStaff.getUserId()))).andExpect(status().isCreated());
-        long assignment = ((Number) JsonPath.read(mvc.perform(get("/crew-assignments/mine").header(HttpHeaders.AUTHORIZATION, driver))
-                .andReturn().getResponse().getContentAsString(), "$.data[0].id")).longValue();
-        mvc.perform(post("/crew-assignments/{id}/acknowledge", assignment).header(HttpHeaders.AUTHORIZATION, driver)).andExpect(status().isOk());
+        Staff escortStaff = testData.staff(testData.unique("stall.escort"), "ESCORT");
+        for (Staff member : List.of(driverStaff, escortStaff)) {
+            String role = member == driverStaff ? "DRIVER" : "ESCORT";
+            mvc.perform(post("/vehicle-trips/{id}/crew-assignments", trip).header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"staffId\":%d,\"crewRole\":\"%s\"}".formatted(member.getUserId(), role))).andExpect(status().isCreated());
+            String crewToken = token(member, role);
+            long assignment = ((Number) JsonPath.read(mvc.perform(get("/crew-assignments/mine").header(HttpHeaders.AUTHORIZATION, crewToken))
+                    .andReturn().getResponse().getContentAsString(), "$.data[0].id")).longValue();
+            mvc.perform(post("/crew-assignments/{id}/acknowledge", assignment).header(HttpHeaders.AUTHORIZATION, crewToken)).andExpect(status().isOk());
+        }
         // Quy tắc #40: còn con chưa có vị trí (chặng lập trước khi có sơ đồ) thì chưa xuất phát
         entityManager.flush();
         jdbc.update("UPDATE horse_leg SET stall_position = NULL WHERE id = ?", standard);

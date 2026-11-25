@@ -18,9 +18,12 @@ import jakarta.persistence.EntityManager;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
@@ -75,6 +78,34 @@ class HorseLegFlowTest {
                 .andExpect(jsonPath("$.data[0].leg.sequenceNumber").value(1));
         assign(trip, seed.horses().getFirst(), stops.get(1), stops.get(2)).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Ngựa đã có trên lượt xe này."));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"PICKUP, 5, 0", "PICKUP, 5, 1", "DIRECT, 10, 0", "DIRECT, 10, 1"})
+    void plannedRideIncludesTimeAtIntermediateStops(String type, int limitHours, int minutesOver) throws Exception {
+        boolean direct = "DIRECT".equals(type);
+        Seed seed = seed(direct ? "DEV-DIRECT-001" : "DEV-DOMESTIC-001");
+        Seed other = seed(direct ? "DEV-DOMESTIC-001" : "DEV-DIRECT-001");
+        Instant start = direct ? seed.pickupDate().atTime(1, 0).toInstant(java.time.ZoneOffset.UTC)
+                : seed.departureAt().minusSeconds(12 * 3600);
+        int alightMinute = 90 + limitHours * 60 + minutesOver;
+        var plan = new ArrayList<>(List.of(stop(hcm, "HUB", start, 0), address(seed.pickup(), "PICKUP", start, 60),
+                address(other.pickup(), "PICKUP", start, alightMinute - 90),
+                direct ? address(seed.delivery(), "DELIVERY", start, alightMinute) : stop(hcm, "HUB", start, alightMinute)));
+        if (direct) {
+            plan.add(stop(hcm, "HUB", start, alightMinute + 60));
+        }
+        long trip = tripId(createTrip(testData.vehicle(4, 0), type, plan.toArray(String[]::new)));
+        List<Long> stops = stopIds(trip);
+
+        var result = assign(trip, seed.horses().getFirst(), stops.get(1), stops.get(3));
+        if (minutesOver == 0) {
+            result.andExpect(status().isCreated());
+        } else {
+            result.andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.data.alightTripStopId")
+                            .value("Ngựa ngồi xe quá " + limitHours + " giờ theo kế hoạch. Bỏ bớt điểm hoặc tách lượt."));
+        }
     }
 
     @Test
@@ -259,7 +290,7 @@ class HorseLegFlowTest {
         // Sau chặng đón con ngựa ở HUB-HCM, không bắt đầu chặng giao ở HUB-DN được
         Instant later = seed.departureAt().plusSeconds(3 * 24 * 3600);
         Vehicle atDanang = testData.vehicle(4, 0);
-        long toDanang = tripId(createTrip(atDanang, "TRANSFER", stop(hcm, "HUB", later, 0), stop(danang, "HUB", later, 900)));
+        long toDanang = tripId(createTrip(atDanang, "TRANSFER", stop(hcm, "HUB", later, 0), stop(danang, "HUB", later, 300)));
         long delivery = tripId(createTrip(atDanang, "DELIVERY", stop(danang, "HUB", later, 960),
                 address(seed.delivery(), "DELIVERY", later, 1020), stop(danang, "HUB", later, 1200)));
         List<Long> deliveryStops = stopIds(delivery);

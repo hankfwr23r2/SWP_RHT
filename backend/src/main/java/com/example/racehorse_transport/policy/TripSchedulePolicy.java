@@ -96,10 +96,16 @@ public final class TripSchedulePolicy {
         return direct ? day : day / 2;
     }
 
-    public static void requireMultiPlaceWindow(Instant board, Instant alight, List<Interval> stops, Rules rules) {
-        if (Duration.between(board, alight).getSeconds() > rideLimitSeconds(false, rules)) {
-            throw new DispatchRuleException("alightTripStopId", "Thời gian trên xe của ngựa vượt giới hạn một chiều.", true);
+    public static void requirePlannedRideWithinLimit(Instant board, Instant alight, boolean direct, Rules rules) {
+        long limit = rideLimitSeconds(direct, rules);
+        if (Duration.between(board, alight).compareTo(Duration.ofSeconds(limit)) > 0) {
+            String limitHours = hours(limit).replaceFirst(",0$", "");
+            throw new DispatchRuleException("alightTripStopId", "Ngựa ngồi xe quá " + limitHours
+                    + " giờ theo kế hoạch. Bỏ bớt điểm hoặc tách lượt.", true);
         }
+    }
+
+    public static void requireMultiPlaceDrivingLimit(List<Interval> stops, Rules rules) {
         long driving = drivingByDay(List.of(stops), ZoneId.of("Asia/Ho_Chi_Minh"), rules).values()
                 .stream().mapToLong(Long::longValue).sum();
         if (driving > rideLimitSeconds(true, rules)) {

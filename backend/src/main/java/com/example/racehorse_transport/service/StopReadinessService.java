@@ -7,5 +7,6 @@ public interface StopReadinessService {
 
     boolean isPaidInFullForDeparture(Long bookingId);
 
-    void requireCanLeave(TripStop stop, String earlyReason, Long actorUserId);
+    // Trả về true khi xe được phép rời sớm ở điểm nghỉ đêm.
+    boolean requireCanLeave(TripStop stop, String earlyReason, Long actorUserId);
 }

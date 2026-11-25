@@ -133,6 +133,19 @@ class TripExecutionFlowTest {
     }
 
     @Test
+    void tripWithHorsesNeedsAnAcknowledgedEscort() throws Exception {
+        makeLocal();
+        acknowledge(driver);
+
+        act(driver, "/vehicle-trips/" + trip + "/start").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Lượt chở ngựa phải có hộ tống đã nhận việc."));
+
+        acknowledge(escort);
+        act(driver, "/vehicle-trips/" + trip + "/start").andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.trip.status").value("IN_PROGRESS"));
+    }
+
+    @Test
     void crewRunsTheWholeDirectTrip() throws Exception {
         // Đơn nội tỉnh không cần giấy bắt buộc (DocumentCompletenessService của luồng A); ca thiếu giấy ở test riêng
         makeLocal();
@@ -140,6 +153,7 @@ class TripExecutionFlowTest {
         act(driver, "/vehicle-trips/" + trip + "/start").andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Tài xế chưa xác nhận nhận việc."));
         acknowledge(driver);
+        acknowledge(escort);
         act(driver, "/vehicle-trips/" + trip + "/start").andExpect(status().isOk()).andExpect(jsonPath("$.data.trip.status").value("IN_PROGRESS"));
 
         // Đi theo thứ tự điểm dừng
@@ -221,6 +235,7 @@ class TripExecutionFlowTest {
         jdbc.update("DELETE FROM payment WHERE booking_id = ? AND payment_type = 'BALANCE'", booking);
         entityManager.clear();
         acknowledge(driver);
+        acknowledge(escort);
         act(driver, "/vehicle-trips/" + trip + "/start").andExpect(status().isOk());
         act(driver, "/trip-stops/" + stops.get(0) + "/arrive").andExpect(status().isOk());
         act(driver, "/trip-stops/" + stops.get(0) + "/depart").andExpect(status().isOk());
@@ -276,14 +291,18 @@ class TripExecutionFlowTest {
         Instant start = jdbc.queryForObject("SELECT planned_departure_at FROM departure d JOIN booking b ON b.departure_id = d.id WHERE b.id = ?",
                 java.sql.Timestamp.class, domestic).toInstant().minusSeconds(10 * 3600);
         Staff driverStaff = testData.staff(testData.unique("exec.driver2"), "DRIVER");
+        Staff escortStaff = testData.staff(testData.unique("exec.escort2"), "ESCORT");
         String driver2 = token(driverStaff, "DRIVER");
         long pickupTrip = id(mvc.perform(post("/vehicle-trips").header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"tripType\":\"PICKUP\",\"vehicleId\":%d,\"stops\":[%s,%s,%s]}".formatted(testData.vehicle(2, 0).getId(),
                         stop("locationId", hcm, "HUB", start, 0), stop("bookingAddressId", pickup, "PICKUP", start, 60), stop("locationId", hcm, "HUB", start, 240)))));
         List<Long> pickupStops = ((List<Number>) JsonPath.read(content(get("/vehicle-trips/" + pickupTrip), coordinator), "$.data.stops[*].id"))
                 .stream().map(Number::longValue).toList();
-        mvc.perform(post("/vehicle-trips/{id}/crew-assignments", pickupTrip).header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"staffId\":%d,\"crewRole\":\"DRIVER\"}".formatted(driverStaff.getUserId()))).andExpect(status().isCreated());
+        for (Staff member : List.of(driverStaff, escortStaff)) {
+            mvc.perform(post("/vehicle-trips/{id}/crew-assignments", pickupTrip).header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"staffId\":%d,\"crewRole\":\"%s\"}".formatted(member.getUserId(), member == driverStaff ? "DRIVER" : "ESCORT")))
+                    .andExpect(status().isCreated());
+        }
         for (long line : lines) {
             mvc.perform(post("/vehicle-trips/{id}/horse-legs", pickupTrip).header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
                     .content("{\"bookingHorseId\":%d,\"boardTripStopId\":%d,\"alightTripStopId\":%d}".formatted(line, pickupStops.get(1), pickupStops.get(2))))
@@ -293,6 +312,7 @@ class TripExecutionFlowTest {
         jdbc.update("UPDATE booking SET booking_type = 'LOCAL' WHERE id = ?", domestic);
         entityManager.clear();
         acknowledge(driver2);
+        acknowledge(token(escortStaff, "ESCORT"));
         act(driver2, "/vehicle-trips/" + pickupTrip + "/start").andExpect(status().isOk());
         act(driver2, "/trip-stops/" + pickupStops.get(0) + "/arrive").andExpect(status().isOk());
         act(driver2, "/trip-stops/" + pickupStops.get(0) + "/depart").andExpect(status().isOk());
@@ -354,6 +374,7 @@ class TripExecutionFlowTest {
     void refusingTheOnlyHorseEndsThePickupAndTheVehicleLeaves() throws Exception {
         makeLocal();
         acknowledge(driver);
+        acknowledge(escort);
         act(driver, "/vehicle-trips/" + trip + "/start").andExpect(status().isOk());
         act(driver, "/trip-stops/" + stops.get(0) + "/arrive").andExpect(status().isOk());
         act(driver, "/trip-stops/" + stops.get(0) + "/depart").andExpect(status().isOk());
@@ -371,6 +392,7 @@ class TripExecutionFlowTest {
     @Test
     void tripDoesNotStartWhileDocumentsAreMissing() throws Exception {
         acknowledge(driver);
+        acknowledge(escort);
         act(driver, "/vehicle-trips/" + trip + "/start").andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Đơn DEV-DIRECT-001 còn thiếu giấy tờ bắt buộc."));
         assertThat(jdbc.queryForObject("SELECT status FROM vehicle_trip WHERE id = ?", String.class, trip)).isEqualTo("PLANNED");
@@ -380,6 +402,7 @@ class TripExecutionFlowTest {
     void tripDoesNotStartWhileInsuranceIsNotConfirmed() throws Exception {
         makeLocal();
         acknowledge(driver);
+        acknowledge(escort);
         entityManager.flush();
         jdbc.update("UPDATE horse_insurance SET status = 'DRAFT', confirmed_by = NULL, confirmed_at = NULL WHERE booking_horse_id = (SELECT booking_horse_id FROM horse_leg WHERE id = ?)", leg);
         entityManager.clear();
@@ -403,6 +426,7 @@ class TripExecutionFlowTest {
                 .thenAnswer(call -> java.util.Map.of("secure_url", "https://cdn.example/"
                         + call.<java.util.Map<?, ?>>getArgument(1).get("public_id") + ".jpg"));
         acknowledge(driver);
+        acknowledge(escort);
         act(driver, "/vehicle-trips/" + trip + "/start").andExpect(status().isOk());
         act(driver, "/trip-stops/" + stops.get(0) + "/arrive").andExpect(status().isOk());
         act(driver, "/trip-stops/" + stops.get(0) + "/depart").andExpect(status().isOk());
@@ -466,6 +490,7 @@ class TripExecutionFlowTest {
     void escortIsReplacedMidwayOnlyAfterTheNewOneSignsTheShift() throws Exception {
         makeLocal();
         acknowledge(driver);
+        acknowledge(escort);
         act(driver, "/vehicle-trips/" + trip + "/start").andExpect(status().isOk());
         act(driver, "/trip-stops/" + stops.get(0) + "/arrive").andExpect(status().isOk());
         act(driver, "/trip-stops/" + stops.get(0) + "/depart").andExpect(status().isOk());

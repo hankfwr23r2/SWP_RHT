@@ -1,7 +1,6 @@
 package com.example.racehorse_transport.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -20,6 +19,8 @@ import java.time.ZoneOffset;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
@@ -92,6 +93,64 @@ class HealthStayFlowTest {
         entityManager.flush();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM audit_log WHERE action = 'LEAVE_REST_STOP_EARLY' AND target_id = ?", Integer.class, stops.get(2)))
                 .isEqualTo(1);
+        assertThat(earlyOvernightNotices()).isEmpty();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"REST", "VITAL_CHECK"})
+    void leavingAnOvernightRestEarlyRequiresAReasonAndAlertsCoordinators(String stopType) throws Exception {
+        long stopId = arriveAtOvernightStop(stopType, 480, 7);
+        act("/trip-stops/" + stopId + "/depart").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.data.earlyReason").value("Chưa nghỉ đủ 8 giờ. Rời sớm phải ghi lý do."));
+        assertThat(earlyOvernightNotices()).isEmpty();
+
+        String reason = "Di chuyển khỏi trạm do ngập đường";
+        mvc.perform(post("/trip-stops/{id}/depart", stopId).header(HttpHeaders.AUTHORIZATION, escort)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"earlyReason\":\"%s\"}".formatted(reason)))
+                .andExpect(status().isOk());
+
+        entityManager.flush();
+        String tripCode = jdbc.queryForObject("""
+                SELECT t.code FROM vehicle_trip t JOIN trip_stop s ON s.vehicle_trip_id = t.id WHERE s.id = ?
+                """, String.class, stopId);
+        assertThat(earlyOvernightNotices()).singleElement().asString().contains(tripCode, reason);
+        assertThat(jdbc.queryForObject("""
+                SELECT new_data->>'reason' FROM audit_log WHERE action = 'LEAVE_REST_STOP_EARLY' AND target_id = ?
+                """, String.class, stopId)).isEqualTo(reason);
+    }
+
+    @Test
+    void overnightVitalCheckCanDepartAfterRestingTheConfiguredHours() throws Exception {
+        long stopId = arriveAtOvernightStop("VITAL_CHECK", 510, 8);
+
+        act("/trip-stops/" + stopId + "/depart").andExpect(status().isOk());
+        assertThat(earlyOvernightNotices()).isEmpty();
+    }
+
+    private long arriveAtOvernightStop(String type, int plannedRestMinutes, int actualRestHours) throws Exception {
+        // Dùng ngưỡng 8 giờ để lượt chạy thẳng vẫn nằm trong giới hạn ngồi xe.
+        jdbc.update("UPDATE system_config SET config_value = '8' WHERE config_key = 'OVERNIGHT_REST_HOURS'");
+        long rest = locations.findByCode("REST-PHANTHIET").orElseThrow().getId();
+        List<Long> stops = runToPickupAndLeave("DIRECT", List.of(
+                stop("locationId", hcm, "HUB", 0), stop("bookingAddressId", pickup, "PICKUP", 60),
+                stop("locationId", rest, type, 120, plannedRestMinutes),
+                stop("bookingAddressId", delivery, "DELIVERY", 660), stop("locationId", hcm, "HUB", 720)), 2);
+        long stopId = stops.get(2);
+        act("/trip-stops/" + stopId + "/arrive").andExpect(status().isOk());
+        log(stopId, null, "NORMAL", "NORMAL", "NORMAL").andExpect(status().isCreated());
+        entityManager.flush();
+        jdbc.update("UPDATE trip_stop SET actual_arrival_at = clock_timestamp() - make_interval(hours => ?) WHERE id = ?",
+                actualRestHours, stopId);
+        entityManager.clear();
+        return stopId;
+    }
+
+    private List<String> earlyOvernightNotices() {
+        entityManager.flush();
+        return jdbc.queryForList("""
+                SELECT n.message FROM notification_recipient r JOIN notification n ON n.id = r.notification_id
+                WHERE r.user_id = ? AND n.title = 'Rời điểm nghỉ đêm sớm'
+                """, String.class, coordinatorStaff.getUserId());
     }
 
     @Test
@@ -227,9 +286,11 @@ class HealthStayFlowTest {
         mvc.perform(post("/vehicle-trips/{id}/horse-legs", trip).header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"bookingHorseId\":%d,\"boardTripStopId\":%d,\"alightTripStopId\":%d}".formatted(line, stops.get(1), alight))).andExpect(status().isCreated());
         String driver = token(driverStaff, "DRIVER");
-        String mine = mvc.perform(get("/crew-assignments/mine").header(HttpHeaders.AUTHORIZATION, driver)).andReturn().getResponse().getContentAsString();
-        mvc.perform(post("/crew-assignments/{id}/acknowledge", ((Number) JsonPath.read(mine, "$.data[0].id")).longValue()).header(HttpHeaders.AUTHORIZATION, driver))
-                .andExpect(status().isOk());
+        for (String member : List.of(driver, escort)) {
+            String mine = mvc.perform(get("/crew-assignments/mine").header(HttpHeaders.AUTHORIZATION, member)).andReturn().getResponse().getContentAsString();
+            mvc.perform(post("/crew-assignments/{id}/acknowledge", ((Number) JsonPath.read(mine, "$.data[0].id")).longValue()).header(HttpHeaders.AUTHORIZATION, member))
+                    .andExpect(status().isOk());
+        }
         act("/vehicle-trips/" + trip + "/start").andExpect(status().isOk());
         act("/trip-stops/" + stops.get(0) + "/arrive").andExpect(status().isOk());
         act("/trip-stops/" + stops.get(0) + "/depart").andExpect(status().isOk());
@@ -270,8 +331,12 @@ class HealthStayFlowTest {
     }
 
     private String stop(String key, long id, String type, int minutes) {
+        return stop(key, id, type, minutes, 30);
+    }
+
+    private String stop(String key, long id, String type, int minutes, int dwellMinutes) {
         String at = start.plusSeconds(60L * minutes).toString();
-        String leave = start.plusSeconds(60L * (minutes + 30)).toString();
+        String leave = start.plusSeconds(60L * (minutes + dwellMinutes)).toString();
         return "{\"%s\":%d,\"stopType\":\"%s\",\"plannedArrivalAt\":\"%s\",\"plannedDepartureAt\":\"%s\"}".formatted(key, id, type, at, leave);
     }
 

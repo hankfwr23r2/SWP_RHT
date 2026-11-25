@@ -50,8 +50,8 @@ Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A
 | Điểm | Đang thế nào | Gợi ý (chưa duyệt) | Xem ở | Lưu ý |
 |---|---|---|---|---|
 | **3.G4** | Không sửa được giờ, xe của lượt đã lập | Cho sửa khi lượt chưa chạy, kiểm lại mọi quy tắc, báo tổ lái và khách | `DispatchServiceImpl`, `TripScheduleServiceImpl` | Phối hợp đợt 4 (thông báo) |
-| **3.G6** | Chỉ cần một tài xế nhận việc là xe chạy, không bắt buộc hộ tống | Bắt buộc có hộ tống đã nhận việc khi chở ngựa | `TripExecutionPolicy`, `TripExecutionServiceImpl` | 1b đã gộp, làm được |
-| **3.G7** | Nhập giờ tay không kiểm 5 giờ ngồi xe | Dùng chung quy tắc với lượt hệ thống tính giờ | `TripSchedulePolicy`, `DispatchPolicy` | |
+| **3.G6** | **Đã sửa.** Lượt chở ngựa phải có hộ tống đã nhận việc mới xuất phát được; lượt chạy rỗng không cần | | `TripExecutionPolicy`, `TripExecutionServiceImpl` | |
+| **3.G7** | **Đã sửa.** Xếp ngựa vào lượt đón, giao nhập giờ tay cũng kiểm thời gian ngồi xe theo kế hoạch: tối đa nửa giới hạn lái mỗi ngày (5 giờ), chạy thẳng tối đa 10 giờ | | `HorseLegServiceImpl`, `TripSchedulePolicy` | |
 | **3.G8** | Khách tự chở chỉ bị kiểm trước giờ chạy, không kiểm hạn có mặt 3 giờ | Giờ hẹn phải trước hạn có mặt ở hub | `HorseStayServiceImpl` (`planSelfDropOff`) | 1b đã gộp, làm được |
 | **3.G9** | Chưa có nút dồn chuyến, chạy xe nhỏ hơn, một khách thuê cả chuyến | Chọn phần thật sự cần; tài liệu có nêu | `DepartureDecisionServiceImpl` | **Chờ** đợt 5 |
 | **3.G10** | Đưa xe về phải nhờ quản lý xác nhận chuyến không có ngựa | Điều phối tự lập lượt về rỗng, không gắn chuyến bán | `DispatchServiceImpl` | THONG_BAO_LUONG_B đã nêu "vẫn lập lượt về rỗng" |
@@ -64,7 +64,7 @@ Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A
 | **4.F1** | Không có màn ghi sức khỏe ở hub, chuồng; ngựa ở hub luôn bị tô Trễ khám | Thêm màn ghi, máy chủ đã nhận | `HealthLogServiceImpl`, màn Theo dõi | Ưu tiên. Màn Hub **chờ** 1b |
 | **4.F2** | Chỉ dẫn ăn uống của khách không hiện cho tổ lái | Hiện chỉ dẫn và số bữa từng con ở màn lượt xe | `booking_horse` (chỉ dẫn, số bữa), `TripRunPage` | Ưu tiên. Màn **chờ** 1b |
 | **4.F3** | Khách không xem được nhật ký sức khỏe | Hiện trong hành trình từng con, chỉ chủ đơn | `TrackingServiceImpl`, `HorseJourney` | Giống cách 3a hiện biên bản |
-| **4.F6** | Điểm nghỉ đêm 10 giờ chỉ bị kiểm 30 phút | Kiểm theo thời gian dừng kế hoạch của điểm; rời sớm phải có lý do và báo điều phối | `StopReadinessServiceImpl`, `HealthLogPolicy` | 1b đã gộp, làm được. Ưu tiên |
+| **4.F6** | **Đã sửa.** Điểm có giờ dừng kế hoạch từ OVERNIGHT_REST_HOURS trở lên phải nghỉ đủ số giờ đó; rời sớm phải ghi lý do và hệ thống báo điều phối | | `StopReadinessServiceImpl`, `HealthLogPolicy` | |
 | **4.F10** | Chưa báo tình trạng xe khi về trụ sở | Tài xế chọn bình thường hoặc cần bảo dưỡng khi kết thúc lượt | `TripExecutionServiceImpl`, `VehicleServiceImpl` | 1b đã gộp, làm được. Làm cùng 5.G16 |
 | **4.F11** | Không có vị trí xe thời gian thực | Cân nhắc bỏ khỏi phạm vi; hiện dùng điểm dừng gần nhất | màn Theo dõi | Hỏi người dùng trước |
 | **4.F12** | Giấy không kiểm ở cửa khẩu đơn xuất | Như 2.F7 | | Trùng 2.F7, làm một lần |
@@ -94,8 +94,10 @@ Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A
 | 1.F5 | | | |
 | 2.F2, 2.F5, 2.F7, 2.F8, 2.F9, 2.F10 | | | |
 | 2.F4 | Cập nhật và xác nhận bảo hiểm mua hộ khi đơn Đang báo giá | Đã duyệt | |
-| 3.G4, 3.G6, 3.G7, 3.G8, 3.G9, 3.G10, 3.G11 | | | |
-| 4.F1, 4.F2, 4.F3, 4.F6, 4.F10, 4.F11, 4.F12 | | | |
+| 3.G4, 3.G8, 3.G9, 3.G10, 3.G11 | | | |
+| 3.G6, 3.G7 | Bắt buộc hộ tống đã nhận việc; kiểm giờ ngồi xe khi nhập giờ tay | Đã duyệt | |
+| 4.F1, 4.F2, 4.F3, 4.F10, 4.F11, 4.F12 | | | |
+| 4.F6 | Điểm nghỉ đêm phải nghỉ đủ OVERNIGHT_REST_HOURS, rời sớm ghi lý do và báo điều phối | Đã duyệt | |
 | 5.G14, 5.G15, 5.G16, 5.G17, 5.G18, 5.G22 | | | |
 | 5.G5 | Lượt đón, giao, chạy thẳng phải kết thúc ở hub | Đã duyệt | |
 | 6.G15 | | | |
