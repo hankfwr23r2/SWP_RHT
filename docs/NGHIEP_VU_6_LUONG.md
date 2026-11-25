@@ -1054,7 +1054,7 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 ### Xử lý xong và đóng
 
 - **5.15** Sự cố sức khỏe hoặc sự cố của một con: phải có xác nhận đủ sức mới báo xử lý xong. Sự cố khác thì không cần.
-- **5.16** Chưa có phương án được duyệt thì không báo xử lý xong được. Chỉ đóng được sự cố đã xử lý.
+- **5.16** Chưa có phương án được duyệt thì không báo xử lý xong được. Chỉ đóng được sự cố đã xử lý. **Riêng giao hụt:** con ngựa giao lại xong, người nhận tự nhận ở hub, hoặc đã trả, thì hệ thống tự đóng, không cần phương án. Còn chi phí chưa duyệt thì chỉ chuyển Đã xử lý.
 - **5.17** Sự cố của một con chặn quyết toán **đơn của con đó**. Sự cố cả lượt chặn quyết toán **mọi đơn có ngựa trên lượt**.
 
 ### Chi phí
