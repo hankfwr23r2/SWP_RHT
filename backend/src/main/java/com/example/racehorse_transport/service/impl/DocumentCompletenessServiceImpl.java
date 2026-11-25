@@ -12,8 +12,9 @@ import com.example.racehorse_transport.policy.DocumentCompletenessPolicy;
 import com.example.racehorse_transport.repository.*;
 import com.example.racehorse_transport.service.DocumentCompletenessService;
 import com.example.racehorse_transport.service.RegulationService;
-import java.time.Clock;
 import static com.example.racehorse_transport.policy.BookingSubmissionPolicy.businessDate;
+import java.time.Clock;
+import java.util.Set;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -32,15 +33,22 @@ public class DocumentCompletenessServiceImpl implements DocumentCompletenessServ
 
     @Override
     public boolean isComplete(Long bookingId) {
-        return isComplete(bookingId, null);
+        return isComplete(bookingId, null, null);
     }
 
     @Override
     public boolean isCompleteForQuoting(Long bookingId) {
-        return isComplete(bookingId, DocumentSubmitter.CUSTOMER);
+        return isComplete(bookingId, DocumentSubmitter.CUSTOMER, null);
     }
 
-    private boolean isComplete(Long bookingId, DocumentSubmitter submitter) {
+    @Override
+    public Set<DocumentSubmitter> missingSubmitters(Long bookingId) {
+        Set<DocumentSubmitter> missing = java.util.EnumSet.noneOf(DocumentSubmitter.class);
+        isComplete(bookingId, null, missing);
+        return missing;
+    }
+
+    private boolean isComplete(Long bookingId, DocumentSubmitter submitter, Set<DocumentSubmitter> missing) {
         Booking booking = bookings.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn."));
         if (booking.getBookingType() == BookingType.LOCAL) {
@@ -49,9 +57,16 @@ public class DocumentCompletenessServiceImpl implements DocumentCompletenessServ
         RegulationPreviewResponseDto resolved = resolve(booking);
         List<BookingHorse> active = horses.findForDetail(bookingId).stream()
                 .filter(horse -> horse.getStatus() == BookingHorseStatus.ACTIVE).toList();
+        var rows = documents.findForBookingReview(bookingId);
+        var requiredOn = DocumentCompletenessPolicy.requiredOn(booking, businessDate(clock.instant()));
+        if (missing != null) {
+            resolved.requirements().stream().map(requirement -> requirement.submitterType()).distinct()
+                    .filter(side -> !DocumentCompletenessPolicy.isComplete(
+                            bookingId, active, resolved.requirements(), rows, requiredOn, side))
+                    .forEach(missing::add);
+        }
         return !resolved.requirementsDependOnGate() && DocumentCompletenessPolicy.isComplete(
-                bookingId, active, resolved.requirements(), documents.findForBookingReview(bookingId),
-                businessDate(clock.instant()), submitter);
+                bookingId, active, resolved.requirements(), rows, requiredOn, submitter);
     }
 
     @Override

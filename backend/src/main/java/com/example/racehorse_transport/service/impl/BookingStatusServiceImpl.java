@@ -67,7 +67,18 @@ public class BookingStatusServiceImpl implements BookingStatusService {
 
         recordHistory(booking, from, reason, actorUserId == null ? null : users.getReferenceById(actorUserId),
                 previousDeparture, cause);
-        if (toStatus == BookingStatus.COMPLETED) {
+        if (toStatus == BookingStatus.QUOTING) {
+            var managers = staff.findUserIdsByRoleAndStatus("MANAGER", AppUserStatus.ACTIVE);
+            if (!managers.isEmpty()) {
+                boolean rejected = from == BookingStatus.AWAITING_DEPOSIT;
+                notifications.notify(managers, bookingId, rejected ? "Khách từ chối báo giá" : "Đơn đang báo giá",
+                        "Đơn " + booking.getCode() + (rejected ? " cần báo giá lại. Lý do: " + reason
+                                : " đã chuyển sang Đang báo giá."), null);
+            }
+        } else if (toStatus == BookingStatus.QUOTE_EXPIRED) {
+            notifications.notify(List.of(booking.getCustomer().getUser().getId()), bookingId, "Báo giá hết hạn",
+                    "Báo giá của đơn " + booking.getCode() + " đã hết hạn.", "/orders/" + bookingId);
+        } else if (toStatus == BookingStatus.COMPLETED) {
             notifications.notify(List.of(booking.getCustomer().getUser().getId()), bookingId, "Đã đóng đơn",
                     "Đơn đã hoàn tất quyết toán.", null);
         } else if (toStatus == BookingStatus.CANCELLED) {

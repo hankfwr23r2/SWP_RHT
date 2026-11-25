@@ -48,7 +48,7 @@ export default function OrderDetailPage() {
           <InsuranceCard data={data} />
           <section id="documents" className={s.section}><DocumentsCard data={data} /></section>
           {HAS_JOURNEY.includes(status) && <Card title={t('myOrders.journey')}><BookingJourney bookingId={data.id} /></Card>}
-          {RATEABLE.includes(status) && <section id="rating" className={s.section}><RatingCard bookingId={data.id} /></section>}
+          {RATEABLE.includes(status) && data.detail?.rated === false && <section id="rating" className={s.section}><RatingCard bookingId={data.id} /></section>}
         </div>
         <aside className={s.side}>
           <OrderInfo data={data} />

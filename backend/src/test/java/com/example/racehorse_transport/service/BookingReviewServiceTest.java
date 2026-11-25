@@ -34,7 +34,7 @@ class BookingReviewServiceTest {
     private static final Instant NOW = Instant.parse("2026-11-23T00:00:00Z");
     private static final LocalDate PICKUP = LocalDate.of(2026, 12, 1);
     private static final Clock CLOCK = Clock.fixed(NOW, ZoneOffset.UTC);
-    private static final MockMultipartFile FILE = new MockMultipartFile("file", new byte[] {1});
+    private static final MockMultipartFile FILE = new MockMultipartFile("file", new byte[] {'%', 'P', 'D', 'F', '-', '1', '.', '7'});
 
     private final Booking booking = new Booking();
     private final DepartureService departures = mock(DepartureService.class);
@@ -144,6 +144,55 @@ class BookingReviewServiceTest {
             verify(attachments).attach(FILE, requirement.documentTypeCode(), DocumentSubject.BOOKING, BOOKING_ID, STAFF_ID);
         }
         assertThat(completeness.isComplete(BOOKING_ID)).isTrue();
+    }
+
+    @Test
+    void rejectsDocumentsForTheCorrectSide() {
+        var passport = requirement(20L, CUSTOMER, true);
+        var certificate = requirement(21L, COMPANY, true);
+        resolve(false, passport, certificate);
+        when(staff.findUserIdsByRoleAndStatus("SPECIALIST", AppUserStatus.ACTIVE)).thenReturn(List.of(STAFF_ID));
+        prepareUpload(passport, CUSTOMER_ID);
+        prepareUpload(certificate, STAFF_ID);
+        docs.attach(BOOKING_ID, "customer", customerUpload(passport));
+        docs.attachForPartner(BOOKING_ID, "specialist", partnerUpload(certificate));
+        docs.reject(BOOKING_ID, passport.id(), "specialist", "Sai hộ chiếu");
+        docs.reject(BOOKING_ID, certificate.id(), "specialist", "Sai giấy chứng nhận");
+        verify(notifications).notify(List.of(CUSTOMER_ID), BOOKING_ID, "Giấy tờ cần bổ sung",
+                "Sai hộ chiếu", "/orders/" + BOOKING_ID);
+        verify(notifications).notify(List.of(STAFF_ID), BOOKING_ID, "Giấy tờ cần bổ sung",
+                "Sai giấy chứng nhận", "/specialist/review/" + BOOKING_ID);
+        verifyNoMoreInteractions(notifications);
+    }
+
+    @Test
+    void checklistAndCompletenessUseTripDateOrDirectPickupDate() {
+        var passport = requirement(20L, CUSTOMER, true);
+        var certificate = requirement(21L, COMPANY, true);
+        resolve(false, passport, certificate);
+        var approved = document(passport, DocumentStatus.APPROVED);
+        approved.setExpiryDate(PICKUP);
+        files.add(approved);
+
+        assertThat(completeness.isCompleteForQuoting(BOOKING_ID)).isFalse();
+        assertThat(completeness.missingSubmitters(BOOKING_ID)).containsExactlyInAnyOrder(CUSTOMER, COMPANY);
+        assertThat(docs.checklist(BOOKING_ID, null).items().getFirst().satisfied()).isFalse();
+        booking.setBookingType(BookingType.INTERPROVINCE);
+        booking.setDeparture(null);
+        assertThat(completeness.isCompleteForQuoting(BOOKING_ID)).isTrue();
+        assertThat(completeness.missingSubmitters(BOOKING_ID)).containsExactly(COMPANY);
+        assertThat(docs.checklist(BOOKING_ID, null).items().getFirst().satisfied()).isTrue();
+    }
+
+    @Test
+    void rejectsFileWithMisleadingExtensionAndContentTypeBeforeUpload() {
+        var passport = requirement(20L, CUSTOMER, true);
+        resolve(false, passport);
+        var spoofed = new MockMultipartFile("file", "passport.pdf", "application/pdf", new byte[] {1});
+        var request = new DocumentUploadRequestDto(passport.id(), null, null, spoofed);
+        assertThatThrownBy(() -> docs.attach(BOOKING_ID, "customer", request))
+                .isInstanceOf(BookingRuleException.class).hasMessageContaining("PDF, JPG hoặc PNG");
+        verifyNoInteractions(attachments);
     }
 
     @Test
@@ -287,6 +336,7 @@ class BookingReviewServiceTest {
         type.setOwnerType(DocumentSubject.BOOKING);
         DocumentRequirement reference = new DocumentRequirement();
         reference.setId(requirement.id());
+        reference.setSubmitterType(requirement.submitterType());
         Document row = new Document();
         row.setId(requirement.id());
         row.setDocumentType(type);

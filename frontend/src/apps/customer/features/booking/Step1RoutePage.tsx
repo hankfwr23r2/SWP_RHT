@@ -85,7 +85,9 @@ export default function Step1RoutePage() {
   const bothAbroad = pickup && delivery && !type
   const infeasible = needRules && regulations.data?.feasible === false
   const badDate = !!draft.pickupDate && (draft.pickupDate < today || (!!lastDay && draft.pickupDate > lastDay))
-  const dateError = badDate ? t('bookingForm.route.badDate') : submitted && !draft.pickupDate ? t('bookingForm.required') : undefined
+  const dateError = direct && infeasible
+    ? t('bookingForm.route.directNotFeasible', { days: regulations.data?.leadDays ?? 0 })
+    : badDate ? t('bookingForm.route.badDate') : submitted && !draft.pickupDate ? t('bookingForm.required') : undefined
 
   const next = (event: FormEvent) => {
     event.preventDefault()

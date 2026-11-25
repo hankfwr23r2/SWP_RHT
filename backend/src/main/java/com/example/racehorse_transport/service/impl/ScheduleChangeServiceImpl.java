@@ -3,6 +3,11 @@ package com.example.racehorse_transport.service.impl;
 import com.example.racehorse_transport.dto.booking.BookingResponseDto;
 import com.example.racehorse_transport.dto.booking.ReportDocumentDelayRequestDto;
 import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.entity.enums.AppUserStatus;
+import com.example.racehorse_transport.entity.enums.BookingType;
+import com.example.racehorse_transport.entity.enums.DocumentSubmitter;
+import com.example.racehorse_transport.policy.DocumentCompletenessPolicy;
+import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.entity.enums.BookingHorseStatus;
 import com.example.racehorse_transport.entity.enums.DepartureStatus;
 import com.example.racehorse_transport.entity.enums.ScheduleChangeCause;
@@ -22,6 +27,7 @@ import com.example.racehorse_transport.service.DocumentCompletenessService;
 import com.example.racehorse_transport.service.NotificationService;
 import com.example.racehorse_transport.service.ScheduleChangeService;
 import com.example.racehorse_transport.service.SystemConfigService;
+import static com.example.racehorse_transport.policy.BookingSubmissionPolicy.businessDate;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -36,6 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ScheduleChangeServiceImpl implements ScheduleChangeService {
     private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final String REMINDER_TITLE = "Bổ sung giấy tờ trước chuyến";
+    private static final String SPECIALIST_REMINDER_TITLE = "Đơn cần bổ sung giấy tờ";
 
     private final BookingRepository bookings;
     private final DocumentCompletenessService documents;
@@ -46,11 +53,12 @@ public class ScheduleChangeServiceImpl implements ScheduleChangeService {
     private final DepartureService departures;
     private final BookingStatusService statuses;
     private final BookingStatusHistoryRepository history;
+    private final StaffRepository staff;
 
     @Override
     @Transactional(readOnly = true)
     public List<BookingResponseDto> missingDocuments() {
-        return bookings.findWithDeparture(BookingStatus.CONFIRMED).stream()
+        return bookings.findForDocumentCheck(BookingStatus.CONFIRMED, BookingType.INTERPROVINCE).stream()
                 .filter(booking -> !documents.isComplete(booking.getId()))
                 .map(BookingResponseDto::from).toList();
     }
@@ -106,7 +114,9 @@ public class ScheduleChangeServiceImpl implements ScheduleChangeService {
     @Transactional(readOnly = true)
     public List<Long> reminderCandidates() {
         Instant now = clock.instant();
-        return bookings.findIdsForDocumentReminder(BookingStatus.CONFIRMED, now, reminderCutoff(now));
+        Instant cutoff = reminderCutoff(now);
+        return bookings.findIdsForDocumentReminder(BookingStatus.CONFIRMED, now, cutoff, BookingType.INTERPROVINCE,
+                now.atZone(BUSINESS_ZONE).toLocalDate(), cutoff.atZone(BUSINESS_ZONE).toLocalDate());
     }
 
     @Override
@@ -114,23 +124,38 @@ public class ScheduleChangeServiceImpl implements ScheduleChangeService {
     public boolean remind(Long bookingId) {
         var booking = bookings.findForUpdate(bookingId).orElse(null);
         Instant now = clock.instant();
-        if (booking == null || booking.getStatus() != BookingStatus.CONFIRMED || booking.getDeparture() == null
-                || !insideReminderWindow(booking, now) || documents.isComplete(bookingId)) {
+        if (booking == null || booking.getStatus() != BookingStatus.CONFIRMED || !insideReminderWindow(booking, now)) {
             return false;
         }
         var today = now.atZone(BUSINESS_ZONE).toLocalDate();
         Instant start = today.atStartOfDay(BUSINESS_ZONE).toInstant();
         Instant end = today.plusDays(1).atStartOfDay(BUSINESS_ZONE).toInstant();
-        if (bookings.hasNotificationBetween(bookingId, REMINDER_TITLE, start, end)) {
-            return false;
+        var missing = documents.missingSubmitters(bookingId);
+        boolean customerMissing = missing.contains(DocumentSubmitter.CUSTOMER)
+                && !bookings.hasNotificationBetween(bookingId, REMINDER_TITLE, start, end);
+        boolean staffMissing = missing.stream().anyMatch(side -> side != DocumentSubmitter.CUSTOMER)
+                && !bookings.hasNotificationBetween(bookingId, SPECIALIST_REMINDER_TITLE, start, end);
+        var specialists = staffMissing ? staff.findUserIdsByRoleAndStatus("SPECIALIST", AppUserStatus.ACTIVE)
+                : List.<Long>of();
+        String message = "Đơn " + booking.getCode() + " còn thiếu giấy tờ cho ngày "
+                + DocumentCompletenessPolicy.requiredOn(booking, businessDate(clock.instant())) + ".";
+        if (customerMissing) {
+            notifications.notify(List.of(booking.getCustomer().getUser().getId()), bookingId, REMINDER_TITLE,
+                    message, "/orders/" + bookingId);
         }
-        notifications.notify(List.of(booking.getCustomer().getUser().getId()), bookingId, REMINDER_TITLE,
-                "Đơn " + booking.getCode() + " còn thiếu giấy tờ cho chuyến ngày "
-                        + booking.getDeparture().getDepartureDate() + ".", null);
-        return true;
+        if (!specialists.isEmpty()) {
+            notifications.notify(specialists, bookingId, SPECIALIST_REMINDER_TITLE, message, "/specialist/review/" + bookingId);
+        }
+        return customerMissing || !specialists.isEmpty();
     }
 
     private boolean insideReminderWindow(Booking booking, Instant now) {
+        if (booking.getDeparture() == null) {
+            var pickupDate = booking.getRequestedPickupDate();
+            return booking.getBookingType() == BookingType.INTERPROVINCE
+                    && !pickupDate.isBefore(now.atZone(BUSINESS_ZONE).toLocalDate())
+                    && !pickupDate.isAfter(reminderCutoff(now).atZone(BUSINESS_ZONE).toLocalDate());
+        }
         Instant departureAt = booking.getDeparture().getPlannedDepartureAt();
         return !departureAt.isBefore(now) && !departureAt.isAfter(reminderCutoff(now));
     }

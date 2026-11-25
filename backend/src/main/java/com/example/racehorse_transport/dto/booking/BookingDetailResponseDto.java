@@ -10,19 +10,19 @@ import java.util.List;
 // intakeByName: nhân viên đã tiếp nhận đơn, chỉ trả cho nhân viên
 public record BookingDetailResponseDto(BookingResponseDto booking, List<PartySnapshot> parties,
         List<AddressSnapshot> addresses, List<HorseDetail> horses, String reviewReason,
-        TransferMethod pickupMethod, TransferMethod deliveryMethod, String intakeByName) {
+        TransferMethod pickupMethod, TransferMethod deliveryMethod, String intakeByName, boolean rated) {
 
     public static BookingDetailResponseDto from(Booking booking, List<BookingParty> parties,
                                                  List<BookingAddress> addresses, List<HorseDetail> horses) {
-        return from(booking, parties, addresses, horses, null, null);
+        return from(booking, parties, addresses, horses, null, null, false);
     }
 
     public static BookingDetailResponseDto from(Booking booking, List<BookingParty> parties,
-            List<BookingAddress> addresses, List<HorseDetail> horses, String reviewReason, String intakeByName) {
+            List<BookingAddress> addresses, List<HorseDetail> horses, String reviewReason, String intakeByName, boolean rated) {
         return new BookingDetailResponseDto(BookingResponseDto.from(booking),
                 parties.stream().map(PartySnapshot::from).toList(),
                 addresses.stream().map(AddressSnapshot::from).toList(), List.copyOf(horses), reviewReason,
-                booking.getPickupMethod(), booking.getDeliveryMethod(), intakeByName);
+                booking.getPickupMethod(), booking.getDeliveryMethod(), intakeByName, rated);
     }
 
     public record PartySnapshot(BookingPartyRole bookingRole, String fullName, String phone,
