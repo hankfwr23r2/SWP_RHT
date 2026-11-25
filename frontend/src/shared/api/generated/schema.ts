@@ -2676,6 +2676,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/incidents/{id}/cancel-legs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["cancelLegs"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/incidents/{id}/close": {
         parameters: {
             query?: never;
@@ -2862,6 +2878,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["swapVehicle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/incidents/{id}/vet-result": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["recordVetResult"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4896,6 +4928,10 @@ export interface components {
         };
         CancelBookingRequestDto: {
             reason: string;
+        };
+        CancelLegsRequestDto: {
+            /** Format: int64 */
+            incidentPlanId: number;
         };
         ChangePasswordRequest: {
             confirmPassword: string;
@@ -7474,6 +7510,11 @@ export interface components {
             vehicleClassId: number;
             /** Format: int32 */
             wideStallCount: number;
+        };
+        VetResultRequestDto: {
+            /** Format: int64 */
+            incidentPlanId?: number;
+            note: string;
         };
         VnpayIpnResponseDto: {
             Message?: string;
@@ -11959,6 +12000,32 @@ export interface operations {
             };
         };
     };
+    cancelLegs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CancelLegsRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIncidentResponseDto"];
+                };
+            };
+        };
+    };
     close: {
         parameters: {
             query?: never;
@@ -12262,6 +12329,32 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["VehicleSwapRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIncidentResponseDto"];
+                };
+            };
+        };
+    };
+    recordVetResult: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VetResultRequestDto"];
             };
         };
         responses: {
@@ -13930,7 +14023,9 @@ export interface operations {
     };
     createHandover: {
         parameters: {
-            query?: never;
+            query?: {
+                incidentPlanId?: number;
+            };
             header?: never;
             path: {
                 id: number;

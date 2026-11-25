@@ -1014,6 +1014,7 @@ Index: `(booking_horse_id, recorded_at)`, `trip_stop_id`, `horse_stay_id`, `vehi
 | `id` | `bigint` | | PK, identity | |
 | `handover_type` | `varchar(30)` | | CK `PICKUP, HUB_IN, HUB_OUT, STAY_IN, STAY_OUT, AGENT, DELIVERY, RETURN, SHIFT` | `SHIFT` chờ migration |
 | `unclaimed_outcome` | `varchar(40)` | Có | `RETURNED_TO_SENDER`, `RETURNED_TO_AUTHORIZED_PERSON`, `RELEASED_BY_LEGAL_DOCUMENT`. Chỉ cho giao nhận `RETURN` đã `DONE` tại lưu trú. |
+| `incident_plan_id` | `bigint` | có | FK → incident_plan | Phiên bản phương án `STABLE_NEARBY` của lần gửi chuồng `STAY_IN` tại điểm dừng (V202611291700). |
 | `trip_stop_id` | `bigint` | có | FK → trip_stop | Giao nhận tại điểm dừng của xe |
 | `horse_stay_id` | `bigint` | có | FK → horse_stay | Giao nhận khi nhập hoặc xuất trại, chuồng |
 | `from_party_id` | `bigint` | có | FK → party | Đối tác giao. NULL = công ty hoặc bên trong đơn |
@@ -1034,6 +1035,8 @@ Ràng buộc bảng:
 - `CHECK (num_nonnulls(trip_stop_id, horse_stay_id) = 1)`
 - `CHECK (from_party_id IS NULL OR to_party_id IS NULL OR from_party_id <> to_party_id)`
 - `CHECK (status <> 'DONE' OR handed_at IS NOT NULL)`
+- `CHECK (incident_plan_id IS NULL OR (handover_type = 'STAY_IN' AND trip_stop_id IS NOT NULL AND to_party_id IS NOT NULL))`
+- Mỗi phương án có tối đa một lần gửi chuồng `PENDING` hoặc `DONE` (unique index trên `incident_plan_id`). Service kiểm phiên bản mới nhất đã duyệt, đối tác nhận đúng phương án và điểm dừng có địa điểm mạng lưới.
 
 Index: `trip_stop_id`, `horse_stay_id`, `from_party_id`, `to_party_id`, `handled_by`.
 

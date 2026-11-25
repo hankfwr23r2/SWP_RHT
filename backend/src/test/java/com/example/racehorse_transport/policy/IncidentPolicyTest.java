@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.example.racehorse_transport.entity.IncidentPlan;
 import com.example.racehorse_transport.entity.enums.IncidentPlanStatus;
 import com.example.racehorse_transport.entity.enums.IncidentResolutionType;
 import com.example.racehorse_transport.entity.enums.IncidentSeverity;
@@ -94,6 +95,26 @@ class IncidentPolicyTest {
         assertThatThrownBy(() -> IncidentPolicy.requireDecidable(IncidentPlanStatus.APPROVED, true)).hasMessageContaining("mới nhất");
         assertThatCode(() -> IncidentPolicy.requireRejectionReason("Chi phí quá cao")).doesNotThrowAnyException();
         assertThatThrownBy(() -> IncidentPolicy.requireRejectionReason(" ")).hasMessageContaining("ghi lý do");
+    }
+
+    @Test
+    void actionRequiresAnActiveIncidentAndTheApprovedPlanOfTheRequestedType() {
+        var plan = new IncidentPlan();
+        plan.setResolutionType(IncidentResolutionType.CANCEL);
+        plan.setStatus(IncidentPlanStatus.PROPOSED);
+        assertThatThrownBy(() -> IncidentPolicy.requireApprovedExecution(IncidentStatus.PLAN_ACTIVE, plan, IncidentResolutionType.CANCEL))
+                .hasMessageContaining("được quản lý duyệt");
+        plan.setStatus(IncidentPlanStatus.APPROVED);
+        assertThatThrownBy(() -> IncidentPolicy.requireApprovedExecution(IncidentStatus.PLAN_ACTIVE, plan, IncidentResolutionType.VET_TREATMENT))
+                .hasMessageContaining("VET_TREATMENT");
+        assertThatThrownBy(() -> IncidentPolicy.requireApprovedExecution(IncidentStatus.CLOSED, plan, IncidentResolutionType.CANCEL))
+                .hasMessageContaining("được quản lý duyệt");
+        IncidentPolicy.requireApprovedExecution(IncidentStatus.PLAN_ACTIVE, plan, IncidentResolutionType.CANCEL);
+        assertThatThrownBy(() -> IncidentPolicy.requireExecutedBeforeResolve(List.of(plan))).hasMessageContaining("Cần thực hiện phương án");
+        plan.setStatus(IncidentPlanStatus.DONE);
+        IncidentPolicy.requireExecutedBeforeResolve(List.of(plan));
+        assertThatThrownBy(() -> IncidentPolicy.requireApprovedExecution(IncidentStatus.PLAN_ACTIVE, plan, IncidentResolutionType.CANCEL))
+                .hasMessage("Phương án đã được thực hiện.");
     }
 
     @Test

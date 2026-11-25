@@ -7,6 +7,9 @@ import com.example.racehorse_transport.dto.operation.HandoverRefusalRequestDto;
 import org.springframework.web.multipart.MultipartFile;
 import com.example.racehorse_transport.dto.operation.HandoverScanRequestDto;
 import com.example.racehorse_transport.entity.Handover;
+import com.example.racehorse_transport.entity.HorseLeg;
+import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 
 // Giao nhận ngựa tại điểm dừng (B2). Chủ sở hữu handover, handover_horse.
@@ -16,7 +19,7 @@ public interface HandoverService {
     CrewTripResponseDto crewTrip(Long vehicleTripId, String username);
 
     // RETURN ở điểm đón: quá hạn trả số dư thì trả ngựa cho người gửi và hủy đơn ngay trong một thao tác
-    CrewTripResponseDto create(Long tripStopId, HandoverCreateRequestDto request, String username);
+    CrewTripResponseDto create(Long tripStopId, HandoverCreateRequestDto request, Long incidentPlanId, String username);
 
     CrewTripResponseDto scan(Long handoverId, HandoverScanRequestDto request, String username);
 
@@ -30,4 +33,6 @@ public interface HandoverService {
     Handover pendingForCrew(Long handoverId, String username);
 
     Set<Long> bookingIdsOf(Handover handover);
+
+    void closeEmptyAlightingHandovers(List<HorseLeg> failed, Instant at);
 }

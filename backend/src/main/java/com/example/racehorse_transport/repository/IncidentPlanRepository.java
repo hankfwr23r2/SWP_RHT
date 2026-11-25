@@ -16,6 +16,9 @@ public interface IncidentPlanRepository extends JpaRepository<IncidentPlan, Long
     @EntityGraph(attributePaths = {"handlerParty", "proposedBy", "decidedBy"})
     List<IncidentPlan> findByIncident_IdOrderByVersion(Long incidentId);
 
+    @EntityGraph(attributePaths = {"handlerParty"})
+    Optional<IncidentPlan> findFirstByIncident_IdOrderByVersionDesc(Long incidentId);
+
     @EntityGraph(attributePaths = {"handlerParty", "proposedBy", "decidedBy"})
     List<IncidentPlan> findByIncident_IdInOrderByIncident_IdAscVersionAsc(Collection<Long> incidentIds);
 }

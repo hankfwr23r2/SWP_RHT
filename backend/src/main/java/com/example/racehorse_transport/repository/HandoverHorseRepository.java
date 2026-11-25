@@ -17,6 +17,14 @@ public interface HandoverHorseRepository extends JpaRepository<HandoverHorse, Ha
 
     List<HandoverHorse> findById_HandoverId(Long handoverId);
 
+    @Query("""
+            SELECT hh FROM HandoverHorse hh JOIN FETCH hh.horseLeg JOIN FETCH hh.handover h
+            WHERE h.tripStop.id = :stopId AND h.status = :status AND h.handoverType IN :types
+                AND hh.microchipMatched = true
+            ORDER BY h.handedAt, h.id
+            """)
+    List<HandoverHorse> findMatchedAtStop(Long stopId, HandoverStatus status, Collection<HandoverType> types);
+
     // Con giao thất bại đã được giao vào hub ở một lần giao nhận khác (đã xong)
     boolean existsByHorseLeg_IdAndHandover_HandoverTypeAndHandover_StatusAndHandover_IdNot(Long horseLegId, HandoverType handoverType,
                                                                                           HandoverStatus status, Long handoverId);

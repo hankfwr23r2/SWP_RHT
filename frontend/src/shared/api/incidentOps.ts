@@ -62,9 +62,12 @@ export const incidentsApi = {
   phoneConsent: (costId: number, note: string) => post<CostItem>(`/cost-items/${costId}/phone-consent`, { note }),
   markRecovered: (costId: number) => post<CostItem>(`/cost-items/${costId}/mark-recovered`),
   parties: () => get<Party[]>('/parties'),
-  // Thực hiện phương án đã duyệt: đổi xe, đưa ngựa về hub
+  // Thực hiện phương án đã duyệt
   swapVehicle: (incidentId: number, vehicleId: number) => post<Incident>(`/incidents/${incidentId}/vehicle-swap`, { vehicleId }),
   returnToHub: (incidentId: number) => post<Incident>(`/incidents/${incidentId}/return-to-hub`),
+  recordVetResult: async (incidentId: number, note: string, incidentPlanId?: number) =>
+    readFormResponse<Incident>(await apiClient.post(`/incidents/${incidentId}/vet-result`, { note, incidentPlanId }, formResponseOptions)),
+  cancelLegs: (incidentId: number, incidentPlanId: number) => post<Incident>(`/incidents/${incidentId}/cancel-legs`, { incidentPlanId }),
   // Chứng từ: biên lai, hóa đơn kèm chi phí; ảnh hiện trường kèm sự cố (có tọa độ nếu máy cho lấy vị trí)
   receipts: (costId: number) => get<Evidence[]>(`/cost-items/${costId}/receipts`),
   attachReceipt: (costId: number, file: File) => upload(`/cost-items/${costId}/receipts`, file),

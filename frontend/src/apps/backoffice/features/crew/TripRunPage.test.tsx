@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { afterEach, expect, it, vi } from 'vitest'
 import apiClient from '@shared/api/client'
@@ -15,15 +15,18 @@ afterEach(() => {
   vi.resetAllMocks()
 })
 
-function renderTrip(parked: boolean, list: Incident[]) {
+type Stop = NonNullable<NonNullable<CrewTrip['trip']>['stops']>[number]
+
+function renderTrip(parked: boolean, list: Incident[], stop?: Stop, horses?: CrewTrip['horses']) {
   const trip: CrewTrip = {
     trip: {
       id: 5, status: 'IN_PROGRESS', code: 'TEST-TRIP', tripType: 'DIRECT',
       stops: [
-        { id: 21, stopType: 'HUB', actualArrivalAt: parked ? '2031-01-01T09:00:00Z' : undefined },
+        { id: 21, stopType: 'HUB', actualArrivalAt: parked ? '2031-01-01T09:00:00Z' : undefined, ...stop },
         { id: 22, stopType: 'HUB' },
       ],
     },
+    horses,
   }
   vi.mocked(apiClient.get).mockImplementation(async url => {
     if (url === '/crew/vehicle-trips/5') return { data: { data: trip } }
@@ -36,6 +39,7 @@ function renderTrip(parked: boolean, list: Incident[]) {
     initialEntries: ['/my-trips/5'],
   })
   render(<RouterProvider router={router} />)
+  return trip
 }
 
 it.each([[false, 'Tới nơi'], [true, 'Rời đi']] as const)('uses the server lock before showing the stop action (%s)', async (parked, label) => {
@@ -70,4 +74,40 @@ it('uses the server preset when the type changes and submits the selected overri
   await waitFor(() => expect(apiClient.post).toHaveBeenCalledWith('/incidents', expect.objectContaining({
     vehicleTripId: 5, incidentType: 'ACCIDENT', severity: 'MEDIUM', title: 'Báo cáo', description: 'Đã kiểm tra',
   }), expect.any(Object)))
+})
+
+const approvedStableIncident: Incident = {
+  id: 10, title: 'Cần gửi chuồng', status: 'PLAN_ACTIVE', horseLegId: 31,
+  plans: [{ id: 77, status: 'APPROVED', resolutionType: 'STABLE_NEARBY', handlerPartyId: 88, handlerPartyName: 'Chuồng Bình An' }],
+}
+const horses: CrewTrip['horses'] = [{ horseName: 'Sao Mai', leg: { id: 31, status: 'IN_PROGRESS' } }]
+
+it('opens an incident handover at the hub for the approved partner and offers collection afterward', async () => {
+  const incidents = [approvedStableIncident]
+  const trip = renderTrip(true, incidents, { locationId: 4, locationName: 'Hub trung chuyển' }, horses)
+  const handover = { id: 40, handoverType: 'STAY_IN', tripStopId: 21, partyName: 'Chuồng Bình An',
+    horses: [{ horseLegId: 31, horseName: 'Sao Mai', microchipMatched: true }] }
+  vi.mocked(apiClient.post).mockImplementation(async url => {
+    const done = url === '/handovers/40/complete'
+    if (done) incidents[0] = { ...approvedStableIncident, plans: [{ ...approvedStableIncident.plans?.[0], status: 'DONE' }] }
+    return { data: { data: { ...trip, handovers: [{ ...handover, status: done ? 'DONE' : 'PENDING' }] } } }
+  })
+
+  fireEvent.click(await screen.findByRole('button', { name: 'Gửi chuồng cho Chuồng Bình An' }))
+  const dialog = screen.getByRole('dialog', { name: 'Gửi chuồng theo phương án' })
+  expect(within(dialog).queryByRole('combobox')).toBeNull()
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Gửi chuồng theo phương án' }))
+  await waitFor(() => expect(apiClient.post).toHaveBeenCalledWith('/trip-stops/21/handovers?incidentPlanId=77',
+    { handoverType: 'STAY_IN', partyId: 88 }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Hoàn tất giao nhận' }))
+  const confirm = screen.getByRole('alertdialog')
+  fireEvent.click(within(confirm).getByRole('button', { name: 'Hoàn tất giao nhận' }))
+  expect(await screen.findByRole('button', { name: 'Nhận lại từ chuồng' })).toBeTruthy()
+  expect(screen.queryByRole('button', { name: 'Gửi chuồng cho Chuồng Bình An' })).toBeNull()
+})
+
+it('explains why an approved stable plan cannot be carried out at the customer address', async () => {
+  renderTrip(true, [approvedStableIncident], { stopType: 'PICKUP', bookingAddressId: 41, addressLine: 'Địa chỉ khách' }, horses)
+  expect(await screen.findByText('Không gửi chuồng tại địa chỉ khách được. Chọn đổi xe hoặc đưa về hub.')).toBeTruthy()
+  expect(screen.queryByRole('button', { name: 'Gửi chuồng cho Chuồng Bình An' })).toBeNull()
 })

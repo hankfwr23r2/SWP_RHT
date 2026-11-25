@@ -149,7 +149,7 @@ public class DeliveryFailureServiceImpl implements DeliveryFailureService {
         var booking = undelivered.getFirst().getBookingHorse().getBooking();
         notifications.notify(coordinators, booking.getId(), "Giao ngựa không thành",
                 "Lượt xe " + handover.getTripStop().getVehicleTrip().getCode() + " không gặp người nhận của đơn " + booking.getCode()
-                        + ". Chọn gửi chuồng hoặc đưa về hub để giao lại.", null);
+                        + ". Tổ xe giao ngựa vào hub. Điều phối lập phương án xử lý tiếp theo.", null);
     }
 
     private Handover lockOnCrew(Long handoverId, String username) {

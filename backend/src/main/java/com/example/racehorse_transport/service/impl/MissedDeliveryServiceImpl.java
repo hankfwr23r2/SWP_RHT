@@ -48,7 +48,8 @@ public class MissedDeliveryServiceImpl implements MissedDeliveryService {
         if (IncidentPolicy.isOpen(incident.getStatus())) {
             plans.findByIncident_IdOrderByVersion(incident.getId()).forEach(plan -> {
                 if (plan.getStatus() == IncidentPlanStatus.APPROVED) {
-                    plan.setStatus(IncidentPlanStatus.DONE);
+                    plan.setStatus(IncidentPolicy.requiresExecution(plan.getResolutionType())
+                            ? IncidentPlanStatus.SUPERSEDED : IncidentPlanStatus.DONE);
                 } else if (plan.getStatus() == IncidentPlanStatus.PROPOSED) {
                     plan.setStatus(IncidentPlanStatus.SUPERSEDED);
                 }

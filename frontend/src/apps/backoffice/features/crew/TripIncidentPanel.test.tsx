@@ -95,3 +95,31 @@ it('hides fitness confirmation from the driver even after rest and photo upload'
   expect(screen.queryByRole('button', { name: 'Bắt đầu cho ngựa nghỉ' })).toBeNull()
   expect(screen.queryByRole('button', { name: 'Đủ sức đi tiếp' })).toBeNull()
 })
+
+it('records the vet result through the approved plan for the escort and hides the action afterward', async () => {
+  const plan = { id: 7, status: 'APPROVED', resolutionType: 'VET_TREATMENT', handlerPartyName: 'Thú y Bình An' } as const
+  let incident: Incident = { ...activeIncident, plans: [plan] }
+  vi.mocked(apiClient.get).mockImplementation(async url => ok(url === '/vehicle-trips/9/incidents' ? [incident] : []))
+  vi.mocked(apiClient.post).mockImplementation(async () => {
+    incident = { ...incident, plans: [{ ...plan, status: 'DONE' }] }
+    return { status: 200, ...ok(incident) }
+  })
+  await renderPanel('escort')
+
+  fireEvent.click(screen.getByRole('button', { name: 'Ghi kết quả thú y' }))
+  const dialog = screen.getByRole('dialog', { name: 'Ghi kết quả thú y' })
+  expect(within(dialog).getByText('Thú y Bình An')).toBeTruthy()
+  const save = within(dialog).getByRole<HTMLButtonElement>('button', { name: 'Lưu kết quả' })
+  expect(save.disabled).toBe(true)
+  fireEvent.change(within(dialog).getByRole('textbox', { name: 'Nội dung kết quả thú y' }), { target: { value: ' Đã khám ' } })
+  await act(async () => { fireEvent.click(save) })
+  expect(apiClient.post).toHaveBeenCalledWith('/incidents/5/vet-result', { note: 'Đã khám', incidentPlanId: 7 }, expect.any(Object))
+  expect(screen.queryByRole('button', { name: 'Ghi kết quả thú y' })).toBeNull()
+})
+
+it('does not offer the approved vet result to the driver', async () => {
+  const incident: Incident = { ...activeIncident, plans: [{ status: 'APPROVED', resolutionType: 'VET_TREATMENT' }] }
+  vi.mocked(apiClient.get).mockImplementation(async url => ok(url === '/vehicle-trips/9/incidents' ? [incident] : []))
+  await renderPanel('driver')
+  expect(screen.queryByRole('button', { name: 'Ghi kết quả thú y' })).toBeNull()
+})
