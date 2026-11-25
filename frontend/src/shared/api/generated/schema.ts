@@ -292,6 +292,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/booking-horses/{id}/complete-pickup-add-on": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["completePickupAddOn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/booking-horses/{id}/confirm-pickup-liability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["confirmPickupLiability"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/booking-horses/{id}/health-logs": {
         parameters: {
             query?: never;
@@ -318,6 +350,38 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["appoint"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/booking-horses/{id}/pickup-add-ons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["pickupAddOns"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/booking-horses/{id}/pickup-choices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["chooseAfterPickupMiss"];
         delete?: never;
         options?: never;
         head?: never;
@@ -382,6 +446,22 @@ export interface paths {
         get: operations["summaries"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{bookingId}/balance-hold-contacts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["recordContact"];
         delete?: never;
         options?: never;
         head?: never;
@@ -468,6 +548,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/bookings/{bookingId}/extend-pickup-payment-wait": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["extend"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/bookings/{bookingId}/payments": {
         parameters: {
             query?: never;
@@ -510,6 +606,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["rate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{bookingId}/send-unclaimed-pickup-to-hub": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["sendToHub"];
         delete?: never;
         options?: never;
         head?: never;
@@ -852,6 +964,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/bookings/{id}/insurances/{insuranceId}/record-premium-refund": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["recordPremiumRefund"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/bookings/{id}/insurances/{insuranceId}/reopen": {
         parameters: {
             query?: never;
@@ -940,6 +1068,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["previewForManager"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/pickup-misses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listPickupMisses"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3719,6 +3863,16 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListPickupAddOnResponseDto: {
+            data?: components["schemas"]["PickupAddOnResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListPickupMissResponseDto: {
+            data?: components["schemas"]["PickupMissResponseDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseListPriceItemResponseDto: {
             data?: components["schemas"]["PriceItemResponseDto"][];
             message?: string;
@@ -3858,6 +4012,16 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponsePickupAddOnResponseDto: {
+            data?: components["schemas"]["PickupAddOnResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponsePickupMissResponseDto: {
+            data?: components["schemas"]["PickupMissResponseDto"];
+            message?: string;
+            status?: string;
+        };
         ApiResponsePlannedTripResponseDto: {
             data?: components["schemas"]["PlannedTripResponseDto"];
             message?: string;
@@ -3976,6 +4140,11 @@ export interface components {
             userId?: number;
             username?: string;
         };
+        BalanceHoldContactRequestDto: {
+            result: string;
+            /** @enum {string} */
+            target: "CUSTOMER" | "EMERGENCY_CONTACT";
+        };
         BillableServiceResponseDto: {
             autoApplied?: boolean;
             /** @enum {string} */
@@ -4025,6 +4194,8 @@ export interface components {
         };
         BookingDetailResponseDto: {
             addresses?: components["schemas"]["AddressSnapshot"][];
+            /** Format: date-time */
+            balanceHoldAt?: string;
             booking?: components["schemas"]["BookingResponseDto"];
             /** @enum {string} */
             deliveryMethod?: "COMPANY" | "SELF";
@@ -4177,6 +4348,10 @@ export interface components {
             /** @enum {string} */
             status?: "REPORTED" | "PLAN_PENDING" | "PLAN_ACTIVE" | "RESOLVED" | "CLOSED";
         };
+        CompletePickupAddOnRequestDto: {
+            /** Format: int64 */
+            serviceId: number;
+        };
         ContactResponseDto: {
             hotline?: string;
             officeAddress?: string;
@@ -4306,6 +4481,9 @@ export interface components {
         CustodyRowResponseDto: {
             /** Format: int64 */
             agentLegId?: number;
+            balanceContactAllowed?: boolean;
+            /** Format: date-time */
+            balanceHoldAt?: string;
             bookingCode?: string;
             /** Format: int64 */
             bookingHorseId?: number;
@@ -4333,6 +4511,7 @@ export interface components {
             tripCode?: string;
             /** Format: int64 */
             vehicleTripId?: number;
+            waitingPickupBalance?: boolean;
         };
         CustomerAddressCreateRequestDto: {
             addressLine: string;
@@ -4755,9 +4934,14 @@ export interface components {
             ownerLabel?: string;
         };
         HandoverRefusalRequestDto: {
+            customerContact?: string;
+            emergencyContact?: string;
             /** Format: int64 */
             horseLegId: number;
             reason: string;
+            /** @enum {string} */
+            reasonCode: "SENDER_ABSENT" | "CHIP_MISMATCH" | "ORIGINAL_DOCUMENTS_MISSING" | "HORSE_UNWELL" | "HORSE_WILL_NOT_BOARD" | "VEHICLE_FAILURE" | "UNSUITABLE_STALL" | "LATE_ARRIVAL" | "CREW_SHORTAGE" | "FLOOD" | "ROAD_CLOSURE";
+            senderContact?: string;
         };
         HandoverResponseDto: {
             /** Format: date-time */
@@ -4986,6 +5170,8 @@ export interface components {
             actualEndAt?: string;
             /** Format: date-time */
             actualStartAt?: string;
+            /** Format: date-time */
+            balanceHoldAt?: string;
             bookingCode?: string;
             /** Format: int64 */
             bookingHorseId?: number;
@@ -5003,6 +5189,7 @@ export interface components {
             plannedEndAt?: string;
             /** Format: date-time */
             plannedStartAt?: string;
+            returnForBalance?: boolean;
             /** @enum {string} */
             stayType?: "ASSEMBLY" | "QUARANTINE" | "OVERNIGHT" | "STABLING";
         };
@@ -5146,6 +5333,7 @@ export interface components {
             premiumAmount?: number;
             /** Format: date-time */
             quoteExpiresAt?: string;
+            refundedPremiumAmount?: number;
             revisionReason?: string;
             /** @enum {string} */
             status?: "DRAFT" | "REVISION_REQUESTED" | "CONFIRMED";
@@ -5164,6 +5352,10 @@ export interface components {
             premiumAmount?: number;
             /** Format: date-time */
             quoteExpiresAt?: string;
+        };
+        InsurancePremiumRefundRequestDto: {
+            receiptReference: string;
+            refundedPremiumAmount: number;
         };
         InsuranceReopenRequestDto: {
             reason: string;
@@ -5498,6 +5690,57 @@ export interface components {
             validFrom: string;
             /** Format: date */
             validTo: string;
+        };
+        PickupAddOnResponseDto: {
+            /** Format: date-time */
+            completedAt?: string;
+            name?: string;
+            /** Format: int64 */
+            serviceId?: number;
+        };
+        PickupHubTransferRequestDto: {
+            reason: string;
+        };
+        PickupMissChoiceRequestDto: {
+            /** @enum {string} */
+            choice: "DROP_HORSE" | "RETRY_PICKUP" | "SELF_DELIVERY" | "CHANGE_DEPARTURE" | "RESCHEDULE_PICKUP" | "CANCEL_BOOKING";
+            /** Format: date-time */
+            hubArrivalAt?: string;
+            phoneNote?: string;
+            /** Format: date */
+            pickupDate?: string;
+        };
+        PickupMissLiabilityRequestDto: {
+            /** @enum {string} */
+            liability: "CUSTOMER" | "COMPANY" | "FORCE_MAJEURE";
+        };
+        PickupMissPriceResponseDto: {
+            balanceDue?: number;
+            currencyCode?: string;
+            forfeited?: number;
+            refund?: number;
+            total?: number;
+        };
+        PickupMissResponseDto: {
+            availableChoices?: ("DROP_HORSE" | "RETRY_PICKUP" | "SELF_DELIVERY" | "CHANGE_DEPARTURE" | "RESCHEDULE_PICKUP" | "CANCEL_BOOKING")[];
+            /** Format: int64 */
+            bookingHorseId?: number;
+            /** @enum {string} */
+            choice?: "DROP_HORSE" | "RETRY_PICKUP" | "SELF_DELIVERY" | "CHANGE_DEPARTURE" | "RESCHEDULE_PICKUP" | "CANCEL_BOOKING";
+            /** Format: date-time */
+            choiceDueAt?: string;
+            horseName?: string;
+            /** @enum {string} */
+            liability?: "CUSTOMER" | "COMPANY" | "FORCE_MAJEURE";
+            /** Format: date-time */
+            missedAt?: string;
+            prices?: {
+                [key: string]: components["schemas"]["PickupMissPriceResponseDto"];
+            };
+            reason?: string;
+        };
+        PickupWaitExtensionRequestDto: {
+            reason: string;
         };
         PlaceDto: {
             /** Format: int64 */
@@ -6870,6 +7113,58 @@ export interface operations {
             };
         };
     };
+    completePickupAddOn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompletePickupAddOnRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePickupAddOnResponseDto"];
+                };
+            };
+        };
+    };
+    confirmPickupLiability: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PickupMissLiabilityRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePickupMissResponseDto"];
+                };
+            };
+        };
+    };
     ofHorse: {
         parameters: {
             query?: never;
@@ -6914,6 +7209,54 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseHorseStayResponseDto"];
+                };
+            };
+        };
+    };
+    pickupAddOns: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListPickupAddOnResponseDto"];
+                };
+            };
+        };
+    };
+    chooseAfterPickupMiss: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PickupMissChoiceRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePickupMissResponseDto"];
                 };
             };
         };
@@ -7021,6 +7364,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListBookingSummaryResponseDto"];
+                };
+            };
+        };
+    };
+    recordContact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BalanceHoldContactRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
                 };
             };
         };
@@ -7177,6 +7546,32 @@ export interface operations {
             };
         };
     };
+    extend: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PickupWaitExtensionRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
     payments: {
         parameters: {
             query?: never;
@@ -7265,6 +7660,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseRatingResponseDto"];
+                };
+            };
+        };
+    };
+    sendToHub: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PickupHubTransferRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
                 };
             };
         };
@@ -7775,6 +8196,33 @@ export interface operations {
             };
         };
     };
+    recordPremiumRefund: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                insuranceId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InsurancePremiumRefundRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
     reopen: {
         parameters: {
             query?: never;
@@ -7924,6 +8372,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseBookingCancellationResponseDto"];
+                };
+            };
+        };
+    };
+    listPickupMisses: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListPickupMissResponseDto"];
                 };
             };
         };
@@ -9379,9 +9849,13 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
+        requestBody?: {
             content: {
-                "application/json": components["schemas"]["HandoverRefusalRequestDto"];
+                "multipart/form-data": {
+                    /** Format: binary */
+                    photo: string;
+                    request: components["schemas"]["HandoverRefusalRequestDto"];
+                };
             };
         };
         responses: {
