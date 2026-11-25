@@ -24,6 +24,19 @@ export const staff = {
   },
   incidents: {
     departure: 'Chuyến liên quan: {{route}} · {{date}}',
+    vetResult: {
+      action: 'Ghi kết quả thú y',
+      note: 'Nội dung kết quả thú y',
+      hint: 'Kết quả được lưu vào sổ sức khỏe tại điểm dừng xe đã tới gần nhất.',
+      save: 'Lưu kết quả',
+      saved: 'Đã ghi kết quả thú y',
+      error: 'Không thể ghi kết quả thú y. Vui lòng thử lại.',
+    },
+    cancelLegs: {
+      action: 'Thực hiện hủy chặng',
+      confirm: 'Ngựa thuộc sự cố sẽ về hub tập kết không phí. Các chặng đã lập phía sau của những con này sẽ bị hủy.',
+      saved: 'Đã thực hiện hủy chặng',
+    },
     severity: {
       label: 'Mức độ',
       LOW: 'Nhẹ',

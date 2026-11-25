@@ -103,7 +103,8 @@ public class StopReadinessServiceImpl implements StopReadinessService {
     // Nghỉ đêm: con đã gửi chuồng ở điểm này (lần giao nhận cuối ở đây là STAY_IN) phải được nhận lại trước khi xe đi
     private void requireNoHorseLeftAtStable(TripStop stop) {
         Map<Long, String> last = new LinkedHashMap<>();
-        handovers.findByTripStop_IdInOrderById(List.of(stop.getId())).stream().filter(h -> h.getStatus() == HandoverStatus.DONE)
+        handovers.findByTripStop_IdInOrderById(List.of(stop.getId())).stream()
+                .filter(h -> h.getStatus() == HandoverStatus.DONE && TripExecutionPolicy.isStableHandover(h.getHandoverType()))
                 .forEach(h -> scans.findById_HandoverId(h.getId()).stream().filter(r -> Boolean.TRUE.equals(r.getMicrochipMatched()))
                         .forEach(r -> last.put(r.getId().getHorseLegId(), h.getHandoverType() == HandoverType.STAY_IN
                                 ? r.getHorseLeg().getBookingHorse().getHorse().getName() : null)));

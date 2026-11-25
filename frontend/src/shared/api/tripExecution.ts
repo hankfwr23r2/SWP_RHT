@@ -27,8 +27,10 @@ export const tripExecutionApi = {
     readFormResponse<CrewTrip>(await apiClient.post(`/vehicle-trips/${tripId}/complete`, { endVehicleCondition, endVehicleNote }, formResponseOptions)),
   arrive: (stopId: number) => post<CrewTrip>(`/trip-stops/${stopId}/arrive`),
   depart: (stopId: number, earlyReason?: string) => post<CrewTrip>(`/trip-stops/${stopId}/depart`, earlyReason ? { earlyReason } : undefined),
-  openHandover: (stopId: number, handoverType: HandoverType, partyId?: number) =>
-    post<CrewTrip>(`/trip-stops/${stopId}/handovers`, partyId ? { handoverType, partyId } : { handoverType }),
+  openHandover: (stopId: number, handoverType: HandoverType, partyId?: number, incidentPlanId?: number) =>
+    incidentPlanId == null
+      ? post<CrewTrip>(`/trip-stops/${stopId}/handovers`, partyId ? { handoverType, partyId } : { handoverType })
+      : post<CrewTrip>(`/trip-stops/${stopId}/handovers?incidentPlanId=${incidentPlanId}`, { handoverType, partyId }),
   stablePartners: () => get<StablePartner[]>('/stable-partners'),
   scan: (handoverId: number, horseLegId: number, microchip: string, conditionNote?: string) => post<CrewTrip>(`/handovers/${handoverId}/horses`, { horseLegId, microchip, conditionNote }),
   refuse: async (handoverId: number, request: PickupMissReport, photo: File) => {

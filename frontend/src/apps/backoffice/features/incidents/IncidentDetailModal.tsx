@@ -1,40 +1,34 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { incidentsApi, type ResolutionType } from '@shared/api/incidentOps'
+import { incidentsApi } from '@shared/api/incidentOps'
 import { useAutoRefresh, useLoad } from '@shared/hooks/useLoad'
 import { formatDateTime, formatVND } from '@shared/lib/format'
 import { Button } from '@shared/ui/Button'
+import { ConfirmDialog } from '@shared/ui/ConfirmDialog'
 import { ErrorState } from '@shared/ui/ErrorState'
-import { Field } from '@shared/ui/Field'
-import { Input } from '@shared/ui/Input'
 import { Modal } from '@shared/ui/Modal'
-import { Select } from '@shared/ui/Select'
 import { Skeleton } from '@shared/ui/Skeleton'
 import { StatusBadge } from '@shared/ui/StatusBadge'
-import { Textarea } from '@shared/ui/Textarea'
 import { useToast } from '@shared/ui/toast'
 import { EvidencePanel } from '@backoffice/shared/EvidencePanel'
 import { IncidentCostForm } from '@backoffice/shared/IncidentCostForm'
 import { IncidentSeverityBadge } from '@backoffice/shared/IncidentSeverity'
+import { VetResultControl } from '@backoffice/shared/VetResultControl'
 import { IncidentCostControls } from './IncidentCostControls'
 import { IncidentPlanApproval } from './IncidentPlanApproval'
+import { IncidentProposalForm } from './IncidentProposalForm'
 import { IncidentEvidenceSection } from './IncidentEvidenceSection'
 import { IncidentSeverityControls } from './IncidentSeverityControls'
 import { PlanRejectDialog } from './PlanRejectDialog'
 import { VehicleSwapControls } from './VehicleSwapControls'
 import s from './Incidents.module.css'
 
-const RESOLUTIONS: ResolutionType[] = ['CONTINUE', 'VET_TREATMENT', 'STABLE_NEARBY', 'TRANSFER_VEHICLE', 'RETURN_TO_HUB', 'CANCEL']
-
 interface Props { incidentId: number; role: 'coordinator' | 'manager'; onClose: () => void; onChanged: () => void }
 export function IncidentDetailModal({ incidentId, role, onClose, onChanged }: Props) {
   const { t } = useTranslation()
   const toast = useToast()
   const [busy, setBusy] = useState(false)
-  const [resolution, setResolution] = useState<ResolutionType>('CONTINUE')
-  const [instructions, setInstructions] = useState('')
-  const [estimatedCost, setEstimatedCost] = useState('')
-  const [handler, setHandler] = useState('')
+  const [cancelPlan, setCancelPlan] = useState<number>()
   const [rejecting, setRejecting] = useState<{ id: number; version: number }>()
   const { data, loaded, error, reload } = useLoad(async () => {
     const [incident, costs, evidence] = await Promise.all([incidentsApi.incident(incidentId), incidentsApi.costs(incidentId), incidentsApi.photos(incidentId)])
@@ -66,6 +60,7 @@ export function IncidentDetailModal({ incidentId, role, onClose, onChanged }: Pr
   const latest = plans.at(-1)
   const canReturn = incident.incidentType !== 'HANDOVER_TIMEOUT'
   const open = incident.status !== 'RESOLVED' && incident.status !== 'CLOSED'
+  const canExecute = role === 'coordinator' && incident.status === 'PLAN_ACTIVE' && latest?.status === 'APPROVED'
 
   return (
     <Modal wide title={incident.title} subtitle={`${t(`incidents.type.${incident.incidentType}`)} · ${t(`incidents.cause.${incident.confirmedCauseType ?? incident.causeType}`)}`} onClose={onClose}
@@ -134,30 +129,16 @@ export function IncidentDetailModal({ incidentId, role, onClose, onChanged }: Pr
             <Button variant="primary" loading={busy} onClick={() => run(() => incidentsApi.returnToHub(incidentId), t('incidents.done.returned'))}>{t('incidents.returnToHub')}</Button>
           </div>
         )}
+        {canExecute && latest.resolutionType === 'VET_TREATMENT' && (
+          <VetResultControl key={latest.id} incidentId={incidentId} planId={latest.id} partnerName={latest.handlerPartyName} disabled={busy}
+            onSaved={async () => { onChanged(); await reload() }} />
+        )}
+        {canExecute && latest.resolutionType === 'CANCEL' && (
+          <Button variant="danger" disabled={busy} onClick={() => setCancelPlan(latest.id)}>{t('incidents.cancelLegs.action')}</Button>
+        )}
         {role === 'coordinator' && open && (
-          <div className={s.form}>
-            <Field label={t('incidents.resolutionType')}>
-              {c => <Select {...c} value={resolution} onChange={value => setResolution(value as ResolutionType)}
-                options={RESOLUTIONS.filter(r => canReturn || r !== 'RETURN_TO_HUB').map(r => ({ value: r, label: t(`incidents.resolution.${r}`) }))} />}
-            </Field>
-            <Field label={t('incidents.handler')}>
-              {c => <Select {...c} value={handler} onChange={setHandler} placeholder={t('incidents.noHandler')}
-                options={[{ value: '', label: t('incidents.noHandler') }, ...(parties ?? []).map(p => ({ value: `${p.id}`, label: p.displayName ?? '' }))]} />}
-            </Field>
-            <Field label={t('incidents.estimatedCost')}>
-              {c => <Input {...c} inputMode="numeric" value={estimatedCost} onChange={e => setEstimatedCost(e.target.value)} />}
-            </Field>
-            <Field label={t('incidents.instructions')} required>
-              {c => <Textarea {...c} value={instructions} onChange={e => setInstructions(e.target.value)} />}
-            </Field>
-            <Button variant="primary" disabled={!instructions.trim()} loading={busy}
-              onClick={() => run(() => incidentsApi.propose(incidentId, {
-                resolutionType: resolution, instructions: instructions.trim(),
-                estimatedCost: estimatedCost ? Number(estimatedCost) : undefined, handlerPartyId: handler ? Number(handler) : undefined,
-              }), t('incidents.done.proposed')).then(ok => { if (ok) setInstructions('') })}>
-              {t('incidents.propose')}
-            </Button>
-          </div>
+          <IncidentProposalForm parties={parties} canReturn={canReturn} busy={busy}
+            onPropose={draft => run(() => incidentsApi.propose(incidentId, draft), t('incidents.done.proposed'))} />
         )}
       </section>
 
@@ -195,6 +176,11 @@ export function IncidentDetailModal({ incidentId, role, onClose, onChanged }: Pr
       {rejecting && <PlanRejectDialog version={rejecting.version} busy={busy} onClose={() => setRejecting(undefined)}
         onReject={async reason => {
           if (await run(() => incidentsApi.reject(rejecting.id, reason), t('incidents.done.rejected'))) setRejecting(undefined)
+        }} />}
+      {cancelPlan !== undefined && <ConfirmDialog tone="danger" title={t('incidents.cancelLegs.action')} message={t('incidents.cancelLegs.confirm')}
+        confirmLabel={t('incidents.cancelLegs.action')} confirmDisabled={busy || !canExecute || latest.id !== cancelPlan}
+        onCancel={() => setCancelPlan(undefined)} onConfirm={async () => {
+          if (await run(() => incidentsApi.cancelLegs(incidentId, cancelPlan), t('incidents.cancelLegs.saved'))) setCancelPlan(undefined)
         }} />}
     </Modal>
   )

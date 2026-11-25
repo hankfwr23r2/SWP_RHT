@@ -24,6 +24,19 @@ export const staff = {
   },
   incidents: {
     departure: 'Related departure: {{route}} · {{date}}',
+    vetResult: {
+      action: 'Record vet result',
+      note: 'Vet findings',
+      hint: 'The findings are saved in the health log at the last stop the vehicle reached.',
+      save: 'Save result',
+      saved: 'Vet result recorded',
+      error: 'Could not record the vet result. Please try again.',
+    },
+    cancelLegs: {
+      action: 'Carry out leg cancellation',
+      confirm: 'The affected horses will return to the hub for staging at no charge. Their subsequent planned legs will be cancelled.',
+      saved: 'Leg cancellation carried out',
+    },
     severity: {
       label: 'Severity',
       LOW: 'Low',

@@ -2454,6 +2454,16 @@
         "required" : [ "reason" ],
         "type" : "object"
       },
+      "CancelLegsRequestDto" : {
+        "properties" : {
+          "incidentPlanId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "incidentPlanId" ],
+        "type" : "object"
+      },
       "ChangePasswordRequest" : {
         "properties" : {
           "confirmPassword" : {
@@ -9371,6 +9381,21 @@
         "required" : [ "homeHubLocationId", "licensePlate", "standardStallCount", "vehicleClassId", "wideStallCount" ],
         "type" : "object"
       },
+      "VetResultRequestDto" : {
+        "properties" : {
+          "incidentPlanId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "note" : {
+            "maxLength" : 2000,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "note" ],
+        "type" : "object"
+      },
       "VnpayIpnResponseDto" : {
         "properties" : {
           "Message" : {
@@ -15309,6 +15334,42 @@
         "tags" : [ "incident-controller" ]
       }
     },
+    "/incidents/{id}/cancel-legs" : {
+      "post" : {
+        "operationId" : "cancelLegs",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CancelLegsRequestDto"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseIncidentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "incident-controller" ]
+      }
+    },
     "/incidents/{id}/close" : {
       "post" : {
         "operationId" : "close",
@@ -15725,6 +15786,43 @@
             "application/json" : {
               "schema" : {
                 "$ref" : "#/components/schemas/VehicleSwapRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseIncidentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "incident-controller" ]
+      }
+    },
+    "/incidents/{id}/vet-result" : {
+      "post" : {
+        "operationId" : "recordVetResult",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VetResultRequestDto"
               }
             }
           },
@@ -17853,6 +17951,15 @@
           "name" : "id",
           "required" : true,
           "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "incidentPlanId",
+          "required" : false,
+          "schema" : {
+            "exclusiveMinimum" : 0,
             "format" : "int64",
             "type" : "integer"
           }
