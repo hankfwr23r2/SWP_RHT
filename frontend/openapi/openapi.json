@@ -4705,6 +4705,12 @@
             },
             "type" : "array"
           },
+          "healthLogs" : {
+            "items" : {
+              "$ref" : "#/components/schemas/JourneyHealthLogResponseDto"
+            },
+            "type" : "array"
+          },
           "holder" : {
             "enum" : [ "SHIPPER", "COMPANY", "PARTY", "CONSIGNEE" ],
             "type" : "string"
@@ -4942,6 +4948,16 @@
           "deliveryMethod" : {
             "enum" : [ "COMPANY", "SELF" ],
             "type" : "string"
+          },
+          "dietNote" : {
+            "type" : "string"
+          },
+          "feedSuppliedByOwner" : {
+            "type" : "boolean"
+          },
+          "feedingsPerDay" : {
+            "format" : "int32",
+            "type" : "integer"
           },
           "horseName" : {
             "type" : "string"
@@ -5562,6 +5578,40 @@
           },
           "waitStartedAt" : {
             "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "JourneyHealthLogResponseDto" : {
+        "properties" : {
+          "feedIntake" : {
+            "enum" : [ "NORMAL", "REDUCED", "REFUSED" ],
+            "type" : "string"
+          },
+          "healthStatus" : {
+            "enum" : [ "NORMAL", "WATCH", "SICK", "CRITICAL" ],
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "placeName" : {
+            "type" : "string"
+          },
+          "recordedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "temperatureCelsius" : {
+            "type" : "number"
+          },
+          "vehicleTripCode" : {
+            "type" : "string"
+          },
+          "waterIntake" : {
+            "enum" : [ "NORMAL", "REDUCED", "REFUSED" ],
             "type" : "string"
           }
         },
@@ -8644,6 +8694,16 @@
         "properties" : {
           "bookingCode" : {
             "type" : "string"
+          },
+          "dietNote" : {
+            "type" : "string"
+          },
+          "feedSuppliedByOwner" : {
+            "type" : "boolean"
+          },
+          "feedingsPerDay" : {
+            "format" : "int32",
+            "type" : "integer"
           },
           "horseName" : {
             "type" : "string"

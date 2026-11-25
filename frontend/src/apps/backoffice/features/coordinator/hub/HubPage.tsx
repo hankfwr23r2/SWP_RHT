@@ -111,6 +111,13 @@ export default function HubPage() {
   const columns: TableColumn<HorseStay>[] = [
     { key: 'horse', header: t('dispatch.stays.colHorse'), render: stay => stay.horseName },
     { key: 'booking', header: t('dispatch.stays.colBooking'), render: stay => stay.bookingCode },
+    { key: 'feeding', header: t('horseFeeding.title'), render: stay => (
+      <div className={h.feeding}>
+        <div>{stay.dietNote?.trim() || t('horseFeeding.none')}</div>
+        <div>{stay.feedingsPerDay == null ? t('horseFeeding.mealsUnknown') : t('horseFeeding.meals', { count: stay.feedingsPerDay })}</div>
+        <div>{t(stay.feedSuppliedByOwner ? 'horseFeeding.owner' : 'horseFeeding.company')}</div>
+      </div>
+    ) },
     { key: 'type', header: t('dispatch.stays.colType'), render: stay =>
       stay.balanceHoldAt ? t('dispatch.stays.balanceHold') : t(`dispatch.stays.stayType.${stay.stayType}`) },
     { key: 'health', header: t('myTrips.run.health.status'), render: stay =>
