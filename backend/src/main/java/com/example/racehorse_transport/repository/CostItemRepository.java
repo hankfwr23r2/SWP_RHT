@@ -26,6 +26,9 @@ public interface CostItemRepository extends JpaRepository<CostItem, Long> {
 
     List<CostItem> findByHorseStay_Id(Long horseStayId);
 
+    // Phí giữ cộng dồn qua mọi lần giữ của một con trong đơn
+    List<CostItem> findByHorseStay_BookingHorse_Id(Long bookingHorseId);
+
     @Query("SELECT COALESCE(SUM(c.stablingDepositCredit), 0) FROM CostItem c WHERE c.booking.id = :bookingId")
     BigDecimal sumStablingDepositCredit(Long bookingId);
 

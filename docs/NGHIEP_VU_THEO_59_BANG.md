@@ -914,3 +914,9 @@ Phí bảo hiểm giữ lại chỉ gồm phần hãng chưa hoàn. Chuyên viê
 Đơn đã cọc đổi chuyến chỉ tính thời gian giấy phải làm lại: giấy đã duyệt còn hạn tới ngày chạy mới không tính; thiếu giấy phép (`IMPORT_PERMIT`, `IMPORT_APPROVAL`) tính `permit_lead_days`, thiếu giấy khác tính `certificate_lead_days`. Đơn chưa cọc vẫn tính đủ. Đơn chạy thẳng xác định theo định tuyến hub, đổi ngày đón trong 30 ngày kể từ lần hụt, kiểm giấy và bảo hiểm cho ngày mới; hủy được sau khi quản lý chốt bên chịu.
 
 Đơn chờ chọn lại lịch vì đón hụt, hoặc vì trả ngựa tại nơi đón, được nhắc ngày 3, 7, 14, 25 (`SCHEDULE_CHOICE_REMINDER_1..4_DAYS`). Đủ `PRICE_HOLD_DAYS` thì đơn đón hụt hủy theo nguyên nhân: mọi con do khách thì mất cọc, có con không do khách thì hoàn 100%; chưa chốt bên chịu thì nhắc quản lý mỗi ngày, không tự hủy.
+
+## Phí giữ ngựa · phần 1 của mục 13.2
+
+Phí giữ = số lần **đủ 24 giờ** × đơn giá chụp lúc bắt đầu giữ; phần lẻ không tính, cộng dồn mọi lần giữ của con đó trong đơn, tối đa 30 lần. Mốc rơi ngoài 06:00–18:00 dời tới 08:00. Bắt đầu: lúc vào hub (người nhận vắng), giờ hẹn (khách tới hub trễ), giờ chạy theo kế hoạch (chưa trả số dư). Báo khách trước mỗi mốc 3 giờ. Xe tới sau khung giờ đã báo thì lỗi công ty, không tính phí; tới sớm thì thời gian chờ đếm từ đầu khung.
+
+Chưa làm ở phần này: đồng hồ dừng khi khách báo sẵn sàng, cước giao lại, giờ xe trục chạy thật.

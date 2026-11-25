@@ -153,8 +153,8 @@ class DeliveryFailureFlowTest {
         entityManager.flush();
         jdbc.update("UPDATE payment SET status = 'PAID', paid_at = now() WHERE id = ?", payment);
         jdbc.update("""
-                UPDATE horse_stay SET actual_start_at = now() - (? * interval '1 day') - interval '2 hour',
-                    planned_start_at = now() - (? * interval '1 day') - interval '2 hour'
+                UPDATE horse_stay SET actual_start_at = now() - (? * interval '1 day') - interval '38 hour',
+                    planned_start_at = now() - (? * interval '1 day') - interval '38 hour'
                 WHERE id = ?
                 """, billedDays, billedDays, stay);
         entityManager.clear();

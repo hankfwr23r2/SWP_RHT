@@ -7,6 +7,8 @@ import java.time.Instant;
 public interface StablingChargeService {
 
     void chargeReturnedBalanceHolds(Long bookingId);
+    java.math.BigDecimal accrued(java.util.List<HorseStay> stays, Instant through);
+    void warnBeforeNextBlock(java.util.List<HorseStay> stays, Instant now);
     int remindOverdueStabling();
     void precharge(HorseLeg replacement, String username);
     void requirePaid(HorseStay stay);

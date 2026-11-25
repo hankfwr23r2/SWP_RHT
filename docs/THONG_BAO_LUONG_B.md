@@ -75,3 +75,7 @@ Chuyên viên ghi số phí bảo hiểm đã hoàn lũy kế theo chứng từ.
 ## Đợt 1b bước 5 · Dời chuyến
 
 `PickupMissFollowUpService` nhắc và kết thúc hạn chọn lịch, chạy cùng `PickupMissScheduler`. `BookingRoutingService.lockReplacement` dùng thời gian giấy phải làm lại khi đơn đã cọc.
+
+## Mục 13.2 phần 1 · Phí giữ theo lần đủ 24 giờ
+
+`StablingPolicy.blocks` thay cách tính ngày. `stableOverdue` tính từ giờ hẹn. `DeliveryFailureServiceImpl`: xe tới sau khung giờ đã báo (`DELIVERY_NOTICE_WINDOW_MINUTES`) thì sự cố là lỗi công ty, về hub tập kết không phí; tới sớm thì chờ đếm từ giờ tới dự kiến. Số migration `V2026112818xx`.
