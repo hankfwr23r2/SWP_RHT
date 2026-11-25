@@ -89,7 +89,7 @@ export function TripDetailModal({ tripId, bookings, onClose, onChanged }: Props)
         <div className={s.sectionHead}>
           <StatusBadge tone={TRIP_STATUS_TONE[trip.status ?? 'PLANNED']} label={t(`tripWords.status.${trip.status}`)} />
           {!editable && <span className={s.muted}>{t('dispatch.detail.locked')}</span>}
-          <span>{trip.coordinatorName ?? t('coordAssignment.unassigned')}</span>
+          <span>{trip.coordinatorName ? t('coordAssignment.ownedBy', { name: trip.coordinatorName }) : t('coordAssignment.unassigned')}</span>
           {canTakeOver && <TripTakeOverButton tripId={tripId} onSaved={async () => { onChanged(); await reload() }} />}
         </div>
       </div>

@@ -54,7 +54,9 @@ export default function ReviewListPage() {
   const [params, setParams] = useSearchParams()
   const mine = params.get('assignment') !== 'all'
   const selected = params.get('tab')
-  const status = reviewStatuses.find(value => value === selected) ?? defaultReviewStatus
+  // Đơn chờ tiếp nhận chưa có chuyên viên nên không nằm trong Đơn của tôi
+  const statuses = reviewStatuses.filter(value => !mine || value !== 'PENDING_INTAKE')
+  const status = statuses.find(value => value === selected) ?? defaultReviewStatus
   const query = params.get('q') ?? ''
   const [search, setSearch] = useState({ from: query, value: query })
   const value = search.from === query ? search.value : query
@@ -77,7 +79,7 @@ export default function ReviewListPage() {
     <Tabs label={t('staffReview.assignmentTabs')} value={mine ? 'mine' : 'all'}
       items={[{ value: 'mine', label: t('staffReview.mine') }, { value: 'all', label: t('staffReview.all') }]}
       onChange={value => update('assignment', value === 'all' ? 'all' : '')}>
-    <Tabs label={t('staffReview.tabs')} value={status} items={reviewStatuses.map(value => ({ value, label: t(`staffReview.tabsByStatus.${value}`) }))}
+    <Tabs label={t('staffReview.tabs')} value={status} items={statuses.map(value => ({ value, label: t(`staffReview.tabsByStatus.${value}`) }))}
       onChange={value => update('tab', value)}>
       <div className={s.stack}>
         {mine && status === defaultReviewStatus && !rows && errors.length

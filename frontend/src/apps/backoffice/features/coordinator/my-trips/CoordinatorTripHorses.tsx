@@ -18,10 +18,10 @@ export function CoordinatorTripHorses({ tripId, code, onClose }: { tripId: numbe
   const { data, error, reload } = useCoordinatorTripHorses(tripId)
   const [history, setHistory] = useState<{ bookingHorseId: number; horseName?: string }>()
   const yesNo = (value?: boolean) => value == null ? '—' : t(value ? 'coordAssignment.yes' : 'coordAssignment.no')
-  return <Modal wide title={t('coordAssignment.horses')} subtitle={code} onClose={onClose}>
+  return <Modal wide title={t('coordAssignment.onTrip')} subtitle={code} onClose={onClose}>
     {!data ? error ? <ErrorState onRetry={reload} /> : <Skeleton lines={4} />
       : !data.length ? <EmptyState title={t('coordAssignment.noHorses')} description={null} />
-        : <Table caption={t('coordAssignment.horses')} rows={data} rowKey={row => row.horse?.leg?.id ?? 0} columns={[
+        : <Table caption={t('coordAssignment.onTrip')} rows={data} rowKey={row => row.horse?.leg?.id ?? 0} columns={[
           { key: 'horse', header: t('coordAssignment.horse'), render: row => row.horse?.horseName },
           { key: 'booking', header: t('coordAssignment.booking'), render: row => row.horse?.bookingCode },
           { key: 'stall', header: t('coordAssignment.stall'), render: row => row.horse?.leg?.stallPosition ?? '—' },
