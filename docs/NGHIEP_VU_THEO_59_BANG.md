@@ -920,3 +920,9 @@ Phí bảo hiểm giữ lại chỉ gồm phần hãng chưa hoàn. Chuyên viê
 Phí giữ = số lần **đủ 24 giờ** × đơn giá chụp lúc bắt đầu giữ; phần lẻ không tính, cộng dồn mọi lần giữ của con đó trong đơn, tối đa 30 lần. Mốc rơi ngoài 06:00–18:00 dời tới 08:00. Bắt đầu: lúc vào hub (người nhận vắng), giờ hẹn (khách tới hub trễ), giờ chạy theo kế hoạch (chưa trả số dư). Báo khách trước mỗi mốc 3 giờ. Xe tới sau khung giờ đã báo thì lỗi công ty, không tính phí; tới sớm thì thời gian chờ đếm từ đầu khung.
 
 Chưa làm ở phần này: đồng hồ dừng khi khách báo sẵn sàng, cước giao lại, giờ xe trục chạy thật.
+
+## Đóng đơn tách khỏi công nợ · mục 13.3, 13.5 (1–5)
+
+Đơn đóng khi: số của báo giá đã trả đúng; không còn sự cố, khiếu nại mở; mọi chi phí phía khách bị từ chối hoặc đã duyệt và thành khoản thu; không còn khoản hoàn chờ; và khách xác nhận ổn hoặc đã hết 7 ngày. Khoản thu thêm chưa trả không chặn. Hệ thống tự đóng sau 7 ngày kể cả khi có chi phí.
+
+Chi phí phía khách chưa duyệt: nhắc quản lý ngày 3, 7; đủ 14 ngày sau khi giao thì công ty chịu. Chi phí lập quá 30 ngày sau khi giao thì công ty chịu. Sự cố Đã xử lý quá 7 ngày, không còn chi phí chờ thì tự đóng; sự cố chưa xử lý của đơn đã giao nhắc mỗi ngày. Khoản hoàn có hạn 7 ngày, quá hạn nhắc mỗi ngày.

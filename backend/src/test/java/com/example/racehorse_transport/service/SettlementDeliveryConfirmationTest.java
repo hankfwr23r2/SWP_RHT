@@ -107,6 +107,39 @@ class SettlementDeliveryConfirmationTest {
         verifyNoInteractions(statuses);
     }
 
+    @Test
+    void unpaidExtraChargeDoesNotBlockClosure() {
+        when(costs.findByBooking_IdOrderByIncurredAt(BOOKING_ID)).thenReturn(java.util.List.of(cost(true, true)));
+        when(costs.sumApprovedForBooking(eq(BOOKING_ID), org.mockito.ArgumentMatchers.anySet())).thenReturn(BigDecimal.TEN);
+
+        assertThat(serviceAt(DEADLINE.plusSeconds(1)).autoClose(BOOKING_ID)).isTrue();
+    }
+
+    @Test
+    void costWithoutApprovalOrChargeBlocksClosure() {
+        var service = serviceAt(DEADLINE.plusSeconds(1));
+        when(costs.findByBooking_IdOrderByIncurredAt(BOOKING_ID)).thenReturn(java.util.List.of(cost(false, false)));
+        assertThat(service.autoClose(BOOKING_ID)).isFalse();
+        when(costs.findByBooking_IdOrderByIncurredAt(BOOKING_ID)).thenReturn(java.util.List.of(cost(true, false)));
+        assertThat(service.autoClose(BOOKING_ID)).isFalse();
+
+        var declined = cost(false, false);
+        declined.setCustomerAgreed(false);
+        when(costs.findByBooking_IdOrderByIncurredAt(BOOKING_ID)).thenReturn(java.util.List.of(declined));
+        assertThat(service.autoClose(BOOKING_ID)).isTrue();
+    }
+
+    private static com.example.racehorse_transport.entity.CostItem cost(boolean approved, boolean charged) {
+        var cost = new com.example.racehorse_transport.entity.CostItem();
+        cost.setId(5L);
+        cost.setPayerType(com.example.racehorse_transport.entity.enums.CostPayerType.CUSTOMER);
+        cost.setCurrencyCode("VND");
+        cost.setAmount(BigDecimal.TEN);
+        if (approved) cost.setApprovedAt(DELIVERED_AT);
+        if (charged) cost.setExtraChargePayment(new com.example.racehorse_transport.entity.Payment());
+        return cost;
+    }
+
     private SettlementServiceImpl serviceAt(Instant now) {
         return new SettlementServiceImpl(bookings, history, quotations, payments, costs, incidents, statuses,
                 mock(PaymentService.class), configs, Clock.fixed(now, ZoneOffset.UTC));

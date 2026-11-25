@@ -46,6 +46,20 @@ public interface IncidentRepository extends JpaRepository<Incident, Long> {
     @EntityGraph(attributePaths = {"booking", "bookingHorse"})
     Optional<Incident> findByBooking_IdAndIncidentType(Long bookingId, IncidentType incidentType);
 
+    @Query("""
+            SELECT i FROM Incident i LEFT JOIN i.horseLeg leg LEFT JOIN leg.bookingHorse line
+            WHERE i.status IN :statuses AND (i.booking.id = :bookingId OR line.booking.id = :bookingId)
+                AND i.incidentType <> com.example.racehorse_transport.entity.enums.IncidentType.COMPLAINT
+            """)
+    List<Incident> findOpenForBooking(@Param("bookingId") Long bookingId, @Param("statuses") Collection<IncidentStatus> statuses);
+
+    @Query("""
+            SELECT i.id FROM Incident i WHERE i.status = :status AND i.resolvedAt <= :cutoff
+                AND i.incidentType <> com.example.racehorse_transport.entity.enums.IncidentType.COMPLAINT
+            ORDER BY i.id
+            """)
+    List<Long> findResolvedBefore(@Param("status") IncidentStatus status, @Param("cutoff") java.time.Instant cutoff);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT i FROM Incident i WHERE i.id = :id AND i.incidentType <> com.example.racehorse_transport.entity.enums.IncidentType.COMPLAINT")
     Optional<Incident> findForUpdate(@Param("id") Long id);

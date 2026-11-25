@@ -72,7 +72,7 @@ export function SettlementPanel({ data }: { data: OrderData }) {
         {(picked.length > 0 || settlement.status === 'DELIVERED') && (
           <div className={s.row}>
             <Button variant="primary" disabled={!picked.length || busy} onClick={() => setDialog('charge')}>{t('mgr.settle.charge')}</Button>
-            {settlement.status === 'DELIVERED' && <Button disabled={busy || settlement.outstanding !== 0} onClick={() => setDialog('complete')}>{t('mgr.settle.complete')}</Button>}
+            {settlement.status === 'DELIVERED' && <Button disabled={busy || !settlement.canClose} onClick={() => setDialog('complete')}>{t('mgr.settle.complete')}</Button>}
           </div>
         )}
       </div>

@@ -189,3 +189,7 @@ Chuyên viên ghi phí bảo hiểm được hoàn cho con đã loại trong ph�
 ## Đợt 1b bước 5 · Dời chuyến
 
 Thẻ chọn lại chuyến ẩn với đơn chạy thẳng; khách chọn **ngày đón mới** hoặc hủy ở thẻ đón hụt. Máy chủ chặn ngày quá 30 ngày kể từ lần hụt, thiếu thời gian làm lại giấy, hết bảo hiểm.
+
+## Đóng đơn tách khỏi công nợ · mục 13.3, 13.5 (1–5)
+
+Quyết toán: nút đóng đơn theo `canClose` của máy chủ, không theo số còn nợ.
