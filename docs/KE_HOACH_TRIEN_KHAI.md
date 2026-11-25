@@ -672,7 +672,7 @@ Xong thì chạy Quality Gate và báo kết quả thật.
 
 ## Màn cũ đã ẩn, chờ cân nhắc xóa (ghi nhận 24/11/2026)
 
-Người dùng chốt: ẩn khỏi menu và đổi trang mở đầu, chưa xóa file. Các màn này gọi API đã bỏ nên mở bằng đường dẫn sẽ báo lỗi. Xóa khi bạn B xác nhận màn mới đã thay đủ.
+Người dùng chốt: ẩn khỏi menu và đổi trang mở đầu, chưa xóa file. **25/11: đã xóa** Xe và lộ trình, Giám sát, Đội xe của điều phối, `/driver`, `/escort` (#459); bảng điều khiển, tiếp nhận, duyệt, sự cố cũ (#458). Các màn này gọi API đã bỏ nên mở bằng đường dẫn sẽ báo lỗi. Xóa khi bạn B xác nhận màn mới đã thay đủ.
 
 | Màn cũ | Đường dẫn | Màn thay thế |
 |---|---|---|
