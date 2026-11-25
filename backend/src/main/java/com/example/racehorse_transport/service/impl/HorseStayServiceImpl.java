@@ -77,6 +77,7 @@ public class HorseStayServiceImpl implements HorseStayService {
                 .forEach(stay -> {
                     stay.setStayType(HorseStayType.STABLING);
                     stay.setBalanceHoldAt(chargedFrom);
+                    stay.setStablingUnitPrice(java.math.BigDecimal.valueOf(configs.getInt(DAILY_FEE)));
                     if (until.isAfter(stay.getPlannedStartAt())) stay.setPlannedEndAt(until);
                 });
     }
@@ -157,6 +158,7 @@ public class HorseStayServiceImpl implements HorseStayService {
         HorseStay stay = new HorseStay();
         stay.setBookingHorse(failedLeg.getBookingHorse());
         stay.setStayType(HorseStayType.STABLING);
+        stay.setStablingUnitPrice(java.math.BigDecimal.valueOf(configs.getInt(DAILY_FEE)));
         stay.setLocation(hub);
         stay.setPlannedStartAt(at);
         stay.setPlannedEndAt(at.plus(Duration.ofDays(configs.getInt(MAX_DAYS))));
@@ -166,7 +168,7 @@ public class HorseStayServiceImpl implements HorseStayService {
         notifications.notify(List.of(booking.getCustomer().getUser().getId()), booking.getId(), "Ngựa đang được giữ tại hub",
                 failedLeg.getBookingHorse().getHorse().getName() + " chưa giao được do không gặp người nhận, đang được giữ và chăm sóc tại "
                         + hub.getName() + " tới " + TIME.format(stay.getPlannedEndAt()) + ". Phí lưu chuồng và chăm sóc "
-                        + money(configs.getInt(DAILY_FEE)) + " mỗi ngày, người nhận chịu.", "/orders/" + booking.getId());
+                        + money(configs.getInt(DAILY_FEE)) + " cho mỗi 24 giờ trọn vẹn, người nhận chịu; chưa đủ 24 giờ không tính.", "/orders/" + booking.getId());
         legs.findByBookingHorse_IdOrderBySequenceNumber(failedLeg.getBookingHorse().getId()).stream()
                 .filter(leg -> leg.getStatus() == HorseLegStatus.PLANNED && leg.getReplacedHorseLeg() != null
                         && leg.getReplacedHorseLeg().getId().equals(failedLeg.getId()))
@@ -268,7 +270,9 @@ public class HorseStayServiceImpl implements HorseStayService {
         stabling.setBookingHorse(assembly.getBookingHorse());
         stabling.setStayType(HorseStayType.STABLING);
         stabling.setLocation(assembly.getLocation());
-        stabling.setPlannedStartAt(now);
+        // Người nhận trễ hẹn: phí tính từ giờ hẹn
+        stabling.setPlannedStartAt(assembly.getPlannedEndAt());
+        stabling.setStablingUnitPrice(java.math.BigDecimal.valueOf(configs.getInt(DAILY_FEE)));
         stabling.setPlannedEndAt(now.plus(Duration.ofDays(configs.getInt(MAX_DAYS))));
         stabling.setActualStartAt(now);
         stays.saveAndFlush(stabling);
@@ -276,7 +280,7 @@ public class HorseStayServiceImpl implements HorseStayService {
         String note = request.note() == null || request.note().isBlank() ? "" : " " + request.note().strip();
         notifications.notify(List.of(booking.getCustomer().getUser().getId()), booking.getId(), "Ngựa đang được giữ tại hub",
                 "Đã quá giờ hẹn. Phí lưu chuồng và chăm sóc tại " + assembly.getLocation().getName()
-                        + " là " + money(configs.getInt(DAILY_FEE)) + " mỗi ngày." + note, "/orders/" + booking.getId());
+                        + " là " + money(configs.getInt(DAILY_FEE)) + " cho mỗi 24 giờ trọn vẹn tính từ giờ hẹn." + note, "/orders/" + booking.getId());
         return HorseStayResponseDto.from(stabling);
     }
 

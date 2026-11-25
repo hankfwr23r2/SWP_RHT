@@ -313,6 +313,8 @@ class HubSelfFlowTest {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM cost_item WHERE horse_stay_id = ?", Long.class, stabling)).isZero();
         assertThat(customerNotices(booking)).contains("Ngựa đang được giữ tại hub");
 
+        // Trễ chưa đủ 24 giờ thì không có phí; ở đây giữ 38 giờ là một lần đủ 24 giờ (mục 13.2)
+        sql("UPDATE horse_stay SET planned_start_at = now() - interval '38 hour', actual_start_at = now() - interval '38 hour' WHERE id = " + stabling);
         // Người nhận vẫn lấy ngựa được. Phí tự duyệt và sinh khoản thu khi ngựa rời hub.
         deliver(stabling, chip(lines.getFirst())).andExpect(status().isOk()).andExpect(jsonPath("$.data.actualEndAt").isNotEmpty());
         entityManager.flush();

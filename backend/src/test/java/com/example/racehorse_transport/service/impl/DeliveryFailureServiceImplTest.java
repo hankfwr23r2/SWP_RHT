@@ -23,6 +23,7 @@ import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.TripStopRepository;
 import com.example.racehorse_transport.service.NotificationService;
 import com.example.racehorse_transport.service.SystemConfigService;
+import com.example.racehorse_transport.policy.TripExecutionPolicy;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -38,9 +39,43 @@ class DeliveryFailureServiceImplTest {
     private final CrewAssignmentRepository crew = mock(CrewAssignmentRepository.class);
     private final TripStopRepository stops = mock(TripStopRepository.class);
     private final SystemConfigService configs = mock(SystemConfigService.class);
+    private final IncidentRepository incidents = mock(IncidentRepository.class);
     private final DeliveryFailureServiceImpl service = new DeliveryFailureServiceImpl(handovers, legs, crew,
-            mock(IncidentRepository.class), mock(StaffRepository.class), mock(NotificationService.class), configs,
+            incidents, mock(StaffRepository.class), mock(NotificationService.class), configs,
             Clock.fixed(now, ZoneOffset.UTC), stops);
+
+    @Test
+    void lateTruckMakesTheCompanyResponsible() {
+        assertThat(TripExecutionPolicy.arrivedAfterWindow(now, now.plusSeconds(3600), 60)).isFalse();
+        assertThat(TripExecutionPolicy.arrivedAfterWindow(now, now.plusSeconds(3601), 60)).isTrue();
+        assertThat(TripExecutionPolicy.arrivedAfterWindow(now, null, 60)).isFalse();
+
+        var trip = new VehicleTrip();
+        trip.setId(1L);
+        trip.setStatus(VehicleTripStatus.IN_PROGRESS);
+        var stop = stop(trip, 12L, 3, TripStopType.DELIVERY);
+        stop.setPlannedArrivalAt(now.minusSeconds(9000));
+        stop.setActualArrivalAt(now.minusSeconds(3600));
+        var waiting = handover(stop);
+        waiting.setWaitStartedAt(now.minusSeconds(7200));
+        var horse = new com.example.racehorse_transport.entity.Horse();
+        horse.setName("Sao");
+        var line = new com.example.racehorse_transport.entity.BookingHorse();
+        line.setHorse(horse);
+        line.setBooking(stop.getBookingAddress().getBooking());
+        var leg = new com.example.racehorse_transport.entity.HorseLeg();
+        leg.setBookingHorse(line);
+        when(configs.getInt("INTERMEDIATE_WAIT_MINUTES")).thenReturn(60);
+        when(configs.getInt("HANDOVER_FREE_WAIT_MINUTES")).thenReturn(120);
+        when(configs.getInt("DELIVERY_NOTICE_WINDOW_MINUTES")).thenReturn(60);
+        when(stops.findByVehicleTrip_IdOrderBySequenceNumber(1L)).thenReturn(List.of(stop));
+        when(handovers.findWaitingSince(HandoverStatus.PENDING, now.minusSeconds(3600))).thenReturn(List.of(waiting));
+        when(legs.findByAlightTripStop_IdAndStatusIn(12L, Set.of(HorseLegStatus.IN_PROGRESS))).thenReturn(List.of(leg));
+
+        assertThat(service.timeoutExpired()).isEqualTo(1);
+        verify(incidents).save(org.mockito.ArgumentMatchers.argThat(row -> row.getConfirmedCauseType()
+                == com.example.racehorse_transport.entity.enums.IncidentCauseType.COMPANY_FAULT));
+    }
 
     @Test
     void stopsOfDifferentBookingsKeepTheFullWait() {

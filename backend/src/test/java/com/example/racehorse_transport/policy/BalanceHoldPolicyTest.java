@@ -33,16 +33,22 @@ class BalanceHoldPolicyTest {
         assertThat(BalanceHoldPolicy.rideLimitSeconds(true, 10)).isEqualTo(36_000);
     }
 
+    private long blocks(Instant through) {
+        return StablingPolicy.blocks(java.util.List.of(new StablingPolicy.Run(departure, null)), through,
+                new StablingPolicy.Hours(java.time.LocalTime.of(6, 0), java.time.LocalTime.of(18, 0),
+                        java.time.LocalTime.of(8, 0), java.time.ZoneId.of("Asia/Ho_Chi_Minh")), 30);
+    }
+
     @Test
     void chargesOnlyDaysInCustodyFromDepartureAndCreditsDepositOnceAcrossHorses() {
-        assertThat(StablingPolicy.holdDays(departure, departure.minusSeconds(1))).isZero();
-        var days = StablingPolicy.holdDays(departure, departure.plus(3, ChronoUnit.DAYS));
-        var charge = StablingPolicy.feeForDays(days, 1_000_000);
+        assertThat(blocks(departure.minusSeconds(1))).isZero();
+        var price = new BigDecimal("1000000");
+        var charge = StablingPolicy.fee(blocks(departure.plus(3, ChronoUnit.DAYS)), price);
         var deposit = new BigDecimal("8761000");
         var firstCredit = StablingPolicy.depositCredit(charge, deposit, BigDecimal.ZERO);
         var secondCredit = StablingPolicy.depositCredit(charge, deposit, firstCredit);
         assertThat(firstCredit.add(secondCredit)).isEqualByComparingTo("6000000");
-        var sevenDayFee = StablingPolicy.feeForDays(StablingPolicy.holdDays(departure, departure.plus(7, ChronoUnit.DAYS)), 1_000_000);
+        var sevenDayFee = StablingPolicy.fee(blocks(departure.plus(7, ChronoUnit.DAYS)), price);
         assertThat(sevenDayFee.multiply(BigDecimal.valueOf(2))).isEqualByComparingTo("14000000");
         assertThat(StablingPolicy.depositCredit(sevenDayFee, deposit, firstCredit.add(secondCredit)))
                 .isEqualByComparingTo("2761000");

@@ -66,6 +66,10 @@ public class HorseStay {
     @Column(name = "balance_hold_at")
     private Instant balanceHoldAt;
 
+    // snapshot: đơn giá mỗi 24 giờ lúc bắt đầu giữ, đổi cấu hình không ảnh hưởng
+    @Column(name = "stabling_unit_price", precision = 15, scale = 2)
+    private java.math.BigDecimal stablingUnitPrice;
+
     // Chỉ dùng cho QUARANTINE (CHECK ở DB)
     @Enumerated(EnumType.STRING)
     @Column(name = "quarantine_result", length = 30)
