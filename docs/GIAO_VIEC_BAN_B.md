@@ -92,14 +92,14 @@ Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A
 | Điểm | Phương án | Duyệt | PR |
 |---|---|---|---|
 | 1.F5 | Đặt hạn theo giờ cho tiếp nhận, thẩm định, gửi báo giá. Quét mỗi giờ, nhắc theo vai trò và giữ trạng thái đơn | Đã duyệt | #504 |
-| 2.F2 | Bắt buộc tệp `INSURANCE_POLICY` cho từng bảo hiểm tự có khi khai báo hoặc bổ sung. Chuyên viên được giao đơn xác nhận sau khi kiểm hợp đồng. | Đã duyệt | |
+| 2.F2 | Bắt buộc tệp `INSURANCE_POLICY` cho từng bảo hiểm tự có khi khai báo hoặc bổ sung. Chuyên viên được giao đơn xác nhận sau khi kiểm hợp đồng. | Đã duyệt | #507 |
 | 2.F8 | | | |
-| 2.F5 | Thu hồi giấy đã duyệt trước khi nhận ngựa, chuyển sang từ chối kèm lý do, ghi kiểm toán và báo bên nộp | Đã duyệt | |
+| 2.F5 | Thu hồi giấy đã duyệt trước khi nhận ngựa, chuyển sang từ chối kèm lý do, ghi kiểm toán và báo bên nộp | Đã duyệt | #506 |
 | 2.F9 | Dùng lại giấy theo ngựa đã duyệt và còn hạn khi yêu cầu cùng loại giấy | Đã duyệt | #503 |
 | 2.F7 | Kiểm đủ giấy bắt buộc khi bàn giao đơn xuất cho đại lý ở cửa khẩu | Đã duyệt | #496 |
 | 2.F10 | Kiểm bảo hiểm đã xác nhận khi nhận ngựa nhập từ đại lý ở cửa khẩu | Đã duyệt | #496 |
 | 2.F4 | Cập nhật và xác nhận bảo hiểm mua hộ khi đơn Đang báo giá | Đã duyệt | #479 |
-| 3.G4 | Đổi xe, dời đều cả lượt ngoài trục hoặc sửa từng điểm của lượt nhập tay. Chỉ điều phối phụ trách được sửa lượt `PLANNED`. Dùng lại các kiểm tra khi lập lượt và báo tổ lái, khách. | Đã duyệt | |
+| 3.G4 | Đổi xe, dời đều cả lượt ngoài trục hoặc sửa từng điểm của lượt nhập tay. Chỉ điều phối phụ trách được sửa lượt `PLANNED`. Dùng lại các kiểm tra khi lập lượt và báo tổ lái, khách. | Đã duyệt | #508 |
 | 3.G9, 3.G11 | | | |
 | 3.G10 | Điều phối lập lượt `TRANSFER` về hub gốc, tính giờ theo tuyến chiều về hoặc theo bản đồ | Đã duyệt | #501 |
 | 3.G6, 3.G7 | Bắt buộc hộ tống đã nhận việc; kiểm giờ ngồi xe khi nhập giờ tay | Đã duyệt | #480 |
