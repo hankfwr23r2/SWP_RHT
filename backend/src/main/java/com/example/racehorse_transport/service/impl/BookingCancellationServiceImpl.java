@@ -115,17 +115,24 @@ public class BookingCancellationServiceImpl implements BookingCancellationServic
         if (checkout.hasPendingBalanceConfirmation(bookingId)) return;
         var cancellation = evaluate(booking, false, true);
         if (cancellation.outcome() == Outcome.FORFEIT_DEPOSIT) {
-            cancel(booking, cancellation, "Hết hạn chọn phương án sau khi ngựa được giữ tại hub.", null, null, List.of());
+            cancel(booking, cancellation, BalanceHoldPolicy.CANCELLED_AFTER_HOLD, null, null, List.of());
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean canReleaseUnpaidAtPickup(Booking booking) {
+        Long bookingId = booking.getId();
+        return booking.getStatus() == BookingStatus.CONFIRMED
+                && checkout.isBalanceOverdue(payments.findByBooking_IdOrderById(bookingId))
+                && !checkout.hasPendingBalanceConfirmation(bookingId);
     }
 
     @Override
     @Transactional
     public void releaseUnpaidAtPickup(Long bookingId, Long actorUserId) {
         var booking = lock(bookingId);
-        if (actorUserId == null || booking.getStatus() != BookingStatus.CONFIRMED
-                || !checkout.isBalanceOverdue(payments.findByBooking_IdOrderById(bookingId))
-                || checkout.hasPendingBalanceConfirmation(bookingId)) {
+        if (actorUserId == null || !canReleaseUnpaidAtPickup(booking)) {
             throw BookingRuleException.conflict("Đơn chưa đủ điều kiện trả ngựa vì quá thời gian chờ thanh toán.");
         }
         var previous = booking.getDeparture();
@@ -264,6 +271,9 @@ public class BookingCancellationServiceImpl implements BookingCancellationServic
         releaseSpace(booking);
         cancellation.payments().stream()
                 .filter(row -> row.getStatus() == PaymentStatus.PENDING && row.getPaymentType() != PaymentType.REFUND)
+                .filter(row -> row.getPaymentType() != PaymentType.EXTRA_CHARGE
+                        || row.getExtraChargeCosts().stream().noneMatch(
+                                com.example.racehorse_transport.policy.CostPayerPolicy::isScheduledStablingFee))
                 .forEach(row -> row.setStatus(PaymentStatus.CANCELLED));
         if (cancellation.amounts().refundable().signum() > 0) {
             refunds.createPending(bookingId, cancellation.quotation().getCurrencyCode(), cancellation.amounts().refundable());

@@ -56,7 +56,8 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
         Instant chargedFrom = booking.getDeparture() == null || booking.getBookingType()
                 == com.example.racehorse_transport.entity.enums.BookingType.IMPORT
                 ? at : booking.getDeparture().getPlannedDepartureAt();
-        horseStays.openBalanceHold(booking.getId(), chargedFrom);
+        horseStays.openBalanceHold(booking.getId(), chargedFrom,
+                booking.getBookingType() == com.example.racehorse_transport.entity.enums.BookingType.IMPORT ? null : booking.getDeparture());
         cancellations.releaseUnpaidAtHub(booking.getId());
     }
 
@@ -230,6 +231,13 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
     public void refuseAtStop(Long bookingHorseId, HandoverRefusalRequestDto request, MultipartFile photo,
                              Instant arrivedAt, Instant at, Long actorUserId) {
         pickupMisses.recordAtStop(bookingHorseId, request, photo, arrivedAt, at, actorUserId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean canReturnUnpaid(List<HorseLeg> boarded) {
+        return !boarded.isEmpty() && boarded.stream().map(leg -> leg.getBookingHorse().getBooking())
+                .distinct().allMatch(cancellations::canReleaseUnpaidAtPickup);
     }
 
     @Override

@@ -70,6 +70,32 @@ public class HorseStay {
     @Column(name = "stabling_unit_price", precision = 15, scale = 2)
     private java.math.BigDecimal stablingUnitPrice;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "failed_delivery_leg_id")
+    private HorseLeg failedDeliveryLeg;
+
+    @Column(name = "ready_at")
+    private Instant readyAt;
+
+    @Column(name = "ready_call_note", length = 500)
+    private String readyCallNote;
+
+    @Column(name = "earliest_redelivery_at")
+    private Instant earliestRedeliveryAt;
+
+    @Column(name = "chosen_redelivery_at")
+    private Instant chosenRedeliveryAt;
+
+    @Column(name = "collection_reported_at")
+    private Instant collectionReportedAt;
+
+    @Column(name = "collection_expected_at")
+    private Instant collectionExpectedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "missed_departure_id")
+    private Departure missedDeparture;
+
     // Chỉ dùng cho QUARANTINE (CHECK ở DB)
     @Enumerated(EnumType.STRING)
     @Column(name = "quarantine_result", length = 30)

@@ -52,7 +52,7 @@ public interface IncidentRepository extends JpaRepository<Incident, Long> {
     Optional<Incident> findOneById(Long id);
 
     @EntityGraph(attributePaths = {"booking", "bookingHorse"})
-    Optional<Incident> findByBooking_IdAndIncidentType(Long bookingId, IncidentType incidentType);
+    List<Incident> findByBooking_IdAndIncidentTypeOrderByReportedAtDescIdDesc(Long bookingId, IncidentType incidentType);
 
     @Query("""
             SELECT i FROM Incident i LEFT JOIN i.horseLeg leg LEFT JOIN leg.bookingHorse line

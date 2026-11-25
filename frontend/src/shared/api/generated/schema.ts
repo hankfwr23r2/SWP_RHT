@@ -525,7 +525,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["resolve_1"];
+        post: operations["resolve_2"];
         delete?: never;
         options?: never;
         head?: never;
@@ -670,6 +670,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["createExtraCharge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{bookingId}/stabling-clocks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["forBooking"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2276,6 +2292,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/horse-stays/{id}/resolve-unclaimed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["resolve_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/horse-stays/{id}/stabling": {
         parameters: {
             query?: never;
@@ -2286,6 +2318,70 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["stable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horse-stays/{stayId}/choose-later-slot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["chooseLaterSlot"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horse-stays/{stayId}/ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ready"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horse-stays/{stayId}/record-ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["recordReady"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horse-stays/{stayId}/report-collection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reportCollection"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4158,6 +4254,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListStablingClockResponseDto: {
+            data?: components["schemas"]["StablingClockResponseDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseListStaffAccountResponseDto: {
             data?: components["schemas"]["StaffAccountResponseDto"][];
             message?: string;
@@ -4609,7 +4710,7 @@ export interface components {
             /** Format: int64 */
             bookingId?: number;
             /** @enum {string} */
-            category: "TOLL" | "FUEL" | "STABLING" | "VET" | "RESCUE" | "REPAIR" | "WAITING" | "OTHER";
+            category: "TOLL" | "FUEL" | "STABLING" | "VET" | "RESCUE" | "REPAIR" | "WAITING" | "REDELIVERY" | "PLANNED_STABLING" | "OTHER";
             currencyCode?: string;
             description: string;
             /** Format: int64 */
@@ -4629,7 +4730,7 @@ export interface components {
             approvedByName?: string;
             bookingCode?: string;
             /** @enum {string} */
-            category?: "TOLL" | "FUEL" | "STABLING" | "VET" | "RESCUE" | "REPAIR" | "WAITING" | "OTHER";
+            category?: "TOLL" | "FUEL" | "STABLING" | "VET" | "RESCUE" | "REPAIR" | "WAITING" | "REDELIVERY" | "PLANNED_STABLING" | "OTHER";
             currencyCode?: string;
             customerAgreed?: boolean;
             customerConsulted?: boolean;
@@ -4732,6 +4833,7 @@ export interface components {
             handovers?: components["schemas"]["HandoverResponseDto"][];
             horses?: components["schemas"]["TripHorseResponseDto"][];
             trip?: components["schemas"]["VehicleTripResponseDto"];
+            unpaidReturnStopIds?: number[];
         };
         CustodyRowResponseDto: {
             /** Format: int64 */
@@ -4764,6 +4866,8 @@ export interface components {
             /** @enum {string} */
             stayType?: "ASSEMBLY" | "QUARANTINE" | "OVERNIGHT" | "STABLING";
             tripCode?: string;
+            /** Format: int64 */
+            unclaimedStayId?: number;
             /** Format: int64 */
             vehicleTripId?: number;
             waitingPickupBalance?: boolean;
@@ -5483,6 +5587,8 @@ export interface components {
             plannedEndAt?: string;
             /** Format: date-time */
             plannedStartAt?: string;
+            /** Format: date-time */
+            readyAt?: string;
             returnForBalance?: boolean;
             /** @enum {string} */
             stayType?: "ASSEMBLY" | "QUARANTINE" | "OVERNIGHT" | "STABLING";
@@ -6414,7 +6520,7 @@ export interface components {
             amount?: number;
             approved?: boolean;
             /** @enum {string} */
-            category?: "TOLL" | "FUEL" | "STABLING" | "VET" | "RESCUE" | "REPAIR" | "WAITING" | "OTHER";
+            category?: "TOLL" | "FUEL" | "STABLING" | "VET" | "RESCUE" | "REPAIR" | "WAITING" | "REDELIVERY" | "PLANNED_STABLING" | "OTHER";
             description?: string;
             /** @enum {string} */
             payerType?: "COMPANY" | "CUSTOMER" | "CONSIGNEE" | "AGENT";
@@ -6588,6 +6694,36 @@ export interface components {
             /** Format: int64 */
             id?: number;
             phone?: string;
+        };
+        StablingClockResponseDto: {
+            amount?: number;
+            canCollect?: boolean;
+            canReady?: boolean;
+            /** Format: date-time */
+            collectionExpectedAt?: string;
+            /** Format: int64 */
+            elapsedSeconds?: number;
+            horseName?: string;
+            /** Format: date-time */
+            nextChargeAt?: string;
+            /** Format: date-time */
+            readyAt?: string;
+            running?: boolean;
+            /** Format: int64 */
+            stayId?: number;
+        };
+        StablingCollectionRequestDto: {
+            /** Format: date-time */
+            expectedAt: string;
+        };
+        StablingLaterSlotRequestDto: {
+            /** Format: date-time */
+            chosenAt: string;
+            /** Format: date-time */
+            earliestAt: string;
+        };
+        StablingReadyRequestDto: {
+            callNote: string;
         };
         StaffAccountCreateRequestDto: {
             driverLicenseClass?: string;
@@ -6790,6 +6926,8 @@ export interface components {
             pickupWindowEndHour?: number;
             /** Format: int32 */
             pickupWindowStartHour?: number;
+            /** Format: int32 */
+            stablingDailyFee?: number;
         };
         TripGroupResponseDto: {
             bookings?: components["schemas"]["GroupBookingDto"][];
@@ -6886,6 +7024,11 @@ export interface components {
             sequenceNumber?: number;
             /** @enum {string} */
             stopType?: "PICKUP" | "DELIVERY" | "HUB" | "REST" | "VITAL_CHECK" | "BORDER" | "QUARANTINE";
+        };
+        UnclaimedHorseResolutionRequestDto: {
+            /** @enum {string} */
+            outcome: "RETURNED_TO_SENDER" | "RETURNED_TO_AUTHORIZED_PERSON" | "RELEASED_BY_LEGAL_DOCUMENT";
+            recipientName: string;
         };
         VehicleClassResponseDto: {
             code?: string;
@@ -7819,7 +7962,7 @@ export interface operations {
             };
         };
     };
-    resolve_1: {
+    resolve_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -8081,6 +8224,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponsePaymentResponseDto"];
+                };
+            };
+        };
+    };
+    forBooking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListStablingClockResponseDto"];
                 };
             };
         };
@@ -10781,6 +10946,36 @@ export interface operations {
             };
         };
     };
+    resolve_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    proof: string;
+                    request: components["schemas"]["UnclaimedHorseResolutionRequestDto"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
     stable: {
         parameters: {
             query?: never;
@@ -10803,6 +10998,106 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseHorseStayResponseDto"];
+                };
+            };
+        };
+    };
+    chooseLaterSlot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stayId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StablingLaterSlotRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    ready: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stayId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    recordReady: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stayId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StablingReadyRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    reportCollection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stayId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StablingCollectionRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
                 };
             };
         };

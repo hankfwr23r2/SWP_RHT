@@ -25,6 +25,8 @@ public interface VehicleTripRepository extends JpaRepository<VehicleTrip, Long> 
             """)
     List<Long> findHeldTripIds(VehicleTripStatus status, Collection<VehicleTripType> types);
 
+    @Query("SELECT MIN(t.actualStartAt) FROM VehicleTrip t WHERE t.departure.id = :departureId")
+    Optional<Instant> firstActualStartForDeparture(Long departureId);
     boolean existsByVehicle_IdAndStatusNotIn(Long vehicleId, Collection<VehicleTripStatus> statuses);
 
     boolean existsByDeparture_IdAndTripTypeAndStatusNotIn(Long departureId,

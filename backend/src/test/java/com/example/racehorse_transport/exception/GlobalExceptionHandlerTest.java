@@ -63,6 +63,23 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void wrongContentTypeIs415() throws Exception {
+        var mvc = org.springframework.test.web.servlet.setup.MockMvcBuilders
+                .standaloneSetup(new JsonEndpoint()).setControllerAdvice(handler).build();
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/json")
+                        .contentType("text/plain").content("body"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isUnsupportedMediaType())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.status").value("error"));
+    }
+
+    @org.springframework.web.bind.annotation.RestController
+    static class JsonEndpoint {
+        @org.springframework.web.bind.annotation.PostMapping(path = "/json", consumes = "application/json")
+        void accept(@org.springframework.web.bind.annotation.RequestBody java.util.Map<String, String> body) {
+        }
+    }
+
+    @Test
     void wrongHttpMethodIs405() {
         assertThat(handler.handleMethodNotSupported(new HttpRequestMethodNotSupportedException("DELETE")).getStatusCode())
                 .isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);

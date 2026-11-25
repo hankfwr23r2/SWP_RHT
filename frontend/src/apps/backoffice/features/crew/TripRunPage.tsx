@@ -5,7 +5,7 @@ import { useParams, Link } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import { tripExecutionApi, type CrewTrip, type Handover, type StablePartner, type DeliveryRecipient } from '@shared/api/tripExecution'
-import { useLoad } from '@shared/hooks/useLoad'
+import { useAutoRefresh, useLoad } from '@shared/hooks/useLoad'
 import { formatDateTime } from '@shared/lib/format'
 import { Button } from '@shared/ui/Button'
 import { Card } from '@shared/ui/Card'
@@ -48,6 +48,7 @@ export default function TripRunPage() {
   const [partners, setPartners] = useState<StablePartner[]>([])
   const [partnerId, setPartnerId] = useState('')
   const { data, loaded, error, reload, updateData } = useLoad(() => tripExecutionApi.trip(tripId), [tripId], { toastOnError: false })
+  useAutoRefresh(reload)
 
   // Mọi thao tác trả về lượt xe mới; lỗi hiện đúng lý do backend trả về
   const run = async (action: () => Promise<CrewTrip>, done: string) => {

@@ -749,6 +749,7 @@ export const customer = {
       },
     },
     review: {
+      stablingFee: 'The hub holding fee is {{amount}} per horse for each full 24 hours.',
       title: 'Review and send',
       subtitle: 'Fill in the people involved, then send. Nothing is charged at this step.',
       route: 'Journey',

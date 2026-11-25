@@ -17,6 +17,8 @@ public interface BookingStatusService {
     // Luồng B gọi khi handover PICKUP đầu tiên xong (IN_OPERATION) và khi chặng giao cuối cùng xong (DELIVERED).
     void transition(Long bookingId, BookingStatus toStatus, String reason, Long actorUserId);
 
+    void cancelAfterUnclaimedReturns(Long bookingId, Long actorUserId);
+
     void transitionForUser(Long bookingId, BookingStatus toStatus, String reason, String username);
 
     void expireQuote(Long bookingId, Departure previousDeparture);

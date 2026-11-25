@@ -54,6 +54,13 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @EntityGraph(attributePaths = "departure")
     Optional<Booking> findByIdAndCustomer_User_Username(Long id, String username);
 
+    @Query("""
+            SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.booking.id = :bookingId
+              AND p.paymentType = com.example.racehorse_transport.entity.enums.PaymentType.DEPOSIT
+              AND p.status = com.example.racehorse_transport.entity.enums.PaymentStatus.PAID
+            """)
+    java.math.BigDecimal paidDepositForStabling(Long bookingId);
+
     @Modifying
     @Query(value = """
             INSERT INTO booking (code, customer_id, booking_type, departure_id, requested_pickup_date,
@@ -105,6 +112,16 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             WHERE n.booking.id = :bookingId AND n.title = :title AND n.createdAt >= :start AND n.createdAt < :end
             """)
     boolean hasNotificationBetween(Long bookingId, String title, Instant start, Instant end);
+
+    @Query("SELECT min(n.createdAt) FROM Notification n WHERE n.booking.id = :bookingId AND n.title = :title AND n.createdAt >= :start")
+    Optional<Instant> firstNoticeSince(Long bookingId, String title, Instant start);
+
+    @Query("""
+            SELECT count(a) FROM AuditLog a
+            WHERE a.targetTable = 'booking' AND a.targetId = :bookingId AND a.createdAt >= :since
+                AND a.action LIKE concat(:actionPrefix, '%')
+            """)
+    long countBalanceHoldContactsSince(Long bookingId, String actionPrefix, Instant since);
 
     @Query("""
             SELECT MIN(s.balanceHoldAt) FROM HorseStay s

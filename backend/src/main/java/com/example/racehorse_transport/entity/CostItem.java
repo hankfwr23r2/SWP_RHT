@@ -117,11 +117,15 @@ public class CostItem {
     @Column(name = "stabling_deposit_credit", nullable = false, precision = 15, scale = 2)
     private BigDecimal stablingDepositCredit = BigDecimal.ZERO;
 
+    // snapshot: phần phí giữ được cấn bằng cước giao chưa chạy khi hủy vì không có người nhận
+    @Column(name = "stabling_delivery_credit", nullable = false, precision = 15, scale = 2)
+    private BigDecimal stablingDeliveryCredit = BigDecimal.ZERO;
+
     @Column(name = "incurred_at", nullable = false)
     private Instant incurredAt;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "recorded_by", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "recorded_by")
     private Staff recordedBy;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = true)

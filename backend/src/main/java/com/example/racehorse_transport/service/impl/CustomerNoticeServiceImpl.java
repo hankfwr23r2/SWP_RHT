@@ -36,14 +36,36 @@ public class CustomerNoticeServiceImpl implements CustomerNoticeService {
     private final HorseLegRepository legs;
     private final HorseStayRepository stays;
     private final SystemConfigService configs;
+    private final com.example.racehorse_transport.repository.PaymentRepository payments;
+    private final java.time.Clock clock;
 
     @Override
     public void bookingSubmitted(Booking booking) {
         notifyCustomer(booking, CustomerNoticePolicy.orderReceived(booking.getCode()));
+        notifyManagersOfLinkedDebt(booking);
         List<Long> specialists = staff.findUserIdsByRoleAndStatus("SPECIALIST", AppUserStatus.ACTIVE);
         if (!specialists.isEmpty()) {
             Notice notice = CustomerNoticePolicy.orderWaitingIntake(booking.getCode());
             notifications.notify(specialists, booking.getId(), notice.title(), notice.message(), "/specialist/review/" + booking.getId());
+        }
+    }
+
+    private void notifyManagersOfLinkedDebt(Booking booking) {
+        var customer = booking.getCustomer();
+        var now = clock.instant();
+        var debts = payments.findLinkedOverdue(booking.getId(), customer.getUserId(), customer.getPhone(),
+                com.example.racehorse_transport.entity.enums.PaymentType.EXTRA_CHARGE,
+                com.example.racehorse_transport.entity.enums.PaymentStatus.PENDING, now);
+        var minimum = java.math.BigDecimal.valueOf(configs.getInt("DEBT_BLOCK_MIN_AMOUNT"));
+        boolean linked = debts.stream().collect(java.util.stream.Collectors.groupingBy(
+                payment -> payment.getBooking().getCustomer().getUserId())).values().stream()
+                .anyMatch(rows -> com.example.racehorse_transport.policy.CustomerDebtPolicy.hasQualifyingOverdue(rows, now, minimum));
+        if (!linked) return;
+        var managers = staff.findUserIdsByRoleAndStatus("MANAGER", AppUserStatus.ACTIVE);
+        if (!managers.isEmpty()) {
+            notifications.notify(managers, booking.getId(), "Đơn mới có liên hệ trùng với công nợ quá hạn",
+                    "Kiểm tra số điện thoại hoặc chip ngựa của đơn " + booking.getCode() + ".",
+                    "/manager/orders/" + booking.getId());
         }
     }
 

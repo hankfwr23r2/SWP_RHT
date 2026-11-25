@@ -113,7 +113,10 @@ public final class PaymentPolicy {
     private static boolean acceptsExistingExtraChargePayment(BookingStatus status, Payment payment) {
         return acceptsExtraChargePayment(status) || isBalanceHoldChargeStatus(status)
                 && !payment.getExtraChargeCosts().isEmpty()
-                && payment.getExtraChargeCosts().stream().allMatch(PaymentPolicy::isBalanceHoldCharge);
+                && payment.getExtraChargeCosts().stream().allMatch(cost -> isBalanceHoldCharge(cost)
+                    || status == BookingStatus.CANCELLED && CostPayerPolicy.isScheduledStablingFee(cost)
+                        && cost.getHorseStay().getBookingHorse().getStatus()
+                            == com.example.racehorse_transport.entity.enums.BookingHorseStatus.RETURNED);
     }
 
     private static boolean isBalanceHoldChargeStatus(BookingStatus status) {
@@ -121,11 +124,13 @@ public final class PaymentPolicy {
     }
 
     private static boolean isBalanceHoldCharge(CostItem cost) {
-        return CostPayerPolicy.isScheduledStablingFee(cost) && cost.getHorseStay().getBalanceHoldAt() != null;
+        return (CostPayerPolicy.isScheduledStablingFee(cost) || cost.getCategory()
+                == com.example.racehorse_transport.entity.enums.CostCategory.PLANNED_STABLING)
+                && cost.getHorseStay().getBalanceHoldAt() != null;
     }
 
     public static boolean canSelectExtraChargeCost(BookingStatus status, CostItem cost) {
-        return acceptsExtraChargePayment(status) && (status != BookingStatus.IN_OPERATION || CostPayerPolicy.isScheduledStablingFee(cost))
+        return acceptsExtraChargePayment(status) && (status != BookingStatus.IN_OPERATION || CostPayerPolicy.isAutomaticTransportFee(cost))
                 && CostPayerPolicy.customerSide(cost.getPayerType()) && cost.getApprovedAt() != null && cost.getExtraChargePayment() == null;
     }
 
@@ -133,7 +138,7 @@ public final class PaymentPolicy {
         if (isBalanceHoldChargeStatus(status) && !costs.isEmpty()
                 && costs.stream().allMatch(PaymentPolicy::isBalanceHoldCharge)) return;
         if (!acceptsExtraChargePayment(status)
-                || (status == BookingStatus.IN_OPERATION && !costs.stream().allMatch(CostPayerPolicy::isScheduledStablingFee))) {
+                || (status == BookingStatus.IN_OPERATION && !costs.stream().allMatch(CostPayerPolicy::isAutomaticTransportFee))) {
             throw BookingRuleException.conflict("Chỉ lập khoản thu thêm khi đã giao, đã hoàn thành hoặc thu phí giữ ngựa khi đang vận chuyển.");
         }
     }
@@ -145,7 +150,7 @@ public final class PaymentPolicy {
                 || !currency.equals(cost.getCurrencyCode()) || cost.getAmount().signum() <= 0)) {
             throw BookingRuleException.conflict("Chỉ thu chi phí của đơn, đã duyệt, do khách hoặc người nhận chịu và chưa gắn khoản thu.");
         }
-        return costs.stream().map(cost -> cost.getAmount().subtract(cost.getStablingDepositCredit()))
+        return costs.stream().map(cost -> cost.getAmount().subtract(cost.getStablingDepositCredit()).subtract(cost.getStablingDeliveryCredit()))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 

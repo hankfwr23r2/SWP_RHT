@@ -23,6 +23,7 @@ import com.example.racehorse_transport.entity.enums.BookingHorseStatus;
 import com.example.racehorse_transport.entity.enums.BookingPartyRole;
 import com.example.racehorse_transport.entity.enums.HandoverStatus;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
+import com.example.racehorse_transport.entity.enums.UnclaimedHorseOutcome;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.CustomerNoticePolicy;
 import com.example.racehorse_transport.policy.CustomerNoticePolicy.ExpectedTimes;
@@ -157,7 +158,7 @@ public class TrackingServiceImpl implements TrackingService {
         HandoverHorse last = lastDone(rows);
         CustodyHolder holder = holder(last);
         return new HorseJourneyResponseDto(line.getId(), line.getHorse().getName(), line.getHorse().getMicrochip(), line.getStatus(),
-                holder, holder == CustodyHolder.PARTY ? last.getHandover().getToParty().getDisplayName() : null,
+                holder, holder == CustodyHolder.PARTY ? partyHolderName(last) : null,
                 last == null ? null : last.getHandover().getHandedAt(),
                 journey.of(journey.legs(), line).stream().map(leg -> journeyLeg(leg, tolerance)).toList(),
                 journey.of(journey.stays(), line).stream().map(HorseJourneyResponseDto.JourneyStayDto::from).toList(),
@@ -217,16 +218,26 @@ public class TrackingServiceImpl implements TrackingService {
                         .collect(Collectors.groupingBy(handover -> handover.getTripStop().getId())));
     }
 
-    // Lần giao nhận DONE mới nhất mà con ngựa thực sự được chuyển (chip khớp)
+    // Lần giao nhận DONE mới nhất có chip khớp hoặc có kết quả cuối do quản lý ghi.
     private static HandoverHorse lastDone(List<HandoverHorse> rows) {
         return rows.stream()
-                .filter(row -> row.getHandover().getStatus() == HandoverStatus.DONE && Boolean.TRUE.equals(row.getMicrochipMatched()))
+                .filter(row -> row.getHandover().getStatus() == HandoverStatus.DONE
+                        && (Boolean.TRUE.equals(row.getMicrochipMatched()) || row.getHandover().getUnclaimedOutcome() != null))
                 .max(Comparator.comparing((HandoverHorse row) -> row.getHandover().getHandedAt()).thenComparing(row -> row.getHandover().getId()))
                 .orElse(null);
     }
 
     private static CustodyHolder holder(HandoverHorse last) {
-        return last == null ? CustodyHolder.SHIPPER
-                : TrackingPolicy.holderAfter(last.getHandover().getHandoverType(), last.getHandover().getToParty() != null);
+        if (last == null) return CustodyHolder.SHIPPER;
+        var handover = last.getHandover();
+        var outcome = handover.getUnclaimedOutcome();
+        boolean externalRecipient = handover.getToParty() != null
+                || outcome != null && outcome != UnclaimedHorseOutcome.RETURNED_TO_SENDER;
+        return TrackingPolicy.holderAfter(handover.getHandoverType(), externalRecipient);
+    }
+
+    private static String partyHolderName(HandoverHorse last) {
+        var party = last.getHandover().getToParty();
+        return party == null ? last.getRecipientName() : party.getDisplayName();
     }
 }

@@ -19,9 +19,9 @@ public final class DeliveryComplaintPolicy {
     }
 
     public static boolean canManagerSubmit(BookingStatus status, Instant deliveredAt, Instant now,
-                                           Duration managerWindow, boolean complaintExists) {
+                                           Duration managerWindow, boolean complaintOpen) {
         return (status == BookingStatus.DELIVERED || status == BookingStatus.COMPLETED)
-                && !complaintExists
+                && !complaintOpen
                 && deliveredAt != null
                 && !now.isBefore(deliveredAt)
                 && !now.isAfter(deliveredAt.plus(managerWindow));

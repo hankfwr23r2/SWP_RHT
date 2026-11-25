@@ -81,16 +81,22 @@ public class DeliveryFaultServiceImpl implements DeliveryFaultService {
         if (returnStays.stream().anyMatch(stay -> costs.existsByHorseStay_IdAndCategory(stay.getId(), CostCategory.STABLING))) {
             throw new DispatchRuleException("cause", "Lưu trú này đã phát sinh phí giữ ngựa.", true);
         }
+        var booking = leg.getBookingHorse().getBooking();
+        if (costs.findByBooking_IdOrderByIncurredAt(booking.getId()).stream().anyMatch(cost ->
+                cost.getCategory() == CostCategory.REDELIVERY && !cost.getIncurredAt().isBefore(leg.getActualEndAt()))) {
+            throw new DispatchRuleException("cause", "Đã lập cước giao lại cho lần giao hụt này.", true);
+        }
         returnStays.stream().filter(stay -> stay.getActualEndAt() == null)
                 .filter(stay -> stay.getStayType() == HorseStayType.ASSEMBLY || stay.getStayType() == HorseStayType.STABLING)
-                .findFirst().ifPresent(stay -> convert(stay, cause));
+                .findFirst().ifPresent(stay -> convert(stay, leg, cause));
     }
 
-    private void convert(HorseStay stay, IncidentCauseType cause) {
+    private void convert(HorseStay stay, HorseLeg leg, IncidentCauseType cause) {
         boolean billable = cause == IncidentCauseType.RECIPIENT_ABSENT;
         var target = billable ? HorseStayType.STABLING : HorseStayType.ASSEMBLY;
         if (stay.getStayType() == target) return;
         stay.setStayType(target);
+        stay.setFailedDeliveryLeg(billable ? leg : null);
         stay.setStablingUnitPrice(billable ? BigDecimal.valueOf(configs.getInt("STABLING_DAILY_FEE")) : null);
         if (billable) {
             stay.setPlannedEndAt(stay.getActualStartAt().plus(Duration.ofDays(configs.getInt("STABLING_MAX_DAYS"))));

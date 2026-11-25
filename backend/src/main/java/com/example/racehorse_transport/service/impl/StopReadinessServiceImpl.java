@@ -50,6 +50,7 @@ public class StopReadinessServiceImpl implements StopReadinessService {
     private final AuditService audit;
     private final Clock clock;
     private final PickupBalanceService pickupBalances;
+    private final com.example.racehorse_transport.service.StablingTimelineService stablingTimeline;
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
@@ -73,6 +74,9 @@ public class StopReadinessServiceImpl implements StopReadinessService {
             requirePaid(stop);
         } else if (REST_STOPS.contains(stop.getStopType())) {
             requireRestStopDone(stop, earlyReason, actorUserId);
+        }
+        if (stop.getVehicleTrip().getTripType() == com.example.racehorse_transport.entity.enums.VehicleTripType.LINEHAUL) {
+            stablingTimeline.chargePlannedStaysOnDeparture(stop.getId(), clock.instant());
         }
     }
 

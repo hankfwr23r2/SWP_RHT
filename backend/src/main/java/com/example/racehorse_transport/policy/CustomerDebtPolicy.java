@@ -33,6 +33,10 @@ public final class CustomerDebtPolicy {
     // Nợ quá hạn đủ mức, hoặc khoản đã xóa nợ mà quản lý chưa mở lại quyền đặt đơn
     public static boolean blocksSubmission(List<Payment> debts, Instant now, BigDecimal minimum) {
         if (debts.stream().anyMatch(row -> row.getWrittenOffAt() != null && row.getBlockReleasedAt() == null)) return true;
+        return hasQualifyingOverdue(debts, now, minimum);
+    }
+
+    public static boolean hasQualifyingOverdue(List<Payment> debts, Instant now, BigDecimal minimum) {
         var overdue = debts.stream().filter(row -> isOverdue(row, now)).map(Payment::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         return overdue.signum() > 0 && overdue.compareTo(minimum) >= 0;

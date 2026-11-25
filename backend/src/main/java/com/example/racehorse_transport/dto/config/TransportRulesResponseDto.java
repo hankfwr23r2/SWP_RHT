@@ -5,4 +5,4 @@ package com.example.racehorse_transport.dto.config;
 public record TransportRulesResponseDto(
         int pickupWindowStartHour, int pickupWindowEndHour, int deliveryWindowStartHour, int deliveryWindowEndHour,
         int hubCheckinHours, int handoverFreeWaitMinutes, int balanceWaitMinutes, int departureDecisionHours,
-        int maxTransferDriveMinutes) {}
+        int maxTransferDriveMinutes, int stablingDailyFee) {}

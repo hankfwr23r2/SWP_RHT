@@ -60,6 +60,82 @@ class StablingPolicyTest {
     }
 
     @Test
+    void readyOnTuesdayAndWaitingForCompanyUntilThursdayCostsNothing() {
+        var monday = Instant.parse("2031-01-13T11:00:00Z");
+        var tuesdayReady = Instant.parse("2031-01-14T03:00:00Z");
+        var thursday = Instant.parse("2031-01-16T07:00:00Z");
+        assertClock(StablingPolicy.clockRuns(monday, thursday, tuesdayReady, null, null, null, thursday),
+                thursday, 16, "0");
+    }
+
+    @Test
+    void choosingThursdayInsteadOfTuesdayAddsFortyEightHours() {
+        var monday = Instant.parse("2031-01-13T11:00:00Z");
+        var ready = Instant.parse("2031-01-14T03:00:00Z");
+        var earliest = Instant.parse("2031-01-14T07:00:00Z");
+        var chosen = Instant.parse("2031-01-16T07:00:00Z");
+        assertClock(StablingPolicy.clockRuns(monday, chosen, ready, earliest, null, null, chosen),
+                chosen, 64, "2000000");
+    }
+
+    @Test
+    void twoMissedDeliveriesOfTwentyHoursShareTheSameClock() {
+        var firstEnd = START.plus(Duration.ofHours(20));
+        var secondStart = START.plus(Duration.ofDays(2));
+        var secondEnd = secondStart.plus(Duration.ofHours(20));
+        var first = StablingPolicy.clockRuns(START, firstEnd, firstEnd, null, null, null, secondEnd);
+        var second = StablingPolicy.clockRuns(secondStart, secondEnd, secondEnd, null, null, null, secondEnd);
+        assertClock(java.util.stream.Stream.concat(first.stream(), second.stream()).toList(), secondEnd, 40, "1000000");
+    }
+
+    @Test
+    void companyTruckTwoHoursLateDoesNotStartAClock() {
+        var arrival = START.plus(Duration.ofHours(2));
+        assertThat(com.example.racehorse_transport.policy.TripExecutionPolicy.arrivedAfterWindow(START, arrival, 60)).isTrue();
+        assertClock(StablingPolicy.clockRuns(null, null, null, null, null, null, arrival), arrival, 0, "0");
+    }
+
+    @Test
+    void hubCollectionUsesReportTimeOnlyIfTheCustomerMakesTheAppointment() {
+        var reported = START.plus(Duration.ofHours(20));
+        var deadline = START.plus(Duration.ofHours(30));
+        assertClock(StablingPolicy.clockRuns(START, deadline, null, null, reported, deadline, deadline),
+                deadline, 20, "0");
+        var missed = deadline.plus(Duration.ofHours(1));
+        assertClock(StablingPolicy.clockRuns(START, null, null, null, reported, deadline, missed), missed, 31, "1000000");
+    }
+
+    @Test
+    void stopsAtActualPaymentRatherThanWhenTheCustomerDeclaredReadiness() {
+        var paid = START.plus(Duration.ofHours(27));
+        var delivered = START.plus(Duration.ofDays(4));
+        assertClock(StablingPolicy.clockRuns(START, delivered, paid, null, null, null, delivered),
+                delivered, 27, "1000000");
+    }
+
+    @Test
+    void waitingForTheCompanyToIssueRedeliveryDoesNotCountAfterItsInvoiceIsPaid() {
+        var ready = START.plus(Duration.ofHours(16));
+        var invoice = ready.plus(Duration.ofDays(2));
+        var paid = invoice.plus(Duration.ofHours(4));
+        var runs = StablingPolicy.clockRuns(START, null, paid, null, null, null, paid);
+        assertClock(StablingPolicy.excludePause(runs, new Run(ready, invoice)), paid, 20, "0");
+    }
+
+    @Test
+    void plannedStayUsesTheQuotationDayRule() {
+        var departure = START.plus(Duration.ofDays(3));
+        assertThat(StablingPolicy.plannedFee(START, departure, HOURS.zone(), new BigDecimal("800000")))
+                .isEqualByComparingTo("1600000");
+    }
+
+    private static void assertClock(List<Run> runs, Instant through, long hours, String amount) {
+        assertThat(StablingPolicy.elapsed(runs, through)).isEqualTo(Duration.ofHours(hours));
+        assertThat(StablingPolicy.fee(StablingPolicy.blocks(runs, through, HOURS, 30), new BigDecimal("1000000")))
+                .isEqualByComparingTo(amount);
+    }
+
+    @Test
     void stoppedClockHasNoNextMark() {
         var runs = List.of(new Run(START, START.plus(Duration.ofHours(16))));
         assertThat(StablingPolicy.blocks(runs, START.plus(Duration.ofDays(5)), HOURS, 30)).isZero();

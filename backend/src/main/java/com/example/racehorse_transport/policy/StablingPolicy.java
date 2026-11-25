@@ -38,6 +38,42 @@ public final class StablingPolicy {
         return charged >= maxBlocks ? Optional.empty() : markAt(runs, charged + 1, hours);
     }
 
+    public static List<Run> clockRuns(Instant start, Instant end, Instant paidStop, Instant resume,
+                                      Instant collectionReported, Instant collectionDeadline, Instant observedAt) {
+        if (start == null) return List.of();
+        var runs = new java.util.ArrayList<Run>();
+        if (paidStop != null && (end == null || paidStop.isBefore(end))) {
+            runs.add(new Run(start, paidStop));
+            start = resume != null && resume.isAfter(paidStop) ? resume : resume == null ? null : paidStop;
+        }
+        if (start != null && collectionReported != null && !collectionReported.isBefore(start)
+                && !(end == null ? observedAt : end).isAfter(collectionDeadline)) {
+            end = collectionReported;
+        }
+        if (start != null && (end == null || end.isAfter(start))) runs.add(new Run(start, end));
+        return List.copyOf(runs);
+    }
+
+    public static List<Run> excludePause(List<Run> runs, Run pause) {
+        if (pause == null) return runs;
+        var result = new java.util.ArrayList<Run>();
+        for (Run run : runs) {
+            if (!run.from().isBefore(pause.to()) || (run.to() != null && !run.to().isAfter(pause.from()))) {
+                result.add(run);
+                continue;
+            }
+            if (run.from().isBefore(pause.from())) result.add(new Run(run.from(), pause.from()));
+            if (run.to() == null || pause.to().isBefore(run.to())) result.add(new Run(pause.to(), run.to()));
+        }
+        return List.copyOf(result);
+    }
+
+    public static Duration elapsed(List<Run> runs, Instant through) {
+        return runs.stream().map(run -> Duration.between(run.from(),
+                        run.to() == null || run.to().isAfter(through) ? through : run.to()))
+                .filter(length -> !length.isNegative()).reduce(Duration.ZERO, Duration::plus);
+    }
+
     private static Optional<Instant> markAt(List<Run> runs, long block, Hours hours) {
         Duration left = BLOCK.multipliedBy(block);
         for (Run run : runs.stream().sorted(Comparator.comparing(Run::from)).toList()) {
@@ -60,6 +96,11 @@ public final class StablingPolicy {
 
     public static BigDecimal fee(long blocks, BigDecimal unitPrice) {
         return unitPrice.multiply(BigDecimal.valueOf(blocks));
+    }
+
+    public static BigDecimal plannedFee(Instant from, Instant to, ZoneId zone, BigDecimal unitPrice) {
+        long days = PricingPolicy.earlyPickupDays(from.atZone(zone).toLocalDate(), to.atZone(zone).toLocalDate());
+        return fee(days, unitPrice);
     }
 
     public static BigDecimal depositCredit(BigDecimal fee, BigDecimal deposit, BigDecimal alreadyCredited) {

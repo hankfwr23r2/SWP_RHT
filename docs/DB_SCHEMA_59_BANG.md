@@ -933,7 +933,13 @@ Index: `vehicle_trip_id`, `agent_party_id`, `board_trip_stop_id`, `alight_trip_s
 | `planned_end_at` | `timestamptz` | | | |
 | `actual_start_at` | `timestamptz` | có | | |
 | `actual_end_at` | `timestamptz` | có | | |
-| `balance_hold_at` | `timestamptz` | có | Chỉ trên `STABLING` đã bắt đầu | Mốc T bắt đầu tính phí do giữ sau khi chưa trả số dư. Có thể muộn hơn lúc công ty nhận ngựa |
+| `balance_hold_at` | `timestamptz` | có | Chỉ trên `STABLING` đã bắt đầu | Mốc T tính hạn hủy. Với chuyến trục, phí bắt đầu từ mốc muộn hơn giữa T và giờ chạy thực tế |
+| `missed_departure_id` | `bigint` | có | FK → departure | Chuyến trục vừa lỡ vì chưa trả số dư |
+| `failed_delivery_leg_id` | `bigint` | có | FK → horse_leg | Chặng giao hụt do người nhận vắng dẫn tới lưu trú |
+| `ready_at` | `timestamptz` | có | | Lúc báo sẵn sàng nhận |
+| `ready_call_note` | `varchar(500)` | có | | Ghi chú khi điều phối ghi hộ qua điện thoại |
+| `earliest_redelivery_at`, `chosen_redelivery_at` | `timestamptz` | có | Cùng có giá trị khi đã sẵn sàng và khách chọn khung muộn hơn | Đồng hồ tiếp tục từ khung sớm nhất đã đưa |
+| `collection_reported_at`, `collection_expected_at` | `timestamptz` | có | Cùng có giá trị và giờ đến nằm trong 24 giờ từ lúc báo | Ghép với thời điểm bàn giao tại hub để xác định khoảng tạm dừng |
 | `stabling_unit_price` | `numeric(15,2)` | có | Dương, chỉ trên `STABLING` | Snapshot đơn giá mỗi 24 giờ lúc bắt đầu giữ; trống thì dùng cấu hình |
 | `quarantine_result` | `varchar(30)` | có | CK `PASSED, FAILED` | Ngừng dùng cùng `QUARANTINE` |
 
@@ -979,6 +985,7 @@ Index: `(booking_horse_id, recorded_at)`, `trip_stop_id`, `horse_stay_id`, `vehi
 |---|---|---|---|---|
 | `id` | `bigint` | | PK, identity | |
 | `handover_type` | `varchar(30)` | | CK `PICKUP, HUB_IN, HUB_OUT, STAY_IN, STAY_OUT, AGENT, DELIVERY, RETURN, SHIFT` | `SHIFT` chờ migration |
+| `unclaimed_outcome` | `varchar(40)` | Có | `RETURNED_TO_SENDER`, `RETURNED_TO_AUTHORIZED_PERSON`, `RELEASED_BY_LEGAL_DOCUMENT`. Chỉ cho giao nhận `RETURN` đã `DONE` tại lưu trú. |
 | `trip_stop_id` | `bigint` | có | FK → trip_stop | Giao nhận tại điểm dừng của xe |
 | `horse_stay_id` | `bigint` | có | FK → horse_stay | Giao nhận khi nhập hoặc xuất trại, chuồng |
 | `from_party_id` | `bigint` | có | FK → party | Đối tác giao. NULL = công ty hoặc bên trong đơn |
@@ -1231,7 +1238,7 @@ Ràng buộc bảng:
 - `CHECK (incident_type <> 'COMPLAINT' OR booking_id IS NOT NULL)`
 - `CHECK (incident_type = 'COMPLAINT' OR (reported_by IS NOT NULL AND cause_type IS NOT NULL))`
 - Các trường riêng của khiếu nại chỉ dùng cho `COMPLAINT`. Khi có kết luận phải có lý do, người kết luận, thời điểm xử lý và trạng thái `CLOSED`.
-- Mỗi đơn có tối đa một `COMPLAINT` theo unique index có điều kiện. Service kiểm tra ngựa được chọn thuộc đơn, ảnh `COMPLAINT_PHOTO` và quyền khách hoặc quản lý trong cùng luồng ghi khiếu nại.
+- Mỗi đơn có tối đa một `COMPLAINT` chưa `CLOSED` theo unique index có điều kiện. Service kiểm tra ngựa được chọn thuộc đơn, ảnh `COMPLAINT_PHOTO` và quyền khách hoặc quản lý trong cùng luồng ghi khiếu nại.
 - `CHECK ((fit_confirmed_by IS NULL) = (fit_confirmed_at IS NULL))`
 
 Index: `booking_id`, `vehicle_trip_id`, `horse_leg_id`, `status`.
@@ -1267,8 +1274,9 @@ Index: `handler_party_id`.
 | Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
 |---|---|---|---|---|
 | `id` | `bigint` | | PK, identity | |
-| `category` | `varchar(30)` | | CK `TOLL, FUEL, STABLING, VET, RESCUE, REPAIR, WAITING, OTHER` | WAITING chỉ giữ cho dữ liệu cũ |
+| `category` | `varchar(30)` | | CK `TOLL, FUEL, STABLING, VET, RESCUE, REPAIR, WAITING, OTHER, REDELIVERY, PLANNED_STABLING` | WAITING chỉ giữ cho dữ liệu cũ |
 | `stabling_days` | `bigint` | có | CK dương, chỉ với `STABLING` gắn `horse_stay` | Snapshot số ngày tính trên dòng phí, dùng để tính chênh khi ngựa rời hub |
+| `stabling_delivery_credit` | `numeric(15,2)` | | Mặc định 0. Snapshot phần phí giữ cấn từ cước giao chưa chạy khi hủy sau giao hụt. `UnclaimedSettlementService` ghi. |
 | `stabling_deposit_credit` | `numeric(15,2)` | | Mặc định 0, từ 0 tới `amount`, chỉ khác 0 cho `STABLING` gắn `horse_stay` | Phần phí giữ được cấn cọc trên đơn đã hủy |
 | `description` | `varchar(500)` | | | |
 | `amount` | `numeric(15,2)` | | CK `> 0` | |
@@ -1289,7 +1297,7 @@ Index: `handler_party_id`.
 | `agent_recovery_required` | `boolean` | | default false | Khoản công ty chịu do đại lý có lỗi |
 | `agent_recovered_at` | `timestamptz` | có | Phải có cờ thu hồi | Giờ quản lý đánh dấu đã đòi |
 | `incurred_at` | `timestamptz` | | | |
-| `recorded_by` | `bigint` | | FK → staff(user_id) | |
+| `recorded_by` | `bigint` | có | FK → staff(user_id) | Trống với dòng phí tự sinh theo biểu giá |
 | `approved_by` | `bigint` | có | FK → staff(user_id) | |
 | `approved_at` | `timestamptz` | có | | |
 | `extra_charge_payment_id` | `bigint` | có | FK → payment | Khoản thu thêm từ khách cho chi phí này |
@@ -1299,16 +1307,18 @@ Hóa đơn hoặc biên lai là một `document` có `cost_item_id` trỏ về d
 Ràng buộc bảng:
 - `CHECK (payer_type = 'COMPANY' OR booking_id IS NOT NULL)`
 - `CHECK (num_nonnulls(booking_id, vehicle_trip_id, incident_id) >= 1)`
-- `CHECK ((approved_by IS NULL) = (approved_at IS NULL))`
+- Với dòng do nhân viên ghi, `approved_by` và `approved_at` cùng có giá trị hoặc cùng trống. Dòng hệ thống tự duyệt có `recorded_by` và `approved_by` trống, có `approved_at`.
+- `recorded_by` chỉ được trống cho `STABLING` có `horse_stay_id` và `stabling_days`, `PLANNED_STABLING` có `horse_stay_id`, hoặc `REDELIVERY`.
+- `REDELIVERY` bắt buộc gắn với booking và lượt xe. Unique index trên cặp `vehicle_trip_id, booking_id` chỉ áp dụng cho loại này.
 - `CHECK (extra_charge_payment_id IS NULL OR payer_type <> 'COMPANY')`
 
 Index: `booking_id`, `vehicle_trip_id`, `incident_id`, `handover_id`, `horse_stay_id`, `extra_charge_payment_id`.
 
+Phí giữ sau giao hụt thuộc `CONSIGNEE`. Phí giữ do chưa trả số dư và lưu chuồng theo kế hoạch thuộc `CUSTOMER`. `PLANNED_STABLING` gắn với lưu trú và không tính vào số lần đủ 24 giờ. Số ngày đã thu nằm trên từng dòng phí, không lưu tổng trên `horse_stay`. Khoản thu thêm có `due_at` và quá hạn được tính khi đọc.
+
 ---
 
 ## Nhóm 14. Chứng từ
-
-Phí biểu phí gắn lưu trú `STABLING` thuộc `CONSIGNEE` và khách thanh toán. Dòng tự duyệt ghi nhân viên thao tác theo ràng buộc hiện có. Số ngày đã thu nằm trên từng dòng phí, không lưu tổng trên `horse_stay`. Khoản thu thêm có `due_at` và quá hạn được tính khi đọc.
 
 `document_type` có mã `VET_REPORT` với chủ thể `INCIDENT`. Điều phối dùng mã này để xác nhận đủ sức thay tổ lái.
 

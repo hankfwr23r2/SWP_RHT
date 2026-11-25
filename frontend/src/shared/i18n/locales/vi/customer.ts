@@ -749,6 +749,7 @@ export const customer = {
       },
     },
     review: {
+      stablingFee: 'Phí giữ ngựa tại hub là {{amount}} mỗi con cho mỗi 24 giờ trọn vẹn.',
       title: 'Xem lại và gửi đơn',
       subtitle: 'Điền thông tin các bên rồi gửi. Bạn chưa phải trả tiền ở bước này.',
       route: 'Hành trình',
