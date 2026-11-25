@@ -557,7 +557,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["extend"];
+        post: operations["extend_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1021,7 +1021,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["reopen"];
+        post: operations["reopen_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1886,6 +1886,102 @@ export interface paths {
         get: operations["getDocumentType"];
         put: operations["updateDocumentType"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/extra-charges/{id}/dispute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["dispute"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/extra-charges/{id}/dispute-decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["decideDispute"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/extra-charges/{id}/extend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["extend"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/extra-charges/{id}/release-block": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["releaseBlock"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/extra-charges/{id}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reopen"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/extra-charges/{id}/write-off": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["writeOff"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4719,6 +4815,18 @@ export interface components {
             phone?: string;
             taxCode?: string;
         };
+        DebtDisputeDecisionRequestDto: {
+            /** @enum {string} */
+            decision: "ACCEPTED" | "REJECTED";
+            response: string;
+        };
+        DebtDisputeRequestDto: {
+            reason: string;
+        };
+        DebtExtensionRequestDto: {
+            /** Format: int32 */
+            days: number;
+        };
         DeliveryComplaintResponseDto: {
             /** Format: int64 */
             bookingId?: number;
@@ -5814,15 +5922,27 @@ export interface components {
         };
         PaymentResponseDto: {
             amount?: number;
+            /** Format: date-time */
+            blockReleasedAt?: string;
             /** Format: int64 */
             bookingId?: number;
             /** Format: date-time */
             confirmationUntil?: string;
             currencyCode?: string;
+            /** @enum {string} */
+            disputeDecision?: "ACCEPTED" | "REJECTED";
+            disputeReason?: string;
+            disputeResponse?: string;
+            /** Format: date-time */
+            disputedAt?: string;
             /** Format: date-time */
             dueAt?: string;
+            /** Format: date-time */
+            extendedAt?: string;
             /** Format: int64 */
             id?: number;
+            /** Format: date-time */
+            issuedAt?: string;
             /** Format: date-time */
             paidAt?: string;
             /** Format: int64 */
@@ -5831,6 +5951,8 @@ export interface components {
             status?: "PENDING" | "PAID" | "FAILED" | "CANCELLED";
             /** @enum {string} */
             type?: "DEPOSIT" | "BALANCE" | "EXTRA_CHARGE" | "REFUND";
+            /** Format: date-time */
+            writtenOffAt?: string;
         };
         PaymentResultResponseDto: {
             amount?: number;
@@ -7718,7 +7840,7 @@ export interface operations {
             };
         };
     };
-    extend: {
+    extend_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -8439,7 +8561,7 @@ export interface operations {
             };
         };
     };
-    reopen: {
+    reopen_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -9989,6 +10111,158 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseDocumentTypeResponseDto"];
+                };
+            };
+        };
+    };
+    dispute: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DebtDisputeRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePaymentResponseDto"];
+                };
+            };
+        };
+    };
+    decideDispute: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DebtDisputeDecisionRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePaymentResponseDto"];
+                };
+            };
+        };
+    };
+    extend: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DebtExtensionRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePaymentResponseDto"];
+                };
+            };
+        };
+    };
+    releaseBlock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePaymentResponseDto"];
+                };
+            };
+        };
+    };
+    reopen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePaymentResponseDto"];
+                };
+            };
+        };
+    };
+    writeOff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    decision: string;
+                    request: components["schemas"]["DebtDisputeRequestDto"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePaymentResponseDto"];
                 };
             };
         };

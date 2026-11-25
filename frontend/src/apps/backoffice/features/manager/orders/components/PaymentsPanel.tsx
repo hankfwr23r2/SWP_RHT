@@ -6,6 +6,7 @@ import { ErrorState } from '@shared/ui/ErrorState'
 import { StatusBadge } from '@shared/ui/StatusBadge'
 import { money, moment } from '@backoffice/shared/staffFormat'
 import type { OrderData } from '../loaders'
+import { DebtActions } from './DebtActions'
 import s from '@backoffice/shared/StaffPanels.module.css'
 
 const TONE = { PENDING: 'warning', PAID: 'success', FAILED: 'danger', CANCELLED: 'neutral' } as const
@@ -30,6 +31,7 @@ export function PaymentsPanel({ data }: { data: OrderData }) {
             <span className={s.amount}>{money(payment.amount, payment.currencyCode)}</span>
             {payment.status && <StatusBadge tone={TONE[payment.status]} label={t(`myOrders.payments.status.${payment.status}`)} />}
             {payment.type === 'REFUND' && payment.status === 'PENDING' && <Button size="sm" onClick={() => navigate('/manager/refunds')}>{t('mgr.payments.refund')}</Button>}
+            <DebtActions payment={payment} />
           </li>
         ))}
       </ul>

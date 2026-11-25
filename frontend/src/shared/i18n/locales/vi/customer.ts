@@ -435,6 +435,11 @@ export const customer = {
       rejectMessage: 'Chúng tôi sẽ xem lý do và báo giá lại. Chỗ trên chuyến vẫn được giữ.',
     },
     payments: {
+      disputeButton: 'Khiếu nại khoản này',
+      disputeHint: 'Mỗi khoản khiếu nại một lần. Trong lúc chờ kết luận, hạn trả tạm dừng và bạn vẫn đặt đơn mới được.',
+      disputeSent: 'Đã gửi khiếu nại khoản thu.',
+      disputePending: 'Đang chờ công ty kết luận khiếu nại khoản này.',
+      dispute: { ACCEPTED: 'Khiếu nại được chấp nhận, khoản thu đã hủy. {{response}}', REJECTED: 'Khoản thu giữ nguyên. {{response}}' },
       title: 'Thanh toán',
       pay: 'Trả qua VNPAY',
       openError: 'Chưa mở được cổng thanh toán.',

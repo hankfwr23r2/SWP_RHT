@@ -19,15 +19,16 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Query("""
             SELECT DISTINCT p.booking.customer.userId FROM Payment p
             WHERE p.paymentType = :type AND p.status = :status AND p.dueAt < :now
+            AND (p.disputedAt IS NULL OR p.disputeResolvedAt IS NOT NULL)
+            AND (p.issuedAt IS NULL OR p.issuedAt > :badBefore)
             ORDER BY p.booking.customer.userId
             """)
-    List<Long> findCustomersWithOverdue(PaymentType type, PaymentStatus status, Instant now);
+    List<Long> findCustomersWithOverdue(PaymentType type, PaymentStatus status, Instant now, Instant badBefore);
 
-    @Query("""
-            SELECT count(p) > 0 FROM Payment p WHERE p.booking.customer.userId = :customerId
-            AND p.paymentType = :type AND p.status = :status AND p.dueAt < :now
-            """)
-    boolean hasOverdue(Long customerId, PaymentType type, PaymentStatus status, Instant now);
+    List<Payment> findByBooking_Customer_UserIdAndPaymentType(Long customerId, PaymentType type);
+
+    @Query("SELECT p.id FROM Payment p WHERE p.paymentType = :type AND p.status = :status AND p.issuedAt <= :before ORDER BY p.id")
+    List<Long> findIssuedBefore(PaymentType type, PaymentStatus status, Instant before);
 
     @Query("select p.booking.id from Payment p where p.id = :paymentId")
     Optional<Long> findBookingId(Long paymentId);

@@ -691,7 +691,7 @@ class QuotationPaymentPostgresTest {
         long cost = jdbc.queryForObject("""
                 INSERT INTO cost_item (category, description, amount, currency_code, payer_type, booking_id,
                     is_customer_consulted, incurred_at, recorded_by, approved_by, approved_at)
-                VALUES ('VET', 'Hóa đơn thú y muộn', 1500, 'VND', 'CUSTOMER', ?, true, now(), ?, ?, now()) RETURNING id
+                VALUES ('VET', 'Hóa đơn thú y muộn', 250000, 'VND', 'CUSTOMER', ?, true, now(), ?, ?, now()) RETURNING id
                 """, Long.class, booking, fixture.managerId(), fixture.managerId());
         var charge = settlements.createExtraCharge(booking, List.of(cost), fixture.manager());
         assertThat(charge.dueAt()).isEqualTo(now.plus(java.time.Duration.ofDays(7)));
@@ -707,7 +707,7 @@ class QuotationPaymentPostgresTest {
         String reference = checkout(charge.id(), fixture);
         Instant paid = now.truncatedTo(java.time.temporal.ChronoUnit.SECONDS).plusSeconds(1);
         when(clock.instant()).thenReturn(paid);
-        assertThat(results.receive(callback(reference, "804978", 1500, paid, true)).code()).isEqualTo("00");
+        assertThat(results.receive(callback(reference, "804978", 250000, paid, true)).code()).isEqualTo("00");
         extraCharges.requireNoOverdue(customer);
         assertThat(bookingStatus(fixture)).isEqualTo("COMPLETED");
     }

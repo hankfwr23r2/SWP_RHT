@@ -11,6 +11,22 @@ export const bookingPaymentsApi = {
   // Số tiền do backend lấy từ khoản thu, client chỉ gửi mã khoản thu
   checkout: async (paymentId: number) =>
     (await apiClient.post<ApiResponse<Schemas['PaymentCheckoutResponseDto']>>(`/payments/${paymentId}/checkout`, {})).data.data,
+  dispute: async (paymentId: number, reason: string) =>
+    (await apiClient.post<ApiResponse<BookingPayment>>(`/extra-charges/${paymentId}/dispute`, { reason })).data.data,
+  decideDispute: async (paymentId: number, decision: 'ACCEPTED' | 'REJECTED', response: string) =>
+    (await apiClient.post<ApiResponse<BookingPayment>>(`/extra-charges/${paymentId}/dispute-decision`, { decision, response })).data.data,
+  extend: async (paymentId: number, days: number) =>
+    (await apiClient.post<ApiResponse<BookingPayment>>(`/extra-charges/${paymentId}/extend`, { days })).data.data,
+  writeOff: async (paymentId: number, reason: string, decision: File) => {
+    const body = new FormData()
+    body.append('request', new Blob([JSON.stringify({ reason })], { type: 'application/json' }))
+    body.append('decision', decision)
+    return (await apiClient.post<ApiResponse<BookingPayment>>(`/extra-charges/${paymentId}/write-off`, body)).data.data
+  },
+  reopen: async (paymentId: number) =>
+    (await apiClient.post<ApiResponse<BookingPayment>>(`/extra-charges/${paymentId}/reopen`)).data.data,
+  releaseBlock: async (paymentId: number) =>
+    (await apiClient.post<ApiResponse<BookingPayment>>(`/extra-charges/${paymentId}/release-block`)).data.data,
   verifyReturn: async (params: Record<string, string>) =>
     (await apiClient.get<ApiResponse<PaymentResult>>('/payments/vnpay/return', { params })).data.data,
 }
