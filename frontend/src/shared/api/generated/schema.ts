@@ -388,6 +388,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/bookings/{bookingId}/delivery-complaints": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["view"];
+        put?: never;
+        post: operations["submit_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{bookingId}/delivery-complaints/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["confirm_2"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{bookingId}/delivery-complaints/reply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reply"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{bookingId}/delivery-complaints/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["resolve_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{bookingId}/delivery-complaints/submit-on-behalf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["submitOnBehalf"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/bookings/{bookingId}/payments": {
         parameters: {
             query?: never;
@@ -3419,6 +3499,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseDeliveryComplaintResponseDto: {
+            data?: components["schemas"]["DeliveryComplaintResponseDto"];
+            message?: string;
+            status?: string;
+        };
         ApiResponseDepartureDecisionResponseDto: {
             data?: components["schemas"]["DepartureDecisionResponseDto"];
             message?: string;
@@ -4054,6 +4139,44 @@ export interface components {
         CompanyCancelBookingRequestDto: {
             reason: string;
         };
+        ComplaintCreateRequestDto: {
+            /** Format: int64 */
+            bookingHorseId?: number;
+            description: string;
+            photos: string[];
+        };
+        ComplaintOnBehalfRequestDto: {
+            /** Format: int64 */
+            bookingHorseId?: number;
+            description: string;
+            photos?: string[];
+        };
+        ComplaintReplyRequestDto: {
+            reply: string;
+        };
+        ComplaintResolveRequestDto: {
+            /** @enum {string} */
+            decision: "ACCEPTED" | "REJECTED";
+            reason: string;
+        };
+        ComplaintResponseDto: {
+            /** Format: int64 */
+            bookingHorseId?: number;
+            /** @enum {string} */
+            decision?: "ACCEPTED" | "REJECTED";
+            decisionReason?: string;
+            description?: string;
+            /** Format: int64 */
+            id?: number;
+            photos?: components["schemas"]["EvidenceResponseDto"][];
+            reply?: string;
+            /** Format: date-time */
+            reportedAt?: string;
+            /** Format: date-time */
+            resolvedAt?: string;
+            /** @enum {string} */
+            status?: "REPORTED" | "PLAN_PENDING" | "PLAN_ACTIVE" | "RESOLVED" | "CLOSED";
+        };
         ContactResponseDto: {
             hotline?: string;
             officeAddress?: string;
@@ -4273,6 +4396,20 @@ export interface components {
             identityDocumentType?: "CCCD" | "PASSPORT" | "BUSINESS_REG";
             phone?: string;
             taxCode?: string;
+        };
+        DeliveryComplaintResponseDto: {
+            /** Format: int64 */
+            bookingId?: number;
+            complaint?: components["schemas"]["ComplaintResponseDto"];
+            /** Format: date-time */
+            confirmedAt?: string;
+            customerCanRespond?: boolean;
+            /** Format: date-time */
+            deliveredAt?: string;
+            managerCanSubmit?: boolean;
+        };
+        DeliveryConfirmationRequestDto: {
+            confirmed: boolean;
         };
         DeliveryRecipientRequestDto: {
             collectionCode?: string;
@@ -4940,7 +5077,7 @@ export interface components {
             /** Format: int64 */
             horseLegId?: number;
             /** @enum {string} */
-            incidentType: "HEALTH" | "VEHICLE_BREAKDOWN" | "ACCIDENT" | "DELAY" | "DOCUMENT" | "HANDOVER_TIMEOUT" | "OTHER";
+            incidentType: "HEALTH" | "VEHICLE_BREAKDOWN" | "ACCIDENT" | "DELAY" | "DOCUMENT" | "HANDOVER_TIMEOUT" | "OTHER" | "COMPLAINT";
             latitude?: number;
             longitude?: number;
             title: string;
@@ -4961,7 +5098,7 @@ export interface components {
             /** Format: int64 */
             id?: number;
             /** @enum {string} */
-            incidentType?: "HEALTH" | "VEHICLE_BREAKDOWN" | "ACCIDENT" | "DELAY" | "DOCUMENT" | "HANDOVER_TIMEOUT" | "OTHER";
+            incidentType?: "HEALTH" | "VEHICLE_BREAKDOWN" | "ACCIDENT" | "DELAY" | "DOCUMENT" | "HANDOVER_TIMEOUT" | "OTHER" | "COMPLAINT";
             latitude?: number;
             longitude?: number;
             plans?: components["schemas"]["PlanDto"][];
@@ -5739,7 +5876,7 @@ export interface components {
             /** Format: int64 */
             id?: number;
             /** @enum {string} */
-            incidentType?: "HEALTH" | "VEHICLE_BREAKDOWN" | "ACCIDENT" | "DELAY" | "DOCUMENT" | "HANDOVER_TIMEOUT" | "OTHER";
+            incidentType?: "HEALTH" | "VEHICLE_BREAKDOWN" | "ACCIDENT" | "DELAY" | "DOCUMENT" | "HANDOVER_TIMEOUT" | "OTHER" | "COMPLAINT";
             /** Format: date-time */
             reportedAt?: string;
             /** Format: date-time */
@@ -6884,6 +7021,158 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListBookingSummaryResponseDto"];
+                };
+            };
+        };
+    };
+    view: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDeliveryComplaintResponseDto"];
+                };
+            };
+        };
+    };
+    submit_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": components["schemas"]["ComplaintCreateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDeliveryComplaintResponseDto"];
+                };
+            };
+        };
+    };
+    confirm_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeliveryConfirmationRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDeliveryComplaintResponseDto"];
+                };
+            };
+        };
+    };
+    reply: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ComplaintReplyRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDeliveryComplaintResponseDto"];
+                };
+            };
+        };
+    };
+    resolve_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ComplaintResolveRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDeliveryComplaintResponseDto"];
+                };
+            };
+        };
+    };
+    submitOnBehalf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": components["schemas"]["ComplaintOnBehalfRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDeliveryComplaintResponseDto"];
                 };
             };
         };

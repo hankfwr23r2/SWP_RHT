@@ -364,6 +364,20 @@
         },
         "type" : "object"
       },
+      "ApiResponseDeliveryComplaintResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/DeliveryComplaintResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseDepartureDecisionResponseDto" : {
         "properties" : {
           "data" : {
@@ -2271,6 +2285,121 @@
         "required" : [ "reason" ],
         "type" : "object"
       },
+      "ComplaintCreateRequestDto" : {
+        "properties" : {
+          "bookingHorseId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "description" : {
+            "maxLength" : 4000,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "photos" : {
+            "items" : {
+              "format" : "binary",
+              "type" : "string"
+            },
+            "minItems" : 1,
+            "type" : "array"
+          }
+        },
+        "required" : [ "description", "photos" ],
+        "type" : "object"
+      },
+      "ComplaintOnBehalfRequestDto" : {
+        "properties" : {
+          "bookingHorseId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "description" : {
+            "maxLength" : 4000,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "photos" : {
+            "items" : {
+              "format" : "binary",
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "description" ],
+        "type" : "object"
+      },
+      "ComplaintReplyRequestDto" : {
+        "properties" : {
+          "reply" : {
+            "maxLength" : 4000,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "reply" ],
+        "type" : "object"
+      },
+      "ComplaintResolveRequestDto" : {
+        "properties" : {
+          "decision" : {
+            "enum" : [ "ACCEPTED", "REJECTED" ],
+            "type" : "string"
+          },
+          "reason" : {
+            "maxLength" : 4000,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "decision", "reason" ],
+        "type" : "object"
+      },
+      "ComplaintResponseDto" : {
+        "properties" : {
+          "bookingHorseId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "decision" : {
+            "enum" : [ "ACCEPTED", "REJECTED" ],
+            "type" : "string"
+          },
+          "decisionReason" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "photos" : {
+            "items" : {
+              "$ref" : "#/components/schemas/EvidenceResponseDto"
+            },
+            "type" : "array"
+          },
+          "reply" : {
+            "type" : "string"
+          },
+          "reportedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "resolvedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "REPORTED", "PLAN_PENDING", "PLAN_ACTIVE", "RESOLVED", "CLOSED" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ContactResponseDto" : {
         "properties" : {
           "hotline" : {
@@ -2865,6 +2994,41 @@
           }
         },
         "required" : [ "countryCode", "customerType", "fullName" ],
+        "type" : "object"
+      },
+      "DeliveryComplaintResponseDto" : {
+        "properties" : {
+          "bookingId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "complaint" : {
+            "$ref" : "#/components/schemas/ComplaintResponseDto"
+          },
+          "confirmedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "customerCanRespond" : {
+            "type" : "boolean"
+          },
+          "deliveredAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "managerCanSubmit" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
+      "DeliveryConfirmationRequestDto" : {
+        "properties" : {
+          "confirmed" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "confirmed" ],
         "type" : "object"
       },
       "DeliveryRecipientRequestDto" : {
@@ -4633,7 +4797,7 @@
             "type" : "integer"
           },
           "incidentType" : {
-            "enum" : [ "HEALTH", "VEHICLE_BREAKDOWN", "ACCIDENT", "DELAY", "DOCUMENT", "HANDOVER_TIMEOUT", "OTHER" ],
+            "enum" : [ "HEALTH", "VEHICLE_BREAKDOWN", "ACCIDENT", "DELAY", "DOCUMENT", "HANDOVER_TIMEOUT", "OTHER", "COMPLAINT" ],
             "type" : "string"
           },
           "latitude" : {
@@ -4690,7 +4854,7 @@
             "type" : "integer"
           },
           "incidentType" : {
-            "enum" : [ "HEALTH", "VEHICLE_BREAKDOWN", "ACCIDENT", "DELAY", "DOCUMENT", "HANDOVER_TIMEOUT", "OTHER" ],
+            "enum" : [ "HEALTH", "VEHICLE_BREAKDOWN", "ACCIDENT", "DELAY", "DOCUMENT", "HANDOVER_TIMEOUT", "OTHER", "COMPLAINT" ],
             "type" : "string"
           },
           "latitude" : {
@@ -6765,7 +6929,7 @@
             "type" : "integer"
           },
           "incidentType" : {
-            "enum" : [ "HEALTH", "VEHICLE_BREAKDOWN", "ACCIDENT", "DELAY", "DOCUMENT", "HANDOVER_TIMEOUT", "OTHER" ],
+            "enum" : [ "HEALTH", "VEHICLE_BREAKDOWN", "ACCIDENT", "DELAY", "DOCUMENT", "HANDOVER_TIMEOUT", "OTHER", "COMPLAINT" ],
             "type" : "string"
           },
           "reportedAt" : {
@@ -9005,6 +9169,214 @@
           }
         },
         "tags" : [ "booking-review-controller" ]
+      }
+    },
+    "/bookings/{bookingId}/delivery-complaints" : {
+      "get" : {
+        "operationId" : "view",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "bookingId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseDeliveryComplaintResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "delivery-complaint-controller" ]
+      },
+      "post" : {
+        "operationId" : "submit_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "bookingId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ComplaintCreateRequestDto"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseDeliveryComplaintResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "delivery-complaint-controller" ]
+      }
+    },
+    "/bookings/{bookingId}/delivery-complaints/confirm" : {
+      "post" : {
+        "operationId" : "confirm_2",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "bookingId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DeliveryConfirmationRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseDeliveryComplaintResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "delivery-complaint-controller" ]
+      }
+    },
+    "/bookings/{bookingId}/delivery-complaints/reply" : {
+      "post" : {
+        "operationId" : "reply",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "bookingId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ComplaintReplyRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseDeliveryComplaintResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "delivery-complaint-controller" ]
+      }
+    },
+    "/bookings/{bookingId}/delivery-complaints/resolve" : {
+      "post" : {
+        "operationId" : "resolve_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "bookingId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ComplaintResolveRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseDeliveryComplaintResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "delivery-complaint-controller" ]
+      }
+    },
+    "/bookings/{bookingId}/delivery-complaints/submit-on-behalf" : {
+      "post" : {
+        "operationId" : "submitOnBehalf",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "bookingId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ComplaintOnBehalfRequestDto"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseDeliveryComplaintResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "delivery-complaint-controller" ]
       }
     },
     "/bookings/{bookingId}/payments" : {

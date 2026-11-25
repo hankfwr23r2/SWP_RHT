@@ -10,6 +10,7 @@ import com.example.racehorse_transport.entity.enums.IncidentStatus;
 import com.example.racehorse_transport.entity.enums.IncidentType;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import com.example.racehorse_transport.entity.enums.PartyRoleType;
+import com.example.racehorse_transport.exception.DispatchRuleException;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -17,6 +18,15 @@ import org.junit.jupiter.api.Test;
 class IncidentPolicyTest {
 
     private static final Instant REPORTED = Instant.parse("2031-03-05T10:00:00Z");
+
+    @Test
+    void tripIncidentReportRejectsComplaintsAndAllowsOperationalIncidents() {
+        assertThatThrownBy(() -> IncidentPolicy.requireReportable(VehicleTripStatus.IN_PROGRESS, IncidentType.COMPLAINT, true))
+                .isInstanceOf(DispatchRuleException.class)
+                .hasMessageContaining("chi tiết đơn hàng");
+        assertThatCode(() -> IncidentPolicy.requireReportable(VehicleTripStatus.IN_PROGRESS, IncidentType.OTHER, false))
+                .doesNotThrowAnyException();
+    }
 
     @Test
     void healthRequiresAHorseForNewReportsButLegacyHealthStillRequiresFit() {

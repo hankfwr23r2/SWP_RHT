@@ -16,22 +16,35 @@ import org.springframework.data.repository.query.Param;
 
 public interface IncidentRepository extends JpaRepository<Incident, Long> {
 
+    @Override
+    @Query("SELECT i FROM Incident i WHERE i.id = :id AND i.incidentType <> com.example.racehorse_transport.entity.enums.IncidentType.COMPLAINT")
+    Optional<Incident> findById(@Param("id") Long id);
+
+    @Override
+    @Query("SELECT count(i) > 0 FROM Incident i WHERE i.id = :id AND i.incidentType <> com.example.racehorse_transport.entity.enums.IncidentType.COMPLAINT")
+    boolean existsById(@Param("id") Long id);
+
     // Con giao thất bại do không gặp người nhận (B5) thì giữ có phí; về hub do sự cố khác thì tập kết không phí
     boolean existsByHorseLeg_IdAndIncidentType(Long horseLegId, IncidentType incidentType);
 
     boolean existsByVehicleTrip_IdAndHorseLegIsNullAndStatusIn(Long vehicleTripId, Collection<IncidentStatus> statuses);
 
     @EntityGraph(attributePaths = {"booking", "vehicleTrip", "horseLeg", "horseLeg.bookingHorse", "horseLeg.bookingHorse.horse", "reportedBy", "fitConfirmedBy"})
+    @Query("SELECT i FROM Incident i WHERE i.status IN :statuses AND i.incidentType <> com.example.racehorse_transport.entity.enums.IncidentType.COMPLAINT ORDER BY i.reportedAt DESC")
     List<Incident> findByStatusInOrderByReportedAtDesc(Collection<IncidentStatus> statuses);
 
     @EntityGraph(attributePaths = {"booking", "vehicleTrip", "horseLeg", "horseLeg.bookingHorse", "horseLeg.bookingHorse.horse", "reportedBy", "fitConfirmedBy"})
     List<Incident> findByVehicleTrip_IdOrderByReportedAtDesc(Long vehicleTripId);
 
     @EntityGraph(attributePaths = {"booking", "vehicleTrip", "horseLeg", "horseLeg.bookingHorse", "horseLeg.bookingHorse.horse", "reportedBy", "fitConfirmedBy"})
+    @Query("SELECT i FROM Incident i WHERE i.id = :id AND i.incidentType <> com.example.racehorse_transport.entity.enums.IncidentType.COMPLAINT")
     Optional<Incident> findOneById(Long id);
 
+    @EntityGraph(attributePaths = {"booking", "bookingHorse"})
+    Optional<Incident> findByBooking_IdAndIncidentType(Long bookingId, IncidentType incidentType);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT i FROM Incident i WHERE i.id = :id")
+    @Query("SELECT i FROM Incident i WHERE i.id = :id AND i.incidentType <> com.example.racehorse_transport.entity.enums.IncidentType.COMPLAINT")
     Optional<Incident> findForUpdate(@Param("id") Long id);
 
     @Query("""
