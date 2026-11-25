@@ -1071,7 +1071,7 @@ Index: `(booking_horse_id, recorded_at)`, `trip_stop_id`, `horse_stay_id`, `vehi
 
 Biên bản ký là một `document` có `handover_id` trỏ về dòng này.
 
-Nhận tại điểm đón, nhận từ đại lý, nhận hoặc giao cho khách tại hub và giao ở điểm giao yêu cầu tình trạng và ảnh của từng con quét đúng chip được giao nhận. Biên bản bắt buộc ở các lần này và khi bàn giao đại lý. Điều phối ghi đại lý đã giao bằng tệp loại `AGENT_DELIVERY_PROOF` có chủ sở hữu `HORSE_LEG`.
+Nhận tại điểm đón, nhận từ đại lý, nhận hoặc giao cho khách tại hub và giao ở điểm giao yêu cầu tình trạng và ảnh của từng con có mã chip khớp. Biên bản bắt buộc ở các lần này và khi bàn giao đại lý. Điều phối ghi đại lý đã giao bằng tệp loại `AGENT_DELIVERY_PROOF` có chủ sở hữu `HORSE_LEG`.
 
 Hành trình của chủ đơn chỉ trả biên bản và ảnh gắn với lần giao nhận DONE có ngựa của đơn đã khớp chip. Tệp gắn chung cho nhiều đơn cần được phân quyền theo từng đơn trước khi hiện cho khách.
 
@@ -1101,10 +1101,14 @@ Bên giao và bên nhận suy ra từ `handover_type`:
 |---|---|---|---|---|
 | `handover_id` | `bigint` | | PK, FK → handover, CASCADE | |
 | `horse_leg_id` | `bigint` | | PK, FK → horse_leg | |
-| `scanned_microchip` | `varchar(30)` | có | | Mã chip đọc được |
+| `scanned_microchip` | `varchar(30)` | có | | Mã chip do máy đọc hoặc người dùng gõ |
+| `microchip_entry_method` | `varchar(10)` | | CK `SCAN, MANUAL`, mặc định `SCAN` | Cách nhập mã chip; bản ghi cũ dùng mặc định |
+| `manual_entry_reason` | `varchar(500)` | có | CK theo cách nhập | Bắt buộc có nội dung khi `MANUAL`; `SCAN` để NULL |
 | `is_microchip_matched` | `boolean` | | | So với `horse.microchip` |
 | `condition_note` | `text` | có | | Tình trạng ngựa lúc giao nhận |
 | `recipient_name` | `varchar(120)` | có | | Họ tên người nhận do nhân viên ghi khi giao |
+
+Khi trả ngựa quá hạn, dòng giao nhận dùng lại mã chip, cách nhập và lý do đã ghi ở lần đón.
 
 Index: `horse_leg_id`.
 

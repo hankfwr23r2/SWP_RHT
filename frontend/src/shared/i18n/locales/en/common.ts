@@ -95,7 +95,7 @@ export const common = {
     phone: "Customer’s confirmation by phone",
     save: "Confirm",
   },
-  handoverEvidence: { noCodeNext: "You can authorize collection from this order.", recipient: "Recipient’s full name", code: "Six-digit collection code", noCode: "Your order has no collection code", confirm: "Authorize collection", confirmMessage: "This allows staff to release the horse without a collection code. Confirm only when the recipient is ready to collect.", confirmed: "Collection authorized", originalMissing: "Original not received", condition: "Horse condition", photo: "Horse condition photo", record: "Signed handover record", photoAttached: "Photo attached", photoSaved: "Photo saved", agentProof: "Agent delivery photo or record" },
+  handoverEvidence: { noCodeNext: "You can authorize collection from this order.", recipient: "Recipient’s full name", code: "Six-digit collection code", noCode: "Your order has no collection code", confirm: "Authorize collection", confirmMessage: "This allows staff to release the horse without a collection code. Confirm only when the recipient is ready to collect.", confirmed: "Collection authorized", originalMissing: "Original not received", condition: "Horse condition", photo: "Horse condition photo", record: "Signed handover record", photoAttached: "Photo attached", photoSaved: "Photo saved", agentProof: "Agent delivery photo or record", manualEntry: "Manual entry", manualToggle: "Typed manually (chip could not be scanned)", manualReason: "Reason for manual entry" },
   ui: {
     loading: 'Loading',
     processing: 'Processing',

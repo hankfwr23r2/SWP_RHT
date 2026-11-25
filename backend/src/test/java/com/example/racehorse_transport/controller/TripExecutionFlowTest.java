@@ -13,10 +13,12 @@ import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.security.JwtUtils;
 import com.example.racehorse_transport.support.TestData;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.LinkedHashMap;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -433,6 +435,59 @@ class TripExecutionFlowTest {
     }
 
     @Test
+    void recordsChipEntryMethodInHandoverDetailsAndStaffJourney() throws Exception {
+        makeLocal();
+        jdbc.update("DELETE FROM payment WHERE booking_id = ? AND payment_type = 'BALANCE'", booking);
+        acknowledge(driver);
+        acknowledge(escort);
+        act(driver, "/vehicle-trips/" + trip + "/start").andExpect(status().isOk());
+        act(driver, "/trip-stops/" + stops.get(0) + "/arrive").andExpect(status().isOk());
+        act(driver, "/trip-stops/" + stops.get(0) + "/depart").andExpect(status().isOk());
+        act(driver, "/trip-stops/" + stops.get(1) + "/arrive").andExpect(status().isOk());
+
+        String horse = "$.data.handovers[0].horses[0]";
+        long pickup = handoverId(handover(escort, stops.get(1), "PICKUP").andExpect(status().isCreated())
+                .andExpect(jsonPath(horse + ".entryMethod").doesNotExist()));
+        scan(escort, pickup, chip).andExpect(status().isOk())
+                .andExpect(jsonPath(horse + ".entryMethod").value("SCAN"))
+                .andExpect(jsonPath(horse + ".manualReason").doesNotExist());
+        chipEntry(pickup, "MANUAL", null).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.data.manualReason").value("Vui lòng ghi lý do gõ tay mã chip."));
+        chipEntry(pickup, "MANUAL", " ".repeat(501)).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.data.manualReason").exists());
+
+        String reason = "Máy đọc bị hỏng";
+        chipEntry(pickup, "MANUAL", "  " + reason + "  ").andExpect(status().isOk())
+                .andExpect(jsonPath(horse + ".entryMethod").value("MANUAL"))
+                .andExpect(jsonPath(horse + ".manualReason").value(reason))
+                .andExpect(jsonPath(horse + ".microchipMatched").value(true));
+        chipEntry(pickup, "SCAN", reason).andExpect(status().isOk())
+                .andExpect(jsonPath(horse + ".entryMethod").value("SCAN"))
+                .andExpect(jsonPath(horse + ".manualReason").doesNotExist());
+        chipEntry(pickup, "MANUAL", reason).andExpect(status().isOk());
+        act(escort, "/handovers/" + pickup + "/complete").andExpect(status().isOk());
+
+        String event = "$.data.horses[0].handovers[0]";
+        mvc.perform(get("/bookings/{id}/journey", booking).header(HttpHeaders.AUTHORIZATION, coordinator))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(event + ".entryMethod").value("MANUAL"))
+                .andExpect(jsonPath(event + ".manualReason").value(reason));
+        String customer = "Bearer " + jwtUtils.generateToken("customer1.dev", List.of("CUSTOMER"));
+        mvc.perform(get("/bookings/{id}/journey", booking).header(HttpHeaders.AUTHORIZATION, customer))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(event + ".microchipMatched").value(true))
+                .andExpect(jsonPath(event + ".entryMethod").doesNotHaveJsonPath())
+                .andExpect(jsonPath(event + ".manualReason").doesNotHaveJsonPath());
+
+        entityManager.flush();
+        jdbc.update("UPDATE payment SET due_at = now() - interval '1 minute' WHERE booking_id = ? AND payment_type = 'BALANCE'", booking);
+        entityManager.clear();
+        handover(escort, stops.get(1), "RETURN").andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.handovers[1].horses[0].entryMethod").value("MANUAL"))
+                .andExpect(jsonPath("$.data.handovers[1].horses[0].manualReason").value(reason));
+    }
+
+    @Test
     void overdueBalanceReturnsTheHorseAndLeavesTheBookingAvailableForRescheduling() throws Exception {
         makeLocal();
         entityManager.flush();
@@ -771,6 +826,17 @@ class TripExecutionFlowTest {
     private ResultActions scan(String token, long handoverId, String microchip) throws Exception {
         return mvc.perform(post("/handovers/{id}/horses", handoverId).header(HttpHeaders.AUTHORIZATION, token)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"horseLegId\":%d,\"conditionNote\":\"Khỏe\",\"microchip\":\"%s\"}".formatted(leg, microchip)));
+    }
+
+    private ResultActions chipEntry(long handoverId, String entryMethod, String manualReason) throws Exception {
+        var body = new LinkedHashMap<String, Object>();
+        body.put("horseLegId", leg);
+        body.put("microchip", chip);
+        body.put("conditionNote", "Khỏe");
+        body.put("entryMethod", entryMethod);
+        if (manualReason != null) body.put("manualReason", manualReason);
+        return mvc.perform(post("/handovers/{id}/horses", handoverId).header(HttpHeaders.AUTHORIZATION, escort)
+                .contentType(MediaType.APPLICATION_JSON).content(new ObjectMapper().writeValueAsString(body)));
     }
 
     private ResultActions refuse(String token, long handoverId, long horseLegId, String reason) throws Exception {

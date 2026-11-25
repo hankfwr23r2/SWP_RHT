@@ -6,12 +6,14 @@ import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.BookingHorse;
 import com.example.racehorse_transport.entity.Handover;
 import com.example.racehorse_transport.entity.HandoverHorse;
+import com.example.racehorse_transport.entity.HandoverHorseId;
 import com.example.racehorse_transport.entity.Horse;
 import com.example.racehorse_transport.entity.HorseLeg;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.TripStop;
 import com.example.racehorse_transport.entity.enums.HandoverStatus;
 import com.example.racehorse_transport.entity.enums.HandoverType;
+import com.example.racehorse_transport.entity.enums.MicrochipEntryMethod;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -66,6 +68,27 @@ class OperationDtoTest {
         assertThat(response.horses().get(1).scannedMicrochip()).isNull();
         assertThat(response.horses().get(1).microchipMatched()).isNull();
         assertThat(response.horses().get(1).bookingCode()).isEqualTo("BK-ABCDEFGH");
+    }
+
+    @Test
+    void appliesChipEntryWithoutOverwritingIdentityOrMatchResult() {
+        HandoverHorse scan = new HandoverHorse();
+        var id = new HandoverHorseId(5L, 1L);
+        scan.setId(id);
+        scan.setMicrochipMatched(false);
+        scan.setRecipientName("Người nhận");
+        var request = new HandoverScanRequestDto(2L, " 985000000100002 ", " Khỏe ",
+                MicrochipEntryMethod.MANUAL, " Máy đọc bị hỏng ");
+
+        request.applyTo(scan, request.entryMethod(), "Máy đọc bị hỏng");
+
+        assertThat(scan.getScannedMicrochip()).isEqualTo("985000000100002");
+        assertThat(scan.getMicrochipEntryMethod()).isEqualTo(MicrochipEntryMethod.MANUAL);
+        assertThat(scan.getManualEntryReason()).isEqualTo("Máy đọc bị hỏng");
+        assertThat(scan.getConditionNote()).isEqualTo("Khỏe");
+        assertThat(scan.getId()).isSameAs(id);
+        assertThat(scan.getMicrochipMatched()).isFalse();
+        assertThat(scan.getRecipientName()).isEqualTo("Người nhận");
     }
 
     private static HorseLeg leg(Long id, String name) {

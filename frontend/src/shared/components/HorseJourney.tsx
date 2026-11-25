@@ -40,8 +40,12 @@ export function HorseJourney({ horse }: { horse: HorseJourneyData }) {
                     <b>{t(`journey.${entry.kind}.${entry.type}`)}</b>
                     {entry.state !== 'done' && <Badge tone={entry.state === 'problem' ? 'danger' : entry.state === 'current' ? 'warning' : 'neutral'}>
                       {t(`journey.state.${entry.state}`)}</Badge>}
+                    {entry.entryMethod === 'MANUAL' && <Badge tone="neutral">{t('handoverEvidence.manualEntry')}</Badge>}
                   </div>
                   <div className={s.muted}>{entry.place}{entry.detail ? ` · ${entry.detail}` : ''}</div>
+                  {entry.entryMethod === 'MANUAL' && entry.manualReason && (
+                    <div className={s.manualReason}>{t('handoverEvidence.manualReason')} · {entry.manualReason}</div>
+                  )}
                   {entry.windows?.map(window => (
                     <div key={window.side} className={s.window}>
                       {t(`journey.window.${window.side}`, {

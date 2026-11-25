@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.example.racehorse_transport.entity.enums.HandoverType;
+import com.example.racehorse_transport.entity.enums.MicrochipEntryMethod;
 import com.example.racehorse_transport.entity.enums.TripStopType;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import java.time.Instant;
@@ -78,6 +79,17 @@ class TripExecutionPolicyTest {
         assertThatCode(() -> TripExecutionPolicy.requireSomeMatched(List.of(false, true))).doesNotThrowAnyException();
         assertThatThrownBy(() -> TripExecutionPolicy.requireSomeMatched(List.of(false))).hasMessageContaining("quét đúng chip");
         assertThatThrownBy(() -> TripExecutionPolicy.requireSomeMatched(List.of())).hasMessageContaining("quét đúng chip");
+    }
+
+    @Test
+    void manualChipEntryRequiresANonBlankReason() {
+        assertThat(TripExecutionPolicy.manualEntryReason(MicrochipEntryMethod.MANUAL, "  Máy đọc bị hỏng  "))
+                .isEqualTo("Máy đọc bị hỏng");
+        assertThat(TripExecutionPolicy.manualEntryReason(MicrochipEntryMethod.SCAN, "Lý do cũ")).isNull();
+        assertThatThrownBy(() -> TripExecutionPolicy.manualEntryReason(MicrochipEntryMethod.MANUAL, null))
+                .hasMessage("Vui lòng ghi lý do gõ tay mã chip.");
+        assertThatThrownBy(() -> TripExecutionPolicy.manualEntryReason(MicrochipEntryMethod.MANUAL, " \t\n "))
+                .hasMessage("Vui lòng ghi lý do gõ tay mã chip.");
     }
 
     @Test

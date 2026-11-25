@@ -4599,11 +4599,18 @@
           "conditionNote" : {
             "type" : "string"
           },
+          "entryMethod" : {
+            "enum" : [ "SCAN", "MANUAL" ],
+            "type" : "string"
+          },
           "horseLegId" : {
             "format" : "int64",
             "type" : "integer"
           },
           "horseName" : {
+            "type" : "string"
+          },
+          "manualReason" : {
             "type" : "string"
           },
           "microchipMatched" : {
@@ -4741,9 +4748,19 @@
             "minLength" : 0,
             "type" : "string"
           },
+          "entryMethod" : {
+            "default" : "SCAN",
+            "enum" : [ "SCAN", "MANUAL" ],
+            "type" : "string"
+          },
           "horseLegId" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "manualReason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
           },
           "microchip" : {
             "maxLength" : 30,
@@ -6183,6 +6200,10 @@
       },
       "JourneyHandoverDto" : {
         "properties" : {
+          "entryMethod" : {
+            "enum" : [ "SCAN", "MANUAL" ],
+            "type" : "string"
+          },
           "evidence" : {
             "items" : {
               "$ref" : "#/components/schemas/HandoverEvidenceResponseDto"
@@ -6203,6 +6224,9 @@
           "id" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "manualReason" : {
+            "type" : "string"
           },
           "microchipMatched" : {
             "type" : "boolean"

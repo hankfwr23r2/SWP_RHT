@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.policy;
 
 import com.example.racehorse_transport.entity.enums.HandoverType;
+import com.example.racehorse_transport.entity.enums.MicrochipEntryMethod;
 import com.example.racehorse_transport.entity.enums.TripStopType;
 import com.example.racehorse_transport.entity.enums.VehicleEndCondition;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
@@ -112,6 +113,14 @@ public final class TripExecutionPolicy {
     public static boolean chipMatches(String scanned, String expected) {
         String normalized = MicrochipPolicy.normalize(scanned);
         return !normalized.isEmpty() && normalized.equals(MicrochipPolicy.normalize(expected));
+    }
+
+    public static String manualEntryReason(MicrochipEntryMethod method, String reason) {
+        if (method != MicrochipEntryMethod.MANUAL) return null;
+        if (reason == null || reason.isBlank()) {
+            throw new DispatchRuleException("manualReason", "Vui lòng ghi lý do gõ tay mã chip.");
+        }
+        return reason.strip();
     }
 
     // Hoàn tất giao nhận khi có ít nhất một con đã quét đúng chip; con sai chip thì không nhận (GĐ6)

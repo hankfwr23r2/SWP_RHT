@@ -151,12 +151,12 @@ public class TrackingServiceImpl implements TrackingService {
         int tolerance = configs.getInt(DeliveryEtaPolicy.TOLERANCE);
         return new BookingJourneyResponseDto(booking.getId(), booking.getCode(), booking.getStatus(),
                 journey.lines().stream().map(line -> horseJourney(line, journey, evidence, tolerance,
-                        includeHealthLogs ? healthLogs.getOrDefault(line.getId(), List.of()) : null)).toList());
+                        includeHealthLogs ? healthLogs.getOrDefault(line.getId(), List.of()) : null, !includeHealthLogs)).toList());
     }
 
     private HorseJourneyResponseDto horseJourney(BookingHorse line, Journey journey,
                                                  Map<Long, List<Document>> evidence, int tolerance,
-                                                 List<JourneyHealthLogResponseDto> healthLogs) {
+                                                 List<JourneyHealthLogResponseDto> healthLogs, boolean includeChipEntry) {
         List<HandoverHorse> rows = journey.of(journey.handovers(), line);
         HandoverHorse last = lastDone(rows);
         CustodyHolder holder = holder(last);
@@ -165,7 +165,7 @@ public class TrackingServiceImpl implements TrackingService {
                 last == null ? null : last.getHandover().getHandedAt(),
                 journey.of(journey.legs(), line).stream().map(leg -> journeyLeg(leg, tolerance)).toList(),
                 journey.of(journey.stays(), line).stream().map(HorseJourneyResponseDto.JourneyStayDto::from).toList(),
-                handoversOf(line, journey, evidence), healthLogs);
+                handoversOf(line, journey, evidence, includeChipEntry), healthLogs);
     }
 
     // Chặng đã gỡ khỏi lượt xe thì khung giờ không còn đúng
@@ -182,11 +182,11 @@ public class TrackingServiceImpl implements TrackingService {
 
     // Giao nhận đã có dòng của con này, cộng các lần chưa xong ở điểm lên, xuống xe của nó, xếp theo thứ tự lập
     private static List<HorseJourneyResponseDto.JourneyHandoverDto> handoversOf(
-            BookingHorse line, Journey journey, Map<Long, List<Document>> evidence) {
+            BookingHorse line, Journey journey, Map<Long, List<Document>> evidence, boolean includeChipEntry) {
         List<HandoverHorse> rows = journey.of(journey.handovers(), line);
         Set<Long> withRow = rows.stream().map(row -> row.getHandover().getId()).collect(Collectors.toSet());
         Stream<HorseJourneyResponseDto.JourneyHandoverDto> scanned = rows.stream()
-                .map(row -> HorseJourneyResponseDto.JourneyHandoverDto.from(row.getHandover(), row.getMicrochipMatched(),
+                .map(row -> HorseJourneyResponseDto.JourneyHandoverDto.from(row.getHandover(), row, includeChipEntry,
                         Boolean.TRUE.equals(row.getMicrochipMatched()) ? evidence.getOrDefault(row.getHandover().getId(), List.of()).stream()
                                 .filter(document -> document.getEvidenceHorseLeg() == null
                                         || document.getEvidenceHorseLeg().getId().equals(row.getHorseLeg().getId()))
@@ -196,7 +196,7 @@ public class TrackingServiceImpl implements TrackingService {
                         stopHandovers(journey, leg.getBoardTripStop() == null ? null : leg.getBoardTripStop().getId(), true),
                         stopHandovers(journey, leg.getAlightTripStop() == null ? null : leg.getAlightTripStop().getId(), false)))
                 .filter(handover -> !withRow.contains(handover.getId())).distinct()
-                .map(handover -> HorseJourneyResponseDto.JourneyHandoverDto.from(handover, null, List.of()));
+                .map(handover -> HorseJourneyResponseDto.JourneyHandoverDto.from(handover, null, includeChipEntry, List.of()));
         return Stream.concat(scanned, open).sorted(Comparator.comparing(HorseJourneyResponseDto.JourneyHandoverDto::id)).toList();
     }
 
