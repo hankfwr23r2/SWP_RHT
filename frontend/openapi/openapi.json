@@ -476,6 +476,20 @@
         },
         "type" : "object"
       },
+      "ApiResponseHealthCheckTaskResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/HealthCheckTaskResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseHealthLogResponseDto" : {
         "properties" : {
           "data" : {
@@ -916,6 +930,40 @@
           "data" : {
             "items" : {
               "$ref" : "#/components/schemas/HandoverPaperResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListHealthCheckAssigneeResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HealthCheckAssigneeResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListHealthCheckTaskResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HealthCheckTaskResponseDto"
             },
             "type" : "array"
           },
@@ -4579,6 +4627,134 @@
           }
         },
         "required" : [ "horseLegId", "microchip" ],
+        "type" : "object"
+      },
+      "HealthCheckAssigneeResponseDto" : {
+        "properties" : {
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "HealthCheckTaskCancelRequestDto" : {
+        "properties" : {
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
+        "type" : "object"
+      },
+      "HealthCheckTaskCreateRequestDto" : {
+        "properties" : {
+          "assignedTo" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "bookingHorseId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "checkType" : {
+            "enum" : [ "ROUTINE", "FOLLOW_UP", "BEFORE_DEPARTURE" ],
+            "type" : "string"
+          },
+          "dueAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "horseStayId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "note" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "vehicleTripId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "assignedTo", "bookingHorseId", "checkType", "dueAt" ],
+        "type" : "object"
+      },
+      "HealthCheckTaskResponseDto" : {
+        "properties" : {
+          "acceptedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "assignedTo" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "assigneeName" : {
+            "type" : "string"
+          },
+          "bookingHorseId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "canCancel" : {
+            "type" : "boolean"
+          },
+          "cancelReason" : {
+            "type" : "string"
+          },
+          "checkType" : {
+            "enum" : [ "ROUTINE", "FOLLOW_UP", "BEFORE_DEPARTURE" ],
+            "type" : "string"
+          },
+          "doneAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "dueAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "healthLogId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "horseName" : {
+            "type" : "string"
+          },
+          "horseStayId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "note" : {
+            "type" : "string"
+          },
+          "overdue" : {
+            "type" : "boolean"
+          },
+          "place" : {
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "ASSIGNED", "ACCEPTED", "DONE", "CANCELLED" ],
+            "type" : "string"
+          },
+          "vehicleTripId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
         "type" : "object"
       },
       "HealthLogRequestDto" : {
@@ -14643,6 +14819,184 @@
           }
         },
         "tags" : [ "health-check-controller" ]
+      }
+    },
+    "/health-check-tasks" : {
+      "get" : {
+        "operationId" : "listHorseHealthCheckTasks",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "bookingHorseId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListHealthCheckTaskResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "health-check-task-controller" ]
+      },
+      "post" : {
+        "operationId" : "assignHealthCheckTask",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/HealthCheckTaskCreateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseHealthCheckTaskResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "health-check-task-controller" ]
+      }
+    },
+    "/health-check-tasks/assignees" : {
+      "get" : {
+        "operationId" : "listHealthCheckAssignees",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "bookingHorseId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "vehicleTripId",
+          "required" : false,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "horseStayId",
+          "required" : false,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListHealthCheckAssigneeResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "health-check-task-controller" ]
+      }
+    },
+    "/health-check-tasks/mine" : {
+      "get" : {
+        "operationId" : "listMyHealthCheckTasks",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListHealthCheckTaskResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "health-check-task-controller" ]
+      }
+    },
+    "/health-check-tasks/{id}/accept" : {
+      "post" : {
+        "operationId" : "acceptHealthCheckTask",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseHealthCheckTaskResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "health-check-task-controller" ]
+      }
+    },
+    "/health-check-tasks/{id}/cancel" : {
+      "post" : {
+        "operationId" : "cancelHealthCheckTask",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/HealthCheckTaskCancelRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseHealthCheckTaskResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "health-check-task-controller" ]
       }
     },
     "/health-logs" : {

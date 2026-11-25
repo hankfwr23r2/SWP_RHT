@@ -137,7 +137,7 @@ Danh sách dưới đây ghi mô hình gốc. Migration `V202611292000` bổ sun
 | 6. Dịch vụ, bảng giá | `billable_service`, `price_list`, `price_item` | 3 |
 | 7. Quy định, giấy tờ yêu cầu | `country_rule`, `document_type`, `document_requirement` | 3 |
 | 8. Đơn hàng | `booking`, `booking_party`, `booking_address`, `booking_horse`, `booking_horse_service`, `booking_status_history`, `terms_acceptance`, `booking_rating` | 8 |
-| 9. Vận hành | `vehicle_trip`, `trip_stop`, `crew_assignment`, `horse_leg`, `horse_stay`, `horse_health_log`, `hub_stall` | 7 |
+| 9. Vận hành | `vehicle_trip`, `trip_stop`, `crew_assignment`, `horse_leg`, `horse_stay`, `horse_health_log`, `hub_stall`, `health_check_task` | 8 |
 | 10. Giao nhận | `handover`, `handover_horse`, `handover_document` | 3 |
 | 11. Bảo hiểm | `horse_insurance` | 1 |
 | 12. Báo giá, thanh toán | `quotation`, `quotation_line`, `payment`, `payment_transaction` | 4 |
@@ -981,6 +981,21 @@ Ràng buộc bảng:
 Index: `booking_horse_id`, `location_id`, `operator_party_id`.
 
 Một ô chỉ được gán cho một lưu trú đã bắt đầu và chưa kết thúc (unique index từng phần).
+
+#### `health_check_task` · việc khám giao cho hộ tống
+
+| Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
+|---|---|---|---|---|
+| `id` | `bigint` | | PK, identity | |
+| `booking_horse_id` | `bigint` | | FK → booking_horse | Con cần khám |
+| `vehicle_trip_id`, `horse_stay_id` | `bigint` | có | FK, đúng một cột có giá trị | Khám trên lượt xe hoặc ở hub |
+| `assigned_to`, `assigned_by` | `bigint` | | FK → staff(user_id) | Hộ tống, điều phối giao |
+| `assigned_at`, `due_at` | `timestamptz` | | | Lúc giao, hạn. Quá hạn suy ra khi đọc |
+| `check_type` | `varchar(30)` | | CK `ROUTINE, FOLLOW_UP, BEFORE_DEPARTURE` | |
+| `status` | `varchar(30)` | | CK `ASSIGNED, ACCEPTED, DONE, CANCELLED` | |
+| `accepted_at`, `done_at`, `overdue_notified_at` | `timestamptz` | có | | |
+| `health_log_id` | `bigint` | có | FK → horse_health_log | Bắt buộc khi DONE. Chỉ `HealthCheckTaskService` ghi |
+| `note`, `cancel_reason` | `varchar(500)` | có | Lý do bắt buộc khi CANCELLED | |
 
 #### `hub_stall` · ô chuồng tại hub
 

@@ -96,6 +96,36 @@ class HealthStayFlowTest {
         assertThat(earlyOvernightNotices()).isEmpty();
     }
 
+    @Test
+    void completesATripTaskFromTheAssignedEscortHealthLog() throws Exception {
+        long rest = locations.findByCode("REST-PHANTHIET").orElseThrow().getId();
+        List<Long> stops = runToPickupAndLeave("DIRECT", List.of(
+                stop("locationId", hcm, "HUB", 0), stop("bookingAddressId", pickup, "PICKUP", 60), stop("locationId", rest, "REST", 120),
+                stop("bookingAddressId", delivery, "DELIVERY", 240), stop("locationId", hcm, "HUB", 480)), 2);
+        long stopId = stops.get(2);
+        act("/trip-stops/" + stopId + "/arrive").andExpect(status().isOk());
+        long tripId = jdbc.queryForObject("SELECT vehicle_trip_id FROM trip_stop WHERE id = ?", Long.class, stopId);
+        long escortId = jdbc.queryForObject("""
+                SELECT staff_id FROM crew_assignment WHERE vehicle_trip_id = ? AND crew_role = 'ESCORT'
+                """, Long.class, tripId);
+        Staff outsider = testData.staff(testData.unique("health.outsider"), "ESCORT");
+        createHealthCheckTask(tripId, outsider.getUserId()).andExpect(status().isBadRequest());
+        String assigned = createHealthCheckTask(tripId, escortId).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        Number taskId = JsonPath.read(assigned, "$.data.id");
+        log(stopId, null, "NORMAL", "NORMAL", "NORMAL").andExpect(status().isCreated());
+        entityManager.flush();
+        assertThat(jdbc.queryForObject("SELECT status FROM health_check_task WHERE id = ?", String.class, taskId.longValue()))
+                .isEqualTo("DONE");
+    }
+
+    private ResultActions createHealthCheckTask(long tripId, long escortId) throws Exception {
+        return mvc.perform(post("/health-check-tasks").header(HttpHeaders.AUTHORIZATION, coordinator)
+                .contentType(MediaType.APPLICATION_JSON).content("""
+                        {"bookingHorseId":%d,"vehicleTripId":%d,"assignedTo":%d,"checkType":"ROUTINE","dueAt":"%s"}
+                        """.formatted(line, tripId, escortId, Instant.now().plusSeconds(3600))));
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"REST", "VITAL_CHECK"})
     void leavingAnOvernightRestEarlyRequiresAReasonAndAlertsCoordinators(String stopType) throws Exception {

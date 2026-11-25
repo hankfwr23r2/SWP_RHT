@@ -1,5 +1,38 @@
 // Ứng dụng hiện trường của tài xế và hộ tống
 export const fieldCrew = {
+  healthCheckTasks: {
+    title: "Việc khám",
+    assign: "Giao khám",
+    assigned: "Đã giao việc khám",
+    assignPrompt: "Xác nhận giao việc khám cho ngựa {{horse}}.",
+    cancel: "Hủy việc khám",
+    cancelled: "Đã hủy việc khám",
+    cancelPrompt: "Hộ tống sẽ mất quyền ghi sức khỏe được cấp từ việc khám này.",
+    reason: "Lý do hủy",
+    escort: "Hộ tống",
+    type: "Loại khám",
+    due: "Hạn khám",
+    noEscorts: "Không có hộ tống phù hợp",
+    noEscortsHint: "Kiểm tra tổ của lượt xe hoặc vị trí tại hub rồi thử lại.",
+    empty: "Chưa có việc khám",
+    mineHint: "Việc khám được giao sẽ hiện ở đây.",
+    loadError: "Không tải được việc khám",
+    saveError: "Không lưu được việc khám. Vui lòng thử lại.",
+    accept: "Nhận việc khám",
+    accepted: "Đã nhận việc khám",
+    overdue: "Quá hạn",
+    types: {
+      ROUTINE: "Định kỳ",
+      FOLLOW_UP: "Tái khám",
+      BEFORE_DEPARTURE: "Trước khi khởi hành",
+    },
+    status: {
+      ASSIGNED: "Chờ nhận",
+      ACCEPTED: "Đã nhận",
+      DONE: "Xong",
+      CANCELLED: "Đã hủy",
+    },
+  },
   stayHealth: {
     record: "Ghi sức khỏe",
     reportedBy: "Người báo",
