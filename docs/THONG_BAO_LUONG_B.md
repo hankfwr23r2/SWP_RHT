@@ -91,4 +91,4 @@ Chuyên viên ghi số phí bảo hiểm đã hoàn lũy kế theo chứng từ.
 
 ## Mục 13.2 phần 2 · Dừng đồng hồ và giao lại
 
-Điều phối ghi cuộc gọi báo sẵn sàng và khung muộn trên màn Hub. Chặng giao lại vẫn tham chiếu chặng hụt. Khoản cước và nhiên liệu được gắn vào lượt giao lại theo đơn, sau khi biết các con đi lượt đó. HUB_OUT kiểm khoản phí giữ và cước giao lại. Khách tự đến hub nhận ngựa theo quy trình bàn giao hiện có. Migration `V202611282100` bổ sung sự kiện vào lưu trú và dùng bảng chi phí, khoản thu hiện có. `V202611282101` gắn chặng giao hụt hoặc chuyến vừa lỡ cho lưu trú đang mở nếu có lịch sử khớp.
+Điều phối ghi cuộc gọi báo sẵn sàng và khung muộn trên màn Hub. Chặng giao lại vẫn tham chiếu chặng hụt. Khoản cước và nhiên liệu được gắn vào lượt giao lại theo đơn, sau khi biết các con đi lượt đó. HUB_OUT kiểm khoản phí giữ và cước giao lại. Khách tự đến hub nhận ngựa theo quy trình bàn giao hiện có. Migration `V202611282400` bổ sung sự kiện vào lưu trú và dùng bảng chi phí, khoản thu hiện có. `V202611282401` gắn chặng giao hụt hoặc chuyến vừa lỡ cho lưu trú đang mở nếu có lịch sử khớp.

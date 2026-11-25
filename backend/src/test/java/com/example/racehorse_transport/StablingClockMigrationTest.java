@@ -24,7 +24,7 @@ class StablingClockMigrationTest {
                 """, String.class)).contains("UNIQUE", "vehicle_trip_id", "booking_id", "REDELIVERY");
         assertThat(jdbc.queryForObject("""
                 SELECT COUNT(*) FROM flyway_schema_history
-                WHERE version IN ('202611282100', '202611282101') AND success
+                WHERE version IN ('202611282400', '202611282401') AND success
                 """, Long.class)).isEqualTo(2L);
         assertThat(jdbc.queryForObject("""
                 SELECT count(*) FROM system_config
