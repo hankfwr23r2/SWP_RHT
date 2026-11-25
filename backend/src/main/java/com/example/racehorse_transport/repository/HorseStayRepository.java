@@ -28,6 +28,23 @@ public interface HorseStayRepository extends JpaRepository<HorseStay, Long> {
     List<Long> findBalanceHoldCandidates();
 
     @Query("""
+            SELECT s.hubStall.id FROM HorseStay s
+            WHERE s.location.id = :locationId AND s.hubStall IS NOT NULL
+                AND s.actualStartAt IS NOT NULL AND s.actualEndAt IS NULL
+            """)
+    List<Long> findOccupiedStallIds(Long locationId);
+
+    @Query("""
+            SELECT s.id FROM HorseStay s JOIN HorseHealthLog h ON h.bookingHorse = s.bookingHorse
+            WHERE s.location.id = :locationId AND s.actualStartAt IS NOT NULL AND s.actualEndAt IS NULL
+                AND h.healthStatus IN (com.example.racehorse_transport.entity.enums.HealthStatus.SICK,
+                    com.example.racehorse_transport.entity.enums.HealthStatus.CRITICAL)
+                AND NOT EXISTS (SELECT newer.id FROM HorseHealthLog newer WHERE newer.bookingHorse = h.bookingHorse
+                    AND (newer.recordedAt > h.recordedAt OR (newer.recordedAt = h.recordedAt AND newer.id > h.id)))
+            """)
+    List<Long> findStaysWithSickHorses(Long locationId);
+
+    @Query("""
             SELECT s.id FROM HorseStay s WHERE s.location.id = :locationId AND s.actualStartAt IS NOT NULL AND s.actualEndAt IS NULL
                 AND s.stayType = com.example.racehorse_transport.entity.enums.HorseStayType.ASSEMBLY
                 AND s.bookingHorse.booking.status = com.example.racehorse_transport.entity.enums.BookingStatus.CONFIRMED
@@ -59,7 +76,7 @@ public interface HorseStayRepository extends JpaRepository<HorseStay, Long> {
             """)
     List<Handover> findUnbilledBalanceHoldReturns(Long bookingId);
 
-    @EntityGraph(attributePaths = {"bookingHorse", "bookingHorse.horse", "bookingHorse.booking", "location"})
+    @EntityGraph(attributePaths = {"bookingHorse", "bookingHorse.horse", "bookingHorse.booking", "location", "hubStall"})
     List<HorseStay> findByActualStartAtIsNotNullAndActualEndAtIsNullOrderByActualStartAt();
 
     List<HorseStay> findByReadyAtIsNotNullAndActualEndAtIsNull();
@@ -102,7 +119,19 @@ public interface HorseStayRepository extends JpaRepository<HorseStay, Long> {
     // Lưu trú đang diễn ra của một con (đã vào, chưa ra)
     Optional<HorseStay> findFirstByBookingHorse_IdAndActualStartAtIsNotNullAndActualEndAtIsNull(Long bookingHorseId);
 
-    @EntityGraph(attributePaths = {"bookingHorse", "bookingHorse.horse", "bookingHorse.booking", "location"})
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<HorseStay> findFirstByBookingHorse_IdAndActualStartAtIsNotNullAndActualEndAtIsNullOrderById(Long bookingHorseId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            SELECT s FROM HorseStay s WHERE s.bookingHorse.booking.id = :bookingId AND s.stayType = :type
+                AND s.location.locationType = :locationType AND s.actualStartAt IS NOT NULL AND s.actualEndAt IS NULL
+            ORDER BY s.id
+            """)
+    List<HorseStay> findOpenForUpdate(Long bookingId, HorseStayType type,
+            com.example.racehorse_transport.entity.enums.LocationType locationType);
+
+    @EntityGraph(attributePaths = {"bookingHorse", "bookingHorse.horse", "bookingHorse.booking", "location", "hubStall"})
     List<HorseStay> findByLocation_IdAndActualStartAtIsNotNullAndActualEndAtIsNullOrderByActualStartAt(Long locationId);
 
     // Theo dõi hành trình: mọi lưu trú của các con trong một đơn

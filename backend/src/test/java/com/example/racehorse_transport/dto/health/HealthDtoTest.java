@@ -84,5 +84,13 @@ class HealthDtoTest {
         assertThat(stayDto.dietNote()).isEqualTo("Hay only");
         assertThat(stayDto.feedingsPerDay()).isNull();
         assertThat(stayDto.feedSuppliedByOwner()).isTrue();
+        assertThat(stayDto.hubStallCode()).isNull();
+        var stall = new com.example.racehorse_transport.entity.HubStall();
+        stall.setCode("S-01");
+        stay.setHubStall(stall);
+        var active = HorseStayResponseDto.from(stay, false, true, true);
+        assertThat(active.hubStallCode()).isEqualTo("S-01");
+        assertThat(active.canChangeHubStall()).isTrue();
+        assertThat(active.suggestIsolation()).isTrue();
     }
 }

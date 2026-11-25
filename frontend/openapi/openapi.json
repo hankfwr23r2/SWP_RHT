@@ -532,6 +532,34 @@
         },
         "type" : "object"
       },
+      "ApiResponseHubStallInventoryResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/HubStallInventoryResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseHubStallResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/HubStallResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseIncidentResponseDto" : {
         "properties" : {
           "data" : {
@@ -2965,6 +2993,16 @@
           "homeHubName" : {
             "type" : "string"
           },
+          "positionLocationId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "positionLocationName" : {
+            "type" : "string"
+          },
+          "positionTripCode" : {
+            "type" : "string"
+          },
           "roleCode" : {
             "type" : "string"
           },
@@ -5048,6 +5086,9 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "canChangeHubStall" : {
+            "type" : "boolean"
+          },
           "deliveryMethod" : {
             "enum" : [ "COMPANY", "SELF" ],
             "type" : "string"
@@ -5063,6 +5104,9 @@
             "type" : "integer"
           },
           "horseName" : {
+            "type" : "string"
+          },
+          "hubStallCode" : {
             "type" : "string"
           },
           "id" : {
@@ -5098,6 +5142,9 @@
           "stayType" : {
             "enum" : [ "ASSEMBLY", "QUARANTINE", "OVERNIGHT", "STABLING" ],
             "type" : "string"
+          },
+          "suggestIsolation" : {
+            "type" : "boolean"
           }
         },
         "type" : "object"
@@ -5276,6 +5323,72 @@
           "note" : {
             "maxLength" : 500,
             "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "HubStallChangeRequestDto" : {
+        "properties" : {
+          "hubStallId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "hubStallId" ],
+        "type" : "object"
+      },
+      "HubStallCreateRequestDto" : {
+        "properties" : {
+          "code" : {
+            "maxLength" : 40,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "stallKind" : {
+            "enum" : [ "STANDARD", "ISOLATION" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "stallKind" ],
+        "type" : "object"
+      },
+      "HubStallInventoryResponseDto" : {
+        "properties" : {
+          "available" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "stalls" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HubStallResponseDto"
+            },
+            "type" : "array"
+          },
+          "total" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "HubStallResponseDto" : {
+        "properties" : {
+          "active" : {
+            "type" : "boolean"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "occupied" : {
+            "type" : "boolean"
+          },
+          "stallKind" : {
+            "enum" : [ "STANDARD", "ISOLATION" ],
             "type" : "string"
           }
         },
@@ -13596,6 +13709,14 @@
             "enum" : [ "DRIVER", "ESCORT", "VET" ],
             "type" : "string"
           }
+        }, {
+          "in" : "query",
+          "name" : "tripId",
+          "required" : false,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
         } ],
         "responses" : {
           "200" : {
@@ -14783,6 +14904,43 @@
         "tags" : [ "hub-handover-controller" ]
       }
     },
+    "/horse-stays/{stayId}/change-stall" : {
+      "post" : {
+        "operationId" : "changeHubStall",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "stayId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/HubStallChangeRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseHubStallResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "hub-stall-controller" ]
+      }
+    },
     "/horse-stays/{stayId}/choose-later-slot" : {
       "post" : {
         "operationId" : "chooseLaterSlot",
@@ -15880,6 +16038,103 @@
           }
         },
         "tags" : [ "location-controller" ]
+      }
+    },
+    "/locations/{hubId}/hub-stalls" : {
+      "get" : {
+        "operationId" : "hubStallInventory",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "hubId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseHubStallInventoryResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "hub-stall-controller" ]
+      },
+      "post" : {
+        "operationId" : "createHubStall",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "hubId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/HubStallCreateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseHubStallResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "hub-stall-controller" ]
+      }
+    },
+    "/locations/{hubId}/hub-stalls/{stallId}/deactivate" : {
+      "post" : {
+        "operationId" : "deactivateHubStall",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "hubId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "path",
+          "name" : "stallId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseHubStallResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "hub-stall-controller" ]
       }
     },
     "/locations/{id}" : {

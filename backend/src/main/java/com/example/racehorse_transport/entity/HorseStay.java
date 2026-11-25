@@ -18,6 +18,7 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.DynamicUpdate;
 
 import java.time.Instant;
 
@@ -26,6 +27,7 @@ import java.time.Instant;
 @Setter
 @NoArgsConstructor
 @Entity
+@DynamicUpdate
 @Table(name = "horse_stay")
 public class HorseStay {
 
@@ -45,6 +47,10 @@ public class HorseStay {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "location_id", nullable = false)
     private Location location;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "hub_stall_id")
+    private HubStall hubStall;
 
     // Đơn vị vận hành nơi đó, ví dụ trại cách ly đối tác
     @ManyToOne(fetch = FetchType.LAZY, optional = true)

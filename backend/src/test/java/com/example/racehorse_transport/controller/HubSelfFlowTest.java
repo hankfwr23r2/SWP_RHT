@@ -118,9 +118,18 @@ class HubSelfFlowTest {
         sql("UPDATE booking SET booking_type = 'LOCAL' WHERE id = " + booking);
         receive(stays.getFirst(), "985000000999999").andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Chip không khớp hồ sơ ngựa. Không giao nhận."));
-        for (int i = 0; i < lines.size(); i++) {
-            receive(stays.get(i), chip(lines.get(i))).andExpect(status().isOk()).andExpect(jsonPath("$.data.actualStartAt").isNotEmpty());
+        jdbc.update("UPDATE hub_stall SET is_active = (code = 'S-01') WHERE location_id = ? AND stall_kind = 'STANDARD'", hub);
+        receive(stays.getFirst(), chip(lines.getFirst())).andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.actualStartAt").isNotEmpty())
+                .andExpect(jsonPath("$.data.hubStallCode").value("S-01"));
+        for (int i = 1; i < lines.size(); i++) {
+            receive(stays.get(i), chip(lines.get(i))).andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.actualStartAt").isNotEmpty())
+                    .andExpect(jsonPath("$.data.hubStallCode").doesNotExist());
         }
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM notification WHERE booking_id = ? AND title = 'Hub không còn ô thường trống'
+                """, Long.class, booking)).isEqualTo(lines.size() - 1L);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM handover WHERE handover_type = 'PICKUP' AND status = 'DONE' AND horse_stay_id IN ("
                 + join(stays) + ")", Long.class)).isEqualTo(lines.size());
         // Nhận xong thì lập khoản số dư

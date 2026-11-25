@@ -1,7 +1,7 @@
 // Chi tiết một lượt xe: điểm dừng, tổ lái (phân công, gỡ), ngựa trên xe (xếp, gỡ), hủy lượt
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { dispatchApi, type CrewAssignment, type CrewRole, type DispatchBooking, type TripHorse } from '@shared/api/dispatch'
+import { dispatchApi, type CrewAssignment, type DispatchBooking, type TripHorse } from '@shared/api/dispatch'
 import { useLoad } from '@shared/hooks/useLoad'
 import { Button } from '@shared/ui/Button'
 import { ConfirmDialog } from '@shared/ui/ConfirmDialog'
@@ -17,6 +17,7 @@ import { TRIP_STATUS_TONE, eligibleHorses, peakSeats } from './dispatchModel'
 import { StallPlanSection } from './StallPlanSection'
 import { TripMap } from './TripMap'
 import { TripTimeline } from './TripTimeline'
+import { TripCrewSection } from './TripCrewSection'
 import b from './Board.module.css'
 import s from './Dispatch.module.css'
 
@@ -32,8 +33,6 @@ type Pending = { kind: 'release'; member: CrewAssignment } | { kind: 'removeHors
 export function TripDetailModal({ tripId, bookings, onClose, onChanged }: Props) {
   const { t } = useTranslation()
   const toast = useToast()
-  const [crewRole, setCrewRole] = useState<CrewRole>('DRIVER')
-  const [staffId, setStaffId] = useState('')
   const [horseKey, setHorseKey] = useState('')
   const [pending, setPending] = useState<Pending>()
   const [reason, setReason] = useState('')
@@ -42,10 +41,6 @@ export function TripDetailModal({ tripId, bookings, onClose, onChanged }: Props)
     const [trip, horses] = await Promise.all([dispatchApi.trip(tripId), dispatchApi.horsesOnTrip(tripId)])
     return { trip, horses }
   }, [tripId], { toastOnError: false })
-  // Lượt đang chạy chỉ thêm hộ tống thay ca
-  const role: CrewRole = data?.trip.status === 'IN_PROGRESS' ? 'ESCORT' : crewRole
-  const { data: candidates } = useLoad(() => dispatchApi.crewCandidates(role), [role])
-
   const stallName = (seats?: number) => t(seats === 2 ? 'dispatch.stall.wide' : 'dispatch.stall.standard')
 
   // Chạy một thao tác ghi: báo kết quả, tải lại lượt xe và bảng điều độ; lỗi thì hiện đúng lý do backend trả về
@@ -73,8 +68,6 @@ export function TripDetailModal({ tripId, bookings, onClose, onChanged }: Props)
 
   const { trip, horses } = data
   const editable = trip.status === 'PLANNED' || trip.status === 'DISPATCHED'
-  const running = trip.status === 'IN_PROGRESS'
-  const crew = (trip.crew ?? []).filter(member => member.status !== 'RELEASED')
   const options = eligibleHorses(trip, bookings, horses)
   const chosen = options.find(option => `${option.horse.bookingHorseId}` === horseKey)
 
@@ -107,42 +100,9 @@ export function TripDetailModal({ tripId, bookings, onClose, onChanged }: Props)
         </div>
       </section>
 
-      <section className={s.section} aria-labelledby="trip-crew">
-        <h3 id="trip-crew" className={s.sectionTitle}>{t('dispatch.detail.crew')}</h3>
-        {crew.length ? (
-          <ul className={s.list}>
-            {crew.map(member => (
-              <li key={member.id} className={s.item}>
-                <span className={s.itemMain}>
-                  <strong>{member.fullName}</strong>
-                  <span className={s.muted}>{t(`tripWords.role.${member.crewRole}`)}</span>
-                </span>
-                <span className={s.legs}>
-                  <StatusBadge tone={member.status === 'ACKNOWLEDGED' ? 'success' : 'warning'} label={t(`dispatch.crewStatus.${member.status}`)} />
-                  {(editable || running) && <Button size="sm" onClick={() => setPending({ kind: 'release', member })}>{t('dispatch.detail.release')}</Button>}
-                </span>
-              </li>
-            ))}
-          </ul>
-        ) : <p className={s.muted}>{t('dispatch.detail.noCrew')}</p>}
-        {running && <p className={s.muted}>{t('dispatch.detail.midwayHint')}</p>}
-        {(editable || running) && (
-          <div className={s.form}>
-            <Field label={t('dispatch.detail.role')}>
-              {c => <Select {...c} value={role} onChange={value => { setCrewRole(value as CrewRole); setStaffId('') }}
-                options={(running ? ['ESCORT'] as const : ['DRIVER', 'ESCORT'] as const).map(role => ({ value: role, label: t(`tripWords.role.${role}`) }))} />}
-            </Field>
-            <Field label={t('dispatch.detail.staff')}>
-              {c => <Select {...c} value={staffId} onChange={setStaffId} placeholder={t('tripWords.choose')}
-                options={(candidates ?? []).map(person => ({ value: `${person.staffId}`, label: `${person.fullName} (${person.staffCode})` }))} />}
-            </Field>
-            <Button variant="primary" disabled={!staffId} loading={busy}
-              onClick={() => run(() => dispatchApi.assignCrew(tripId, Number(staffId), role), t('dispatch.done.assigned')).then(() => setStaffId(''), () => {})}>
-              {t('dispatch.detail.assignCrew')}
-            </Button>
-          </div>
-        )}
-      </section>
+      <TripCrewSection key={`${tripId}-${trip.status}`} tripId={tripId} trip={trip} busy={busy}
+        onAssign={(staffId, role) => run(() => dispatchApi.assignCrew(tripId, staffId, role), t('dispatch.done.assigned'))}
+        onRelease={member => setPending({ kind: 'release', member })} />
 
       <section className={s.section} aria-labelledby="trip-horses">
         <div className={s.sectionHead}>

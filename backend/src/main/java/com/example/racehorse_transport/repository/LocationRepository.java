@@ -20,6 +20,9 @@ public interface LocationRepository extends JpaRepository<Location, Long> {
 
     Optional<Location> findByCode(String code);
 
+    @Query(value = "SELECT * FROM location WHERE id = :id FOR NO KEY UPDATE", nativeQuery = true)
+    Optional<Location> findForUpdate(Long id);
+
     // Lọc theo loại và trạng thái; tham số null nghĩa là không lọc
     @Query("""
             SELECT l FROM Location l JOIN FETCH l.country LEFT JOIN FETCH l.province LEFT JOIN FETCH l.counterpartCountry

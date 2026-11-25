@@ -2,6 +2,7 @@ package com.example.racehorse_transport.service;
 
 import com.example.racehorse_transport.dto.health.HorseStayResponseDto;
 import com.example.racehorse_transport.entity.Departure;
+import com.example.racehorse_transport.entity.HorseStay;
 import com.example.racehorse_transport.dto.health.StablePartnerResponseDto;
 import com.example.racehorse_transport.entity.Party;
 import com.example.racehorse_transport.entity.TripStop;
@@ -18,6 +19,8 @@ public interface HorseStayService {
 
     // Giao vào hub xong: mở lưu trú tập kết ở hub, dự kiến tới khi chặng sau bắt đầu
     void openAssembly(HorseLeg alightedLeg, Instant at);
+
+    void allocateHubStallOnArrival(HorseStay stay);
 
     // Nhận ra khỏi hub hoặc chuồng: đóng lưu trú đang diễn ra của con ngựa. Gửi chuồng sau giao thất bại thì
     // ghi phí lưu chuồng và chăm sóc theo số ngày (người nhận chịu, chờ quản lý duyệt)

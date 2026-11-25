@@ -2436,6 +2436,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/horse-stays/{stayId}/change-stall": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["changeHubStall"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/horse-stays/{stayId}/choose-later-slot": {
         parameters: {
             query?: never;
@@ -2910,6 +2926,38 @@ export interface paths {
         get: operations["list_2"];
         put?: never;
         post: operations["create_2"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/locations/{hubId}/hub-stalls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["hubStallInventory"];
+        put?: never;
+        post: operations["createHubStall"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/locations/{hubId}/hub-stalls/{stallId}/deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["deactivateHubStall"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4279,6 +4327,16 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseHubStallInventoryResponseDto: {
+            data?: components["schemas"]["HubStallInventoryResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseHubStallResponseDto: {
+            data?: components["schemas"]["HubStallResponseDto"];
+            message?: string;
+            status?: string;
+        };
         ApiResponseIncidentResponseDto: {
             data?: components["schemas"]["IncidentResponseDto"];
             message?: string;
@@ -5113,6 +5171,10 @@ export interface components {
             /** Format: int64 */
             homeHubLocationId?: number;
             homeHubName?: string;
+            /** Format: int64 */
+            positionLocationId?: number;
+            positionLocationName?: string;
+            positionTripCode?: string;
             roleCode?: string;
             staffCode?: string;
             /** Format: int64 */
@@ -5888,6 +5950,7 @@ export interface components {
             bookingCode?: string;
             /** Format: int64 */
             bookingHorseId?: number;
+            canChangeHubStall?: boolean;
             /** @enum {string} */
             deliveryMethod?: "COMPANY" | "SELF";
             dietNote?: string;
@@ -5895,6 +5958,7 @@ export interface components {
             /** Format: int32 */
             feedingsPerDay?: number;
             horseName?: string;
+            hubStallCode?: string;
             /** Format: int64 */
             id?: number;
             /** Format: int64 */
@@ -5911,6 +5975,7 @@ export interface components {
             returnForBalance?: boolean;
             /** @enum {string} */
             stayType?: "ASSEMBLY" | "QUARANTINE" | "OVERNIGHT" | "STABLING";
+            suggestIsolation?: boolean;
         };
         HorseTypeResponseDto: {
             description?: string;
@@ -5967,6 +6032,31 @@ export interface components {
         };
         HubStablingRequestDto: {
             note?: string;
+        };
+        HubStallChangeRequestDto: {
+            /** Format: int64 */
+            hubStallId: number;
+        };
+        HubStallCreateRequestDto: {
+            code: string;
+            /** @enum {string} */
+            stallKind: "STANDARD" | "ISOLATION";
+        };
+        HubStallInventoryResponseDto: {
+            /** Format: int32 */
+            available?: number;
+            stalls?: components["schemas"]["HubStallResponseDto"][];
+            /** Format: int32 */
+            total?: number;
+        };
+        HubStallResponseDto: {
+            active?: boolean;
+            code?: string;
+            /** Format: int64 */
+            id?: number;
+            occupied?: boolean;
+            /** @enum {string} */
+            stallKind?: "STANDARD" | "ISOLATION";
         };
         IncidentPlanRequestDto: {
             estimatedCost?: number;
@@ -10671,6 +10761,7 @@ export interface operations {
         parameters: {
             query: {
                 role: "DRIVER" | "ESCORT" | "VET";
+                tripId?: number;
             };
             header?: never;
             path?: never;
@@ -11560,6 +11651,32 @@ export interface operations {
             };
         };
     };
+    changeHubStall: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stayId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HubStallChangeRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHubStallResponseDto"];
+                };
+            };
+        };
+    };
     chooseLaterSlot: {
         parameters: {
             query?: never;
@@ -12412,6 +12529,77 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseLocationResponse"];
+                };
+            };
+        };
+    };
+    hubStallInventory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                hubId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHubStallInventoryResponseDto"];
+                };
+            };
+        };
+    };
+    createHubStall: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                hubId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HubStallCreateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHubStallResponseDto"];
+                };
+            };
+        };
+    };
+    deactivateHubStall: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                hubId: number;
+                stallId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHubStallResponseDto"];
                 };
             };
         };

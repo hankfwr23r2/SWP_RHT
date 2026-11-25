@@ -1,5 +1,9 @@
 // Chữ các trang kế hoạch, điều độ, theo dõi, hub của điều phối viên; tải khi mở trang
 export const staffDispatch = {
+  "crewPositions": {
+    "inVehicle": "Trên xe {{code}}",
+    "positionUnknown": "Chưa rõ vị trí"
+  },
   "tracking": {
     "balance": {
       "open": "Xử lý chờ số dư",

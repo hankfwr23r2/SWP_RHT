@@ -1,8 +1,8 @@
-# Đặc tả cơ sở dữ liệu: 59 bảng
+# Đặc tả cơ sở dữ liệu
 
 > Tài liệu dùng để tạo DB (viết Flyway migration). Bản này thay cho mô hình 64 bảng trong
 > `ERD_ENTITY_MERMAID.md`, `ERD_ALL_IN_ONE.md`, `ERD_ENTITY_BOXES.md` (các file đó chưa cập nhật).
-> Hệ quản trị: PostgreSQL 15 trở lên.
+> Hệ quản trị: PostgreSQL 15 trở lên. Mô hình 59 bảng được bổ sung `hub_stall` trong mục 15.5 của phương án 6 luồng.
 
 > Migration `V202611231300__sync_names.sql` đồng bộ tên bảng, cột và các đối tượng liên quan.
 
@@ -10,7 +10,7 @@
 
 0. [Quy ước chung](#0-quy-ước-chung)
 1. [Thay đổi so với bản 64 bảng](#thay-đổi-so-với-bản-64-bảng)
-2. [Danh sách 59 bảng](#danh-sách-59-bảng)
+2. [Danh sách bảng](#danh-sách-bảng)
 3. [Thứ tự tạo bảng](#thứ-tự-tạo-bảng)
 4. Chi tiết từng nhóm: [1](#nhóm-1-danh-mục-địa-lý) · [2](#nhóm-2-tài-khoản-nhân-sự-các-bên) · [3](#nhóm-3-ngựa) · [4](#nhóm-4-mạng-lưới-và-lịch-chạy) · [5](#nhóm-5-xe) · [6](#nhóm-6-dịch-vụ-và-bảng-giá) · [7](#nhóm-7-quy-định-và-giấy-tờ-yêu-cầu) · [8](#nhóm-8-đơn-hàng) · [9](#nhóm-9-vận-hành) · [10](#nhóm-10-chuỗi-giao-nhận) · [11](#nhóm-11-bảo-hiểm) · [12](#nhóm-12-báo-giá-và-thanh-toán) · [13](#nhóm-13-sự-cố-và-chi-phí) · [14](#nhóm-14-chứng-từ) · [15](#nhóm-15-hỗ-trợ)
 5. [Dữ liệu dẫn xuất](#dữ-liệu-dẫn-xuất)
@@ -123,7 +123,7 @@ Các dòng ghi **chờ migration** là lược đồ đích đã chốt ngày 23
 
 ---
 
-## Danh sách 59 bảng
+## Danh sách bảng
 
 Danh sách dưới đây ghi mô hình gốc. Migration `V202611292000` bổ sung bảng `booking_specialist_history` ở nhóm 8 (mục 8.9).
 
@@ -137,14 +137,14 @@ Danh sách dưới đây ghi mô hình gốc. Migration `V202611292000` bổ sun
 | 6. Dịch vụ, bảng giá | `billable_service`, `price_list`, `price_item` | 3 |
 | 7. Quy định, giấy tờ yêu cầu | `country_rule`, `document_type`, `document_requirement` | 3 |
 | 8. Đơn hàng | `booking`, `booking_party`, `booking_address`, `booking_horse`, `booking_horse_service`, `booking_status_history`, `terms_acceptance`, `booking_rating` | 8 |
-| 9. Vận hành | `vehicle_trip`, `trip_stop`, `crew_assignment`, `horse_leg`, `horse_stay`, `horse_health_log` | 6 |
+| 9. Vận hành | `vehicle_trip`, `trip_stop`, `crew_assignment`, `horse_leg`, `horse_stay`, `horse_health_log`, `hub_stall` | 7 |
 | 10. Giao nhận | `handover`, `handover_horse`, `handover_document` | 3 |
 | 11. Bảo hiểm | `horse_insurance` | 1 |
 | 12. Báo giá, thanh toán | `quotation`, `quotation_line`, `payment`, `payment_transaction` | 4 |
 | 13. Sự cố, chi phí | `incident`, `incident_plan`, `cost_item` | 3 |
 | 14. Chứng từ | `document` | 1 |
 | 15. Hỗ trợ | `notification`, `notification_recipient`, `audit_log`, `system_config`, `route_cache` | 5 |
-| | **Tổng** | **59** |
+| | **Tổng** | **60** |
 
 ---
 
@@ -157,7 +157,7 @@ Thứ tự này bảo đảm bảng cha luôn được tạo trước bảng con
 | 1 | `country`, `role`, `horse_type`, `vehicle_class`, `stall_type`, `billable_service`, `price_list`, `document_type`, `route_cache` |
 | 2 | `app_user`, `province`, `country_rule` |
 | 3 | `customer`, `otp`, `location`, `party` |
-| 4 | `hub_service_area`, `staff`, `party_role`, `customer_address`, `horse`, `route`, `vehicle`, `document_requirement` |
+| 4 | `hub_stall`, `hub_service_area`, `staff`, `party_role`, `customer_address`, `horse`, `route`, `vehicle`, `document_requirement` |
 | 5 | `route_stop`, `departure_schedule`, `price_item`, `system_config` |
 | 6 | `departure_schedule_day`, `departure` |
 | 7 | `booking` |
@@ -956,6 +956,7 @@ Index: `vehicle_trip_id`, `agent_party_id`, `board_trip_stop_id`, `alight_trip_s
 | `booking_horse_id` | `bigint` | | FK → booking_horse | |
 | `stay_type` | `varchar(30)` | | CK `ASSEMBLY, QUARANTINE, OVERNIGHT, STABLING` | Tập kết ở hub / (ngừng dùng) / nghỉ qua đêm / gửi chuồng |
 | `location_id` | `bigint` | | FK → location | |
+| `hub_stall_id` | `bigint` | có | FK → hub_stall | Ô được gán trong lần lưu trú tại hub |
 | `operator_party_id` | `bigint` | có | FK → party | Đơn vị vận hành nơi đó, ví dụ chuồng gửi đối tác |
 | `planned_start_at` | `timestamptz` | | | |
 | `planned_end_at` | `timestamptz` | | | |
@@ -978,6 +979,20 @@ Ràng buộc bảng:
 - `CHECK (balance_hold_at IS NULL OR (stay_type = 'STABLING' AND actual_start_at IS NOT NULL))`
 
 Index: `booking_horse_id`, `location_id`, `operator_party_id`.
+
+Một ô chỉ được gán cho một lưu trú đã bắt đầu và chưa kết thúc (unique index từng phần).
+
+#### `hub_stall` · ô chuồng tại hub
+
+| Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
+|---|---|---|---|---|
+| `id` | `bigint` | | PK identity | |
+| `location_id` | `bigint` | | FK → location | Phải là hub |
+| `code` | `varchar(40)` | | UK cùng `location_id` | Mã ô tại hub |
+| `stall_kind` | `varchar(16)` | | CK STANDARD, ISOLATION | Ô thường hoặc ô cách ly |
+| `is_active` | `boolean` | | Mặc định true | Ô còn dùng |
+
+Service kiểm hub của ô trùng địa điểm lưu trú và chỉ gán ô đang dùng cho lưu trú đang mở tại hub do công ty vận hành. Khi mở lưu trú, chọn ô thường trống theo mã. Nếu hết ô, vẫn nhập hub và báo điều phối. Người dùng có thể chọn ô cách ly khi đổi ô. Ô có lưu trú đang mở không được ngừng dùng. Số ô trống suy ra từ lưu trú đang mở.
 
 ### 9.6 `horse_health_log`: lần đo sức khỏe ngựa
 

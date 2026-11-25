@@ -164,6 +164,7 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
     public void atHub(Handover handover, HorseLeg leg, Long actorUserId) {
         Booking booking = leg.getBookingHorse().getBooking();
         if (handover.getHandoverType() == HandoverType.PICKUP) {
+            horseStays.allocateHubStallOnArrival(handover.getHorseStay());
             payments.requestBalance(booking.getId(), handover.getHandedAt());
         } else if (handover.getHandoverType() == HandoverType.RETURN) {
             handover.getHorseStay().setActualEndAt(handover.getHandedAt());

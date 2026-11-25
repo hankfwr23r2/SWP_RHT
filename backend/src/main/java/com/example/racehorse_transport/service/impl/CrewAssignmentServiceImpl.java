@@ -1,17 +1,13 @@
 package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.dto.dispatch.CrewAssignmentRequestDto;
-import com.example.racehorse_transport.dto.dispatch.CrewCandidateResponseDto;
 import com.example.racehorse_transport.dto.dispatch.MyCrewAssignmentResponseDto;
 import com.example.racehorse_transport.dto.dispatch.VehicleTripResponseDto;
 import com.example.racehorse_transport.entity.CrewAssignment;
-import com.example.racehorse_transport.entity.Location;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.VehicleTrip;
-import com.example.racehorse_transport.entity.enums.AppUserStatus;
 import com.example.racehorse_transport.entity.enums.CrewAssignmentStatus;
 import com.example.racehorse_transport.entity.enums.CrewRole;
-import com.example.racehorse_transport.entity.enums.EmploymentStatus;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
@@ -21,6 +17,7 @@ import com.example.racehorse_transport.repository.CrewAssignmentRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.VehicleTripRepository;
 import com.example.racehorse_transport.service.CrewAssignmentService;
+import com.example.racehorse_transport.service.CrewPositionService;
 import com.example.racehorse_transport.service.DispatchService;
 import com.example.racehorse_transport.service.NotificationService;
 import java.time.ZoneId;
@@ -66,6 +63,7 @@ public class CrewAssignmentServiceImpl implements CrewAssignmentService {
     private final HandoverHorseRepository scans;
     private final TripStopRepository stops;
     private final SystemConfigService configs;
+    private final CrewPositionService positions;
 
     @Override
     @Transactional
@@ -87,7 +85,10 @@ public class CrewAssignmentServiceImpl implements CrewAssignmentService {
         if (assignments.existsByVehicleTrip_IdAndStaff_UserIdAndStatusNot(trip.getId(), member.getUserId(), CrewAssignmentStatus.RELEASED)) {
             throw new DispatchRuleException("staffId", "Nhân viên đã có trong lượt xe này.", true);
         }
-        requireStaffFree(member, trip, midway);
+        if (!midway) {
+            positions.requireAtStart(member, trip);
+        }
+        requireStaffFree(member, trip);
         if (request.crewRole() == CrewRole.DRIVER) {
             requireDailyDriving(member, trip);
         }
@@ -123,20 +124,6 @@ public class CrewAssignmentServiceImpl implements CrewAssignmentService {
                     "/my-trips");
         }
         return dispatch.trip(assignment.getVehicleTrip().getId());
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<CrewCandidateResponseDto> candidates(CrewRole crewRole) {
-        String roleCode = switch (crewRole) {
-            case DRIVER -> "DRIVER";
-            case ESCORT -> "ESCORT";
-            case VET -> null;
-        };
-        return staff.findAllByOrderByStaffCodeAsc().stream()
-                .filter(s -> s.getEmploymentStatus() == EmploymentStatus.ACTIVE && s.getUser().getStatus() == AppUserStatus.ACTIVE)
-                .filter(s -> s.getUser().getRole().getCode().equals(roleCode))
-                .map(CrewCandidateResponseDto::from).toList();
     }
 
     @Override
@@ -178,21 +165,11 @@ public class CrewAssignmentServiceImpl implements CrewAssignmentService {
                 .map(l -> l.getBookingHorse().getHorse().getName()).toList();
     }
 
-    // Quy tắc #10: nhân viên không ở hai lượt trùng giờ và bắt đầu ở nơi lượt trước của mình kết thúc (chưa có lượt thì ở hub gốc).
-    // Hộ tống thay ca giữa đường (midway) tự tới điểm dừng nên không xét nơi bắt đầu
-    private void requireStaffFree(Staff member, VehicleTrip trip, boolean midway) {
+    private void requireStaffFree(Staff member, VehicleTrip trip) {
         List<VehicleTrip> others = assignments.findActiveOfStaff(member.getUserId(), CrewAssignmentStatus.RELEASED, VehicleTripStatus.CANCELLED)
                 .stream().map(CrewAssignment::getVehicleTrip).filter(t -> !t.getId().equals(trip.getId())).toList();
         DispatchPolicy.requireNoOverlap("staffId", "Nhân viên", new Interval(trip.getPlannedStartAt(), trip.getPlannedEndAt()),
                 others.stream().map(t -> new Interval(t.getPlannedStartAt(), t.getPlannedEndAt())).toList());
-        Location expectedStart = others.stream().filter(t -> !t.getPlannedEndAt().isAfter(trip.getPlannedStartAt()))
-                .max(Comparator.comparing(VehicleTrip::getPlannedEndAt))
-                .map(VehicleTrip::getEndLocation)
-                .orElse(member.getHomeHubLocation());
-        if (!midway) {
-            DispatchPolicy.requireStartsWherePreviousEnded("staffId", "Nhân viên", trip.getStartLocation().getId(),
-                    expectedStart == null ? null : expectedStart.getId(), expectedStart == null ? "chưa gán hub gốc" : expectedStart.getName());
-        }
     }
 
     // Tài xế không lái quá giới hạn mỗi ngày, tính gộp mọi lượt; hai tài xế trên một xe thì mỗi người tính đủ
