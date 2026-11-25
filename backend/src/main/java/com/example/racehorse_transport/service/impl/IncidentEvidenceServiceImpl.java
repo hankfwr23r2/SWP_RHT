@@ -5,12 +5,15 @@ import com.example.racehorse_transport.entity.CostItem;
 import com.example.racehorse_transport.entity.Document;
 import com.example.racehorse_transport.entity.Incident;
 import com.example.racehorse_transport.entity.Staff;
+import com.example.racehorse_transport.entity.VehicleTrip;
 import com.example.racehorse_transport.entity.enums.CostCategory;
+import com.example.racehorse_transport.entity.enums.CrewAssignmentStatus;
 import com.example.racehorse_transport.entity.enums.DocumentSubject;
 import com.example.racehorse_transport.entity.enums.IncidentStatus;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.CostItemRepository;
+import com.example.racehorse_transport.repository.CrewAssignmentRepository;
 import com.example.racehorse_transport.repository.DocumentRepository;
 import com.example.racehorse_transport.repository.IncidentRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
@@ -34,12 +37,14 @@ public class IncidentEvidenceServiceImpl implements IncidentEvidenceService {
     private static final String TOLL_RECEIPT = "TOLL_RECEIPT";
     private static final String EXPENSE_INVOICE = "EXPENSE_INVOICE";
     private static final String INCIDENT_PHOTO = "INCIDENT_PHOTO";
+    private static final String VEHICLE_SWAP_RECORD = "VEHICLE_SWAP_RECORD";
 
     private final DocumentService documentFiles;
     private final DocumentRepository documents;
     private final CostItemRepository costs;
     private final IncidentRepository incidents;
     private final StaffRepository staff;
+    private final CrewAssignmentRepository crew;
     private final Clock clock;
 
     @Override
@@ -64,7 +69,7 @@ public class IncidentEvidenceServiceImpl implements IncidentEvidenceService {
     @Override
     @Transactional
     public List<EvidenceResponseDto> attachPhoto(Long incidentId, MultipartFile file, BigDecimal latitude, BigDecimal longitude, String documentType, String username) {
-        Incident incident = incidents.findById(incidentId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố " + incidentId));
+        Incident incident = incidents.findForUpdate(incidentId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố " + incidentId));
         if (incident.getStatus() == IncidentStatus.CLOSED) {
             throw new DispatchRuleException("incidentId", "Sự cố đã đóng, không thêm ảnh.", true);
         }
@@ -73,8 +78,13 @@ public class IncidentEvidenceServiceImpl implements IncidentEvidenceService {
         }
         Staff uploader = actor(username);
         String code = documentType == null ? INCIDENT_PHOTO : documentType;
-        if (!INCIDENT_PHOTO.equals(code)
-                && !("VET_REPORT".equals(code) && "COORDINATOR".equals(uploader.getUser().getRole().getCode()))) {
+        String role = uploader.getUser().getRole().getCode();
+        if (VEHICLE_SWAP_RECORD.equals(code)) {
+            requireVehicleSwapRecordUploader(incident, uploader, role);
+            if (file.getContentType() == null || !file.getContentType().startsWith("image/")) {
+                throw new DispatchRuleException("file", "Chọn ảnh biên bản đổi xe đã ký.");
+            }
+        } else if (!INCIDENT_PHOTO.equals(code) && !("VET_REPORT".equals(code) && "COORDINATOR".equals(role))) {
             throw new DispatchRuleException("documentType", "Loại tệp chứng cứ không phù hợp.");
         }
         Long id = documentFiles.attach(file, code, DocumentSubject.INCIDENT, incident.getId(), uploader.getUserId());
@@ -83,6 +93,26 @@ public class IncidentEvidenceServiceImpl implements IncidentEvidenceService {
         photo.setLatitude(latitude);
         photo.setLongitude(longitude);
         return photos(incidentId);
+    }
+
+    private void requireVehicleSwapRecordUploader(Incident incident, Staff uploader, String role) {
+        VehicleTrip trip = incident.getVehicleTrip();
+        if (trip == null && incident.getHorseLeg() != null) {
+            trip = incident.getHorseLeg().getVehicleTrip();
+        }
+        if (!("DRIVER".equals(role) || "ESCORT".equals(role)) || trip == null
+                || !crew.existsByVehicleTrip_IdAndStaff_UserIdAndStatusNot(trip.getId(), uploader.getUserId(), CrewAssignmentStatus.RELEASED)) {
+            throw new AccessDeniedException("Chỉ tổ lái của lượt xe được tải biên bản đổi xe.");
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void requireVehicleSwapRecord(Long incidentId) {
+        if (!incidents.hasDocumentType(incidentId, VEHICLE_SWAP_RECORD)) {
+            throw new DispatchRuleException("incidentId",
+                    "Chưa có biên bản đổi xe. Tổ xe chụp biên bản đã ký trước khi đổi xe.", true);
+        }
     }
 
     @Override

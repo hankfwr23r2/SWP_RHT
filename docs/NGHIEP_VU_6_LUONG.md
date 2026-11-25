@@ -780,7 +780,7 @@ Ba lớp trạng thái không trộn vào nhau:
 
 ### Bước 9. Kết thúc lượt xe
 
-- Bấm **Kết thúc lượt** khi đã tới điểm cuối và **không còn ngựa trên xe**. Lượt xe sang Hoàn thành, xe và tổ lái rảnh cho lượt sau.
+- Bấm **Kết thúc lượt** khi đã tới điểm cuối và **không còn ngựa trên xe**. Tổ xe báo **Bình thường** hoặc **Cần bảo dưỡng**. Khi cần bảo dưỡng, tổ xe ghi chú và hệ thống chuyển xe sang bảo dưỡng, ghi kiểm toán và báo điều phối, quản trị viên kèm mã các lượt đã lên lịch sắp tới của xe.
 - Con ngựa cuối cùng của đơn được giao thì đơn tự sang **Đã giao** (luồng 6).
 
 ### Bước 10. Điều phối và khách theo dõi
@@ -878,7 +878,7 @@ Ba lớp trạng thái không trộn vào nhau:
 7. **Xuất phát không kiểm giờ kế hoạch**: có thể xuất phát trước hoặc sau nhiều giờ. Đi trễ không báo điều phối hay khách, chỉ thấy trong báo cáo.
 8. **Chuyến không chuyển sang Đang chạy hay Đã xong** khi xe trục chạy (cũng nêu ở luồng 3).
 9. **Khách không được báo** khi ngựa tới hub, khi xe trục chạy, khi tới hub đích; chỉ báo lúc nhận, qua cửa khẩu và giao.
-10. **Chưa có màn báo tình trạng xe khi về trụ sở** (bình thường hay cần bảo dưỡng), dù tài liệu có.
+10. **Đã sửa** · Tổ xe báo tình trạng khi kết thúc lượt. Xe cần bảo dưỡng được khóa xếp lượt mới và xuất phát, đồng thời hệ thống báo các lượt cần bố trí xe khác.
 11. **Không có vị trí xe theo thời gian thực**; vị trí là điểm dừng gần nhất đã bấm Tới nơi.
 12. **Giấy không được kiểm lại ở cửa khẩu đơn xuất** (cũng nêu ở luồng 2).
 
@@ -959,13 +959,13 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 
 **Bước 10.** Tài xế báo sự cố cả lượt, loại Hỏng xe, nguyên nhân Lỗi công ty. Điều phối lập phương án **Đổi xe**, quản lý duyệt.
 
-**Bước 11.** Điều phối chọn xe thay. Hệ thống chỉ nhận xe:
+**Bước 11.** Tổ xe tải ảnh biên bản đổi xe đã ký vào sự cố. Điều phối xem biên bản và chọn xe thay. Hệ thống chỉ nhận xe:
 
 - khác xe đang hỏng và đang ở tình trạng hoạt động;
 - không bận lượt khác trong phần hành trình còn lại;
 - đủ ngăn cho vị trí ngăn cao nhất đang dùng.
 
-**Bước 12.** Hệ thống đổi xe ngay trên lượt đang chạy. Điểm dừng, tổ lái, danh sách ngựa và số ngăn **giữ nguyên**; không cần ký giao nhận lại. Xe thay không phải xuất phát từ chỗ xe cũ, vì là xe cứu ứng.
+**Bước 12.** Hệ thống gán xe cứu ứng vào lượt đang chạy, đánh dấu đã thực hiện phương án và chuyển xe cũ sang bảo dưỡng. Hệ thống ghi kiểm toán và báo điều phối, quản trị viên kèm mã các lượt đã lên lịch sắp tới đang dùng xe cũ.
 
 **Bước 13.** Điều phối xử lý xong và đóng như câu chuyện 1. Sự cố hỏng xe cả lượt **không** đòi xác nhận đủ sức.
 
@@ -1047,7 +1047,7 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 
 ### Đổi xe và đưa về hub
 
-- **5.12** Đổi xe chỉ khi lượt **đang chạy** và phương án Đổi xe đã duyệt. Giữ nguyên lượt, điểm dừng, ngựa, tổ lái.
+- **5.12** Điều phối thực hiện phương án Đổi xe đã duyệt khi lượt **đang chạy** và sự cố có ảnh biên bản đổi xe do tổ lái tải lên.
 - **5.13** Nút Đưa về hub dành cho con **còn đang trên xe, chặng chưa thất bại**: sự cố một con thì chỉ con đó, sự cố cả lượt thì mọi con. Lượt phải còn điểm dừng hub chưa tới, nằm sau nơi xuống của con đó. Bấm xong, chặng thành Thất bại, xe tới hub thì giao ngựa vào hub.
 - **5.14** Về hub do **người nhận vắng**: giữ có phí. Về hub do **nguyên nhân khác**: tập kết, không phí, chờ lập chặng mới.
 
@@ -1125,7 +1125,7 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 
 14. **Sự cố không chặn xe.** Đang có sự cố, tài xế vẫn bấm Tới nơi, Rời đi được. Tài liệu có bước "mở lại thao tác chặng", nghĩa là trước đó phải khóa.
 15. **Gửi chuồng gần, Thú y điều trị, Hủy chặng chỉ là chữ.** Duyệt xong hệ thống không mở lưu trú, không đổi chặng. Câu báo cho điều phối gợi ý "gửi chuồng hoặc đưa về hub" nhưng gửi chuồng không có thao tác.
-16. **Đổi xe không ký lại giao nhận và không đưa xe hỏng sang bảo dưỡng.** Tài liệu yêu cầu hộ tống ký tại chỗ; xe hỏng vẫn có thể được xếp lượt khác.
+16. **Đã sửa theo phương án (a)** · Tổ xe tải ảnh biên bản đổi xe đã ký trước khi điều phối đổi xe. Xe cũ chuyển sang bảo dưỡng và hệ thống báo các lượt cần bố trí xe khác.
 17. **Xác nhận đủ sức không cần ảnh, không cần thú y**; tài xế cũng bấm được, dù tài liệu ghi thú y hoặc hộ tống kèm ảnh.
 18. **30 phút đếm từ lúc báo**, không đếm từ lúc ngựa được nghỉ.
 19. **Ghi sức khỏe Ốm hoặc Nguy cấp không mở sự cố** (đã nêu ở luồng 4).

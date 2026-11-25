@@ -108,6 +108,14 @@ export const fieldCrew = {
       "loadError": "Không tải được lượt xe",
       "start": "Xuất phát",
       "complete": "Kết thúc lượt",
+      "completion": {
+        "condition": "Tình trạng xe",
+        "normal": "Bình thường",
+        "needsMaintenance": "Cần bảo dưỡng",
+        "note": "Ghi chú tình trạng xe",
+        "hint": "Lượt sẽ được ghi nhận là đã hoàn thành.",
+        "maintenanceHint": "Lượt sẽ hoàn thành và xe sẽ chuyển sang bảo dưỡng. Điều phối và quản trị viên sẽ nhận thông báo."
+      },
       "stops": "Điểm dừng",
       "stopState": {
         "waiting": "Chưa tới",

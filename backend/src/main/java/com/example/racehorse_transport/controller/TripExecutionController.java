@@ -7,8 +7,10 @@ import com.example.racehorse_transport.dto.operation.HandoverCreateRequestDto;
 import com.example.racehorse_transport.dto.operation.HandoverRefusalRequestDto;
 import com.example.racehorse_transport.dto.operation.HandoverScanRequestDto;
 import com.example.racehorse_transport.dto.operation.StopDepartRequestDto;
+import com.example.racehorse_transport.dto.operation.TripCompleteRequestDto;
 import com.example.racehorse_transport.service.DeliveryFailureService;
 import com.example.racehorse_transport.service.HandoverService;
+import com.example.racehorse_transport.service.TripCompletionService;
 import com.example.racehorse_transport.service.TripExecutionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class TripExecutionController {
 
     private final TripExecutionService execution;
+    private final TripCompletionService completion;
     private final HandoverService handovers;
     private final DeliveryFailureService deliveryFailures;
 
@@ -60,9 +63,9 @@ public class TripExecutionController {
     }
 
     @PostMapping("/vehicle-trips/{id}/complete")
-    public ApiResponseDto<CrewTripResponseDto> complete(@PathVariable Long id, Authentication authentication) {
-        execution.complete(id, authentication.getName());
-        return ApiResponseDto.success(handovers.crewTrip(id, authentication.getName()), "Đã kết thúc lượt xe");
+    public ApiResponseDto<CrewTripResponseDto> complete(@PathVariable Long id, Authentication authentication,
+            @Valid @RequestBody(required = false) TripCompleteRequestDto request) {
+        return ApiResponseDto.success(completion.complete(id, request, authentication.getName()), "Đã kết thúc lượt xe");
     }
 
     @PostMapping("/trip-stops/{id}/handovers")

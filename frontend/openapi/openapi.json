@@ -8593,6 +8593,21 @@
         },
         "type" : "object"
       },
+      "TripCompleteRequestDto" : {
+        "properties" : {
+          "endVehicleCondition" : {
+            "enum" : [ "NORMAL", "NEEDS_MAINTENANCE" ],
+            "type" : "string"
+          },
+          "endVehicleNote" : {
+            "maxLength" : 1000,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "endVehicleCondition" ],
+        "type" : "object"
+      },
       "TripGroupResponseDto" : {
         "properties" : {
           "bookings" : {
@@ -9022,6 +9037,13 @@
             "type" : "integer"
           },
           "endLocationName" : {
+            "type" : "string"
+          },
+          "endVehicleCondition" : {
+            "enum" : [ "NORMAL", "NEEDS_MAINTENANCE" ],
+            "type" : "string"
+          },
+          "endVehicleNote" : {
             "type" : "string"
           },
           "id" : {
@@ -17516,6 +17538,15 @@
             "type" : "integer"
           }
         } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TripCompleteRequestDto"
+              }
+            }
+          }
+        },
         "responses" : {
           "200" : {
             "content" : {

@@ -5,6 +5,9 @@ import com.example.racehorse_transport.dto.vehicle.VehicleCreateRequestDto;
 import com.example.racehorse_transport.dto.vehicle.VehicleResponseDto;
 import com.example.racehorse_transport.dto.vehicle.VehicleStatusChangeRequestDto;
 import com.example.racehorse_transport.dto.vehicle.VehicleUpdateRequestDto;
+import com.example.racehorse_transport.dto.dispatch.DispatchVehicleResponseDto;
+import com.example.racehorse_transport.entity.Vehicle;
+import java.time.Instant;
 import java.util.List;
 
 public interface VehicleService {
@@ -24,4 +27,11 @@ public interface VehicleService {
     VehicleResponseDto reactivate(Long id, String username, VehicleStatusChangeRequestDto request);
 
     VehicleResponseDto retire(Long id, String username, VehicleStatusChangeRequestDto request);
+
+    List<DispatchVehicleResponseDto> vehiclesForDispatch();
+
+    Vehicle lockVehicle(Long id);
+
+    // Gọi trong giao dịch đã khóa xe khi tổ lái báo xe cần bảo dưỡng hoặc đã thay xe do sự cố.
+    void markForMaintenance(Vehicle vehicle, Long actorUserId, String reason, Instant reportedAt);
 }

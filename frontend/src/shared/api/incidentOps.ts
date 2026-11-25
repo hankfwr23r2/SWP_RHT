@@ -54,6 +54,6 @@ export const incidentsApi = {
   receipts: (costId: number) => get<Evidence[]>(`/cost-items/${costId}/receipts`),
   attachReceipt: (costId: number, file: File) => upload(`/cost-items/${costId}/receipts`, file),
   photos: (incidentId: number) => get<Evidence[]>(`/incidents/${incidentId}/photos`),
-  attachPhoto: (incidentId: number, file: File, at?: { latitude: number; longitude: number }, documentType?: 'INCIDENT_PHOTO' | 'VET_REPORT') =>
+  attachPhoto: (incidentId: number, file: File, at?: { latitude: number; longitude: number }, documentType?: 'INCIDENT_PHOTO' | 'VET_REPORT' | 'VEHICLE_SWAP_RECORD') =>
     upload(`/incidents/${incidentId}/photos`, file, { ...at, ...(documentType ? { documentType } : {}) }),
 }

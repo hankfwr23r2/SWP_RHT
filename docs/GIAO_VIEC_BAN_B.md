@@ -93,13 +93,15 @@ Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A
 |---|---|---|---|
 | 1.F5 | | | |
 | 2.F2, 2.F5, 2.F7, 2.F8, 2.F9, 2.F10 | | | |
-| 2.F4 | Cập nhật và xác nhận bảo hiểm mua hộ khi đơn Đang báo giá | Đã duyệt | |
+| 2.F4 | Cập nhật và xác nhận bảo hiểm mua hộ khi đơn Đang báo giá | Đã duyệt | #479 |
 | 3.G4, 3.G8, 3.G9, 3.G10, 3.G11 | | | |
-| 3.G6, 3.G7 | Bắt buộc hộ tống đã nhận việc; kiểm giờ ngồi xe khi nhập giờ tay | Đã duyệt | |
-| 4.F1, 4.F2, 4.F3, 4.F10, 4.F11, 4.F12 | | | |
-| 4.F6 | Điểm nghỉ đêm phải nghỉ đủ OVERNIGHT_REST_HOURS, rời sớm ghi lý do và báo điều phối | Đã duyệt | |
-| 5.G14, 5.G15, 5.G16, 5.G17, 5.G18, 5.G22 | | | |
-| 5.G5 | Lượt đón, giao, chạy thẳng phải kết thúc ở hub | Đã duyệt | |
+| 3.G6, 3.G7 | Bắt buộc hộ tống đã nhận việc; kiểm giờ ngồi xe khi nhập giờ tay | Đã duyệt | #480 |
+| 4.F1, 4.F2, 4.F3, 4.F11, 4.F12 | | | |
+| 4.F6 | Điểm nghỉ đêm phải nghỉ đủ OVERNIGHT_REST_HOURS, rời sớm ghi lý do và báo điều phối | Đã duyệt | #480 |
+| 4.F10 | Báo tình trạng xe cuối lượt, đưa vào bảo dưỡng khi cần | Đã duyệt | #482 |
+| 5.G14, 5.G15, 5.G17, 5.G18, 5.G22 | | | |
+| 5.G5 | Lượt đón, giao, chạy thẳng phải kết thúc ở hub | Đã duyệt | #478 |
+| 5.G16 | Phương án (a), ảnh biên bản đã ký và đưa xe cũ vào bảo dưỡng | Đã duyệt | #482 |
 | 6.G15 | | | |
 
 ## 6. Luồng A giữ lại (22 điểm, đừng làm)

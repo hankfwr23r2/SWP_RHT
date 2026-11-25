@@ -20,6 +20,40 @@ function newRun() {
   }
 }
 
+test('tài xế ghi tình trạng xe trước khi kết thúc lượt', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 844 })
+  await page.addInitScript(() => sessionStorage.setItem('SWP_SESSION_backoffice', JSON.stringify({ role: 'driver', name: 'Tài xế Một', username: 'driver@example.com' })))
+  const run = newRun()
+  run.trip.status = 'IN_PROGRESS'
+  run.trip.stops[2].actualArrivalAt = '2031-03-05T05:00:00Z'
+  run.horses[0].leg.status = 'COMPLETED'
+  let report: unknown
+  await page.route('**/api/v1/**', route => {
+    const request = route.request()
+    const path = new URL(request.url()).pathname.replace('/api/v1', '')
+    if (path === '/crew/vehicle-trips/9') return ok(route, run)
+    if (path === '/vehicle-trips/9/complete') {
+      report = request.postDataJSON()
+      run.trip.status = 'COMPLETED'
+      return ok(route, run)
+    }
+    return ok(route, [])
+  })
+  await page.goto('/backoffice/my-trips/9')
+  await page.getByRole('button', { name: 'Kết thúc lượt' }).click()
+  const dialog = page.getByRole('alertdialog', { name: 'Kết thúc lượt' })
+  const select = dialog.getByRole('combobox', { name: /Tình trạng xe/ })
+  await expect(select).toHaveText('Bình thường')
+  await select.click()
+  await page.getByRole('option', { name: 'Cần bảo dưỡng' }).click()
+  const confirm = dialog.getByRole('button', { name: 'Kết thúc lượt' })
+  await expect(confirm).toBeDisabled()
+  await dialog.getByLabel('Ghi chú tình trạng xe').fill('Phanh có tiếng kêu')
+  await confirm.click()
+  await expect(dialog).toHaveCount(0)
+  expect(report).toEqual({ endVehicleCondition: 'NEEDS_MAINTENANCE', endVehicleNote: 'Phanh có tiếng kêu' })
+})
+
 test('hộ tống xuất phát, nhận ngựa có quét chip rồi rời điểm đón', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.addInitScript(() => sessionStorage.setItem('SWP_SESSION_backoffice', JSON.stringify({ role: 'escort', name: 'Hộ tống Một', username: 'escort@example.com' })))

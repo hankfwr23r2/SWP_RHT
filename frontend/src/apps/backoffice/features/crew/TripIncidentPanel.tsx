@@ -2,8 +2,8 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { CrewTrip } from '@shared/api/tripExecution'
-import { incidentsApi, type CauseType, type IncidentType } from '@shared/api/incidentOps'
-import { useLoad } from '@shared/hooks/useLoad'
+import { incidentsApi, type CauseType, type Evidence, type IncidentType } from '@shared/api/incidentOps'
+import { useAutoRefresh, useLoad } from '@shared/hooks/useLoad'
 import { formatVND } from '@shared/lib/format'
 import { Button } from '@shared/ui/Button'
 import { Card } from '@shared/ui/Card'
@@ -48,6 +48,37 @@ function IncidentCosts({ incidentId }: { incidentId: number }) {
   )
 }
 
+function useTripIncidentEvidence(incidentId: number) {
+  const query = useLoad(() => incidentsApi.photos(incidentId), [incidentId], { toastOnError: false })
+  const save = async (upload: Promise<Evidence[]>) => {
+    const evidence = await upload
+    query.updateData(() => evidence)
+    return evidence
+  }
+  return {
+    ...query,
+    uploadPhoto: async (file: File) => save(incidentsApi.attachPhoto(incidentId, file, await currentPosition())),
+    uploadRecord: (file: File) => save(incidentsApi.attachPhoto(incidentId, file, undefined, 'VEHICLE_SWAP_RECORD')),
+  }
+}
+
+function TripIncidentEvidence({ incidentId, canUploadRecord }: { incidentId: number; canUploadRecord: boolean }) {
+  const { t } = useTranslation()
+  const { data, loaded, error, reload, uploadPhoto, uploadRecord } = useTripIncidentEvidence(incidentId)
+  if (!loaded) return <Skeleton variant="block" lines={2} />
+  if (error) return <ErrorState message={error.message} onRetry={reload} />
+  const records = (data ?? []).filter(file => file.documentTypeCode === 'VEHICLE_SWAP_RECORD')
+
+  return (
+    <>
+      <EvidencePanel title={t('incidents.photos')} evidence={(data ?? []).filter(file => file.documentTypeCode !== 'VEHICLE_SWAP_RECORD')}
+        upload={uploadPhoto} />
+      {(canUploadRecord || records.length > 0) && <EvidencePanel title={t('incidents.vehicleSwapRecord')} evidence={records}
+        accept="image/*" fileLabel={t('incidents.vehicleSwapRecordFile')} uploadLabel={t('incidents.uploadVehicleSwapRecord')}
+        upload={canUploadRecord ? uploadRecord : undefined} />}
+    </>
+  )
+}
 
 export function TripIncidentPanel({ run }: { run: CrewTrip }) {
   const { t } = useTranslation()
@@ -59,6 +90,7 @@ export function TripIncidentPanel({ run }: { run: CrewTrip }) {
   const [form, setForm] = useState({ scope: '', type: 'OTHER' as IncidentType, cause: 'COMPANY_FAULT' as CauseType, title: '', description: '' })
   const [costVersion, setCostVersion] = useState(0)
   const { data: incidents, loaded, error, reload } = useLoad(() => incidentsApi.ofTrip(tripId), [tripId], { toastOnError: false })
+  useAutoRefresh(reload)
 
   const act = async (action: () => Promise<unknown>, done: string) => {
     setBusy(true)
@@ -86,6 +118,7 @@ export function TripIncidentPanel({ run }: { run: CrewTrip }) {
         {(incidents ?? []).map(incident => {
           const id = incident.id ?? 0
           const open = incident.status !== 'RESOLVED' && incident.status !== 'CLOSED'
+          const latest = incident.plans?.at(-1)
           return (
             <li key={id} className={s.body}>
               <p className={s.line}>{incident.title}{incident.horseName ? ` · ${incident.horseName}` : ''}</p>
@@ -95,8 +128,8 @@ export function TripIncidentPanel({ run }: { run: CrewTrip }) {
                   onClick={() => act(() => incidentsApi.confirmFit(id), t('myTrips.run.incident.fitDone'))}>{t('myTrips.run.incident.confirmFit')}</Button>
               )}
               {incident.status !== 'CLOSED' && (
-                <EvidencePanel title={t('incidents.photos')} load={() => incidentsApi.photos(id)}
-                  upload={async file => incidentsApi.attachPhoto(id, file, await currentPosition())} />
+                <TripIncidentEvidence incidentId={id}
+                  canUploadRecord={open && latest?.status === 'APPROVED' && latest.resolutionType === 'TRANSFER_VEHICLE'} />
               )}
               <IncidentCosts key={`${id}-${costVersion}`} incidentId={id} />
               {incident.status !== 'CLOSED' && (

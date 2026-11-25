@@ -108,6 +108,14 @@ export const fieldCrew = {
       "loadError": "Could not load the trip",
       "start": "Start trip",
       "complete": "Finish trip",
+      "completion": {
+        "condition": "Vehicle condition",
+        "normal": "Normal",
+        "needsMaintenance": "Needs maintenance",
+        "note": "Vehicle condition note",
+        "hint": "The trip will be marked as completed.",
+        "maintenanceHint": "The trip will be completed and the vehicle will be marked for maintenance. Dispatchers and administrators will be notified."
+      },
       "stops": "Stops",
       "stopState": {
         "waiting": "Not yet",

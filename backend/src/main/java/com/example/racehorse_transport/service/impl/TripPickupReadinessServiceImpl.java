@@ -2,20 +2,24 @@ package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.entity.HorseLeg;
 import com.example.racehorse_transport.entity.TripStop;
+import com.example.racehorse_transport.entity.VehicleTrip;
 import com.example.racehorse_transport.entity.enums.HorseInsuranceStatus;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
 import com.example.racehorse_transport.entity.enums.TripStopType;
+import com.example.racehorse_transport.entity.enums.VehicleStatus;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.repository.HorseInsuranceRepository;
 import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.repository.TripStopRepository;
 import com.example.racehorse_transport.service.DocumentCompletenessService;
 import com.example.racehorse_transport.service.TripPickupReadinessService;
+import com.example.racehorse_transport.service.VehicleService;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -25,12 +29,16 @@ public class TripPickupReadinessServiceImpl implements TripPickupReadinessServic
     private final HorseLegRepository legs;
     private final HorseInsuranceRepository insurances;
     private final DocumentCompletenessService documents;
+    private final VehicleService vehicles;
 
     @Override
-    @Transactional(readOnly = true)
-    public void requireReady(Long tripId) {
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void requireReady(VehicleTrip trip) {
+        if (vehicles.lockVehicle(trip.getVehicle().getId()).getStatus() != VehicleStatus.ACTIVE) {
+            throw new DispatchRuleException("vehicleId", "Xe đang bảo dưỡng hoặc đã ngừng sử dụng. Liên hệ điều phối để đổi xe.", true);
+        }
         Map<Long, String> bookings = new LinkedHashMap<>();
-        for (TripStop stop : stops.findByVehicleTrip_IdOrderBySequenceNumber(tripId)) {
+        for (TripStop stop : stops.findByVehicleTrip_IdOrderBySequenceNumber(trip.getId())) {
             if (stop.getStopType() != TripStopType.PICKUP) continue;
             for (HorseLeg leg : legs.findByBoardTripStop_IdAndStatusIn(stop.getId(), Set.of(HorseLegStatus.PLANNED))) {
                 var horse = leg.getBookingHorse();

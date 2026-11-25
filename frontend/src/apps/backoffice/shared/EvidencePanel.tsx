@@ -9,12 +9,21 @@ import { Field } from '@shared/ui/Field'
 import { useToast } from '@shared/ui/toast'
 import s from './EvidencePanel.module.css'
 
-interface Props { title: string; load: () => Promise<Evidence[]>; upload?: (file: File) => Promise<Evidence[]> }
+interface Props {
+  title: string
+  load?: () => Promise<Evidence[]>
+  evidence?: Evidence[]
+  upload?: (file: File) => Promise<Evidence[]>
+  accept?: string
+  fileLabel?: string
+  uploadLabel?: string
+}
 
-export function EvidencePanel({ title, load, upload }: Props) {
+export function EvidencePanel({ title, load, evidence, upload, accept = 'image/*,application/pdf', fileLabel, uploadLabel }: Props) {
   const { t } = useTranslation()
   const toast = useToast()
-  const { data, updateData } = useLoad(load, [], { toastOnError: false })
+  const { data, updateData } = useLoad(() => load?.() ?? Promise.resolve([]), [], { toastOnError: false })
+  const items = evidence ?? data ?? []
   const [file, setFile] = useState<File>()
   const [busy, setBusy] = useState(false)
 
@@ -36,12 +45,13 @@ export function EvidencePanel({ title, load, upload }: Props) {
   return (
     <div className={s.panel}>
       <strong>{title}</strong>
-      {(data ?? []).length ? (
+      {items.length ? (
         <ul className={s.list} aria-label={title}>
-          {(data ?? []).map(item => (
+          {items.map(item => (
             <li key={item.id} className={s.muted}>
               <a href={item.fileUrl} target="_blank" rel="noreferrer">{item.fileName}</a>
               {item.documentTypeCode === 'VET_REPORT' && <> · {t('incidents.vetReport')}</>}
+              {item.documentTypeCode === 'VEHICLE_SWAP_RECORD' && <> · {t('incidents.vehicleSwapRecord')}</>}
               {' · '}{item.uploadedByName}
               {item.capturedAt || item.uploadedAt ? ` · ${formatDateTime(new Date(item.capturedAt ?? item.uploadedAt ?? ''))}` : ''}
               {item.latitude != null && item.longitude != null ? ` · ${item.latitude}, ${item.longitude}` : ''}
@@ -51,10 +61,10 @@ export function EvidencePanel({ title, load, upload }: Props) {
       ) : <p className={s.muted}>{t('incidents.noEvidence')}</p>}
       {upload && (
         <div className={s.row}>
-          <Field label={t('incidents.evidenceFile')}>
-            {c => <input {...c} type="file" accept="image/*,application/pdf" capture="environment" onChange={e => setFile(e.target.files?.[0])} />}
+          <Field label={fileLabel ?? t('incidents.evidenceFile')}>
+            {c => <input {...c} type="file" accept={accept} capture="environment" onChange={e => setFile(e.target.files?.[0])} />}
           </Field>
-          <Button size="sm" disabled={!file} loading={busy} onClick={() => void send()}>{t('incidents.uploadEvidence')}</Button>
+          <Button size="sm" disabled={!file} loading={busy} onClick={() => void send()}>{uploadLabel ?? t('incidents.uploadEvidence')}</Button>
         </div>
       )}
     </div>

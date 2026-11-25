@@ -23,6 +23,7 @@ import { useToast } from '@shared/ui/toast'
 import { PickupMissDialog } from './PickupMissDialog'
 import { HandoverPapersPanel } from './HandoverPapersPanel'
 import { StopHealthPanel } from './StopHealthPanel'
+import { TripCompletionDialog } from './TripCompletionDialog'
 import { TripIncidentPanel } from './TripIncidentPanel'
 import { canArrive, canComplete, canDepart, canRefuse, canReturnUnpaid, canStart, needsRecord, handoverTypesAt, isRestStop, pendingAt, receivesOriginals, stopState, type StopState } from './tripRunModel'
 import s from './MyTrips.module.css'
@@ -36,6 +37,7 @@ export default function TripRunPage() {
   const toast = useToast()
   const { session } = useAuth()
   const [busy, setBusy] = useState(false)
+  const [completing, setCompleting] = useState(false)
   const [deliveryRecipients, setDeliveryRecipients] = useState<Record<number, Record<string, DeliveryRecipient>>>({})
   const [conditions, setConditions] = useState<Record<string, string>>({})
   const [chips, setChips] = useState<Record<number, string>>({})
@@ -278,10 +280,17 @@ export default function TripRunPage() {
             .then(ok => { if (ok) setRefusing(undefined) })
         }} />}
       {canComplete(data) && (
-        <Button variant="primary" size="lg" fullWidth loading={busy} onClick={() => run(() => tripExecutionApi.complete(tripId), t('myTrips.run.done.completed'))}>
+        <Button variant="primary" size="lg" fullWidth disabled={busy} onClick={() => setCompleting(true)}>
           {t('myTrips.run.complete')}
         </Button>
       )}
+      {canComplete(data) && completing && <TripCompletionDialog onCancel={() => setCompleting(false)}
+        onConfirm={async (condition, note) => {
+          const next = await tripExecutionApi.complete(tripId, condition, note)
+          updateData(() => next)
+          toast(t('myTrips.run.done.completed'), 'success')
+          setCompleting(false)
+        }} />}
     </div>
   )
 }

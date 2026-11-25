@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.entity;
 
+import com.example.racehorse_transport.entity.enums.VehicleEndCondition;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import com.example.racehorse_transport.entity.enums.VehicleTripType;
 
@@ -76,6 +77,13 @@ public class VehicleTrip {
 
     @Column(name = "actual_end_at")
     private Instant actualEndAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "end_vehicle_condition", length = 30)
+    private VehicleEndCondition endVehicleCondition;
+
+    @Column(name = "end_vehicle_note", length = 1000)
+    private String endVehicleNote;
 
     // Niêm phong và khử trùng chỉ ghi nhận, đợt này chưa có quy tắc kiểm tra
     @Column(name = "sealed_at")

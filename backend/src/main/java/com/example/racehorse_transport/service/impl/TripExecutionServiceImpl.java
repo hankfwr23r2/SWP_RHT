@@ -8,8 +8,6 @@ import com.example.racehorse_transport.entity.VehicleTrip;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.CrewAssignmentStatus;
 import com.example.racehorse_transport.entity.enums.CrewRole;
-import com.example.racehorse_transport.entity.enums.HandoverStatus;
-import com.example.racehorse_transport.entity.enums.HandoverType;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
 import com.example.racehorse_transport.entity.enums.TripStopType;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
@@ -70,7 +68,7 @@ public class TripExecutionServiceImpl implements TripExecutionService {
             throw new DispatchRuleException("stallPlan", "Còn ngựa chưa có vị trí khoang: " + String.join(", ", unplaced)
                     + ". Xếp sơ đồ khoang trước khi xuất phát.", true);
         }
-        startChecks.requireReady(trip.getId());
+        startChecks.requireReady(trip);
         trip.setStatus(VehicleTripStatus.IN_PROGRESS);
         trip.setActualStartAt(clock.instant());
         if (trip.getTripType() == VehicleTripType.LINEHAUL) {
@@ -111,27 +109,6 @@ public class TripExecutionServiceImpl implements TripExecutionService {
         }
         notices.departed(stop);
         return trip.getId();
-    }
-
-    @Override
-    @Transactional
-    public void complete(Long vehicleTripId, String username) {
-        VehicleTrip trip = trips.findForUpdate(vehicleTripId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lượt xe " + vehicleTripId));
-        requireCrew(trip.getId(), username);
-        TripExecutionPolicy.requireInProgress(trip.getStatus());
-        List<TripStop> all = stops.findByVehicleTrip_IdOrderBySequenceNumber(trip.getId());
-        TripStop last = all.getLast();
-        if (last.getStopType() == TripStopType.PICKUP || last.getStopType() == TripStopType.BORDER) {
-            readiness.requireCanLeave(last, null, null);
-        }
-        TripExecutionPolicy.requireCanComplete(last.getActualArrivalAt() != null,
-                legs.countByVehicleTrip_IdAndStatus(trip.getId(), HorseLegStatus.IN_PROGRESS)
-                        + legs.countFailedNotInHub(trip.getId(), HorseLegStatus.FAILED, HandoverType.HUB_IN, HandoverStatus.DONE));
-        trip.setStatus(VehicleTripStatus.COMPLETED);
-        trip.setActualEndAt(clock.instant());
-        if (trip.getTripType() == VehicleTripType.LINEHAUL) {
-            departures.linehaulCompleted(trip.getDeparture().getId());
-        }
     }
 
     // Đơn nhập có thể rời cửa khẩu về hub khi chưa thanh toán.

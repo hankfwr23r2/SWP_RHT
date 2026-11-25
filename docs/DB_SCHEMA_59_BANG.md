@@ -528,7 +528,7 @@ Khi tính sức chứa, `STANDARD` chiếm 1 chỗ, `WIDE` chiếm 2 chỗ.
 | `standard_stall_count` | `int` | | CK `>= 0` | Số khoang thường ở bố trí mặc định. Chỉ dùng để tính tổng chỗ |
 | `wide_stall_count` | `int` | | CK `>= 0` | Số khoang rộng ở bố trí mặc định. Chỉ dùng để tính tổng chỗ, không giới hạn số con khoang rộng và không cố định vị trí |
 | `home_hub_location_id` | `bigint` | | FK → location | Hub gốc. Đợt này mọi xe thuộc trụ sở |
-| `status` | `varchar(30)` | | CK `ACTIVE, MAINTENANCE, RETIRED` | Do quản trị viên đổi, ghi `audit_log` (quy tắc #36). Xe đang chạy hay rảnh suy ra từ `vehicle_trip` |
+| `status` | `varchar(30)` | | CK `ACTIVE, MAINTENANCE, RETIRED` | Quản trị viên đổi thủ công. Hệ thống chuyển sang bảo dưỡng khi tổ xe báo cần bảo dưỡng lúc kết thúc lượt hoặc khi xe được thay do sự cố. Mỗi lần đổi trạng thái ghi `audit_log` (quy tắc #36). Xe đang chạy hay rảnh suy ra từ `vehicle_trip` |
 
 Vách ngăn **di động**: hai vị trí liền nhau bất kỳ ghép thành một khoang rộng. Cả xe là một dãy liền, đánh số từ 1 tới tổng chỗ.
 
@@ -839,6 +839,8 @@ Chỉ đánh giá được khi đơn ở trạng thái `DELIVERED` hoặc `COMPL
 | `planned_end_at` | `timestamptz` | | | |
 | `actual_start_at` | `timestamptz` | có | | |
 | `actual_end_at` | `timestamptz` | có | | |
+| `end_vehicle_condition` | `varchar(30)` | có | CK `NORMAL, NEEDS_MAINTENANCE` | Tình trạng xe do tổ lái báo khi hoàn tất lượt. Lượt đã hoàn tất trước khi áp dụng quy tắc có thể để trống |
+| `end_vehicle_note` | `varchar(1000)` | có | | Ghi chú của tổ lái, bắt buộc có nội dung khi báo cần bảo dưỡng |
 | `sealed_at` | `timestamptz` | có | | Thời điểm niêm phong xe. Chỉ ghi nhận, đợt này không có quy tắc kiểm tra |
 | `disinfected_at` | `timestamptz` | có | | Thời điểm khử trùng xe. Chỉ ghi nhận |
 | `status` | `varchar(30)` | | CK `PLANNED, DISPATCHED, IN_PROGRESS, COMPLETED, CANCELLED` | |
@@ -847,6 +849,7 @@ Ràng buộc bảng:
 - `CHECK (trip_type <> 'LINEHAUL' OR departure_id IS NOT NULL)`
 - `CHECK (planned_end_at > planned_start_at)`
 - `CHECK (actual_end_at IS NULL OR actual_start_at IS NOT NULL)`
+- Chỉ lượt `COMPLETED` được lưu tình trạng xe cuối lượt. Chỉ lưu ghi chú khi có tình trạng xe, và `NEEDS_MAINTENANCE` yêu cầu ghi chú có ít nhất một ký tự khác khoảng trắng.
 
 Index: `departure_id`, `vehicle_id`, `(status, planned_start_at)`.
 
@@ -1330,6 +1333,8 @@ Phí giữ sau giao hụt thuộc `CONSIGNEE`. Phí giữ do chưa trả số d�
 
 `document_type` có mã `VET_REPORT` với chủ thể `INCIDENT`. Điều phối dùng mã này để xác nhận đủ sức thay tổ lái.
 
+`VEHICLE_SWAP_RECORD` có chủ thể `INCIDENT`. Tổ xe tải ảnh biên bản đã ký trước khi điều phối thực hiện phương án đổi xe.
+
 ### 14.1 `document`: tệp chứng từ
 
 Mỗi chứng từ thuộc **đúng một** đối tượng, được chỉ bằng một trong các cột `*_id` ở phần dưới của bảng. Cột nào được điền phải khớp với `document_type.owner_type`.
@@ -1618,7 +1623,7 @@ Các quy tắc dưới đây cần so dữ liệu ở nhiều bảng nên CHECK 
 | 33 | `quotation.expires_at` là mốc sớm nhất trong 24 giờ sau khi gửi, hết ngày đón và hết ngày hiệu lực báo giá bảo hiểm (nếu có). Mốc `planned_departure_at − DEPARTURE_DECISION_HOURS` chỉ nhả chỗ đơn chưa gửi báo giá. Đơn AWAITING_DEPOSIT giữ chỗ đến khi báo giá hết hạn | quotation, departure |
 | 34 | Xe chỉ rời trạm nghỉ khi mọi ngựa trên xe có `horse_health_log` ở điểm đó (gồm `water_intake`, `feed_intake`) và đã nghỉ đủ. Rời sớm phải xác nhận kèm lý do | trip_stop, horse_health_log |
 | 35 | Đơn IMPORT: hoàn tất `handover` AGENT ở cửa khẩu chỉ khi đủ giấy bắt buộc, gồm `IMPORT_TRANSPORT_CERT` | handover, document |
-| 36 | Xe không chuyển sang MAINTENANCE, RETIRED khi đang chạy hoặc còn lượt chưa hoàn thành. RETIRED không quay lại. Không gán xe khác ACTIVE vào lượt mới | vehicle, vehicle_trip |
+| 36 | Quản trị viên chỉ đưa xe vào MAINTENANCE hoặc RETIRED khi xe không còn lượt chưa hoàn thành. Khi hoàn tất lượt có báo cần bảo dưỡng hoặc khi đã đổi xe do sự cố, hệ thống đưa xe cần bảo dưỡng vào MAINTENANCE dù còn lượt đã lên lịch. Ghi kiểm toán và báo điều phối, quản trị viên kèm mã các lượt PLANNED sắp tới của xe. Chỉ xe ACTIVE được xếp lượt mới hoặc xuất phát. RETIRED là trạng thái cuối | vehicle, vehicle_trip, audit_log, notification |
 | 37 | Người phụ trách một con ngựa là `handled_by` của `handover` DONE mới nhất mà công ty là bên nhận. Không sửa tay. `crew_assignment` chỉ là kế hoạch | handover, crew_assignment |
 | 38 | Hộ tống không kết thúc ca hoặc lượt xe khi còn phụ trách ngựa chưa bàn giao. Người ký nhận phải đang trong ca, có mặt ở nơi đó, và đã xem phiếu tóm tắt của từng con | handover, vehicle_trip |
 | 39 | Trên cùng một đoạn đường của lượt xe, hai con không trùng `stall_position`. Khoang rộng chiếm hai vị trí liền nhau **bất kỳ** (vách di động). Vị trí cuối không vượt số chỗ của xe (quy tắc #9) | horse_leg, vehicle, trip_stop |

@@ -7057,6 +7057,11 @@ export interface components {
             /** Format: int32 */
             stablingDailyFee?: number;
         };
+        TripCompleteRequestDto: {
+            /** @enum {string} */
+            endVehicleCondition: "NORMAL" | "NEEDS_MAINTENANCE";
+            endVehicleNote?: string;
+        };
         TripGroupResponseDto: {
             bookings?: components["schemas"]["GroupBookingDto"][];
             /** Format: double */
@@ -7225,6 +7230,9 @@ export interface components {
             /** Format: int64 */
             endLocationId?: number;
             endLocationName?: string;
+            /** @enum {string} */
+            endVehicleCondition?: "NORMAL" | "NEEDS_MAINTENANCE";
+            endVehicleNote?: string;
             /** Format: int64 */
             id?: number;
             licensePlate?: string;
@@ -13697,7 +13705,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TripCompleteRequestDto"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {

@@ -11,13 +11,14 @@ interface ConfirmDialogProps {
   confirmLabel: string
   cancelLabel?: string
   tone?: 'primary' | 'danger'
+  confirmDisabled?: boolean
   // Trả về Promise thì nút bị khóa tới khi xong. Thành công thì nơi gọi tự đóng hộp thoại; lỗi thì hộp thoại mở lại để thử tiếp
   onConfirm: () => unknown
   onCancel: () => void
 }
 
 // Xác nhận thao tác không hoàn tác được (gửi, hủy, duyệt, thanh toán, xóa). Tiêu điểm đặt sẵn ở nút Hủy.
-export function ConfirmDialog({ title, message, confirmLabel, cancelLabel, tone = 'primary', onConfirm, onCancel }: ConfirmDialogProps) {
+export function ConfirmDialog({ title, message, confirmLabel, cancelLabel, tone = 'primary', confirmDisabled, onConfirm, onCancel }: ConfirmDialogProps) {
   const { t } = useTranslation()
   // React vẽ lại ngay sau cú bấm, nên nút đã khóa trước cú bấm thứ hai
   const [busy, setBusy] = useState(false)
@@ -43,7 +44,7 @@ export function ConfirmDialog({ title, message, confirmLabel, cancelLabel, tone 
       footer={(
         <>
           <Button data-autofocus onClick={cancel} disabled={busy}>{cancelLabel ?? t('ui.cancel')}</Button>
-          <Button variant={tone} onClick={confirm} loading={busy}>{confirmLabel}</Button>
+          <Button variant={tone} onClick={confirm} disabled={confirmDisabled} loading={busy}>{confirmLabel}</Button>
         </>
       )}
     >
