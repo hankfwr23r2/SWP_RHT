@@ -38,6 +38,7 @@ import com.example.racehorse_transport.repository.TripStopRepository;
 import com.example.racehorse_transport.repository.VehicleRepository;
 import com.example.racehorse_transport.repository.VehicleTripRepository;
 import com.example.racehorse_transport.service.DispatchService;
+import com.example.racehorse_transport.service.NotificationService;
 import com.example.racehorse_transport.util.VehicleTripCodes;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -69,6 +70,7 @@ public class DispatchServiceImpl implements DispatchService {
     private final LocationRepository locations;
     private final BookingAddressRepository bookingAddresses;
     private final Clock clock;
+    private final NotificationService notifications;
 
     @Override
     @Transactional(readOnly = true)
@@ -119,8 +121,13 @@ public class DispatchServiceImpl implements DispatchService {
             departures.linehaulCompleted(trip.getDeparture().getId());
         }
         for (CrewAssignment assignment : crew.findByVehicleTrip_IdInOrderById(List.of(id))) {
+            if (assignment.getStatus() == CrewAssignmentStatus.RELEASED) continue;
             assignment.setStatus(CrewAssignmentStatus.RELEASED);
             assignment.setNote(request.reason().strip());
+            notifications.notify(List.of(assignment.getStaff().getUserId()), null,
+                    "Lượt xe đã hủy",
+                    "Lượt xe " + trip.getCode() + " đã hủy. Lý do: " + request.reason().strip(),
+                    "/my-trips");
         }
         return trip(id);
     }

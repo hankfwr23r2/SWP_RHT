@@ -29,6 +29,7 @@ import com.example.racehorse_transport.repository.PaymentRepository;
 import com.example.racehorse_transport.repository.PaymentTransactionRepository;
 import com.example.racehorse_transport.service.DocumentService;
 import com.example.racehorse_transport.service.RefundService;
+import com.example.racehorse_transport.service.NotificationService;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.util.List;
@@ -49,6 +50,7 @@ public class RefundServiceImpl implements RefundService {
     private final QuotationRepository quotations;
     private final BookingStatusHistoryRepository history;
     private final ScheduleChangeService schedules;
+    private final NotificationService notifications;
 
     @Override
     @Transactional
@@ -131,7 +133,7 @@ public class RefundServiceImpl implements RefundService {
     public PaymentResponseDto markRefunded(Long paymentId, String username, MarkRefundedRequestDto request,
                                            MultipartFile receipt) {
         Long bookingId = payments.findBookingId(paymentId).orElseThrow(RefundServiceImpl::notFound);
-        bookings.findForUpdate(bookingId).orElseThrow(RefundServiceImpl::notFound);
+        Booking booking = bookings.findForUpdate(bookingId).orElseThrow(RefundServiceImpl::notFound);
         var refund = payments.findById(paymentId).filter(row -> row.getPaymentType() == PaymentType.REFUND)
                 .orElseThrow(RefundServiceImpl::notFound);
         if (refund.getStatus() != PaymentStatus.PENDING) {
@@ -154,6 +156,10 @@ public class RefundServiceImpl implements RefundService {
         refund.setPaymentMethod(PaymentMethod.BANK_TRANSFER);
         refund.setStatus(PaymentStatus.PAID);
         refund.setPaidAt(now);
+        notifications.notify(List.of(booking.getCustomer().getUser().getId()), bookingId,
+                "Đã ghi nhận hoàn tiền",
+                "Quản lý đã ghi nhận hoàn tiền cho đơn " + booking.getCode() + ".",
+                "/orders/" + bookingId);
         return PaymentResponseDto.from(refund);
     }
 

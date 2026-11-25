@@ -11,6 +11,7 @@ import com.example.racehorse_transport.entity.enums.AppUserStatus;
 import com.example.racehorse_transport.entity.enums.CrewAssignmentStatus;
 import com.example.racehorse_transport.entity.enums.EmploymentStatus;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
+import com.example.racehorse_transport.entity.enums.HealthStatus;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
@@ -72,7 +73,11 @@ public class HealthLogServiceImpl implements HealthLogService {
                 });
         log.setRecordedBy(recorder);
         log.setRecordedAt(clock.instant());
-        return HealthLogResponseDto.from(healthLogs.saveAndFlush(log));
+        HorseHealthLog saved = healthLogs.saveAndFlush(log);
+        if (saved.getHealthStatus() == HealthStatus.SICK || saved.getHealthStatus() == HealthStatus.CRITICAL) {
+            notifyCoordinatorsForHealth(line, saved.getHealthStatus());
+        }
+        return HealthLogResponseDto.from(saved);
     }
 
     // Người ghi trong tổ lái; xe đang ở điểm này; con ngựa đang trên xe ở điểm này
@@ -111,5 +116,15 @@ public class HealthLogServiceImpl implements HealthLogService {
         if (coordinators.isEmpty()) return;
         notifications.notify(coordinators, line.getBooking().getId(), "Ngựa bỏ uống hai lần dừng liền",
                 line.getHorse().getName() + " (đơn " + line.getBooking().getCode() + ") không uống nước ở hai lần dừng liền, đã chuyển sang theo dõi.", null);
+    }
+
+    private void notifyCoordinatorsForHealth(BookingHorse line, HealthStatus status) {
+        List<Long> coordinators = staff.findUserIdsByRoleAndStatus("COORDINATOR", AppUserStatus.ACTIVE);
+        if (coordinators.isEmpty()) return;
+        String label = status == HealthStatus.CRITICAL ? "Nguy cấp" : "Ốm";
+        notifications.notify(coordinators, line.getBooking().getId(),
+                "Sức khỏe ngựa " + label,
+                line.getHorse().getName() + " (đơn " + line.getBooking().getCode() + ") được ghi " + label + ".",
+                "/coordinator/incidents");
     }
 }
