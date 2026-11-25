@@ -125,7 +125,7 @@ Các dòng ghi **chờ migration** là lược đồ đích đã chốt ngày 23
 
 ## Danh sách bảng
 
-Danh sách dưới đây ghi mô hình gốc. Migration `V202611292000` bổ sung bảng `booking_specialist_history` ở nhóm 8 (mục 8.9).
+Mô hình gốc 59 bảng, ngày 25/11/2026 thêm `booking_specialist_history`, `hub_stall`, `health_check_task`, `coordinator_assignment_history` (mục 15 của PHUONG_AN_6_LUONG). Sơ đồ: [ERD](database/ERD.md).
 
 | Nhóm | Bảng | Số bảng |
 |---|---|---|
@@ -136,7 +136,7 @@ Danh sách dưới đây ghi mô hình gốc. Migration `V202611292000` bổ sun
 | 5. Xe | `vehicle_class`, `stall_type`, `vehicle` | 3 |
 | 6. Dịch vụ, bảng giá | `billable_service`, `price_list`, `price_item` | 3 |
 | 7. Quy định, giấy tờ yêu cầu | `country_rule`, `document_type`, `document_requirement` | 3 |
-| 8. Đơn hàng | `booking`, `booking_party`, `booking_address`, `booking_horse`, `booking_horse_service`, `booking_status_history`, `terms_acceptance`, `booking_rating` | 8 |
+| 8. Đơn hàng | `booking`, `booking_party`, `booking_address`, `booking_horse`, `booking_horse_service`, `booking_status_history`, `booking_specialist_history`, `terms_acceptance`, `booking_rating` | 9 |
 | 9. Vận hành | `vehicle_trip`, `trip_stop`, `crew_assignment`, `horse_leg`, `horse_stay`, `horse_health_log`, `hub_stall`, `health_check_task`, `coordinator_assignment_history` | 9 |
 | 10. Giao nhận | `handover`, `handover_horse`, `handover_document` | 3 |
 | 11. Bảo hiểm | `horse_insurance` | 1 |
@@ -144,7 +144,7 @@ Danh sách dưới đây ghi mô hình gốc. Migration `V202611292000` bổ sun
 | 13. Sự cố, chi phí | `incident`, `incident_plan`, `cost_item` | 3 |
 | 14. Chứng từ | `document` | 1 |
 | 15. Hỗ trợ | `notification`, `notification_recipient`, `audit_log`, `system_config`, `route_cache` | 5 |
-| | **Tổng** | **60** |
+| | **Tổng** | **63** |
 
 ---
 
