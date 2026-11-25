@@ -55,6 +55,11 @@ export const routes: AppRoute[] = [
 
   { path: '/manager', lazyPage: () => import('./features/manager/overview/OverviewPage'), roles: M, title: 'Tổng quan', layout: 'staff' },
   {
+    path: '/manager/assignments', roles: ['manager'], layout: 'staff', catalog: false,
+    lazyPage: () => Promise.all([import('./features/manager/assignments/AssignmentsPage'), managerTexts()]).then(([page]) => page),
+    get title() { return i18n.t('mgr.assignments.title') },
+  },
+  {
     path: '/manager/orders', roles: M, layout: 'staff', catalog: false,
     lazyPage: () => Promise.all([import('./features/manager/orders/ManagerOrdersPage'), managerTexts()]).then(([page]) => page), title: 'Đơn hàng',
   },

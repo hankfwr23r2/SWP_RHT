@@ -2,6 +2,7 @@ package com.example.racehorse_transport.dto.account;
 
 import com.example.racehorse_transport.entity.Location;
 import com.example.racehorse_transport.entity.Staff;
+import com.example.racehorse_transport.entity.enums.EmploymentStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -18,7 +19,8 @@ public record StaffAccountUpdateRequestDto(
         @NotNull LocalDate hireDate,
         @NotNull @Positive Long homeHubLocationId,
         @Size(max = 10) String driverLicenseClass,
-        LocalDate driverLicenseExpiryDate) {
+        LocalDate driverLicenseExpiryDate,
+        EmploymentStatus employmentStatus) {
 
     public void applyTo(Staff staff, Location hub) {
         staff.setStaffCode(staffCode.strip().toUpperCase(Locale.ROOT));

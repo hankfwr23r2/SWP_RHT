@@ -29,7 +29,7 @@ function MissingRow({ booking, id }: { booking: BookingOrder; id: number }) {
   const horseOf = (item: ChecklistItem) => data?.horses?.find(horse => horse.id === item.bookingHorseId)
   const canUpload = (item: ChecklistItem) => {
     const submitter = item.submitterType ?? item.requirement?.submitterType
-    return showsDocumentActions(booking.status) && item.requirement?.id != null && !!submitter && submitter !== 'CUSTOMER'
+    return data?.assignedToMe === true && showsDocumentActions(booking.status) && item.requirement?.id != null && !!submitter && submitter !== 'CUSTOMER'
       && !documentsFor(item, data?.checklist.documents ?? [], horseOf(item)?.horseId).some(document => document.status === 'UPLOADED')
   }
   const missing = data?.checklist.items?.filter(item => item.requirement?.mandatory && item.satisfied === false) ?? []
@@ -39,6 +39,7 @@ function MissingRow({ booking, id }: { booking: BookingOrder; id: number }) {
         <h2>{booking.code}</h2>
         <OrderStatusBadge status={booking.status} />
       </div>
+      <p>{booking.specialistName ? t('staffReview.assigned', { name: booking.specialistName }) : t('staffReview.unassigned')}</p>
       {booking.requestedPickupDate && <p>{t('staffReview.pickupDate', { date: showDate(booking.requestedPickupDate, i18n.language) })}</p>}
       {!loaded && <Skeleton lines={2} />}
       {error && <ErrorState onRetry={reload} />}

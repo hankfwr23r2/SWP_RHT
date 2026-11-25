@@ -19,6 +19,10 @@ public class BookingRuleException extends ResponseStatusException {
         return new BookingRuleException(HttpStatus.CONFLICT, null, message);
     }
 
+    public static BookingRuleException forbidden(String message) {
+        return new BookingRuleException(HttpStatus.FORBIDDEN, null, message);
+    }
+
     private BookingRuleException(HttpStatus status, String field, String message) {
         super(status, message);
         this.field = field;

@@ -155,9 +155,14 @@ class DispatchDtoTest {
         assertThat(mine.licensePlate()).isEqualTo("51C-12345");
         assertThat(mine.endLocationName()).isEqualTo("Hub Đà Nẵng");
 
-        var candidate = CrewCandidateResponseDto.from(assignment.getStaff());
+        var candidate = CrewCandidateResponseDto.from(assignment.getStaff(), assignment.getVehicleTrip().getEndLocation(), null);
         assertThat(candidate.roleCode()).isEqualTo("DRIVER");
         assertThat(candidate.homeHubName()).isEqualTo("Hub HCM");
+        assertThat(candidate.positionLocationName()).isEqualTo("Hub Đà Nẵng");
+        assertThat(candidate.positionTripCode()).isNull();
+        var onboard = CrewCandidateResponseDto.from(assignment.getStaff(), null, "VT-ABCDEFGH");
+        assertThat(onboard.positionLocationId()).isNull();
+        assertThat(onboard.positionTripCode()).isEqualTo("VT-ABCDEFGH");
     }
 
     @Test

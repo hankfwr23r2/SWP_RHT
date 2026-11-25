@@ -16,8 +16,8 @@ import s from '../Review.module.css'
 type Horse = NonNullable<BookingDetail['horses']>[number]
 const insuranceTone = { DRAFT: 'neutral', REVISION_REQUESTED: 'warning', CONFIRMED: 'success' } as const
 
-function HorseInsurance({ horse, editable, insurers, actions }: {
-  horse: Horse; editable: boolean; insurers?: Insurer[]; actions: ReviewActions
+function HorseInsurance({ horse, editable, canEdit, insurers, actions }: {
+  horse: Horse; editable: boolean; canEdit: boolean; insurers?: Insurer[]; actions: ReviewActions
 }) {
   const { t, i18n } = useTranslation()
   const [recording, setRecording] = useState(false)
@@ -61,7 +61,7 @@ function HorseInsurance({ horse, editable, insurers, actions }: {
           setRecording(true)
         }}>{t(coverageOption === 'PERSONAL' ? 'staffReview.recordPolicy' : 'staffReview.recordEvidence')}</Button> : null}
         <ActionButtons options={options} actions={actions} />
-        {horse.status === 'EXCLUDED' && status === 'CONFIRMED' && coverageOption === 'ARRANGED' && id != null &&
+        {canEdit && horse.status === 'EXCLUDED' && status === 'CONFIRMED' && coverageOption === 'ARRANGED' && id != null &&
           <Button size="sm" disabled={actions.busy} onClick={() => setRefunding(true)}>{t('staffReview.recordPremiumRefund')}</Button>}
       </div>
       {recording && id != null && insurance && insurers &&
@@ -72,16 +72,16 @@ function HorseInsurance({ horse, editable, insurers, actions }: {
   </li>
 }
 
-export function InsurancesCard({ horses, status, insurers, actions }: {
-  horses?: BookingDetail['horses']; status?: BookingStatus; insurers?: Insurer[]; actions: ReviewActions
+export function InsurancesCard({ horses, status, canEdit, insurers, actions }: {
+  horses?: BookingDetail['horses']; status?: BookingStatus; canEdit: boolean; insurers?: Insurer[]; actions: ReviewActions
 }) {
   const { t } = useTranslation()
   const reviewing = status === 'UNDER_REVIEW' || status === 'NEEDS_RESUBMISSION'
   const quoting = status === 'QUOTING'
   return <Card title={t('staffReview.insurance')}>
     {horses?.length ? <ul className={s.list}>{horses.map(horse =>
-      <HorseInsurance key={horse.id} horse={horse} insurers={insurers} actions={actions}
-        editable={horse.status === 'ACTIVE' && (reviewing || (quoting && horse.insurance?.coverageOption === 'ARRANGED'))} />
+      <HorseInsurance key={horse.id} horse={horse} canEdit={canEdit} insurers={insurers} actions={actions}
+        editable={canEdit && horse.status === 'ACTIVE' && (reviewing || (quoting && horse.insurance?.coverageOption === 'ARRANGED'))} />
     )}</ul> : <EmptyState title={t('staffReview.noHorses')} description={t('staffReview.noInsuranceHint')} />}
   </Card>
 }

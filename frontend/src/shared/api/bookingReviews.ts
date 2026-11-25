@@ -16,13 +16,12 @@ async function post<T>(path: string, body: unknown) {
 }
 
 export const bookingReviewsApi = {
-  summaries: async (status: BookingStatus, page: number) =>
-    (await apiClient.get<ApiResponse<BookingSummary[]>>('/bookings/summaries', { params: { statuses: status, page } })).data.data,
+  summaries: async (status: BookingStatus, page: number, mine = false) =>
+    (await apiClient.get<ApiResponse<BookingSummary[]>>('/bookings/summaries', { params: { statuses: status, page, mine } })).data.data,
   detail: async (id: number) =>
     (await apiClient.get<ApiResponse<BookingDetail>>(bookingPath(id) + '/review-detail')).data.data,
   missingDocuments: async () =>
     (await apiClient.get<ApiResponse<BookingOrder[]>>('/bookings/missing-documents')).data.data,
-  intake: (id: number) => post<BookingOrder>(bookingPath(id) + '/intake', {}),
   returnForResubmission: (id: number, body: Schemas['BookingReturnRequestDto']) =>
     post<BookingOrder>(bookingPath(id) + '/return-for-resubmission', body),
   reject: (id: number, body: Schemas['BookingRejectionRequestDto']) => post<BookingOrder>(bookingPath(id) + '/reject', body),

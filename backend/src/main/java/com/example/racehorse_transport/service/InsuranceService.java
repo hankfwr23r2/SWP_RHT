@@ -10,7 +10,7 @@ public interface InsuranceService {
     void recordPremiumRefund(Long bookingId, Long insuranceId,
             com.example.racehorse_transport.dto.booking.InsurancePremiumRefundRequestDto request, String username);
 
-    void recordEvidence(Long bookingId, Long insuranceId, com.example.racehorse_transport.dto.booking.InsuranceEvidenceRequestDto request);
+    void recordEvidence(Long bookingId, Long insuranceId, com.example.racehorse_transport.dto.booking.InsuranceEvidenceRequestDto request, String username);
 
     void confirm(Long bookingId, Long insuranceId, String username);
 

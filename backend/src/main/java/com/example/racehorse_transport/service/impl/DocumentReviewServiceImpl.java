@@ -35,7 +35,7 @@ public class DocumentReviewServiceImpl implements DocumentReviewService {
     private final BookingHorseRepository horses;
     private final DocumentRepository documents;
     private final DocumentRequirementRepository requirements;
-    private final StaffRepository staff;
+    private final BookingAssignmentService assignments;
     private final DocumentService attachments;
     private final DocumentCompletenessService completeness;
     private final NotificationService notifications;
@@ -107,8 +107,9 @@ public class DocumentReviewServiceImpl implements DocumentReviewService {
     public BookingDocumentResponseDto attachForPartner(Long bookingId, String username, PartnerDocumentUploadRequestDto request) {
         Booking booking = lockBooking(bookingId);
         DocumentRequirementResponseDto requirement = requirement(booking, request.requirementId());
+        var reviewer = assignments.requireAssigned(booking, username);
         DocumentReviewPolicy.requirePartnerUpload(booking.getStatus(), requirement.submitterType());
-        return attach(bookingId, request.toUploadRequest(), requirement, reviewer(username).getUserId(),
+        return attach(bookingId, request.toUploadRequest(), requirement, reviewer.getUserId(),
                 DocumentCompletenessPolicy.requiredOn(booking, businessDate(clock.instant())));
     }
 
@@ -157,6 +158,7 @@ public class DocumentReviewServiceImpl implements DocumentReviewService {
     private BookingDocumentResponseDto conclude(Long bookingId, Long documentId, String username,
             DocumentStatus outcome, String note) {
         Booking booking = lockBooking(bookingId);
+        var reviewer = assignments.requireAssigned(booking, username);
         DocumentReviewPolicy.requireStaffReview(booking.getStatus());
         Document document = documents.findForReviewUpdate(documentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy giấy tờ."));
@@ -167,17 +169,17 @@ public class DocumentReviewServiceImpl implements DocumentReviewService {
             throw new ResourceNotFoundException("Không tìm thấy giấy tờ của đơn.");
         }
         DocumentReviewPolicy.requireUploaded(document.getStatus());
-        document.setReviewedBy(reviewer(username));
+        document.setReviewedBy(reviewer);
         document.setReviewedAt(clock.instant());
         document.setReviewNote(note);
         document.setStatus(outcome);
         if (outcome == DocumentStatus.REJECTED) {
             boolean customer = document.getDocumentRequirement().getSubmitterType() == DocumentSubmitter.CUSTOMER;
             var recipients = customer ? List.of(booking.getCustomer().getUser().getId())
-                    : staff.findUserIdsByRoleAndStatus("SPECIALIST", AppUserStatus.ACTIVE);
+                    : assignments.recipients(booking);
             if (!recipients.isEmpty()) {
                 notifications.notify(recipients, bookingId, "Giấy tờ cần bổ sung", note,
-                        customer ? "/orders/" + bookingId : "/specialist/review/" + bookingId);
+                        customer ? "/orders/" + bookingId : assignments.reviewLink(booking));
             }
         }
         return BookingDocumentResponseDto.from(document);
@@ -197,11 +199,6 @@ public class DocumentReviewServiceImpl implements DocumentReviewService {
             throw new BookingRuleException("Không đọc được tệp giấy tờ.");
         }
         throw new BookingRuleException("Giấy tờ phải là tệp PDF, JPG hoặc PNG.");
-    }
-
-    private Staff reviewer(String username) {
-        return staff.findByUser_Username(username)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ nhân viên."));
     }
 
     private Booking lockBooking(Long id) {

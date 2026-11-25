@@ -5,6 +5,6 @@ import { useLoad } from '@shared/hooks/useLoad'
 export function useMissingChecklist(id: number) {
   return useLoad(async () => {
     const [checklist, detail] = await Promise.all([bookingDocumentsApi.checklist(id), bookingReviewsApi.detail(id)])
-    return { checklist, horses: detail.horses }
+    return { checklist, horses: detail.horses, assignedToMe: detail.assignedToMe }
   }, [id], { toastOnError: false })
 }

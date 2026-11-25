@@ -16,6 +16,7 @@ import com.example.racehorse_transport.dto.dispatch.DispatchVehicleResponseDto;
 import com.example.racehorse_transport.entity.enums.CrewRole;
 import com.example.racehorse_transport.entity.enums.VehicleTripType;
 import com.example.racehorse_transport.service.CrewAssignmentService;
+import com.example.racehorse_transport.service.CrewPositionService;
 import com.example.racehorse_transport.service.DispatchService;
 import com.example.racehorse_transport.service.HorseLegService;
 import com.example.racehorse_transport.service.TripGroupingService;
@@ -45,6 +46,7 @@ public class DispatchController {
 
     private final DispatchService dispatch;
     private final CrewAssignmentService crew;
+    private final CrewPositionService positions;
     private final HorseLegService horseLegs;
     private final TripGroupingService grouping;
     private final TripScheduleService schedules;
@@ -89,8 +91,9 @@ public class DispatchController {
     }
 
     @GetMapping("/dispatch/crew-candidates")
-    public ApiResponseDto<List<CrewCandidateResponseDto>> crewCandidates(@RequestParam CrewRole role) {
-        return ApiResponseDto.success(crew.candidates(role), "Nhân viên có thể phân công");
+    public ApiResponseDto<List<CrewCandidateResponseDto>> crewCandidates(@RequestParam CrewRole role,
+            @RequestParam(required = false) Long tripId) {
+        return ApiResponseDto.success(positions.candidates(role, tripId), "Nhân viên có thể phân công");
     }
 
     @GetMapping("/dispatch/bookings")

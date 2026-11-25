@@ -31,7 +31,7 @@ import com.example.racehorse_transport.policy.BookingReviewPolicy;
 import com.example.racehorse_transport.policy.InsuranceReviewPolicy;
 import com.example.racehorse_transport.policy.PickupMissPricingPolicy;
 import com.example.racehorse_transport.repository.BookingRepository;
-import com.example.racehorse_transport.repository.StaffRepository;
+import com.example.racehorse_transport.service.BookingAssignmentService;
 import com.example.racehorse_transport.service.AuditService;
 import com.example.racehorse_transport.service.BookingHorseService;
 import com.example.racehorse_transport.service.NotificationService;
@@ -56,7 +56,7 @@ public class InsuranceServiceImpl implements InsuranceService {
     private final TermsAcceptanceRepository terms;
     private final HorseInsuranceRepository insurances;
     private final BookingRepository bookings;
-    private final StaffRepository staff;
+    private final BookingAssignmentService assignments;
     private final NotificationService notifications;
     private final AuditService audit;
     private final Clock clock;
@@ -65,8 +65,7 @@ public class InsuranceServiceImpl implements InsuranceService {
     @Override
     @Transactional
     public void recordPremiumRefund(Long bookingId, Long insuranceId, InsurancePremiumRefundRequestDto request, String username) {
-        lockBooking(bookingId);
-        var actor = reviewer(username);
+        var actor = assignments.requireAssigned(lockBooking(bookingId), username);
         var insurance = insurances.findById(insuranceId)
                 .filter(row -> bookingId.equals(row.getBookingHorse().getBooking().getId()))
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bảo hiểm của đơn."));
@@ -85,8 +84,9 @@ public class InsuranceServiceImpl implements InsuranceService {
 
     @Override
     @Transactional
-    public void recordEvidence(Long bookingId, Long insuranceId, InsuranceEvidenceRequestDto request) {
+    public void recordEvidence(Long bookingId, Long insuranceId, InsuranceEvidenceRequestDto request, String username) {
         Booking booking = lockBooking(bookingId);
+        assignments.requireAssigned(booking, username);
         HorseInsurance insurance = editableInsurance(booking, insuranceId);
         InsuranceReviewPolicy.requireStatus(insurance, HorseInsuranceStatus.DRAFT);
         InsuranceReviewPolicy.validateEvidence(insurance.getCoverageOption(), request.coverageAmount(),
@@ -100,13 +100,14 @@ public class InsuranceServiceImpl implements InsuranceService {
     @Transactional
     public void confirm(Long bookingId, Long insuranceId, String username) {
         Booking booking = lockBooking(bookingId);
+        Staff actor = assignments.requireAssigned(booking, username);
         HorseInsurance insurance = editableInsurance(booking, insuranceId);
         InsuranceReviewPolicy.validateConfirmation(insurance, booking.getRequestedPickupDate(), departureDate(booking),
                 clock.instant());
         if (insurance.getCoverageOption() != InsuranceCoverageOption.NONE) {
             insurer(insurance.getInsurerParty().getId(), businessDate(clock.instant()));
         }
-        insurance.setConfirmedBy(reviewer(username));
+        insurance.setConfirmedBy(actor);
         insurance.setConfirmedAt(clock.instant());
         insurance.setStatus(HorseInsuranceStatus.CONFIRMED);
     }
@@ -132,10 +133,10 @@ public class InsuranceServiceImpl implements InsuranceService {
     @Transactional
     public void reopen(Long bookingId, Long insuranceId, String username, String reason) {
         Booking booking = lockBooking(bookingId);
+        Staff actor = assignments.requireAssigned(booking, username);
         HorseInsurance insurance = editableInsurance(booking, insuranceId);
         InsuranceReviewPolicy.requireStatus(insurance, HorseInsuranceStatus.CONFIRMED);
         String note = BookingReviewPolicy.requireReason(reason);
-        Staff actor = reviewer(username);
         insurance.setStatus(HorseInsuranceStatus.DRAFT);
         insurance.setConfirmedBy(null);
         insurance.setConfirmedAt(null);
@@ -148,12 +149,12 @@ public class InsuranceServiceImpl implements InsuranceService {
     @Transactional
     public void requestRevision(Long bookingId, Long insuranceId, String username, String reason) {
         Booking booking = lockBooking(bookingId);
+        Staff actor = assignments.requireAssigned(booking, username);
         requireReview(booking);
         HorseInsurance insurance = activeInsurance(bookingId, insuranceId);
         InsuranceReviewPolicy.requirePersonal(insurance);
         InsuranceReviewPolicy.requireStatus(insurance, HorseInsuranceStatus.DRAFT);
         String note = BookingReviewPolicy.requireReason(reason);
-        Staff actor = reviewer(username);
         insurance.setRevisionReason(note);
         insurance.setRevisionRequestedBy(actor);
         insurance.setRevisionRequestedAt(clock.instant());
@@ -182,10 +183,10 @@ public class InsuranceServiceImpl implements InsuranceService {
         insurance.setCoverageAmount(null);
         insurance.setCurrencyCode(null);
         insurance.setStatus(HorseInsuranceStatus.DRAFT);
-        Staff recipient = insurance.getRevisionRequestedBy();
-        if (recipient != null) {
-            notifications.notify(List.of(recipient.getUserId()), bookingId, "Hợp đồng bảo hiểm đã bổ sung",
-                    "Kiểm tra lại chứng từ bảo hiểm trong chi tiết đơn.", null);
+        var recipients = assignments.recipients(booking);
+        if (!recipients.isEmpty()) {
+            notifications.notify(recipients, bookingId, "Hợp đồng bảo hiểm đã bổ sung",
+                    "Kiểm tra lại chứng từ bảo hiểm trong chi tiết đơn.", assignments.reviewLink(booking));
         }
     }
 
@@ -222,11 +223,6 @@ public class InsuranceServiceImpl implements InsuranceService {
                 .filter(row -> row.getBookingHorse().getBooking().getId().equals(bookingId)
                         && row.getBookingHorse().getStatus() == BookingHorseStatus.ACTIVE)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bảo hiểm của đơn."));
-    }
-
-    private Staff reviewer(String username) {
-        return staff.findByUser_Username(username)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ nhân viên."));
     }
 
     @Override

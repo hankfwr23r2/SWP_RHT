@@ -1,5 +1,9 @@
 // Coordinator planning, dispatch, tracking and hub pages; loaded with the page
 export const staffDispatch = {
+  "crewPositions": {
+    "inVehicle": "On trip {{code}}",
+    "positionUnknown": "Location unknown"
+  },
   "tracking": {
     "balance": {
       "open": "Balance follow-up",

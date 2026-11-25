@@ -7,11 +7,13 @@ import { ActionBar } from '@backoffice/shared/ActionBar'
 import { BackButton } from '@backoffice/shared/BackButton'
 import { OrderStatusBadge } from '@shared/components/OrderStatusBadge'
 import { Button } from '@shared/ui/Button'
+import { Card } from '@shared/ui/Card'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { StaffBookingInfo } from '@backoffice/shared/StaffBookingInfo'
 import { CancelPanel } from './components/CancelPanel'
 import { DeliveryComplaintPanel } from './components/DeliveryComplaintPanel'
 import { DocumentDelayPanel } from './components/DocumentDelayPanel'
+import { ReassignSpecialist } from '@backoffice/shared/ReassignSpecialist'
 import { IntakePanel } from './components/IntakePanel'
 import { UnclaimedHorsePanel } from './components/UnclaimedHorsePanel'
 import { PaymentsPanel } from './components/PaymentsPanel'
@@ -44,7 +46,16 @@ export default function ManagerOrderPage() {
       {data.detail.reviewReason && <p className={s.alert}>{t('mgr.orders.reviewReason')} {data.detail.reviewReason}</p>}
       <div className={s.layout}>
         <div className={s.stack}>
-          <div id="order-intake" className={s.anchor}><IntakePanel data={data} /></div>
+          <div id="order-intake" className={s.anchor}>
+            <IntakePanel data={data} />
+            {status && status !== 'PENDING_INTAKE' && <Card title={t('mgr.assignments.specialist')}>
+              <div className={s.row}>
+                <span>{booking.specialistName ?? t('mgr.assignments.unassigned')}</span>
+                {!['COMPLETED', 'CANCELLED', 'REJECTED'].includes(status) &&
+                  <ReassignSpecialist id={data.id} currentId={booking.specialistId} />}
+              </div>
+            </Card>}
+          </div>
           <div id="order-quote" className={s.anchor}><QuotePanel data={data} /></div>
           <PaymentsPanel data={data} />
           <PickupMissPanel bookingId={data.id} mode="manager" renderAddOns={id => <PickupAddOnPanel horseId={id} />} />

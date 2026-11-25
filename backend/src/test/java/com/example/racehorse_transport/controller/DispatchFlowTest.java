@@ -1,6 +1,8 @@
 package com.example.racehorse_transport.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -219,7 +221,15 @@ class DispatchFlowTest {
         // Sau lượt trục tài xế đang ở Đà Nẵng
         long awayFromDriver = tripId(createTrip(localTripWith(other, hcm, hcm, "2031-03-05T06:00:00Z", "2031-03-05T09:00:00Z")));
         assign(awayFromDriver, driver, "DRIVER").andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message", startsWith("Nhân viên không ở điểm xuất phát")));
+                .andExpect(jsonPath("$.message", allOf(startsWith("Nhân viên không ở điểm xuất phát"),
+                        containsString(driver.getFullName()), containsString("Đà Nẵng"), containsString("TP.HCM"))));
+        String candidates = mvc.perform(get("/dispatch/crew-candidates").param("role", "DRIVER")
+                        .param("tripId", String.valueOf(awayFromDriver)).header(HttpHeaders.AUTHORIZATION, coordinator))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].positionLocationId").value(hcm))
+                .andReturn().getResponse().getContentAsString();
+        List<Number> locations = JsonPath.read(candidates, "$.data[?(@.staffId == " + driver.getUserId() + ")].positionLocationId");
+        assertThat(locations).extracting(Number::longValue).containsExactly(danang);
     }
 
     @Test

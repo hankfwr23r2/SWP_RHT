@@ -205,6 +205,13 @@ BEGIN
         VALUES (v_booking, v_quotation, 'DEPOSIT', v_deposit, 'VND', 'VNPAY', 'PAID', now() - interval '2 days'),
                (v_booking, v_quotation, 'BALANCE', v_total - v_deposit, 'VND', 'VNPAY', 'PAID', now() - interval '1 day');
 
+        -- Kiểm thử migration cũ nạp dữ liệu mẫu khi chưa có bảng này
+        IF to_regclass('booking_specialist_history') IS NOT NULL THEN
+            UPDATE booking SET specialist_id = v_specialist WHERE id = v_booking;
+            INSERT INTO booking_specialist_history (booking_id, to_staff_id, changed_by, changed_at)
+            VALUES (v_booking, v_specialist, v_manager, now() - interval '4 days');
+        END IF;
+
         INSERT INTO booking_status_history (booking_id, from_status, to_status, changed_by, changed_at, reason)
         VALUES (v_booking, NULL, 'PENDING_INTAKE', v_user, now() - interval '5 days', NULL),
                (v_booking, 'PENDING_INTAKE', 'UNDER_REVIEW', v_manager, now() - interval '4 days', NULL),

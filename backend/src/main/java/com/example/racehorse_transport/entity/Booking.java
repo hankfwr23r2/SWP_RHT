@@ -49,6 +49,10 @@ public class Booking {
     @Column(name = "id")
     private Long id;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "specialist_id")
+    private Staff specialist;
+
     @Column(name = "code", length = 30, nullable = false)
     private String code;
 

@@ -60,24 +60,25 @@ public class BookingQueryServiceImpl implements BookingQueryService {
     public BookingDetailResponseDto get(String username, Long id) {
         Booking booking = bookings.findByIdAndCustomer_User_Username(id, username)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn."));
-        return detail(booking, null);
+        return detail(booking, null, false);
     }
 
     @Override
-    public List<BookingResponseDto> reviewQueue() {
-        return bookings.findByStatusInOrderByCreatedAtAscIdAsc(List.of(
-                BookingStatus.PENDING_INTAKE,
-                BookingStatus.UNDER_REVIEW,
-                BookingStatus.NEEDS_RESUBMISSION))
-                .stream().map(BookingResponseDto::from).toList();
+    public List<BookingResponseDto> reviewQueue(String username) {
+        var statuses = List.of(BookingStatus.PENDING_INTAKE, BookingStatus.UNDER_REVIEW, BookingStatus.NEEDS_RESUBMISSION);
+        var rows = username == null ? bookings.findByStatusInOrderByCreatedAtAscIdAsc(statuses)
+                : bookings.findBySpecialist_User_UsernameAndStatusInOrderByCreatedAtAscIdAsc(username, statuses);
+        return rows.stream().map(BookingResponseDto::from).toList();
     }
 
     @Override
-    public List<BookingSummaryResponseDto> summaries(Set<BookingStatus> statuses, int page) {
+    public List<BookingSummaryResponseDto> summaries(Set<BookingStatus> statuses, int page, String username) {
         if (statuses.isEmpty() || page < 0) {
             throw new IllegalArgumentException("Chọn ít nhất một trạng thái và trang từ 0.");
         }
-        return summarize(bookings.findByStatusInOrderByCreatedAtDescIdDesc(statuses, PageRequest.of(page, PAGE_SIZE)));
+        var pagination = PageRequest.of(page, PAGE_SIZE);
+        return summarize(username == null ? bookings.findByStatusInOrderByCreatedAtDescIdDesc(statuses, pagination)
+                : bookings.findBySpecialist_User_UsernameAndStatusInOrderByCreatedAtDescIdDesc(username, statuses, pagination));
     }
 
     private List<BookingSummaryResponseDto> summarize(List<Booking> rows) {
@@ -92,10 +93,11 @@ public class BookingQueryServiceImpl implements BookingQueryService {
     }
 
     @Override
-    public BookingDetailResponseDto reviewDetail(Long id) {
-        Booking booking = bookings.findById(id)
+    public BookingDetailResponseDto reviewDetail(Long id, String username) {
+        Booking booking = bookings.findOneById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn."));
-        return detail(booking, intakeByName(id));
+        return detail(booking, intakeByName(id), booking.getSpecialist() != null
+                && booking.getSpecialist().getUser().getUsername().equals(username));
     }
 
     // Người đã tiếp nhận đơn. NULL khi đơn chưa được tiếp nhận
@@ -106,7 +108,7 @@ public class BookingQueryServiceImpl implements BookingQueryService {
         return actor == null ? null : staff.findById(actor.getId()).map(Staff::getFullName).orElse(actor.getUsername());
     }
 
-    private BookingDetailResponseDto detail(Booking booking, String intakeByName) {
+    private BookingDetailResponseDto detail(Booking booking, String intakeByName, boolean assignedToMe) {
         Long id = booking.getId();
         List<BookingHorse> rows = horses.findForDetail(id);
         String reason = history.findFirstByBooking_IdOrderByChangedAtDescIdDesc(id)
@@ -115,7 +117,7 @@ public class BookingQueryServiceImpl implements BookingQueryService {
                 .map(BookingStatusHistory::getReason).orElse(null);
         return BookingDetailResponseDto.from(booking, parties.findById_BookingId(id),
                 addresses.findAddressesForDetail(id), horseDetails(rows), reason, intakeByName, ratings.existsById(id),
-                bookings.findActiveBalanceHoldAt(id).orElse(null));
+                bookings.findActiveBalanceHoldAt(id).orElse(null), assignedToMe);
     }
 
     private List<HorseDetail> horseDetails(List<BookingHorse> rows) {

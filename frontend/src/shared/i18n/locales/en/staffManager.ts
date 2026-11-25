@@ -24,6 +24,22 @@ export const staffManager = {
     resolveEffect: 'The customer will see the decision and reason. The complaint will be closed.',
   },
   mgr: {
+    assignments: {
+      noStaffHint: 'Try again when a specialist is available.',
+      noBookingsHint: 'Select another specialist to view their assigned bookings.',
+      unassigned: 'No specialist assigned',
+      title: 'Assignments',
+      specialist: 'Specialist',
+      option: '{{name}} · {{count}} bookings',
+      noStaff: 'No active specialists.',
+      change: 'Change specialist',
+      changeHint: 'The selected specialist will take over and the previous specialist will be notified.',
+      saved: 'Assignment updated.',
+      intakeHint: 'The booking will move to review and the selected specialist will be notified.',
+      bookings: 'Assigned bookings',
+      noBookings: 'This specialist has no active bookings.',
+      showBookings: 'View assigned bookings',
+    },
     unclaimed: {
       title: 'Unclaimed horse resolution',
       outcome: 'Handover outcome',

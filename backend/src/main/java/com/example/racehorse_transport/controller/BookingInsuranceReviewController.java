@@ -18,8 +18,8 @@ public class BookingInsuranceReviewController {
 
     @PostMapping("/{insuranceId}/record-evidence")
     @PreAuthorize("hasRole('SPECIALIST')")
-    public ApiResponseDto<Void> recordEvidence(@PathVariable Long id, @PathVariable Long insuranceId, @Valid @RequestBody InsuranceEvidenceRequestDto request) {
-        insurance.recordEvidence(id, insuranceId, request);
+    public ApiResponseDto<Void> recordEvidence(@PathVariable Long id, @PathVariable Long insuranceId, @Valid @RequestBody InsuranceEvidenceRequestDto request, Authentication actor) {
+        insurance.recordEvidence(id, insuranceId, request, actor.getName());
         return ApiResponseDto.success(null, "Đã cập nhật bảo hiểm.");
     }
 

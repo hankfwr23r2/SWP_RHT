@@ -33,7 +33,7 @@ class AccountServiceTest {
         assertThat(encoder.matches(request.password(), users.findById(created.userId()).orElseThrow().getPasswordHash())).isTrue();
         assertThat(accounts.staffAccount(created.userId())).isEqualTo(created);
         var updated = accounts.updateStaffAccount(created.userId(), new StaffAccountUpdateRequestDto(
-                "STAFF-TEST", "Driver Updated", "0123", date, hub, null, null));
+                "STAFF-TEST", "Driver Updated", "0123", date, hub, null, null, null));
         assertThat(updated.username()).isEqualTo(created.username());
         assertThat(updated.fullName()).isEqualTo("Driver Updated");
         assertThat(accounts.staffAccounts()).contains(updated);
