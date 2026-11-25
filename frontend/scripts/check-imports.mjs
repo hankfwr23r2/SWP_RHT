@@ -21,7 +21,6 @@ const EXCEPTIONS = {
   R4: [
     'src/apps/backoffice/features/coordinator/fleet-plan/FleetPlanPage.tsx',
     'src/apps/backoffice/features/coordinator/fleet/FleetPage.tsx',
-    'src/apps/backoffice/features/manager/dashboard/OrderDetailModal.tsx',
     'src/apps/customer/features/auth/LoginPage.tsx',
   ],
   R6: [
