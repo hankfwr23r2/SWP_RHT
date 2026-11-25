@@ -10,6 +10,8 @@ import java.time.LocalDate;
 import java.util.Currency;
 
 public final class InsuranceReviewPolicy {
+    public static final String POLICY_DOCUMENT_CODE = "INSURANCE_POLICY";
+
     private InsuranceReviewPolicy() {}
 
     public static void requireStatus(HorseInsurance insurance, HorseInsuranceStatus status) {
@@ -71,8 +73,12 @@ public final class InsuranceReviewPolicy {
         }
     }
 
-    public static void validateConfirmation(HorseInsurance insurance, LocalDate pickup, LocalDate departure, Instant now) {
+    public static void validateConfirmation(HorseInsurance insurance, LocalDate pickup, LocalDate departure,
+            Instant now, boolean hasPolicyFile) {
         requireStatus(insurance, HorseInsuranceStatus.DRAFT);
+        if (insurance.getCoverageOption() == InsuranceCoverageOption.PERSONAL && !hasPolicyFile) {
+            throw BookingRuleException.conflict("Chưa có tệp hợp đồng bảo hiểm tự mua.");
+        }
         if (insurance.getCoverageOption() == InsuranceCoverageOption.NONE) {
             if (insurance.getWaiverTermsAcceptance() == null) {
                 throw BookingRuleException.conflict("Ngựa chưa có cam kết miễn trách.");

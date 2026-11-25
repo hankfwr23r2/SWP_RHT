@@ -70,6 +70,7 @@ export default function Step4ReviewPage() {
   }
 
   const serverError = (path: string) => fields[path]
+  const insuranceFileErrors = Object.fromEntries(Object.entries(fields).filter(([path]) => path.endsWith('.insurance.file')))
   const partyErrors = (role: PartyRole) => {
     const index = PARTY_ROLES.indexOf(role)
     const errors: Partial<Record<keyof PartyDraft, string>> = {}
@@ -145,6 +146,8 @@ export default function Step4ReviewPage() {
           <span className={s.row}>
             <Link to="/booking/route" className={s.link}>{t('bookingForm.review.checkRoute')}</Link>
             <Link to="/booking/horses" className={s.link}>{t('bookingForm.review.checkHorses')}</Link>
+            {Object.keys(insuranceFileErrors).length > 0 && <Link to="/booking/services" className={s.link}
+              state={{ insuranceFileErrors }}>{t('bookingForm.review.checkInsurance')}</Link>}
           </span>
         </div>
       )}

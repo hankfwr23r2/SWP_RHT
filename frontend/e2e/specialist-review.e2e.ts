@@ -121,6 +121,9 @@ async function open(page: Page, path: string, initialStatus: Status = 'UNDER_REV
       parties: [{ bookingRole: 'SHIPPER', fullName: 'Người gửi' }],
     })
     if (path === `${documentPath}/checklist`) return reply({ items, documents })
+    if (path === documentPath) return reply([...documents, {
+      id: 10, bookingHorseId: 21, typeCode: 'INSURANCE_POLICY', fileName: 'policy.pdf', fileUrl: 'https://example.test/policy.pdf',
+    }])
     if (path === '/parties/insurers') return reply([{ id: 7, displayName: 'Hãng A' }])
     return reply([])
   })
@@ -222,6 +225,7 @@ test('chuyên viên thu hồi giấy đã duyệt và thấy yêu cầu giấy t
 
 test('ghi báo giá và xác nhận bảo hiểm, mở lại, yêu cầu bổ sung và thử lại khi báo giá bị chặn', async ({ page }) => {
   const { calls, unblockQuote } = await open(page, detailPath)
+  await expect(page.getByRole('link', { name: 'Xem policy.pdf' })).toHaveAttribute('href', 'https://example.test/policy.pdf')
   await page.getByRole('button', { name: 'Ghi báo giá bảo hiểm', exact: true }).click()
   const evidence = page.getByRole('dialog')
   await evidence.getByRole('combobox').click()

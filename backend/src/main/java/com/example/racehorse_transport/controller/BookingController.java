@@ -14,9 +14,11 @@ import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/bookings")
@@ -28,12 +30,22 @@ public class BookingController {
     private final BookingQueryService queries;
     private final BookingRescheduleService reschedules;
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponseDto<BookingResponseDto> submit(@Valid @RequestBody BookingCreateRequestDto request,
                                                     Authentication authentication, HttpServletRequest httpRequest) {
         return ApiResponseDto.success(bookings.submit(authentication.getName(), httpRequest.getRemoteAddr(), request),
                 "Đã gửi đơn.");
+    }
+
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponseDto<BookingResponseDto> submitWithInsuranceFiles(
+            @Valid @RequestPart("request") BookingCreateRequestDto request,
+            @RequestPart(value = "insuranceFiles", required = false) List<MultipartFile> insuranceFiles,
+            Authentication authentication, HttpServletRequest httpRequest) {
+        return ApiResponseDto.success(bookings.submit(authentication.getName(), httpRequest.getRemoteAddr(), request,
+                insuranceFiles == null ? List.of() : insuranceFiles), "Đã gửi đơn.");
     }
 
     @GetMapping

@@ -61,7 +61,7 @@ class BookingReviewServiceTest {
             bookings, horses, documents, requirements, assignments, attachments, completeness, notifications, audit, CLOCK);
     private final InsuranceService insurance = new InsuranceServiceImpl(
             roles, mock(TermsAcceptanceRepository.class), insurances, bookings, assignments, notifications, audit, CLOCK,
-            bookingHorses);
+            bookingHorses, attachments);
     private final BookingStatusHistoryRepository history = mock(BookingStatusHistoryRepository.class);
     private final BookingStatusService statuses = mock(BookingStatusService.class);
     private BookingReviewService review;
@@ -332,9 +332,10 @@ class BookingReviewServiceTest {
         when(roles.findById(new PartyRoleId(8L, PartyRoleType.INSURER))).thenReturn(Optional.of(role));
         insurance.requestRevision(BOOKING_ID, INSURANCE_ID, "specialist", "Cập nhật hạn hợp đồng");
         insurance.revise(BOOKING_ID, INSURANCE_ID, "customer",
-                new PersonalInsuranceRevisionRequestDto(8L, "new-policy", PICKUP, replacement.getDepartureDate()));
+                new PersonalInsuranceRevisionRequestDto(8L, "new-policy", PICKUP, replacement.getDepartureDate()), FILE);
         insurance.recordEvidence(BOOKING_ID, INSURANCE_ID,
                 new InsuranceEvidenceRequestDto(8L, BigDecimal.TEN, null, "VND", null), "specialist");
+        when(insurances.hasPolicyFile(INSURANCE_ID, "INSURANCE_POLICY")).thenReturn(true);
         insurance.confirm(BOOKING_ID, INSURANCE_ID, "specialist");
         assertThat(review.startQuoting(BOOKING_ID, "specialist").status()).isEqualTo(QUOTING);
     }

@@ -123,6 +123,8 @@ export const staffReview = {
     "recordEvidence": "Ghi báo giá bảo hiểm",
     "recordPolicy": "Ghi thông tin từ hợp đồng",
     "policyNumber": "Số hợp đồng",
+    "policyFile": "Tệp hợp đồng bảo hiểm",
+    "policyFileMissing": "Chưa có tệp hợp đồng.",
     "validFrom": "Hiệu lực từ",
     "validTo": "Hiệu lực đến",
     "waiver": "Cam kết miễn trách",

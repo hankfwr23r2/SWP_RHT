@@ -119,12 +119,20 @@ test('bổ sung giấy và bảo hiểm rồi gửi lại đơn', async ({ page 
   await expect(dialog).toHaveCount(0)
   await page.getByLabel(/Số hợp đồng/).fill('P2')
   await page.getByRole('button', { name: 'Lưu bổ sung' }).click()
+  await expect(page.getByText('Vui lòng điền mục này.', { exact: true })).toBeVisible()
+  expect(calls).toHaveLength(1)
+  await page.getByLabel('Tệp hợp đồng bảo hiểm').setInputFiles({
+    name: 'updated.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.7'),
+  })
+  await page.getByRole('button', { name: 'Lưu bổ sung' }).click()
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Lưu bổ sung' }).click()
   await expect(page.getByText('Đã lưu bảo hiểm.')).toBeVisible()
   await page.getByRole('button', { name: 'Gửi lại đơn' }).click()
   await page.getByRole('alertdialog').getByRole('button', { name: 'Gửi lại đơn' }).click()
   await expect(page.getByText('Đang thẩm định').first()).toBeVisible()
   expect(calls.map(call => call.path)).toEqual(['/bookings/8/documents/upload', '/bookings/8/insurances/31/revise', '/bookings/8/resubmit'])
-  expect(calls[1].body).toEqual({ insurerPartyId: 3, policyNumber: 'P2', validFrom: '2099-01-01', validTo: '2099-02-01' })
+  expect(calls[1].body).toEqual(expect.stringContaining('"policyNumber":"P2"'))
+  expect(calls[1].body).toEqual(expect.stringContaining('name="file"; filename="updated.pdf"'))
 })
 
 test('đổi chuyến: không hiện chuyến cũ, ngày đón trước ngày xuất phát', async ({ page }) => {

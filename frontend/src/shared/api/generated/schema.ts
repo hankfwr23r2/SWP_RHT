@@ -397,7 +397,7 @@ export interface paths {
         };
         get: operations["list_5"];
         put?: never;
-        post: operations["submit"];
+        post: operations["submitWithInsuranceFiles"];
         delete?: never;
         options?: never;
         head?: never;
@@ -541,7 +541,7 @@ export interface paths {
         };
         get: operations["view"];
         put?: never;
-        post: operations["submit_1"];
+        post: operations["submit"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8610,7 +8610,7 @@ export interface operations {
             };
         };
     };
-    submit: {
+    submitWithInsuranceFiles: {
         parameters: {
             query?: never;
             header?: never;
@@ -8620,6 +8620,10 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["BookingCreateRequestDto"];
+                "multipart/form-data": {
+                    insuranceFiles?: string[];
+                    request: components["schemas"]["BookingCreateRequestDto"];
+                };
             };
         };
         responses: {
@@ -8844,7 +8848,7 @@ export interface operations {
             };
         };
     };
-    submit_1: {
+    submit: {
         parameters: {
             query?: never;
             header?: never;
@@ -9860,9 +9864,13 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
+        requestBody?: {
             content: {
-                "application/json": components["schemas"]["PersonalInsuranceRevisionRequestDto"];
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file?: string;
+                    request: components["schemas"]["PersonalInsuranceRevisionRequestDto"];
+                };
             };
         };
         responses: {

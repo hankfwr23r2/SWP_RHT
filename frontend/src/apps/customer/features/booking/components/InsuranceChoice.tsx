@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import type { Insurer } from '@shared/api/catalog'
+import { documentUploadError } from '@shared/lib/documentUpload'
 import { Field } from '@shared/ui/Field'
 import { Input } from '@shared/ui/Input'
 import { PolicyLink } from '@shared/ui/PolicyLink'
@@ -12,20 +13,23 @@ interface Props {
   choice: HorseChoice
   insurers: Insurer[]
   missing: boolean
+  fileError?: string
   onChange: (patch: Partial<HorseChoice>) => void
 }
 
-export function InsuranceChoice({ horseId, choice, insurers, missing, onChange }: Props) {
+export function InsuranceChoice({ horseId, choice, insurers, missing, fileError, onChange }: Props) {
   const { t } = useTranslation()
   const required = (value: string) => missing && !value.trim() ? t('bookingForm.required') : undefined
   const badRange = !!choice.validFrom && !!choice.validTo && choice.validFrom > choice.validTo
+  const invalidFile = choice.policyFile && documentUploadError(choice.policyFile)
   return (
     <fieldset className={s.group}>
       <legend>{t('bookingForm.services.insurance')}</legend>
       <div className={s.options}>
         {(['ARRANGED', 'PERSONAL', 'NONE'] as const).map(option => (
           <label key={option} className={s.option}>
-            <input type="radio" name={`insurance-${horseId}`} checked={choice.coverage === option} onChange={() => onChange({ coverage: option })} />
+            <input type="radio" name={`insurance-${horseId}`} checked={choice.coverage === option}
+              onChange={() => onChange({ coverage: option, policyFile: undefined })} />
             <strong>{t(`bookingForm.services.coverage.${option}`)}</strong>
             <span>{t(`bookingForm.services.coverageHint.${option}`)}</span>
           </label>
@@ -47,6 +51,14 @@ export function InsuranceChoice({ horseId, choice, insurers, missing, onChange }
           </Field>
           <Field label={t('bookingForm.services.validTo')} required error={badRange ? t('bookingForm.services.badRange') : required(choice.validTo)}>
             {control => <Input {...control} type="date" value={choice.validTo} min={choice.validFrom || undefined} onChange={event => onChange({ validTo: event.target.value })} />}
+          </Field>
+          <Field label={t('bookingForm.services.policyFile')} required
+            hint={choice.policyFile?.name ?? t('bookingForm.services.policyFileHint')}
+            error={fileError ?? (invalidFile ? t('bookingForm.services.policyFileInvalid') : required(choice.policyFile?.name ?? ''))}>
+            {control => <Input {...control} type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={event => {
+              onChange({ policyFile: event.target.files?.[0] })
+              event.target.value = ''
+            }} />}
           </Field>
         </div>
       )}

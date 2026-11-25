@@ -25,6 +25,16 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 
     @Query("""
             SELECT d FROM Document d JOIN FETCH d.documentType
+                JOIN FETCH d.horseInsurance i JOIN FETCH i.bookingHorse h
+            WHERE h.booking.id = :bookingId AND d.documentType.code = :typeCode
+                AND d.id = (SELECT MAX(previous.id) FROM Document previous
+                            WHERE previous.horseInsurance = i AND previous.documentType = d.documentType)
+            ORDER BY d.id
+            """)
+    List<Document> findLatestInsuranceDocuments(Long bookingId, String typeCode);
+
+    @Query("""
+            SELECT d FROM Document d JOIN FETCH d.documentType
             WHERE d.horse.id IN (SELECT h.horse.id FROM BookingHorse h WHERE h.booking.id = :bookingId AND h.status = ACTIVE)
                 AND d.documentRequirement IS NULL AND d.status = APPROVED
             ORDER BY d.id

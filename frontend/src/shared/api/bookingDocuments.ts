@@ -8,6 +8,8 @@ export type ChecklistItem = Schemas['Item']
 export type BookingDocument = Schemas['BookingDocumentResponseDto']
 
 export const bookingDocumentsApi = {
+  list: async (id: number) =>
+    (await apiClient.get<ApiResponse<BookingDocument[]>>(`/bookings/${id}/documents`)).data.data,
   checklist: async (id: number) =>
     (await apiClient.get<ApiResponse<DocumentChecklist>>(`/bookings/${id}/documents/checklist`)).data.data,
   approve: async (id: number, documentId: number) =>

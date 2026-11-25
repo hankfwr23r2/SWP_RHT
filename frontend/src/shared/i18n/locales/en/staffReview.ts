@@ -123,6 +123,8 @@ export const staffReview = {
     "recordEvidence": "Record insurance quote",
     "recordPolicy": "Record policy details",
     "policyNumber": "Policy number",
+    "policyFile": "Insurance policy file",
+    "policyFileMissing": "No policy file has been uploaded.",
     "validFrom": "Valid from",
     "validTo": "Valid until",
     "waiver": "Liability waiver",

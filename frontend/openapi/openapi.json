@@ -10798,12 +10798,30 @@
         "tags" : [ "booking-controller" ]
       },
       "post" : {
-        "operationId" : "submit",
+        "operationId" : "submitWithInsuranceFiles",
         "requestBody" : {
           "content" : {
             "application/json" : {
               "schema" : {
                 "$ref" : "#/components/schemas/BookingCreateRequestDto"
+              }
+            },
+            "multipart/form-data" : {
+              "schema" : {
+                "properties" : {
+                  "insuranceFiles" : {
+                    "items" : {
+                      "format" : "binary",
+                      "type" : "string"
+                    },
+                    "type" : "array"
+                  },
+                  "request" : {
+                    "$ref" : "#/components/schemas/BookingCreateRequestDto"
+                  }
+                },
+                "required" : [ "request" ],
+                "type" : "object"
               }
             }
           },
@@ -11109,7 +11127,7 @@
         "tags" : [ "delivery-complaint-controller" ]
       },
       "post" : {
-        "operationId" : "submit_1",
+        "operationId" : "submit",
         "parameters" : [ {
           "in" : "path",
           "name" : "bookingId",
@@ -12538,13 +12556,22 @@
         } ],
         "requestBody" : {
           "content" : {
-            "application/json" : {
+            "multipart/form-data" : {
               "schema" : {
-                "$ref" : "#/components/schemas/PersonalInsuranceRevisionRequestDto"
+                "properties" : {
+                  "file" : {
+                    "format" : "binary",
+                    "type" : "string"
+                  },
+                  "request" : {
+                    "$ref" : "#/components/schemas/PersonalInsuranceRevisionRequestDto"
+                  }
+                },
+                "required" : [ "request" ],
+                "type" : "object"
               }
             }
-          },
-          "required" : true
+          }
         },
         "responses" : {
           "200" : {

@@ -64,7 +64,7 @@ Các nhánh phụ: Cần bổ sung, Báo giá hết hạn, Cần chọn lại ch
 - Với đơn đi trục, khách chọn **xe công ty đến đón** hay **tự chở tới hub**; **xe công ty giao** hay **tự đến hub nhận**. Hệ thống tính đường thật; quá xa thì khóa lựa chọn xe công ty và nói lý do.
 - Khách chọn **ngày đón**, muộn nhất là một ngày trước ngày chuyến chạy, để ngựa kịp về hub nghỉ đêm. Màn 1 cũng liệt kê giấy khách phải nộp.
 - **Màn 2, ngựa.** Khách chọn ngựa, loại khoang từng con (thường hoặc rộng), số bữa, chỉ dẫn ăn uống, có gửi kèm thức ăn hay không. Ngựa đang nằm trong đơn khác thì bị khóa, ghi rõ mã đơn.
-- **Màn 3, dịch vụ và bảo hiểm.** Khách chọn dịch vụ thêm và cách bảo hiểm cho **từng con**: đã có, nhờ công ty mua, hoặc không mua. Không mua thì phải tích đồng ý điều khoản trách nhiệm hạn chế cho con đó.
+- **Màn 3, dịch vụ và bảo hiểm.** Khách chọn dịch vụ thêm và cách bảo hiểm cho **từng con**: đã có, nhờ công ty mua, hoặc không mua. Nếu đã có, khách khai số hợp đồng, thời hạn và chọn tệp hợp đồng để nộp cùng đơn. Không mua thì phải tích đồng ý điều khoản trách nhiệm hạn chế cho con đó.
 - **Màn 4, xem lại và gửi.** Khách khai bốn vai: người gửi, người nhận, người trả tiền, liên hệ khẩn cấp. Có thể ghi lưu ý đường vào và **hạn mức chi khẩn cấp** (khi ngựa gặp sự cố trên đường, công ty được chi tới mức này mà không cần hỏi trước). Đồng ý điều khoản rồi gửi đơn.
 - Suốt 4 màn, khách luôn thấy **giá tạm tính** do máy chủ tính, và bản nháp được giữ khi quay lại màn trước.
 - Khi đơn được gửi, hệ thống **giữ chỗ ngay** trên chuyến, đặt trạng thái **Chờ tiếp nhận**, báo khách "Đã nhận đơn" và báo quản lý.
@@ -309,7 +309,7 @@ Hai đợt chuẩn bị giấy tờ **chạy song song với luồng 1** và k�
 - Ngay khi khách chọn nơi đón, nơi giao và ngày đón (luồng 1, màn 1), hệ thống tra quy định đang hiệu lực **vào ngày đón** và hiện danh sách giấy khách phải nộp. Giấy khác do công ty và đại lý lo, khách không phải tìm.
 - Đơn **trong tỉnh** không cần giấy nào.
 - Đơn quốc tế: có giấy phụ thuộc cửa khẩu, nên danh sách chỉ chắc chắn khi đơn đã gắn chuyến.
-- Khách **chưa phải nộp ngay**: gửi đơn xong mới nộp, trong trang chi tiết đơn.
+- Khách nộp giấy theo quy định trong trang chi tiết sau khi gửi đơn. Tệp hợp đồng bảo hiểm tự có được nộp cùng đơn ở màn Dịch vụ và bảo hiểm.
 
 ### Bước 2. Khách nộp giấy
 
@@ -329,10 +329,10 @@ Hai đợt chuẩn bị giấy tờ **chạy song song với luồng 1** và k�
 
 Lúc đặt đơn khách đã chọn một trong ba cách cho mỗi con. Chuyên viên xử lý tiếp:
 
-- **Khách tự có.** Khách đã khai số hợp đồng và thời hạn. Chuyên viên chọn công ty bảo hiểm, ghi số tiền bảo hiểm theo chứng từ. Thời hạn phải phủ **cả ngày đón và ngày chuyến chạy**. Sai hoặc thiếu thì bấm **Yêu cầu bổ sung** kèm lý do; khách sửa trong trang đơn, chuyên viên được báo và kiểm lại.
+- **Khách tự có.** Khi đặt đơn, khách khai số hợp đồng, thời hạn và nộp tệp PDF, JPG hoặc PNG (tối đa 5 MB) cho từng con. Tệp `INSURANCE_POLICY` gắn với bảo hiểm của con đó trong đơn. Chuyên viên xem tệp mới nhất ở mục Bảo hiểm, chọn công ty bảo hiểm và ghi số tiền theo chứng từ. Thời hạn phải phủ **cả ngày đón và ngày chuyến chạy**. Sai hoặc thiếu thì chuyên viên được giao đơn bấm **Yêu cầu bổ sung** kèm lý do. Khách sửa thông tin và nộp tệp mới trong trang đơn, sau đó chuyên viên được giao nhận thông báo để kiểm lại.
 - **Nhờ công ty mua hộ.** Chuyên viên xin giá từ công ty bảo hiểm, ghi số tiền bảo hiểm, **phí** và **hạn hiệu lực của báo giá hãng**. Phí này vào báo giá của đơn thành khoản thu hộ, khách trả đủ ngay trong tiền cọc.
 - **Không mua.** Khách đã ký cam kết trách nhiệm hạn chế cho riêng con đó lúc đặt đơn. Chuyên viên chỉ kiểm có cam kết.
-- Cả ba trường hợp, chuyên viên phải bấm **Xác nhận bảo hiểm** cho từng con. Xác nhận nhầm thì **mở lại** kèm lý do, hệ thống ghi nhật ký.
+- Cả ba trường hợp, chuyên viên được giao đơn phải bấm **Xác nhận bảo hiểm** cho từng con. Bảo hiểm tự có phải có tệp hợp đồng mới xác nhận được. Xác nhận nhầm thì **mở lại** kèm lý do, hệ thống ghi nhật ký.
 
 ### Bước 5. Chốt đợt 1, chuyển sang báo giá
 
@@ -447,7 +447,7 @@ Tiếp ví dụ chuyến chạy **05:00 thứ Ba 08/12** (liên tỉnh), khách 
 ### Bảo hiểm
 
 - **2.13** Mỗi con phải có **một lựa chọn** bảo hiểm và phải được **xác nhận** trước khi báo giá.
-- **2.14** Bảo hiểm tự có phải phủ ngày đón và ngày chuyến chạy. Đơn chạy thẳng chỉ xét ngày đón.
+- **2.14** Bảo hiểm tự có phải có tệp hợp đồng khi khai báo và khi bổ sung. Máy chủ kiểm có tệp trước khi xác nhận. Thời hạn phải phủ ngày đón và ngày chuyến chạy. Đơn chạy thẳng chỉ xét ngày đón.
 - **2.15** Bảo hiểm mua hộ: báo giá hãng tính bằng VND và còn hạn **lúc xác nhận, lúc bắt đầu báo giá và lúc gửi báo giá**. Hạn này cũng giới hạn thời gian khách trả cọc (điểm 1.28).
 - **2.16** Phí mua hộ **thu trọn trong tiền cọc**, vì phải nộp đủ cho hãng thì hợp đồng mới có hiệu lực. Công ty không cộng lời.
 - **2.17** Không mua bảo hiểm: khách ký cam kết **cho từng con**, hệ thống lưu phiên bản điều khoản, thời điểm và địa chỉ mạng.
@@ -468,7 +468,7 @@ Tiếp ví dụ chuyến chạy **05:00 thứ Ba 08/12** (liên tỉnh), khách 
 |---|---|---|---|
 | T14 | 2 | Khách nộp lại giấy đang chờ duyệt | Không nhận, báo giấy đang chờ duyệt hoặc còn hiệu lực |
 | T15 | 3 | Giấy bị từ chối hoặc thu hồi | Báo đúng bên nộp kèm lý do, cho nộp lại theo điều kiện ở mục 2.8 |
-| T16 | 4 | Hợp đồng khách tự có không phủ ngày chuyến chạy | Không cho xác nhận. Chuyên viên yêu cầu bổ sung, khách sửa hợp đồng |
+| T16 | 4 | Bảo hiểm khách tự có thiếu tệp hợp đồng hoặc hợp đồng không phủ ngày chuyến chạy | Không cho xác nhận. Chuyên viên được giao đơn yêu cầu bổ sung, khách sửa thông tin và nộp tệp hợp đồng |
 | T17 | 4 | Báo giá của hãng bảo hiểm hết hạn khi chưa gửi báo giá cho khách | Chặn lập hoặc gửi báo giá, báo tên ngựa. Chuyên viên cập nhật và xác nhận báo giá hãng, sau đó quản lý lập lại bản nháp |
 | T18 | 5 | Đơn quốc tế chưa gắn chuyến nên chưa biết cửa khẩu | Coi là chưa đủ giấy, chưa cho báo giá |
 | T19 | 6 | Sổ tiêm của khách hết hạn sau khi đã cọc | Đơn hiện lại ở Đơn thiếu giấy; khách nộp bản mới, chuyên viên duyệt |
@@ -480,7 +480,7 @@ Tiếp ví dụ chuyến chạy **05:00 thứ Ba 08/12** (liên tỉnh), khách 
 ## 2.F. Điểm còn hở, cần nhóm quyết
 
 1. **Đã sửa.** Nhắc thiếu giấy và báo giấy bị từ chối theo bên nộp. Giấy khách nộp báo khách. Giấy của công ty, người nhận hoặc đại lý báo chuyên viên.
-2. **Không có chỗ tải tệp hợp đồng bảo hiểm.** Khách tự có chỉ khai số hợp đồng và ngày; chuyên viên không có tệp để kiểm. Loại giấy "Hợp đồng bảo hiểm" đã khai nhưng chưa dùng.
+2. **Đã sửa.** Khách phải nộp tệp hợp đồng lúc khai báo và lúc bổ sung bảo hiểm tự có. Màn thẩm định hiện tệp mới nhất của từng con. Chuyên viên được giao đơn chỉ xác nhận được khi có tệp.
 3. **Đã sửa.** Giấy được duyệt phải còn hiệu lực đến hết mốc ngày chạy của chuyến hoặc ngày đón của đơn chạy thẳng.
 4. **Đã sửa.** Khi đơn Đang báo giá (T17), chuyên viên mở lại bảo hiểm mua hộ kèm lý do, ghi báo giá hãng mới và xác nhận. Quản lý lập lại bản nháp theo phí mới.
 5. **Đã sửa.** Chuyên viên thu hồi giấy đã duyệt trước khi nhận ngựa, bắt buộc ghi lý do, lưu kiểm toán và báo bên nộp. Hệ thống chặn xuất phát hoặc nhận ngựa nếu đơn thiếu giấy bắt buộc. Giấy đã theo xe thì xử lý qua sự cố giấy tờ.

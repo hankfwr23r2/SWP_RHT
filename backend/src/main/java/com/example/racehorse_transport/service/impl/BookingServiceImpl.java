@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -55,8 +56,19 @@ public class BookingServiceImpl implements BookingService {
     @Override
     @Transactional
     public BookingResponseDto submit(String username, String ipAddress, BookingCreateRequestDto request) {
+        return submit(username, ipAddress, request, List.of());
+    }
+
+    @Override
+    @Transactional
+    public BookingResponseDto submit(String username, String ipAddress, BookingCreateRequestDto request,
+            List<MultipartFile> insuranceFiles) {
         Instant now = clock.instant();
         BookingSubmissionPolicy.validate(request, now);
+        long personalCount = request.horses().stream().filter(BookingServiceImpl::hasPersonalInsurance).count();
+        if (insuranceFiles.size() != personalCount) {
+            throw new BookingRuleException("Cần đúng một tệp hợp đồng bảo hiểm cho mỗi con ngựa có bảo hiểm tự mua.");
+        }
         Customer customer = customers.findSubmittingCustomer(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ khách hàng."));
 
@@ -77,9 +89,20 @@ public class BookingServiceImpl implements BookingService {
         details.saveAddress(resolved.pickup(), resolved.pickupProvince(), booking);
         List<BookingAddress> deliveryPlaces = resolved.deliveryPlaces().stream()
                 .map(place -> details.saveAddress(place.address(), place.province(), booking)).toList();
-        for (HorseInput input : request.horses()) {
-            details.saveHorse(input, selectedHorses.get(input.horseId()), booking, deliveryPlaces.get(input.selectedDeliveryPlace()), ipAddress,
-                    BookingSubmissionPolicy.businessDate(now));
+        // Các phần insuranceFiles lặp lại theo thứ tự những con chọn PERSONAL trong request.horses.
+        var files = insuranceFiles.iterator();
+        for (int index = 0; index < request.horses().size(); index++) {
+            HorseInput input = request.horses().get(index);
+            MultipartFile file = hasPersonalInsurance(input) ? files.next() : null;
+            try {
+                details.saveHorse(input, selectedHorses.get(input.horseId()), booking,
+                        deliveryPlaces.get(input.selectedDeliveryPlace()), ipAddress, BookingSubmissionPolicy.businessDate(now), file);
+            } catch (BookingRuleException failure) {
+                if ("file".equals(failure.getField())) {
+                    throw new BookingRuleException("horses[" + index + "].insurance.file", failure.getReason());
+                }
+                throw failure;
+            }
         }
         details.acceptServiceTerms(booking, ipAddress);
         if (departure != null) {
@@ -88,6 +111,10 @@ public class BookingServiceImpl implements BookingService {
         }
         statusHistory.recordInitialStatus(booking);
         return BookingResponseDto.from(booking);
+    }
+
+    private static boolean hasPersonalInsurance(HorseInput horse) {
+        return horse.insurance().coverageOption() == InsuranceCoverageOption.PERSONAL;
     }
 
     private Map<Long, Horse> lockAvailableHorses(BookingCreateRequestDto request, Customer customer) {

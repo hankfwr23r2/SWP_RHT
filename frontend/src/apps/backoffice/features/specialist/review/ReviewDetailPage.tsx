@@ -42,12 +42,13 @@ function ReviewDetail({ id, detail, data }: {
     </div>
     <p>{booking?.specialistName ? t('staffReview.assigned', { name: booking.specialistName }) : t('staffReview.unassigned')}</p>
     {reviewReason && <p>{t('staffReview.reviewReason', { reason: reviewReason })}</p>}
-    {(!data.insurers || !data.stallTypes) && <ErrorState onRetry={data.reload} retrying={state !== 'idle'} />}
+    {(!data.insurers || !data.stallTypes || !data.documents) && <ErrorState onRetry={data.reload} retrying={state !== 'idle'} />}
     <OrderFacts detail={detail} stallTypes={data.stallTypes} />
     {data.checklist
       ? <DocumentsCard checklist={data.checklist} horses={detail.horses} status={detail.assignedToMe ? status : undefined} actions={actions} />
       : <Card title={t('staffReview.documents')}><ErrorState onRetry={data.reload} retrying={state !== 'idle'} /></Card>}
-    <InsurancesCard horses={detail.horses} status={status} canEdit={detail.assignedToMe === true} insurers={data.insurers} actions={actions} />
+    <InsurancesCard horses={detail.horses} status={status} canEdit={detail.assignedToMe === true} insurers={data.insurers}
+      documents={data.documents} actions={actions} />
     {detail.assignedToMe && <ActionBar next={next}>{options.length > 0 && <ActionButtons options={options} actions={actions} />}</ActionBar>}
   </>
 }

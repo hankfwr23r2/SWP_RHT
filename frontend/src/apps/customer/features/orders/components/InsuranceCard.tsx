@@ -1,15 +1,17 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { bookingOrdersApi, type BookingDetail } from '@shared/api/bookingOrders'
+import type { BookingDetail } from '@shared/api/bookingOrders'
 import { catalogApi } from '@shared/api/catalog'
 import { useLoad } from '@shared/hooks/useLoad'
+import { documentUploadError } from '@shared/lib/documentUpload'
 import { Button } from '@shared/ui/Button'
 import { Card } from '@shared/ui/Card'
+import { ConfirmDialog } from '@shared/ui/ConfirmDialog'
 import { Field } from '@shared/ui/Field'
 import { Input } from '@shared/ui/Input'
 import { Select } from '@shared/ui/Select'
 import type { OrderData } from '../loaders'
-import { useOrderAction } from '../useOrderAction'
+import { useInsuranceRevision } from '../useInsuranceRevision'
 import s from '../Orders.module.css'
 
 type HorseDetail = NonNullable<BookingDetail['horses']>[number]
@@ -28,47 +30,71 @@ export function InsuranceCard({ data }: { data: OrderData }) {
 
 function RevisionForm({ bookingId, horse }: { bookingId: number; horse: HorseDetail }) {
   const { t } = useTranslation()
-  const { run, busy, error } = useOrderAction()
   const insurers = useLoad(catalogApi.insurers, [], { toastOnError: false })
   const insurance = horse.insurance!
+  const { save, busy, error, fields, clearErrors } = useInsuranceRevision(bookingId, insurance.id!)
   const [form, setForm] = useState({
     insurerPartyId: insurance.insurerPartyId ? String(insurance.insurerPartyId) : '',
     policyNumber: insurance.policyNumber ?? '', validFrom: insurance.validFrom ?? '', validTo: insurance.validTo ?? '',
   })
   const [submitted, setSubmitted] = useState(false)
-  const set = (patch: Partial<typeof form>) => setForm(current => ({ ...current, ...patch }))
+  const [file, setFile] = useState<File>()
+  const [confirming, setConfirming] = useState(false)
+  const set = (patch: Partial<typeof form>) => {
+    setForm(current => ({ ...current, ...patch }))
+    clearErrors()
+  }
   const missing = (value: string) => submitted && !value.trim() ? t('bookingForm.required') : undefined
   const badRange = !!form.validFrom && !!form.validTo && form.validFrom > form.validTo
+  const invalidFile = file && documentUploadError(file)
 
-  const save = async () => {
+  const review = () => {
     setSubmitted(true)
-    if (Object.values(form).some(value => !value.trim()) || badRange) return
-    await run(() => bookingOrdersApi.reviseInsurance(bookingId, insurance.id!, {
+    if (Object.values(form).some(value => !value.trim()) || badRange || !file || invalidFile) return
+    setConfirming(true)
+  }
+
+  const send = async () => {
+    if (!file) return
+    setConfirming(false)
+    await save({
       insurerPartyId: Number(form.insurerPartyId), policyNumber: form.policyNumber.trim(), validFrom: form.validFrom, validTo: form.validTo,
-    }), t('myOrders.insurance.saved'))
+    }, file)
   }
 
   return (
     <div className={s.stack}>
       <p className={s.error}><strong>{horse.horseName}:</strong> {insurance.revisionReason}</p>
       <div className={s.options}>
-        <Field label={t('bookingForm.services.insurer')} required error={missing(form.insurerPartyId)}>
+        <Field label={t('bookingForm.services.insurer')} required error={fields.insurerPartyId ?? missing(form.insurerPartyId)}>
           {control => <Select {...control} value={form.insurerPartyId} onChange={insurerPartyId => set({ insurerPartyId })}
             placeholder={t('myOrders.insurance.chooseInsurer')}
             options={(insurers.data ?? []).map(insurer => ({ value: String(insurer.id), label: insurer.displayName ?? '' }))} />}
         </Field>
-        <Field label={t('bookingForm.services.policyNumber')} required error={missing(form.policyNumber)}>
+        <Field label={t('bookingForm.services.policyNumber')} required error={fields.policyNumber ?? missing(form.policyNumber)}>
           {control => <Input {...control} maxLength={50} value={form.policyNumber} onChange={event => set({ policyNumber: event.target.value })} />}
         </Field>
-        <Field label={t('bookingForm.services.validFrom')} required error={missing(form.validFrom)}>
+        <Field label={t('bookingForm.services.validFrom')} required error={fields.validFrom ?? missing(form.validFrom)}>
           {control => <Input {...control} type="date" value={form.validFrom} onChange={event => set({ validFrom: event.target.value })} />}
         </Field>
-        <Field label={t('bookingForm.services.validTo')} required error={badRange ? t('bookingForm.services.badRange') : missing(form.validTo)}>
+        <Field label={t('bookingForm.services.validTo')} required
+          error={fields.validTo ?? (badRange ? t('bookingForm.services.badRange') : missing(form.validTo))}>
           {control => <Input {...control} type="date" value={form.validTo} onChange={event => set({ validTo: event.target.value })} />}
         </Field>
+        <Field label={t('bookingForm.services.policyFile')} required
+          hint={file?.name ?? t('bookingForm.services.policyFileHint')}
+          error={fields.file ?? (invalidFile ? t('bookingForm.services.policyFileInvalid') : missing(file?.name ?? ''))}>
+          {control => <Input {...control} type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={event => {
+            setFile(event.target.files?.[0])
+            clearErrors()
+            event.target.value = ''
+          }} />}
+        </Field>
       </div>
-      {error && <p className={s.error} role="alert">{error}</p>}
-      <div><Button variant="primary" loading={busy} onClick={save}>{t('myOrders.insurance.save')}</Button></div>
+      {error && !Object.keys(fields).length && <p className={s.error} role="alert">{error}</p>}
+      <div><Button variant="primary" loading={busy} onClick={review}>{t('myOrders.insurance.save')}</Button></div>
+      {confirming && <ConfirmDialog title={t('myOrders.insurance.confirmTitle')} message={t('myOrders.insurance.confirmMessage')}
+        confirmLabel={t('myOrders.insurance.save')} onConfirm={send} onCancel={() => setConfirming(false)} />}
     </div>
   )
 }

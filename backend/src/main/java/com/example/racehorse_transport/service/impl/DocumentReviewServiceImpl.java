@@ -5,9 +5,7 @@ import com.example.racehorse_transport.dto.booking.BookingDocumentChecklistRespo
 import com.example.racehorse_transport.dto.booking.BookingDocumentChecklistResponseDto.Item;
 import com.example.racehorse_transport.policy.DocumentCompletenessPolicy;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
-import java.util.Arrays;
 import com.example.racehorse_transport.dto.booking.DocumentUploadRequestDto;
 import com.example.racehorse_transport.dto.booking.PartnerDocumentUploadRequestDto;
 import com.example.racehorse_transport.dto.booking.DocumentApprovalRequestDto;
@@ -19,12 +17,15 @@ import com.example.racehorse_transport.exception.BookingRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.BookingReviewPolicy;
 import com.example.racehorse_transport.policy.DocumentReviewPolicy;
+import com.example.racehorse_transport.policy.InsuranceReviewPolicy;
 import com.example.racehorse_transport.repository.*;
 import com.example.racehorse_transport.service.*;
+import com.example.racehorse_transport.util.FileFormats;
 import static com.example.racehorse_transport.policy.BookingSubmissionPolicy.businessDate;
 import java.time.Clock;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,7 +51,11 @@ public class DocumentReviewServiceImpl implements DocumentReviewService {
         if (!bookings.existsById(bookingId)) {
             throw new ResourceNotFoundException("Không tìm thấy đơn.");
         }
-        return documents.findForBookingReview(bookingId).stream().map(BookingDocumentResponseDto::from).toList();
+        return Stream.concat(
+                documents.findForBookingReview(bookingId).stream().map(BookingDocumentResponseDto::from),
+                documents.findLatestInsuranceDocuments(bookingId, InsuranceReviewPolicy.POLICY_DOCUMENT_CODE).stream()
+                        .map(row -> BookingDocumentResponseDto.from(row, row.getHorseInsurance().getBookingHorse().getId())))
+                .toList();
     }
 
     @Override
@@ -236,12 +241,7 @@ public class DocumentReviewServiceImpl implements DocumentReviewService {
 
     private static void requireSupportedFile(MultipartFile file) {
         try (var input = file.getInputStream()) {
-            byte[] header = input.readNBytes(8);
-            if (Arrays.equals(header, new byte[] {(byte) 0x89, 'P', 'N', 'G', 13, 10, 26, 10})
-                    || (header.length >= 5 && "%PDF-".equals(new String(header, 0, 5,
-                            StandardCharsets.US_ASCII)))
-                    || (header.length >= 3 && header[0] == (byte) 0xff
-                            && header[1] == (byte) 0xd8 && header[2] == (byte) 0xff)) {
+            if (FileFormats.isPdfJpegOrPng(input)) {
                 return;
             }
         } catch (IOException failure) {

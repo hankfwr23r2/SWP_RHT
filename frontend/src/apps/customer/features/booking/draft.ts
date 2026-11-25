@@ -18,6 +18,7 @@ export interface HorseChoice {
   coverage: CoverageOption | ''
   insurerPartyId: string
   policyNumber: string
+  policyFile?: File
   validFrom: string
   validTo: string
   acceptedWaiver: boolean
@@ -91,9 +92,12 @@ function getSnapshot(): BookingDraft {
 
 const subscribe = (fn: () => void) => { listeners.add(fn); return () => { listeners.delete(fn) } }
 
-function write(next: BookingDraft | null) {
+// File objects stay in the current tab's memory while moving between steps.
+const serialize = (draft: BookingDraft) => JSON.stringify(draft, (key, value: unknown) =>
+  key === 'policyFile' ? undefined : value)
+
+function write(next: BookingDraft | null, raw = next && serialize(next)) {
   const key = draftKey()
-  const raw = next && JSON.stringify(next)
   try { if (raw) sessionStorage.setItem(key, raw); else sessionStorage.removeItem(key) } catch { /* giữ trong bộ nhớ */ }
   lastKey = key
   lastRaw = raw
@@ -104,7 +108,10 @@ function write(next: BookingDraft | null) {
 export function saveDraft(patch: Partial<BookingDraft>) {
   const current = getSnapshot()
   const next = { ...current, ...patch }
-  if (JSON.stringify(next) !== JSON.stringify(current)) write(next)
+  const raw = serialize(next)
+  if (raw !== serialize(current) || next.horseIds.some(id => next.horses[id]?.policyFile !== current.horses[id]?.policyFile)) {
+    write(next, raw)
+  }
 }
 
 export const clearDraft = () => write(null)

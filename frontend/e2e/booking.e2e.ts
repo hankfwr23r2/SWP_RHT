@@ -13,7 +13,8 @@ const departure = {
 }
 
 async function open(page: Page, options: { feasible?: boolean; rejectFirst?: boolean; transfer?: object; noRules?: boolean; multiDelivery?: boolean } = {}) {
-  const state = { created: [] as Record<string, unknown>[], priced: [] as Record<string, unknown>[], busy: 'BK-KHAC' as string | undefined }
+  const state = { created: [] as Record<string, unknown>[], multipart: [] as string[],
+    priced: [] as Record<string, unknown>[], busy: 'BK-KHAC' as string | undefined }
   await page.addInitScript(() => {
     sessionStorage.setItem('SWP_SESSION_customer', JSON.stringify({ role: 'customer', name: 'Khách thử', username: 'customer.test' }))
     localStorage.setItem('SWP_ACCESS_TOKEN_customer', `e30.${btoa(JSON.stringify({ exp: 4102444800 }))}.x`)
@@ -57,6 +58,10 @@ async function open(page: Page, options: { feasible?: boolean; rejectFirst?: boo
       return reply({ total: 12_500_000, depositRate: 0.3, lines: [{ priceItemId: 1, serviceCode: 'LINEHAUL', amount: 12_500_000 }] })
     }
     if (path === '/bookings' && request.method() === 'POST') {
+      if (request.headers()['content-type']?.includes('multipart/form-data')) {
+        state.multipart.push(request.postData() ?? '')
+        return reply({ id: 99, code: 'BK-TEST' })
+      }
       state.created.push(request.postDataJSON())
       if (options.rejectFirst && state.created.length === 1) {
         return route.fulfill({ status: 400, json: { status: 'error', message: 'Dữ liệu nhập vào không hợp lệ', data: { 'parties[0].phone': 'Số điện thoại không hợp lệ.' } } })
@@ -122,6 +127,40 @@ test('đặt đơn liên tỉnh từ đầu tới cuối, chỉ gửi lựa ch�
   })
   expect(JSON.stringify(state.created[0])).not.toMatch(/amount|total|unitPrice/)
   expect(state.priced.at(-1)).toMatchObject({ pickupAddressId: 1, deliveryAddressId: 2, departureId: 7 })
+})
+
+test('bảo hiểm tự có cần tệp hợp đồng và giữ tệp khi quay lại bước bảo hiểm', async ({ page }) => {
+  const state = await open(page)
+  await chooseRoute(page)
+  const next = page.getByRole('button', { name: /Tiếp tục/ })
+  await next.click()
+  await page.getByRole('checkbox', { name: /Gió Nam/ }).check()
+  await next.click()
+  await page.getByText('Tôi đã có bảo hiểm').click()
+  await page.getByLabel(/Số hợp đồng/).fill('P-TEST')
+  await page.getByLabel(/Hiệu lực từ/).fill('2099-01-01')
+  await page.getByLabel(/Hiệu lực tới/).fill('2099-02-01')
+  await next.click()
+  await expect(page.getByRole('alert')).toContainText('Vui lòng điền mục này.')
+  expect(state.multipart).toHaveLength(0)
+  await page.getByLabel('Tệp hợp đồng bảo hiểm').setInputFiles({
+    name: 'policy.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.7'),
+  })
+  await next.click()
+  await page.getByRole('link', { name: 'Quay lại' }).click()
+  await expect(page.getByText('policy.pdf')).toBeVisible()
+  await next.click()
+  const mine = page.getByRole('button', { name: 'Dùng thông tin của tôi' })
+  for (let i = 0; i < 4; i++) {
+    await mine.nth(i).click()
+    await expect(page.getByLabel(/Số điện thoại/).nth(i)).toHaveValue('0900000000')
+  }
+  await page.getByRole('checkbox', { name: /Tôi đồng ý với/ }).check()
+  await send(page)
+  await expect(page.getByRole('heading', { name: 'Đã gửi đơn BK-TEST' })).toBeVisible()
+  expect(state.multipart).toHaveLength(1)
+  expect(state.multipart[0]).toContain('"coverageOption":"PERSONAL"')
+  expect(state.multipart[0]).toContain('name="insuranceFiles"; filename="policy.pdf"')
 })
 
 test('xe công ty không tới được nơi đón thì khóa lựa chọn, nói lý do và chuyển sang tự chở', async ({ page }) => {

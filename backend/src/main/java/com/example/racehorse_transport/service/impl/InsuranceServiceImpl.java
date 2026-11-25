@@ -24,6 +24,7 @@ import com.example.racehorse_transport.dto.booking.PersonalInsuranceRevisionRequ
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.enums.BookingHorseStatus;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
+import com.example.racehorse_transport.entity.enums.DocumentSubject;
 import com.example.racehorse_transport.entity.enums.InsuranceCoverageOption;
 import com.example.racehorse_transport.entity.enums.PickupMissLiability;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
@@ -34,8 +35,12 @@ import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.service.BookingAssignmentService;
 import com.example.racehorse_transport.service.AuditService;
 import com.example.racehorse_transport.service.BookingHorseService;
+import com.example.racehorse_transport.service.DocumentService;
 import com.example.racehorse_transport.service.NotificationService;
+import com.example.racehorse_transport.util.FileFormats;
 import static com.example.racehorse_transport.policy.BookingSubmissionPolicy.businessDate;
+import static com.example.racehorse_transport.policy.InsuranceReviewPolicy.POLICY_DOCUMENT_CODE;
+import java.io.IOException;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.Instant;
@@ -47,6 +52,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -61,6 +67,7 @@ public class InsuranceServiceImpl implements InsuranceService {
     private final AuditService audit;
     private final Clock clock;
     private final BookingHorseService bookingHorses;
+    private final DocumentService documents;
 
     @Override
     @Transactional
@@ -102,8 +109,10 @@ public class InsuranceServiceImpl implements InsuranceService {
         Booking booking = lockBooking(bookingId);
         Staff actor = assignments.requireAssigned(booking, username);
         HorseInsurance insurance = editableInsurance(booking, insuranceId);
+        boolean hasPolicyFile = insurance.getCoverageOption() == InsuranceCoverageOption.PERSONAL
+                && insurances.hasPolicyFile(insuranceId, POLICY_DOCUMENT_CODE);
         InsuranceReviewPolicy.validateConfirmation(insurance, booking.getRequestedPickupDate(), departureDate(booking),
-                clock.instant());
+                clock.instant(), hasPolicyFile);
         if (insurance.getCoverageOption() != InsuranceCoverageOption.NONE) {
             insurer(insurance.getInsurerParty().getId(), businessDate(clock.instant()));
         }
@@ -168,7 +177,8 @@ public class InsuranceServiceImpl implements InsuranceService {
 
     @Override
     @Transactional
-    public void revise(Long bookingId, Long insuranceId, String username, PersonalInsuranceRevisionRequestDto request) {
+    public void revise(Long bookingId, Long insuranceId, String username, PersonalInsuranceRevisionRequestDto request,
+            MultipartFile file) {
         Booking booking = lockBooking(bookingId);
         if (!booking.getCustomer().getUser().getUsername().equals(username)) {
             throw missingBooking();
@@ -179,7 +189,9 @@ public class InsuranceServiceImpl implements InsuranceService {
         InsuranceReviewPolicy.requireStatus(insurance, HorseInsuranceStatus.REVISION_REQUESTED);
         InsuranceReviewPolicy.validatePeriod(request.validFrom(), request.validTo(),
                 booking.getRequestedPickupDate(), departureDate(booking));
-        request.applyTo(insurance, insurer(request.insurerPartyId(), businessDate(clock.instant())));
+        Party insurer = insurer(request.insurerPartyId(), businessDate(clock.instant()));
+        attachPolicyFile(insurance, file, booking.getCustomer().getUserId());
+        request.applyTo(insurance, insurer);
         insurance.setCoverageAmount(null);
         insurance.setCurrencyCode(null);
         insurance.setStatus(HorseInsuranceStatus.DRAFT);
@@ -227,7 +239,8 @@ public class InsuranceServiceImpl implements InsuranceService {
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
-    public void declare(BookingHorse horse, InsuranceDeclarationRequestDto request, LocalDate submittedOn, String ipAddress) {
+    public void declare(BookingHorse horse, InsuranceDeclarationRequestDto request, LocalDate submittedOn,
+            String ipAddress, MultipartFile file) {
         InsuranceDeclarationPolicy.validate(request);
         HorseInsurance insurance = switch (request.coverageOption()) {
             case PERSONAL -> request.toEntity(horse, insurer(request.insurerPartyId(), submittedOn), null);
@@ -236,6 +249,23 @@ public class InsuranceServiceImpl implements InsuranceService {
         };
         insurance.setStatus(HorseInsuranceStatus.DRAFT);
         insurances.save(insurance);
+        if (request.coverageOption() == InsuranceCoverageOption.PERSONAL) {
+            attachPolicyFile(insurance, file, horse.getBooking().getCustomer().getUserId());
+        }
+    }
+
+    private void attachPolicyFile(HorseInsurance insurance, MultipartFile file, Long customerId) {
+        if (file == null || file.isEmpty()) {
+            throw new BookingRuleException("file", "Cần tải tệp hợp đồng bảo hiểm tự mua.");
+        }
+        try (var input = file.getInputStream()) {
+            if (!FileFormats.isPdfJpegOrPng(input)) {
+                throw new BookingRuleException("file", "Hợp đồng bảo hiểm phải là tệp PDF, JPG hoặc PNG.");
+            }
+        } catch (IOException failure) {
+            throw new BookingRuleException("file", "Không đọc được tệp hợp đồng bảo hiểm.");
+        }
+        documents.attach(file, POLICY_DOCUMENT_CODE, DocumentSubject.INSURANCE, insurance.getId(), customerId);
     }
 
     private Party insurer(Long id, LocalDate submittedOn) {
