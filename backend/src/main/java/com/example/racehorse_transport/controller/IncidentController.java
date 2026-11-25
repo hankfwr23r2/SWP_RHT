@@ -80,6 +80,12 @@ public class IncidentController {
         return ApiResponseDto.success(incidents.reject(id, request, authentication.getName()), "Đã từ chối phương án");
     }
 
+    @PostMapping("/incidents/{id}/rest-start")
+    @PreAuthorize("hasRole('ESCORT')")
+    public ApiResponseDto<IncidentResponseDto> startRest(@PathVariable Long id, Authentication authentication) {
+        return ApiResponseDto.success(incidents.startRest(id, authentication.getName()), "Đã bắt đầu cho ngựa nghỉ");
+    }
+
     @PostMapping("/incidents/{id}/fit-confirmation")
     @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT', 'COORDINATOR')")
     public ApiResponseDto<IncidentResponseDto> confirmFit(@PathVariable Long id, Authentication authentication) {

@@ -2,12 +2,17 @@ package com.example.racehorse_transport.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.example.racehorse_transport.PostgresIntegrationTest;
+import com.example.racehorse_transport.client.CloudinaryClient;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.repository.LocationRepository;
@@ -26,6 +31,8 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,6 +50,7 @@ class IncidentFlowTest {
     @Autowired private LocationRepository locations;
     @Autowired private EntityManager entityManager;
     @Autowired private CostItemService costService;
+    @MockitoBean private CloudinaryClient cloudinary;
 
     private String coordinator;
     private String manager;
@@ -113,6 +121,8 @@ class IncidentFlowTest {
         mvc.perform(post("/incident-plans/{id}/approve", plan2).header(HttpHeaders.AUTHORIZATION, manager)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("PLAN_ACTIVE")).andExpect(jsonPath("$.data.plans[1].status").value("APPROVED"));
 
+        act(escort, "/incidents/" + incident + "/rest-start").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Sự cố này không yêu cầu xác nhận đủ sức."));
         act(coordinator, "/incidents/" + incident + "/resolve").andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("RESOLVED")).andExpect(jsonPath("$.data.plans[1].status").value("DONE"));
         act(coordinator, "/incidents/" + incident + "/close").andExpect(status().isOk()).andExpect(jsonPath("$.data.status").value("CLOSED"));
@@ -131,20 +141,54 @@ class IncidentFlowTest {
         mvc.perform(get("/notifications/mine").header(HttpHeaders.AUTHORIZATION, coordinator))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[?(@.title == 'Sự cố mới')]").isNotEmpty());
-        act(escort, "/incidents/" + incident + "/fit-confirmation").andExpect(status().isConflict())
+        String restPath = "/incidents/" + incident + "/rest-start";
+        String fitPath = "/incidents/" + incident + "/fit-confirmation";
+        act(escort, restPath).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Phương án xử lý chưa được duyệt."));
+        act(escort, fitPath).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Phương án xử lý chưa được duyệt."));
         long plan = ((Number) JsonPath.read(propose(incident, "VET_TREATMENT", party("Phòng khám thú y ngựa (mẫu)")).andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString(), "$.data.plans[0].id")).longValue();
         mvc.perform(post("/incident-plans/{id}/approve", plan).header(HttpHeaders.AUTHORIZATION, manager)).andExpect(status().isOk());
 
-        act(escort, "/incidents/" + incident + "/fit-confirmation").andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Ngựa chưa được nghỉ và chăm sóc đủ 30 phút."));
-        act(coordinator, "/incidents/" + incident + "/resolve").andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Chưa xác nhận ngựa đủ sức khỏe đi tiếp."));
+        Staff driverStaff = testData.staff(testData.unique("incident.driver"), "DRIVER");
+        String driver = token(driverStaff, "DRIVER");
+        String otherEscort = token(testData.staff(testData.unique("incident.other-escort"), "ESCORT"), "ESCORT");
+        jdbc.update("""
+                INSERT INTO crew_assignment (vehicle_trip_id, staff_id, crew_role, status)
+                VALUES (?, ?, 'DRIVER', 'ACKNOWLEDGED')
+                """, trip, driverStaff.getUserId());
         entityManager.flush();
         jdbc.update("UPDATE incident SET reported_at = now() - interval '40 minutes' WHERE id = ?", incident);
         entityManager.clear();
-        act(escort, "/incidents/" + incident + "/fit-confirmation").andExpect(status().isOk()).andExpect(jsonPath("$.data.fitConfirmedAt").exists());
+        act(escort, fitPath).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Chưa bắt đầu cho ngựa nghỉ."));
+        act(driver, restPath).andExpect(status().isForbidden());
+        act(otherEscort, restPath).andExpect(status().isForbidden());
+
+        String rest = act(escort, restPath).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        Instant startedAt = Instant.parse(JsonPath.read(rest, "$.data.restStartedAt"));
+        assertThat(Instant.parse(JsonPath.read(rest, "$.data.fitEligibleAt"))).isEqualTo(startedAt.plusSeconds(1800));
+        act(escort, restPath).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Đã bắt đầu cho ngựa nghỉ."));
+        act(escort, fitPath).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Ngựa chưa được nghỉ và chăm sóc đủ 30 phút."));
+        act(coordinator, "/incidents/" + incident + "/resolve").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Chưa xác nhận ngựa đủ sức khỏe đi tiếp."));
+
+        backdateRest(incident);
+        addEvidence(incident, "INCIDENT_PHOTO");
+        act(escort, fitPath).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Cần ảnh con ngựa trước khi xác nhận đủ sức."));
+        uploadFitPhoto(incident, otherEscort, "image/jpeg").andExpect(status().isForbidden());
+        uploadFitPhoto(incident, escort, "application/pdf").andExpect(status().isBadRequest());
+        when(cloudinary.uploadFile(any(), anyString())).thenReturn("https://cdn.example/fit-check.jpg");
+        uploadFitPhoto(incident, escort, "image/jpeg").andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[?(@.documentTypeCode == 'FIT_CHECK_PHOTO')]").isNotEmpty());
+        act(driver, fitPath).andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Chỉ hộ tống của lượt xe được xác nhận ngựa đủ sức đi tiếp."));
+        act(otherEscort, fitPath).andExpect(status().isForbidden());
+        act(escort, fitPath).andExpect(status().isOk()).andExpect(jsonPath("$.data.fitConfirmedAt").exists());
         act(coordinator, "/incidents/" + incident + "/resolve").andExpect(status().isOk()).andExpect(jsonPath("$.data.status").value("RESOLVED"));
     }
 
@@ -276,14 +320,22 @@ class IncidentFlowTest {
                 .andReturn().getResponse().getContentAsString(), "$.data.plans[0].id")).longValue();
         act(manager, "/incident-plans/" + plan + "/approve").andExpect(status().isOk());
         entityManager.flush();
-        jdbc.update("UPDATE incident SET horse_leg_id = null, reported_at = now() - interval '40 minutes' WHERE id = ?", incident);
+        jdbc.update("UPDATE incident SET horse_leg_id = null WHERE id = ?", incident);
         jdbc.update("UPDATE vehicle_trip SET status = 'COMPLETED', actual_end_at = now() WHERE id = ?", trip);
         entityManager.clear();
 
         addEvidence(incident, "INCIDENT_PHOTO");
-        act(coordinator, "/incidents/" + incident + "/fit-confirmation").andExpect(status().isConflict());
+        String fitPath = "/incidents/" + incident + "/fit-confirmation";
+        act(coordinator, fitPath).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Cần tải kết quả thú y trước khi xác nhận thay."));
         addEvidence(incident, "VET_REPORT");
-        act(coordinator, "/incidents/" + incident + "/fit-confirmation").andExpect(status().isOk())
+        // Tổ lái không còn trên lượt nên không ai bấm bắt đầu nghỉ: điều phối xác nhận thay đếm từ lúc báo sự cố
+        act(coordinator, fitPath).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Ngựa chưa được nghỉ và chăm sóc đủ 30 phút."));
+        entityManager.flush();
+        jdbc.update("UPDATE incident SET reported_at = now() - interval '40 minutes' WHERE id = ?", incident);
+        entityManager.clear();
+        act(coordinator, fitPath).andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.requiresFit").value(true)).andExpect(jsonPath("$.data.fitConfirmedAt").exists());
         cost(incident, "VET", "150000", true).andExpect(status().isCreated());
     }
@@ -312,6 +364,18 @@ class IncidentFlowTest {
                 INSERT INTO document (document_type_id, file_url, file_name, uploaded_by, status, incident_id)
                 SELECT id, 'test://' || code, code || '.pdf', ?, 'UPLOADED', ? FROM document_type WHERE code = ?
                 """, coordinatorId, incidentId, type);
+    }
+
+    private void backdateRest(long incidentId) {
+        entityManager.flush();
+        jdbc.update("UPDATE incident SET rest_started_at = now() - interval '40 minutes' WHERE id = ?", incidentId);
+        entityManager.clear();
+    }
+
+    private ResultActions uploadFitPhoto(long incidentId, String token, String contentType) throws Exception {
+        var file = new MockMultipartFile("file", "sao-mai.jpg", contentType, new byte[] {1, 2, 3});
+        return mvc.perform(multipart("/incidents/{id}/photos", incidentId).file(file).param("documentType", "FIT_CHECK_PHOTO")
+                .header(HttpHeaders.AUTHORIZATION, token));
     }
 
     private ResultActions report(Long horseLeg, String type, String cause) throws Exception {

@@ -21,6 +21,12 @@ public final class IncidentPolicy {
         return type == IncidentType.HEALTH || (type == IncidentType.ACCIDENT && hasHorse);
     }
 
+    public static void requireFitConfirmation(IncidentType type, boolean hasHorse) {
+        if (!requiresFit(type, hasHorse)) {
+            throw new DispatchRuleException("incidentType", "Sự cố này không yêu cầu xác nhận đủ sức.", true);
+        }
+    }
+
     public static void requireReportable(VehicleTripStatus status, IncidentType type, boolean hasHorse) {
         if (status != VehicleTripStatus.IN_PROGRESS) {
             throw new DispatchRuleException("vehicleTripId", "Chỉ báo sự cố khi lượt xe đang chạy.", true);
@@ -87,13 +93,34 @@ public final class IncidentPolicy {
         }
     }
 
+    public static void requireCanStartRest(IncidentStatus status, Instant restStartedAt, boolean fitConfirmed) {
+        requireActivePlanForFit(status);
+        if (restStartedAt != null) {
+            throw new DispatchRuleException("restStartedAt", "Đã bắt đầu cho ngựa nghỉ.", true);
+        }
+        if (fitConfirmed) {
+            throw new DispatchRuleException("fitConfirmedAt", "Đã xác nhận ngựa đủ sức đi tiếp.", true);
+        }
+    }
+
+    public static Instant fitEligibleAt(Instant restStartedAt, int minRestMinutes) {
+        return restStartedAt == null ? null : restStartedAt.plus(Duration.ofMinutes(minRestMinutes));
+    }
+
     // Xác nhận ngựa đủ sức đi tiếp khi phương án đang hiệu lực và đã nghỉ, chăm sóc đủ thời gian tối thiểu
-    public static void requireCanConfirmFit(IncidentStatus status, Instant reportedAt, Instant now, int minRestMinutes) {
+    public static void requireCanConfirmFit(IncidentStatus status, Instant restStartedAt, Instant now, int minRestMinutes) {
+        requireActivePlanForFit(status);
+        if (restStartedAt == null) {
+            throw new DispatchRuleException("restStartedAt", "Chưa bắt đầu cho ngựa nghỉ.", true);
+        }
+        if (now.isBefore(fitEligibleAt(restStartedAt, minRestMinutes))) {
+            throw new DispatchRuleException("status", "Ngựa chưa được nghỉ và chăm sóc đủ " + minRestMinutes + " phút.", true);
+        }
+    }
+
+    private static void requireActivePlanForFit(IncidentStatus status) {
         if (status != IncidentStatus.PLAN_ACTIVE) {
             throw new DispatchRuleException("status", "Phương án xử lý chưa được duyệt.", true);
-        }
-        if (Duration.between(reportedAt, now).compareTo(Duration.ofMinutes(minRestMinutes)) < 0) {
-            throw new DispatchRuleException("status", "Ngựa chưa được nghỉ và chăm sóc đủ " + minRestMinutes + " phút.", true);
         }
     }
 

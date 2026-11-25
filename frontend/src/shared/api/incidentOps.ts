@@ -3,7 +3,11 @@ import apiClient, { type ApiResponse } from './client'
 import type { components } from './generated/schema'
 
 type Schemas = components['schemas']
-export type Incident = Schemas['IncidentResponseDto']
+// Mở rộng kiểu trong lúc chờ xuất lại OpenAPI.
+export type Incident = Schemas['IncidentResponseDto'] & {
+  restStartedAt?: string | null
+  fitEligibleAt?: string | null
+}
 export type HandoverCauseChange = Schemas['HandoverCauseRequestDto']
 export type IncidentPlan = Schemas['PlanDto']
 export type IncidentReport = Schemas['IncidentReportRequestDto']
@@ -34,6 +38,7 @@ export const incidentsApi = {
   propose: (incidentId: number, body: IncidentPlanCreate) => post<Incident>(`/incidents/${incidentId}/plans`, body),
   approve: (planId: number, confirmedCauseType?: CauseType) => post<Incident>(`/incident-plans/${planId}/approve`, { confirmedCauseType }),
   reject: (planId: number, reason: string) => post<Incident>(`/incident-plans/${planId}/reject`, { reason }),
+  startRest: (incidentId: number) => post<Incident>(`/incidents/${incidentId}/rest-start`),
   confirmFit: (incidentId: number) => post<Incident>(`/incidents/${incidentId}/fit-confirmation`),
   resolve: (incidentId: number) => post<Incident>(`/incidents/${incidentId}/resolve`),
   close: (incidentId: number) => post<Incident>(`/incidents/${incidentId}/close`),
@@ -54,6 +59,6 @@ export const incidentsApi = {
   receipts: (costId: number) => get<Evidence[]>(`/cost-items/${costId}/receipts`),
   attachReceipt: (costId: number, file: File) => upload(`/cost-items/${costId}/receipts`, file),
   photos: (incidentId: number) => get<Evidence[]>(`/incidents/${incidentId}/photos`),
-  attachPhoto: (incidentId: number, file: File, at?: { latitude: number; longitude: number }, documentType?: 'INCIDENT_PHOTO' | 'VET_REPORT' | 'VEHICLE_SWAP_RECORD') =>
+  attachPhoto: (incidentId: number, file: File, at?: { latitude: number; longitude: number }, documentType?: 'INCIDENT_PHOTO' | 'VET_REPORT' | 'VEHICLE_SWAP_RECORD' | 'FIT_CHECK_PHOTO') =>
     upload(`/incidents/${incidentId}/photos`, file, { ...at, ...(documentType ? { documentType } : {}) }),
 }

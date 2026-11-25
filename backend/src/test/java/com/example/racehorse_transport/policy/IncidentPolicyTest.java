@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 
 class IncidentPolicyTest {
 
-    private static final Instant REPORTED = Instant.parse("2031-03-05T10:00:00Z");
+    private static final Instant REST_STARTED = Instant.parse("2031-03-05T10:00:00Z");
 
     @Test
     void tripIncidentReportRejectsComplaintsAndAllowsOperationalIncidents() {
@@ -73,10 +73,28 @@ class IncidentPolicyTest {
     }
 
     @Test
+    void restCanBeStartedOnceAndOnlyWithAnActivePlanAndPendingFitConfirmation() {
+        assertThatCode(() -> IncidentPolicy.requireCanStartRest(IncidentStatus.PLAN_ACTIVE, null, false)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> IncidentPolicy.requireCanStartRest(IncidentStatus.PLAN_PENDING, null, false))
+                .hasMessageContaining("chưa được duyệt");
+        assertThatThrownBy(() -> IncidentPolicy.requireCanStartRest(IncidentStatus.PLAN_ACTIVE, REST_STARTED, false))
+                .hasMessage("Đã bắt đầu cho ngựa nghỉ.");
+        assertThatThrownBy(() -> IncidentPolicy.requireCanStartRest(IncidentStatus.PLAN_ACTIVE, null, true))
+                .hasMessage("Đã xác nhận ngựa đủ sức đi tiếp.");
+    }
+
+    @Test
     void fitIsConfirmedAfterTheApprovedPlanAndEnoughRest() {
-        assertThatCode(() -> IncidentPolicy.requireCanConfirmFit(IncidentStatus.PLAN_ACTIVE, REPORTED, REPORTED.plusSeconds(1800), 30)).doesNotThrowAnyException();
-        assertThatThrownBy(() -> IncidentPolicy.requireCanConfirmFit(IncidentStatus.PLAN_PENDING, REPORTED, REPORTED.plusSeconds(3600), 30)).hasMessageContaining("chưa được duyệt");
-        assertThatThrownBy(() -> IncidentPolicy.requireCanConfirmFit(IncidentStatus.PLAN_ACTIVE, REPORTED, REPORTED.plusSeconds(1799), 30)).hasMessageContaining("đủ 30 phút");
+        assertThatCode(() -> IncidentPolicy.requireCanConfirmFit(IncidentStatus.PLAN_ACTIVE, REST_STARTED, REST_STARTED.plusSeconds(1800), 30))
+                .doesNotThrowAnyException();
+        assertThatThrownBy(() -> IncidentPolicy.requireCanConfirmFit(IncidentStatus.PLAN_PENDING, REST_STARTED, REST_STARTED.plusSeconds(3600), 30))
+                .hasMessageContaining("chưa được duyệt");
+        assertThatThrownBy(() -> IncidentPolicy.requireCanConfirmFit(IncidentStatus.PLAN_ACTIVE, null, REST_STARTED.plusSeconds(3600), 30))
+                .hasMessage("Chưa bắt đầu cho ngựa nghỉ.");
+        assertThatThrownBy(() -> IncidentPolicy.requireCanConfirmFit(IncidentStatus.PLAN_ACTIVE, REST_STARTED, REST_STARTED.plusSeconds(1799), 30))
+                .hasMessageContaining("đủ 30 phút");
+        assertThat(IncidentPolicy.fitEligibleAt(null, 30)).isNull();
+        assertThat(IncidentPolicy.fitEligibleAt(REST_STARTED, 45)).isEqualTo(REST_STARTED.plusSeconds(2700));
     }
 
     @Test

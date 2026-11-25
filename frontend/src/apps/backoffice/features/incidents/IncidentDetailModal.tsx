@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { incidentsApi, type Incident, type ResolutionType } from '@shared/api/incidentOps'
 import { useAutoRefresh, useLoad } from '@shared/hooks/useLoad'
-import { formatVND } from '@shared/lib/format'
+import { formatDateTime, formatVND } from '@shared/lib/format'
 import { Button } from '@shared/ui/Button'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { Field } from '@shared/ui/Field'
@@ -84,6 +84,7 @@ export function IncidentDetailModal({ incidentId, role, onClose, onChanged }: Pr
           {incident.requiresFit && <StatusBadge tone={incident.fitConfirmedAt ? 'success' : 'neutral'}
             label={incident.fitConfirmedAt ? t('incidents.fitConfirmed') : t('incidents.notFit')} />}
         </div>
+        {incident.restStartedAt && <p className={s.muted}>{t('incidents.restStartedAt', { time: formatDateTime(new Date(incident.restStartedAt)) })}</p>}
         <p className={s.muted}>{[incident.vehicleTripCode, incident.horseName, incident.bookingCode].filter(Boolean).join(' · ')}</p>
         <p>{incident.description}</p>
         <IncidentEvidenceSection evidence={data.evidence} busy={busy}

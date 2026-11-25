@@ -947,7 +947,7 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 
 **Bước 5. Tổ lái thực hiện và ghi chi phí.** Tổ lái ghi loại chi, mô tả, số tiền và kèm biên lai. Người trả do hệ thống tính theo nguyên nhân đã chốt hoặc tạm tính theo nguyên nhân đề xuất. Không thu phí chờ.
 
-**Bước 6. Tổ lái xác nhận ngựa đủ sức đi tiếp.** Nút **Đủ sức đi tiếp** dùng được khi phương án đã duyệt và đã qua **ít nhất 30 phút kể từ lúc báo sự cố**. Chưa đủ 30 phút thì hệ thống từ chối.
+**Bước 6. Hộ tống xác nhận ngựa đủ sức đi tiếp.** Phương án đã duyệt thì hộ tống bấm **Bắt đầu cho ngựa nghỉ**. Nút **Đủ sức đi tiếp** dùng được khi đã qua **ít nhất 30 phút kể từ lúc bắt đầu nghỉ** và hộ tống đã tải **ảnh con ngựa**. Tài xế không xác nhận được. Điều phối xác nhận thay khi có kết quả thú y; tổ lái không còn trên lượt thì 30 phút đếm từ lúc báo sự cố.
 
 **Bước 7. Điều phối viên bấm Đã xử lý xong.** Với sự cố sức khỏe hoặc sự cố của một con, hệ thống đòi đã có xác nhận ở bước 6. Phương án chuyển **Đã xong**, sự cố chuyển **Đã xử lý**.
 
@@ -1018,7 +1018,7 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 
 | Hạn | Của ai | Đếm từ | Dài bao lâu | Quá hạn thì |
 |---|---|---|---|---|
-| Nghỉ và chăm trước khi xác nhận đủ sức (bước 6) | Tổ lái | Lúc báo sự cố | **Ít nhất** 30 phút (cấu hình) | Chưa đủ thì không xác nhận được. Không có hạn tối đa |
+| Nghỉ và chăm trước khi xác nhận đủ sức (bước 6) | Hộ tống | Lúc bấm Bắt đầu cho ngựa nghỉ | **Ít nhất** 30 phút (cấu hình) | Chưa đủ thì không xác nhận được. Không có hạn tối đa |
 | Chờ người nhận miễn phí (bước 14) | Người nhận | Lúc tổ lái bấm Bắt đầu chờ | 120 phút (cấu hình) | Ghi giao thất bại, mở sự cố từng con, báo điều phối |
 | Hệ thống tự ghi không gặp người nhận (bước 15) | Hệ thống | Sau khi hết 120 phút | Kiểm 5 phút một lần | Tự ghi thay tổ lái |
 | Giữ ngựa ở hub sau giao thất bại (bước 17) | Người nhận | Lúc ngựa vào hub | 3 ngày (cấu hình) | Nhắc khách và quản lý 8:00 mỗi ngày; phí tiếp tục cộng |
@@ -1126,8 +1126,8 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 14. **Sự cố không chặn xe.** Đang có sự cố, tài xế vẫn bấm Tới nơi, Rời đi được. Tài liệu có bước "mở lại thao tác chặng", nghĩa là trước đó phải khóa.
 15. **Gửi chuồng gần, Thú y điều trị, Hủy chặng chỉ là chữ.** Duyệt xong hệ thống không mở lưu trú, không đổi chặng. Câu báo cho điều phối gợi ý "gửi chuồng hoặc đưa về hub" nhưng gửi chuồng không có thao tác.
 16. **Đã sửa theo phương án (a)** · Tổ xe tải ảnh biên bản đổi xe đã ký trước khi điều phối đổi xe. Xe cũ chuyển sang bảo dưỡng và hệ thống báo các lượt cần bố trí xe khác.
-17. **Xác nhận đủ sức không cần ảnh, không cần thú y**; tài xế cũng bấm được, dù tài liệu ghi thú y hoặc hộ tống kèm ảnh.
-18. **30 phút đếm từ lúc báo**, không đếm từ lúc ngựa được nghỉ.
+17. **Đã sửa.** Chỉ hộ tống của lượt xác nhận đủ sức và phải tải ảnh con ngựa; điều phối xác nhận thay vẫn cần kết quả thú y.
+18. **Đã sửa.** 30 phút đếm từ lúc hộ tống bấm Bắt đầu cho ngựa nghỉ.
 19. **Ghi sức khỏe Ốm hoặc Nguy cấp không mở sự cố** (đã nêu ở luồng 4).
 20. **Máy chủ không kiểm lượt đang chạy khi báo sự cố**; hiện chỉ màn hình chặn.
 21. **Quá 3 ngày giữ ngựa chỉ nhắc**, không có bước kết thúc (trả về người gửi, thanh lý hợp đồng…).

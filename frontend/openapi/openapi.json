@@ -5300,6 +5300,10 @@
           "fitConfirmedByName" : {
             "type" : "string"
           },
+          "fitEligibleAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
           "horseLegId" : {
             "format" : "int64",
             "type" : "integer"
@@ -5338,6 +5342,10 @@
             "type" : "boolean"
           },
           "resolvedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "restStartedAt" : {
             "format" : "date-time",
             "type" : "string"
           },
@@ -15319,6 +15327,33 @@
     "/incidents/{id}/resolve" : {
       "post" : {
         "operationId" : "resolve",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseIncidentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "incident-controller" ]
+      }
+    },
+    "/incidents/{id}/rest-start" : {
+      "post" : {
+        "operationId" : "startRest",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",

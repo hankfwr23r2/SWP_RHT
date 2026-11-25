@@ -16,6 +16,7 @@ public record IncidentResponseDto(
         Long id, IncidentType incidentType, IncidentCauseType causeType, IncidentStatus status, String title, String description,
         Long vehicleTripId, String vehicleTripCode, Long horseLegId, String horseName, String bookingCode,
         BigDecimal latitude, BigDecimal longitude, String reportedByName, Instant reportedAt,
+        Instant restStartedAt, Instant fitEligibleAt,
         String fitConfirmedByName, Instant fitConfirmedAt, Instant resolvedAt, boolean requiresFit, List<PlanDto> plans, IncidentCauseType confirmedCauseType,
         String causeConfirmedByName, Instant causeConfirmedAt, DeliveryFailureDto deliveryFailure, Long departureId,
         String departureRouteName, LocalDate departureDate) {
@@ -34,7 +35,8 @@ public record IncidentResponseDto(
         }
     }
 
-    public static IncidentResponseDto from(Incident incident, boolean requiresFit, List<PlanDto> plans, DeliveryFailureDto deliveryFailure) {
+    public static IncidentResponseDto from(Incident incident, boolean requiresFit, Instant fitEligibleAt,
+                                          List<PlanDto> plans, DeliveryFailureDto deliveryFailure) {
         var trip = incident.getVehicleTrip();
         var leg = incident.getHorseLeg();
         var booking = incident.getBooking();
@@ -45,6 +47,7 @@ public record IncidentResponseDto(
                 leg == null ? null : leg.getId(), leg == null ? null : leg.getBookingHorse().getHorse().getName(),
                 booking == null ? null : booking.getCode(), incident.getLatitude(), incident.getLongitude(),
                 incident.getReportedBy() == null ? null : incident.getReportedBy().getFullName(), incident.getReportedAt(),
+                incident.getRestStartedAt(), fitEligibleAt,
                 incident.getFitConfirmedBy() == null ? null : incident.getFitConfirmedBy().getFullName(), incident.getFitConfirmedAt(),
                 incident.getResolvedAt(), requiresFit, plans, incident.getConfirmedCauseType(),
                 incident.getCauseConfirmedBy() == null ? null : incident.getCauseConfirmedBy().getFullName(),
