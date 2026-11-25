@@ -109,6 +109,8 @@ Mã điểm (ví dụ 4.F1) trỏ tới mục "Điểm còn hở" trong [NGHIEP_
 
 ## 6. Luồng A giữ lại (22 điểm, đừng làm)
 
+Một phần giao cho thành viên khác theo [KE_HOACH_GIAO_THANH_VIEN.md](KE_HOACH_GIAO_THANH_VIEN.md) (đợt 3, 4, 5). Bạn B không làm các điểm này.
+
 | Đợt | Điểm |
 |---|---|
 | 2 | 1.F1, 5.G9, 5.G10, 5.G11, 5.G12, 5.G13, 6.G23 |
