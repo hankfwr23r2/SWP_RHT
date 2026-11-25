@@ -28,7 +28,13 @@ test('điều phối lập chặng đại lý cho đơn xuất rồi ghi đại 
         fromName: 'Cửa khẩu Mộc Bài', toName: 'Phnom Penh', plannedStartAt: '2031-03-06T01:00:00Z' })
       return ok(route, legs[1], 201)
     }
-    if (path === '/agent-legs/71/complete') { sent.complete = true; legs[1].status = 'COMPLETED'; return ok(route, legs[1]) }
+    if (path === '/agent-legs/71/complete') {
+      const form = await new Response(request.postDataBuffer(), { headers: { 'Content-Type': request.headers()['content-type'] } }).formData()
+      const proof = form.get('proof') as File
+      sent.complete = { name: proof.name, type: proof.type, bytes: [...new Uint8Array(await proof.arrayBuffer())] }
+      legs[1].status = 'COMPLETED'
+      return ok(route, legs[1])
+    }
     return ok(route, [])
   })
   await page.goto('/backoffice/coordinator/dispatch')
@@ -50,9 +56,13 @@ test('điều phối lập chặng đại lý cho đơn xuất rồi ghi đại 
 
   const agentLegs = dialog.getByRole('list', { name: 'Chặng đại lý của con ngựa' })
   await expect(agentLegs).toContainText('Đại lý đang chở')
-  await agentLegs.getByRole('button', { name: 'Đại lý đã giao' }).click()
+  const complete = agentLegs.getByRole('button', { name: 'Đại lý đã giao', exact: true })
+  await expect(complete).toBeDisabled()
+  await agentLegs.getByLabel('Ảnh hoặc biên bản đại lý đã giao')
+    .setInputFiles({ name: 'dai-ly.jpg', mimeType: 'image/jpeg', buffer: Buffer.from([1, 2, 3]) })
+  await complete.click()
   await expect(agentLegs).toContainText('Đã xong')
-  expect(sent.complete).toBe(true)
+  expect(sent.complete).toEqual({ name: 'dai-ly.jpg', type: 'image/jpeg', bytes: [1, 2, 3] })
 })
 
 test('đơn nhập phải chọn cửa khẩu đại lý giao ngựa', async ({ page }) => {

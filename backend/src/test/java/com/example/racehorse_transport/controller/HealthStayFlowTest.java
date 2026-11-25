@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.example.racehorse_transport.PostgresIntegrationTest;
+import com.example.racehorse_transport.support.HandoverEvidenceFixtures;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.security.JwtUtils;
@@ -205,7 +206,7 @@ class HealthStayFlowTest {
     private void scanOnly(long handoverId) throws Exception {
         long leg = jdbc.queryForObject("SELECT id FROM horse_leg WHERE booking_horse_id = ? AND status <> 'CANCELLED' ORDER BY sequence_number DESC LIMIT 1", Long.class, line);
         mvc.perform(post("/handovers/{id}/horses", handoverId).header(HttpHeaders.AUTHORIZATION, escort).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"horseLegId\":%d,\"microchip\":\"%s\"}".formatted(leg, chip))).andExpect(status().isOk());
+                .content("{\"horseLegId\":%d,\"conditionNote\":\"Khỏe\",\"microchip\":\"%s\"}".formatted(leg, chip))).andExpect(status().isOk());
     }
 
     private List<Long> runToPickupAndLeave(String type, List<String> stopBodies, int alightIndex) throws Exception {
@@ -249,7 +250,7 @@ class HealthStayFlowTest {
     private void scanAndComplete(long handoverId) throws Exception {
         long leg = jdbc.queryForObject("SELECT id FROM horse_leg WHERE booking_horse_id = ? AND status <> 'CANCELLED' ORDER BY sequence_number DESC LIMIT 1", Long.class, line);
         mvc.perform(post("/handovers/{id}/horses", handoverId).header(HttpHeaders.AUTHORIZATION, escort).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"horseLegId\":%d,\"microchip\":\"%s\"}".formatted(leg, chip))).andExpect(status().isOk());
+                .content("{\"horseLegId\":%d,\"conditionNote\":\"Khỏe\",\"microchip\":\"%s\"}".formatted(leg, chip))).andExpect(status().isOk());
         signedRecord(handoverId);
         act("/handovers/" + handoverId + "/complete").andExpect(status().isOk());
     }
@@ -265,7 +266,7 @@ class HealthStayFlowTest {
     }
 
     private ResultActions act(String path) throws Exception {
-        return mvc.perform(post(path).header(HttpHeaders.AUTHORIZATION, escort));
+        return mvc.perform(HandoverEvidenceFixtures.complete(mvc, jdbc, jwtUtils, path).header(HttpHeaders.AUTHORIZATION, escort));
     }
 
     private String stop(String key, long id, String type, int minutes) {

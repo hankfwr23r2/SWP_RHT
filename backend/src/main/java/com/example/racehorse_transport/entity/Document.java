@@ -131,6 +131,11 @@ public class Document {
     @JoinColumn(name = "handover_id")
     private Handover handover;
 
+    // Chặng của con ngựa trong lần giao nhận chứa ảnh.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "evidence_horse_leg_id")
+    private HorseLeg evidenceHorseLeg;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
     @JoinColumn(name = "vehicle_id")
     private Vehicle vehicle;

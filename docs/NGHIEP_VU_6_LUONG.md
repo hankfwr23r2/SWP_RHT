@@ -1170,7 +1170,7 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 - **sai chip**: con đó không được nhận trong lần này. Quét lại được;
 - con không đủ điều kiện đi: bấm **Không nhận** (câu chuyện 2).
 
-**Bước 2. Nhận giấy gốc và ký biên bản.** Màn hình liệt kê các giấy đã duyệt của đơn; tổ lái đánh dấu bản gốc nào đã nhận (không bắt buộc đánh dấu hết). Sau đó **chụp biên bản đã ký và tải lên**. Chưa có biên bản thì nút Hoàn tất bị khóa.
+**Bước 2. Nhận giấy gốc và ký biên bản.** Màn hình liệt kê các giấy đã duyệt của đơn; tổ lái đánh dấu từng giấy đã nhận hoặc không nhận bản gốc. Sau đó **chụp biên bản đã ký và tải lên**. Chưa có biên bản thì nút Hoàn tất bị khóa.
 
 **Bước 3. Hoàn tất nhận ngựa.** Cần ít nhất một con đúng chip. Từ lúc này **công ty giữ ngựa**, người bấm là người phụ trách. Khách nhận thông báo **Đã nhận ngựa**.
 
@@ -1180,7 +1180,7 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 
 **Bước 6. Giao vào hub, nhận từ hub.** Mỗi lần vào hoặc ra hub đều quét chip từng con và lưu tên người bấm thay cho chữ ký; **không cần biên bản**. Giao vào hub thì mở lưu trú tập kết; nhận ra khỏi hub thì đóng lưu trú đó.
 
-**Bước 7. Giao cho người nhận.** Xe tới điểm giao, tổ lái bấm **Giao ngựa**, quét chip từng con, đánh dấu giấy gốc đã trả, chụp biên bản người nhận đã ký, **Hoàn tất giao nhận**. Khách nhận thông báo **Đã giao ngựa**. Không gặp người nhận: luồng 5.
+**Bước 7. Giao cho người nhận.** Xe tới điểm giao, tổ lái bấm **Giao ngựa**, quét chip, ghi tình trạng và tải ảnh từng con, đánh dấu giấy gốc đã trả, tải biên bản đã ký, ghi họ tên người nhận và nhập mã hoặc kiểm xác nhận của khách, **Hoàn tất giao nhận**. Khách nhận thông báo **Đã giao ngựa**. Không gặp người nhận: luồng 5.
 
 **Bước 8. Đơn sang Đã giao.** Khi **con cuối cùng** còn trong đơn được giao, đơn tự sang **Đã giao**. Con đã bị loại thì không tính.
 
@@ -1235,9 +1235,9 @@ Tiền VNPAY về **sau** khi đơn đã hủy: không ghi vào đơn, báo qu�
 
 ### Câu chuyện 5. Đơn quốc tế
 
-**Bước 17. Đơn xuất.** Ở cửa khẩu, tổ lái bấm **Bàn giao với đại lý**, quét chip. Chặng của đại lý tự chạy, khách được báo. Đại lý giao xong ở nước ngoài thì **điều phối bấm Đại lý đã giao**; đủ các con thì đơn Đã giao.
+**Bước 17. Đơn xuất.** Ở cửa khẩu, tổ lái bấm **Bàn giao với đại lý**, quét chip và tải biên bản đã ký để hoàn tất. Chặng của đại lý tự chạy, khách được báo. Đại lý giao xong ở nước ngoài thì **điều phối bấm Đại lý đã giao**; đủ các con thì đơn Đã giao.
 
-**Bước 18. Đơn nhập.** Tổ lái nhận ngựa từ đại lý ở cửa khẩu, quét chip. Hệ thống **kiểm lại đủ giấy bắt buộc**, gồm giấy vận chuyển mẫu 14a; thiếu thì không nhận. Sau đó lập số dư, chờ 30 phút như bước 4.
+**Bước 18. Đơn nhập.** Tổ lái nhận ngựa từ đại lý ở cửa khẩu, quét chip, đánh dấu bản gốc đã nhận và tải biên bản đã ký. Hệ thống **kiểm lại đủ giấy bắt buộc**, gồm giấy vận chuyển mẫu 14a; thiếu thì không nhận. Sau đó lập số dư, chờ 30 phút như bước 4.
 
 ## 6.B. Bảng các lần giao nhận
 
@@ -1248,8 +1248,8 @@ Tiền VNPAY về **sau** khi đơn đã hủy: không ghi vào đơn, báo qu�
 | Vào hub, ra hub | Hub | Tổ lái | Từng con | Không | Không | Mở, đóng lưu trú |
 | Gửi chuồng đêm, nhận lại | Trạm nghỉ, cửa khẩu | Tổ lái | Từng con | Không | Không | Đổi bên giữ (luồng 4) |
 | Bàn giao ca | Điểm dừng bất kỳ | Hộ tống mới | Từng con | Không | Không | Đổi người phụ trách |
-| Bàn giao đại lý (xuất) | Cửa khẩu | Tổ lái | Từng con | Không | Không | Chặng đại lý chạy |
-| Nhận từ đại lý (nhập) | Cửa khẩu | Tổ lái | Từng con | Không | Máy chủ cho, màn chưa có | Lập số dư |
+| Bàn giao đại lý (xuất) | Cửa khẩu | Tổ lái | Từng con | **Bắt buộc** | Không | Chặng đại lý chạy |
+| Nhận từ đại lý (nhập) | Cửa khẩu | Tổ lái | Từng con | **Bắt buộc** | Đánh dấu đã nhận | Lập số dư |
 | Giao người nhận | Điểm giao | Tổ lái | Từng con | **Bắt buộc** | Đánh dấu đã trả | Con cuối: Đã giao |
 | Trả tại hub (tự tới lấy) | Hub | Điều phối | Từng con | Không | Không | Con cuối: Đã giao |
 | Đại lý đã giao | Nước ngoài | Điều phối ghi thay | Không | Không | Không | Con cuối: Đã giao |
@@ -1287,7 +1287,7 @@ Dòng hai: loại một con thì bỏ cước trục, dịch vụ và phí bảo
 - **6.1** Chỉ giao nhận khi xe **đang ở điểm đó**: đã bấm Tới nơi, chưa bấm Rời đi. Người bấm phải trong tổ lái.
 - **6.2** So chip sau khi bỏ khoảng trắng và dấu gạch, không phân biệt hoa thường. Sai thì con đó không được tính.
 - **6.3** Hoàn tất cần ít nhất một con đúng chip. Con sai chip ở lại với bên giao; mở lần giao nhận khác được khi xe chưa rời.
-- **6.4** Nhận ở nhà khách và giao người nhận phải có **ảnh biên bản đã ký**.
+- **6.4** Nhận ở nhà khách, giao người nhận và giao nhận với đại lý ở cửa khẩu phải có **ảnh hoặc bản quét biên bản đã ký**.
 - **6.5** Giấy gốc: nhận lúc đón, trả lúc giao. Chỉ liệt kê giấy **đã duyệt**. Đánh dấu không bắt buộc để hoàn tất.
 - **6.6** Không sửa, không xóa được lần giao nhận đã hoàn tất.
 
@@ -1350,14 +1350,14 @@ Dòng hai: loại một con thì bỏ cước trục, dịch vụ và phí bảo
 
 **Bằng chứng giao nhận:**
 
-7. **Không ghi ai là người nhận.** Không tên, không giấy tờ, không mã xác nhận. Chỉ có ảnh biên bản. Đề xuất: mã một lần gửi vào điện thoại người nhận.
-8. **Giao nhận tại hub với khách không có biên bản và không nhận, trả giấy gốc.** Cũng chưa có biên bản ở cửa khẩu với đại lý.
-9. **Đại lý đã giao không cần bằng chứng**, và **khách không được báo** (các cách giao khác đều báo).
-10. **Trả ngựa quá hạn không trả giấy gốc**, dù tài liệu ghi trả cả ngựa lẫn giấy.
-11. **Đơn nhập không đánh dấu được giấy gốc** nhận từ đại lý; màn chỉ hiện phần giấy khi nhận nhà khách hoặc giao người nhận.
-12. **Giấy gốc không bắt buộc** nhận hay trả đủ, nên không biết bản nào còn ở công ty.
-13. **Khách không xem được biên bản** trên đơn, dù tài liệu ghi có.
-14. **Không có ảnh và tình trạng ngựa lúc nhận, lúc giao.** Máy chủ có ô tình trạng, màn tổ lái chưa có. Tranh chấp hư hại thì không có căn cứ.
+7. **Đã sửa.** Mã 6 số sinh khi đơn chuyển Đang vận chuyển. Chủ đơn xem mã trên đơn và nhận email khi có cấu hình gửi thư. Tổ lái hoặc điều phối ghi họ tên người nhận và nhập mã đúng, hoặc dùng xác nhận của chủ đơn. Số lần nhập sai lấy từ cấu hình.
+8. **Đã sửa.** Bắt buộc biên bản tại hub khi giao nhận với khách và tại cửa khẩu khi giao nhận với đại lý.
+9. **Đã sửa.** Điều phối tải ảnh hoặc biên bản trước khi ghi đại lý đã giao. Khách nhận thông báo.
+10. **Đã sửa.** Khi xác nhận trả ngựa quá hạn tại điểm đón hoặc cửa khẩu, ghi trả toàn bộ giấy gốc còn giữ của các đơn trong lần trả.
+11. **Đã sửa.** Màn tổ lái hiện giấy gốc và cho đánh dấu đã nhận khi đại lý giao ngựa nhập cho xe công ty.
+12. **Đã sửa.** Nhận ngựa thì đánh dấu từng giấy đã nhận hoặc không nhận bản gốc. Khi giao ngựa, xác nhận trả các bản gốc còn giữ của đơn theo lịch sử giao nhận đã hoàn tất. Khi chuyển ngựa ra cho đại lý, bàn giao các bản gốc đang giữ cùng ngựa.
+13. **Đã sửa một phần.** Chủ đơn xem biên bản và ảnh đã lưu ở từng lần giao nhận hoàn tất trong hành trình. Tệp cũ gắn vào lần giao nhận chung của nhiều đơn cần được phân quyền theo từng đơn trước khi hiển thị.
+14. **Đã sửa.** Trước khi hoàn tất nhận ở điểm đón, nhận từ đại lý, giao nhận tại hub với khách hoặc giao người nhận, từng con giao nhận phải có tình trạng và ít nhất một ảnh.
 15. Chip có thể **gõ tay**; hệ thống chưa phân biệt quét máy với gõ.
 
 **Tiền và đóng đơn:**

@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.example.racehorse_transport.PostgresIntegrationTest;
+import com.example.racehorse_transport.support.HandoverEvidenceFixtures;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.security.JwtUtils;
@@ -41,7 +42,7 @@ class TripExecutionFlowTest {
     @Autowired private LocationRepository locations;
     @Autowired private EntityManager entityManager;
     // Lưu tệp lên Cloudinary là dịch vụ bên ngoài
-    @org.springframework.test.context.bean.override.mockito.MockitoBean private com.example.racehorse_transport.client.CloudinaryClient cloudinary;
+    @org.springframework.test.context.bean.override.mockito.MockitoBean private com.cloudinary.Cloudinary cloudinary;
 
     private String coordinator;
     private String driver;
@@ -169,6 +170,9 @@ class TripExecutionFlowTest {
         act(escort, "/handovers/" + pickup + "/complete").andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Chưa có biên bản giao nhận. Chụp biên bản đã ký trước khi hoàn tất."));
         signedRecord(pickup);
+        mvc.perform(post("/handovers/{id}/complete", pickup).header(HttpHeaders.AUTHORIZATION, escort))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Cần ít nhất một ảnh cho từng con ngựa."));
         act(escort, "/handovers/" + pickup + "/complete").andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.handovers[0].recordAttached").value(true))
                 .andExpect(jsonPath("$.data.handovers[0].status").value("DONE"))
@@ -296,7 +300,7 @@ class TripExecutionFlowTest {
         long second = jdbc.queryForObject("SELECT id FROM horse_leg WHERE booking_horse_id = ? AND vehicle_trip_id = ?", Long.class, lines.get(1), pickupTrip);
         String firstChip = jdbc.queryForObject("SELECT h.microchip FROM booking_horse bh JOIN horse h ON h.id = bh.horse_id WHERE bh.id = ?", String.class, lines.get(0));
         mvc.perform(post("/handovers/{id}/horses", handover).header(HttpHeaders.AUTHORIZATION, driver2).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"horseLegId\":%d,\"microchip\":\"%s\"}".formatted(first, firstChip))).andExpect(status().isOk());
+                .content("{\"horseLegId\":%d,\"conditionNote\":\"Khỏe\",\"microchip\":\"%s\"}".formatted(first, firstChip))).andExpect(status().isOk());
         mvc.perform(post("/handovers/{id}/horses", handover).header(HttpHeaders.AUTHORIZATION, driver2).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"horseLegId\":%d,\"microchip\":\"985000000999999\"}".formatted(second))).andExpect(status().isOk());
 
@@ -372,8 +376,11 @@ class TripExecutionFlowTest {
                        'test://passport/' || md5(random()::text), 'passport.pdf', u.id, 'APPROVED', u.id, now(),
                        (SELECT horse_id FROM booking_horse WHERE booking_id = ?)
                 FROM document_type dt, (SELECT min(id) AS id FROM app_user) u WHERE dt.code = 'HORSE_PASSPORT' RETURNING id""", Long.class, booking);
-        org.mockito.Mockito.when(cloudinary.uploadFile(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyString()))
-                .thenAnswer(call -> "https://cdn.example/record-" + System.nanoTime() + ".jpg");
+        var uploader = org.mockito.Mockito.mock(com.cloudinary.Uploader.class);
+        org.mockito.Mockito.when(cloudinary.uploader()).thenReturn(uploader);
+        org.mockito.Mockito.when(uploader.upload(org.mockito.ArgumentMatchers.any(byte[].class), org.mockito.ArgumentMatchers.anyMap()))
+                .thenAnswer(call -> java.util.Map.of("secure_url", "https://cdn.example/"
+                        + call.<java.util.Map<?, ?>>getArgument(1).get("public_id") + ".jpg"));
         acknowledge(driver);
         act(driver, "/vehicle-trips/" + trip + "/start").andExpect(status().isOk());
         act(driver, "/trip-stops/" + stops.get(0) + "/arrive").andExpect(status().isOk());
@@ -385,6 +392,13 @@ class TripExecutionFlowTest {
         mvc.perform(get("/handovers/{id}/papers", pickup).header(HttpHeaders.AUTHORIZATION, escort)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].documentId").value(passport)).andExpect(jsonPath("$.data[0].direction").doesNotExist());
         paper(pickup, passport).andExpect(status().isOk()).andExpect(jsonPath("$.data[0].direction").value("RECEIVED"));
+        var photo = new org.springframework.mock.web.MockMultipartFile("file", "horse.jpg", "image/jpeg", new byte[] {1, 2, 3});
+        uploadPhoto(pickup, photo).andExpect(status().isOk());
+        uploadPhoto(pickup, photo).andExpect(status().isOk());
+        entityManager.flush();
+        assertThat(jdbc.queryForList("""
+                SELECT file_url FROM document WHERE handover_id = ? AND evidence_horse_leg_id = ? AND file_name = 'horse.jpg'
+                """, String.class, pickup, leg)).hasSize(2).doesNotHaveDuplicates();
         act(escort, "/handovers/" + pickup + "/complete").andExpect(status().isConflict());
         uploadRecord(pickup).andExpect(status().isOk()).andExpect(jsonPath("$.data.handovers[0].recordAttached").value(true));
         act(escort, "/handovers/" + pickup + "/complete").andExpect(status().isOk());
@@ -394,6 +408,7 @@ class TripExecutionFlowTest {
         long delivery = rawHandoverId(handover(escort, stops.get(2), "DELIVERY").andExpect(status().isCreated()));
         scan(escort, delivery, chip).andExpect(status().isOk());
         paper(delivery, passport).andExpect(status().isOk()).andExpect(jsonPath("$.data[0].direction").value("RETURNED"));
+        uploadPhoto(delivery, photo).andExpect(status().isOk());
         uploadRecord(delivery).andExpect(status().isOk());
         act(escort, "/handovers/" + delivery + "/complete").andExpect(status().isOk());
         assertThat(jdbc.queryForList("SELECT direction FROM handover_document WHERE document_id = ? ORDER BY handover_id", String.class, passport))
@@ -405,7 +420,13 @@ class TripExecutionFlowTest {
 
     private ResultActions paper(long handoverId, long documentId) throws Exception {
         return mvc.perform(post("/handovers/{id}/papers", handoverId).header(HttpHeaders.AUTHORIZATION, escort)
-                .contentType(MediaType.APPLICATION_JSON).content("{\"documentId\":%d}".formatted(documentId)));
+                .contentType(MediaType.APPLICATION_JSON).content("{\"documentId\":%d,\"originalMissing\":false}".formatted(documentId)));
+    }
+
+    private ResultActions uploadPhoto(long handoverId, org.springframework.mock.web.MockMultipartFile file) throws Exception {
+        return mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .multipart("/handovers/{id}/horses/{horseLegId}/photos", handoverId, leg)
+                .file(file).header(HttpHeaders.AUTHORIZATION, escort));
     }
 
     private ResultActions uploadRecord(long handoverId) throws Exception {
@@ -485,7 +506,7 @@ class TripExecutionFlowTest {
     }
 
     private ResultActions act(String token, String path) throws Exception {
-        return mvc.perform(post(path).header(HttpHeaders.AUTHORIZATION, token));
+        return mvc.perform(HandoverEvidenceFixtures.complete(mvc, jdbc, jwtUtils, path).header(HttpHeaders.AUTHORIZATION, token));
     }
 
     private ResultActions handover(String token, long stopId, String type) throws Exception {
@@ -495,7 +516,7 @@ class TripExecutionFlowTest {
 
     private ResultActions scan(String token, long handoverId, String microchip) throws Exception {
         return mvc.perform(post("/handovers/{id}/horses", handoverId).header(HttpHeaders.AUTHORIZATION, token)
-                .contentType(MediaType.APPLICATION_JSON).content("{\"horseLegId\":%d,\"microchip\":\"%s\"}".formatted(leg, microchip)));
+                .contentType(MediaType.APPLICATION_JSON).content("{\"horseLegId\":%d,\"conditionNote\":\"Khỏe\",\"microchip\":\"%s\"}".formatted(leg, microchip)));
     }
 
     private ResultActions refuse(String token, long handoverId, long horseLegId, String reason) throws Exception {

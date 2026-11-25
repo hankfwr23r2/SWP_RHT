@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.dto.operation.CrewTripResponseDto;
+import com.example.racehorse_transport.dto.operation.HandoverCompleteRequestDto;
 import com.example.racehorse_transport.dto.operation.HandoverCreateRequestDto;
 import com.example.racehorse_transport.dto.operation.HandoverRefusalRequestDto;
 import com.example.racehorse_transport.dto.operation.HandoverResponseDto;
@@ -23,7 +24,7 @@ import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.TripExecutionPolicy;
 import com.example.racehorse_transport.repository.CrewAssignmentRepository;
-import com.example.racehorse_transport.repository.DocumentRepository;
+import com.example.racehorse_transport.service.HandoverEvidenceService;
 import com.example.racehorse_transport.repository.HandoverHorseRepository;
 import com.example.racehorse_transport.repository.HandoverRepository;
 import com.example.racehorse_transport.repository.HorseLegRepository;
@@ -49,7 +50,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class HandoverServiceImpl implements HandoverService {
 
-    static final String RECORD_TYPE = "HANDOVER_RECORD";
 
     private final HandoverRepository handovers;
     private final HandoverHorseRepository scans;
@@ -59,7 +59,7 @@ public class HandoverServiceImpl implements HandoverService {
     private final DispatchService dispatch;
     private final HorseLegService horseLegs;
     private final HandoverOutcomeService outcomes;
-    private final DocumentRepository documents;
+    private final HandoverEvidenceService evidence;
     private final Clock clock;
 
     @Override
@@ -134,7 +134,7 @@ public class HandoverServiceImpl implements HandoverService {
 
     @Override
     @Transactional
-    public CrewTripResponseDto complete(Long handoverId, String username) {
+    public CrewTripResponseDto complete(Long handoverId, HandoverCompleteRequestDto request, String username) {
         Handover handover = pending(handoverId, username);
         Long tripId = handover.getTripStop().getVehicleTrip().getId();
         Long actorId = requireCrew(tripId, username).getStaff().getUserId();
@@ -143,11 +143,29 @@ public class HandoverServiceImpl implements HandoverService {
                 .filter(r -> r.getHorseLeg().getStatus() != HorseLegStatus.CANCELLED).toList();
         TripExecutionPolicy.requireSomeMatched(results.stream().map(HandoverHorse::getMicrochipMatched).toList());
         // Nhận và giao ngựa phải có biên bản đã ký (MAN_HINH 4.3, 6.5)
-        if (needsRecord(handover) && !documents.existsByHandover_IdAndDocumentType_Code(handover.getId(), RECORD_TYPE)) {
+        if (needsRecord(handover) && !evidence.hasRecord(handover.getId())) {
             throw new DispatchRuleException("record", "Chưa có biên bản giao nhận. Chụp biên bản đã ký trước khi hoàn tất.", true);
         }
-        outcomes.complete(handover, results.stream().filter(r -> Boolean.TRUE.equals(r.getMicrochipMatched()))
-                .map(HandoverHorse::getHorseLeg).toList(), clock.instant(), actorId);
+        List<HandoverHorse> matched = results.stream().filter(r -> Boolean.TRUE.equals(r.getMicrochipMatched())).toList();
+        boolean receiving = handover.getHandoverType() == HandoverType.PICKUP
+                || handover.getHandoverType() == HandoverType.AGENT && handover.getFromParty() != null;
+        if (receiving || handover.getHandoverType() == HandoverType.DELIVERY) {
+            matched.forEach(evidence::requireHorseEvidence);
+        }
+        if (needsRecord(handover)) {
+            Set<Long> bookingIds = matched.stream().map(row -> row.getHorseLeg().getBookingHorse().getBooking().getId())
+                    .collect(Collectors.toSet());
+            evidence.requirePapers(handover.getId(), bookingIds, receiving);
+        }
+        if (handover.getHandoverType() == HandoverType.DELIVERY) {
+            Map<String, String> recipients = new LinkedHashMap<>();
+            for (HandoverHorse row : matched) {
+                var booking = row.getHorseLeg().getBookingHorse().getBooking();
+                row.setRecipientName(recipients.computeIfAbsent(booking.getCode(),
+                        code -> evidence.requireRecipient(booking, request == null ? null : request.forBooking(code))));
+            }
+        }
+        outcomes.complete(handover, matched.stream().map(HandoverHorse::getHorseLeg).toList(), clock.instant(), actorId);
         return crewTrip(tripId, username);
     }
 
@@ -207,6 +225,8 @@ public class HandoverServiceImpl implements HandoverService {
             scans.save(returned);
         }
         scans.flush();
+        evidence.returnOriginals(handover, boarded.stream().map(leg -> leg.getBookingHorse().getBooking().getId())
+                .collect(Collectors.toSet()));
     }
 
     // Bàn giao ở cửa khẩu (#28): đại lý của chặng kế tiếp (đơn xuất, công ty giao) hoặc chặng trước (đơn nhập, đại lý giao)
@@ -298,7 +318,7 @@ public class HandoverServiceImpl implements HandoverService {
         // Lần trả ngựa đã xong: các con là các con đã ghi trong lần đó (chặng đã hủy)
         List<HorseLeg> horses = handover.getHandoverType() == HandoverType.RETURN
                 ? byLeg.values().stream().map(HandoverHorse::getHorseLeg).toList() : candidates(handover);
-        return HandoverResponseDto.from(handover, horses, byLeg, documents.existsByHandover_IdAndDocumentType_Code(handover.getId(), RECORD_TYPE));
+        return HandoverResponseDto.from(handover, horses, byLeg, evidence.hasRecord(handover.getId()));
     }
 
     @Override
@@ -331,7 +351,8 @@ public class HandoverServiceImpl implements HandoverService {
     }
 
     private static boolean needsRecord(Handover handover) {
-        return handover.getHandoverType() == HandoverType.PICKUP || handover.getHandoverType() == HandoverType.DELIVERY;
+        return handover.getHandoverType() == HandoverType.PICKUP || handover.getHandoverType() == HandoverType.DELIVERY
+                || handover.getHandoverType() == HandoverType.AGENT;
     }
 
     private Handover pending(Long handoverId, String username) {

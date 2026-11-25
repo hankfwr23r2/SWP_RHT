@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.example.racehorse_transport.PostgresIntegrationTest;
+import com.example.racehorse_transport.support.HandoverEvidenceFixtures;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.security.JwtUtils;
@@ -36,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 class DeliveryFailureFlowTest {
 
     @Autowired private MockMvc mvc;
+    @org.springframework.test.context.bean.override.mockito.MockitoBean private com.example.racehorse_transport.client.CloudinaryClient cloudinary;
     @Autowired private JdbcTemplate jdbc;
     @Autowired private TestData testData;
     @Autowired private JwtUtils jwtUtils;
@@ -197,8 +199,17 @@ class DeliveryFailureFlowTest {
         replacement.assign(line, 0, 1);
         entityManager.flush();
         long stay = jdbc.queryForObject("SELECT horse_stay_id FROM cost_item WHERE booking_id = ?", Long.class, booking);
-        mvc.perform(post("/horse-stays/{id}/deliveries", stay).header(HttpHeaders.AUTHORIZATION, coordinator)
-                .contentType(MediaType.APPLICATION_JSON).content("{\"microchip\":\"%s\"}".formatted(chip)))
+        String owner = jdbc.queryForObject("SELECT u.username FROM booking b JOIN app_user u ON u.id = b.customer_id WHERE b.id = ?", String.class, booking);
+        HandoverEvidenceFixtures.confirm(mvc, jwtUtils, booking, owner);
+        org.mockito.Mockito.when(cloudinary.uploadFile(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyString()))
+                .thenAnswer(call -> "https://example.test/" + java.util.UUID.randomUUID());
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart("/horse-stays/{id}/deliveries", stay)
+                .file(new org.springframework.mock.web.MockMultipartFile("request", "", "application/json",
+                        "{\"microchip\":\"%s\",\"conditionNote\":\"Khỏe\",\"papers\":[],\"recipient\":{\"recipientName\":\"Người nhận\"}}".formatted(chip)
+                                .getBytes(java.nio.charset.StandardCharsets.UTF_8)))
+                .file(new org.springframework.mock.web.MockMultipartFile("photo", "horse.jpg", "image/jpeg", new byte[]{1}))
+                .file(new org.springframework.mock.web.MockMultipartFile("record", "record.pdf", "application/pdf", new byte[]{1}))
+                .header(HttpHeaders.AUTHORIZATION, coordinator))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.actualEndAt").isNotEmpty());
         entityManager.flush();
         assertThat(bookingStatus()).isEqualTo("DELIVERED");
@@ -306,12 +317,12 @@ class DeliveryFailureFlowTest {
         void scan(long handover) throws Exception {
             long leg = jdbc.queryForObject("SELECT id FROM horse_leg WHERE booking_horse_id = ? AND vehicle_trip_id = ?", Long.class, line, id);
             mvc.perform(post("/handovers/{id}/horses", handover).header(HttpHeaders.AUTHORIZATION, driver).contentType(MediaType.APPLICATION_JSON)
-                    .content("{\"horseLegId\":%d,\"microchip\":\"%s\"}".formatted(leg, chip))).andExpect(status().isOk());
+                    .content("{\"horseLegId\":%d,\"conditionNote\":\"Khỏe\",\"microchip\":\"%s\"}".formatted(leg, chip))).andExpect(status().isOk());
             signedRecord(handover);
         }
 
         ResultActions act(String path) throws Exception {
-            return mvc.perform(post(path).header(HttpHeaders.AUTHORIZATION, driver));
+            return mvc.perform(HandoverEvidenceFixtures.complete(mvc, jdbc, jwtUtils, path).header(HttpHeaders.AUTHORIZATION, driver));
         }
     }
 

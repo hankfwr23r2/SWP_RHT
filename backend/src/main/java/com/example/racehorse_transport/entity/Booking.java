@@ -30,9 +30,19 @@ import java.time.LocalDate;
 @Getter
 @Setter
 @NoArgsConstructor
+@org.hibernate.annotations.DynamicUpdate
 @Entity
 @Table(name = "booking")
 public class Booking {
+
+    @Column(name = "collection_code", length = 6)
+    private String collectionCode;
+
+    @Column(name = "collection_failed_attempts", nullable = false)
+    private int collectionFailedAttempts;
+
+    @Column(name = "collection_confirmed", nullable = false)
+    private boolean collectionConfirmed;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -21,6 +21,9 @@ import lombok.Setter;
 @Table(name = "handover_horse")
 public class HandoverHorse {
 
+    @Column(name = "recipient_name", length = 120)
+    private String recipientName;
+
     @EmbeddedId
     private HandoverHorseId id;
 

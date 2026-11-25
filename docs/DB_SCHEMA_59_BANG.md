@@ -663,6 +663,9 @@ Index: `document_type_id`, `gate_location_id`.
 | Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
 |---|---|---|---|---|
 | `id` | `bigint` | | PK, identity | |
+| `collection_code` | `varchar(6)` | có | CK 6 chữ số | Mã nhận ngựa, sinh khi chuyển sang `IN_OPERATION`, chỉ trả cho chủ đơn |
+| `collection_failed_attempts` | `integer` | | Default 0, CK ≥ 0 | Đếm lần nhập sai dưới khóa dòng `booking`. Giới hạn `COLLECTION_CODE_MAX_ATTEMPTS` |
+| `collection_confirmed` | `boolean` | | Default false | Chủ đơn đã xác nhận cho phép giao mà không cần mã |
 | `code` | `varchar(30)` | | UK | Mã đơn hiển thị cho khách |
 | `customer_id` | `bigint` | | FK → customer(user_id) | Người đặt đơn |
 | `booking_type` | `varchar(30)` | | CK `LOCAL, INTERPROVINCE, EXPORT, IMPORT` | |
@@ -973,6 +976,10 @@ Index: `(booking_horse_id, recorded_at)`, `trip_stop_id`, `horse_stay_id`, `vehi
 
 Biên bản ký là một `document` có `handover_id` trỏ về dòng này.
 
+Nhận tại điểm đón, nhận từ đại lý, nhận hoặc giao cho khách tại hub và giao ở điểm giao yêu cầu tình trạng và ảnh của từng con quét đúng chip được giao nhận. Biên bản bắt buộc ở các lần này và khi bàn giao đại lý. Điều phối ghi đại lý đã giao bằng tệp loại `AGENT_DELIVERY_PROOF` có chủ sở hữu `HORSE_LEG`.
+
+Hành trình của chủ đơn chỉ trả biên bản và ảnh gắn với lần giao nhận DONE có ngựa của đơn đã khớp chip. Tệp gắn chung cho nhiều đơn cần được phân quyền theo từng đơn trước khi hiện cho khách.
+
 Ràng buộc bảng:
 - `CHECK (num_nonnulls(trip_stop_id, horse_stay_id) = 1)`
 - `CHECK (from_party_id IS NULL OR to_party_id IS NULL OR from_party_id <> to_party_id)`
@@ -1000,6 +1007,7 @@ Bên giao và bên nhận suy ra từ `handover_type`:
 | `scanned_microchip` | `varchar(30)` | có | | Mã chip đọc được |
 | `is_microchip_matched` | `boolean` | | | So với `horse.microchip` |
 | `condition_note` | `text` | có | | Tình trạng ngựa lúc giao nhận |
+| `recipient_name` | `varchar(120)` | có | | Họ tên người nhận do nhân viên ghi khi giao |
 
 Index: `horse_leg_id`.
 
@@ -1009,7 +1017,7 @@ Index: `horse_leg_id`.
 |---|---|---|---|---|
 | `handover_id` | `bigint` | | PK, FK → handover, CASCADE | |
 | `document_id` | `bigint` | | PK, FK → document | Ví dụ hộ chiếu ngựa bản gốc |
-| `direction` | `varchar(30)` | | CK `RECEIVED, RETURNED` | |
+| `direction` | `varchar(30)` | | CK `RECEIVED, NOT_RECEIVED, RETURNED` | |
 
 Index: `document_id`.
 
@@ -1284,6 +1292,7 @@ Mỗi chứng từ thuộc **đúng một** đối tượng, được chỉ bằ
 | `incident_id` | `bigint` | có | FK → incident | owner_type `INCIDENT` |
 | `cost_item_id` | `bigint` | có | FK → cost_item | owner_type `COST_ITEM` |
 | `handover_id` | `bigint` | có | FK → handover | owner_type `HANDOVER` |
+| `evidence_horse_leg_id` | `bigint` | có | FK → horse_leg và FK ghép (`handover_id`, `evidence_horse_leg_id`) → handover_horse | Chỉ định con trong ảnh giao nhận. Cột này không phải chủ sở hữu tệp. |
 | `vehicle_id` | `bigint` | có | FK → vehicle | owner_type `VEHICLE` |
 | `staff_id` | `bigint` | có | FK → staff(user_id) | owner_type `STAFF` |
 | `party_id` | `bigint` | có | FK → party | owner_type `PARTY` (đối tác) |

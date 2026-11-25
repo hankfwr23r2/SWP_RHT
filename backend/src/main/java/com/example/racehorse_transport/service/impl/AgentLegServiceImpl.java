@@ -2,6 +2,7 @@ package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.repository.DispatchBookingRepository;
 import com.example.racehorse_transport.dto.dispatch.AgentLegRequestDto;
+import org.springframework.web.multipart.MultipartFile;
 import com.example.racehorse_transport.dto.dispatch.HorseLegResponseDto;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.BookingAddress;
@@ -29,6 +30,7 @@ import com.example.racehorse_transport.repository.PartyRoleRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.service.AgentLegService;
 import com.example.racehorse_transport.service.BookingStatusService;
+import com.example.racehorse_transport.service.HandoverEvidenceService;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -56,6 +58,7 @@ public class AgentLegServiceImpl implements AgentLegService {
     private final StaffRepository staff;
     private final BookingStatusService bookingStatus;
     private final Clock clock;
+    private final HandoverEvidenceService evidence;
     private final DispatchBookingRepository dispatchBookings;
 
     @Override
@@ -165,18 +168,20 @@ public class AgentLegServiceImpl implements AgentLegService {
 
     @Override
     @Transactional
-    public HorseLegResponseDto complete(Long horseLegId, String username) {
+    public HorseLegResponseDto complete(Long horseLegId, MultipartFile proof, String username) {
         HorseLeg leg = agentLeg(horseLegId);
         // Chặng đại lý của đơn xuất chạy khi tổ xe bàn giao ở cửa khẩu (handover AGENT)
         if (leg.getLegType() != HorseLegType.DELIVERY || leg.getStatus() != HorseLegStatus.IN_PROGRESS) {
             throw new DispatchRuleException("status", "Chỉ ghi đã giao cho chặng giao của đại lý đang chạy (đã bàn giao ở cửa khẩu).", true);
         }
+        Long actor = staff.findByUser_Username(username)
+                .orElseThrow(() -> new AccessDeniedException("Không tìm thấy hồ sơ nhân viên.")).getUserId();
+        evidence.recordAgentDelivery(leg, proof, actor);
         leg.setStatus(HorseLegStatus.COMPLETED);
         leg.setActualEndAt(clock.instant());
         legs.flush();
         Booking booking = leg.getBookingHorse().getBooking();
         if (booking.getStatus() == BookingStatus.IN_OPERATION && legs.countActiveHorsesNotDelivered(booking.getId()) == 0) {
-            Long actor = staff.findByUser_Username(username).orElseThrow(() -> new AccessDeniedException("Không tìm thấy hồ sơ nhân viên.")).getUserId();
             bookingStatus.transition(booking.getId(), BookingStatus.DELIVERED, "Đại lý đã giao xong mọi con ngựa", actor);
         }
         return HorseLegResponseDto.from(leg);

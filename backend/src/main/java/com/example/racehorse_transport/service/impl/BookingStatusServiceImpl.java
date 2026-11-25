@@ -17,6 +17,7 @@ import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.service.BookingStatusService;
 import com.example.racehorse_transport.service.CustomerNoticeService;
 import com.example.racehorse_transport.service.NotificationService;
+import com.example.racehorse_transport.service.CollectionCodeService;
 import com.example.racehorse_transport.service.HorseLegService;
 import org.springframework.beans.factory.ObjectProvider;
 import java.util.ArrayList;
@@ -37,6 +38,7 @@ public class BookingStatusServiceImpl implements BookingStatusService {
     private final NotificationService notifications;
     private final StaffRepository staff;
     private final CustomerNoticeService notices;
+    private final CollectionCodeService collectionCodes;
     private final ExtraChargeService extraCharges;
     private final ObjectProvider<HorseLegService> horseLegs;
 
@@ -81,6 +83,9 @@ public class BookingStatusServiceImpl implements BookingStatusService {
             throw new IllegalStateException("Đơn " + booking.getCode() + " không chuyển được từ " + from + " sang " + toStatus + ".");
         }
         booking.setStatus(toStatus);
+        if (toStatus == BookingStatus.IN_OPERATION) {
+            collectionCodes.issue(booking);
+        }
         if (toStatus == BookingStatus.CANCELLED || toStatus == BookingStatus.SCHEDULE_CHANGE_REQUIRED
                 || toStatus == BookingStatus.REJECTED || toStatus == BookingStatus.QUOTE_EXPIRED) {
             clearPlannedTransport(bookingId);

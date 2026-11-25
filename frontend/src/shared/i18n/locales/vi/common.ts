@@ -1,5 +1,6 @@
 // Dùng chung mọi trang: thành phần giao diện, điều hướng, trạng thái, vai trò, đăng nhập
 export const common = {
+  handoverEvidence: { noCodeNext: "Bạn có thể xác nhận cho người nhận ngay trên đơn này.", recipient: "Họ tên người nhận", code: "Mã nhận ngựa 6 số", noCode: "Đơn chưa có mã nhận ngựa", confirm: "Xác nhận cho nhận ngựa", confirmMessage: "Sau khi xác nhận, nhân viên có thể giao ngựa mà không cần mã. Chỉ xác nhận khi người nhận sẵn sàng nhận ngựa.", confirmed: "Đã xác nhận cho nhận ngựa", originalMissing: "Không nhận bản gốc", condition: "Tình trạng ngựa", photo: "Ảnh tình trạng ngựa", record: "Biên bản giao nhận đã ký", photoSaved: "Đã lưu ảnh", agentProof: "Ảnh hoặc biên bản đại lý đã giao" },
   ui: {
     loading: 'Đang tải',
     processing: 'Đang xử lý',
@@ -64,6 +65,7 @@ export const common = {
     confirmDeleteAllMessage: 'Các thông báo sẽ bị gỡ khỏi hộp thư của bạn.',
   },
   journey: {
+    evidence: { record: 'Biên bản giao nhận · {{name}}', photo: 'Ảnh giao nhận · {{name}}' },
     horseLabel: 'Hành trình của {{name}}',
     empty: 'Chưa lập chặng nào cho con ngựa này.',
     noHorses: 'Đơn chưa có ngựa.',

@@ -1,5 +1,6 @@
 // Dùng chung mọi trang: thành phần giao diện, điều hướng, trạng thái, vai trò, đăng nhập
 export const common = {
+  handoverEvidence: { noCodeNext: "You can authorize collection from this order.", recipient: "Recipient’s full name", code: "Six-digit collection code", noCode: "Your order has no collection code", confirm: "Authorize collection", confirmMessage: "This allows staff to release the horse without a collection code. Confirm only when the recipient is ready to collect.", confirmed: "Collection authorized", originalMissing: "Original not received", condition: "Horse condition", photo: "Horse condition photo", record: "Signed handover record", photoSaved: "Photo saved", agentProof: "Agent delivery photo or record" },
   ui: {
     loading: 'Loading',
     processing: 'Processing',
@@ -64,6 +65,7 @@ export const common = {
     confirmDeleteAllMessage: 'These notifications will be removed from your inbox.',
   },
   journey: {
+    evidence: { record: 'Signed handover record · {{name}}', photo: 'Handover photo · {{name}}' },
     horseLabel: 'Journey of {{name}}',
     empty: 'No legs planned for this horse yet.',
     noHorses: 'This booking has no horses.',
