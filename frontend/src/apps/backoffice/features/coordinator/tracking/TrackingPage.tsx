@@ -3,6 +3,8 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { custodyApi, type CustodyRow } from '@shared/api/custody'
 import { dispatchApi } from '@shared/api/dispatch'
+import { StayHealthAction } from '@backoffice/shared/StayHealthAction'
+import { HorseHealthHistory } from './HorseHealthHistory'
 import { BookingJourney } from '@shared/components/HorseJourney'
 import { useLoad } from '@shared/hooks/useLoad'
 import { formatDateTime } from '@shared/lib/format'
@@ -31,6 +33,7 @@ export default function TrackingPage() {
   const [proof, setProof] = useState<File>()
   const [savingProof, setSavingProof] = useState(false)
   const [delivered, setDelivered] = useState<CustodyRow>()
+  const [history, setHistory] = useState<CustodyRow>()
   const [journey, setJourney] = useState<CustodyRow>()
   const [balance, setBalance] = useState<CustodyRow>()
   const { data, loaded, error, reload } = useLoad(custodyApi.board, [], { toastOnError: false })
@@ -70,6 +73,11 @@ export default function TrackingPage() {
                 {row.nextCheckAt && row.holder === 'COMPANY' && ` · ${t('tracking.nextCheck', { at: formatDateTime(new Date(row.nextCheckAt)) })}`}</p>
               <div className={s.chips}>
                 {row.agentLegId && <Button size="sm" variant="primary" onClick={() => { setProof(undefined); setDelivered(row) }}>{t('dispatch.agent.complete')}</Button>}
+                {row.healthLogStayId != null && row.bookingHorseId != null && (
+                  <StayHealthAction horseStayId={row.healthLogStayId} bookingHorseId={row.bookingHorseId}
+                    horseName={row.horseName} reported onSaved={reload} />
+                )}
+                {row.bookingHorseId != null && <Button size="sm" onClick={() => setHistory(row)}>{t('stayHealth.history')}</Button>}
                 <Button size="sm" onClick={() => setJourney(row)}>{t('dispatch.board.journey')}</Button>
                 {row.balanceContactAllowed && (
                   <Button size="sm" onClick={() => setBalance(row)}>{t('tracking.balance.open')}</Button>
@@ -109,6 +117,9 @@ export default function TrackingPage() {
             {c => <Input {...c} type="file" accept="image/*,application/pdf" onChange={e => setProof(e.target.files?.[0])} />}
           </Field>
         </Modal>
+      )}
+      {history?.bookingHorseId != null && (
+        <HorseHealthHistory bookingHorseId={history.bookingHorseId} horseName={history.horseName} onClose={() => setHistory(undefined)} />
       )}
       {journey && (
         <Modal title={t('dispatch.bookings.journeyTitle', { code: journey.bookingCode })} onClose={() => setJourney(undefined)}>

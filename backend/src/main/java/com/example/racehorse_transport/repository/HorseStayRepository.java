@@ -59,6 +59,9 @@ public interface HorseStayRepository extends JpaRepository<HorseStay, Long> {
             """)
     List<Handover> findUnbilledBalanceHoldReturns(Long bookingId);
 
+    @EntityGraph(attributePaths = {"bookingHorse", "bookingHorse.horse", "bookingHorse.booking", "location"})
+    List<HorseStay> findByActualStartAtIsNotNullAndActualEndAtIsNullOrderByActualStartAt();
+
     List<HorseStay> findByReadyAtIsNotNullAndActualEndAtIsNull();
 
     @Query("""

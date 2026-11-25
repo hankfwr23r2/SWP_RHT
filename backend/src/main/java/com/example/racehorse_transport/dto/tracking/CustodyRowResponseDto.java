@@ -15,5 +15,5 @@ public record CustodyRowResponseDto(
         CustodyHolder holder, String holderName, Instant holderSince,
         HorseStayType stayType, HorseLegType legType, Long vehicleTripId, String tripCode, String placeName, GeoPointDto point,
         Instant lastCheckAt, HealthStatus healthStatus, Instant nextCheckAt, boolean careOverdue, Long agentLegId,
-        boolean waitingPickupBalance, boolean balanceContactAllowed, Instant balanceHoldAt, Long unclaimedStayId) {
+        boolean waitingPickupBalance, boolean balanceContactAllowed, Instant balanceHoldAt, Long unclaimedStayId, Long healthLogStayId) {
 }

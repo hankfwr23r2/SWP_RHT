@@ -22,6 +22,7 @@ import { StatusBadge, type StatusTone } from '@shared/ui/StatusBadge'
 import { useToast } from '@shared/ui/toast'
 import { PickupMissDialog } from './PickupMissDialog'
 import { HandoverPapersPanel } from './HandoverPapersPanel'
+import { HorseFeedingDetails } from './HorseFeedingDetails'
 import { StopHealthPanel } from './StopHealthPanel'
 import { TripCompletionDialog } from './TripCompletionDialog'
 import { TripIncidentPanel } from './TripIncidentPanel'
@@ -101,6 +102,7 @@ export default function TripRunPage() {
           return (
             <li key={legId} className={s.body}>
               <p className={s.line}>{horse.horseName} · {horse.bookingCode}</p>
+              <HorseFeedingDetails horse={horse} />
               {/* Chip đúng thì chỉ chỗ dẫn ngựa vào (MAN_HINH 4.2, 6.1) */}
               {horse.microchipMatched && stallOf(legId) && <p className={s.line}><strong>{t('myTrips.run.stall', { n: stallOf(legId) })}</strong></p>}
               <StatusBadge

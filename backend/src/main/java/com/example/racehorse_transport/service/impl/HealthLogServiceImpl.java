@@ -2,7 +2,10 @@ package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.dto.health.HealthLogRequestDto;
 import com.example.racehorse_transport.dto.health.HealthLogResponseDto;
+import com.example.racehorse_transport.dto.health.HorseStayResponseDto;
 import com.example.racehorse_transport.entity.BookingHorse;
+import com.example.racehorse_transport.entity.Handover;
+import com.example.racehorse_transport.entity.HandoverHorse;
 import com.example.racehorse_transport.entity.HorseHealthLog;
 import com.example.racehorse_transport.entity.HorseStay;
 import com.example.racehorse_transport.entity.Staff;
@@ -10,14 +13,17 @@ import com.example.racehorse_transport.entity.TripStop;
 import com.example.racehorse_transport.entity.enums.AppUserStatus;
 import com.example.racehorse_transport.entity.enums.CrewAssignmentStatus;
 import com.example.racehorse_transport.entity.enums.EmploymentStatus;
-import com.example.racehorse_transport.entity.enums.HorseLegStatus;
+import com.example.racehorse_transport.entity.enums.HandoverStatus;
 import com.example.racehorse_transport.entity.enums.HealthStatus;
+import com.example.racehorse_transport.entity.enums.HorseLegStatus;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.HealthLogPolicy;
+import com.example.racehorse_transport.policy.TrackingPolicy;
 import com.example.racehorse_transport.repository.BookingHorseRepository;
 import com.example.racehorse_transport.repository.CrewAssignmentRepository;
+import com.example.racehorse_transport.repository.HandoverHorseRepository;
 import com.example.racehorse_transport.repository.HorseHealthLogRepository;
 import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.repository.HorseStayRepository;
@@ -26,9 +32,13 @@ import com.example.racehorse_transport.repository.TripStopRepository;
 import com.example.racehorse_transport.service.HealthLogService;
 import com.example.racehorse_transport.service.NotificationService;
 import java.time.Clock;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BinaryOperator;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -47,6 +57,22 @@ public class HealthLogServiceImpl implements HealthLogService {
     private final StaffRepository staff;
     private final NotificationService notifications;
     private final Clock clock;
+    private final HandoverHorseRepository scans;
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<HorseStayResponseDto> myStays(String username) {
+        Staff recorder = recorder(username);
+        if (!isCrew(roleOf(recorder))) throw new AccessDeniedException("Chỉ tổ xe được xem danh sách này.");
+        var active = stays.findByActualStartAtIsNotNullAndActualEndAtIsNullOrderByActualStartAt().stream()
+                .filter(stay -> HealthLogPolicy.canRecordStay(stay.getLocation().getLocationType(), stay.getStayType(), stay.getOperatorParty() != null))
+                .toList();
+        var handlers = latestCompanyHandovers(active.stream().map(stay -> stay.getBookingHorse().getId()).distinct().toList());
+        return active.stream()
+                .filter(stay -> signedBy(handlers.get(stay.getBookingHorse().getId()), recorder))
+                .map(HorseStayResponseDto::from)
+                .toList();
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -57,14 +83,26 @@ public class HealthLogServiceImpl implements HealthLogService {
     @Override
     @Transactional
     public HealthLogResponseDto record(HealthLogRequestDto request, String username) {
+        Staff recorder = recorder(username);
+        String role = roleOf(recorder);
+        boolean coordinator = "COORDINATOR".equals(role);
+        if ((!coordinator && !isCrew(role)) || (coordinator && request.tripStopId() != null)) {
+            throw new AccessDeniedException("Bạn không có quyền ghi sức khỏe tại đây.");
+        }
         HealthLogPolicy.requireOnePlace(request.tripStopId() != null, request.horseStayId() != null);
         BookingHorse line = bookingHorses.findById(request.bookingHorseId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngựa trong đơn " + request.bookingHorseId()));
-        Staff recorder = staff.findByUser_Username(username).orElseThrow(() -> new AccessDeniedException("Không tìm thấy hồ sơ nhân viên."));
         TripStop stop = request.tripStopId() == null ? null : stopWhereHorseIsOnBoard(request.tripStopId(), line, username);
         HorseStay stay = request.horseStayId() == null ? null : activeStayOf(request.horseStayId(), line);
 
+        if (stay != null && !coordinator && !signedBy(latestCompanyHandovers(List.of(line.getId())).get(line.getId()), recorder)) {
+            throw new AccessDeniedException("Bạn không phụ trách con ngựa này.");
+        }
+
         HorseHealthLog log = request.toEntity(line, stop, stay);
+        if (coordinator) {
+            log.setNote(HealthLogPolicy.reportedNote(request.reportedBy(), request.reportChannel(), request.note()));
+        }
         healthLogs.findFirstByBookingHorse_IdOrderByRecordedAtDesc(line.getId())
                 .filter(previous -> HealthLogPolicy.refusedWaterTwice(request.waterIntake(), previous.getWaterIntake()))
                 .ifPresent(previous -> {
@@ -78,6 +116,37 @@ public class HealthLogServiceImpl implements HealthLogService {
             notifyCoordinatorsForHealth(line, saved.getHealthStatus());
         }
         return HealthLogResponseDto.from(saved);
+    }
+
+    private Staff recorder(String username) {
+        return staff.findByUser_Username(username)
+                .orElseThrow(() -> new AccessDeniedException("Không tìm thấy hồ sơ nhân viên."));
+    }
+
+    private static String roleOf(Staff recorder) {
+        return recorder.getUser().getRole().getCode();
+    }
+
+    private static boolean isCrew(String role) {
+        return "ESCORT".equals(role) || "DRIVER".equals(role);
+    }
+
+    private static boolean signedBy(Handover handover, Staff recorder) {
+        return handover != null && Objects.equals(handover.getHandledBy().getUserId(), recorder.getUserId());
+    }
+
+    private Map<Long, Handover> latestCompanyHandovers(List<Long> horseIds) {
+        if (horseIds.isEmpty()) return Map.of();
+        return scans.findByBookingHorseIds(horseIds).stream()
+                .filter(scan -> Boolean.TRUE.equals(scan.getMicrochipMatched()))
+                .filter(scan -> {
+                    Handover handover = scan.getHandover();
+                    return handover.getStatus() == HandoverStatus.DONE
+                            && TrackingPolicy.holderAfter(handover.getHandoverType(), handover.getToParty() != null)
+                                    == TrackingPolicy.CustodyHolder.COMPANY;
+                })
+                .collect(Collectors.toMap(scan -> scan.getHorseLeg().getBookingHorse().getId(), HandoverHorse::getHandover,
+                        BinaryOperator.maxBy(Comparator.comparing(Handover::getHandedAt).thenComparing(Handover::getId))));
     }
 
     // Người ghi trong tổ lái; xe đang ở điểm này; con ngựa đang trên xe ở điểm này
@@ -101,9 +170,12 @@ public class HealthLogServiceImpl implements HealthLogService {
     }
 
     private HorseStay activeStayOf(Long horseStayId, BookingHorse line) {
-        HorseStay stay = stays.findById(horseStayId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lần lưu trú " + horseStayId));
+        HorseStay stay = stays.findForUpdate(horseStayId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lần lưu trú " + horseStayId));
         if (!Objects.equals(stay.getBookingHorse().getId(), line.getId()) || stay.getActualStartAt() == null || stay.getActualEndAt() != null) {
             throw new DispatchRuleException("horseStayId", "Lần lưu trú này không phải của con ngựa hoặc đã kết thúc.", true);
+        }
+        if (!HealthLogPolicy.canRecordStay(stay.getLocation().getLocationType(), stay.getStayType(), stay.getOperatorParty() != null)) {
+            throw new AccessDeniedException("Chỉ ghi sức khỏe trong lần lưu trú ở hub hoặc chuồng.");
         }
         return stay;
     }

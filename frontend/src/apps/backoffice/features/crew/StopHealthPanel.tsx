@@ -9,6 +9,7 @@ import { Input } from '@shared/ui/Input'
 import { Select } from '@shared/ui/Select'
 import { StatusBadge } from '@shared/ui/StatusBadge'
 import { useToast } from '@shared/ui/toast'
+import { HorseFeedingDetails } from './HorseFeedingDetails'
 import { horsesPassing } from './tripRunModel'
 import s from './MyTrips.module.css'
 
@@ -59,6 +60,7 @@ export function StopHealthPanel({ run, stop }: { run: CrewTrip; stop: Stop }) {
         return (
           <div key={id} className={s.body}>
             <p className={s.line}>{horse.horseName} · {horse.bookingCode}</p>
+            <HorseFeedingDetails horse={horse} />
             <StatusBadge tone={done ? 'success' : 'warning'} label={done ? t('myTrips.run.health.logged') : t('myTrips.run.health.notLogged')} />
             <Field label={t('myTrips.run.health.status')}>
               {c => <Select {...c} value={draft.status} onChange={value => update({ status: value as HealthStatus })}
