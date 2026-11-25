@@ -198,6 +198,10 @@ Quyết toán: nút đóng đơn theo `canClose` của máy chủ, không theo s
 
 Khách: nút **Khiếu nại khoản này** ở khoản thu thêm chưa trả. Quản lý: ở khoản thu của đơn có kết luận khiếu nại, gia hạn, xóa nợ, mở lại khoản, cho đặt đơn lại; mọi thao tác ghi `audit_log`.
 
+## Ngựa chưa có người nhận và các mốc liên quan
+
+Chi tiết đơn của quản lý hiển thị các con đã tới hạn ghi kết quả cuối sau giao hụt. Quản lý chọn hình thức bàn giao, nhập tên người nhận, đính kèm tệp và xác nhận. Bước xem lại đơn hiển thị giá giữ mỗi con trên mỗi 24 giờ trọn vẹn từ quy định công khai. Màn tổ xe đọc danh sách điểm được trả ngựa từ máy chủ.
+
 ## Giờ giao và xe trễ · mục 14 của phương án
 
 Chi tiết đơn hiện khung giao mới nhất. Màn sự cố hiện giờ báo, giờ tới thật, số phút lệch của lần giao hụt; quản lý sửa kết luận trong 24 giờ, điều phối chỉ ghi bất khả kháng.

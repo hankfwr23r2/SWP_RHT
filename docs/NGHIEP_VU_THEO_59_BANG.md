@@ -933,6 +933,10 @@ Nợ quá hạn từ 200.000 đ thì chưa đặt đơn mới được; nhỏ h�
 
 Chưa làm: chia tối đa 3 kỳ; so nợ theo số điện thoại và chip ngựa (13.5 điểm 7); điều khoản phí lúc đặt đơn (điểm 10).
 
+## Ngựa chưa có người nhận và các mốc liên quan
+
+Sau 45 ngày từ thông báo bằng văn bản, quản lý ghi một kết quả theo từng con còn giữ tại hub do giao hụt và đính kèm biên bản. Lần ghi tạo handover RETURN, kết thúc lưu trú và chốt phí qua luồng hiện có. Khi mọi con đã có kết quả, đơn có con đã giao chuyển DELIVERED, đơn toàn bộ con phải trả chuyển CANCELLED. Hủy đơn do quá hạn số dư tách khỏi lưu trú đang mở.
+
 ## Giờ giao và xe trễ · mục 14 của phương án
 
 Đơn chỉ hẹn ngày giao. Lúc phân lượt, mọi điểm được báo giờ dự kiến. Xe rời hub và rời từng điểm thì tính lại giờ mọi điểm còn lại (`trip_stop.expected_arrival_at`), lệch quá ngưỡng thì nhắn khách và ghi `told_arrival_at`, `told_at`. Người nhận vắng thì so giờ tới thật với giờ báo gần nhất ± 30 phút: trong khung là người nhận, sau khung là công ty. Quản lý sửa kết luận trong 24 giờ. Vượt giờ giao hoặc giờ ngồi xe thì báo điều phối.

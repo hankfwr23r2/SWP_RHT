@@ -52,9 +52,16 @@ public class PickupMissEvidenceServiceImpl implements PickupMissEvidenceService 
         var booking = horse.getBooking();
         var recipients = new HashSet<>(staff.findUserIdsByRoleAndStatus("MANAGER", AppUserStatus.ACTIVE));
         recipients.addAll(staff.findUserIdsByRoleAndStatus("COORDINATOR", AppUserStatus.ACTIVE));
-        recipients.add(booking.getCustomer().getUser().getId());
-        notifications.notify(List.copyOf(recipients), booking.getId(), "Đón hụt",
-                "Chưa nhận được " + horse.getHorse().getName() + ". Xem chi tiết đơn để xử lý trước hạn.", null);
+        var customerId = booking.getCustomer().getUser().getId();
+        recipients.remove(customerId);
+        var deadline = java.time.format.DateTimeFormatter.ofPattern("HH:mm dd/MM/uuuu")
+                .withZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).format(horse.getPickupChoiceDueAt());
+        String message = "Chưa nhận được " + horse.getHorse().getName() + ". Lý do: " + horse.getPickupMissReason()
+                + ". Hạn chọn: " + deadline + " (giờ Việt Nam).";
+        notifications.notify(List.of(customerId), booking.getId(), "Đón hụt", message, "/orders/" + booking.getId());
+        if (!recipients.isEmpty()) {
+            notifications.notify(List.copyOf(recipients), booking.getId(), "Đón hụt", message, null);
+        }
     }
 
     @Override
