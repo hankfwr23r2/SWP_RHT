@@ -50,7 +50,6 @@ Muốn chạy hết một đơn trong một buổi (tua giờ, thanh toán giả
 
 ## Chưa làm, đừng báo lỗi
 
-- Cước giao lại, đồng hồ phí giữ dừng khi khách sẵn sàng, kết quả cuối của ngựa không người nhận, giờ giao tính lại sau mỗi điểm: đang làm.
 - Chia nợ nhiều kỳ, đổi nơi giao sau khi cọc.
 - Các gói G2, G3, G5 và điểm của bạn B chưa ghi Đã sửa trong `NGHIEP_VU_6_LUONG.md`.
 

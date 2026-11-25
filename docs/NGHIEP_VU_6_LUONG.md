@@ -1026,7 +1026,7 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 
 ## 5.E. Các điểm nghiệp vụ
 
-> **Đã chốt 25/11/2026, đã làm phần phí giữ, đóng đơn, công nợ; cước giao lại đang làm:** phí giữ theo số lần đủ 24 giờ, chỉ tính thời gian do khách; thu cước giao lại; đơn đóng được khi còn khoản thu thêm. Xem mục 13 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md).
+> **Đã chốt 25/11/2026, đã làm phần phí giữ, đóng đơn, công nợ; cước giao lại:** phí giữ theo số lần đủ 24 giờ, chỉ tính thời gian do khách; thu cước giao lại; đơn đóng được khi còn khoản thu thêm. Xem mục 13 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md).
 
 ### Báo sự cố
 
@@ -1278,7 +1278,7 @@ Dòng hai: loại một con thì bỏ cước trục, dịch vụ và phí bảo
 
 ## 6.E. Các điểm nghiệp vụ
 
-> **Đã chốt 25/11/2026, đã làm phần phí giữ, đóng đơn, công nợ; cước giao lại đang làm:** phí giữ theo số lần đủ 24 giờ, chỉ tính thời gian do khách; thu cước giao lại; đơn đóng được khi còn khoản thu thêm. Xem mục 13 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md).
+> **Đã chốt 25/11/2026, đã làm phần phí giữ, đóng đơn, công nợ; cước giao lại:** phí giữ theo số lần đủ 24 giờ, chỉ tính thời gian do khách; thu cước giao lại; đơn đóng được khi còn khoản thu thêm. Xem mục 13 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md).
 
 ### Giao nhận
 

@@ -13,13 +13,7 @@ Mã điểm (ví dụ 4.F1) trỏ tới mục "Điểm còn hở" trong [NGHIEP_
 
 ## 2. Vùng luồng A đang sửa, đừng sửa cùng lúc
 
-1b, đợt 2 và nhiều nơi giao **đã gộp**. Đang làm, cập nhật 25/11/2026:
-
-| Việc | File |
-|---|---|
-| Đồng hồ dừng, cước giao lại (13.2) | `Stabling*`, `HorseStayServiceImpl`, màn Hub, chi tiết đơn của khách, `PricingPolicy`, `QuotationDraft*` |
-| Đơn không người nhận (13.4), 6.G19, 6.G20 | `BookingCancellation*`, `BalanceHoldNotice*`, `CustodyBoard*`, `DeliveryComplaint*` |
-| Giờ giao và xe trễ (mục 14) | `TripExecutionServiceImpl`, `DeliveryFailureServiceImpl`, `TrackingServiceImpl`, màn sự cố |
+Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A không sửa dở file nào.
 
 ## 3. Nên làm trước
 
