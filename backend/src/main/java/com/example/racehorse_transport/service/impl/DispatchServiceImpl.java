@@ -202,7 +202,10 @@ public class DispatchServiceImpl implements DispatchService {
         DispatchPolicy.requirePlannedWindow(start, end);
         DispatchPolicy.requireStopsInOrder(new Interval(start, end),
                 requested.stream().map(s -> new Interval(s.plannedArrivalAt(), s.plannedDepartureAt())).toList());
-        return request.toEntity(vehicle, null, findLocation(first.locationId()), findLocation(last.locationId()), start, end);
+        Location startLocation = findLocation(first.locationId());
+        Location endLocation = findLocation(last.locationId());
+        DispatchPolicy.requireEndsAtHub(request.tripType(), last.stopType(), endLocation.getLocationType());
+        return request.toEntity(vehicle, null, startLocation, endLocation, start, end);
     }
 
     private List<TripStop> localStops(VehicleTrip trip, List<TripStopRequestDto> requested) {

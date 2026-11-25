@@ -29,11 +29,12 @@ export const toStops = (stops: StopDraft[], locations: NetworkLocation[]): TripS
   }
 })
 
-export function ManualStops({ stops, onChange, bookings, locations }: {
+export function ManualStops({ stops, onChange, bookings, locations, finalPlaceError }: {
   stops: StopDraft[]
   onChange: (stops: StopDraft[]) => void
   bookings: DispatchBooking[]
   locations: NetworkLocation[]
+  finalPlaceError?: string
 }) {
   const { t } = useTranslation()
   const places = [
@@ -52,7 +53,7 @@ export function ManualStops({ stops, onChange, bookings, locations }: {
       <p className={s.muted}>{t('dispatch.create.stopsHint')}</p>
       {stops.map((stop, index) => (
         <div key={index} className={s.stopRow}>
-          <Field label={t('dispatch.create.place', { n: index + 1 })} required>
+          <Field label={t('dispatch.create.place', { n: index + 1 })} error={index === stops.length - 1 ? finalPlaceError : undefined} required>
             {c => <Select {...c} value={stop.place} onChange={value => update(index, { place: value })} placeholder={t('tripWords.choose')} options={places} />}
           </Field>
           <Field label={t('dispatch.create.arrival')} required>

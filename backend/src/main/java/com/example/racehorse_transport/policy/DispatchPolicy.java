@@ -2,7 +2,10 @@ package com.example.racehorse_transport.policy;
 
 import com.example.racehorse_transport.entity.enums.CrewRole;
 import com.example.racehorse_transport.entity.enums.EmploymentStatus;
+import com.example.racehorse_transport.entity.enums.LocationType;
+import com.example.racehorse_transport.entity.enums.TripStopType;
 import com.example.racehorse_transport.entity.enums.VehicleStatus;
+import com.example.racehorse_transport.entity.enums.VehicleTripType;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -53,11 +56,18 @@ public final class DispatchPolicy {
         }
     }
 
-    // Lượt đón, giao, chạy thẳng, chuyển xe bắt đầu và kết thúc ở một điểm của mạng lưới (hub);
+    // Lượt đón, giao, chạy thẳng, chuyển xe bắt đầu và kết thúc ở một điểm của mạng lưới;
     // địa chỉ của khách nằm giữa
     public static void requireStartsAndEndsAtNetworkLocation(boolean firstIsLocation, boolean lastIsLocation) {
         if (!firstIsLocation || !lastIsLocation) {
             throw new DispatchRuleException("stops", "Lượt xe phải bắt đầu và kết thúc ở một điểm của mạng lưới.");
+        }
+    }
+
+    public static void requireEndsAtHub(VehicleTripType tripType, TripStopType lastStopType, LocationType endLocationType) {
+        if ((tripType == VehicleTripType.PICKUP || tripType == VehicleTripType.DELIVERY || tripType == VehicleTripType.DIRECT)
+                && (lastStopType != TripStopType.HUB || endLocationType != LocationType.HUB)) {
+            throw new DispatchRuleException("stops", "Lượt đón, giao, chạy thẳng phải kết thúc ở hub để ngựa giao hụt có chỗ về.");
         }
     }
 

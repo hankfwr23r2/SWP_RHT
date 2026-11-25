@@ -6,7 +6,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.example.racehorse_transport.entity.enums.CrewRole;
 import com.example.racehorse_transport.entity.enums.EmploymentStatus;
+import com.example.racehorse_transport.entity.enums.LocationType;
+import com.example.racehorse_transport.entity.enums.TripStopType;
 import com.example.racehorse_transport.entity.enums.VehicleStatus;
+import com.example.racehorse_transport.entity.enums.VehicleTripType;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.policy.DispatchPolicy.Interval;
 import com.example.racehorse_transport.policy.DispatchPolicy.Occupancy;
@@ -14,6 +17,8 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class DispatchPolicyTest {
 
@@ -55,6 +60,25 @@ class DispatchPolicyTest {
         assertThatCode(() -> DispatchPolicy.requireStartsAndEndsAtNetworkLocation(true, true)).doesNotThrowAnyException();
         assertThatThrownBy(() -> DispatchPolicy.requireStartsAndEndsAtNetworkLocation(false, true)).isInstanceOf(DispatchRuleException.class);
         assertThatThrownBy(() -> DispatchPolicy.requireStartsAndEndsAtNetworkLocation(true, false)).isInstanceOf(DispatchRuleException.class);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = VehicleTripType.class, names = {"PICKUP", "DELIVERY", "DIRECT"})
+    void localHorseTripMustEndAtAHubStopAtAHubLocation(VehicleTripType tripType) {
+        assertThatCode(() -> DispatchPolicy.requireEndsAtHub(tripType, TripStopType.HUB, LocationType.HUB))
+                .doesNotThrowAnyException();
+        assertThatThrownBy(() -> DispatchPolicy.requireEndsAtHub(tripType, TripStopType.REST, LocationType.HUB))
+                .isInstanceOf(DispatchRuleException.class);
+        assertThatThrownBy(() -> DispatchPolicy.requireEndsAtHub(tripType, TripStopType.HUB, LocationType.REST_STOP))
+                .isInstanceOf(DispatchRuleException.class);
+    }
+
+    @Test
+    void transferAndLinehaulCanEndAtOtherNetworkLocations() {
+        assertThatCode(() -> DispatchPolicy.requireEndsAtHub(VehicleTripType.TRANSFER, TripStopType.REST, LocationType.REST_STOP))
+                .doesNotThrowAnyException();
+        assertThatCode(() -> DispatchPolicy.requireEndsAtHub(VehicleTripType.LINEHAUL, TripStopType.BORDER, LocationType.BORDER_GATE))
+                .doesNotThrowAnyException();
     }
 
     @Test
