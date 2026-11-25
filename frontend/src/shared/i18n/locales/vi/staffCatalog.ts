@@ -1,6 +1,6 @@
 export const staffCatalog = {
   systemLogs: {
-    "values": { "ACTIVE": "Đang hoạt động", "INACTIVE": "Ngừng hoạt động", "MAINTENANCE": "Bảo trì", "ADMIN": "Quản trị viên", "MANAGER": "Quản lý", "COORDINATOR": "Điều phối viên", "SPECIALIST": "Chuyên viên", "DRIVER": "Tài xế", "ESCORT": "Hộ tống", "CUSTOMER": "Khách hàng" },
+    "values": { "ACTIVE": "Đang hoạt động", "INACTIVE": "Ngừng hoạt động", "MAINTENANCE": "Bảo trì", "ADMIN": "Quản trị viên", "MANAGER": "Quản lý", "COORDINATOR": "Điều phối viên", "SPECIALIST": "Chuyên viên", "DRIVER": "Tài xế", "ESCORT": "Hộ tống", "CUSTOMER": "Khách hàng", "APPROVED": "Đã duyệt", "REJECTED": "Từ chối" },
     "role": "Vai trò người thực hiện",
     "title": "Nhật ký hệ thống",
     "subtitle": "Theo dõi thay đổi tài khoản và cấu hình quản trị. Thời gian hiển thị theo Việt Nam (UTC+7).",
@@ -49,6 +49,7 @@ export const staffCatalog = {
         "system_config": "Tham số hệ thống",
         "departure": "Chuyến khởi hành",
         "horse_insurance": "Bảo hiểm ngựa",
+        "document": "Giấy tờ",
         "trip_stop": "Điểm dừng",
         "HORSE_TYPE": "Giống ngựa & Giá trị bảo hiểm",
         "USER": "Tài khoản",
@@ -66,6 +67,7 @@ export const staffCatalog = {
         "CONFIRM_DEPARTURE_RUN": "Xác nhận chạy chuyến",
         "REOPEN_INSURANCE": "Mở lại hồ sơ bảo hiểm",
         "REQUEST_INSURANCE_REVISION": "Yêu cầu sửa hồ sơ bảo hiểm",
+        "REVOKE_DOCUMENT": "Thu hồi giấy đã duyệt",
         "LEAVE_REST_STOP_EARLY": "Rời điểm nghỉ sớm",
         "CREATE_HORSE_TYPE": "Tạo giống ngựa",
         "UPDATE_HORSE_TYPE": "Cập nhật giống ngựa",
@@ -101,6 +103,8 @@ export const staffCatalog = {
         "updatedAt": "Thời điểm cập nhật",
         "updatedByUserId": "Người cập nhật",
         "reason": "Lý do",
+        "reviewedBy": "Người kết luận",
+        "reviewedAt": "Thời điểm kết luận",
         "stopOrder": "Thứ tự điểm dừng",
         "typeName": "Tên giống ngựa",
         "insuredValue": "Giá trị bảo hiểm",

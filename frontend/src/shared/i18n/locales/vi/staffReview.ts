@@ -140,6 +140,7 @@ export const staffReview = {
       "startQuoting": "Bắt đầu báo giá",
       "approveDocument": "Duyệt giấy",
       "rejectDocument": "Từ chối giấy",
+      "revokeDocument": "Thu hồi",
       "confirmInsurance": "Xác nhận bảo hiểm",
       "requestRevision": "Yêu cầu bổ sung bảo hiểm",
       "reopenInsurance": "Mở lại bảo hiểm"
@@ -152,6 +153,7 @@ export const staffReview = {
       "startQuoting": "Đơn sẽ chuyển sang Đang báo giá nếu hồ sơ đáp ứng các yêu cầu.",
       "approveDocument": "Giấy này sẽ được đánh dấu đã duyệt.",
       "rejectDocument": "Giấy sẽ bị từ chối. Khách sẽ nhận được lý do bạn nhập.",
+      "revokeDocument": "Giấy sẽ bị từ chối và bên nộp sẽ nhận được lý do. Xe sẽ bị chặn nếu đơn thiếu giấy bắt buộc.",
       "confirmInsurance": "Phương án bảo hiểm của ngựa này sẽ được đánh dấu đã xác nhận.",
       "requestRevision": "Khách sẽ nhận lời nhắn yêu cầu cập nhật hợp đồng.",
       "reopenInsurance": "Bảo hiểm sẽ trở về trạng thái chờ xác nhận để bạn thẩm định lại."

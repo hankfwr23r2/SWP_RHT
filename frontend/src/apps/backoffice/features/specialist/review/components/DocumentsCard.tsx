@@ -7,7 +7,7 @@ import { Card } from '@shared/ui/Card'
 import { EmptyState } from '@shared/ui/EmptyState'
 import { StatusBadge } from '@shared/ui/StatusBadge'
 import { documentsFor, itemKey, showDate, showsDocumentActions } from '../reviewDisplay'
-import type { ReviewActions } from '../useReviewActions'
+import type { ReviewAction, ReviewActions } from '../useReviewActions'
 import { ActionButtons } from './ActionButtons'
 import { ChecklistFacts } from './ChecklistFacts'
 import { UploadPartnerDialog } from './UploadPartnerDialog'
@@ -19,6 +19,11 @@ function DocumentRow({ document, editable, actions }: { document: BookingDocumen
   const { t, i18n } = useTranslation()
   const { id, status, fileUrl, fileName, expiryDate, reviewNote } = document
   const pending = editable && status === 'UPLOADED'
+  const options: ReviewAction[] = []
+  if (editable && id != null) {
+    if (status === 'UPLOADED') options.push(actions.approveDocument(id), actions.rejectDocument(id))
+    if (status === 'APPROVED') options.push(actions.revokeDocument(id))
+  }
   return <li className={s.item} data-pending={pending || undefined}>
     <div className={s.stack}>
       <div className={s.row}>
@@ -28,8 +33,7 @@ function DocumentRow({ document, editable, actions }: { document: BookingDocumen
       </div>
       {expiryDate && <p>{t('staffReview.expiry', { date: showDate(expiryDate, i18n.language) })}</p>}
       {reviewNote && <p>{reviewNote}</p>}
-      {pending && id != null &&
-        <ActionButtons options={[actions.approveDocument(id), actions.rejectDocument(id)]} actions={actions} />}
+      {options.length > 0 && <ActionButtons options={options} actions={actions} />}
     </div>
   </li>
 }

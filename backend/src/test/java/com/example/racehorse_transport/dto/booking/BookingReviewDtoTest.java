@@ -73,4 +73,23 @@ class BookingReviewDtoTest {
         assertThat(result.bookingHorseId()).isNull();
         assertThat(BookingDocumentResponseDto.from(row, 9L).bookingHorseId()).isEqualTo(9L);
     }
+
+    @Test
+    void revocationRequestOnlyAppliesTheReviewNote() {
+        Document row = new Document();
+        row.setId(1L);
+        row.setStatus(DocumentStatus.APPROVED);
+        Staff reviewer = new Staff();
+        Instant reviewedAt = Instant.parse("2026-11-23T00:00:00Z");
+        row.setReviewedBy(reviewer);
+        row.setReviewedAt(reviewedAt);
+
+        new DocumentRevocationRequestDto("  Giấy sai nội dung  ").applyTo(row);
+
+        assertThat(row.getReviewNote()).isEqualTo("Giấy sai nội dung");
+        assertThat(row.getId()).isEqualTo(1L);
+        assertThat(row.getStatus()).isEqualTo(DocumentStatus.APPROVED);
+        assertThat(row.getReviewedBy()).isSameAs(reviewer);
+        assertThat(row.getReviewedAt()).isEqualTo(reviewedAt);
+    }
 }

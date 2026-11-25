@@ -8,5 +8,7 @@ public interface HandoverReadinessService {
 
     void requireReadyToReceiveAtHub(BookingHorse horse);
 
+    void requireDocumentsForPickup(Booking booking);
+
     void requireDocumentsAtBorder(Booking booking, boolean fromAgent);
 }

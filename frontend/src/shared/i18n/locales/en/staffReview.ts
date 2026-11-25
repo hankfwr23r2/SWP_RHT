@@ -140,6 +140,7 @@ export const staffReview = {
       "startQuoting": "Start quoting",
       "approveDocument": "Approve document",
       "rejectDocument": "Reject document",
+      "revokeDocument": "Revoke approval",
       "confirmInsurance": "Confirm insurance",
       "requestRevision": "Request insurance updates",
       "reopenInsurance": "Reopen insurance"
@@ -152,6 +153,7 @@ export const staffReview = {
       "startQuoting": "The order will move to Preparing quote if it meets the requirements.",
       "approveDocument": "This document will be marked as approved.",
       "rejectDocument": "The document will be rejected. The customer will receive your reason.",
+      "revokeDocument": "The document will be rejected and the submitting party will receive your reason. The vehicle cannot depart if required paperwork is missing.",
       "confirmInsurance": "This horse’s insurance option will be marked as confirmed.",
       "requestRevision": "The customer will receive your request to update the policy.",
       "reopenInsurance": "Insurance will return to Awaiting confirmation so you can review it again."

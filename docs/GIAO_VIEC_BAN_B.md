@@ -39,7 +39,7 @@ Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A
 |---|---|---|---|---|
 | **2.F2** | Khách tự có bảo hiểm chỉ khai số hợp đồng, không tải tệp | Dùng loại giấy `INSURANCE_POLICY` đã khai, bắt buộc tệp khi khách tự mua | `InsuranceServiceImpl`, màn thẩm định | |
 | **2.F4** | **Đã sửa.** Chuyên viên cập nhật và xác nhận bảo hiểm mua hộ khi đơn Đang báo giá. Quản lý lập lại bản nháp theo phí mới | | `InsuranceServiceImpl`, `InsurancesCard.tsx` | |
-| **2.F5** | Không rút được giấy đã duyệt khi phát hiện giả hoặc sai | Chuyên viên thu hồi, bắt buộc lý do, báo bên nộp; chặn xe như thiếu giấy | `DocumentReviewServiceImpl`, `DocumentReviewPolicy` | Giấy đã theo xe thì cần quy định riêng |
+| **2.F5** | **Đã sửa.** Chuyên viên thu hồi giấy đã duyệt trước khi nhận ngựa, ghi lý do, lưu kiểm toán và báo bên nộp. Thiếu giấy thì chặn xe. | | `DocumentReviewServiceImpl`, `DocumentReviewPolicy` | Đã nhận ngựa thì xử lý qua sự cố giấy tờ |
 | **2.F7** | **Đã sửa.** Đơn xuất phải đủ giấy bắt buộc khi bàn giao cho đại lý ở cửa khẩu. Thiếu giấy thì ngựa vẫn trên xe. | | `HandoverOutcomeServiceImpl` | Trùng 4.F12 |
 | **2.F8** | Xuất Lào thiếu sổ tiêm, nhập Lào thiếu xét nghiệm so với Campuchia | Hỏi nhóm cố ý hay thiếu; tra [CAN_CU_PHAP_LY_VA_IRT.md](CAN_CU_PHAP_LY_VA_IRT.md) | `db/seed-dev/R__dev_seed_base.sql` (`document_requirement`) | Pháp lý Lào **chưa kiểm chứng** |
 | **2.F9** | **Đã sửa.** Giấy theo ngựa đã duyệt, còn hạn được dùng cho mọi quy định yêu cầu cùng loại giấy. | | `DocumentCompletenessPolicy` | Giấy theo đơn hoặc theo ngựa trong đơn chỉ dùng cho đơn đó |
@@ -65,7 +65,7 @@ Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A
 | **4.F2** | **Đã sửa.** Tổ xe và màn Hub thấy chỉ dẫn ăn uống, số bữa, ai cấp thức ăn | | `HorseFeedingDetails` | |
 | **4.F3** | **Đã sửa.** Chủ đơn xem nhật ký sức khỏe từng con; nhân viên và tra cứu công khai không nhận mục này | | `TrackingEvidenceServiceImpl` | |
 | **4.F6** | **Đã sửa.** Điểm có giờ dừng kế hoạch từ OVERNIGHT_REST_HOURS trở lên phải nghỉ đủ số giờ đó; rời sớm phải ghi lý do và hệ thống báo điều phối | | `StopReadinessServiceImpl`, `HealthLogPolicy` | |
-| **4.F10** | Chưa báo tình trạng xe khi về trụ sở | Tài xế chọn bình thường hoặc cần bảo dưỡng khi kết thúc lượt | `TripExecutionServiceImpl`, `VehicleServiceImpl` | 1b đã gộp, làm được. Làm cùng 5.G16 |
+| **4.F10** | **Đã sửa.** Tài xế báo tình trạng xe khi kết thúc lượt; cần bảo dưỡng thì xe sang bảo dưỡng | | `TripExecutionServiceImpl`, `VehicleServiceImpl` | Làm cùng 5.G16 (#482) |
 | **4.F11** | Không có vị trí xe thời gian thực | Cân nhắc bỏ khỏi phạm vi; hiện dùng điểm dừng gần nhất | màn Theo dõi | Hỏi người dùng trước |
 | **4.F12** | **Đã sửa.** Tổ xe chỉ hoàn tất bàn giao cho đại lý ở cửa khẩu khi đơn xuất đủ giấy bắt buộc. | | `HandoverOutcomeServiceImpl` | Trùng 2.F7 |
 
@@ -76,7 +76,7 @@ Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A
 | **5.G5** | **Đã sửa.** Lượt đón, giao, chạy thẳng phải kết thúc ở hub; máy chủ chặn khi lập lượt, màn lập lượt báo ngay ở điểm cuối | | `DispatchPolicy`, `DispatchServiceImpl`, `CreateTripModal.tsx` | |
 | **5.G14** | **Đã sửa.** Sự cố Nặng chưa có phương án được duyệt thì khóa Tới nơi, Rời đi; duyệt phương án tự mở, điều phối mở khóa kèm lý do | | `IncidentPolicy.blocksTrip`, `TripReadinessServiceImpl` | |
 | **5.G15** | **Đã sửa.** Ghi kết quả thú y vào sổ sức khỏe, gửi đúng chuồng tại điểm dừng mạng lưới, hủy chặng và đưa ngựa về hub tập kết không phí. | | `IncidentActionServiceImpl`, `HandoverCustodyServiceImpl`, `IncidentReturnServiceImpl` | |
-| **5.G16** | Đổi xe không ký lại giao nhận, xe hỏng không sang bảo dưỡng | Xe hỏng sang bảo dưỡng ngay; hộ tống ký `SHIFT` tại chỗ | `IncidentActionServiceImpl`, `VehicleServiceImpl` | Đợt 2 đã gộp, làm được. Làm cùng 4.F10 |
+| **5.G16** | **Đã sửa.** Đổi xe có ảnh biên bản đã ký, xe hỏng sang bảo dưỡng ngay | | `IncidentActionServiceImpl`, `VehicleServiceImpl` | Làm cùng 4.F10 (#482) |
 | **5.G17** | **Đã sửa.** Chỉ hộ tống của lượt xác nhận đủ sức và phải có ảnh xác nhận; điều phối xác nhận thay vẫn cần kết quả thú y | | `IncidentServiceImpl`, `TripIncidentPanel` | |
 | **5.G18** | **Đã sửa.** Hộ tống bấm Bắt đầu cho ngựa nghỉ; 30 phút đếm từ lúc đó | | `IncidentPolicy`, `incident.rest_started_at` | |
 | **5.G22** | **Đã sửa.** Sự cố có mức Nhẹ, Vừa, Nặng (mặc định theo loại, điều phối đổi được); danh sách xếp Nặng lên đầu | | `incident.severity`, màn sự cố | |
@@ -92,7 +92,8 @@ Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A
 | Điểm | Phương án | Duyệt | PR |
 |---|---|---|---|
 | 1.F5 | Đặt hạn theo giờ cho tiếp nhận, thẩm định, gửi báo giá. Quét mỗi giờ, nhắc theo vai trò và giữ trạng thái đơn | Đã duyệt | #504 |
-| 2.F2, 2.F5, 2.F8 | | | |
+| 2.F2, 2.F8 | | | |
+| 2.F5 | Thu hồi giấy đã duyệt trước khi nhận ngựa, chuyển sang từ chối kèm lý do, ghi kiểm toán và báo bên nộp | Đã duyệt | |
 | 2.F9 | Dùng lại giấy theo ngựa đã duyệt và còn hạn khi yêu cầu cùng loại giấy | Đã duyệt | #503 |
 | 2.F7 | Kiểm đủ giấy bắt buộc khi bàn giao đơn xuất cho đại lý ở cửa khẩu | Đã duyệt | #496 |
 | 2.F10 | Kiểm bảo hiểm đã xác nhận khi nhận ngựa nhập từ đại lý ở cửa khẩu | Đã duyệt | #496 |

@@ -4313,6 +4313,16 @@
         "required" : [ "documentTypeId", "mandatory", "submitterType" ],
         "type" : "object"
       },
+      "DocumentRevocationRequestDto" : {
+        "properties" : {
+          "reason" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
+        "type" : "object"
+      },
       "DocumentTypeCreateRequestDto" : {
         "properties" : {
           "code" : {
@@ -12217,6 +12227,51 @@
             "application/json" : {
               "schema" : {
                 "$ref" : "#/components/schemas/DocumentRejectionRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBookingDocumentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-document-review-controller" ]
+      }
+    },
+    "/bookings/{id}/documents/{documentId}/revoke" : {
+      "post" : {
+        "operationId" : "revoke",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "path",
+          "name" : "documentId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DocumentRevocationRequestDto"
               }
             }
           },

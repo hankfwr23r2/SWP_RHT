@@ -60,4 +60,11 @@ public class BookingDocumentReviewController {
     public ApiResponseDto<BookingDocumentResponseDto> reject(@PathVariable Long id, @PathVariable Long documentId, Authentication authentication, @Valid @RequestBody DocumentRejectionRequestDto request) {
         return ApiResponseDto.success(documents.reject(id, documentId, authentication.getName(), request.reason()), "Thành công.");
     }
+
+    @PostMapping("/{documentId}/revoke")
+    @PreAuthorize("hasRole('SPECIALIST')")
+    public ApiResponseDto<BookingDocumentResponseDto> revoke(@PathVariable Long id, @PathVariable Long documentId,
+            Authentication authentication, @Valid @RequestBody DocumentRevocationRequestDto request) {
+        return ApiResponseDto.success(documents.revoke(id, documentId, authentication.getName(), request), "Thành công.");
+    }
 }

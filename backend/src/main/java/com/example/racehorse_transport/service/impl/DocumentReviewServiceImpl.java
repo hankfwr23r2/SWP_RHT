@@ -11,6 +11,7 @@ import java.util.Arrays;
 import com.example.racehorse_transport.dto.booking.DocumentUploadRequestDto;
 import com.example.racehorse_transport.dto.booking.PartnerDocumentUploadRequestDto;
 import com.example.racehorse_transport.dto.booking.DocumentApprovalRequestDto;
+import com.example.racehorse_transport.dto.booking.DocumentRevocationRequestDto;
 import com.example.racehorse_transport.dto.regulation.DocumentRequirementResponseDto;
 import com.example.racehorse_transport.entity.*;
 import com.example.racehorse_transport.entity.enums.*;
@@ -23,6 +24,7 @@ import com.example.racehorse_transport.service.*;
 import static com.example.racehorse_transport.policy.BookingSubmissionPolicy.businessDate;
 import java.time.Clock;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +41,7 @@ public class DocumentReviewServiceImpl implements DocumentReviewService {
     private final DocumentService attachments;
     private final DocumentCompletenessService completeness;
     private final NotificationService notifications;
+    private final AuditService audit;
     private final Clock clock;
 
     @Override
@@ -58,8 +61,7 @@ public class DocumentReviewServiceImpl implements DocumentReviewService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn."));
         var resolved = completeness.resolve(booking);
         List<Document> rows = completeness.findCandidateDocuments(bookingId);
-        List<BookingHorse> active = horses.findForDetail(bookingId).stream()
-                .filter(horse -> horse.getStatus() == BookingHorseStatus.ACTIVE).toList();
+        List<BookingHorse> active = activeHorses(bookingId);
         LocalDate requiredOn = DocumentCompletenessPolicy.requiredOn(booking, businessDate(clock.instant()));
         List<Item> items = resolved.requirements().stream().flatMap(requirement -> switch (requirement.ownerType()) {
             case HORSE, BOOKING_HORSE -> active.stream().map(horse -> checklistItem(requirement, bookingId, horse, rows, requiredOn));
@@ -164,13 +166,44 @@ public class DocumentReviewServiceImpl implements DocumentReviewService {
         return conclude(bookingId, documentId, username, DocumentStatus.REJECTED, BookingReviewPolicy.requireReason(reason));
     }
 
+    @Override
+    @Transactional
+    public BookingDocumentResponseDto revoke(Long bookingId, Long documentId, String username, DocumentRevocationRequestDto request) {
+        Booking booking = lockBooking(bookingId);
+        Staff reviewer = assignments.requireAssigned(booking, username);
+        DocumentReviewPolicy.requireRevocationBeforePickup(booking.getStatus(), bookings.hasReceivedHorses(bookingId));
+        Document document = lockDocument(documentId);
+        DocumentSubmitter submitter = revocationSubmitter(booking, document);
+        DocumentReviewPolicy.requireApproved(document.getStatus());
+
+        var before = Map.of("status", document.getStatus(), "reviewedBy", document.getReviewedBy().getUserId(),
+                "reviewedAt", document.getReviewedAt().toString());
+        request.applyTo(document);
+        markReviewed(document, reviewer, DocumentStatus.REJECTED);
+        audit.record(reviewer.getUserId(), "REVOKE_DOCUMENT", "document", documentId, before,
+                Map.of("status", document.getStatus(), "reviewedBy", reviewer.getUserId(),
+                        "reviewedAt", document.getReviewedAt().toString(), "reason", document.getReviewNote()));
+        notifyRejection(booking, submitter, document.getReviewNote());
+        return BookingDocumentResponseDto.from(document);
+    }
+
+    private DocumentSubmitter revocationSubmitter(Booking booking, Document document) {
+        Long bookingId = booking.getId();
+        List<BookingHorse> active = activeHorses(bookingId);
+        var requirement = completeness.resolve(booking).requirements().stream()
+                .filter(row -> DocumentCompletenessPolicy.matchesChecklist(document, row, bookingId, null)
+                        || active.stream().anyMatch(horse -> DocumentCompletenessPolicy.matchesChecklist(document, row, bookingId, horse)))
+                .findFirst().orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy giấy tờ của đơn."));
+        var source = document.getDocumentRequirement();
+        return source == null ? requirement.submitterType() : source.getSubmitterType();
+    }
+
     private BookingDocumentResponseDto conclude(Long bookingId, Long documentId, String username,
             DocumentStatus outcome, String note) {
         Booking booking = lockBooking(bookingId);
         var reviewer = assignments.requireAssigned(booking, username);
         DocumentReviewPolicy.requireStaffReview(booking.getStatus());
-        Document document = documents.findForReviewUpdate(documentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy giấy tờ."));
+        Document document = lockDocument(documentId);
         if (documents.findForBookingReview(bookingId).stream().noneMatch(row -> row.getId().equals(documentId))
                 || completeness.resolve(booking).requirements().stream()
                         .noneMatch(row -> row.id().equals(document.getDocumentRequirement().getId())
@@ -178,20 +211,27 @@ public class DocumentReviewServiceImpl implements DocumentReviewService {
             throw new ResourceNotFoundException("Không tìm thấy giấy tờ của đơn.");
         }
         DocumentReviewPolicy.requireUploaded(document.getStatus());
-        document.setReviewedBy(reviewer);
-        document.setReviewedAt(clock.instant());
+        markReviewed(document, reviewer, outcome);
         document.setReviewNote(note);
-        document.setStatus(outcome);
         if (outcome == DocumentStatus.REJECTED) {
-            boolean customer = document.getDocumentRequirement().getSubmitterType() == DocumentSubmitter.CUSTOMER;
-            var recipients = customer ? List.of(booking.getCustomer().getUser().getId())
-                    : assignments.recipients(booking);
-            if (!recipients.isEmpty()) {
-                notifications.notify(recipients, bookingId, "Giấy tờ cần bổ sung", note,
-                        customer ? "/orders/" + bookingId : assignments.reviewLink(booking));
-            }
+            notifyRejection(booking, document.getDocumentRequirement().getSubmitterType(), note);
         }
         return BookingDocumentResponseDto.from(document);
+    }
+
+    private void markReviewed(Document document, Staff reviewer, DocumentStatus outcome) {
+        document.setReviewedBy(reviewer);
+        document.setReviewedAt(clock.instant());
+        document.setStatus(outcome);
+    }
+
+    private void notifyRejection(Booking booking, DocumentSubmitter submitter, String note) {
+        boolean customer = submitter == DocumentSubmitter.CUSTOMER;
+        var recipients = customer ? List.of(booking.getCustomer().getUser().getId()) : assignments.recipients(booking);
+        if (!recipients.isEmpty()) {
+            notifications.notify(recipients, booking.getId(), "Giấy tờ cần bổ sung", note,
+                    customer ? "/orders/" + booking.getId() : assignments.reviewLink(booking));
+        }
     }
 
     private static void requireSupportedFile(MultipartFile file) {
@@ -212,6 +252,15 @@ public class DocumentReviewServiceImpl implements DocumentReviewService {
 
     private Booking lockBooking(Long id) {
         return bookings.findForUpdate(id).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn."));
+    }
+
+    private Document lockDocument(Long id) {
+        return documents.findForReviewUpdate(id).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy giấy tờ."));
+    }
+
+    private List<BookingHorse> activeHorses(Long bookingId) {
+        return horses.findForDetail(bookingId).stream()
+                .filter(horse -> horse.getStatus() == BookingHorseStatus.ACTIVE).toList();
     }
 
     private BookingHorse ownerHorse(Long bookingId, Long horseId, DocumentSubject subject) {

@@ -33,7 +33,15 @@ export function ActionButtons({ options, actions }: { options: ReviewAction[]; a
 
   const label = selected && t(`staffReview.action.${selected.label}`)
   const error = selected && actions.error && <p role="alert" className={s.error}>{actions.error}</p>
-  const message = selected && t(`staffReview.consequence.${selected.label}`)
+  const message = selected && <div className={s.stack}>
+    <p>{t(`staffReview.consequence.${selected.label}`)}</p>
+    {selected.reason && <Field label={t('staffReview.reason')} required
+      error={actions.fields.reason || (submitted && !reason.trim() ? t('staffReview.required') : undefined)}>
+      {control => <Textarea {...control} rows={3} value={reason} disabled={actions.busy}
+        onChange={event => { setReason(event.target.value); actions.clear() }} />}
+    </Field>}
+    {(!selected.reason || !actions.fields.reason) && error}
+  </div>
 
   return <>
     <div className={s.actions}>
@@ -47,21 +55,10 @@ export function ActionButtons({ options, actions }: { options: ReviewAction[]; a
         }}>{t(`staffReview.action.${option.label}`)}</Button>)}
     </div>
     {!selected && quoteError && <p role="alert" className={s.error}>{quoteError}</p>}
-    {selected?.reason ? <Modal title={label} onClose={close} footer={<>
+    {selected?.reason && !selected.confirm ? <Modal title={label} onClose={close} footer={<>
       <Button onClick={close} disabled={actions.busy}>{t('ui.cancel')}</Button>
       <Button variant={selected.danger ? 'danger' : 'primary'} onClick={apply} loading={actions.busy}>{label}</Button>
-    </>}>
-      <div className={s.stack}>
-        <p>{message}</p>
-        <Field label={t('staffReview.reason')} required
-          error={actions.fields.reason || (submitted && !reason.trim() ? t('staffReview.required') : undefined)}>
-          {control => <Textarea {...control} rows={3} value={reason} disabled={actions.busy}
-            onChange={event => { setReason(event.target.value); actions.clear() }} />}
-        </Field>
-        {!actions.fields.reason && error}
-      </div>
-    </Modal> : selected && <ConfirmDialog title={label} confirmLabel={label ?? ''}
-      message={<div className={s.stack}><p>{message}</p>{error}</div>}
-      onConfirm={apply} onCancel={close} />}
+    </>}>{message}</Modal> : selected && <ConfirmDialog title={label} confirmLabel={label ?? ''}
+      message={message} tone={selected.danger ? 'danger' : 'primary'} onConfirm={apply} onCancel={close} />}
   </>
 }

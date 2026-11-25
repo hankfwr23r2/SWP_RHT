@@ -1,6 +1,6 @@
 export const staffCatalog = {
   systemLogs: {
-    "values": { "ACTIVE": "Active", "INACTIVE": "Inactive", "MAINTENANCE": "Maintenance", "ADMIN": "Administrator", "MANAGER": "Manager", "COORDINATOR": "Coordinator", "SPECIALIST": "Specialist", "DRIVER": "Driver", "ESCORT": "Escort", "CUSTOMER": "Customer" },
+    "values": { "ACTIVE": "Active", "INACTIVE": "Inactive", "MAINTENANCE": "Maintenance", "ADMIN": "Administrator", "MANAGER": "Manager", "COORDINATOR": "Coordinator", "SPECIALIST": "Specialist", "DRIVER": "Driver", "ESCORT": "Escort", "CUSTOMER": "Customer", "APPROVED": "Approved", "REJECTED": "Rejected" },
     "role": "Actor role",
     "title": "System log",
     "subtitle": "Track account and administrative configuration changes. Times are shown in Vietnam time (UTC+7).",
@@ -49,6 +49,7 @@ export const staffCatalog = {
         "system_config": "System setting",
         "departure": "Departure",
         "horse_insurance": "Horse insurance",
+        "document": "Document",
         "trip_stop": "Trip stop",
         "HORSE_TYPE": "Horse types & Insured values",
         "USER": "Account",
@@ -66,6 +67,7 @@ export const staffCatalog = {
         "CONFIRM_DEPARTURE_RUN": "Confirm departure",
         "REOPEN_INSURANCE": "Reopen insurance",
         "REQUEST_INSURANCE_REVISION": "Request insurance revision",
+        "REVOKE_DOCUMENT": "Revoke document approval",
         "LEAVE_REST_STOP_EARLY": "Leave rest stop early",
         "CREATE_HORSE_TYPE": "Create horse type",
         "UPDATE_HORSE_TYPE": "Update horse type",
@@ -101,6 +103,8 @@ export const staffCatalog = {
         "updatedAt": "Updated at",
         "updatedByUserId": "Updated by",
         "reason": "Reason",
+        "reviewedBy": "Reviewed by",
+        "reviewedAt": "Reviewed at",
         "stopOrder": "Stop order",
         "typeName": "Horse type name",
         "insuredValue": "Insured value",
