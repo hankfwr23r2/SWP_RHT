@@ -22,5 +22,5 @@ CREATE INDEX ix_coordinator_history_departure ON coordinator_assignment_history(
 CREATE INDEX ix_coordinator_history_trip ON coordinator_assignment_history(vehicle_trip_id);
 
 INSERT INTO system_config (config_key, config_value, unit, config_group, description, min_value, max_value)
-VALUES ('COORDINATOR_ASSIGN_REMIND_HOURS', '48', 'HOUR', 'DEPARTURE', 'Nhac phan cong dieu phoi cho chuyen', 1, 168),
-       ('EARLY_START_MINUTES', '30', 'MINUTE', 'DEPARTURE', 'Nguong yeu cau ly do xuat phat som', 0, 1440);
+VALUES ('COORDINATOR_ASSIGN_REMIND_HOURS', '48', 'HOUR', 'DEPARTURE', 'Nhắc phân công điều phối cho chuyến trước giờ chạy', 1, 168),
+       ('EARLY_START_MINUTES', '30', 'MINUTE', 'DEPARTURE', 'Xuất phát sớm hơn kế hoạch quá số phút này thì phải ghi lý do', 0, 1440);

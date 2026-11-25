@@ -73,7 +73,7 @@ class PickupMissServiceTest {
         assertThat(horse.getPickupMissReason()).isEqualTo("Chip mismatch");
         assertThat(horse.getStatus()).isEqualTo(BookingHorseStatus.ACTIVE);
         assertThat(planned.getStatus()).isEqualTo(HorseLegStatus.CANCELLED);
-        verify(evidence).record(horse, null, null, null, NOW, 4L);
+        verify(evidence).record(eq(horse), isNull(), isNull(), isNull(), eq(NOW), eq(4L), any());
         verifyNoInteractions(bookingHorses, cancellations);
     }
 
