@@ -5444,6 +5444,7 @@ export interface components {
             horseLegId?: number;
             horseName?: string;
             microchipMatched?: boolean;
+            photoAttached?: boolean;
             scannedMicrochip?: string;
         };
         HandoverPaperRequestDto: {

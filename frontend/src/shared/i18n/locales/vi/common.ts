@@ -2,6 +2,7 @@
 export const common = {
   stablingClock: {
     title: "Giữ ngựa tại hub",
+    readyReported: "Đã báo sẵn sàng nhận lúc {{at}}. Công ty đang xếp giờ giao lại.",
     empty: "Đơn chưa có ngựa đang giữ tại hub.",
     emptyHint: "Theo dõi hành trình của ngựa trong chi tiết đơn.",
     running: "Đang tính giờ",
@@ -94,7 +95,7 @@ export const common = {
     phone: "Nội dung khách xác nhận qua điện thoại",
     save: "Xác nhận",
   },
-  handoverEvidence: { noCodeNext: "Bạn có thể xác nhận cho người nhận ngay trên đơn này.", recipient: "Họ tên người nhận", code: "Mã nhận ngựa 6 số", noCode: "Đơn chưa có mã nhận ngựa", confirm: "Xác nhận cho nhận ngựa", confirmMessage: "Sau khi xác nhận, nhân viên có thể giao ngựa mà không cần mã. Chỉ xác nhận khi người nhận sẵn sàng nhận ngựa.", confirmed: "Đã xác nhận cho nhận ngựa", originalMissing: "Không nhận bản gốc", condition: "Tình trạng ngựa", photo: "Ảnh tình trạng ngựa", record: "Biên bản giao nhận đã ký", photoSaved: "Đã lưu ảnh", agentProof: "Ảnh hoặc biên bản đại lý đã giao" },
+  handoverEvidence: { noCodeNext: "Bạn có thể xác nhận cho người nhận ngay trên đơn này.", recipient: "Họ tên người nhận", code: "Mã nhận ngựa 6 số", noCode: "Đơn chưa có mã nhận ngựa", confirm: "Xác nhận cho nhận ngựa", confirmMessage: "Sau khi xác nhận, nhân viên có thể giao ngựa mà không cần mã. Chỉ xác nhận khi người nhận sẵn sàng nhận ngựa.", confirmed: "Đã xác nhận cho nhận ngựa", originalMissing: "Không nhận bản gốc", condition: "Tình trạng ngựa", photo: "Ảnh tình trạng ngựa", record: "Biên bản giao nhận đã ký", photoAttached: "Đã có ảnh", photoSaved: "Đã lưu ảnh", agentProof: "Ảnh hoặc biên bản đại lý đã giao" },
   ui: {
     loading: 'Đang tải',
     processing: 'Đang xử lý',

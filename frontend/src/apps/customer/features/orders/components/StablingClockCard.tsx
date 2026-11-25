@@ -55,6 +55,7 @@ export function StablingClockCard({ bookingId, onChanged }: { bookingId: number;
         })}</p>
         <p>{t('stablingClock.amount', { amount: formatVND(row.amount ?? 0) })}</p>
         {row.nextChargeAt && <p>{t('stablingClock.next', { at: formatDateTime(new Date(row.nextChargeAt)) })}</p>}
+        {row.readyAt && <p>{t('stablingClock.readyReported', { at: formatDateTime(new Date(row.readyAt)) })}</p>}
         {row.collectionExpectedAt && <p>{t('stablingClock.collectionAt', { at: formatDateTime(new Date(row.collectionExpectedAt)) })}</p>}
         <div className={s.stack}>
           {row.canReady && row.stayId != null && <Button onClick={() => setAction({ stayId: row.stayId!, collect: false })}>{t('stablingClock.ready')}</Button>}
