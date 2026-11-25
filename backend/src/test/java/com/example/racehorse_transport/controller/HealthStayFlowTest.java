@@ -219,7 +219,7 @@ class HealthStayFlowTest {
                 "reportedBy":"Nhân viên chuồng","reportChannel":" "
                 """)).andExpect(status().isBadRequest()).andExpect(jsonPath("$.data.reportChannel").exists());
         mvc.perform(get("/horse-stays/mine").header(HttpHeaders.AUTHORIZATION, escort))
-                .andExpect(status().isOk()).andExpect(jsonPath(lineFilter + ".id").value(stay));
+                .andExpect(status().isOk()).andExpect(jsonPath(lineFilter + ".id").value((int) stay));
         mvc.perform(get("/horse-stays/mine").header(HttpHeaders.AUTHORIZATION, driver))
                 .andExpect(status().isOk()).andExpect(jsonPath(lineFilter).isEmpty());
         mvc.perform(get("/horse-stays/mine").header(HttpHeaders.AUTHORIZATION, coordinator)).andExpect(status().isForbidden());
@@ -233,7 +233,7 @@ class HealthStayFlowTest {
         entityManager.clear();
         postHealth(escort, body).andExpect(status().isForbidden());
         mvc.perform(get("/horse-stays/mine").header(HttpHeaders.AUTHORIZATION, driver))
-                .andExpect(status().isOk()).andExpect(jsonPath(lineFilter + ".id").value(stay));
+                .andExpect(status().isOk()).andExpect(jsonPath(lineFilter + ".id").value((int) stay));
         mvc.perform(get("/custody-board").header(HttpHeaders.AUTHORIZATION, coordinator))
                 .andExpect(status().isOk()).andExpect(jsonPath(lineFilter + ".careOverdue").value(true));
         postHealth(driver, body).andExpect(status().isCreated());

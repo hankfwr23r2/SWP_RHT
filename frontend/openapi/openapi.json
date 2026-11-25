@@ -2946,6 +2946,10 @@
           "careOverdue" : {
             "type" : "boolean"
           },
+          "healthLogStayId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
           "healthStatus" : {
             "enum" : [ "NORMAL", "WATCH", "SICK", "CRITICAL" ],
             "type" : "string"
@@ -4391,6 +4395,16 @@
           },
           "note" : {
             "maxLength" : 2000,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "reportChannel" : {
+            "maxLength" : 120,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "reportedBy" : {
+            "maxLength" : 120,
             "minLength" : 0,
             "type" : "string"
           },
@@ -14236,6 +14250,24 @@
           }
         },
         "tags" : [ "hub-handover-controller" ]
+      }
+    },
+    "/horse-stays/mine" : {
+      "get" : {
+        "operationId" : "myStays",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListHorseStayResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "health-log-controller" ]
       }
     },
     "/horse-stays/{id}/collection-time" : {

@@ -2292,6 +2292,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/horse-stays/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["myStays"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/horse-stays/{id}/collection-time": {
         parameters: {
             query?: never;
@@ -4945,6 +4961,8 @@ export interface components {
             /** Format: int64 */
             bookingId?: number;
             careOverdue?: boolean;
+            /** Format: int64 */
+            healthLogStayId?: number;
             /** @enum {string} */
             healthStatus?: "NORMAL" | "WATCH" | "SICK" | "CRITICAL";
             /** @enum {string} */
@@ -5489,6 +5507,8 @@ export interface components {
             /** Format: int64 */
             horseStayId?: number;
             note?: string;
+            reportChannel?: string;
+            reportedBy?: string;
             /** Format: int32 */
             respirationRatePerMinute?: number;
             symptoms?: string;
@@ -5596,6 +5616,7 @@ export interface components {
             /** Format: int64 */
             bookingHorseId?: number;
             handovers?: components["schemas"]["JourneyHandoverDto"][];
+            healthLogs?: components["schemas"]["JourneyHealthLogResponseDto"][];
             /** @enum {string} */
             holder?: "SHIPPER" | "COMPANY" | "PARTY" | "CONSIGNEE";
             holderPartyName?: string;
@@ -5693,6 +5714,10 @@ export interface components {
             bookingHorseId?: number;
             /** @enum {string} */
             deliveryMethod?: "COMPANY" | "SELF";
+            dietNote?: string;
+            feedSuppliedByOwner?: boolean;
+            /** Format: int32 */
+            feedingsPerDay?: number;
             horseName?: string;
             /** Format: int64 */
             id?: number;
@@ -5924,6 +5949,21 @@ export interface components {
             toPartyName?: string;
             /** Format: date-time */
             waitStartedAt?: string;
+        };
+        JourneyHealthLogResponseDto: {
+            /** @enum {string} */
+            feedIntake?: "NORMAL" | "REDUCED" | "REFUSED";
+            /** @enum {string} */
+            healthStatus?: "NORMAL" | "WATCH" | "SICK" | "CRITICAL";
+            /** Format: int64 */
+            id?: number;
+            placeName?: string;
+            /** Format: date-time */
+            recordedAt?: string;
+            temperatureCelsius?: number;
+            vehicleTripCode?: string;
+            /** @enum {string} */
+            waterIntake?: "NORMAL" | "REDUCED" | "REFUSED";
         };
         JourneyLegDto: {
             /** Format: date-time */
@@ -7075,6 +7115,10 @@ export interface components {
         };
         TripHorseResponseDto: {
             bookingCode?: string;
+            dietNote?: string;
+            feedSuppliedByOwner?: boolean;
+            /** Format: int32 */
+            feedingsPerDay?: number;
             horseName?: string;
             leg?: components["schemas"]["HorseLegResponseDto"];
             microchip?: string;
@@ -11047,6 +11091,26 @@ export interface operations {
             query: {
                 locationId: number;
             };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListHorseStayResponseDto"];
+                };
+            };
+        };
+    };
+    myStays: {
+        parameters: {
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;

@@ -869,8 +869,8 @@ Ba lớp trạng thái không trộn vào nhau:
 
 ## 4.F. Điểm còn hở, cần nhóm quyết
 
-1. **Không có chỗ ghi sức khỏe khi ngựa ở hub hoặc chuồng.** Máy chủ nhận, màn hình chưa có; ngựa ở hub vì thế luôn bị tô Trễ khám sau 12 giờ.
-2. **Chỉ dẫn ăn uống của khách không tới tay tổ lái.** Khách ghi chỉ dẫn và số bữa lúc đặt đơn, màn của tài xế và hộ tống không hiện.
+1. **Đã sửa 25/11/2026 (4.F1).** **Không có chỗ ghi sức khỏe khi ngựa ở hub hoặc chuồng.** Máy chủ nhận, màn hình chưa có; ngựa ở hub vì thế luôn bị tô Trễ khám sau 12 giờ.
+2. **Đã sửa 25/11/2026 (4.F2).** **Chỉ dẫn ăn uống của khách không tới tay tổ lái.** Khách ghi chỉ dẫn và số bữa lúc đặt đơn, màn của tài xế và hộ tống không hiện.
 3. **Khách không xem được nhật ký sức khỏe.** Dòng thời gian của khách chỉ có chặng, lưu trú, giao nhận.
 4. **Ghi Ốm hoặc Nguy cấp không báo ai và không mở sự cố.** Chỉ "bỏ uống hai lần" mới báo điều phối. Đề xuất: Ốm và Nguy cấp báo ngay điều phối và gợi ý mở sự cố.
 5. **Không ghi sức khỏe lúc nhận ngựa**, dù tài liệu yêu cầu khám khi nhận. Lúc quét chip chỉ có ô tình trạng, màn hình chưa hiện ô này. Nhịp tim, nhịp thở có ở máy chủ nhưng chưa có ô nhập.
