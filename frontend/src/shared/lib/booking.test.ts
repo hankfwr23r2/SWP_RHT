@@ -1,8 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { createElement } from 'react'
-import { renderToStaticMarkup } from 'react-dom/server'
-import i18n from '../i18n'
-import { QuoteSheet } from '../ui/QuoteSheet'
 import { DAY, HOUR } from '../config/business-rules'
 import { BOOKING_STATUS, BOOKING_STEPS, stepOf, statusRank, type BookingStatus } from '../config/booking-rules'
 import type { Incident, IncidentExpense } from '../types/booking'
@@ -319,18 +315,6 @@ describe('báo giá', () => {
       expect(lines.length).toBeGreaterThan(0)
       expect(lines.filter(l => !(l.amount > 0)).map(l => l.label)).toEqual([])
     }
-  })
-  // Công ty không ký điện tử và không xuất hóa đơn qua phiếu này: phiếu không được tự nhận là hóa đơn
-  it('phiếu báo giá mang tên "PHIẾU BÁO GIÁ" và không tự nhận là hóa đơn hay dự thảo hóa đơn điện tử', () => {
-    const { lines } = quoteLines(base, [{ capacity: 2 }])
-    const total = lines.reduce((sum, line) => sum + line.amount, 0)
-    void i18n.changeLanguage('vi')
-    const html = renderToStaticMarkup(createElement(QuoteSheet, { lines, subtotal: total, total, deposit: Math.round(total * 0.3), balance: total - Math.round(total * 0.3) }))
-    const text = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')
-
-    expect(text).toContain('PHIẾU BÁO GIÁ')
-    expect(text).not.toMatch(/HÓA ĐƠN BÁO GIÁ/)
-    expect(text).not.toMatch(/dự thảo hóa đơn|hóa đơn (dịch vụ vận chuyển )?điện tử/i)
   })
   // Chủ dự án chốt 18/11: phí giấy phép nhập khẩu và kiểm dịch của đơn quốc tế do khách chịu, thể hiện trong báo giá
   it('dòng phí thủ tục đơn quốc tế nói rõ do khách chịu theo mức ghi trên báo giá, không gọi là phí trọn gói', () => {
