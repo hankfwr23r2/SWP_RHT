@@ -56,6 +56,7 @@ public class IncidentReportingServiceImpl implements IncidentReportingService {
             IncidentPolicy.requireNoOpenTripIncident(incidents.existsByVehicleTrip_IdAndHorseLegIsNullAndStatusIn(trip.getId(), OPEN));
         }
         Incident incident = request.toEntity(trip, leg, leg == null ? null : leg.getBookingHorse().getBooking());
+        incident.setSeverity(request.severity() == null ? IncidentPolicy.defaultSeverity(request.incidentType()) : request.severity());
         incident.setReportedBy(reporter);
         incident.setStatus(IncidentStatus.REPORTED);
         Incident saved = incidents.saveAndFlush(incident);

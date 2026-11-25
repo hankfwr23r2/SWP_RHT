@@ -52,8 +52,9 @@ class IncidentEvidenceFlowTest {
         manager = token(testData.staff(testData.unique("evidence.manager"), "MANAGER"), "MANAGER");
         long booking = jdbc.queryForObject("SELECT id FROM booking WHERE code = 'DEV-DIRECT-001'", Long.class);
         incident = jdbc.queryForObject("""
-                INSERT INTO incident (booking_id, incident_type, cause_type, title, description, reported_by, status)
-                VALUES (?, 'HEALTH', 'HORSE_CONDITION', 'Ngựa sốt', 'Sốt 39,5 độ', ?, 'REPORTED') RETURNING id""", Long.class, booking, driverStaff.getUserId());
+                INSERT INTO incident (booking_id, incident_type, severity, cause_type, title, description, reported_by, status)
+                VALUES (?, 'HEALTH', 'HIGH', 'HORSE_CONDITION', 'Ngựa sốt', 'Sốt 39,5 độ', ?, 'REPORTED') RETURNING id""",
+                Long.class, booking, driverStaff.getUserId());
         toll = jdbc.queryForObject("""
                 INSERT INTO cost_item (category, description, amount, currency_code, payer_type, booking_id, incurred_at, recorded_by)
                 VALUES ('TOLL', 'Phí cao tốc', 300000, 'VND', 'COMPANY', ?, now(), ?) RETURNING id""", Long.class, booking, driverStaff.getUserId());

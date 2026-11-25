@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.policy.IncidentPolicy;
 import com.example.racehorse_transport.dto.report.OperationsSummaryResponseDto;
 import com.example.racehorse_transport.dto.report.OperationsSummaryResponseDto.PayerAmountDto;
 import com.example.racehorse_transport.dto.report.OperationsSummaryResponseDto.IncidentTypeCountDto;
@@ -135,7 +136,8 @@ public class ReportServiceImpl implements ReportService {
         return new Facts(tripList,
                 stops.findByVehicleTrip_IdInOrderByVehicleTrip_IdAscSequenceNumberAsc(ids).stream().collect(Collectors.groupingBy(stop -> stop.getVehicleTrip().getId())),
                 tripLegs.stream().collect(Collectors.groupingBy(leg -> leg.getVehicleTrip().getId())),
-                incidents.findByVehicleTrip_IdInOrderByReportedAt(ids).stream().collect(Collectors.groupingBy(incident -> incident.getVehicleTrip().getId())),
+                incidents.findByVehicleTrip_IdIn(ids).stream().sorted(IncidentPolicy.DISPLAY_ORDER)
+                        .collect(Collectors.groupingBy(incident -> incident.getVehicleTrip().getId())),
                 costs.findOfTrips(ids).stream().collect(Collectors.groupingBy(ReportServiceImpl::tripOf)),
                 bookingIds.isEmpty() ? Map.of() : ratings.findByBookingIdIn(bookingIds).stream().collect(Collectors.toMap(BookingRating::getBookingId, r -> r)));
     }

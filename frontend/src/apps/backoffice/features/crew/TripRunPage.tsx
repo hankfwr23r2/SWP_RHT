@@ -1,5 +1,4 @@
 // Thực hiện lượt xe theo điểm dừng (tài xế, hộ tống, điện thoại): xuất phát, tới, giao nhận và quét chip, rời, kết thúc
-// (docs/MAN_HINH_VA_TAC_DONG.md mục 4.1–4.5, 6.1, 6.5). Nhận ngựa: không nhận con nào thì ghi lý do (4.4)
 import { useState } from 'react'
 import { useParams, Link } from 'react-router'
 import { useTranslation } from 'react-i18next'
@@ -26,6 +25,7 @@ import { HorseFeedingDetails } from './HorseFeedingDetails'
 import { StopHealthPanel } from './StopHealthPanel'
 import { TripCompletionDialog } from './TripCompletionDialog'
 import { TripIncidentPanel } from './TripIncidentPanel'
+import { useTripIncidents } from './useTripIncidents'
 import { canArrive, canComplete, canDepart, canRefuse, canReturnUnpaid, canStart, needsRecord, handoverTypesAt, isRestStop, pendingAt, receivesOriginals, stopState, type StopState } from './tripRunModel'
 import s from './MyTrips.module.css'
 
@@ -52,6 +52,7 @@ export default function TripRunPage() {
   const [partnerId, setPartnerId] = useState('')
   const { data, loaded, error, reload, updateData } = useLoad(() => tripExecutionApi.trip(tripId), [tripId], { toastOnError: false })
   useAutoRefresh(reload)
+  const incidents = useTripIncidents(tripId, data?.trip)
 
   // Mọi thao tác trả về lượt xe mới; lỗi hiện đúng lý do backend trả về
   const run = async (action: () => Promise<CrewTrip>, done: string) => {
@@ -72,6 +73,8 @@ export default function TripRunPage() {
   if (!loaded) return <Skeleton variant="block" lines={4} />
   if (error || !data?.trip) return <ErrorState title={t('myTrips.run.loadError')} message={error?.message} onRetry={reload} />
   const trip = data.trip
+  const tripBlocked = trip.status === 'IN_PROGRESS' && incidents.data?.some(incident => incident.blocksTrip)
+  const canMove = incidents.data !== undefined && !incidents.error && !tripBlocked
 
   const openStayIn = async (stopId: number) => {
     setPartnerId('')
@@ -177,6 +180,7 @@ export default function TripRunPage() {
       <PageHeader title={`${trip.code} · ${t(`tripWords.type.${trip.tripType}`)}`}
         description={`${trip.licensePlate} · ${trip.startLocationName} → ${trip.endLocationName}`} />
       <StatusBadge tone={trip.status === 'COMPLETED' ? 'success' : trip.status === 'IN_PROGRESS' ? 'info' : 'neutral'} label={t(`tripWords.status.${trip.status}`)} />
+      {tripBlocked && <p className={s.warning} role="status">{t('myTrips.run.incident.tripBlocked')}</p>}
       {canStart(data) && (
         <Button variant="primary" size="lg" fullWidth loading={busy} onClick={() => run(() => tripExecutionApi.start(tripId), t('myTrips.run.done.started'))}>
           {t('myTrips.run.start')}
@@ -192,7 +196,7 @@ export default function TripRunPage() {
                 actions={<StatusBadge tone={STATE_TONE[state]} label={t(`myTrips.run.stopState.${state}`)} />}>
                 <div className={s.body}>
                   <p className={s.muted}>{stop.plannedArrivalAt ? formatDateTime(new Date(stop.plannedArrivalAt)) : ''}</p>
-                  {canArrive(data, stop) && (
+                  {canMove && canArrive(data, stop) && (
                     <Button variant="primary" size="lg" fullWidth loading={busy}
                       onClick={() => run(() => tripExecutionApi.arrive(stop.id ?? 0), t('myTrips.run.done.arrived'))}>{t('myTrips.run.arrive')}</Button>
                   )}
@@ -208,13 +212,13 @@ export default function TripRunPage() {
                     <Button variant="danger" size="lg" fullWidth onClick={() => setReturning(stop.id)}>{t('myTrips.run.unpaidReturn.action')}</Button>
                   )}
                   {state === 'here' && isRestStop(stop) && <StopHealthPanel run={data} stop={stop} />}
-                  {canDepart(data, stop) && isRestStop(stop) && (
+                  {canMove && canDepart(data, stop) && isRestStop(stop) && (
                     <Field label={t('myTrips.run.earlyReason')}>
                       {c => <Textarea {...c} value={earlyReasons[stop.id ?? 0] ?? ''}
                         onChange={e => setEarlyReasons(current => ({ ...current, [stop.id ?? 0]: e.target.value }))} />}
                     </Field>
                   )}
-                  {canDepart(data, stop) && (
+                  {canMove && canDepart(data, stop) && (
                     <Button size="lg" fullWidth loading={busy}
                       onClick={() => run(() => tripExecutionApi.depart(stop.id ?? 0, earlyReasons[stop.id ?? 0]?.trim() || undefined), t('myTrips.run.done.departed'))}>
                       {t('myTrips.run.depart')}
@@ -226,7 +230,7 @@ export default function TripRunPage() {
           )
         })}
       </ol>
-      {(trip.status === 'IN_PROGRESS' || trip.status === 'COMPLETED') && <TripIncidentPanel run={data} />}
+      {(trip.status === 'IN_PROGRESS' || trip.status === 'COMPLETED') && <TripIncidentPanel run={data} query={incidents} />}
       {failing !== undefined && (
         <ConfirmDialog
           tone="danger"

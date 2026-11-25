@@ -18,6 +18,7 @@ import com.example.racehorse_transport.entity.enums.HorseLegStatus;
 import com.example.racehorse_transport.entity.enums.HorseLegType;
 import com.example.racehorse_transport.entity.enums.HorseStayType;
 import com.example.racehorse_transport.entity.enums.IncidentCauseType;
+import com.example.racehorse_transport.entity.enums.IncidentSeverity;
 import com.example.racehorse_transport.entity.enums.IncidentPlanStatus;
 import com.example.racehorse_transport.entity.enums.IncidentResolutionType;
 import com.example.racehorse_transport.entity.enums.IncidentStatus;
@@ -309,6 +310,7 @@ class OperationsEntityMappingTest {
         Incident incident = new Incident();
         incident.setVehicleTrip(trip);
         incident.setIncidentType(IncidentType.DELAY);
+        incident.setSeverity(IncidentSeverity.LOW);
         incident.setCauseType(IncidentCauseType.COMPANY_FAULT);
         incident.setTitle("Kẹt xe trên quốc lộ");
         incident.setDescription("Chậm 2 giờ");
@@ -405,6 +407,7 @@ class OperationsEntityMappingTest {
                 .getDirection()).isEqualTo(HandoverDocumentDirection.RECEIVED);
         assertThat(documents.findById(record.getId()).orElseThrow().getUploadedAt()).isNotNull();
         assertThat(incidents.findById(incidentId).orElseThrow().getReportedAt()).isNotNull();
+        assertThat(incidents.findById(incidentId).orElseThrow().getSeverity()).isEqualTo(IncidentSeverity.LOW);
         assertThat(incidentPlans.findAll()).filteredOn(p -> p.getIncident().getId().equals(incidentId))
                 .singleElement().satisfies(p -> assertThat(p.getProposedAt()).isNotNull());
         assertThat(costItems.findAll()).filteredOn(c -> c.getIncident() != null && c.getIncident().getId().equals(incidentId))

@@ -20,6 +20,7 @@ import com.example.racehorse_transport.entity.enums.IncidentType;
 import com.example.racehorse_transport.exception.BookingRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.DeliveryComplaintPolicy;
+import com.example.racehorse_transport.policy.IncidentPolicy;
 import com.example.racehorse_transport.repository.BookingHorseRepository;
 import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.BookingStatusHistoryRepository;
@@ -163,6 +164,7 @@ public class DeliveryComplaintServiceImpl implements DeliveryComplaintService {
         photos.forEach(DeliveryComplaintServiceImpl::requirePhoto);
         complaint.setTitle("Khiếu nại giao ngựa");
         complaint.setIncidentType(IncidentType.COMPLAINT);
+        complaint.setSeverity(IncidentPolicy.defaultSeverity(complaint.getIncidentType()));
         complaint.setStatus(IncidentStatus.REPORTED);
         complaint.setReportedBy(reporter);
         incidents.saveAndFlush(complaint);

@@ -31,6 +31,8 @@ public interface IncidentService {
     // Từ chối phải có lý do; điều phối lập phiên bản tiếp theo
     IncidentResponseDto reject(Long planId, PlanRejectRequestDto request, String username);
 
+    IncidentResponseDto startRest(Long incidentId, String username);
+
     // Ngựa đủ sức đi tiếp, sau khi phương án được duyệt và đã nghỉ đủ MIN_REST_MINUTES
     IncidentResponseDto confirmFit(Long incidentId, String username);
 

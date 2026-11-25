@@ -22,7 +22,7 @@ import com.example.racehorse_transport.service.BookingStatusService;
 import com.example.racehorse_transport.service.StopReadinessService;
 import com.example.racehorse_transport.service.TripExecutionService;
 import com.example.racehorse_transport.service.TripProgressNoticeService;
-import com.example.racehorse_transport.service.TripPickupReadinessService;
+import com.example.racehorse_transport.service.TripReadinessService;
 import java.time.Clock;
 import java.util.List;
 import java.util.Set;
@@ -39,7 +39,7 @@ public class TripExecutionServiceImpl implements TripExecutionService {
     private final TripStopRepository stops;
     private final CrewAssignmentRepository crew;
     private final HorseLegRepository legs;
-    private final TripPickupReadinessService startChecks;
+    private final TripReadinessService tripReadiness;
     private final StopReadinessService readiness;
     private final BookingStatusService bookingStatus;
     private final Clock clock;
@@ -68,7 +68,7 @@ public class TripExecutionServiceImpl implements TripExecutionService {
             throw new DispatchRuleException("stallPlan", "Còn ngựa chưa có vị trí khoang: " + String.join(", ", unplaced)
                     + ". Xếp sơ đồ khoang trước khi xuất phát.", true);
         }
-        startChecks.requireReady(trip);
+        tripReadiness.requireReadyToStart(trip);
         trip.setStatus(VehicleTripStatus.IN_PROGRESS);
         trip.setActualStartAt(clock.instant());
         if (trip.getTripType() == VehicleTripType.LINEHAUL) {
@@ -83,6 +83,7 @@ public class TripExecutionServiceImpl implements TripExecutionService {
         TripStop stop = findStop(tripStopId);
         requireCrew(trip.getId(), username);
         TripExecutionPolicy.requireInProgress(trip.getStatus());
+        tripReadiness.requireTripUnblocked(trip.getId());
         TripStop previous = previousOf(stop);
         TripExecutionPolicy.requireCanArrive(stop.getActualArrivalAt() != null, previous == null || previous.getActualDepartureAt() != null);
         stop.setActualArrivalAt(clock.instant());
@@ -96,6 +97,7 @@ public class TripExecutionServiceImpl implements TripExecutionService {
         TripStop stop = findStop(tripStopId);
         CrewAssignment member = requireCrew(trip.getId(), username);
         TripExecutionPolicy.requireInProgress(trip.getStatus());
+        tripReadiness.requireTripUnblocked(trip.getId());
         boolean earlyOvernightDeparture = readiness.requireCanLeave(stop, earlyReason, member.getStaff().getUserId());
         if (stop.getStopType() == TripStopType.PICKUP || stop.getStopType() == TripStopType.BORDER || stop.getStopType() == TripStopType.HUB) {
             leavePickup(stop, member.getStaff().getUserId());

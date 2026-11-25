@@ -29,6 +29,14 @@
   font-size: var(--text-sm);
 }
 
+.warning {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-danger-soft);
+  color: var(--color-danger-strong);
+}
+
 .actions {
   display: grid;
   gap: var(--space-2);

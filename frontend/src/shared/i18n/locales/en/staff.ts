@@ -24,6 +24,20 @@ export const staff = {
   },
   incidents: {
     departure: 'Related departure: {{route}} · {{date}}',
+    severity: {
+      label: 'Severity',
+      LOW: 'Low',
+      MEDIUM: 'Medium',
+      HIGH: 'High',
+      default: 'Default for incident type',
+      defaultsError: 'Could not load the default severities by incident type.',
+      save: 'Save severity',
+    },
+    unlockTrip: {
+      action: 'Unlock vehicle trip',
+      reason: 'Reason for unlocking',
+      consequence: 'This releases the lock caused by this incident. The reason will be recorded in the audit log.',
+    },
     handoverCause: {
       told: "Announced time",
       arrived: "Actual arrival",
@@ -114,6 +128,10 @@ export const staff = {
     "evidenceType": "Evidence type",
     "vetReport": "Veterinary report",
     "vetReportNeeded": "Upload a veterinary report to confirm on behalf of the crew.",
+    "restStartedAt": "Rest started at {{time}}",
+    "fitCheckPhoto": "Fitness confirmation photo",
+    "fitCheckPhotoFile": "Choose a photo of the horse",
+    "uploadFitCheckPhoto": "Upload fitness confirmation photo",
     "vehicleSwapRecord": "Vehicle swap record",
     "vehicleSwapRecordFile": "Photo of the signed vehicle swap record",
     "uploadVehicleSwapRecord": "Upload vehicle swap record",
