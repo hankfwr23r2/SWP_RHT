@@ -3,6 +3,7 @@ import { expect, test, type Route } from '@playwright/test'
 // B2: hộ tống thực hiện lượt đón theo điểm dừng trên điện thoại. API giả lập có trạng thái.
 const ok = (route: Route, data: unknown) => route.fulfill({ json: { status: 'success', message: '', data } })
 const CHIP = '985000000100002'
+const horsePhoto = { name: 'horse.jpg', mimeType: 'image/jpeg', buffer: Buffer.from([1, 2, 3]) }
 
 function newRun() {
   return {
@@ -46,6 +47,10 @@ test('hộ tống xuất phát, nhận ngựa có quét chip rồi rời điểm
       horse.microchipMatched = microchip === CHIP
       return ok(route, run)
     }
+    if (path === '/handovers/50/horses/70/photos') {
+      sent.photo = request.postData()?.includes('name="file"; filename="horse.jpg"')
+      return ok(route, run)
+    }
     if (path === '/handovers/50/papers' && request.method() === 'GET') return ok(route, papers)
     if (path === '/handovers/50/papers') { papers[0].direction = 'RECEIVED'; sent.paper = request.postDataJSON(); return ok(route, papers) }
     if (path === '/handovers/50/record') { sent.record = true; run.handovers[0].recordAttached = true; return ok(route, run) }
@@ -74,6 +79,7 @@ test('hộ tống xuất phát, nhận ngựa có quét chip rồi rời điểm
   // Đang giao nhận dở thì chưa có nút rời đi
   await expect(pickup.getByRole('button', { name: 'Rời đi' })).toHaveCount(0)
 
+  await pickup.getByLabel('Tình trạng ngựa').fill('Khỏe')
   await pickup.getByLabel('Chip của Sao Mai').fill('985000000999999')
   await pickup.getByRole('button', { name: 'Quét' }).click()
   await expect(pickup).toContainText('Sai chip')
@@ -82,10 +88,13 @@ test('hộ tống xuất phát, nhận ngựa có quét chip rồi rời điểm
   await expect(pickup).toContainText('Đúng chip')
   // Chip đúng thì hiện số khoang để dẫn ngựa vào
   await expect(pickup).toContainText('Khoang số 2')
+  await pickup.getByLabel('Ảnh tình trạng ngựa').setInputFiles(horsePhoto)
+  await expect(page.getByText('Đã lưu ảnh', { exact: true })).toBeVisible()
+  expect(sent.photo).toBe(true)
   // Giấy gốc: nhận hộ chiếu ngựa. Chưa có biên bản thì chưa hoàn tất được
   await pickup.getByRole('list', { name: 'Giấy tờ gốc' }).getByRole('button', { name: 'Đã nhận bản gốc' }).click()
   await expect(pickup.getByRole('list', { name: 'Giấy tờ gốc' })).toContainText('Đã nhận bản gốc')
-  expect(sent.paper).toEqual({ documentId: 900 })
+  expect(sent.paper).toEqual({ documentId: 900, originalMissing: false })
   await expect(pickup.getByRole('button', { name: 'Hoàn tất giao nhận' })).toBeDisabled()
   await pickup.getByLabel('Ảnh biên bản đã ký').setInputFiles({ name: 'bien-ban.jpg', mimeType: 'image/jpeg', buffer: Buffer.from([1, 2, 3]) })
   await pickup.getByRole('button', { name: 'Tải biên bản' }).click()
@@ -96,6 +105,70 @@ test('hộ tống xuất phát, nhận ngựa có quét chip rồi rời điểm
   await pickup.getByRole('button', { name: 'Rời đi' }).click()
   await expect(pickup).toContainText('Đã rời')
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0)
+})
+
+test('hộ tống giao ngựa với tình trạng, ảnh và mã nhận sáu số', async ({ page }) => {
+  await page.addInitScript(() => sessionStorage.setItem('SWP_SESSION_backoffice', JSON.stringify({ role: 'escort', name: 'Hộ tống Một', username: 'escort@example.com' })))
+  const run = newRun()
+  Object.assign(run.trip, { tripType: 'DIRECT', status: 'IN_PROGRESS' })
+  Object.assign(run.trip.stops[0], { actualArrivalAt: 't', actualDepartureAt: 't' })
+  Object.assign(run.trip.stops[1], { actualArrivalAt: 't', actualDepartureAt: 't' })
+  Object.assign(run.trip.stops[2], { stopType: 'DELIVERY', locationName: 'Trại Huế', actualArrivalAt: 't' })
+  run.horses[0].leg.status = 'IN_PROGRESS'
+  const horse = { horseLegId: 70, bookingCode: 'BK-AAAA0001', horseName: 'Sao Mai', microchipMatched: false }
+  const handover = { id: 60, handoverType: 'DELIVERY', status: 'PENDING', tripStopId: 3, recordAttached: false, horses: [horse] }
+  run.handovers.push(handover)
+  const sent: Record<string, unknown> = {}
+  await page.route('**/api/v1/**', async route => {
+    const request = route.request()
+    const path = new URL(request.url()).pathname.replace('/api/v1', '')
+    if (path === '/crew/vehicle-trips/9') return ok(route, run)
+    if (path === '/handovers/60/papers') return ok(route, [])
+    if (path === '/handovers/60/horses') {
+      sent.scan = request.postDataJSON()
+      horse.microchipMatched = true
+      return ok(route, run)
+    }
+    if (path === '/handovers/60/horses/70/photos') {
+      const form = await new Response(request.postDataBuffer(), { headers: { 'Content-Type': request.headers()['content-type'] } }).formData()
+      const photo = form.get('file') as File
+      sent.photo = { name: photo.name, type: photo.type, bytes: [...new Uint8Array(await photo.arrayBuffer())] }
+      return ok(route, run)
+    }
+    if (path === '/handovers/60/record') {
+      handover.recordAttached = true
+      return ok(route, run)
+    }
+    if (path === '/handovers/60/complete') {
+      sent.complete = request.postDataJSON()
+      handover.status = 'DONE'
+      run.horses[0].leg.status = 'COMPLETED'
+      return ok(route, run)
+    }
+    return ok(route, [])
+  })
+  await page.goto('/backoffice/my-trips/9')
+  const delivery = page.getByRole('list', { name: 'Điểm dừng' }).getByRole('listitem').filter({ has: page.locator('h2') }).nth(2)
+  await delivery.getByLabel('Chip của Sao Mai').fill(CHIP)
+  const scan = delivery.getByRole('button', { name: 'Quét', exact: true })
+  await expect(scan).toBeDisabled()
+  await delivery.getByLabel('Tình trạng ngựa').fill('Khỏe khi giao')
+  await scan.click()
+  await expect(delivery).toContainText('Đúng chip')
+  await delivery.getByLabel('Ảnh tình trạng ngựa').setInputFiles(horsePhoto)
+  await expect(page.getByText('Đã lưu ảnh', { exact: true })).toBeVisible()
+  await delivery.getByLabel('Họ tên người nhận · BK-AAAA0001').fill('Nguyễn Văn An')
+  await delivery.getByLabel('Mã nhận ngựa 6 số').fill('012345')
+  await delivery.getByLabel('Ảnh biên bản đã ký').setInputFiles(horsePhoto)
+  await delivery.getByRole('button', { name: 'Tải biên bản', exact: true }).click()
+  await expect(delivery).toContainText('Đã có biên bản')
+  await delivery.getByRole('button', { name: 'Hoàn tất giao nhận', exact: true }).click()
+  await expect(delivery.getByRole('button', { name: 'Hoàn tất giao nhận', exact: true })).toHaveCount(0)
+  expect(sent).toEqual({
+    scan: { horseLegId: 70, microchip: CHIP, conditionNote: 'Khỏe khi giao' },
+    photo: { name: 'horse.jpg', type: 'image/jpeg', bytes: [1, 2, 3] },
+    complete: { recipients: { 'BK-AAAA0001': { recipientName: 'Nguyễn Văn An', collectionCode: '012345' } } },
+  })
 })
 
 test('hộ tống không nhận một con ở điểm đón, phải ghi lý do, con còn lại vẫn nhận', async ({ page }) => {

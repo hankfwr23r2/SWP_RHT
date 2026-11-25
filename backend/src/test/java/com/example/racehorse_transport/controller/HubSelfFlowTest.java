@@ -64,6 +64,9 @@ class HubSelfFlowTest {
 
     @BeforeEach
     void setUp() {
+        var uploads = new java.util.concurrent.atomic.AtomicInteger();
+        when(cloudinary.uploadFile(any(), anyString())).thenAnswer(invocation ->
+                "https://example.test/hub-evidence/" + uploads.incrementAndGet());
         coordinator = token(testData.staff(testData.unique("hub.coordinator"), "COORDINATOR"), "COORDINATOR");
         driverStaff = testData.staff(testData.unique("hub.driver"), "DRIVER");
         escortStaff = testData.staff(testData.unique("hub.escort"), "ESCORT");
@@ -296,8 +299,6 @@ class HubSelfFlowTest {
     }
 
     private ResultActions hubHandover(long stay, String microchip, boolean receiving) throws Exception {
-        when(cloudinary.uploadFile(any(), anyString())).thenAnswer(invocation ->
-                "https://example.test/" + invocation.<org.springframework.web.multipart.MultipartFile>getArgument(0).getOriginalFilename());
         String listed = mvc.perform(get("/horse-stays/{id}/handover-papers", stay)
                         .param("receiving", String.valueOf(receiving)).header(HttpHeaders.AUTHORIZATION, coordinator))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();

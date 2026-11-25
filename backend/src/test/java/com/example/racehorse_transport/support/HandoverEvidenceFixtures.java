@@ -28,11 +28,11 @@ public final class HandoverEvidenceFixtures {
 
         jdbc.update("""
                 INSERT INTO document (document_type_id, file_url, file_name, uploaded_by, status, handover_id, evidence_horse_leg_id)
-                SELECT t.id, 'https://example.test/horse.jpg', 'horse.jpg', h.handled_by, 'UPLOADED', h.id, hh.horse_leg_id
+                SELECT t.id, 'https://example.test/handovers/' || h.id || '/horses/' || hh.horse_leg_id || '.jpg', 'horse.jpg', h.handled_by, 'UPLOADED', h.id, hh.horse_leg_id
                 FROM handover h JOIN handover_horse hh ON hh.handover_id = h.id
                 CROSS JOIN document_type t
                 WHERE h.id = ? AND hh.is_microchip_matched AND t.code = 'HANDOVER_PHOTO'
-                  AND NOT EXISTS (SELECT 1 FROM document d WHERE d.handover_id = h.id AND d.evidence_horse_leg_id = hh.horse_leg_id)
+                  AND NOT EXISTS (SELECT 1 FROM document d WHERE d.handover_id = h.id AND d.evidence_horse_leg_id = hh.horse_leg_id AND d.document_type_id = t.id)
                 """, handover);
         jdbc.update("""
                 INSERT INTO handover_document (handover_id, document_id, direction)
@@ -50,13 +50,15 @@ public final class HandoverEvidenceFixtures {
                 """, handover);
         Map<String, Map<String, String>> recipients = new LinkedHashMap<>();
         for (var row : jdbc.queryForList("""
-                SELECT DISTINCT b.id, b.code, u.username
+                SELECT DISTINCT b.id, b.code, b.collection_confirmed, u.username
                 FROM handover h JOIN handover_horse hh ON hh.handover_id = h.id AND hh.is_microchip_matched
                 JOIN horse_leg l ON l.id = hh.horse_leg_id JOIN booking_horse bh ON bh.id = l.booking_horse_id
                 JOIN booking b ON b.id = bh.booking_id JOIN app_user u ON u.id = b.customer_id
                 WHERE h.id = ? AND h.handover_type = 'DELIVERY'
                 """, handover)) {
-            confirm(mvc, jwt, ((Number) row.get("id")).longValue(), row.get("username").toString());
+            if (!Boolean.TRUE.equals(row.get("collection_confirmed"))) {
+                confirm(mvc, jwt, ((Number) row.get("id")).longValue(), row.get("username").toString());
+            }
             recipients.put(row.get("code").toString(), Map.of("recipientName", "Người nhận thử nghiệm"));
         }
         return recipients.isEmpty() ? request : request.contentType(MediaType.APPLICATION_JSON)

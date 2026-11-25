@@ -179,15 +179,7 @@ class BorderAgentFlowTest {
         long[] received = receiveImportAtTheGate();
         long trip = received[0];
         long gateStop = received[1];
-        Long original = jdbc.queryForObject("""
-                SELECT min(d.document_id) FROM handover_document d JOIN handover h ON h.id = d.handover_id
-                WHERE h.trip_stop_id = ? AND h.handover_type = 'AGENT'
-                """, Long.class, gateStop);
-        assertThat(original).isNotNull();
-        jdbc.update("""
-                UPDATE handover_document SET direction = 'RECEIVED' WHERE document_id = ?
-                  AND handover_id IN (SELECT id FROM handover WHERE trip_stop_id = ? AND handover_type = 'AGENT')
-                """, original, gateStop);
+        long original = received[2];
         // Nhận ở cửa khẩu xong thì lập khoản số dư (seed có sẵn số dư đã trả nên đã bỏ đi)
         assertThat(jdbc.queryForObject("SELECT status FROM payment WHERE booking_id = ? AND payment_type = 'BALANCE'", String.class, booking)).isEqualTo("PENDING");
         mvc.perform(post("/trip-stops/{id}/depart", gateStop).header(HttpHeaders.AUTHORIZATION, driver)).andExpect(status().isConflict())
@@ -238,9 +230,26 @@ class BorderAgentFlowTest {
     // Đơn mẫu đổi thành đơn nhập chưa trả số dư; đại lý giao, tổ xe nhận lên xe ở cửa khẩu. Trả về {lượt xe, điểm cửa khẩu}
     private long[] receiveImportAtTheGate() throws Exception {
         long[] gate = arriveWithImportAtTheGate();
+        long passport = jdbc.queryForObject("""
+                INSERT INTO document (document_type_id, document_requirement_id, file_url, file_name,
+                                      uploaded_by, status, reviewed_by, reviewed_at, horse_id)
+                SELECT dr.document_type_id, dr.id, 'https://example.test/gate-passport/' || bh.id,
+                       'passport.pdf', u.id, 'APPROVED', u.id, now(), bh.horse_id
+                FROM booking_horse bh CROSS JOIN (SELECT min(id) AS id FROM app_user) u
+                CROSS JOIN (
+                    SELECT r.id, r.document_type_id FROM document_requirement r
+                    JOIN document_type t ON t.id = r.document_type_id
+                    WHERE t.code = 'HORSE_PASSPORT' ORDER BY r.id LIMIT 1
+                ) dr WHERE bh.id = ? RETURNING id
+                """, Long.class, line);
+        mvc.perform(post("/handovers/{id}/papers", gate[2]).header(HttpHeaders.AUTHORIZATION, escort)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"documentId\":%d,\"originalMissing\":false}".formatted(passport)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[?(@.documentId == " + passport + ")].direction").value(org.hamcrest.Matchers.contains("RECEIVED")));
         attachRecord(gate[2]);
         act(escort, "/handovers/" + gate[2] + "/complete").andExpect(status().isOk());
-        return new long[] {gate[0], gate[1]};
+        return new long[] {gate[0], gate[1], passport};
     }
 
     // Đơn nhập đủ giấy, chưa trả số dư: xe tới cửa khẩu, mở lần nhận từ đại lý và quét chip. Trả về {lượt xe, điểm cửa khẩu, lần giao nhận, chặng đại lý}
