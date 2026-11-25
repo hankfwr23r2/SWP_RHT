@@ -13,17 +13,13 @@ Mã điểm (ví dụ 4.F1) trỏ tới mục "Điểm còn hở" trong [NGHIEP_
 
 ## 2. Vùng luồng A đang sửa, đừng sửa cùng lúc
 
-| Việc của A | File chính |
-|---|---|
-| **1b** đón hụt, chưa trả số dư (nhánh `feat/flow-1b`, chưa gộp) | `HandoverServiceImpl`, `HandoverOutcomeServiceImpl`, `HubHandoverServiceImpl`, `HorseStayServiceImpl`, `StopReadinessServiceImpl`, `TripExecutionServiceImpl`, `BookingHorse*`, `QuotationDraft*`, `Payment*`, `BookingReschedule*`; màn `TripRunPage`, `HubPage` |
-| **Đợt 2** nguyên nhân sự cố, khách đồng ý chi phí, lỗi đại lý | `Incident*`, `CostItem*`; màn sự cố |
-| **Đợt 3** khiếu nại, nghiệm thu | `Incident*`, `Settlement*`; màn đơn của khách |
-| **Đợt 4** thông báo sự cố, Ốm và Nguy cấp, hủy lượt | `HealthLogServiceImpl`, `DispatchServiceImpl`, `IncidentServiceImpl` |
-| **Đợt 5** chuyến trễ | `Departure*`, `DepartureDecision*` |
-| **Phí giữ, cước giao lại, đóng đơn** (mục 13 phương án) | `Stabling*`, `DeliveryFailure*`, `Settlement*`, `ExtraCharge*` |
-| **Nhiều nơi giao cùng tuyến** | `Pricing*`, `HorseLeg*`, `TripGrouping*` |
+1b, đợt 2 và nhiều nơi giao **đã gộp**. Đang làm, cập nhật 25/11/2026:
 
-Điểm ghi **Chờ** ở mục 4 phụ thuộc việc của A: soạn phương án được ngay, sửa code sau khi phần đó gộp.
+| Việc | File |
+|---|---|
+| Đồng hồ dừng, cước giao lại (13.2) | `Stabling*`, `HorseStayServiceImpl`, màn Hub, chi tiết đơn của khách, `PricingPolicy`, `QuotationDraft*` |
+| Đơn không người nhận (13.4), 6.G19, 6.G20 | `BookingCancellation*`, `BalanceHoldNotice*`, `CustodyBoard*`, `DeliveryComplaint*` |
+| Giờ giao và xe trễ (mục 14) | `TripExecutionServiceImpl`, `DeliveryFailureServiceImpl`, `TrackingServiceImpl`, màn sự cố |
 
 ## 3. Nên làm trước
 
@@ -50,19 +46,19 @@ Mã điểm (ví dụ 4.F1) trỏ tới mục "Điểm còn hở" trong [NGHIEP_
 | **2.F2** | Khách tự có bảo hiểm chỉ khai số hợp đồng, không tải tệp | Dùng loại giấy `INSURANCE_POLICY` đã khai, bắt buộc tệp khi khách tự mua | `InsuranceServiceImpl`, màn thẩm định | |
 | **2.F4** | Báo giá bảo hiểm hết hạn lúc đơn Đang báo giá thì kẹt | Cho sửa bảo hiểm mua hộ khi Đang báo giá, lập lại bản nháp | `InsuranceServiceImpl`, `InsuranceReviewPolicy`, `QuotationDraftServiceImpl` | **Chờ** 1b (`QuotationDraft*`). Ưu tiên |
 | **2.F5** | Không rút được giấy đã duyệt khi phát hiện giả hoặc sai | Chuyên viên thu hồi, bắt buộc lý do, báo bên nộp; chặn xe như thiếu giấy | `DocumentReviewServiceImpl`, `DocumentReviewPolicy` | Giấy đã theo xe thì cần quy định riêng |
-| **2.F7** | Giấy không kiểm lại ở cửa khẩu đơn xuất | Kiểm đủ giấy lúc bàn giao đại lý, giống chiều nhập | `HandoverOutcomeServiceImpl` | **Chờ** 1b. Trùng 4.F12 |
+| **2.F7** | Giấy không kiểm lại ở cửa khẩu đơn xuất | Kiểm đủ giấy lúc bàn giao đại lý, giống chiều nhập | `HandoverOutcomeServiceImpl` | 1b đã gộp, làm được. Trùng 4.F12 |
 | **2.F8** | Xuất Lào thiếu sổ tiêm, nhập Lào thiếu xét nghiệm so với Campuchia | Hỏi nhóm cố ý hay thiếu; tra [CAN_CU_PHAP_LY_VA_IRT.md](CAN_CU_PHAP_LY_VA_IRT.md) | `db/seed-dev/R__dev_seed_base.sql` (`document_requirement`) | Pháp lý Lào **chưa kiểm chứng** |
 | **2.F9** | Hộ chiếu đã duyệt cho đơn liên tỉnh vẫn phải nộp lại cho đơn xuất | Giấy theo ngựa còn hạn dùng chung cho mọi quy định | `DocumentCompletenessPolicy` | Giấy theo đơn thì không dùng chung |
-| **2.F10** | Đơn nhập không kiểm bảo hiểm ở cửa khẩu | Kiểm như ở điểm đón và hub | `HandoverOutcomeServiceImpl` | **Chờ** 1b |
+| **2.F10** | Đơn nhập không kiểm bảo hiểm ở cửa khẩu | Kiểm như ở điểm đón và hub | `HandoverOutcomeServiceImpl` | 1b đã gộp, làm được |
 
 ### Luồng 3 (7 điểm)
 
 | Điểm | Đang thế nào | Gợi ý (chưa duyệt) | Xem ở | Lưu ý |
 |---|---|---|---|---|
 | **3.G4** | Không sửa được giờ, xe của lượt đã lập | Cho sửa khi lượt chưa chạy, kiểm lại mọi quy tắc, báo tổ lái và khách | `DispatchServiceImpl`, `TripScheduleServiceImpl` | Phối hợp đợt 4 (thông báo) |
-| **3.G6** | Chỉ cần một tài xế nhận việc là xe chạy, không bắt buộc hộ tống | Bắt buộc có hộ tống đã nhận việc khi chở ngựa | `TripExecutionPolicy`, `TripExecutionServiceImpl` | **Chờ** 1b |
+| **3.G6** | Chỉ cần một tài xế nhận việc là xe chạy, không bắt buộc hộ tống | Bắt buộc có hộ tống đã nhận việc khi chở ngựa | `TripExecutionPolicy`, `TripExecutionServiceImpl` | 1b đã gộp, làm được |
 | **3.G7** | Nhập giờ tay không kiểm 5 giờ ngồi xe | Dùng chung quy tắc với lượt hệ thống tính giờ | `TripSchedulePolicy`, `DispatchPolicy` | |
-| **3.G8** | Khách tự chở chỉ bị kiểm trước giờ chạy, không kiểm hạn có mặt 3 giờ | Giờ hẹn phải trước hạn có mặt ở hub | `HorseStayServiceImpl` (`planSelfDropOff`) | **Chờ** 1b |
+| **3.G8** | Khách tự chở chỉ bị kiểm trước giờ chạy, không kiểm hạn có mặt 3 giờ | Giờ hẹn phải trước hạn có mặt ở hub | `HorseStayServiceImpl` (`planSelfDropOff`) | 1b đã gộp, làm được |
 | **3.G9** | Chưa có nút dồn chuyến, chạy xe nhỏ hơn, một khách thuê cả chuyến | Chọn phần thật sự cần; tài liệu có nêu | `DepartureDecisionServiceImpl` | **Chờ** đợt 5 |
 | **3.G10** | Đưa xe về phải nhờ quản lý xác nhận chuyến không có ngựa | Điều phối tự lập lượt về rỗng, không gắn chuyến bán | `DispatchServiceImpl` | THONG_BAO_LUONG_B đã nêu "vẫn lập lượt về rỗng" |
 | **3.G11** | Giờ lái tính theo ngày lịch, không theo 24 giờ liên tục | Cửa sổ trượt 24 giờ | `DispatchPolicy`, `CrewAssignmentServiceImpl` | Tra luật giao thông, hiện **chưa kiểm chứng** |
@@ -74,8 +70,8 @@ Mã điểm (ví dụ 4.F1) trỏ tới mục "Điểm còn hở" trong [NGHIEP_
 | **4.F1** | Không có màn ghi sức khỏe ở hub, chuồng; ngựa ở hub luôn bị tô Trễ khám | Thêm màn ghi, máy chủ đã nhận | `HealthLogServiceImpl`, màn Theo dõi | Ưu tiên. Màn Hub **chờ** 1b |
 | **4.F2** | Chỉ dẫn ăn uống của khách không hiện cho tổ lái | Hiện chỉ dẫn và số bữa từng con ở màn lượt xe | `booking_horse` (chỉ dẫn, số bữa), `TripRunPage` | Ưu tiên. Màn **chờ** 1b |
 | **4.F3** | Khách không xem được nhật ký sức khỏe | Hiện trong hành trình từng con, chỉ chủ đơn | `TrackingServiceImpl`, `HorseJourney` | Giống cách 3a hiện biên bản |
-| **4.F6** | Điểm nghỉ đêm 10 giờ chỉ bị kiểm 30 phút | Kiểm theo thời gian dừng kế hoạch của điểm; rời sớm phải có lý do và báo điều phối | `StopReadinessServiceImpl`, `HealthLogPolicy` | **Chờ** 1b. Ưu tiên |
-| **4.F10** | Chưa báo tình trạng xe khi về trụ sở | Tài xế chọn bình thường hoặc cần bảo dưỡng khi kết thúc lượt | `TripExecutionServiceImpl`, `VehicleServiceImpl` | **Chờ** 1b. Làm cùng 5.G16 |
+| **4.F6** | Điểm nghỉ đêm 10 giờ chỉ bị kiểm 30 phút | Kiểm theo thời gian dừng kế hoạch của điểm; rời sớm phải có lý do và báo điều phối | `StopReadinessServiceImpl`, `HealthLogPolicy` | 1b đã gộp, làm được. Ưu tiên |
+| **4.F10** | Chưa báo tình trạng xe khi về trụ sở | Tài xế chọn bình thường hoặc cần bảo dưỡng khi kết thúc lượt | `TripExecutionServiceImpl`, `VehicleServiceImpl` | 1b đã gộp, làm được. Làm cùng 5.G16 |
 | **4.F11** | Không có vị trí xe thời gian thực | Cân nhắc bỏ khỏi phạm vi; hiện dùng điểm dừng gần nhất | màn Theo dõi | Hỏi người dùng trước |
 | **4.F12** | Giấy không kiểm ở cửa khẩu đơn xuất | Như 2.F7 | | Trùng 2.F7, làm một lần |
 
@@ -85,17 +81,17 @@ Mã điểm (ví dụ 4.F1) trỏ tới mục "Điểm còn hở" trong [NGHIEP_
 |---|---|---|---|---|
 | **5.G5** | Lượt giao không có hub phía sau thì con giao hụt không có chỗ vào, lượt không kết thúc được | Lượt giao phải kết thúc ở hub khi lập; hoặc cho thêm điểm hub vào lượt đang chạy | `DispatchServiceImpl`, `DispatchPolicy` | Ưu tiên. Gợi ý gom đã tự thêm hub cuối |
 | **5.G14** | Đang có sự cố, tài xế vẫn Tới nơi, Rời đi được | Chỉ khóa với sự cố nặng; có cách mở lại | `TripExecutionServiceImpl`, `IncidentPolicy` | **Chờ** 1b và đợt 2 |
-| **5.G15** | Gửi chuồng gần, Thú y, Hủy chặng duyệt xong không có thao tác | Gửi chuồng mở lưu trú ở đối tác; hủy chặng gỡ chặng; thú y ghi nhật ký | `IncidentActionServiceImpl`, `HorseStayServiceImpl` | **Chờ** đợt 2 |
-| **5.G16** | Đổi xe không ký lại giao nhận, xe hỏng không sang bảo dưỡng | Xe hỏng sang bảo dưỡng ngay; hộ tống ký `SHIFT` tại chỗ | `IncidentActionServiceImpl`, `VehicleServiceImpl` | **Chờ** đợt 2. Làm cùng 4.F10 |
-| **5.G17** | Tổ lái xác nhận đủ sức không cần ảnh | Bắt buộc ảnh; tài xế không tự xác nhận | `IncidentServiceImpl` | **Chờ** đợt 2. Điều phối xác nhận thay đã cần `VET_REPORT` (1a) |
-| **5.G18** | 30 phút đếm từ lúc báo, không từ lúc ngựa nghỉ | Đếm từ lúc bắt đầu nghỉ | `IncidentPolicy` | **Chờ** đợt 2 |
-| **5.G22** | Sự cố không có mức nặng nhẹ | Thêm mức, sắp danh sách theo mức | `incident` (cột mới), màn sự cố | **Chờ** đợt 2. Cần cập nhật đặc tả |
+| **5.G15** | Gửi chuồng gần, Thú y, Hủy chặng duyệt xong không có thao tác | Gửi chuồng mở lưu trú ở đối tác; hủy chặng gỡ chặng; thú y ghi nhật ký | `IncidentActionServiceImpl`, `HorseStayServiceImpl` | Đợt 2 đã gộp, làm được |
+| **5.G16** | Đổi xe không ký lại giao nhận, xe hỏng không sang bảo dưỡng | Xe hỏng sang bảo dưỡng ngay; hộ tống ký `SHIFT` tại chỗ | `IncidentActionServiceImpl`, `VehicleServiceImpl` | Đợt 2 đã gộp, làm được. Làm cùng 4.F10 |
+| **5.G17** | Tổ lái xác nhận đủ sức không cần ảnh | Bắt buộc ảnh; tài xế không tự xác nhận | `IncidentServiceImpl` | Đợt 2 đã gộp, làm được. Điều phối xác nhận thay đã cần `VET_REPORT` (1a) |
+| **5.G18** | 30 phút đếm từ lúc báo, không từ lúc ngựa nghỉ | Đếm từ lúc bắt đầu nghỉ | `IncidentPolicy` | Đợt 2 đã gộp, làm được |
+| **5.G22** | Sự cố không có mức nặng nhẹ | Thêm mức, sắp danh sách theo mức | `incident` (cột mới), màn sự cố | Đợt 2 đã gộp, làm được. Cần cập nhật đặc tả |
 
 ### Luồng 6 (1 điểm)
 
 | Điểm | Đang thế nào | Gợi ý (chưa duyệt) | Xem ở | Lưu ý |
 |---|---|---|---|---|
-| **6.G15** | Không phân biệt quét chip với gõ tay | Lưu cách nhập; gõ tay thì ghi lý do | `HandoverServiceImpl`, `handover_horse` | **Chờ** 1b |
+| **6.G15** | Không phân biệt quét chip với gõ tay | Lưu cách nhập; gõ tay thì ghi lý do | `HandoverServiceImpl`, `handover_horse` | 1b đã gộp, làm được |
 
 ## 5. Theo dõi
 

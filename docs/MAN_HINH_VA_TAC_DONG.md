@@ -197,3 +197,7 @@ Quyết toán: nút đóng đơn theo `canClose` của máy chủ, không theo s
 ## Công nợ khoản thu thêm · mục 13.3, 13.5 (6, 8, 9)
 
 Khách: nút **Khiếu nại khoản này** ở khoản thu thêm chưa trả. Quản lý: ở khoản thu của đơn có kết luận khiếu nại, gia hạn, xóa nợ, mở lại khoản, cho đặt đơn lại; mọi thao tác ghi `audit_log`.
+
+## Giờ giao và xe trễ · mục 14 của phương án
+
+Chi tiết đơn hiện khung giao mới nhất. Màn sự cố hiện giờ báo, giờ tới thật, số phút lệch của lần giao hụt; quản lý sửa kết luận trong 24 giờ, điều phối chỉ ghi bất khả kháng.

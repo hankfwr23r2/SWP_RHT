@@ -516,7 +516,7 @@ Giả định của đợt này: địa chỉ giao của đơn nhập là nơi c
 
 ### GĐ8. Giao ngựa
 
-> **Đã chốt 25/11/2026, code chưa sửa:** phí giữ, cước giao lại và cách đóng đơn theo mục 13 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md).
+> **Đã chốt 25/11/2026** (phí giữ, đóng đơn, công nợ đã làm; cước giao lại đang làm): theo mục 13 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md).
 
 Với `delivery_method = SELF`, trả ngựa tại hub và ghi `handover` DELIVERY gắn với `horse_stay`. Quá giờ hẹn thì gửi chuồng, báo khách khi bắt đầu giữ và tính phí theo `STABLING_DAILY_FEE` khi rời hub.
 
@@ -575,11 +575,11 @@ Khoản thu thêm đến hạn sau `EXTRA_CHARGE_DUE_DAYS` kể từ lúc lập.
 
 ### GĐ10. Đóng đơn
 
-> **Đã chốt 25/11/2026, code chưa sửa:** phí giữ, cước giao lại và cách đóng đơn theo mục 13 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md).
+> **Đã chốt 25/11/2026** (phí giữ, đóng đơn, công nợ đã làm; cước giao lại đang làm): theo mục 13 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md).
 
 | Việc | Bảng |
 |---|---|
-| Đã trả đủ: số còn nợ theo `SettlementPolicy` bằng 0. Đơn không có khoản phát sinh tự đóng sau 7 ngày kể từ khi giao | `booking.status = COMPLETED` |
+| Đủ điều kiện đóng theo `SettlementPolicy.canClose` (khoản thu thêm chưa trả không chặn). Tự đóng sau 7 ngày kể từ khi giao | `booking.status = COMPLETED` |
 | Khách đánh giá một lần khi đơn ở `DELIVERED` hoặc `COMPLETED` | `booking_rating` |
 | Thông báo cho các bên | `notification`, `notification_recipient` |
 
@@ -932,3 +932,7 @@ Chi phí phía khách chưa duyệt: nhắc quản lý ngày 3, 7; đủ 14 ngà
 Nợ quá hạn từ 200.000 đ thì chưa đặt đơn mới được; nhỏ hơn chỉ nhắc. Khách khiếu nại mỗi khoản một lần: tạm dừng hạn và không chặn tới khi quản lý kết luận (chấp nhận thì hủy khoản, giữ nguyên thì hạn lùi đúng thời gian chờ). Ngày 14 báo quản lý gọi khách, gia hạn một lần tối đa 14 ngày. Ngày 30 là nợ khó thu: ngừng nhắc mỗi ngày, báo khách và quản lý một lần. Xóa nợ chỉ với nợ khó thu, cần lý do và tệp quyết định; quyền đặt đơn do quản lý mở riêng; khách muốn trả sau thì quản lý mở lại khoản.
 
 Chưa làm: chia tối đa 3 kỳ; so nợ theo số điện thoại và chip ngựa (13.5 điểm 7); điều khoản phí lúc đặt đơn (điểm 10).
+
+## Giờ giao và xe trễ · mục 14 của phương án
+
+Đơn chỉ hẹn ngày giao. Lúc phân lượt, mọi điểm được báo giờ dự kiến. Xe rời hub và rời từng điểm thì tính lại giờ mọi điểm còn lại (`trip_stop.expected_arrival_at`), lệch quá ngưỡng thì nhắn khách và ghi `told_arrival_at`, `told_at`. Người nhận vắng thì so giờ tới thật với giờ báo gần nhất ± 30 phút: trong khung là người nhận, sau khung là công ty. Quản lý sửa kết luận trong 24 giờ. Vượt giờ giao hoặc giờ ngồi xe thì báo điều phối.
