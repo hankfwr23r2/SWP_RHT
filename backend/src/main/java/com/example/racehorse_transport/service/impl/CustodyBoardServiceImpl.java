@@ -18,6 +18,7 @@ import com.example.racehorse_transport.entity.enums.HandoverStatus;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
 import com.example.racehorse_transport.entity.enums.HorseLegType;
 import com.example.racehorse_transport.policy.CareCheckPolicy;
+import com.example.racehorse_transport.policy.HealthLogPolicy;
 import com.example.racehorse_transport.policy.TrackingPolicy;
 import com.example.racehorse_transport.policy.TrackingPolicy.CustodyHolder;
 import com.example.racehorse_transport.repository.BookingHorseRepository;
@@ -123,7 +124,8 @@ public class CustodyBoardServiceImpl implements CustodyBoardService {
                 lastCheck, log == null ? null : log.getHealthStatus(), next, holder == CustodyHolder.COMPANY && CareCheckPolicy.overdue(next, now),
                 moving != null && moving.getAgentParty() != null && moving.getLegType() == HorseLegType.DELIVERY ? moving.getId() : null,
                 waitingAtPickup, balanceContact, stay == null ? null : stay.getBalanceHoldAt(),
-                canResolveUnclaimed(stay, now) ? stay.getId() : null);
+                canResolveUnclaimed(stay, now) ? stay.getId() : null,
+                stay != null && HealthLogPolicy.canRecordStay(stay.getLocation().getLocationType(), stay.getStayType(), stay.getOperatorParty() != null) ? stay.getId() : null);
     }
 
     private boolean canResolveUnclaimed(HorseStay stay, Instant now) {

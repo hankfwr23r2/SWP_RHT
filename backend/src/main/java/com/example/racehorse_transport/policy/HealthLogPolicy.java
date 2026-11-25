@@ -3,6 +3,8 @@ package com.example.racehorse_transport.policy;
 import com.example.racehorse_transport.entity.enums.HealthStatus;
 import com.example.racehorse_transport.entity.enums.IntakeLevel;
 import com.example.racehorse_transport.exception.DispatchRuleException;
+import com.example.racehorse_transport.entity.enums.HorseStayType;
+import com.example.racehorse_transport.entity.enums.LocationType;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
@@ -17,6 +19,26 @@ public final class HealthLogPolicy {
         if (atStop == inStay) {
             throw new DispatchRuleException("tripStopId", "Ghi sức khỏe tại một điểm dừng hoặc trong một lần lưu trú.");
         }
+    }
+
+    public static boolean canRecordStay(LocationType type, HorseStayType stayType, boolean hasOperator) {
+        return type == LocationType.HUB || type == LocationType.STABLE
+                || (stayType == HorseStayType.OVERNIGHT && hasOperator);
+    }
+
+    public static String reportedNote(String reporter, String channel, String note) {
+        if (reporter == null || reporter.isBlank()) {
+            throw new DispatchRuleException("reportedBy", "Nhập tên người báo.");
+        }
+        if (channel == null || channel.isBlank()) {
+            throw new DispatchRuleException("reportChannel", "Nhập kênh tiếp nhận báo cáo.");
+        }
+        String result = "Người báo: " + reporter.strip() + "\nKênh báo: " + channel.strip();
+        if (note != null && !note.isBlank()) result += "\n" + note.strip();
+        if (result.length() > 2000) {
+            throw new DispatchRuleException("note", "Ghi chú gồm nguồn báo tối đa 2000 ký tự.");
+        }
+        return result;
     }
 
     // Bỏ uống 2 lần dừng liền thì ít nhất WATCH (docs/NGHIEP_VU_THEO_59_BANG.md mục 7.2)

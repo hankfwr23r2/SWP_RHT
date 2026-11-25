@@ -3,7 +3,8 @@ package com.example.racehorse_transport.service.impl;
 import com.example.racehorse_transport.dto.tracking.HorseJourneyResponseDto.HandoverEvidenceResponseDto;
 import com.example.racehorse_transport.policy.DeliveryEtaPolicy;
 import com.example.racehorse_transport.service.SystemConfigService;
-import com.example.racehorse_transport.repository.DocumentRepository;
+import com.example.racehorse_transport.service.TrackingEvidenceService;
+import com.example.racehorse_transport.dto.tracking.JourneyHealthLogResponseDto;
 
 import com.example.racehorse_transport.dto.tracking.BookingJourneyResponseDto;
 import com.example.racehorse_transport.policy.TrackingPolicy.CustodyHolder;
@@ -65,7 +66,7 @@ public class TrackingServiceImpl implements TrackingService {
     private final HorseStayRepository stays;
     private final HandoverHorseRepository handoverHorses;
     private final HandoverRepository handovers;
-    private final DocumentRepository documents;
+    private final TrackingEvidenceService evidenceService;
     private final PublicTrackingGuard guard;
     private final SystemConfigService configs;
 
@@ -82,14 +83,14 @@ public class TrackingServiceImpl implements TrackingService {
     @Override
     @Transactional(readOnly = true)
     public BookingJourneyResponseDto bookingJourney(Long bookingId) {
-        return journeyOf(bookings.findById(bookingId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn " + bookingId)));
+        return journeyOf(bookings.findById(bookingId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn " + bookingId)), false);
     }
 
     @Override
     @Transactional(readOnly = true)
     public BookingJourneyResponseDto customerBookingJourney(Long bookingId, String username) {
         return journeyOf(bookings.findByIdAndCustomer_User_Username(bookingId, username)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn.")));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn.")), true);
     }
 
     @Override
@@ -140,20 +141,22 @@ public class TrackingServiceImpl implements TrackingService {
                 moving == null || moving.getToLocation() == null ? null : moving.getToLocation().getName(), updatedAt);
     }
 
-    private BookingJourneyResponseDto journeyOf(Booking booking) {
+    private BookingJourneyResponseDto journeyOf(Booking booking, boolean includeHealthLogs) {
         Journey journey = load(booking);
         List<Long> handoverIds = journey.handovers().values().stream().flatMap(List::stream)
                 .map(row -> row.getHandover().getId()).distinct().toList();
-        Map<Long, List<Document>> evidence = handoverIds.isEmpty() ? Map.of()
-                : documents.findHandoverEvidenceForBooking(booking.getId(), handoverIds).stream()
-                        .collect(Collectors.groupingBy(document -> document.getHandover().getId()));
+        Map<Long, List<Document>> evidence = evidenceService.handoverEvidence(booking.getId(), handoverIds);
+        Map<Long, List<JourneyHealthLogResponseDto>> healthLogs = includeHealthLogs
+                ? evidenceService.healthLogsByHorse(booking.getId()) : Map.of();
         int tolerance = configs.getInt(DeliveryEtaPolicy.TOLERANCE);
         return new BookingJourneyResponseDto(booking.getId(), booking.getCode(), booking.getStatus(),
-                journey.lines().stream().map(line -> horseJourney(line, journey, evidence, tolerance)).toList());
+                journey.lines().stream().map(line -> horseJourney(line, journey, evidence, tolerance,
+                        includeHealthLogs ? healthLogs.getOrDefault(line.getId(), List.of()) : null)).toList());
     }
 
     private HorseJourneyResponseDto horseJourney(BookingHorse line, Journey journey,
-                                                 Map<Long, List<Document>> evidence, int tolerance) {
+                                                 Map<Long, List<Document>> evidence, int tolerance,
+                                                 List<JourneyHealthLogResponseDto> healthLogs) {
         List<HandoverHorse> rows = journey.of(journey.handovers(), line);
         HandoverHorse last = lastDone(rows);
         CustodyHolder holder = holder(last);
@@ -162,7 +165,7 @@ public class TrackingServiceImpl implements TrackingService {
                 last == null ? null : last.getHandover().getHandedAt(),
                 journey.of(journey.legs(), line).stream().map(leg -> journeyLeg(leg, tolerance)).toList(),
                 journey.of(journey.stays(), line).stream().map(HorseJourneyResponseDto.JourneyStayDto::from).toList(),
-                handoversOf(line, journey, evidence));
+                handoversOf(line, journey, evidence), healthLogs);
     }
 
     // Chặng đã gỡ khỏi lượt xe thì khung giờ không còn đúng

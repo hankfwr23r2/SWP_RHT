@@ -87,6 +87,39 @@ class TrackingFlowTest {
                 .andExpect(jsonPath("$.data.horses[0].handovers[0].evidence.length()").value(0));
     }
 
+    @Test
+    void onlyOwnersSeeTheirHorsesHealthLogsWithoutInternalFields() throws Exception {
+        long horse = jdbc.queryForObject("SELECT min(id) FROM booking_horse WHERE booking_id = ?", Long.class, booking);
+        long stay = jdbc.queryForObject("""
+                INSERT INTO horse_stay (booking_horse_id, stay_type, location_id, planned_start_at, planned_end_at)
+                SELECT ?, 'ASSEMBLY', id, now(), now() + interval '1 hour' FROM location WHERE code = 'HUB-HCM' RETURNING id
+                """, Long.class, horse);
+        jdbc.update("""
+                INSERT INTO horse_health_log (booking_horse_id, recorded_by, recorded_at, horse_stay_id,
+                    health_status, water_intake, feed_intake, temperature_celsius, symptoms, note)
+                SELECT ?, id, now(), ?, 'WATCH', 'REDUCED', 'NORMAL', 38.2, 'internal symptoms', 'internal note'
+                FROM app_user WHERE username = 'manager.dev'
+                """, horse, stay);
+        String log = "$.data.horses[0].healthLogs[0]";
+        journey("customer1.dev", "CUSTOMER").andExpect(status().isOk())
+                .andExpect(jsonPath(log + ".recordedAt").isNotEmpty())
+                .andExpect(jsonPath(log + ".placeName").isNotEmpty())
+                .andExpect(jsonPath(log + ".healthStatus").value("WATCH"))
+                .andExpect(jsonPath(log + ".waterIntake").value("REDUCED"))
+                .andExpect(jsonPath(log + ".feedIntake").value("NORMAL"))
+                .andExpect(jsonPath(log + ".temperatureCelsius").value(38.2))
+                .andExpect(jsonPath(log + ".recordedByName").doesNotHaveJsonPath())
+                .andExpect(jsonPath(log + ".symptoms").doesNotHaveJsonPath())
+                .andExpect(jsonPath(log + ".note").doesNotHaveJsonPath());
+        journey("manager.dev", "MANAGER").andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.horses[0].healthLogs").doesNotHaveJsonPath());
+        String stranger = testData.customer(testData.unique("tracking.health")).getUser().getUsername();
+        journey(stranger, "CUSTOMER").andExpect(status().isNotFound());
+        track("[\"dev-direct-001\"]", "0001").andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].found").value(true))
+                .andExpect(jsonPath("$.data[0].horses[0].healthLogs").doesNotHaveJsonPath());
+    }
+
     private void addHandoverHorse(long handover, long horse, long location) {
         long leg = jdbc.queryForObject("""
                 INSERT INTO horse_leg (booking_horse_id, sequence_number, leg_type, from_location_id, to_location_id,

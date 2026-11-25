@@ -2,10 +2,13 @@ package com.example.racehorse_transport.service;
 
 import com.example.racehorse_transport.dto.health.HealthLogRequestDto;
 import com.example.racehorse_transport.dto.health.HealthLogResponseDto;
+import com.example.racehorse_transport.dto.health.HorseStayResponseDto;
 import java.util.List;
 
 // Sổ sức khỏe theo từng con ngựa (B3). Chủ sở hữu horse_health_log.
 public interface HealthLogService {
+
+    List<HorseStayResponseDto> myStays(String username);
 
     List<HealthLogResponseDto> ofHorse(Long bookingHorseId);
 

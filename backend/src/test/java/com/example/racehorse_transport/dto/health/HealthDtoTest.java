@@ -24,7 +24,7 @@ class HealthDtoTest {
         BookingHorse line = new BookingHorse();
         TripStop stop = new TripStop();
         var request = new HealthLogRequestDto(1L, 2L, null, HealthStatus.NORMAL, new BigDecimal("37.8"), (short) 40, (short) 12, null,
-                IntakeLevel.NORMAL, IntakeLevel.REDUCED, "  ", " Ăn chậm ");
+                IntakeLevel.NORMAL, IntakeLevel.REDUCED, "  ", " Ăn chậm ", null, null);
 
         HorseHealthLog log = request.toEntity(line, stop, null);
 
@@ -75,9 +75,14 @@ class HealthDtoTest {
         assertThat(response.tripStopId()).isNull();
         assertThat(response.recordedByName()).isEqualTo("Hộ tống Một");
 
+        line.setDietNote("Hay only");
+        line.setFeedSuppliedByOwner(true);
         var stayDto = HorseStayResponseDto.from(stay);
         assertThat(stayDto.bookingCode()).isEqualTo("BK-ABCDEFGH");
         assertThat(stayDto.locationName()).isEqualTo("Hub HCM");
         assertThat(stayDto.actualEndAt()).isNull();
+        assertThat(stayDto.dietNote()).isEqualTo("Hay only");
+        assertThat(stayDto.feedingsPerDay()).isNull();
+        assertThat(stayDto.feedSuppliedByOwner()).isTrue();
     }
 }
