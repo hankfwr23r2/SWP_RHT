@@ -60,12 +60,15 @@ public class BookingServiceImpl implements BookingService {
         Customer customer = customers.findSubmittingCustomer(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ khách hàng."));
 
+        statusHistory.requireSubmissionAllowed(customer.getUserId());
         SubmissionRouting resolved = routing.resolve(request);
 
         Map<Long, Horse> selectedHorses = lockAvailableHorses(request, customer);
         Departure departure = null;
         if (request.departureId() != null) {
             departure = routing.lockDeparture(request, resolved);
+        }
+        if (departure != null || request.bookingType() == com.example.racehorse_transport.entity.enums.BookingType.INTERPROVINCE) {
             validateLeadTime(request, resolved.pickup(), resolved.delivery(), departure, clock.instant());
         }
 
@@ -106,10 +109,14 @@ public class BookingServiceImpl implements BookingService {
 
     private void validateLeadTime(BookingCreateRequestDto request, AddressInput pickup, AddressInput delivery,
                                   Departure departure, Instant now) {
-        Long gate = DepartureRoutePolicy.gateId(departure.getRoute(), request.bookingType());
+        Long gate = departure == null ? null : DepartureRoutePolicy.gateId(departure.getRoute(), request.bookingType());
         long days = regulation.resolve(request.bookingType(), pickup.countryCode(), delivery.countryCode(),
                 request.requestedPickupDate(), gate).leadDays();
-        if (!RegulationPolicy.feasible(days, now, departure.getBookingCutoffAt())) {
+        if (departure == null) {
+            if (!RegulationPolicy.feasible(days, BookingSubmissionPolicy.businessDate(now), request.requestedPickupDate())) {
+                throw BookingRuleException.conflict("Không kịp làm giấy trước ngày đón. Cần " + days + " ngày.");
+            }
+        } else if (!RegulationPolicy.feasible(days, now, departure.getBookingCutoffAt())) {
             throw BookingRuleException.conflict("Không kịp làm giấy trước giờ chốt chuyến. Cần " + days + " ngày.");
         }
     }

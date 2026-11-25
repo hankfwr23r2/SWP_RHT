@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.service.ExtraChargeService;
 import com.example.racehorse_transport.entity.AppUser;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.BookingStatusHistory;
@@ -17,6 +18,8 @@ import com.example.racehorse_transport.service.BookingStatusService;
 import com.example.racehorse_transport.service.CustomerNoticeService;
 import com.example.racehorse_transport.service.NotificationService;
 import com.example.racehorse_transport.service.CollectionCodeService;
+import com.example.racehorse_transport.service.HorseLegService;
+import org.springframework.beans.factory.ObjectProvider;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +39,20 @@ public class BookingStatusServiceImpl implements BookingStatusService {
     private final StaffRepository staff;
     private final CustomerNoticeService notices;
     private final CollectionCodeService collectionCodes;
+    private final ExtraChargeService extraCharges;
+    private final ObjectProvider<HorseLegService> horseLegs;
+
+    @Override
+    @Transactional(readOnly = true)
+    public void requireSubmissionAllowed(Long customerId) {
+        extraCharges.requireNoOverdue(customerId);
+    }
+
+    @Override
+    @Transactional
+    public void clearPlannedTransport(Long bookingId) {
+        horseLegs.getObject().cancelPlannedLegsOfBooking(bookingId);
+    }
 
     @Override
     @Transactional
@@ -69,10 +86,25 @@ public class BookingStatusServiceImpl implements BookingStatusService {
         if (toStatus == BookingStatus.IN_OPERATION) {
             collectionCodes.issue(booking);
         }
+        if (toStatus == BookingStatus.CANCELLED || toStatus == BookingStatus.SCHEDULE_CHANGE_REQUIRED
+                || toStatus == BookingStatus.REJECTED || toStatus == BookingStatus.QUOTE_EXPIRED) {
+            clearPlannedTransport(bookingId);
+        }
 
         recordHistory(booking, from, reason, actorUserId == null ? null : users.getReferenceById(actorUserId),
                 previousDeparture, cause);
-        if (toStatus == BookingStatus.COMPLETED) {
+        if (toStatus == BookingStatus.QUOTING) {
+            var managers = staff.findUserIdsByRoleAndStatus("MANAGER", AppUserStatus.ACTIVE);
+            if (!managers.isEmpty()) {
+                boolean rejected = from == BookingStatus.AWAITING_DEPOSIT;
+                notifications.notify(managers, bookingId, rejected ? "Khách từ chối báo giá" : "Đơn đang báo giá",
+                        "Đơn " + booking.getCode() + (rejected ? " cần báo giá lại. Lý do: " + reason
+                                : " đã chuyển sang Đang báo giá."), null);
+            }
+        } else if (toStatus == BookingStatus.QUOTE_EXPIRED) {
+            notifications.notify(List.of(booking.getCustomer().getUser().getId()), bookingId, "Báo giá hết hạn",
+                    "Báo giá của đơn " + booking.getCode() + " đã hết hạn.", "/orders/" + bookingId);
+        } else if (toStatus == BookingStatus.COMPLETED) {
             notifications.notify(List.of(booking.getCustomer().getUser().getId()), bookingId, "Đã đóng đơn",
                     "Đơn đã hoàn tất quyết toán.", null);
         } else if (toStatus == BookingStatus.CANCELLED) {

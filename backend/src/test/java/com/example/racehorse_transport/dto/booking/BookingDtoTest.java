@@ -59,10 +59,13 @@ class BookingDtoTest {
                 """, BookingCreateRequestDto.class);
         Booking booking = input.toEntity(new Customer(), null);
         var response = BookingDetailResponseDto.from(booking, List.of(), List.of(), List.of());
+        assertThat(response.rated()).isFalse();
+        assertThat(BookingDetailResponseDto.from(booking, List.of(), List.of(), List.of(), null, null, true).rated())
+                .isTrue();
         assertThat(response.pickupMethod()).isEqualTo(TransferMethod.SELF);
         assertThat(response.deliveryMethod()).isEqualTo(TransferMethod.COMPANY);
         assertThat(response.intakeByName()).isNull();
-        assertThat(BookingDetailResponseDto.from(booking, List.of(), List.of(), List.of(), null, "Lê An").intakeByName()).isEqualTo("Lê An");
+        assertThat(BookingDetailResponseDto.from(booking, List.of(), List.of(), List.of(), null, "Lê An", true).intakeByName()).isEqualTo("Lê An");
     }
 
     @Test

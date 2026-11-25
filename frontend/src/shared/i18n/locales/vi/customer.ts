@@ -637,6 +637,7 @@ export const customer = {
       optional: 'không bắt buộc',
       noDocuments: 'Bạn không phải nộp giấy nào cho tuyến này.',
       documentsHint: 'Nộp sau khi gửi đơn, trong trang chi tiết đơn. Giấy khác do công ty và đại lý lo.',
+      directNotFeasible: 'Cần ít nhất {{days}} ngày làm giấy. Hãy chọn ngày đón muộn hơn.',
       notFeasible: 'Không kịp làm giấy cho chuyến này: cần ít nhất {{days}} ngày. Hãy chọn chuyến sau.',
       next: 'Tiếp tục: chọn ngựa',
     },

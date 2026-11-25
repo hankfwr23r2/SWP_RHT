@@ -15,7 +15,7 @@ public record IncidentResponseDto(
         Long id, IncidentType incidentType, IncidentCauseType causeType, IncidentStatus status, String title, String description,
         Long vehicleTripId, String vehicleTripCode, Long horseLegId, String horseName, String bookingCode,
         BigDecimal latitude, BigDecimal longitude, String reportedByName, Instant reportedAt,
-        String fitConfirmedByName, Instant fitConfirmedAt, Instant resolvedAt, List<PlanDto> plans) {
+        String fitConfirmedByName, Instant fitConfirmedAt, Instant resolvedAt, boolean requiresFit, List<PlanDto> plans) {
 
     public record PlanDto(Long id, Integer version, IncidentResolutionType resolutionType, String instructions, BigDecimal estimatedCost,
                           Long handlerPartyId, String handlerPartyName, IncidentPlanStatus status, String proposedByName, Instant proposedAt,
@@ -29,7 +29,7 @@ public record IncidentResponseDto(
         }
     }
 
-    public static IncidentResponseDto from(Incident incident, List<PlanDto> plans) {
+    public static IncidentResponseDto from(Incident incident, boolean requiresFit, List<PlanDto> plans) {
         var trip = incident.getVehicleTrip();
         var leg = incident.getHorseLeg();
         var booking = incident.getBooking();
@@ -40,6 +40,6 @@ public record IncidentResponseDto(
                 booking == null ? null : booking.getCode(), incident.getLatitude(), incident.getLongitude(),
                 incident.getReportedBy().getFullName(), incident.getReportedAt(),
                 incident.getFitConfirmedBy() == null ? null : incident.getFitConfirmedBy().getFullName(), incident.getFitConfirmedAt(),
-                incident.getResolvedAt(), plans);
+                incident.getResolvedAt(), requiresFit, plans);
     }
 }

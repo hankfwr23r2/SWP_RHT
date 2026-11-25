@@ -113,7 +113,7 @@ test('hủy theo yêu cầu khách: thấy tiền mất và tiền hoàn, khoả
 
 test('quyết toán: duyệt chi phí, lập khoản thu chỉ gửi mã chi phí', async ({ page }) => {
   const state = await open(page, '/manager/orders/8', { status: 'DELIVERED', settlement: {
-    bookingId: 8, status: 'DELIVERED', currencyCode: 'VND', quotationTotal: 9_000_000, approvedCustomerCosts: 200_000, outstanding: 200_000,
+    bookingId: 8, status: 'DELIVERED', currencyCode: 'VND', quotationTotal: 9_000_000, approvedCustomerCosts: 200_000, outstanding: 200_000, chargeableCostIds: [1],
     costs: [
       { id: 1, category: 'VET', amount: 200_000, currencyCode: 'VND', payerType: 'CUSTOMER', customerConsulted: true, approvedAt: '2099-01-01T00:00:00Z' },
       { id: 2, category: 'TOLL', amount: 50_000, currencyCode: 'VND', payerType: 'COMPANY' },

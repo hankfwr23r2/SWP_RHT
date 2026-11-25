@@ -7,6 +7,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.example.racehorse_transport.entity.enums.IncidentPlanStatus;
 import com.example.racehorse_transport.entity.enums.IncidentResolutionType;
 import com.example.racehorse_transport.entity.enums.IncidentStatus;
+import com.example.racehorse_transport.entity.enums.IncidentType;
+import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import com.example.racehorse_transport.entity.enums.PartyRoleType;
 import java.time.Instant;
 import java.util.List;
@@ -15,6 +17,21 @@ import org.junit.jupiter.api.Test;
 class IncidentPolicyTest {
 
     private static final Instant REPORTED = Instant.parse("2031-03-05T10:00:00Z");
+
+    @Test
+    void healthRequiresAHorseForNewReportsButLegacyHealthStillRequiresFit() {
+        assertThatThrownBy(() -> IncidentPolicy.requireReportable(VehicleTripStatus.IN_PROGRESS, IncidentType.HEALTH, false))
+                .hasMessageContaining("chọn con ngựa");
+        assertThatThrownBy(() -> IncidentPolicy.requireReportable(VehicleTripStatus.COMPLETED, IncidentType.HEALTH, true))
+                .hasMessageContaining("đang chạy");
+        IncidentPolicy.requireReportable(VehicleTripStatus.IN_PROGRESS, IncidentType.ACCIDENT, false);
+        assertThat(IncidentPolicy.requiresFit(IncidentType.HEALTH, false)).isTrue();
+        assertThat(IncidentPolicy.requiresFit(IncidentType.ACCIDENT, true)).isTrue();
+        assertThat(IncidentPolicy.requiresFit(IncidentType.ACCIDENT, false)).isFalse();
+        assertThat(IncidentPolicy.requiresFit(IncidentType.HANDOVER_TIMEOUT, true)).isFalse();
+        assertThatThrownBy(() -> IncidentPolicy.requireResolutionAvailable(IncidentType.HANDOVER_TIMEOUT, IncidentResolutionType.RETURN_TO_HUB))
+                .hasMessageContaining("Xe giao thẳng");
+    }
 
     @Test
     void tripWithAnOpenIncidentCannotReportAnother() {

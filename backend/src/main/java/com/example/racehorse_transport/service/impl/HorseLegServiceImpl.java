@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.service.StablingChargeService;
 import com.example.racehorse_transport.dto.dispatch.DispatchBookingResponseDto;
 import com.example.racehorse_transport.dto.dispatch.DispatchBookingResponseDto.HorseDto;
 import com.example.racehorse_transport.dto.dispatch.HorseLegRequestDto;
@@ -61,6 +62,7 @@ public class HorseLegServiceImpl implements HorseLegService {
     private final StallPlanService stallPlans;
     private final SystemConfigService configs;
     private final CustomerNoticeService notices;
+    private final StablingChargeService stablingCharges;
 
     @Override
     @Transactional(readOnly = true)
@@ -99,14 +101,14 @@ public class HorseLegServiceImpl implements HorseLegService {
 
     @Override
     @Transactional
-    public List<TripHorseResponseDto> assign(Long vehicleTripId, HorseLegRequestDto request) {
+    public List<TripHorseResponseDto> assign(Long vehicleTripId, HorseLegRequestDto request, String username) {
         // Khóa lượt xe: hai người gán ngựa cùng lúc không vượt sức chứa
         VehicleTrip trip = trips.findForUpdate(vehicleTripId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lượt xe " + vehicleTripId));
         requireNotStarted(trip);
         BookingHorse line = bookingHorses.findById(request.bookingHorseId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngựa trong đơn " + request.bookingHorseId()));
-        Booking booking = line.getBooking();
+        Booking booking = dispatchBookings.findForUpdate(line.getBooking().getId()).orElseThrow();
         if (line.getStatus() != BookingHorseStatus.ACTIVE) {
             throw new DispatchRuleException("bookingHorseId", "Ngựa này đang " + line.getStatus() + ", không xếp xe được.", true);
         }
@@ -131,7 +133,8 @@ public class HorseLegServiceImpl implements HorseLegService {
             throw new DispatchRuleException("bookingHorseId", "Ngựa đã có trên lượt xe này.", true);
         }
         HorseLeg previous = chain.stream().filter(l -> !INACTIVE.contains(l.getStatus())).reduce((first, second) -> second).orElse(null);
-        HorseLeg last = chain.isEmpty() ? null : chain.getLast();
+        HorseLeg last = chain.stream().filter(existing -> existing.getStatus() != HorseLegStatus.CANCELLED)
+                .reduce((first, next) -> next).orElse(null);
         HorseLeg failed = last != null && last.getStatus() == HorseLegStatus.FAILED ? last : null;
         if (failed != null) {
             // Giao thất bại: xe đưa ngựa về nơi lượt đó kết thúc (về hub); chặng mới đi tiếp từ đó (B5)
@@ -178,6 +181,9 @@ public class HorseLegServiceImpl implements HorseLegService {
         legs.saveAndFlush(leg);
         // Hệ thống tự xếp vị trí khoang ngay khi gán ngựa (NGHIEP_VU GĐ5), điều phối chỉnh ở sơ đồ khoang
         stallPlans.placeNew(leg);
+        if (leg.getReplacedHorseLeg() != null) {
+            stablingCharges.precharge(leg, username);
+        }
         notices.legAssigned(leg);
         return horsesOnTrip(trip.getId());
     }
@@ -205,7 +211,11 @@ public class HorseLegServiceImpl implements HorseLegService {
     @Transactional
     public int cancelPlannedLegsOfBooking(Long bookingId) {
         List<HorseLeg> planned = legs.findByBookingHorse_Booking_IdAndStatus(bookingId, HorseLegStatus.PLANNED);
-        planned.forEach(leg -> leg.setStatus(HorseLegStatus.CANCELLED));
+        planned.forEach(leg -> {
+            leg.setStatus(HorseLegStatus.CANCELLED);
+            leg.setStallPosition(null);
+        });
+        notices.clearHubAppointmentsAndNotify(bookingId, planned.size());
         legs.flush();
         return planned.size();
     }

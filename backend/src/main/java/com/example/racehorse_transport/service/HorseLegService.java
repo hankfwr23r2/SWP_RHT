@@ -16,7 +16,7 @@ public interface HorseLegService {
     List<TripHorseResponseDto> horsesOnTrip(Long vehicleTripId);
 
     // Gán ngựa vào lượt xe, tạo chặng mới nối tiếp chuỗi chặng của con ngựa
-    List<TripHorseResponseDto> assign(Long vehicleTripId, HorseLegRequestDto request);
+    List<TripHorseResponseDto> assign(Long vehicleTripId, HorseLegRequestDto request, String username);
 
     // Gỡ chặng chưa chạy, chỉ khi đó là chặng cuối của con ngựa
     List<TripHorseResponseDto> cancel(Long horseLegId);

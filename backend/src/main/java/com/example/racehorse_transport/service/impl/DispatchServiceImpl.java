@@ -30,7 +30,7 @@ import com.example.racehorse_transport.policy.DispatchPolicy.Interval;
 import com.example.racehorse_transport.policy.StallSeatPolicy;
 import com.example.racehorse_transport.repository.BookingAddressRepository;
 import com.example.racehorse_transport.repository.CrewAssignmentRepository;
-import com.example.racehorse_transport.repository.DepartureRepository;
+import com.example.racehorse_transport.service.DepartureService;
 import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.repository.RouteStopRepository;
@@ -64,7 +64,7 @@ public class DispatchServiceImpl implements DispatchService {
     private final CrewAssignmentRepository crew;
     private final HorseLegRepository legs;
     private final VehicleRepository vehicles;
-    private final DepartureRepository departures;
+    private final DepartureService departures;
     private final RouteStopRepository routeStops;
     private final LocationRepository locations;
     private final BookingAddressRepository bookingAddresses;
@@ -115,6 +115,9 @@ public class DispatchServiceImpl implements DispatchService {
             throw new DispatchRuleException("status", "Lượt xe còn ngựa. Gỡ ngựa khỏi lượt trước khi hủy.", true);
         }
         trip.setStatus(VehicleTripStatus.CANCELLED);
+        if (trip.getTripType() == VehicleTripType.LINEHAUL) {
+            departures.linehaulCompleted(trip.getDeparture().getId());
+        }
         for (CrewAssignment assignment : crew.findByVehicleTrip_IdInOrderById(List.of(id))) {
             assignment.setStatus(CrewAssignmentStatus.RELEASED);
             assignment.setNote(request.reason().strip());
@@ -137,8 +140,7 @@ public class DispatchServiceImpl implements DispatchService {
         if (request.departureId() == null) {
             throw new DispatchRuleException("departureId", "Lượt xe trục phải gắn với một chuyến.");
         }
-        Departure departure = departures.findById(request.departureId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chuyến " + request.departureId()));
+        Departure departure = departures.lockForLinehaulPlanning(request.departureId());
         if (!RUNNABLE_DEPARTURES.contains(departure.getStatus())) {
             throw new DispatchRuleException("departureId", "Chuyến đang " + departure.getStatus() + ", không lập lượt xe được.", true);
         }

@@ -637,6 +637,7 @@ export const customer = {
       optional: 'optional',
       noDocuments: 'You do not need to submit any document for this route.',
       documentsHint: 'Submit them on the order page after sending. We and our agents handle the rest.',
+      directNotFeasible: 'Allow at least {{days}} days for paperwork. Choose a later pickup date.',
       notFeasible: 'The papers cannot be ready for this departure: at least {{days}} days are needed. Choose a later one.',
       next: 'Continue: horses',
     },

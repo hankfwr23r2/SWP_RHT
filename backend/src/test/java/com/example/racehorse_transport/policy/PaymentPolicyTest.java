@@ -89,7 +89,7 @@ class PaymentPolicyTest {
     }
 
     @Test
-    void extraChargeCheckoutAndIpnRequireDeliveredBookingAndExactAmount() {
+    void extraChargeCheckoutAndIpnRequireAnEligibleBookingAndExactAmount() {
         Instant now = Instant.parse("2027-01-15T10:00:00Z");
         var booking = new Booking();
         booking.setStatus(BookingStatus.DELIVERED);
@@ -104,9 +104,28 @@ class PaymentPolicyTest {
         assertThat(PaymentPolicy.isOpen(extra, booking, now)).isTrue();
         assertThat(PaymentPolicy.canApply(extra, booking, session, now, now, 5, new BigDecimal("3000"))).isTrue();
         assertThat(PaymentPolicy.canApply(extra, booking, session, now, now, 5, new BigDecimal("3100"))).isFalse();
-        booking.setStatus(BookingStatus.COMPLETED);
+        for (var status : List.of(BookingStatus.IN_OPERATION, BookingStatus.COMPLETED)) {
+            booking.setStatus(status);
+            assertThat(PaymentPolicy.isOpen(extra, booking, now)).isTrue();
+            assertThat(PaymentPolicy.canApply(extra, booking, session, now, now, 5, new BigDecimal("3000"))).isTrue();
+        }
+        booking.setStatus(BookingStatus.CONFIRMED);
         assertThat(PaymentPolicy.isOpen(extra, booking, now)).isFalse();
         assertThat(PaymentPolicy.canApply(extra, booking, session, now, now, 5, new BigDecimal("3000"))).isFalse();
+    }
+
+    @Test
+    void chargingDuringOperationRequiresATariffStablingCost() {
+        var cost = new CostItem();
+        cost.setCategory(com.example.racehorse_transport.entity.enums.CostCategory.STABLING);
+        cost.setPayerType(CostPayerType.CONSIGNEE);
+        assertThatThrownBy(() -> PaymentPolicy.requireExtraChargeAllowed(BookingStatus.IN_OPERATION, List.of(cost)))
+                .isInstanceOf(com.example.racehorse_transport.exception.BookingRuleException.class);
+        var stay = new com.example.racehorse_transport.entity.HorseStay();
+        stay.setStayType(com.example.racehorse_transport.entity.enums.HorseStayType.STABLING);
+        cost.setHorseStay(stay);
+        PaymentPolicy.requireExtraChargeAllowed(BookingStatus.IN_OPERATION, List.of(cost));
+        assertThat(CostPayerPolicy.countsAgainstEmergencyLimit(cost)).isFalse();
     }
 
     @Test

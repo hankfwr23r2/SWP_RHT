@@ -1,5 +1,8 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.repository.VehicleTripRepository;
+import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
+import com.example.racehorse_transport.entity.enums.VehicleTripType;
 import com.example.racehorse_transport.dto.departure.DepartureCreateRequestDto;
 import com.example.racehorse_transport.dto.departure.DepartureResponseDto;
 import com.example.racehorse_transport.entity.AppUser;
@@ -57,6 +60,32 @@ public class DepartureServiceImpl implements DepartureService {
     private final BookingStatusService bookingStatus;
     private final SystemConfigService config;
     private final Clock clock;
+    private final VehicleTripRepository vehicleTrips;
+
+    @Override
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
+    public Departure lockForLinehaulPlanning(Long departureId) {
+        return departures.findForUpdate(departureId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chuyến " + departureId));
+    }
+
+    @Override
+    @Transactional
+    public void linehaulDeparted(Long departureId) {
+        Departure departure = departures.findForUpdate(departureId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chuyến " + departureId));
+        departure.setStatus(DepartureCapacityPolicy.afterLinehaulDeparture(departure.getStatus()));
+    }
+
+    @Override
+    @Transactional
+    public void linehaulCompleted(Long departureId) {
+        Departure departure = departures.findForUpdate(departureId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chuyến " + departureId));
+        boolean unfinished = vehicleTrips.existsByDeparture_IdAndTripTypeAndStatusNotIn(departureId,
+                VehicleTripType.LINEHAUL, Set.of(VehicleTripStatus.COMPLETED, VehicleTripStatus.CANCELLED));
+        departure.setStatus(DepartureCapacityPolicy.afterLinehaulCompletion(departure.getStatus(), unfinished));
+    }
 
     @Override
     @Transactional
@@ -167,6 +196,8 @@ public class DepartureServiceImpl implements DepartureService {
         for (Booking booking : onDeparture) {
             if (BookingStatusPolicy.canTransition(booking.getStatus(), BookingStatus.SCHEDULE_CHANGE_REQUIRED)) {
                 bookingStatus.requireScheduleChange(booking.getId(), departure, ScheduleChangeCause.COMPANY, bookingReason, actor.getId());
+            } else {
+                bookingStatus.clearPlannedTransport(booking.getId());
             }
         }
         return toDto(departures.findWithRoute(departureId).orElseThrow());

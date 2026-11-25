@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.repository.DispatchBookingRepository;
 import com.example.racehorse_transport.dto.dispatch.AgentLegRequestDto;
 import org.springframework.web.multipart.MultipartFile;
 import com.example.racehorse_transport.dto.dispatch.HorseLegResponseDto;
@@ -58,13 +59,14 @@ public class AgentLegServiceImpl implements AgentLegService {
     private final BookingStatusService bookingStatus;
     private final Clock clock;
     private final HandoverEvidenceService evidence;
+    private final DispatchBookingRepository dispatchBookings;
 
     @Override
     @Transactional
     public HorseLegResponseDto create(Long bookingHorseId, AgentLegRequestDto request) {
         BookingHorse line = bookingHorses.findById(bookingHorseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngựa trong đơn " + bookingHorseId));
-        Booking booking = line.getBooking();
+        Booking booking = dispatchBookings.findForUpdate(line.getBooking().getId()).orElseThrow();
         if (line.getStatus() != BookingHorseStatus.ACTIVE || !DISPATCHABLE.contains(booking.getStatus())) {
             throw new DispatchRuleException("bookingHorseId", "Ngựa hoặc đơn " + booking.getCode() + " không ở trạng thái lập chặng được.", true);
         }

@@ -1,5 +1,7 @@
 package com.example.racehorse_transport.policy;
 
+import com.example.racehorse_transport.entity.enums.IncidentType;
+import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import com.example.racehorse_transport.entity.enums.IncidentPlanStatus;
 import com.example.racehorse_transport.entity.enums.IncidentResolutionType;
 import com.example.racehorse_transport.entity.enums.IncidentStatus;
@@ -14,6 +16,25 @@ import java.util.Optional;
 public final class IncidentPolicy {
 
     private IncidentPolicy() {}
+
+    public static boolean requiresFit(IncidentType type, boolean hasHorse) {
+        return type == IncidentType.HEALTH || (type == IncidentType.ACCIDENT && hasHorse);
+    }
+
+    public static void requireReportable(VehicleTripStatus status, IncidentType type, boolean hasHorse) {
+        if (status != VehicleTripStatus.IN_PROGRESS) {
+            throw new DispatchRuleException("vehicleTripId", "Chỉ báo sự cố khi lượt xe đang chạy.", true);
+        }
+        if (type == IncidentType.HEALTH && !hasHorse) {
+            throw new DispatchRuleException("horseLegId", "Sự cố sức khỏe phải chọn con ngựa.");
+        }
+    }
+
+    public static void requireResolutionAvailable(IncidentType type, IncidentResolutionType resolution) {
+        if (type == IncidentType.HANDOVER_TIMEOUT && resolution == IncidentResolutionType.RETURN_TO_HUB) {
+            throw new DispatchRuleException("resolutionType", "Xe giao thẳng vào hub, không cần bấm đưa về hub.", true);
+        }
+    }
 
     public static boolean isOpen(IncidentStatus status) {
         return status != IncidentStatus.RESOLVED && status != IncidentStatus.CLOSED;

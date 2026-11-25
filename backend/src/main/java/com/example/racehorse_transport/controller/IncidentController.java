@@ -77,7 +77,7 @@ public class IncidentController {
     }
 
     @PostMapping("/incidents/{id}/fit-confirmation")
-    @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT')")
+    @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT', 'COORDINATOR')")
     public ApiResponseDto<IncidentResponseDto> confirmFit(@PathVariable Long id, Authentication authentication) {
         return ApiResponseDto.success(incidents.confirmFit(id, authentication.getName()), "Đã xác nhận ngựa đủ sức đi tiếp");
     }

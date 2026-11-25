@@ -30,7 +30,11 @@ public interface CrewAssignmentRepository extends JpaRepository<CrewAssignment, 
     @EntityGraph(attributePaths = {"vehicleTrip", "vehicleTrip.vehicle", "vehicleTrip.startLocation", "vehicleTrip.endLocation"})
     @Query("""
             SELECT a FROM CrewAssignment a
-            WHERE a.staff.user.username = :username AND a.status <> :released AND a.vehicleTrip.status NOT IN :ended
+            WHERE a.staff.user.username = :username AND a.status <> :released
+              AND (a.vehicleTrip.status NOT IN :ended OR
+                   (a.vehicleTrip.status = com.example.racehorse_transport.entity.enums.VehicleTripStatus.COMPLETED
+                    AND EXISTS (SELECT 1 FROM Incident i WHERE i.vehicleTrip = a.vehicleTrip
+                        AND i.status <> com.example.racehorse_transport.entity.enums.IncidentStatus.CLOSED)))
             ORDER BY a.vehicleTrip.plannedStartAt
             """)
     List<CrewAssignment> findOpenOfUser(@Param("username") String username,

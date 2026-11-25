@@ -81,9 +81,11 @@ public class CostItemServiceImpl implements CostItemService {
             throw new DispatchRuleException("status", "Chi phí đã được duyệt.", true);
         }
         Booking booking = cost.getBooking();
-        CostPayerPolicy.requireConsultedOrWithinEmergencyLimit(cost.getPayerType(), Boolean.TRUE.equals(cost.getCustomerConsulted()), cost.getAmount(),
-                booking == null ? java.math.BigDecimal.ZERO : costs.sumApprovedWithoutConsulting(booking.getId(), CUSTOMER_SIDE),
-                booking == null ? null : booking.getEmergencySpendingLimit());
+        if (CostPayerPolicy.countsAgainstEmergencyLimit(cost)) {
+            CostPayerPolicy.requireConsultedOrWithinEmergencyLimit(cost.getPayerType(), false, cost.getAmount(),
+                    booking == null ? java.math.BigDecimal.ZERO : costs.sumApprovedWithoutConsulting(booking.getId(), CUSTOMER_SIDE),
+                    booking == null ? null : booking.getEmergencySpendingLimit());
+        }
         cost.setApprovedBy(staff.findByUser_Username(username).orElseThrow(() -> new AccessDeniedException("Không tìm thấy hồ sơ nhân viên.")));
         cost.setApprovedAt(clock.instant());
         return CostItemResponseDto.from(costs.saveAndFlush(cost));

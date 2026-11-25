@@ -1224,6 +1224,7 @@ Index: `handler_party_id`.
 |---|---|---|---|---|
 | `id` | `bigint` | | PK, identity | |
 | `category` | `varchar(30)` | | CK `TOLL, FUEL, STABLING, VET, RESCUE, REPAIR, WAITING, OTHER` | |
+| `stabling_days` | `bigint` | có | CK dương, chỉ với `STABLING` gắn `horse_stay` | Snapshot số ngày tính trên dòng phí, dùng để tính chênh khi ngựa rời hub |
 | `description` | `varchar(500)` | | | |
 | `amount` | `numeric(15,2)` | | CK `> 0` | |
 | `currency_code` | `char(3)` | | | |
@@ -1253,6 +1254,10 @@ Index: `booking_id`, `vehicle_trip_id`, `incident_id`, `handover_id`, `horse_sta
 ---
 
 ## Nhóm 14. Chứng từ
+
+Phí biểu phí gắn lưu trú `STABLING` thuộc `CONSIGNEE` và khách thanh toán. Dòng tự duyệt ghi nhân viên thao tác theo ràng buộc hiện có. Số ngày đã thu nằm trên từng dòng phí, không lưu tổng trên `horse_stay`. Khoản thu thêm có `due_at` và quá hạn được tính khi đọc.
+
+`document_type` có mã `VET_REPORT` với chủ thể `INCIDENT`. Điều phối dùng mã này để xác nhận đủ sức thay tổ lái.
 
 ### 14.1 `document`: tệp chứng từ
 
@@ -1405,6 +1410,8 @@ Giá trị khởi đầu của các tham số chốt ngày 23/11/2026, thêm b�
 | `AUTHORITY_DELAY_REFUND_MISSES` | 2 | Số lần lỡ chuyến do cơ quan cấp giấy để hoàn cọc vận chuyển khi hủy. Đơn vị `COUNT`, giới hạn 1–10 |
 | `PRICE_HOLD_DAYS` | 30 | Giữ giá khi đổi chuyến, tính từ ngày chạy của chuyến vừa lỡ |
 | `SETTLEMENT_AUTO_CLOSE_DAYS` | 7 | Tự đóng đơn không phát sinh |
+| `EXTRA_CHARGE_DUE_DAYS` | 7 | Hạn khoản thu thêm từ lúc lập, 1–30 ngày |
+| `STABLING_DAILY_FEE` | 1.000.000 đ | Phí giữ tại hub mỗi con mỗi ngày |
 | `HANDOVER_FREE_WAIT_MINUTES` | 1 | 1440 |
 
 ### 15.5 `route_cache`: bộ đệm kết quả tính lộ trình
@@ -1436,6 +1443,7 @@ Có hai cách xử lý giá trị dẫn xuất:
 | `quotation.total_amount` | Tổng các dòng báo giá | `QuotationService`, lúc tạo hoặc sửa bản DRAFT. Bất biến sau khi SENT | `CHECK (total_amount >= 0)` |
 | `quotation.pass_through_amount` | Phần thu hộ (bảo hiểm, lệ phí nhà nước) | Như trên | `CHECK (pass_through_amount BETWEEN 0 AND total_amount)` |
 | `quotation.deposit_amount` | Tiền cọc, gồm **toàn bộ** phần thu hộ | Như trên, tính bằng `DepositPolicy` | `CHECK (deposit_amount BETWEEN pass_through_amount AND total_amount)` |
+| `cost_item.stabling_days` | Snapshot số ngày của từng dòng phí giữ đã tính | `StablingChargeService`, khi tạo dòng phí theo biểu | Dương, chỉ áp dụng với khoản STABLING có `horse_stay_id` |
 | `departure.booked_stall_count` | Số chỗ đã được đặt (khoang rộng 2 chỗ) | `DepartureService`, cộng khi đặt chỗ, trừ khi nhả chỗ (hủy, từ chối, báo giá hết hạn, loại ngựa). Luôn giữ `SELECT … FOR UPDATE` trên dòng `departure` | `CHECK (booked_stall_count BETWEEN 0 AND stall_capacity)`: DB chặn bán quá chỗ |
 
 Công thức:

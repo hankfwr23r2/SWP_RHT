@@ -128,6 +128,12 @@ public class QuotationServiceImpl implements QuotationService {
         changeStatus(quotation, QuotationStatus.ACCEPTED);
         quotation.setAcceptedAt(now);
         payments.createDeposit(quotation);
+        var managers = staff.findUserIdsByRoleAndStatus("MANAGER",
+                com.example.racehorse_transport.entity.enums.AppUserStatus.ACTIVE);
+        if (!managers.isEmpty()) {
+            notifications.notify(managers, booking.getId(), "Khách chấp nhận báo giá",
+                    "Khách đã chấp nhận báo giá của đơn " + booking.getCode() + ".", null);
+        }
         return describe(quotation);
     }
 

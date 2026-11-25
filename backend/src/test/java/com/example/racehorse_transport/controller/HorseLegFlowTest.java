@@ -208,8 +208,22 @@ class HorseLegFlowTest {
             assign(linehaul, horse, linehaulStops.getFirst(), linehaulStops.getLast()).andExpect(status().isCreated());
         }
 
+        long appointment = jdbc.queryForObject("""
+                INSERT INTO horse_stay (booking_horse_id, stay_type, location_id, planned_start_at, planned_end_at)
+                VALUES (?, 'ASSEMBLY', ?, now(), now() + interval '1 hour') RETURNING id
+                """, Long.class, seed.horses().getFirst(), hcm);
+        long started = jdbc.queryForObject("""
+                INSERT INTO horse_stay (booking_horse_id, stay_type, location_id, planned_start_at, planned_end_at, actual_start_at)
+                VALUES (?, 'ASSEMBLY', ?, now(), now() + interval '1 hour', now()) RETURNING id
+                """, Long.class, seed.horses().getLast(), hcm);
         // Luồng A gọi khi đơn rời chuyến: mọi chặng còn PLANNED của đơn bị hủy, xe được nhả chỗ
         assertThat(horseLegs.cancelPlannedLegsOfBooking(seed.bookingId())).isEqualTo(2 * seed.horses().size());
+        assertThat(horseLegs.cancelPlannedLegsOfBooking(seed.bookingId())).isZero();
+        assertThat(jdbc.queryForList("SELECT id FROM horse_stay WHERE id IN (?, ?)", Long.class, appointment, started)).containsExactly(started);
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM horse_leg l JOIN booking_horse h ON h.id = l.booking_horse_id
+                WHERE h.booking_id = ? AND l.stall_position IS NOT NULL
+                """, Long.class, seed.bookingId())).isZero();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM horse_leg l JOIN booking_horse bh ON bh.id = l.booking_horse_id WHERE bh.booking_id = ? AND l.status <> 'CANCELLED'",
                 Long.class, seed.bookingId())).isZero();
         mvc.perform(get("/vehicle-trips/{id}/horse-legs", linehaul).header(HttpHeaders.AUTHORIZATION, coordinator))

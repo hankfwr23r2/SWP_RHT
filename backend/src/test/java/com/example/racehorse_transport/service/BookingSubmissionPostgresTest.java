@@ -170,6 +170,22 @@ class BookingSubmissionPostgresTest {
     }
 
     @Test
+    void interprovinceDirectSubmissionRejectsInsufficientDocumentLeadTime() {
+        String owner = customer();
+        var date = LocalDate.ofInstant(clock.instant(), ZoneId.of("Asia/Ho_Chi_Minh"));
+        var local = request(null, date, List.of(horseInput(horse(owner), InsuranceCoverageOption.NONE, true, List.of())));
+        var direct = new BookingCreateRequestDto(BookingType.INTERPROVINCE, null, date, new BigDecimal("1000"),
+                local.parties(), List.of(address(AddressRole.PICKUP, "VN-79"), address(AddressRole.DELIVERY, "VN-75")),
+                local.horses(), true);
+
+        assertThatThrownBy(() -> bookings.submit(owner, null, direct))
+                .isInstanceOf(BookingRuleException.class).hasMessageContaining("Không kịp làm giấy trước ngày đón");
+        var later = new BookingCreateRequestDto(direct.bookingType(), null, pickupDate(),
+                direct.emergencySpendingLimit(), direct.parties(), direct.addresses(), direct.horses(), true);
+        assertThat(bookings.submit(owner, null, later).departureId()).isNull();
+    }
+
+    @Test
     void refusesNoneWithoutWaiver() {
         String owner = customer();
         var request = request(null, pickupDate(), List.of(horseInput(horse(owner),
@@ -284,6 +300,7 @@ class BookingSubmissionPostgresTest {
     @Test
     void waiverCanBeConfirmedOnceAndAllowsLocalQuotation() {
         String owner = customer();
+        long manager = data.staff(data.unique("quoting-notice-manager"), "MANAGER").getUserId();
         String specialist = data.unique("a6-specialist");
         data.staff(specialist, "SPECIALIST");
         Long id = bookings.submit(owner, null, request(null, pickupDate(), List.of(
@@ -294,6 +311,10 @@ class BookingSubmissionPostgresTest {
         assertThatThrownBy(() -> insurance.confirm(id, insuranceId, specialist))
                 .isInstanceOfSatisfying(BookingRuleException.class, ex -> assertThat(ex.getStatusCode().value()).isEqualTo(409));
         assertThat(review.startQuoting(id, specialist).status()).isEqualTo(BookingStatus.QUOTING);
+        assertThat(jdbc.queryForList("""
+                select nr.user_id from notification_recipient nr join notification n on n.id = nr.notification_id
+                where n.booking_id = ? and n.title = 'Đơn đang báo giá'
+                """, Long.class, id)).contains(manager);
     }
 
     @Test
@@ -352,7 +373,7 @@ class BookingSubmissionPostgresTest {
                 SELECT id, ?, 'CUSTOMER', false FROM country_rule
                 WHERE country_code = 'VN' AND direction = 'INTERPROVINCE' RETURNING id
                 """, Long.class, typeId);
-        var file = new org.springframework.mock.web.MockMultipartFile("file", "transport.pdf", "application/pdf", new byte[]{1});
+        var file = new org.springframework.mock.web.MockMultipartFile("file", "transport.pdf", "application/pdf", new byte[]{'%', 'P', 'D', 'F', '-', '1', '.', '7'});
         org.mockito.Mockito.when(cloudinary.uploadFile(file, "documents/booking"))
                 .thenReturn("https://example.test/doc.pdf");
         var request = new com.example.racehorse_transport.dto.booking.DocumentUploadRequestDto(

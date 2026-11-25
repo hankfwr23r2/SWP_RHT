@@ -67,8 +67,10 @@ class QuotationPaymentPostgresTest {
     @Autowired private BookingCancellationService cancellations;
     @Autowired private RefundService refunds;
     @Autowired private SettlementService settlements;
+    @Autowired private ExtraChargeService extraCharges;
     @Autowired private SettlementScheduler settlementScheduler;
     @Autowired private DocumentReminderScheduler reminderScheduler;
+    @Autowired private ScheduleChangeService schedule;
     @MockitoSpyBean private DocumentCompletenessService documentCompleteness;
     @Autowired private PaymentCheckoutService checkout;
     @Autowired private PaymentResultService results;
@@ -184,6 +186,7 @@ class QuotationPaymentPostgresTest {
         quotations.reject(quote, new QuotationRejectRequestDto("Cần đổi lịch"), fixture.customer());
         assertThat(bookingStatus(fixture)).isEqualTo("QUOTING");
         assertThat(bookedSeats(departure)).isEqualTo(2);
+        assertThat(noticeCount(fixture, "Khách từ chối báo giá")).isEqualTo(1);
     }
 
     @Test
@@ -215,6 +218,8 @@ class QuotationPaymentPostgresTest {
         var codes = race(() -> results.receive(callback).code(), () -> results.receive(callback).code());
         assertThat(codes).containsExactlyInAnyOrder("00", "02");
         assertThat(gatewayRows(payment)).isEqualTo(1);
+        assertThat(noticeCount(fixture, "Khách chấp nhận báo giá")).isEqualTo(1);
+        assertThat(noticeCount(fixture, "Đặt cọc thành công")).isEqualTo(1);
         assertThat(jdbc.queryForObject("""
                 select count(*) from booking_status_history where booking_id = ? and to_status = 'CONFIRMED'
                 """, Integer.class, fixture.booking().getId())).isEqualTo(1);
@@ -247,6 +252,7 @@ class QuotationPaymentPostgresTest {
                 """, Integer.class, fixture.booking().getId())).isGreaterThanOrEqualTo(1);
         assertThat(gatewayRows(payment)).isEqualTo(1);
         assertThat(bookingStatus(fixture)).isEqualTo("QUOTE_EXPIRED");
+        assertThat(noticeCount(fixture, "Báo giá hết hạn")).isEqualTo(1);
     }
 
     @Test
@@ -444,7 +450,7 @@ class QuotationPaymentPostgresTest {
         when(clock.instant()).thenReturn(now);
         jdbc.update("update departure set booking_cutoff_at = ?, planned_departure_at = ? where id = ?",
                 java.sql.Timestamp.from(now.minusSeconds(3600)), java.sql.Timestamp.from(now.plusSeconds(2 * 86400L)), departure);
-        doReturn(false).when(documentCompleteness).isComplete(booking);
+        doReturn(java.util.Set.of(DocumentSubmitter.CUSTOMER)).when(documentCompleteness).missingSubmitters(booking);
 
         reminderScheduler.sendReminders();
         reminderScheduler.sendReminders();
@@ -455,11 +461,38 @@ class QuotationPaymentPostgresTest {
     }
 
     @Test
+    void confirmedDirectBookingIsListedAndRemindsOnlyTheSpecialistForPartnerDocuments() {
+        var fixture = fixture(BookingType.INTERPROVINCE, BookingStatus.CONFIRMED);
+        long booking = fixture.booking().getId();
+        long specialist = data.staff(data.unique("direct-document-specialist"), "SPECIALIST").getUserId();
+        var now = jdbc.queryForObject("select now()", java.sql.Timestamp.class).toInstant();
+        when(clock.instant()).thenReturn(now);
+        jdbc.update("update booking set requested_pickup_date = ? where id = ?",
+                LocalDate.ofInstant(now, QuotationPolicy.BUSINESS_ZONE).plusDays(1), booking);
+        doReturn(true).when(documentCompleteness).isComplete(anyLong());
+        doReturn(false).when(documentCompleteness).isComplete(booking);
+        doReturn(java.util.Set.of(DocumentSubmitter.CONSIGNEE)).when(documentCompleteness).missingSubmitters(booking);
+
+        assertThat(schedule.reminderCandidates()).contains(booking);
+        assertThat(schedule.missingDocuments()).extracting(row -> row.id()).contains(booking);
+        assertThat(schedule.remind(booking)).isTrue();
+        assertThat(schedule.remind(booking)).isFalse();
+        assertThat(noticeCount(fixture, "Bổ sung giấy tờ trước chuyến")).isZero();
+        assertThat(noticeCount(fixture, "Đơn cần bổ sung giấy tờ")).isEqualTo(1);
+        assertThat(jdbc.queryForList("""
+                select nr.user_id from notification_recipient nr join notification n on n.id = nr.notification_id
+                where n.booking_id = ? and n.title = 'Đơn cần bổ sung giấy tờ'
+                """, Long.class, booking)).contains(specialist);
+    }
+
+    @Test
     void ratingApiChecksRoleOwnerAndDuplicate() throws Exception {
         var fixture = fixture(BookingType.LOCAL, BookingStatus.DELIVERED);
         long booking = fixture.booking().getId();
         String other = data.customer(data.unique("rating-other")).getUser().getUsername();
         String input = "{\"score\":5,\"comment\":\"Đã nhận ngựa\"}";
+        var detail = get("/bookings/{id}", booking).header(HttpHeaders.AUTHORIZATION, auth(fixture.customer(), "CUSTOMER"));
+        mvc.perform(detail).andExpect(status().isOk()).andExpect(jsonPath("$.data.rated").value(false));
 
         mvc.perform(post("/bookings/{id}/ratings", booking).contentType("application/json").content(input)
                 .header(HttpHeaders.AUTHORIZATION, auth(fixture.manager(), "MANAGER"))).andExpect(status().isForbidden());
@@ -469,6 +502,7 @@ class QuotationPaymentPostgresTest {
                 .header(HttpHeaders.AUTHORIZATION, auth(fixture.customer(), "CUSTOMER"))).andExpect(status().isOk());
         mvc.perform(post("/bookings/{id}/ratings", booking).contentType("application/json").content(input)
                 .header(HttpHeaders.AUTHORIZATION, auth(fixture.customer(), "CUSTOMER"))).andExpect(status().isConflict());
+        mvc.perform(detail).andExpect(status().isOk()).andExpect(jsonPath("$.data.rated").value(true));
     }
 
     @org.junit.jupiter.params.ParameterizedTest
@@ -599,6 +633,7 @@ class QuotationPaymentPostgresTest {
         var charge = settlements.createExtraCharge(booking, List.of(cost), fixture.manager());
         assertThat(charge.type()).isEqualTo(PaymentType.EXTRA_CHARGE);
         assertThat(charge.amount()).isEqualByComparingTo("1500");
+        assertThat(charge.dueAt()).isEqualTo(START.plus(java.time.Duration.ofDays(7)));
         assertThat(jdbc.queryForObject("select extra_charge_payment_id from cost_item where id = ?", Long.class, cost))
                 .isEqualTo(charge.id());
         assertThatThrownBy(() -> settlements.createExtraCharge(booking, List.of(cost), fixture.manager()))
@@ -609,6 +644,39 @@ class QuotationPaymentPostgresTest {
         assertThat(results.receive(callback).code()).isEqualTo("00");
         assertThat(results.receive(callback).code()).isEqualTo("02");
         assertThat(settlements.settlement(booking).outstanding()).isEqualByComparingTo("0");
+    }
+
+    @Test
+    void lateInvoiceForCompletedBookingRemindsOnceAndBlocksSubmissionUntilPaid() {
+        Instant now = Instant.now();
+        when(clock.instant()).thenReturn(now);
+        var fixture = fixture(BookingType.LOCAL, BookingStatus.COMPLETED);
+        long booking = fixture.booking().getId();
+        long customer = fixture.booking().getCustomer().getUserId();
+        long quote = quote(fixture, QuotationStatus.ACCEPTED, now.plusSeconds(120), "10000", "10000");
+        paidDeposit(booking, quote, "10000");
+        long cost = jdbc.queryForObject("""
+                INSERT INTO cost_item (category, description, amount, currency_code, payer_type, booking_id,
+                    is_customer_consulted, incurred_at, recorded_by, approved_by, approved_at)
+                VALUES ('VET', 'Hóa đơn thú y muộn', 1500, 'VND', 'CUSTOMER', ?, true, now(), ?, ?, now()) RETURNING id
+                """, Long.class, booking, fixture.managerId(), fixture.managerId());
+        var charge = settlements.createExtraCharge(booking, List.of(cost), fixture.manager());
+        assertThat(charge.dueAt()).isEqualTo(now.plus(java.time.Duration.ofDays(7)));
+        jdbc.update("UPDATE payment SET due_at = now() - interval '1 minute' WHERE id = ?", charge.id());
+        assertThatThrownBy(() -> extraCharges.requireNoOverdue(customer)).isInstanceOf(BookingRuleException.class)
+                .hasMessageContaining("trước khi gửi đơn mới");
+        extraCharges.remindOverdue();
+        extraCharges.remindOverdue();
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM notification n JOIN notification_recipient r ON r.notification_id = n.id
+                WHERE r.user_id = ? AND n.title = 'Khoản thu thêm quá hạn'
+                """, Long.class, customer)).isEqualTo(1L);
+        String reference = checkout(charge.id(), fixture);
+        Instant paid = now.truncatedTo(java.time.temporal.ChronoUnit.SECONDS).plusSeconds(1);
+        when(clock.instant()).thenReturn(paid);
+        assertThat(results.receive(callback(reference, "804978", 1500, paid, true)).code()).isEqualTo("00");
+        extraCharges.requireNoOverdue(customer);
+        assertThat(bookingStatus(fixture)).isEqualTo("COMPLETED");
     }
 
     private long paidDeposit(long booking, long quote, String value) {
@@ -671,6 +739,11 @@ class QuotationPaymentPostgresTest {
                 insert into booking_horse (booking_id, horse_id, stall_type_code, status)
                 values (?, ?, ?, 'ACTIVE') returning id
                 """, Long.class, fixture.booking().getId(), horse, stall);
+    }
+
+    private int noticeCount(Fixture fixture, String title) {
+        return jdbc.queryForObject("select count(*) from notification where booking_id = ? and title = ?",
+                Integer.class, fixture.booking().getId(), title);
     }
 
     private void confirmWaiver(Fixture fixture, long horse) {

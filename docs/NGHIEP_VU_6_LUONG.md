@@ -167,7 +167,7 @@ Vì báo giá phải gửi trước mốc quyết định và sống tối đa 2
 - **1.13** **Hạn nhận đặt** của mỗi chuyến là **72 giờ trước giờ chạy** (đặt trong lịch chạy của tuyến). Sau hạn này không ai đặt mới hay đổi sang chuyến đó được; đơn đã giữ chỗ từ trước không ảnh hưởng.
 - **1.14** Khoang thường chiếm **1 chỗ**, khoang rộng chiếm **2 chỗ** trên chuyến. Chuyến mẫu có 9 chỗ. Khách tự chọn khoang, không bắt buộc theo giới tính ngựa.
 - **1.15** Chỗ được **giữ ngay khi gửi đơn**, chưa cần cọc. Chỗ chỉ được nhả khi: đơn bị từ chối, bị hủy, hết hạn báo giá, đổi sang chuyến khác, hoặc bị nhả ở mốc quyết định. Hai khách đặt cùng lúc thì người tới sau nhận thông báo hết chỗ; không bao giờ vượt sức chứa.
-- **1.16** **Thời gian làm giấy** đếm từ hôm khách gửi đơn tới **hạn nhận đặt** của chuyến (không phải tới giờ chạy): liên tỉnh **5 ngày**, xuất **21 ngày**, nhập **37 ngày** (số mẫu, đặt theo quy định từng nước). Không đủ thì không chọn được chuyến đó.
+- **1.16** **Thời gian làm giấy** đếm từ hôm khách gửi đơn tới **hạn nhận đặt** của chuyến (không phải tới giờ chạy): liên tỉnh **5 ngày**, xuất **21 ngày**, nhập **37 ngày** (số mẫu, đặt theo quy định từng nước). Không đủ thì không chọn được chuyến đó. Đơn liên tỉnh chạy thẳng tính đến ngày đón.
 - **1.17** **Ngày đón** của đơn liên tỉnh đi trục và đơn xuất phải **trước ngày chuyến chạy ít nhất 1 ngày**. Khách muốn đưa ngựa tới sớm hơn 1 ngày đó thì tính **phí lưu chuồng** cho từng ngày thừa, theo con (800.000 đ, số mẫu). Đơn nhập thì ngày đón không được sau ngày chuyến chạy.
 - **1.18** Một con ngựa chỉ nằm trong **một đơn chưa kết thúc**. Đơn kết thúc là: hoàn thành, hủy, bị từ chối, báo giá hết hạn. Ngựa phải đang hoạt động và thuộc khách đó.
 
@@ -258,11 +258,12 @@ Vì báo giá phải gửi trước mốc quyết định và sống tối đa 2
 Tìm thấy khi đối chiếu code để viết luồng này:
 
 1. **Báo giá hết hạn là ngõ cụt** (T7). Bảng trạng thái cho phép quay lại báo giá nhưng chưa có nút nào làm việc đó; khách phải đặt đơn mới. Hỏi: giữ vậy, hay cho quản lý mở lại nếu chuyến còn chỗ?
-2. **Thiếu thông báo** (bước 4, 5). Quản lý không được báo khi đơn chuyển sang Đang báo giá, khi khách chấp nhận hoặc từ chối. Khách không được báo khi báo giá hết hạn và khi cọc thành công (chỉ thấy trên màn kết quả thanh toán).
-3. **Đơn liên tỉnh chạy thẳng không kiểm thời gian làm giấy** (1.16). Kiểm 5 ngày chỉ áp dụng khi có chuyến trục. Xe vẫn không đi đón được nếu thiếu giấy, nhưng khách không được báo sớm.
-4. **Nút Từ chối đơn chưa khớp** (T4). Màn quản lý còn hiện nút khi đơn Cần bổ sung, bấm sẽ bị máy chủ chặn. Hỏi: cho từ chối cả khi Cần bổ sung hay ẩn nút?
+2. **Đã sửa.** Báo quản lý khi đơn sang Đang báo giá và khi khách chấp nhận hoặc từ chối báo giá. Báo khách khi báo giá hết hạn và khi hệ thống xác nhận đã nhận cọc.
+3. **Đã sửa.** Khi đặt đơn liên tỉnh chạy thẳng, hệ thống kiểm số ngày làm giấy theo quy định đến ngày đón.
+4. **Đã sửa.** Nút Từ chối đơn chỉ hiện ở Chờ tiếp nhận và Đang thẩm định, theo điều kiện của máy chủ.
 5. **Không có hạn cho việc của công ty**: tiếp nhận, thẩm định, báo giá không có hạn riêng, chỉ bị chặn chung ở mốc quyết định. Hoàn tiền cũng không có hạn. Hỏi: có cần đặt hạn nội bộ (ví dụ tiếp nhận trong 4 giờ làm việc) để nhắc nhân viên?
 6. **Xử lý chuyến trễ** theo cách hàng không: đã có đề xuất, chờ duyệt, chưa làm. Sẽ viết ở luồng 3 và 5.
+7. **Đã sửa.** Chi tiết đơn của khách ẩn ô đánh giá khi đơn đã có đánh giá.
 
 ---
 
@@ -290,7 +291,7 @@ Luồng này **chạy song song với luồng 1**, rồi kéo dài tới lúc xe
 | **Giấy theo ngựa** | Hộ chiếu, sổ tiêm: gắn với hồ sơ con ngựa |
 | **Giấy theo ngựa trong đơn** | Phiếu xét nghiệm, giấy kiểm dịch: làm riêng cho từng con của đơn này |
 | **Giấy theo đơn** | Tờ khai hải quan, giấy phép nhập: một bản cho cả đơn |
-| **Đạt** | Giấy đã được **duyệt** và **còn hạn vào ngày kiểm** |
+| **Đạt** | Giấy đã được **duyệt** và **còn hạn vào ngày chuyến chạy hoặc ngày đón nếu chạy thẳng** |
 
 ## 2.A. Đi từng bước
 
@@ -337,7 +338,7 @@ Lúc đặt đơn khách đã chọn một trong ba cách cho mỗi con. Chuyên
 - Chuyên viên lo giấy của công ty, và **nộp thay** giấy của người nhận, đại lý (họ không có tài khoản), rồi duyệt.
 - Với nước đến bắt buộc xét nghiệm, công ty cho thú y tới **tận chuồng lấy mẫu**; phí thú y đã nằm sẵn trong báo giá.
 - Nếu giấy của khách hết hạn trong lúc chờ, khách được nộp lại bản mới.
-- **Từ 5 ngày trước giờ chạy**, mỗi ngày lúc 08:00 hệ thống nhắc khách của đơn còn thiếu giấy, mỗi ngày một lần.
+- **Từ 5 ngày trước giờ chạy hoặc ngày đón nếu chạy thẳng**, lúc 08:00 hệ thống nhắc đúng bên phụ trách giấy còn thiếu, tối đa một lần mỗi bên mỗi ngày.
 
 ### Bước 7. Không kịp giấy
 
@@ -390,7 +391,7 @@ Tiếp ví dụ chuyến chạy **05:00 thứ Ba 08/12** (liên tỉnh), khách 
 |---|---|---|---|
 | 30/11 | | Khách | Ngày cuối đặt được chuyến này, vì cần 5 ngày làm giấy trước hạn nhận đặt 05/12 |
 | 23/11 → trước khi báo giá | | **Khách** và chuyên viên | Đợt 1: nộp và duyệt giấy của khách, bảo hiểm. Không có hạn riêng, chặn chung bởi mốc quyết định |
-| 03/12 → 08/12, 08:00 mỗi ngày | 5 ngày | Công ty nhắc khách | Nhắc đơn đã cọc còn thiếu giấy |
+| 03/12 → 08/12, 08:00 mỗi ngày | 5 ngày | Hệ thống | Báo khách hoặc chuyên viên theo bên nộp giấy còn thiếu |
 | 06/12 05:00 | 48 giờ | **Quản lý** | Từ lúc này được báo giấy không kịp |
 | 07/12, lúc xe đi đón | 1 ngày | **Công ty** | Kiểm lần cuối. Thiếu giấy thì xe không xuất phát |
 
@@ -415,7 +416,7 @@ Tiếp ví dụ chuyến chạy **05:00 thứ Ba 08/12** (liên tỉnh), khách 
 
 - **2.5** Màn hình chỉ cho chọn PDF, JPG, PNG; máy chủ chặn tệp quá **5 MB**.
 - **2.6** Mỗi yêu cầu chỉ có **một bản đang hiệu lực**: đang chờ duyệt hoặc đã duyệt còn hạn thì không nộp thêm; bị từ chối hoặc hết hạn thì nộp lại được.
-- **2.7** Giấy **đạt** khi đã duyệt và chưa quá ngày hết hạn **tính vào ngày kiểm**. Giấy không ghi ngày hết hạn thì coi như không hết hạn.
+- **2.7** Giấy **đạt** khi đã duyệt và chưa quá ngày hết hạn **tính vào ngày chuyến chạy hoặc ngày đón nếu chạy thẳng**. Giấy không ghi ngày hết hạn thì coi như không hết hạn.
 - **2.8** Ai nộp được gì, khi nào:
 
 | Ai | Giấy nào | Khi đơn |
@@ -444,7 +445,7 @@ Tiếp ví dụ chuyến chạy **05:00 thứ Ba 08/12** (liên tỉnh), khách 
 
 - **2.21** Hai cửa chặn: **trước báo giá** chỉ cần giấy của khách và bảo hiểm; **trước khi nhận ngựa** cần giấy của cả bốn bên và bảo hiểm.
 - **2.22** Chưa trả đủ tiền **không** chặn xe đi đón; thiếu giấy thì chặn.
-- **2.23** Nhắc thiếu giấy chỉ áp dụng cho đơn **đã cọc, có chuyến**, trong **5 ngày** cuối (cấu hình), mỗi ngày nhiều nhất một lần.
+- **2.23** Nhắc thiếu giấy áp dụng cho đơn **đã cọc, có chuyến hoặc liên tỉnh chạy thẳng**, trong cửa sổ **5 ngày** (cấu hình), mỗi bên nhận nhiều nhất một lần mỗi ngày.
 - **2.24** Quản lý chỉ báo giấy không kịp khi đủ cả bốn: đơn đã cọc, còn thiếu giấy, chưa nhận ngựa, đã tới mốc quyết định. Bắt buộc chọn nguyên nhân và ghi lý do.
 
 ## 2.E. Tình huống và cách hệ thống xử lý
@@ -464,17 +465,17 @@ Tiếp ví dụ chuyến chạy **05:00 thứ Ba 08/12** (liên tỉnh), khách 
 
 ## 2.F. Điểm còn hở, cần nhóm quyết
 
-1. **Nhắc sai người.** Nhắc thiếu giấy gửi cho **khách** kể cả khi giấy thiếu là của công ty hoặc đại lý; chuyên viên không được nhắc. Tương tự, từ chối giấy của công ty cũng báo khách. Đề xuất: nhắc đúng bên nộp, giấy công ty, người nhận, đại lý thì nhắc chuyên viên.
+1. **Đã sửa.** Nhắc thiếu giấy và báo giấy bị từ chối theo bên nộp. Giấy khách nộp báo khách. Giấy của công ty, người nhận hoặc đại lý báo chuyên viên.
 2. **Không có chỗ tải tệp hợp đồng bảo hiểm.** Khách tự có chỉ khai số hợp đồng và ngày; chuyên viên không có tệp để kiểm. Loại giấy "Hợp đồng bảo hiểm" đã khai nhưng chưa dùng.
-3. **Ngày hết hạn chỉ so với ngày kiểm.** Giấy còn hạn hôm nay nhưng hết hạn trước ngày chạy vẫn được coi là đạt. Đề xuất: khi báo giá, so với ngày chuyến chạy.
+3. **Đã sửa.** Giấy được duyệt phải còn hiệu lực đến hết mốc ngày chạy của chuyến hoặc ngày đón của đơn chạy thẳng.
 4. **Báo giá bảo hiểm hết hạn lúc đơn Đang báo giá thì kẹt** (T17): bảo hiểm đã khóa, đơn không quay về thẩm định được; chỉ còn hủy hoặc chờ bị nhả chỗ ở mốc quyết định. Đề xuất: cho sửa bảo hiểm mua hộ khi Đang báo giá.
 5. **Không rút lại được giấy đã duyệt** nếu phát hiện giả hoặc sai.
-6. **Đơn chạy thẳng liên tỉnh không được nhắc**, không có trong danh sách Đơn thiếu giấy và không báo giấy không kịp được, vì cả ba đều dựa vào chuyến.
+6. **Đã sửa phần nhắc và danh sách.** Đơn liên tỉnh chạy thẳng được nhắc theo ngày đón và hiện trong danh sách Đơn thiếu giấy sau khi đã cọc. Thao tác báo giấy không kịp vẫn áp dụng cho đơn có chuyến.
 7. **Sau khi xe trục rời hub, giấy không được kiểm lại** ở cửa khẩu đơn xuất. Tài liệu có nêu cán bộ cửa khẩu xác nhận giấy, code chưa có.
 8. **Danh sách giấy mẫu lệch giữa Campuchia và Lào**: xuất Lào thiếu sổ tiêm, nhập Lào thiếu xét nghiệm. Cần nhóm xác nhận cố ý hay thiếu.
 9. **Giấy theo ngựa chỉ dùng lại trong cùng quy định**: hộ chiếu đã duyệt cho đơn liên tỉnh vẫn phải nộp lại cho đơn xuất. Đề xuất: giấy theo ngựa dùng chung cho mọi quy định.
 10. **Đơn nhập không kiểm bảo hiểm ở cửa khẩu**, trong khi xe đón và hub có kiểm. Ít rủi ro vì bảo hiểm đã xác nhận trước báo giá, nhưng nên thống nhất.
-11. **Loại tệp chỉ kiểm ở màn hình**, máy chủ chưa kiểm PDF, JPG, PNG.
+11. **Đã sửa.** Máy chủ kiểm chữ ký định dạng PDF, JPEG hoặc PNG trong nội dung tệp giấy tờ khi khách hoặc chuyên viên tải lên.
 
 ---
 
@@ -689,9 +690,9 @@ Theo cách hàng không, đã trình bày và chờ duyệt cuối:
 
 ## 3.G. Điểm còn hở, cần nhóm quyết
 
-1. **Đơn rời chuyến nhưng chặng xe không bị gỡ (lỗi).** Khi đơn bị hủy, đổi chuyến, chuyến bị hủy hoặc báo giấy không kịp, các chặng đã xếp **vẫn nằm trên lượt xe**, vẫn chiếm chỗ và chặn hủy lượt; lịch hẹn ở hub cũng không bị bỏ. Luồng B đã viết hàm gỡ, luồng A chưa gọi. Nên sửa đầu tiên.
+1. **Đã sửa** · Đơn rời chuyến được gỡ chặng chưa chạy, vị trí khoang và lịch hẹn hub.
 2. **Quên xác nhận chạy thì đơn đứng yên** (T25). Đã có đề xuất ở 3.F.
-3. **Chuyến không chuyển sang Đang chạy hay Đã xong** khi xe trục chạy, nên màn quản lý vẫn hiện nút Hủy chuyến cho chuyến đã qua.
+3. **Đã sửa** · Chuyến cập nhật khi xe trục đầu tiên rời điểm đầu và khi các lượt trục hoàn tất.
 4. **Không sửa được giờ của lượt đã lập**: muốn đổi giờ hoặc đổi xe phải gỡ ngựa, hủy lượt, lập lại.
 5. **Hủy lượt xe hoặc gỡ người thì tổ lái không được báo.**
 6. **Không bắt buộc có hộ tống**: chỉ cần một tài xế nhận việc là xe chạy được, dù chở ngựa.
@@ -1097,12 +1098,12 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 
 **Gây kẹt đơn thật, nên sửa trước:**
 
-1. **Sự cố sức khỏe báo cho cả lượt không bao giờ xử lý xong được.** Hệ thống đòi xác nhận đủ sức, nhưng nút Đủ sức đi tiếp chỉ hiện với sự cố của một con. Hậu quả: mọi đơn trên xe không quyết toán được. Đây lại là **lựa chọn mặc định** khi mở ô báo sự cố. Đề xuất: sự cố sức khỏe bắt buộc chọn con ngựa.
-2. **Quên xác nhận đủ sức trước khi kết thúc lượt thì kẹt.** Lượt xong thì phần sự cố của tổ lái biến mất, điều phối không xác nhận thay được. Đề xuất: giữ phần sự cố khi còn sự cố chưa đóng.
-3. **Sự cố người nhận vắng cũng đòi xác nhận ngựa đủ sức**, dù ngựa không bệnh. Dễ rơi vào lỗi 2. Đề xuất: chỉ đòi với loại Sức khỏe và Tai nạn.
-4. **Chỉ tổ lái có màn ghi chi phí**, và chỉ khi lượt đang chạy. Hóa đơn thú y gửi sau vài ngày không có chỗ nhập, dù máy chủ cho điều phối ghi.
+1. **Đã sửa** · HEALTH mới phải chọn ngựa. HEALTH cũ vẫn xác nhận được.
+2. **Đã sửa** · Tổ lái xử lý sự cố sau khi hoàn tất lượt. Điều phối xác nhận thay với kết quả thú y.
+3. **Đã sửa** · Chỉ HEALTH và ACCIDENT có ngựa yêu cầu xác nhận đủ sức.
+4. **Đã sửa** · Điều phối có form ghi chi phí và tổ lái còn ghi được sau khi kết thúc lượt.
 5. **Không còn hub phía sau thì con giao hụt không có chỗ vào**: không đưa về hub được và lượt cũng không kết thúc được. Điều phối phải nhớ để hub là điểm dừng cuối của lượt giao.
-6. **Nút Đưa về hub vẫn hiện với sự cố người nhận vắng nhưng bấm thì báo lỗi** "không có con ngựa nào đang trên xe", vì chặng đã thất bại sẵn. Đề xuất: ẩn nút trong trường hợp này.
+6. **Đã sửa** · Máy chủ từ chối Đưa về hub cho HANDOVER_TIMEOUT. Màn hình ẩn thao tác.
 
 **Thiếu thông báo:**
 
@@ -1340,8 +1341,8 @@ Dòng hai: loại một con thì bỏ cước trục, dịch vụ và phí bảo
 
 **Gây kẹt đơn thật, nên sửa trước:**
 
-1. **Không thu được phí người nhận chịu.** Màn quyết toán chỉ cho chọn chi phí **khách** chịu. Phí giữ ngựa và phí gửi chuồng ở luồng 5 do **người nhận** chịu nên không lập được khoản thu thêm, còn nợ không về 0, đơn **không đóng được**. Máy chủ thì cho phép.
-2. **Phí giữ ngựa tự ghi luôn là "chưa hỏi khách"** và không có chỗ sửa. Khách không điền hạn mức khẩn cấp, hoặc phí vượt hạn mức, thì quản lý **không bao giờ duyệt được**, đơn kẹt. Đề xuất: phí giữ ngựa, gửi chuồng không cần hỏi vì đã báo trước giá.
+1. **Đã sửa** · Khách thanh toán được cả phí bên CONSIGNEE, với hạn, nhắc quá hạn và chặn gửi đơn mới.
+2. **Đã sửa** · Phí hệ thống tính theo ngày được miễn điều kiện đã hỏi và không chiếm hạn mức khẩn cấp.
 3. **Khách tự chở tới hub mà không trả số dư: không trả ngựa được.** Nút trả ngựa chỉ có ở nhà khách và cửa khẩu. Ngựa đã lên xe trục thì cả xe không rời được hub. Quản lý hủy đơn thay khách được sau 30 phút, nhưng hệ thống **không gỡ ngựa khỏi xe hay khỏi hub**: xe rời được, chở theo ngựa của đơn đã hủy.
 4. **Cửa khẩu có hai đơn nhập, một đơn trả đủ, một đơn không:** bấm trả ngựa thì bị từ chối cả hai, vì hệ thống định hủy cả đơn đã trả. Xe kẹt ở cửa khẩu.
 5. **Con sai chip ở điểm đón mà tổ lái không bấm Không nhận**, xe vẫn rời được. Con đó vẫn trong đơn, đơn không bao giờ Đã giao. Sau khi xe rời thì không loại được nữa.

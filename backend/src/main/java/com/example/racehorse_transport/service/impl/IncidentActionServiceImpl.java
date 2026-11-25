@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.policy.IncidentPolicy;
 import com.example.racehorse_transport.dto.incident.IncidentResponseDto;
 import com.example.racehorse_transport.entity.HorseLeg;
 import com.example.racehorse_transport.entity.Incident;
@@ -49,6 +50,9 @@ public class IncidentActionServiceImpl implements IncidentActionService {
     @Override
     @Transactional
     public IncidentResponseDto returnToHub(Long incidentId, String username) {
+        Incident current = incidents.findForUpdate(incidentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố " + incidentId));
+        IncidentPolicy.requireResolutionAvailable(current.getIncidentType(), IncidentResolutionType.RETURN_TO_HUB);
         Incident incident = approvedFor(incidentId, IncidentResolutionType.RETURN_TO_HUB);
         VehicleTrip trip = tripOf(incident);
         // Con đang trên xe: chỉ con của sự cố nếu sự cố gắn một con, không thì mọi con

@@ -38,7 +38,6 @@ export default function HubPage() {
   const [chip, setChip] = useState('')
   const [note, setNote] = useState('')
   const [collectAt, setCollectAt] = useState('')
-  const [fee, setFee] = useState('')
   const [busy, setBusy] = useState(false)
   // Hub gốc của xe (trụ sở) đứng đầu và được chọn sẵn
   const { data: hubs } = useLoad(async () => {
@@ -62,7 +61,7 @@ export default function HubPage() {
   )
   const papersMarked = papersLoaded && !papersError && (papers ?? []).every(paper => paper.documentId !== undefined && paper.documentId in marked)
 
-  const open = (stay: HorseStay, kind: Action['kind']) => { setMarked({}); setRecipientName(''); setCollectionCode(''); setPhoto(undefined); setRecord(undefined); setChip(''); setNote(''); setCollectAt(''); setFee(''); setAction({ stay, kind }) }
+  const open = (stay: HorseStay, kind: Action['kind']) => { setMarked({}); setRecipientName(''); setCollectionCode(''); setPhoto(undefined); setRecord(undefined); setChip(''); setNote(''); setCollectAt(''); setAction({ stay, kind }) }
   const submit = async () => {
     if (!action) return
     setBusy(true)
@@ -70,7 +69,7 @@ export default function HubPage() {
       const stayId = action.stay.id ?? 0
       if (action.kind === 'collect') await dispatchApi.setCollectionTime(stayId, localToIso(collectAt))
       else if (action.kind === 'refuse') await dispatchApi.refuseAtHub(stayId, note.trim())
-      else if (action.kind === 'stable') await dispatchApi.stableAtHub(stayId, Number(fee), note.trim() || undefined)
+      else if (action.kind === 'stable') await dispatchApi.stableAtHub(stayId, note.trim() || undefined)
       else {
         if (!photo || !record) return
         await (action.kind === 'receive' ? dispatchApi.receiveAtHub : dispatchApi.deliverAtHub)(stayId, {
@@ -125,7 +124,7 @@ export default function HubPage() {
       header: '',
       // Người nhận tự tới hub; backend kiểm ngựa đã tới bằng chặng cuối. Quá giờ hẹn thì gửi chuồng
       render: stay => {
-        if (stay.deliveryMethod !== 'SELF' || (stay.stayType !== 'ASSEMBLY' && stay.stayType !== 'STABLING')) return null
+        if (stay.stayType !== 'STABLING' && (stay.deliveryMethod !== 'SELF' || stay.stayType !== 'ASSEMBLY')) return null
         const overdue = stay.stayType === 'ASSEMBLY' && stay.plannedEndAt && new Date(stay.plannedEndAt).getTime() < Date.now()
         return (
           <span className={s.row}>
@@ -170,7 +169,7 @@ export default function HubPage() {
             <>
               <Button onClick={() => setAction(undefined)}>{t('ui.cancel')}</Button>
               <Button variant={action.kind === 'refuse' ? 'danger' : 'primary'} loading={busy} onClick={() => void submit()}
-                disabled={action.kind === 'collect' ? !collectAt : action.kind === 'stable' ? !(Number(fee) > 0) : action.kind === 'refuse' ? !note.trim() : !chip.trim() || !note.trim() || !photo || !record || !papersMarked || action.kind === 'deliver' && !recipientName.trim()}>
+                disabled={action.kind === 'collect' ? !collectAt : action.kind === 'stable' ? false : action.kind === 'refuse' ? !note.trim() : !chip.trim() || !note.trim() || !photo || !record || !papersMarked || action.kind === 'deliver' && !recipientName.trim()}>
                 {t(`dispatch.stays.${action.kind}`)}
               </Button>
             </>
@@ -217,11 +216,6 @@ export default function HubPage() {
           {action.kind === 'collect' && (
             <Field label={t('dispatch.stays.collectAt')} required>
               {c => <Input {...c} type="datetime-local" value={collectAt} onChange={e => setCollectAt(e.target.value)} data-autofocus />}
-            </Field>
-          )}
-          {action.kind === 'stable' && (
-            <Field label={t('dispatch.stays.fee')} required>
-              {c => <Input {...c} inputMode="numeric" value={fee} onChange={e => setFee(e.target.value.replace(/\D/g, ''))} data-autofocus />}
             </Field>
           )}
           {action.kind === 'refuse' && (

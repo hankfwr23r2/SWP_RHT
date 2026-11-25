@@ -3948,6 +3948,7 @@ export interface components {
             parties?: components["schemas"]["PartySnapshot"][];
             /** @enum {string} */
             pickupMethod?: "COMPANY" | "SELF";
+            rated?: boolean;
             reviewReason?: string;
         };
         BookingDocumentChecklistResponseDto: {
@@ -4922,7 +4923,6 @@ export interface components {
             provinceName?: string;
         };
         HubStablingRequestDto: {
-            fee: number;
             note?: string;
         };
         IncidentPlanRequestDto: {
@@ -4968,6 +4968,7 @@ export interface components {
             /** Format: date-time */
             reportedAt?: string;
             reportedByName?: string;
+            requiresFit?: boolean;
             /** Format: date-time */
             resolvedAt?: string;
             /** @enum {string} */
@@ -5866,6 +5867,7 @@ export interface components {
             approvedCustomerCosts?: number;
             /** Format: int64 */
             bookingId?: number;
+            chargeableCostIds?: number[];
             costs?: components["schemas"]["CostItemResponseDto"][];
             currencyCode?: string;
             hasOpenIncident?: boolean;
@@ -9790,6 +9792,7 @@ export interface operations {
             query?: {
                 latitude?: number;
                 longitude?: number;
+                documentType?: string;
             };
             header?: never;
             path: {
