@@ -891,7 +891,7 @@ Ba lớp trạng thái không trộn vào nhau:
 **Người tham gia:**
 
 - **Tài xế, hộ tống**: báo sự cố, chụp ảnh, ghi chi phí, xác nhận ngựa đủ sức đi tiếp.
-- **Điều phối viên**: lập phương án, thực hiện đổi xe hoặc đưa về hub, báo đã xử lý xong, đóng sự cố.
+- **Điều phối viên**: lập phương án, ghi kết quả thú y, thực hiện đổi xe, đưa về hub hoặc hủy chặng, báo đã xử lý xong, đóng sự cố.
 - **Quản lý**: duyệt hoặc từ chối phương án, duyệt chi phí.
 - **Hệ thống**: tự mở sự cố khi không gặp người nhận, tự xác định ai chịu chi phí, tự tính phí giữ ngựa.
 
@@ -934,11 +934,11 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 | Cách xử lý | Dùng khi | Bên xử lý | Hệ thống làm gì sau khi duyệt |
 |---|---|---|---|
 | Đi tiếp | Nhẹ, nghỉ rồi đi | Không có | Không có thao tác thêm |
-| Thú y điều trị | Cần bác sĩ | **Bắt buộc** thú y | Không có thao tác thêm |
-| Gửi chuồng gần | Phải dừng lâu | **Bắt buộc** chuồng gửi | Không có thao tác thêm |
+| Thú y điều trị | Cần bác sĩ | **Bắt buộc** thú y | Điều phối hoặc hộ tống của lượt bấm **Ghi kết quả thú y**. Sổ sức khỏe ghi tên đối tác và nội dung cho ngựa thuộc sự cố, tại điểm xe đã tới gần nhất. |
+| Gửi chuồng gần | Phải dừng lâu | **Bắt buộc** chuồng gửi | Tổ xe mở lần giao nhận cho đúng đối tác tại điểm dừng mạng lưới. Quét chip và hoàn tất thì mở lưu trú. Nhận lại ngựa từ đối tác trước khi rời điểm dừng. |
 | Đổi xe | Xe không chạy được | Cứu hộ, không bắt buộc | Mở ô chọn xe thay (câu chuyện 2) |
 | Về hub | Ngựa còn trên xe nhưng không nên đi tiếp tới nơi giao | Cứu hộ, không bắt buộc | Mở nút **Đưa về hub** (điểm 5.13) |
-| Hủy chặng | Không đi tiếp được | Không có | Không có thao tác thêm |
+| Hủy chặng | Không đi tiếp được | Không có | Điều phối bấm **Thực hiện hủy chặng**. Ngựa về hub tập kết không phí. Các chặng phía sau còn `PLANNED` của những con này bị hủy và hệ thống ghi kiểm toán. |
 
 **Bước 4. Quản lý quyết định phương án.**
 
@@ -949,7 +949,7 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 
 **Bước 6. Hộ tống xác nhận ngựa đủ sức đi tiếp.** Phương án đã duyệt thì hộ tống bấm **Bắt đầu cho ngựa nghỉ**. Nút **Đủ sức đi tiếp** dùng được khi đã qua **ít nhất 30 phút kể từ lúc bắt đầu nghỉ** và hộ tống đã tải **ảnh con ngựa**. Tài xế không xác nhận được. Điều phối xác nhận thay khi có kết quả thú y; tổ lái không còn trên lượt thì 30 phút đếm từ lúc báo sự cố.
 
-**Bước 7. Điều phối viên bấm Đã xử lý xong.** Với sự cố sức khỏe hoặc sự cố của một con, hệ thống đòi đã có xác nhận ở bước 6. Phương án chuyển **Đã xong**, sự cố chuyển **Đã xử lý**.
+**Bước 7. Điều phối viên bấm Đã xử lý xong.** Sự cố sức khỏe và tai nạn của một con cần xác nhận ở bước 6. Thú y điều trị, Gửi chuồng gần và Hủy chặng cần thực hiện phương án trước. Sự cố chuyển **Đã xử lý**. Phương án còn hiệu lực chuyển **Đã xong** tại bước này nếu chưa hoàn tất từ lúc thực hiện.
 
 **Bước 8. Quản lý duyệt chi phí.** Khoản khách chịu cần chốt nguyên nhân và có phản hồi đồng ý, trừ tiền giữ theo biểu hoặc ngoại lệ trong hạn mức quy định ở phần quyết toán.
 
@@ -1043,7 +1043,11 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 - **5.8** Đi tiếp và Hủy chặng không được chọn bên xử lý.
 - **5.9** Lập phương án mới khi phương án cũ đang chờ duyệt: phương án cũ thành **Đã thay**.
 - **5.10** Quản lý chỉ duyệt hoặc từ chối được **phiên bản mới nhất** đang chờ. Từ chối phải có lý do.
-- **5.11** Mỗi sự cố chỉ **một** phương án hiệu lực. Duyệt phiên bản mới thì phiên bản đã duyệt trước đó thành Đã thay. Trong lúc chờ duyệt phiên bản mới, sự cố vẫn là Đang xử lý, nhưng **Đổi xe và Đưa về hub bị khóa** vì hệ thống chỉ thực hiện phiên bản mới nhất.
+- **5.11** Mỗi sự cố chỉ **một** phương án hiệu lực. Duyệt phiên bản mới thì phiên bản đã duyệt trước đó thành Đã thay. Máy chủ chỉ cho thực hiện phiên bản mới nhất đã duyệt. Lập phiên bản mới thì lần gửi chuồng đang mở theo phiên bản trước được đóng để tổ xe dùng phương án mới sau khi duyệt.
+- **Thú y điều trị.** Sự cố một con ghi sổ sức khỏe của con đó. Sự cố cả lượt ghi một bản cho từng con còn trên xe. Mức sức khỏe ít nhất là Theo dõi và giữ nguyên mức Ốm hoặc Nguy cấp đã ghi gần nhất. Xác nhận đủ sức vẫn theo bước 6.
+- **Gửi chuồng gần.** Tổ xe được gửi ngựa tại mọi điểm dừng có địa điểm mạng lưới. Nếu xe đang ở địa chỉ khách, chọn đổi xe hoặc đưa về hub. Hệ thống chỉ chấp nhận đối tác của phương án. Quét đúng chip mọi con thuộc phương án trước khi hoàn tất lần gửi.
+- **Hủy chặng.** Lượt cần còn hub chưa tới phía sau nơi xuống của các con thuộc sự cố. Hệ thống đánh dấu chặng đang đi Thất bại và hủy các chặng kế tiếp còn `PLANNED`. Tổ xe giao ngựa vào hub để tập kết không phí.
+- Ba phương án trên chuyển **Đã xong** sau khi thực hiện thành công và mỗi phiên bản chỉ được thực hiện một lần.
 
 ### Đổi xe và đưa về hub
 
@@ -1053,8 +1057,8 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 
 ### Xử lý xong và đóng
 
-- **5.15** Sự cố sức khỏe hoặc sự cố của một con: phải có xác nhận đủ sức mới báo xử lý xong. Sự cố khác thì không cần.
-- **5.16** Chưa có phương án được duyệt thì không báo xử lý xong được. Chỉ đóng được sự cố đã xử lý. **Riêng giao hụt:** con ngựa giao lại xong, người nhận tự nhận ở hub, hoặc đã trả, thì hệ thống tự đóng, không cần phương án. Còn chi phí chưa duyệt thì chỉ chuyển Đã xử lý.
+- **5.15** Sự cố sức khỏe và sự cố tai nạn gắn với một con cần xác nhận đủ sức trước khi báo xử lý xong.
+- **5.16** Điều phối chỉ báo xử lý xong khi phương án đã được duyệt. Với Thú y điều trị, Gửi chuồng gần và Hủy chặng, điều phối báo sau khi phương án chuyển Đã xong. Chỉ đóng được sự cố đã xử lý. **Riêng giao hụt:** con ngựa giao lại xong, người nhận tự nhận ở hub, hoặc đã trả, thì hệ thống tự đóng, không cần phương án. Còn chi phí chưa duyệt thì chỉ chuyển Đã xử lý.
 - **5.17** Sự cố của một con chặn quyết toán **đơn của con đó**. Sự cố cả lượt chặn quyết toán **mọi đơn có ngựa trên lượt**.
 
 ### Chi phí
@@ -1124,7 +1128,7 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 **Vận hành:**
 
 14. **Đã sửa.** Sự cố Nặng chưa có phương án được duyệt thì khóa Tới nơi, Rời đi. Duyệt phương án tự mở; điều phối mở khóa kèm lý do.
-15. **Gửi chuồng gần, Thú y điều trị, Hủy chặng chỉ là chữ.** Duyệt xong hệ thống không mở lưu trú, không đổi chặng. Câu báo cho điều phối gợi ý "gửi chuồng hoặc đưa về hub" nhưng gửi chuồng không có thao tác.
+15. **Đã sửa.** Phương án mới nhất đã duyệt có thao tác ghi kết quả thú y, gửi đúng chuồng tại điểm dừng mạng lưới, hoặc đưa ngựa về hub và hủy các chặng phía sau chưa chạy. Thực hiện thành công thì phương án chuyển Đã xong.
 16. **Đã sửa theo phương án (a)** · Tổ xe tải ảnh biên bản đổi xe đã ký trước khi điều phối đổi xe. Xe cũ chuyển sang bảo dưỡng và hệ thống báo các lượt cần bố trí xe khác.
 17. **Đã sửa.** Chỉ hộ tống của lượt xác nhận đủ sức và phải tải ảnh con ngựa; điều phối xác nhận thay vẫn cần kết quả thú y.
 18. **Đã sửa.** 30 phút đếm từ lúc hộ tống bấm Bắt đầu cho ngựa nghỉ.
@@ -1242,7 +1246,7 @@ Tiền VNPAY về **sau** khi đơn đã hủy: không ghi vào đơn, báo qu�
 | Nhận ngựa | Nhà khách | Tổ lái | Từng con | **Bắt buộc** | Đánh dấu đã nhận | Lập số dư |
 | Nhận tại hub (khách tự chở) | Hub | Điều phối | Từng con | Không | Không | Lập số dư |
 | Vào hub, ra hub | Hub | Tổ lái | Từng con | Không | Không | Mở, đóng lưu trú |
-| Gửi chuồng đêm, nhận lại | Trạm nghỉ, cửa khẩu | Tổ lái | Từng con | Không | Không | Đổi bên giữ (luồng 4) |
+| Gửi chuồng, nhận lại | Trạm nghỉ, cửa khẩu, hoặc điểm dừng mạng lưới theo phương án Gửi chuồng gần | Tổ lái | Từng con hoặc các con thuộc phương án | Không | Không | Đổi bên giữ (luồng 4 và 5) |
 | Bàn giao ca | Điểm dừng bất kỳ | Hộ tống mới | Từng con | Không | Không | Đổi người phụ trách |
 | Bàn giao đại lý (xuất) | Cửa khẩu | Tổ lái | Từng con | **Bắt buộc** | Không | Chặng đại lý chạy |
 | Nhận từ đại lý (nhập) | Cửa khẩu | Tổ lái | Từng con | **Bắt buộc** | Đánh dấu đã nhận | Lập số dư |

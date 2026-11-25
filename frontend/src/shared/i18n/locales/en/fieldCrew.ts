@@ -23,7 +23,16 @@ export const fieldCrew = {
         "title": "Stable overnight",
         "hint": "The horses on board are left with a partner stable overnight. In the morning, collect them from the stable before leaving.",
         "partner": "Stable",
-        "choose": "Choose a stable"
+        "choose": "Choose a stable",
+        "noPartners": "No active partner stables",
+        "noPartnersHint": "Contact dispatch to arrange a stable.",
+        "incidentTitle": "Stable horses under the plan",
+        "incidentAction": "Stable horses with {{name}}",
+        "approvedPartner": "The approved plan names {{name}}. Open the handover, then scan each horse's chip to complete it.",
+        "customerAddress": "Horses cannot be stabled at a customer address. Arrange a vehicle swap or return to the hub.",
+        "party": "Partner stable {{name}}",
+        "confirmIn": "Confirm that the horses with matching chips have been handed over to {{name}}?",
+        "confirmOut": "Confirm that the horses with matching chips have been collected from {{name}}?"
       },
       "papers": {
         "record": "Photo of the signed record",

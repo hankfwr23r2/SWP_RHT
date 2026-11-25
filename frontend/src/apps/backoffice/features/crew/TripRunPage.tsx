@@ -3,7 +3,8 @@ import { useState } from 'react'
 import { useParams, Link } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
-import { tripExecutionApi, type CrewTrip, type Handover, type StablePartner, type DeliveryRecipient } from '@shared/api/tripExecution'
+import { tripExecutionApi, type CrewTrip, type Handover, type DeliveryRecipient } from '@shared/api/tripExecution'
+import type { IncidentPlan } from '@shared/api/incidentOps'
 import { useAutoRefresh, useLoad } from '@shared/hooks/useLoad'
 import { formatDateTime } from '@shared/lib/format'
 import { Button } from '@shared/ui/Button'
@@ -12,8 +13,6 @@ import { ConfirmDialog } from '@shared/ui/ConfirmDialog'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { Field } from '@shared/ui/Field'
 import { Input } from '@shared/ui/Input'
-import { Modal } from '@shared/ui/Modal'
-import { Select } from '@shared/ui/Select'
 import { PageHeader } from '@shared/ui/PageHeader'
 import { Skeleton } from '@shared/ui/Skeleton'
 import { Textarea } from '@shared/ui/Textarea'
@@ -23,10 +22,11 @@ import { PickupMissDialog } from './PickupMissDialog'
 import { HandoverPapersPanel } from './HandoverPapersPanel'
 import { HorseFeedingDetails } from './HorseFeedingDetails'
 import { StopHealthPanel } from './StopHealthPanel'
+import { StableHandoverDialog } from './StableHandoverDialog'
 import { TripCompletionDialog } from './TripCompletionDialog'
 import { TripIncidentPanel } from './TripIncidentPanel'
 import { useTripIncidents } from './useTripIncidents'
-import { canArrive, canComplete, canDepart, canRefuse, canReturnUnpaid, canStart, needsRecord, handoverTypesAt, isRestStop, pendingAt, receivesOriginals, stopState, type StopState } from './tripRunModel'
+import { canArrive, canComplete, canDepart, canRefuse, canReturnUnpaid, canStart, needsRecord, handoverTypesAt, isRestStop, isStableHandover, pendingAt, receivesOriginals, stablePlansAt, stopState, type StopState } from './tripRunModel'
 import s from './MyTrips.module.css'
 
 const STATE_TONE: Record<StopState, StatusTone> = { waiting: 'neutral', here: 'info', left: 'success' }
@@ -46,10 +46,8 @@ export default function TripRunPage() {
   const [failing, setFailing] = useState<number>()
   const [returning, setReturning] = useState<number>()
   const [refusing, setRefusing] = useState<{ handoverId: number; legId: number; name: string }>()
-  // Gửi chuồng qua đêm: chọn đối tác chuồng
-  const [stayAt, setStayAt] = useState<number>()
-  const [partners, setPartners] = useState<StablePartner[]>([])
-  const [partnerId, setPartnerId] = useState('')
+  const [stay, setStay] = useState<{ stopId: number; plan?: IncidentPlan }>()
+  const [confirmStay, setConfirmStay] = useState<Handover>()
   const { data, loaded, error, reload, updateData } = useLoad(() => tripExecutionApi.trip(tripId), [tripId], { toastOnError: false })
   useAutoRefresh(reload)
   const incidents = useTripIncidents(tripId, data?.trip)
@@ -76,11 +74,6 @@ export default function TripRunPage() {
   const tripBlocked = trip.status === 'IN_PROGRESS' && incidents.data?.some(incident => incident.blocksTrip)
   const canMove = incidents.data !== undefined && !incidents.error && !tripBlocked
 
-  const openStayIn = async (stopId: number) => {
-    setPartnerId('')
-    setStayAt(stopId)
-    try { setPartners(await tripExecutionApi.stablePartners()) } catch (e) { toast(e instanceof Error ? e.message : String(e), 'error') }
-  }
   const stallOf = (legId: number) => (data.horses ?? []).find(h => h.leg?.id === legId)?.leg?.stallPosition
   const handoverPanel = (handover: Handover) => {
     const handoverId = handover.id ?? 0
@@ -95,7 +88,7 @@ export default function TripRunPage() {
     return (
     <div className={s.body}>
       <StatusBadge tone="info" label={`${t(`myTrips.run.handover.${handover.handoverType}`)} · ${t(`myTrips.run.handoverStatus.${handover.status}`)}`} />
-      {handover.partyName && <p className={s.line}>{t('myTrips.run.agentParty', { name: handover.partyName })}</p>}
+      {handover.partyName && <p className={s.line}>{t(isStableHandover(handover.handoverType) ? 'myTrips.run.stayIn.party' : 'myTrips.run.agentParty', { name: handover.partyName })}</p>}
       <ul className={s.list}>
         {(handover.horses ?? []).map(horse => {
           const legId = horse.horseLegId ?? 0
@@ -154,7 +147,8 @@ export default function TripRunPage() {
       {needsRecord(handover) && <HandoverPapersPanel handover={handover} receiving={receivesOriginals(data, handover)} onTrip={next => updateData(() => next)} />}
       {needsRecord(handover) && !handover.recordAttached && <p className={s.muted}>{t('myTrips.run.papers.needRecord')}</p>}
       <Button variant="primary" size="lg" fullWidth loading={busy} disabled={needsRecord(handover) && !handover.recordAttached}
-        onClick={() => run(() => tripExecutionApi.completeHandover(handoverId, handover.handoverType === 'DELIVERY' ? recipients : undefined), t('myTrips.run.done.handed'))}>
+        onClick={() => isStableHandover(handover.handoverType) ? setConfirmStay(handover)
+          : run(() => tripExecutionApi.completeHandover(handoverId, handover.handoverType === 'DELIVERY' ? recipients : undefined), t('myTrips.run.done.handed'))}>
         {t('myTrips.run.completeHandover')}
       </Button>
       {handover.handoverType === 'DELIVERY' && (handover.waitStartedAt
@@ -190,6 +184,8 @@ export default function TripRunPage() {
         {(trip.stops ?? []).map(stop => {
           const state = stopState(stop)
           const pending = pendingAt(data, stop.id)
+          const stablePlans = stablePlansAt(data, stop, incidents.data ?? [])
+          const types = handoverTypesAt(data, stop)
           return (
             <li key={stop.id}>
               <Card title={`${stop.sequenceNumber}. ${stop.locationName ?? `${stop.bookingCode}: ${stop.addressLine}`}`}
@@ -200,13 +196,18 @@ export default function TripRunPage() {
                     <Button variant="primary" size="lg" fullWidth loading={busy}
                       onClick={() => run(() => tripExecutionApi.arrive(stop.id ?? 0), t('myTrips.run.done.arrived'))}>{t('myTrips.run.arrive')}</Button>
                   )}
-                  {handoverTypesAt(data, stop).filter(type => type !== 'SHIFT' || session?.role === 'escort').map(type => (
+                  {types.filter(type => (type !== 'SHIFT' || session?.role === 'escort') && (type !== 'STAY_IN' || !stablePlans.length)).map(type => (
                     <Button key={type} size="lg" fullWidth loading={busy}
-                      onClick={() => (type === 'STAY_IN' ? openStayIn(stop.id ?? 0)
+                      onClick={() => (type === 'STAY_IN' ? setStay({ stopId: stop.id ?? 0 })
                         : run(() => tripExecutionApi.openHandover(stop.id ?? 0, type), t('myTrips.run.done.opened')))}>
                       {t(`myTrips.run.handover.${type}`)}
                     </Button>
                   ))}
+                  {!types.includes('STAY_OUT') && (stop.locationId != null ? stablePlans.map(plan => (
+                    <Button key={plan.id} size="lg" fullWidth loading={busy} onClick={() => setStay({ stopId: stop.id ?? 0, plan })}>
+                      {t('myTrips.run.stayIn.incidentAction', { name: plan.handlerPartyName })}
+                    </Button>
+                  )) : stablePlans.length > 0 && <p className={s.warning}>{t('myTrips.run.stayIn.customerAddress')}</p>)}
                   {pending && handoverPanel(pending)}
                   {canReturnUnpaid(data, stop) && (
                     <Button variant="danger" size="lg" fullWidth onClick={() => setReturning(stop.id)}>{t('myTrips.run.unpaidReturn.action')}</Button>
@@ -261,25 +262,21 @@ export default function TripRunPage() {
           }}
         />
       )}
-      {stayAt !== undefined && (
-        <Modal title={t('myTrips.run.stayIn.title')} onClose={() => setStayAt(undefined)}
-          footer={(
-            <>
-              <Button onClick={() => setStayAt(undefined)}>{t('ui.cancel')}</Button>
-              <Button variant="primary" disabled={!partnerId} loading={busy}
-                onClick={() => run(() => tripExecutionApi.openHandover(stayAt, 'STAY_IN', Number(partnerId)), t('myTrips.run.done.opened'))
-                  .then(ok => { if (ok) setStayAt(undefined) })}>
-                {t('myTrips.run.handover.STAY_IN')}
-              </Button>
-            </>
-          )}>
-          <p className={s.muted}>{t('myTrips.run.stayIn.hint')}</p>
-          <Field label={t('myTrips.run.stayIn.partner')} required>
-            {c => <Select {...c} value={partnerId} onChange={setPartnerId} placeholder={t('myTrips.run.stayIn.choose')}
-              options={partners.map(p => ({ value: String(p.id), label: p.address ? `${p.displayName} · ${p.address}` : p.displayName ?? '' }))} />}
-          </Field>
-        </Modal>
-      )}
+      {stay && <StableHandoverDialog busy={busy} plan={stay.plan} onClose={() => setStay(undefined)}
+        canOpen={!stay.plan || !!incidents.data?.some(incident =>
+          incident.plans?.at(-1)?.status === 'APPROVED' && incident.plans.at(-1)?.id === stay.plan?.id)}
+        onOpen={async (partyId, planId) => {
+          if (await run(() => tripExecutionApi.openHandover(stay.stopId, 'STAY_IN', partyId, planId), t('myTrips.run.done.opened'))) setStay(undefined)
+        }} />}
+      {confirmStay && <ConfirmDialog title={t(`myTrips.run.handover.${confirmStay.handoverType}`)}
+        message={t(confirmStay.handoverType === 'STAY_IN' ? 'myTrips.run.stayIn.confirmIn' : 'myTrips.run.stayIn.confirmOut', { name: confirmStay.partyName })}
+        confirmLabel={t('myTrips.run.completeHandover')} onCancel={() => setConfirmStay(undefined)}
+        onConfirm={async () => {
+          if (await run(() => tripExecutionApi.completeHandover(confirmStay.id ?? 0), t('myTrips.run.done.handed'))) {
+            await incidents.reload()
+            setConfirmStay(undefined)
+          }
+        }} />}
       {refusing && <PickupMissDialog horseLegId={refusing.legId} name={refusing.name} busy={busy}
         onClose={() => setRefusing(undefined)}
         onSubmit={(request, photo) => {

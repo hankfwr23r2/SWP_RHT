@@ -51,6 +51,10 @@ public class Handover {
     @JoinColumn(name = "horse_stay_id")
     private HorseStay horseStay;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "incident_plan_id")
+    private IncidentPlan incidentPlan;
+
     // NULL = công ty hoặc bên trong đơn
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
     @JoinColumn(name = "from_party_id")

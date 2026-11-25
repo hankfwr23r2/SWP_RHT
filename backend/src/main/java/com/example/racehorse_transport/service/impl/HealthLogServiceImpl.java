@@ -7,11 +7,14 @@ import com.example.racehorse_transport.entity.BookingHorse;
 import com.example.racehorse_transport.entity.Handover;
 import com.example.racehorse_transport.entity.HandoverHorse;
 import com.example.racehorse_transport.entity.HorseHealthLog;
+import com.example.racehorse_transport.entity.HorseLeg;
 import com.example.racehorse_transport.entity.HorseStay;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.TripStop;
+import com.example.racehorse_transport.entity.VehicleTrip;
 import com.example.racehorse_transport.entity.enums.AppUserStatus;
 import com.example.racehorse_transport.entity.enums.CrewAssignmentStatus;
+import com.example.racehorse_transport.entity.enums.CrewRole;
 import com.example.racehorse_transport.entity.enums.EmploymentStatus;
 import com.example.racehorse_transport.entity.enums.HandoverStatus;
 import com.example.racehorse_transport.entity.enums.HealthStatus;
@@ -32,6 +35,7 @@ import com.example.racehorse_transport.repository.TripStopRepository;
 import com.example.racehorse_transport.service.HealthLogService;
 import com.example.racehorse_transport.service.NotificationService;
 import java.time.Clock;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -109,13 +113,47 @@ public class HealthLogServiceImpl implements HealthLogService {
                     log.setHealthStatus(HealthLogPolicy.atLeastWatch(request.healthStatus()));
                     notifyCoordinators(line);
                 });
-        log.setRecordedBy(recorder);
-        log.setRecordedAt(clock.instant());
-        HorseHealthLog saved = healthLogs.saveAndFlush(log);
+        HorseHealthLog saved = save(log, recorder, clock.instant());
         if (saved.getHealthStatus() == HealthStatus.SICK || saved.getHealthStatus() == HealthStatus.CRITICAL) {
             notifyCoordinatorsForHealth(line, saved.getHealthStatus());
         }
         return HealthLogResponseDto.from(saved);
+    }
+
+    @Override
+    @Transactional
+    public void recordVetResult(VehicleTrip trip, BookingHorse affectedHorse, String note, String username) {
+        Staff recorder = recorder(username);
+        Long tripId = trip.getId();
+        if (!"COORDINATOR".equals(roleOf(recorder)) && (!"ESCORT".equals(roleOf(recorder))
+                || crew.findFirstByVehicleTrip_IdAndStaff_User_UsernameAndStatusNot(tripId, username, CrewAssignmentStatus.RELEASED)
+                        .filter(assignment -> assignment.getCrewRole() == CrewRole.ESCORT).isEmpty())) {
+            throw new AccessDeniedException("Chỉ điều phối hoặc hộ tống của lượt xe được ghi kết quả thú y.");
+        }
+        TripStop stop = stops.findFirstByVehicleTrip_IdAndActualArrivalAtIsNotNullOrderBySequenceNumberDesc(tripId)
+                .orElseThrow(() -> new DispatchRuleException("tripStopId", "Lượt xe chưa tới điểm dừng nào để ghi kết quả thú y.", true));
+        List<BookingHorse> horses = affectedHorse == null
+                ? legs.findOnBoardForIncident(tripId, Set.of(HorseLegStatus.IN_PROGRESS, HorseLegStatus.FAILED)).stream()
+                        .map(HorseLeg::getBookingHorse).distinct().toList()
+                : List.of(affectedHorse);
+        if (horses.isEmpty()) {
+            throw new DispatchRuleException("incidentId", "Không có con ngựa nào đang trên xe để ghi kết quả thú y.", true);
+        }
+        Instant now = clock.instant();
+        for (BookingHorse horse : horses) {
+            // Ghi chú thú y cần theo dõi, không làm giảm mức độ nặng đã ghi.
+            HealthStatus status = healthLogs.findFirstByBookingHorse_IdOrderByRecordedAtDesc(horse.getId())
+                    .map(HorseHealthLog::getHealthStatus).map(HealthLogPolicy::atLeastWatch).orElse(HealthStatus.WATCH);
+            var entry = new HealthLogRequestDto(horse.getId(), stop.getId(), null, status,
+                    null, null, null, null, null, null, null, note, null, null);
+            save(entry.toEntity(horse, stop, null), recorder, now);
+        }
+    }
+
+    private HorseHealthLog save(HorseHealthLog log, Staff recorder, Instant now) {
+        log.setRecordedBy(recorder);
+        log.setRecordedAt(now);
+        return healthLogs.saveAndFlush(log);
     }
 
     private Staff recorder(String username) {

@@ -190,6 +190,13 @@ class IncidentFlowTest {
                 .andExpect(jsonPath("$.message").value("Chỉ hộ tống của lượt xe được xác nhận ngựa đủ sức đi tiếp."));
         act(otherEscort, fitPath).andExpect(status().isForbidden());
         act(escort, fitPath).andExpect(status().isOk()).andExpect(jsonPath("$.data.fitConfirmedAt").exists());
+        act(coordinator, "/incidents/" + incident + "/resolve").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Cần thực hiện phương án sự cố trước khi báo đã xử lý xong."));
+        entityManager.flush();
+        jdbc.update("UPDATE trip_stop SET actual_arrival_at = now() WHERE vehicle_trip_id = ? AND sequence_number = 1", trip);
+        entityManager.clear();
+        mvc.perform(post("/incidents/{id}/vet-result", incident).header(HttpHeaders.AUTHORIZATION, coordinator)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"note\":\"Đã khám và cho nghỉ\"}")).andExpect(status().isOk());
         act(coordinator, "/incidents/" + incident + "/resolve").andExpect(status().isOk()).andExpect(jsonPath("$.data.status").value("RESOLVED"));
     }
 

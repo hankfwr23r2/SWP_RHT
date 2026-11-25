@@ -23,7 +23,16 @@ export const fieldCrew = {
         "title": "Gửi chuồng qua đêm",
         "hint": "Các con đang trên xe được gửi cho chuồng đối tác qua đêm. Sáng hôm sau bấm Nhận lại từ chuồng rồi mới rời trạm.",
         "partner": "Chuồng gửi",
-        "choose": "Chọn chuồng"
+        "choose": "Chọn chuồng",
+        "noPartners": "Chưa có chuồng đối tác còn hiệu lực",
+        "noPartnersHint": "Liên hệ điều phối để bố trí chuồng.",
+        "incidentTitle": "Gửi chuồng theo phương án",
+        "incidentAction": "Gửi chuồng cho {{name}}",
+        "approvedPartner": "Phương án đã duyệt chỉ định {{name}}. Mở lần giao nhận rồi quét chip từng con để hoàn tất.",
+        "customerAddress": "Không gửi chuồng tại địa chỉ khách được. Chọn đổi xe hoặc đưa về hub.",
+        "party": "Chuồng gửi {{name}}",
+        "confirmIn": "Xác nhận đã giao các con quét đúng chip cho {{name}}?",
+        "confirmOut": "Xác nhận đã nhận lại các con quét đúng chip từ {{name}}?"
       },
       "papers": {
         "record": "Ảnh biên bản đã ký",

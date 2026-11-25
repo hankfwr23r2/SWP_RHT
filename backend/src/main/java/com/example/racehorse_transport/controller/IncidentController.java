@@ -4,6 +4,7 @@ import com.example.racehorse_transport.dto.incident.PlanApproveRequestDto;
 import com.example.racehorse_transport.dto.incident.CostApproveRequestDto;
 import com.example.racehorse_transport.dto.incident.PhoneCostConsentRequestDto;
 import com.example.racehorse_transport.dto.common.ApiResponseDto;
+import com.example.racehorse_transport.dto.incident.CancelLegsRequestDto;
 import com.example.racehorse_transport.dto.incident.CostItemRequestDto;
 import com.example.racehorse_transport.dto.incident.CostItemResponseDto;
 import com.example.racehorse_transport.dto.incident.IncidentPlanRequestDto;
@@ -13,6 +14,7 @@ import com.example.racehorse_transport.dto.incident.IncidentSeverityRequestDto;
 import com.example.racehorse_transport.dto.incident.PlanRejectRequestDto;
 import com.example.racehorse_transport.dto.incident.TripUnlockRequestDto;
 import com.example.racehorse_transport.dto.incident.VehicleSwapRequestDto;
+import com.example.racehorse_transport.dto.incident.VetResultRequestDto;
 import com.example.racehorse_transport.entity.enums.IncidentSeverity;
 import com.example.racehorse_transport.entity.enums.IncidentType;
 import com.example.racehorse_transport.service.CostItemService;
@@ -144,6 +146,22 @@ public class IncidentController {
     @PreAuthorize("hasRole('COORDINATOR')")
     public ApiResponseDto<IncidentResponseDto> returnToHub(@PathVariable Long id, Authentication authentication) {
         return ApiResponseDto.success(actions.returnToHub(id, authentication.getName()), "Đã cho ngựa về hub");
+    }
+
+    @PostMapping("/incidents/{id}/vet-result")
+    @PreAuthorize("hasAnyRole('COORDINATOR', 'ESCORT')")
+    public ApiResponseDto<IncidentResponseDto> recordVetResult(@PathVariable Long id, @Valid @RequestBody VetResultRequestDto request,
+            Authentication authentication) {
+        return ApiResponseDto.success(actions.recordVetResult(id, request.incidentPlanId(), request.note(), authentication.getName()),
+                "Đã ghi kết quả thú y");
+    }
+
+    @PostMapping("/incidents/{id}/cancel-legs")
+    @PreAuthorize("hasRole('COORDINATOR')")
+    public ApiResponseDto<IncidentResponseDto> cancelLegs(@PathVariable Long id,
+            @Valid @RequestBody(required = false) CancelLegsRequestDto request, Authentication authentication) {
+        return ApiResponseDto.success(actions.cancelLegs(id, request == null ? null : request.incidentPlanId(), authentication.getName()),
+                "Đã thực hiện hủy chặng");
     }
 
     @GetMapping("/incidents/{id}/cost-items")

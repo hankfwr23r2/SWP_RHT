@@ -3,6 +3,7 @@ package com.example.racehorse_transport.service;
 import com.example.racehorse_transport.dto.dispatch.DispatchBookingResponseDto;
 import com.example.racehorse_transport.dto.dispatch.HorseLegRequestDto;
 import com.example.racehorse_transport.dto.dispatch.TripHorseResponseDto;
+import com.example.racehorse_transport.entity.HorseLeg;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -24,4 +25,6 @@ public interface HorseLegService {
     // Hợp đồng gọi chéo (KE_HOACH mục 3.3). Cài đặt: luồng B. Gọi: luồng A khi đơn rời chuyến (báo giấy chậm, hủy chuyến,
     // đổi chuyến, hủy đơn). Hủy mọi chặng còn PLANNED của đơn, kể cả chặng đại lý; nhả chỗ trên lượt xe và vị trí khoang. Trả về số chặng đã hủy
     int cancelPlannedLegsOfBooking(Long bookingId);
+
+    List<Long> cancelPlannedLegsAfter(List<HorseLeg> affectedLegs);
 }

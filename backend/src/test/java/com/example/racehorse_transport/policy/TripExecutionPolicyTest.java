@@ -71,6 +71,13 @@ class TripExecutionPolicyTest {
     }
 
     @Test
+    void incidentStableHandoverRequiresANetworkLocation() {
+        assertThatCode(() -> TripExecutionPolicy.requireNetworkStableStop(true)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> TripExecutionPolicy.requireNetworkStableStop(false))
+                .hasMessage("Không gửi chuồng tại địa chỉ khách được. Chọn đổi xe hoặc đưa về hub.");
+    }
+
+    @Test
     void tripCompletesAtLastStopWithNoHorseLeftOnBoard() {
         assertThatCode(() -> TripExecutionPolicy.requireCanComplete(true, 0)).doesNotThrowAnyException();
         assertThatThrownBy(() -> TripExecutionPolicy.requireCanComplete(false, 0)).hasMessageContaining("điểm dừng cuối");

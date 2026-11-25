@@ -15,6 +15,7 @@ import com.example.racehorse_transport.entity.Party;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.VehicleTrip;
 import com.example.racehorse_transport.entity.enums.IncidentPlanStatus;
+import com.example.racehorse_transport.entity.enums.IncidentResolutionType;
 import com.example.racehorse_transport.entity.enums.IncidentStatus;
 import com.example.racehorse_transport.entity.enums.AppUserStatus;
 import com.example.racehorse_transport.entity.enums.CrewAssignmentStatus;
@@ -30,8 +31,8 @@ import java.time.Instant;
 import com.example.racehorse_transport.repository.CrewAssignmentRepository;
 import com.example.racehorse_transport.repository.IncidentPlanRepository;
 import com.example.racehorse_transport.repository.IncidentRepository;
-import com.example.racehorse_transport.repository.PartyRepository;
 import com.example.racehorse_transport.service.IncidentCostDecisionService;
+import com.example.racehorse_transport.service.IncidentPlanService;
 import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.service.IncidentService;
 import com.example.racehorse_transport.service.IncidentReportingService;
@@ -59,7 +60,7 @@ public class IncidentServiceImpl implements IncidentService {
     private final IncidentReportingService reporting;
     private final CrewAssignmentRepository crew;
     private final StaffRepository staff;
-    private final PartyRepository parties;
+    private final IncidentPlanService planExecution;
     private final IncidentCostDecisionService decisions;
     private final SystemConfigService configs;
     private final NotificationService notifications;
@@ -95,10 +96,9 @@ public class IncidentServiceImpl implements IncidentService {
     public IncidentResponseDto propose(Long incidentId, IncidentPlanRequestDto request, String username) {
         Incident incident = openIncident(incidentId);
         IncidentPolicy.requireResolutionAvailable(incident.getIncidentType(), request.resolutionType());
-        Party handler = request.handlerPartyId() == null ? null : parties.findById(request.handlerPartyId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đối tác " + request.handlerPartyId()));
-        IncidentPolicy.requireHandler(request.resolutionType(), handler != null, handler == null ? List.of() : decisions.validRoles(handler.getId()));
+        Party handler = planExecution.handlerFor(request.resolutionType(), request.handlerPartyId());
         List<IncidentPlan> existing = plans.findByIncident_IdOrderByVersion(incidentId);
+        planExecution.discardStableDrafts(incidentId, clock.instant());
         // Phương án đang chờ duyệt bị thay bởi phương án mới
         existing.stream().filter(p -> p.getStatus() == IncidentPlanStatus.PROPOSED).forEach(p -> {
             p.setStatus(IncidentPlanStatus.SUPERSEDED);
@@ -161,6 +161,9 @@ public class IncidentServiceImpl implements IncidentService {
     public IncidentResponseDto approve(Long planId, PlanApproveRequestDto request, String username) {
         IncidentPlan plan = decidablePlan(planId);
         Incident incident = plan.getIncident();
+        if (plan.getResolutionType() == IncidentResolutionType.STABLE_NEARBY) {
+            planExecution.discardOvernightDrafts(incident, clock.instant());
+        }
         decisions.confirmCause(plan, request, currentStaff(username));
         // Mỗi sự cố chỉ một phương án hiệu lực: phương án đã duyệt trước đó bị thay
         plans.findByIncident_IdOrderByVersion(incident.getId()).stream().filter(p -> p.getStatus() == IncidentPlanStatus.APPROVED)
@@ -230,7 +233,9 @@ public class IncidentServiceImpl implements IncidentService {
         Incident incident = openIncident(incidentId);
         boolean concernsHorse = IncidentPolicy.requiresFit(incident.getIncidentType(), incident.getHorseLeg() != null);
         IncidentPolicy.requireResolvable(incident.getStatus(), concernsHorse, incident.getFitConfirmedAt() != null);
-        plans.findByIncident_IdOrderByVersion(incidentId).stream().filter(p -> p.getStatus() == IncidentPlanStatus.APPROVED)
+        List<IncidentPlan> versions = plans.findByIncident_IdOrderByVersion(incidentId);
+        IncidentPolicy.requireExecutedBeforeResolve(versions);
+        versions.stream().filter(p -> p.getStatus() == IncidentPlanStatus.APPROVED)
                 .forEach(p -> p.setStatus(IncidentPlanStatus.DONE));
         incident.setStatus(IncidentStatus.RESOLVED);
         incident.setResolvedAt(clock.instant());
@@ -285,6 +290,12 @@ public class IncidentServiceImpl implements IncidentService {
 
     private void notifyPlanDecision(IncidentPlan plan, Incident incident, boolean approved) {
         VehicleTrip trip = tripOf(incident);
+        String coordinatorNextStep = approved ? switch (plan.getResolutionType()) {
+            case VET_TREATMENT -> " Mở sự cố để ghi kết quả thú y.";
+            case STABLE_NEARBY -> " Tổ xe gửi ngựa cho " + plan.getHandlerParty().getDisplayName() + " tại điểm dừng mạng lưới.";
+            case CANCEL -> " Mở sự cố để thực hiện hủy chặng.";
+            default -> "";
+        } : "";
         List<Long> recipients = crew.findByVehicleTrip_IdInOrderById(trip == null ? List.of() : List.of(trip.getId())).stream()
                 .filter(a -> a.getStatus() != CrewAssignmentStatus.RELEASED)
                 .map(a -> a.getStaff().getUserId())
@@ -302,7 +313,7 @@ public class IncidentServiceImpl implements IncidentService {
         if (!coordinators.isEmpty()) {
             notifications.notify(coordinators, incident.getBooking() == null ? null : incident.getBooking().getId(),
                     approved ? "Phương án sự cố được duyệt" : "Phương án sự cố bị từ chối",
-                    (approved ? "Đã duyệt" : "Đã từ chối") + " phương án cho sự cố " + incident.getTitle() + ".",
+                    (approved ? "Đã duyệt" : "Đã từ chối") + " phương án cho sự cố " + incident.getTitle() + "." + coordinatorNextStep,
                     "/coordinator/incidents");
         }
         if (approved && incident.getHorseLeg() != null) {
