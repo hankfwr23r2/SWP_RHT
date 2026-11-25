@@ -30,6 +30,8 @@ public interface IncidentRepository extends JpaRepository<Incident, Long> {
     boolean existsByHorseLeg_IdAndIncidentTypeAndConfirmedCauseType(Long horseLegId, IncidentType incidentType,
             com.example.racehorse_transport.entity.enums.IncidentCauseType cause);
 
+    List<Incident> findByHorseLeg_BookingHorse_IdAndIncidentTypeAndStatusNotOrderById(Long bookingHorseId, IncidentType incidentType, IncidentStatus status);
+
     boolean existsByVehicleTrip_IdAndHorseLegIsNullAndStatusIn(Long vehicleTripId, Collection<IncidentStatus> statuses);
 
     @EntityGraph(attributePaths = {"vehicleTrip", "vehicleTrip.departure.route", "booking", "horseLeg", "horseLeg.bookingHorse.horse",
