@@ -24,7 +24,7 @@ class HealthDtoTest {
         BookingHorse line = new BookingHorse();
         TripStop stop = new TripStop();
         var request = new HealthLogRequestDto(1L, 2L, null, HealthStatus.NORMAL, new BigDecimal("37.8"), (short) 40, (short) 12, null,
-                IntakeLevel.NORMAL, IntakeLevel.REDUCED, "  ", " Ăn chậm ");
+                IntakeLevel.NORMAL, IntakeLevel.REDUCED, "  ", " Ăn chậm ", null, null);
 
         HorseHealthLog log = request.toEntity(line, stop, null);
 

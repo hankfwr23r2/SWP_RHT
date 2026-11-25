@@ -14,6 +14,7 @@ import { PageHeader } from '@shared/ui/PageHeader'
 import { Skeleton } from '@shared/ui/Skeleton'
 import { StatusBadge } from '@shared/ui/StatusBadge'
 import { useToast } from '@shared/ui/toast'
+import { MyStayHealthPanel } from './MyStayHealthPanel'
 import s from './MyTrips.module.css'
 
 export default function MyTripsPage() {
@@ -74,6 +75,7 @@ export default function MyTripsPage() {
     <div className={s.page}>
       <PageHeader title={t('myTrips.title')} description={t('myTrips.description')} />
       {content()}
+      <MyStayHealthPanel />
     </div>
   )
 }

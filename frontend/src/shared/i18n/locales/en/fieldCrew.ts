@@ -1,5 +1,22 @@
 // Ứng dụng hiện trường của tài xế và hộ tống
 export const fieldCrew = {
+  stayHealth: {
+    record: "Record health",
+    reportedBy: "Reported by",
+    reportChannel: "Report channel (e.g. phone)",
+    heartRateBpm: "Heart rate (bpm)",
+    respirationRatePerMinute: "Respiratory rate (breaths/min)",
+    symptoms: "Symptoms",
+    note: "Notes",
+    history: "Health log",
+    empty: "No health records yet",
+    emptyHint: "Health records will appear here.",
+    mine: "Horses in my care at a stay",
+    mineEmpty: "No horses in your care at a stay",
+    mineHint: "Horses will appear here after you accept a handover.",
+    confirm: "Save this entry to the health log?",
+    saveError: "Unable to record health. Please try again.",
+  },
   myTrips: {
     "run": {
       "stayIn": {
