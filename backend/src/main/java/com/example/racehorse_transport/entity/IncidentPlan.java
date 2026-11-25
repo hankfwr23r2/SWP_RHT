@@ -81,4 +81,11 @@ public class IncidentPlan {
 
     @Column(name = "rejection_reason", columnDefinition = "text")
     private String rejectionReason;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_agreed_by")
+    private AppUser customerAgreedBy;
+
+    @Column(name = "customer_agreed_at")
+    private Instant customerAgreedAt;
 }

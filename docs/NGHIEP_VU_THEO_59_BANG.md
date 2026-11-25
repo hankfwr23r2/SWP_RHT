@@ -554,7 +554,7 @@ Giao ngựa **đối xứng với đón ngựa**. **Ai:** tài xế và hộ t�
 | Đối chiếu số đã trả và số còn nợ | `SettlementPolicy`, từ tổng `payment` và `cost_item` (truy vấn tổng hợp ở repository) |
 | Tách các khoản thu hộ (bảo hiểm, lệ phí nhà nước) khỏi doanh thu | `quotation_line.is_pass_through` |
 
-**Ai chịu chi phí** do `incident.cause_type` quyết định:
+**Ai chịu chi phí** do nguyên nhân quản lý chốt khi duyệt phương án quyết định. Tổ lái chỉ đề xuất. Trước khi chốt, bên chịu là tạm tính. Khi chốt, hệ thống cập nhật các khoản chưa duyệt. Sự cố `HANDOVER_TIMEOUT` dùng nguyên nhân do hệ thống xác định.
 
 | `cause_type` | Bên chịu (`cost_item.payer_type`) |
 |---|---|
@@ -567,7 +567,7 @@ Giao ngựa **đối xứng với đón ngựa**. **Ai:** tài xế và hộ t�
 
 Khoản khách chịu luôn gắn với một con hoặc một đơn, nên **không chia chi phí theo đầu ngựa**. Quản lý chọn các khoản đã duyệt chưa gắn khoản thu, backend lấy tổng theo chi phí đã ghi và khách trả `EXTRA_CHARGE` qua VNPAY.
 
-Phải hỏi khách trước khi chi khoản khách chịu (`is_customer_consulted = true`). Ngoại lệ gồm chi trong hạn mức khẩn cấp và phí hệ thống tính theo biểu phí gắn lưu trú STABLING. Phí biểu phí đã báo khi bắt đầu giữ và không chiếm hạn mức khẩn cấp.
+Khách thấy khoản chờ trên đơn và đồng ý hoặc từ chối. Điều phối có thể ghi đồng ý qua điện thoại kèm nội dung. Hết hạn phản hồi, quản lý chỉ duyệt khoản chưa được đồng ý nếu tổng chi chưa đồng ý còn trong hạn mức. Sau khi khách từ chối, chỉ khoản cấp cứu VET có lý do quản lý và còn trong hạn mức được duyệt. Phí giữ theo biểu gắn lưu trú STABLING miễn điều kiện này và không chiếm hạn mức. Phương án có chi phí dự kiến do khách chịu vượt hạn mức còn lại phải có chủ đơn đồng ý với phương án. Khoản lỗi đại lý do công ty trả và quản lý đánh dấu đã đòi ở quyết toán.
 
 Khoản thu thêm đến hạn sau `EXTRA_CHARGE_DUE_DAYS` kể từ lúc lập. Hệ thống báo khách khi lập, nhắc mỗi khách lúc 08:00 giờ Việt Nam mỗi ngày còn nợ quá hạn và chặn gửi đơn mới tới khi trả.
 
@@ -884,6 +884,8 @@ Các class migration một lần sẽ **bỏ** khi chuyển sang Flyway: `Bookin
 | **Sửa** | Các service CRUD, bảo hiểm, thanh toán, sự cố, quyết toán, báo cáo, scheduler, seeder (thành dữ liệu Flyway) |
 | **Viết lại** | Lập lịch và giữ xe (`FleetService`, `BookingScheduleService`), tiến trình chuyến (`TripProgressService`), giao nhận, yêu cầu giấy tờ, chia chi phí sự cố, theo dõi ngựa |
 | **Bỏ** | `DetailsJson`, `quote_lines_json`, tính giá ở frontend, khóa giá trong `system_config`, ModelMapper, các class migration một lần |
+
+**Mở lại báo giá hết hạn.** Quản lý mở lại khi kịp giấy, còn hạn đặt và đủ chỗ trên chuyến vừa nhả. Hệ thống giữ lại chỗ trong cùng giao dịch, chuyển đơn sang `QUOTING` và báo khách. Đơn chạy thẳng kiểm ngày đón còn ở tương lai và kịp giấy. Bản nháp mới tính theo bảng giá hiện hành và báo giá chạy thẳng ghi rằng loại bớt ngựa không giảm cước xe. Đơn trục cũ đã mất tham chiếu chuyến trước đợt này không thể giữ lại chỗ bằng thao tác mở lại.
 
 ## Đón hụt tại nơi nhận
 

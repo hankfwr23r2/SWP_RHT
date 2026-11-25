@@ -820,6 +820,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/bookings/{id}/customer-cost-items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["customerCosts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/customer-incident-plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["customerPlans"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/bookings/{id}/documents": {
         parameters: {
             query?: never;
@@ -1140,6 +1172,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/bookings/{id}/reopen-quote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reopenExpiredQuote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/bookings/{id}/report-document-delay": {
         parameters: {
             query?: never;
@@ -1252,6 +1300,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/cost-items/{id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["acceptCost"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/cost-items/{id}/approve": {
         parameters: {
             query?: never;
@@ -1262,6 +1326,54 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["approveCost"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cost-items/{id}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["declineCost"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cost-items/{id}/mark-recovered": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["markRecovered"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cost-items/{id}/phone-consent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["phoneConsent"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2159,6 +2271,22 @@ export interface paths {
         put: operations["assign"];
         post?: never;
         delete: operations["remove"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/incident-plans/{id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["acceptPlan"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -3873,6 +4001,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListPlanDto: {
+            data?: components["schemas"]["PlanDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseListPriceItemResponseDto: {
             data?: components["schemas"]["PriceItemResponseDto"][];
             message?: string;
@@ -4356,6 +4489,9 @@ export interface components {
             hotline?: string;
             officeAddress?: string;
         };
+        CostApproveRequestDto: {
+            emergencyOverrideReason?: string;
+        };
         CostItemRequestDto: {
             amount: number;
             /** Format: int64 */
@@ -4363,7 +4499,6 @@ export interface components {
             /** @enum {string} */
             category: "TOLL" | "FUEL" | "STABLING" | "VET" | "RESCUE" | "REPAIR" | "WAITING" | "OTHER";
             currencyCode?: string;
-            customerConsulted?: boolean;
             description: string;
             /** Format: int64 */
             incidentId?: number;
@@ -4373,6 +4508,9 @@ export interface components {
             vehicleTripId?: number;
         };
         CostItemResponseDto: {
+            /** Format: date-time */
+            agentRecoveredAt?: string;
+            agentRecoveryRequired?: boolean;
             amount?: number;
             /** Format: date-time */
             approvedAt?: string;
@@ -4381,7 +4519,12 @@ export interface components {
             /** @enum {string} */
             category?: "TOLL" | "FUEL" | "STABLING" | "VET" | "RESCUE" | "REPAIR" | "WAITING" | "OTHER";
             currencyCode?: string;
+            customerAgreed?: boolean;
             customerConsulted?: boolean;
+            /** Format: date-time */
+            customerResponseAt?: string;
+            /** Format: date-time */
+            customerResponseDueAt?: string;
             description?: string;
             /** Format: int64 */
             extraChargePaymentId?: number;
@@ -5273,8 +5416,13 @@ export interface components {
         };
         IncidentResponseDto: {
             bookingCode?: string;
+            /** Format: date-time */
+            causeConfirmedAt?: string;
+            causeConfirmedByName?: string;
             /** @enum {string} */
             causeType?: "COMPANY_FAULT" | "HORSE_CONDITION" | "CUSTOMER_DOCS" | "AGENT_FAULT" | "FORCE_MAJEURE" | "RECIPIENT_ABSENT";
+            /** @enum {string} */
+            confirmedCauseType?: "COMPANY_FAULT" | "HORSE_CONDITION" | "CUSTOMER_DOCS" | "AGENT_FAULT" | "FORCE_MAJEURE" | "RECIPIENT_ABSENT";
             description?: string;
             /** Format: date-time */
             fitConfirmedAt?: string;
@@ -5691,6 +5839,9 @@ export interface components {
             /** Format: date */
             validTo: string;
         };
+        PhoneCostConsentRequestDto: {
+            note: string;
+        };
         PickupAddOnResponseDto: {
             /** Format: date-time */
             completedAt?: string;
@@ -5748,7 +5899,13 @@ export interface components {
             /** Format: int64 */
             locationId?: number;
         };
+        PlanApproveRequestDto: {
+            /** @enum {string} */
+            confirmedCauseType?: "COMPANY_FAULT" | "HORSE_CONDITION" | "CUSTOMER_DOCS" | "AGENT_FAULT" | "FORCE_MAJEURE" | "RECIPIENT_ABSENT";
+        };
         PlanDto: {
+            /** Format: date-time */
+            customerAgreedAt?: string;
             /** Format: date-time */
             decidedAt?: string;
             decidedByName?: string;
@@ -7974,6 +8131,50 @@ export interface operations {
             };
         };
     };
+    customerCosts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListCostItemResponseDto"];
+                };
+            };
+        };
+    };
+    customerPlans: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListPlanDto"];
+                };
+            };
+        };
+    };
     list_7: {
         parameters: {
             query?: never;
@@ -8472,6 +8673,28 @@ export interface operations {
             };
         };
     };
+    reopenExpiredQuote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingResponseDto"];
+                };
+            };
+        };
+    };
     reportDocumentDelay: {
         parameters: {
             query?: never;
@@ -8648,7 +8871,7 @@ export interface operations {
             };
         };
     };
-    approveCost: {
+    acceptCost: {
         parameters: {
             query?: never;
             header?: never;
@@ -8658,6 +8881,102 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCostItemResponseDto"];
+                };
+            };
+        };
+    };
+    approveCost: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CostApproveRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCostItemResponseDto"];
+                };
+            };
+        };
+    };
+    declineCost: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCostItemResponseDto"];
+                };
+            };
+        };
+    };
+    markRecovered: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCostItemResponseDto"];
+                };
+            };
+        };
+    };
+    phoneConsent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PhoneCostConsentRequestDto"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -10348,7 +10667,7 @@ export interface operations {
             };
         };
     };
-    approvePlan: {
+    acceptPlan: {
         parameters: {
             query?: never;
             header?: never;
@@ -10358,6 +10677,32 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    approvePlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PlanApproveRequestDto"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {

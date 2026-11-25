@@ -9,5 +9,7 @@ public interface BookingReviewService {
     BookingResponseDto reject(Long id, String username, String reason);
     BookingResponseDto changeDeparture(Long id, Long departureId);
     // Kiểm giấy bắt buộc của khách và hiệu lực bảo hiểm hiện tại trước khi sang QUOTING.
+    BookingResponseDto reopenExpiredQuote(Long id, String username);
+
     BookingResponseDto startQuoting(Long id, String username);
 }

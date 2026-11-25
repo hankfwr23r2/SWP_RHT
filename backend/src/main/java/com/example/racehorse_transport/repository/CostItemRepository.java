@@ -1,5 +1,8 @@
 package com.example.racehorse_transport.repository;
 
+import java.util.Optional;
+import org.springframework.data.jpa.repository.Lock;
+import jakarta.persistence.LockModeType;
 import com.example.racehorse_transport.entity.CostItem;
 import com.example.racehorse_transport.entity.enums.CostPayerType;
 import java.math.BigDecimal;
@@ -11,6 +14,15 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface CostItemRepository extends JpaRepository<CostItem, Long> {
+    @Query("select c.incident.id from CostItem c where c.id = :id")
+    Optional<Long> findIncidentId(Long id);
+
+    @Query("select c.booking.id from CostItem c where c.id = :id")
+    Optional<Long> findBookingId(Long id);
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select c from CostItem c where c.id = :id")
+    Optional<CostItem> findForUpdate(Long id);
+
 
     List<CostItem> findByHorseStay_Id(Long horseStayId);
 

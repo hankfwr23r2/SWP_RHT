@@ -1,6 +1,8 @@
 package com.example.racehorse_transport.policy;
 
 import com.example.racehorse_transport.entity.CostItem;
+import com.example.racehorse_transport.entity.Incident;
+import com.example.racehorse_transport.entity.enums.IncidentType;
 import com.example.racehorse_transport.entity.enums.CostCategory;
 import com.example.racehorse_transport.entity.enums.HorseStayType;
 import com.example.racehorse_transport.entity.enums.CostPayerType;
@@ -22,6 +24,20 @@ public final class CostPayerPolicy {
         };
     }
 
+    public static IncidentCauseType effectiveCause(Incident incident) {
+        return incident.getConfirmedCauseType() == null ? incident.getCauseType() : incident.getConfirmedCauseType();
+    }
+
+    public static boolean causeConfirmed(Incident incident) {
+        return incident.getCauseConfirmedAt() != null || incident.getIncidentType() == IncidentType.HANDOVER_TIMEOUT;
+    }
+
+    public static void requireRecordableCategory(CostCategory category) {
+        if (category == CostCategory.WAITING) {
+            throw new DispatchRuleException("category", "Không thu phí chờ.");
+        }
+    }
+
     public static boolean customerSide(CostPayerType payer) {
         return payer == CostPayerType.CUSTOMER || payer == CostPayerType.CONSIGNEE;
     }
@@ -34,6 +50,16 @@ public final class CostPayerPolicy {
     public static boolean countsAgainstEmergencyLimit(CostItem cost) {
         return customerSide(cost.getPayerType()) && !Boolean.TRUE.equals(cost.getCustomerConsulted())
                 && !isScheduledStablingFee(cost);
+    }
+
+    public static void requireCostResponse(CostItem cost, java.time.Instant now, String overrideReason) {
+        if (Boolean.FALSE.equals(cost.getCustomerAgreed())) {
+            if (cost.getCategory() != CostCategory.VET || overrideReason == null || overrideReason.isBlank()) {
+                throw new DispatchRuleException("emergencyOverrideReason", "Khách đã từ chối khoản chi phí này.", true);
+            }
+        } else if (cost.getCustomerResponseDueAt() == null || now.isBefore(cost.getCustomerResponseDueAt())) {
+            throw new DispatchRuleException("customerResponse", "Vẫn còn thời gian chờ phản hồi của khách.", true);
+        }
     }
 
     // Khoản khách chịu phải gắn với một đơn

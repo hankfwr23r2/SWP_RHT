@@ -62,6 +62,8 @@ class BookingReviewServiceTest {
     private final InsuranceService insurance = new InsuranceServiceImpl(
             roles, mock(TermsAcceptanceRepository.class), insurances, bookings, staff, notifications, audit, CLOCK,
             bookingHorses);
+    private final BookingStatusHistoryRepository history = mock(BookingStatusHistoryRepository.class);
+    private final BookingStatusService statuses = mock(BookingStatusService.class);
     private BookingReviewService review;
 
     @Test
@@ -132,14 +134,55 @@ class BookingReviewServiceTest {
         actor.setId(STAFF_ID);
         AppUserRepository users = mock(AppUserRepository.class);
         when(users.findByUsername("specialist")).thenReturn(Optional.of(actor));
-        BookingStatusService statuses = mock(BookingStatusService.class);
         doAnswer(call -> {
             booking.setStatus(call.getArgument(1));
             return null;
         }).when(statuses).transition(BOOKING_ID, QUOTING, null, STAFF_ID);
         review = new BookingReviewServiceImpl(bookings, users, horses, insurance, statuses, routing,
-                departures, completeness, notifications, mock(BookingStatusHistoryRepository.class));
+                departures, completeness, notifications, history);
         resolve(false);
+    }
+
+    @Test
+    void reopeningExpiredQuoteReservesHistoricalDepartureAndUpdatesOnce() {
+        booking.setStatus(QUOTE_EXPIRED);
+        var previous = booking.getDeparture();
+        booking.setDeparture(null);
+        var expired = new BookingStatusHistory();
+        expired.setPreviousDeparture(previous);
+        when(history.findFirstByBooking_IdAndToStatusOrderByChangedAtDescIdDesc(BOOKING_ID, QUOTE_EXPIRED))
+                .thenReturn(Optional.of(expired));
+        when(routing.lockReplacement(booking, previous.getId())).thenReturn(previous);
+        doAnswer(call -> {
+            assertThat(booking.getDeparture()).isSameAs(previous);
+            return true;
+        }).when(completeness).isCompleteForQuoting(BOOKING_ID);
+        doAnswer(call -> {
+            booking.setStatus(QUOTING);
+            return null;
+        }).when(statuses).transition(eq(BOOKING_ID), eq(QUOTING), anyString(), eq(STAFF_ID));
+
+        assertThat(review.reopenExpiredQuote(BOOKING_ID, "specialist").status()).isEqualTo(QUOTING);
+        assertThat(booking.getDeparture()).isSameAs(previous);
+        assertThatThrownBy(() -> review.reopenExpiredQuote(BOOKING_ID, "specialist")).isInstanceOf(BookingRuleException.class);
+        verify(departures).reserve(previous.getId(), 2);
+        verify(notifications).notify(eq(List.of(CUSTOMER_ID)), eq(BOOKING_ID), anyString(), anyString(), isNull());
+    }
+
+    @Test
+    void reopeningExpiredQuoteDoesNotTransitionWhenDepartureHasNoCapacity() {
+        booking.setStatus(QUOTE_EXPIRED);
+        var previous = booking.getDeparture();
+        when(routing.lockReplacement(booking, previous.getId())).thenReturn(previous);
+        doThrow(BookingRuleException.conflict("Departure full")).when(departures).reserve(previous.getId(), 2);
+
+        assertThatThrownBy(() -> review.reopenExpiredQuote(BOOKING_ID, "specialist"))
+                .isInstanceOfSatisfying(BookingRuleException.class, error -> {
+                    assertThat(error.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+                    assertThat(error.getReason()).isEqualTo("Departure full");
+                });
+        assertThat(booking.getStatus()).isEqualTo(QUOTE_EXPIRED);
+        verifyNoInteractions(statuses, notifications);
     }
 
     @Test

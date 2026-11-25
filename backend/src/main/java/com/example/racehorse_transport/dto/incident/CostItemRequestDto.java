@@ -22,7 +22,6 @@ public record CostItemRequestDto(
         @Positive Long incidentId,
         @Positive Long vehicleTripId,
         @Positive Long bookingId,
-        boolean customerConsulted,
         @NotNull Instant incurredAt) {
 
     public String currencyOrDefault() {
@@ -39,7 +38,6 @@ public record CostItemRequestDto(
         cost.setIncident(incident);
         cost.setVehicleTrip(trip);
         cost.setBooking(booking);
-        cost.setCustomerConsulted(customerConsulted);
         cost.setIncurredAt(incurredAt);
         return cost;
     }

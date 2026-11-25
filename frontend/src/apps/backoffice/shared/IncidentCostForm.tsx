@@ -6,7 +6,7 @@ import { Field } from '@shared/ui/Field'
 import { Input } from '@shared/ui/Input'
 import { Select } from '@shared/ui/Select'
 
-const CATEGORIES: CostCategory[] = ['VET', 'RESCUE', 'REPAIR', 'STABLING', 'TOLL', 'FUEL', 'WAITING', 'OTHER']
+const CATEGORIES: CostCategory[] = ['VET', 'RESCUE', 'REPAIR', 'STABLING', 'TOLL', 'FUEL', 'OTHER']
 
 interface Props {
   incidentId: number
@@ -20,14 +20,12 @@ export function IncidentCostForm({ incidentId, busy, className, onSave }: Props)
   const [category, setCategory] = useState<CostCategory>('VET')
   const [description, setDescription] = useState('')
   const [amount, setAmount] = useState('')
-  const [consulted, setConsulted] = useState('no')
 
   const save = async () => {
     if (await onSave({ incidentId, category, description: description.trim(), amount: Number(amount),
-      customerConsulted: consulted === 'yes', incurredAt: new Date().toISOString() })) {
+      incurredAt: new Date().toISOString() })) {
       setDescription('')
       setAmount('')
-      setConsulted('no')
     }
   }
 
@@ -42,10 +40,6 @@ export function IncidentCostForm({ incidentId, busy, className, onSave }: Props)
       </Field>
       <Field label={t('myTrips.run.incident.amount')} required>
         {c => <Input {...c} inputMode="decimal" value={amount} onChange={e => setAmount(e.target.value)} />}
-      </Field>
-      <Field label={t('myTrips.run.incident.consulted')}>
-        {c => <Select {...c} value={consulted} onChange={setConsulted}
-          options={[{ value: 'no', label: t('incidents.notConsulted') }, { value: 'yes', label: t('incidents.consulted') }]} />}
       </Field>
       <Button size="lg" fullWidth disabled={!description.trim() || !(Number(amount) > 0)} loading={busy} onClick={() => void save()}>
         {t('myTrips.run.incident.addCost')}

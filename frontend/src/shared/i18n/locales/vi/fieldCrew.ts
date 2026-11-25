@@ -65,7 +65,7 @@ export const fieldCrew = {
       "incident": {
         "report": "Báo sự cố",
         "reportTitle": "Báo sự cố",
-        "cause": "Nguyên nhân",
+        "cause": "Nguyên nhân đề xuất",
         "scope": "Ảnh hưởng",
         "wholeTrip": "Cả xe",
         "incidentTitle": "Tiêu đề",

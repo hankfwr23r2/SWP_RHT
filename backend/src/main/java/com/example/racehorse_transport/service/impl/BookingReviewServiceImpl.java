@@ -116,6 +116,33 @@ public class BookingReviewServiceImpl implements BookingReviewService {
         return transition(booking, QUOTING, null, actor(username));
     }
 
+    @Override
+    @Transactional
+    public BookingResponseDto reopenExpiredQuote(Long id, String username) {
+        var booking = lock(id, QUOTE_EXPIRED);
+        var previous = history.findFirstByBooking_IdAndToStatusOrderByChangedAtDescIdDesc(id, QUOTE_EXPIRED)
+                .map(row -> row.getPreviousDeparture()).orElse(booking.getDeparture());
+        Long departureId = previous == null ? null : previous.getId();
+        routing.validateReopenPickup(booking, departureId);
+        Departure departure = departureId == null ? null : routing.lockReplacement(booking, departureId);
+        booking.setDeparture(departure);
+        if (!documents.isCompleteForQuoting(id)) {
+            throw BookingRuleException.conflict("Đơn chưa đủ giấy tờ bắt buộc.");
+        }
+        var active = horses.findForDetail(id).stream().filter(horse -> horse.getStatus() == ACTIVE).toList();
+        if (active.isEmpty()) {
+            throw BookingRuleException.conflict("Đơn không có ngựa đang hoạt động.");
+        }
+        insurance.validateForQuoting(booking, active);
+        if (departure != null) {
+            int stalls = StallSeatPolicy.total(active.stream().map(horse -> horse.getStallType().getCode()).toList());
+            departures.reserve(departure.getId(), stalls);
+        }
+        var result = transition(booking, QUOTING, "Mở lại báo giá hết hạn.", actor(username));
+        notifyCustomer(booking, "Đã mở lại báo giá", "Quản lý đang chuẩn bị báo giá mới cho đơn.");
+        return result;
+    }
+
     private int activeSeats(Long id) {
         return StallSeatPolicy.total(horses.findByBooking_Id(id).stream()
                 .filter(horse -> horse.getStatus() == ACTIVE)

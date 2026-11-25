@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useRevalidator } from 'react-router'
 import { useTranslation } from 'react-i18next'
+import { bookingReviewsApi } from '@shared/api/bookingReviews'
 import { quotationsApi, type Quotation } from '@shared/api/quotations'
 import { Badge } from '@shared/ui/Badge'
 import { Button } from '@shared/ui/Button'
@@ -21,7 +22,7 @@ export function QuotePanel({ data }: { data: OrderData }) {
   const { t } = useTranslation()
   const { revalidate, state } = useRevalidator()
   const { run, busy, error, clearError } = useStaffAction()
-  const [dialog, setDialog] = useState<'draft' | 'adjust' | 'send' | null>(null)
+  const [dialog, setDialog] = useState<'draft' | 'adjust' | 'send' | 'reopen' | null>(null)
   const quoting = data.detail?.booking?.status === 'QUOTING'
 
   if (!data.quotations) return <Card title={t('mgr.quote.title')}><ErrorState onRetry={revalidate} retrying={state !== 'idle'} /></Card>
@@ -29,7 +30,7 @@ export function QuotePanel({ data }: { data: OrderData }) {
   const versions = [...data.quotations].sort((a, b) => (b.version ?? 0) - (a.version ?? 0))
   const latest = versions[0] as Quotation | undefined
   const editable = quoting && latest?.status === 'DRAFT'
-  const open = (next: 'draft' | 'adjust' | 'send') => { clearError(); setDialog(next) }
+  const open = (next: 'draft' | 'adjust' | 'send' | 'reopen') => { clearError(); setDialog(next) }
 
   const draft = async () => { setDialog(null); await run(() => quotationsApi.draft(data.id), t('mgr.quote.drafted')) }
   const send = async () => { setDialog(null); await run(() => quotationsApi.send(latest!.id!), t('mgr.quote.sent')) }
@@ -42,6 +43,8 @@ export function QuotePanel({ data }: { data: OrderData }) {
       <div className={s.stack}>
         {!latest && <EmptyState icon={<i className="fa-solid fa-file-invoice-dollar" />} title={t('mgr.quote.empty')} description={t('mgr.quote.emptyHint')} />}
         {latest && <QuoteSheet quote={latest} />}
+        {data.detail?.booking?.status === 'QUOTE_EXPIRED' &&
+          <Button loading={busy} onClick={() => open('reopen')}>{t('incidentDecisions.reopen')}</Button>}
         {error && dialog !== 'adjust' && <p className={s.error} role="alert">{error}</p>}
         {quoting && (
           <div className={s.row}>
@@ -65,6 +68,11 @@ export function QuotePanel({ data }: { data: OrderData }) {
           </details>
         )}
       </div>
+      {dialog === 'reopen' && <ConfirmDialog title={t('incidentDecisions.reopen')}
+        message={t('incidentDecisions.reopenHint')} confirmLabel={t('incidentDecisions.reopen')}
+        onConfirm={async () => {
+          if (await run(() => bookingReviewsApi.reopenExpiredQuote(data.id), t('incidentDecisions.reopened'))) setDialog(null)
+        }} onCancel={() => setDialog(null)} />}
       {dialog === 'draft' && <ConfirmDialog title={t('mgr.quote.redraftTitle')} message={t('mgr.quote.redraftHint')} confirmLabel={t('mgr.quote.redraft')}
         onConfirm={draft} onCancel={() => setDialog(null)} />}
       {dialog === 'send' && latest && <ConfirmDialog title={t('mgr.quote.sendTitle')}
@@ -90,6 +98,7 @@ function QuoteSheet({ quote }: { quote: Quotation }) {
         {quote.estimatedDeliveryDate && <div><dt>{t('myOrders.quote.delivery')}</dt><dd>{showDate(quote.estimatedDeliveryDate)}</dd></div>}
         {quote.expiresAt && <div><dt>{t('myOrders.quote.expires')}</dt><dd>{moment(quote.expiresAt)}</dd></div>}
       </dl>
+      {quote.lines?.some(line => line.lineType === 'DIRECT') && <p>{t('incidentDecisions.directNote')}</p>}
       <table className={s.lines}>
         <thead><tr><th scope="col">{t('myOrders.quote.item')}</th><th scope="col">{t('myOrders.quote.amount')}</th></tr></thead>
         <tbody>

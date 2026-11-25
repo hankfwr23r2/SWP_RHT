@@ -164,6 +164,7 @@ public class QuotationServiceImpl implements QuotationService {
     public void expire(Long id) {
         var booking = lockBooking(id, null);
         var quote = getQuotation(id);
+        var previousDeparture = booking.getDeparture();
         var now = clock.instant();
         if (booking.getStatus() != BookingStatus.AWAITING_DEPOSIT
                 || (quote.getStatus() != QuotationStatus.SENT && quote.getStatus() != QuotationStatus.ACCEPTED)
@@ -172,7 +173,7 @@ public class QuotationServiceImpl implements QuotationService {
             return;
         }
         changeStatus(quote, QuotationStatus.EXPIRED);
-        statuses.transition(booking.getId(), BookingStatus.QUOTE_EXPIRED, "Báo giá đã hết hạn.", null);
+        statuses.expireQuote(booking.getId(), previousDeparture);
     }
 
     private Booking lockBooking(Long quoteId, String customer) {

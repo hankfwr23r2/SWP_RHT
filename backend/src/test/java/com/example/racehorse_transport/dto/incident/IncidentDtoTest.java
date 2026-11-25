@@ -45,7 +45,7 @@ class IncidentDtoTest {
         assertThat(plan.getHandlerParty()).isSameAs(vet);
         assertThat(plan.getInstructions()).isEqualTo("Khám");
 
-        var request = new CostItemRequestDto(CostCategory.VET, " Thuốc ", new BigDecimal("500000"), null, 1L, null, null, true, Instant.parse("2031-03-05T10:00:00Z"));
+        var request = new CostItemRequestDto(CostCategory.VET, " Thuốc ", new BigDecimal("500000"), null, 1L, null, null, Instant.parse("2031-03-05T10:00:00Z"));
         CostItem cost = request.toEntity(incident, trip, null);
         assertThat(cost.getId()).isNull();
         assertThat(cost.getPayerType()).isNull();
@@ -54,7 +54,7 @@ class IncidentDtoTest {
         assertThat(cost.getApprovedAt()).isNull();
         assertThat(cost.getExtraChargePayment()).isNull();
         assertThat(cost.getCurrencyCode()).isEqualTo("VND");
-        assertThat(cost.getCustomerConsulted()).isTrue();
+        assertThat(cost.getCustomerConsulted()).isFalse();
         assertThat(cost.getDescription()).isEqualTo("Thuốc");
     }
 

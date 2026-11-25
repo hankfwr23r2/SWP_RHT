@@ -91,6 +91,8 @@ public class DeliveryFailureServiceImpl implements DeliveryFailureService {
             incident.setBooking(leg.getBookingHorse().getBooking());
             incident.setIncidentType(IncidentType.HANDOVER_TIMEOUT);
             incident.setCauseType(IncidentCauseType.RECIPIENT_ABSENT);
+            incident.setConfirmedCauseType(IncidentCauseType.RECIPIENT_ABSENT);
+            incident.setCauseConfirmedAt(now);
             incident.setTitle("Không gặp người nhận: " + leg.getBookingHorse().getHorse().getName());
             incident.setDescription("Đã chờ hết thời gian chờ miễn phí tại điểm giao, không gặp người nhận.");
             incident.setReportedBy(handover.getHandledBy());

@@ -12,6 +12,7 @@ import { CancelOrder } from './components/CancelOrder'
 import { CollectionCodeCard } from './components/CollectionCodeCard'
 import { DeliveryComplaintCard } from './components/DeliveryComplaintCard'
 import { DocumentsCard } from './components/DocumentsCard'
+import { IncidentDecisionsCard } from './components/IncidentDecisionsCard'
 import { InsuranceCard } from './components/InsuranceCard'
 import { NextStepBanner } from './components/NextStepBanner'
 import { OrderInfo } from './components/OrderInfo'
@@ -56,6 +57,7 @@ export default function OrderDetailPage() {
           {status === 'SCHEDULE_CHANGE_REQUIRED' && <section id="reschedule" className={s.section}><RescheduleCard data={data} /></section>}
           <section id="quote" className={s.section}><QuoteCard data={data} /></section>
           <section id="payments" className={s.section}><PaymentsCard data={data} /></section>
+          {HAS_JOURNEY.includes(status) && <IncidentDecisionsCard bookingId={data.id} />}
           <InsuranceCard data={data} />
           <section id="documents" className={s.section}><DocumentsCard data={data} /></section>
           {status === 'IN_OPERATION' && <CollectionCodeCard bookingId={data.id} />}

@@ -95,6 +95,33 @@ public class BookingRoutingServiceImpl implements BookingRoutingService {
 
     @Override
     @Transactional(readOnly = true)
+    public void validateReopenPickup(Booking booking, Long departureId) {
+        var today = BookingSubmissionPolicy.businessDate(clock.instant());
+        var pickupDate = booking.getRequestedPickupDate();
+        if (departureId != null) {
+            if (pickupDate.isBefore(today)) {
+                throw BookingRuleException.conflict("Ngày đón đã qua.");
+            }
+            return;
+        }
+        if (!pickupDate.isAfter(today)) {
+            throw BookingRuleException.conflict("Ngày đón phải ở tương lai.");
+        }
+        if (requiresDeparture(booking)) {
+            throw BookingRuleException.conflict("Đơn chưa có chuyến trục.");
+        }
+        var addresses = bookingAddresses.findAddressesForDetail(booking.getId());
+        var pickup = bookingAddress(addresses, AddressRole.PICKUP);
+        var delivery = bookingAddress(addresses, AddressRole.DELIVERY);
+        long days = regulations.resolve(booking.getBookingType(), pickup.getCountry().getCode(),
+                delivery.getCountry().getCode(), pickupDate, null).leadDays();
+        if (!RegulationPolicy.feasible(days, today, pickupDate)) {
+            throw BookingRuleException.conflict("Không kịp làm giấy trước ngày đón.");
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public void requireDirectLeadTime(Booking booking, LocalDate pickupDate) {
         if (booking.getBookingType() == BookingType.LOCAL) {
             return;
