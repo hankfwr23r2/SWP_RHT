@@ -39,4 +39,15 @@ describe('bản nháp đơn', () => {
     saveDraft({ pickupNote: 'mới' })
     expect(JSON.parse(store.get('SWP_RHT_BOOKING_DRAFT_a')!)).toMatchObject({ pickupNote: 'mới', horseIds: [] })
   })
+
+  it('không ghi tệp hợp đồng vào sessionStorage', async () => {
+    const { emptyHorse, saveDraft } = await import('./draft')
+    signIn('a')
+    saveDraft({ horseIds: [1], horses: {
+      1: { ...emptyHorse(), coverage: 'PERSONAL', policyNumber: 'P1', policyFile: new File(['%PDF-1.7'], 'policy.pdf') },
+    } })
+    const raw = store.get('SWP_RHT_BOOKING_DRAFT_a')!
+    expect(JSON.parse(raw).horses[1]).toMatchObject({ coverage: 'PERSONAL', policyNumber: 'P1' })
+    expect(raw).not.toContain('policyFile')
+  })
 })

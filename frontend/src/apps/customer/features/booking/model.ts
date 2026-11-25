@@ -1,6 +1,7 @@
 // Chuyển bản nháp thành yêu cầu gửi backend. Không tính giá, không tự suy hạn chót.
 import type { BookingCreateRequest, PricingPreviewRequest, TransferOptionsRequest } from '@shared/api/bookingOrders'
 import type { CustomerAddress } from '@shared/api/customerAddresses'
+import { documentUploadError } from '@shared/lib/documentUpload'
 import { PARTY_ROLES, type BookingDraft, type HorseChoice, type PartyDraft } from './draft'
 
 export type BookingType = BookingCreateRequest['bookingType']
@@ -48,7 +49,8 @@ export function insuranceReady(horse: HorseChoice | undefined) {
   if (!horse?.coverage) return false
   if (horse.coverage === 'NONE') return horse.acceptedWaiver
   return horse.coverage === 'ARRANGED'
-    || !!(horse.policyNumber.trim() && horse.validFrom && horse.validTo && horse.validFrom <= horse.validTo)
+    || !!(horse.policyNumber.trim() && horse.validFrom && horse.validTo && horse.validFrom <= horse.validTo
+      && horse.policyFile && !documentUploadError(horse.policyFile))
 }
 
 export const servicesReady = (draft: BookingDraft) => draft.horseIds.every(id => insuranceReady(draft.horses[id]))

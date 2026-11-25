@@ -2,6 +2,9 @@ package com.example.racehorse_transport.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -35,6 +38,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 
 @PostgresIntegrationTest
@@ -589,21 +593,27 @@ class BookingSubmissionPostgresTest {
                 insurer, date.minusMonths(2));
         var declaration = new InsuranceDeclarationRequestDto(InsuranceCoverageOption.PERSONAL,
                 "ORIGINAL-01", date, date.plusDays(5), insurer, null);
+        when(cloudinary.uploadFile(any(), eq("documents/insurance")))
+                .thenReturn("https://example.test/" + data.unique("original") + ".pdf",
+                        "https://example.test/" + data.unique("revised") + ".pdf");
+        byte[] pdf = {'%', 'P', 'D', 'F', '-', '1', '.', '7'};
         Long id = bookings.submit(owner, null, request(null, date, List.of(
-                new HorseInput(horse(owner), "STANDARD", null, null, false, List.of(), declaration)))).id();
+                new HorseInput(horse(owner), "STANDARD", null, null, false, List.of(), declaration))),
+                List.of(new MockMultipartFile("insuranceFiles", "original.pdf", "application/pdf", pdf))).id();
         review.intake(id, "manager.dev", specialistId);
         Long insuranceId = queries.get(owner, id).horses().getFirst().insurance().id();
         var revision = new com.example.racehorse_transport.dto.booking.PersonalInsuranceRevisionRequestDto(
                 insurer, "REVISED-02", date, date.plusDays(8));
+        var file = new MockMultipartFile("file", "revised.pdf", "application/pdf", pdf);
         insurance.requestRevision(id, insuranceId, specialist, "Bổ sung số hợp đồng");
-        assertThatThrownBy(() -> insurance.revise(id, insuranceId, other, revision))
+        assertThatThrownBy(() -> insurance.revise(id, insuranceId, other, revision, file))
                 .isInstanceOf(com.example.racehorse_transport.exception.ResourceNotFoundException.class);
-        insurance.revise(id, insuranceId, owner, revision);
+        insurance.revise(id, insuranceId, owner, revision, file);
         var result = queries.get(owner, id).horses().getFirst().insurance();
         assertThat(result.status()).isEqualTo(HorseInsuranceStatus.DRAFT);
         assertThat(result.policyNumber()).isEqualTo("REVISED-02");
         assertThat(result.revisionReason()).isEqualTo("Bổ sung số hợp đồng");
-        assertThatThrownBy(() -> insurance.revise(id, insuranceId, owner, revision))
+        assertThatThrownBy(() -> insurance.revise(id, insuranceId, owner, revision, file))
                 .isInstanceOf(BookingRuleException.class);
     }
 

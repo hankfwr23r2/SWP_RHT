@@ -63,7 +63,10 @@ describe('điều kiện đi tiếp', () => {
     expect(insuranceReady({ ...horse, coverage: 'NONE', acceptedWaiver: true })).toBe(true)
     const personal = { ...horse, coverage: 'PERSONAL' as const, policyNumber: 'P1', validFrom: '2099-02-01', validTo: '2099-01-01' }
     expect(insuranceReady(personal)).toBe(false)
-    expect(insuranceReady({ ...personal, validTo: '2099-03-01' })).toBe(true)
+    const validDates = { ...personal, validTo: '2099-03-01' }
+    expect(insuranceReady(validDates)).toBe(false)
+    expect(insuranceReady({ ...validDates, policyFile: new File([], 'empty.pdf') })).toBe(false)
+    expect(insuranceReady({ ...validDates, policyFile: new File(['%PDF-1.7'], 'policy.pdf') })).toBe(true)
   })
 })
 

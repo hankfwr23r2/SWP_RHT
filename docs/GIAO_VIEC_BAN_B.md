@@ -37,7 +37,7 @@ Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A
 
 | Điểm | Đang thế nào | Gợi ý (chưa duyệt) | Xem ở | Lưu ý |
 |---|---|---|---|---|
-| **2.F2** | Khách tự có bảo hiểm chỉ khai số hợp đồng, không tải tệp | Dùng loại giấy `INSURANCE_POLICY` đã khai, bắt buộc tệp khi khách tự mua | `InsuranceServiceImpl`, màn thẩm định | |
+| **2.F2** | **Đã sửa.** Khách tải tệp hợp đồng khi khai báo hoặc bổ sung bảo hiểm tự có cho từng con. Chuyên viên xem tệp mới nhất và chỉ xác nhận được khi có tệp. | | `InsuranceServiceImpl`, màn thẩm định | |
 | **2.F4** | **Đã sửa.** Chuyên viên cập nhật và xác nhận bảo hiểm mua hộ khi đơn Đang báo giá. Quản lý lập lại bản nháp theo phí mới | | `InsuranceServiceImpl`, `InsurancesCard.tsx` | |
 | **2.F5** | **Đã sửa.** Chuyên viên thu hồi giấy đã duyệt trước khi nhận ngựa, ghi lý do, lưu kiểm toán và báo bên nộp. Thiếu giấy thì chặn xe. | | `DocumentReviewServiceImpl`, `DocumentReviewPolicy` | Đã nhận ngựa thì xử lý qua sự cố giấy tờ |
 | **2.F7** | **Đã sửa.** Đơn xuất phải đủ giấy bắt buộc khi bàn giao cho đại lý ở cửa khẩu. Thiếu giấy thì ngựa vẫn trên xe. | | `HandoverOutcomeServiceImpl` | Trùng 4.F12 |
@@ -92,7 +92,8 @@ Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A
 | Điểm | Phương án | Duyệt | PR |
 |---|---|---|---|
 | 1.F5 | Đặt hạn theo giờ cho tiếp nhận, thẩm định, gửi báo giá. Quét mỗi giờ, nhắc theo vai trò và giữ trạng thái đơn | Đã duyệt | #504 |
-| 2.F2, 2.F8 | | | |
+| 2.F2 | Bắt buộc tệp `INSURANCE_POLICY` cho từng bảo hiểm tự có khi khai báo hoặc bổ sung. Chuyên viên được giao đơn xác nhận sau khi kiểm hợp đồng. | Đã duyệt | |
+| 2.F8 | | | |
 | 2.F5 | Thu hồi giấy đã duyệt trước khi nhận ngựa, chuyển sang từ chối kèm lý do, ghi kiểm toán và báo bên nộp | Đã duyệt | |
 | 2.F9 | Dùng lại giấy theo ngựa đã duyệt và còn hạn khi yêu cầu cùng loại giấy | Đã duyệt | #503 |
 | 2.F7 | Kiểm đủ giấy bắt buộc khi bàn giao đơn xuất cho đại lý ở cửa khẩu | Đã duyệt | #496 |

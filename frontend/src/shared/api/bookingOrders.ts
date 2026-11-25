@@ -25,6 +25,14 @@ export type BookingDelay = Schemas['BookingDelayResponseDto']
 export type BookingReschedule = Schemas['BookingRescheduleRequestDto']
 export type InsuranceRevision = Schemas['PersonalInsuranceRevisionRequestDto']
 
+const multipartOptions = { ...formResponseOptions, headers: { 'Content-Type': 'multipart/form-data' } }
+
+function multipartRequest(request: BookingCreateRequest | InsuranceRevision) {
+  const body = new FormData()
+  body.append('request', new Blob([JSON.stringify(request)], { type: 'application/json' }))
+  return body
+}
+
 export const bookingOrdersApi = {
   suggestions: async (params: DepartureSuggestionQuery) =>
     (await apiClient.get<ApiResponse<DepartureSuggestion>>('/departures/suggestions', { params })).data.data,
@@ -34,8 +42,12 @@ export const bookingOrdersApi = {
     (await apiClient.post<ApiResponse<PricingPreview>>('/pricing/preview', body)).data.data,
   transferOptions: async (body: TransferOptionsRequest) =>
     (await apiClient.post<ApiResponse<TransferOptions>>('/pricing/transfer-options', body)).data.data,
-  create: async (body: BookingCreateRequest) =>
-    readFormResponse<BookingOrder>(await apiClient.post('/bookings', body, formResponseOptions)),
+  create: async (request: BookingCreateRequest, insuranceFiles: File[] = []) => {
+    if (!insuranceFiles.length) return readFormResponse<BookingOrder>(await apiClient.post('/bookings', request, formResponseOptions))
+    const body = multipartRequest(request)
+    for (const file of insuranceFiles) body.append('insuranceFiles', file)
+    return readFormResponse<BookingOrder>(await apiClient.post('/bookings', body, multipartOptions))
+  },
   list: async () => (await apiClient.get<ApiResponse<BookingSummary[]>>('/bookings')).data.data,
   detail: async (id: number) => (await apiClient.get<ApiResponse<BookingDetail>>(`/bookings/${id}`)).data.data,
   previewDeliveryChange: async (id: number, body: DeliveryChangeSelection) =>
@@ -58,8 +70,10 @@ export const bookingOrdersApi = {
     (await apiClient.post<ApiResponse<BookingOrder>>(`/bookings/${id}/reschedule`, body)).data.data,
   resubmit: async (id: number) =>
     (await apiClient.post<ApiResponse<BookingOrder>>(`/bookings/${id}/resubmit`, {})).data.data,
-  reviseInsurance: async (id: number, insuranceId: number, body: InsuranceRevision) => {
-    await apiClient.post(`/bookings/${id}/insurances/${insuranceId}/revise`, body)
+  reviseInsurance: async (id: number, insuranceId: number, request: InsuranceRevision, file: File) => {
+    const body = multipartRequest(request)
+    body.append('file', file)
+    readFormResponse(await apiClient.post(`/bookings/${id}/insurances/${insuranceId}/revise`, body, multipartOptions))
   },
   myProfile: async () =>
     (await apiClient.get<ApiResponse<CustomerProfile>>('/customers/me')).data.data,

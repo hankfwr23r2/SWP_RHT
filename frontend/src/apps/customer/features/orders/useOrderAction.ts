@@ -28,5 +28,5 @@ export function useOrderAction() {
       setBusy(false)
     }
   }
-  return { run, busy, error }
+  return { run, busy, error, clearError: () => setError('') }
 }

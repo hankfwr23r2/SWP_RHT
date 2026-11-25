@@ -6,9 +6,11 @@ import com.example.racehorse_transport.service.*;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/bookings/{id}/insurances")
@@ -54,10 +56,12 @@ public class BookingInsuranceReviewController {
         return ApiResponseDto.success(null, "Đã mở lại bảo hiểm.");
     }
 
-    @PostMapping("/{insuranceId}/revise")
+    @PostMapping(value = "/{insuranceId}/revise", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('CUSTOMER')")
-    public ApiResponseDto<Void> revise(@PathVariable Long id, @PathVariable Long insuranceId, Authentication authentication, @Valid @RequestBody PersonalInsuranceRevisionRequestDto request) {
-        insurance.revise(id, insuranceId, authentication.getName(), request);
+    public ApiResponseDto<Void> revise(@PathVariable Long id, @PathVariable Long insuranceId, Authentication authentication,
+            @Valid @RequestPart("request") PersonalInsuranceRevisionRequestDto request,
+            @RequestPart(value = "file", required = false) MultipartFile file) {
+        insurance.revise(id, insuranceId, authentication.getName(), request, file);
         return ApiResponseDto.success(null, "Đã cập nhật bảo hiểm.");
     }
 }

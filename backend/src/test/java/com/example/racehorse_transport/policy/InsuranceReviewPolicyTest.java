@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static com.example.racehorse_transport.entity.enums.InsuranceCoverageOption.*;
 import com.example.racehorse_transport.entity.HorseInsurance;
+import com.example.racehorse_transport.entity.Party;
 import com.example.racehorse_transport.entity.TermsAcceptance;
 import com.example.racehorse_transport.entity.enums.HorseInsuranceStatus;
 import com.example.racehorse_transport.exception.BookingRuleException;
@@ -40,17 +41,38 @@ class InsuranceReviewPolicyTest {
     }
 
     @Test
+    void personalInsuranceNeedsAFileEvenWhenDatesAndEvidenceAreValid() {
+        LocalDate pickup = LocalDate.of(2026, 11, 23);
+        HorseInsurance insurance = new HorseInsurance();
+        insurance.setCoverageOption(PERSONAL);
+        insurance.setStatus(HorseInsuranceStatus.DRAFT);
+        insurance.setInsurerParty(new Party());
+        insurance.setCoverageAmount(COVERAGE);
+        insurance.setCurrencyCode("VND");
+        insurance.setValidFrom(pickup);
+        insurance.setValidTo(pickup.plusDays(1));
+
+        assertThatThrownBy(() -> InsuranceReviewPolicy.validateConfirmation(insurance, pickup, pickup.plusDays(1), NOW, false))
+                .isInstanceOfSatisfying(BookingRuleException.class, ex -> {
+                    org.assertj.core.api.Assertions.assertThat(ex.getStatusCode().value()).isEqualTo(409);
+                    org.assertj.core.api.Assertions.assertThat(ex.getReason()).contains("tệp hợp đồng");
+                });
+        assertThatCode(() -> InsuranceReviewPolicy.validateConfirmation(insurance, pickup, pickup.plusDays(1), NOW, true))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
     void noneRequiresWaiverAndCannotBeConfirmedTwice() {
         HorseInsurance insurance = new HorseInsurance();
         insurance.setStatus(HorseInsuranceStatus.DRAFT);
         insurance.setCoverageOption(NONE);
-        assertThatThrownBy(() -> InsuranceReviewPolicy.validateConfirmation(insurance, null, null, NOW))
+        assertThatThrownBy(() -> InsuranceReviewPolicy.validateConfirmation(insurance, null, null, NOW, false))
                 .isInstanceOf(BookingRuleException.class);
         insurance.setWaiverTermsAcceptance(new TermsAcceptance());
-        assertThatCode(() -> InsuranceReviewPolicy.validateConfirmation(insurance, null, null, NOW))
+        assertThatCode(() -> InsuranceReviewPolicy.validateConfirmation(insurance, null, null, NOW, false))
                 .doesNotThrowAnyException();
         insurance.setStatus(HorseInsuranceStatus.CONFIRMED);
-        assertThatThrownBy(() -> InsuranceReviewPolicy.validateConfirmation(insurance, null, null, NOW))
+        assertThatThrownBy(() -> InsuranceReviewPolicy.validateConfirmation(insurance, null, null, NOW, false))
                 .isInstanceOfSatisfying(BookingRuleException.class, ex ->
                         org.assertj.core.api.Assertions.assertThat(ex.getStatusCode().value()).isEqualTo(409));
     }

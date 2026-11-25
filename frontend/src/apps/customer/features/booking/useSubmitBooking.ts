@@ -20,7 +20,11 @@ export function useSubmitBooking() {
     setError('')
     setFields({})
     try {
-      setOrder(await bookingOrdersApi.create(createRequest(draft, pickup, delivery, addressBook)))
+      const insuranceFiles = draft.horseIds.flatMap(id => {
+        const horse = draft.horses[id]
+        return horse.coverage === 'PERSONAL' && horse.policyFile ? [horse.policyFile] : []
+      })
+      setOrder(await bookingOrdersApi.create(createRequest(draft, pickup, delivery, addressBook), insuranceFiles))
       clearDraft()
     } catch (cause) {
       const failure = cause as Error & { fields?: Record<string, string> }

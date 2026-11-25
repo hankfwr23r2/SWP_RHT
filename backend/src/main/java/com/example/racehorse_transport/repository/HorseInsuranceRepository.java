@@ -13,6 +13,12 @@ public interface HorseInsuranceRepository extends JpaRepository<HorseInsurance, 
     Optional<HorseInsurance> findByBookingHorse_Id(Long bookingHorseId);
 
     @Query("""
+            SELECT COUNT(d) > 0 FROM Document d
+            WHERE d.horseInsurance.id = :insuranceId AND d.documentType.code = :typeCode
+            """)
+    boolean hasPolicyFile(Long insuranceId, String typeCode);
+
+    @Query("""
             SELECT i FROM HorseInsurance i LEFT JOIN FETCH i.insurerParty LEFT JOIN FETCH i.waiverTermsAcceptance
             WHERE i.bookingHorse.id IN :horseRowIds
             """)

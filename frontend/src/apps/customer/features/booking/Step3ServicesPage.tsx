@@ -1,6 +1,6 @@
 // Bước 3: dịch vụ thêm và bảo hiểm của từng con.
 import { useState } from 'react'
-import { Navigate, useNavigate } from 'react-router'
+import { Navigate, useLocation, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { catalogApi } from '@shared/api/catalog'
 import { useLoad } from '@shared/hooks/useLoad'
@@ -16,9 +16,11 @@ import s from './Booking.module.css'
 export default function Step3ServicesPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const { state } = useLocation()
   const data = useBookingData()
   const { draft, save, setHorse } = useBookingDraft()
   const [submitted, setSubmitted] = useState(false)
+  const [fileErrors, setFileErrors] = useState<Record<string, string>>(() => state?.insuranceFileErrors ?? {})
   const insurers = useLoad(catalogApi.insurers, [], { toastOnError: false })
 
   if (!data.failed && !routeReady(draft)) return <Navigate to="/booking/route" replace />
@@ -33,11 +35,14 @@ export default function Step3ServicesPage() {
     })
   }
 
-  // Số hợp đồng và miễn trách là của riêng từng con nên không chép sang con khác
+  // Số, tệp hợp đồng và miễn trách là của riêng từng con.
   const copyToAll = (horseId: number) => {
     const { addOnServiceIds, coverage, insurerPartyId } = draft.horses[horseId]
     save({
-      horses: Object.fromEntries(draft.horseIds.map(id => [id, { ...draft.horses[id], addOnServiceIds, coverage, insurerPartyId }])),
+      horses: Object.fromEntries(draft.horseIds.map(id => [id, {
+        ...draft.horses[id], addOnServiceIds, coverage, insurerPartyId,
+        policyFile: coverage === 'PERSONAL' ? draft.horses[id].policyFile : undefined,
+      }])),
     })
   }
 
@@ -52,9 +57,10 @@ export default function Step3ServicesPage() {
 
   return (
     <BookingShell step={3} title={t('bookingForm.services.title')} subtitle={t('bookingForm.services.subtitle')}>
-      {draft.horseIds.map(id => {
+      {draft.horseIds.map((id, index) => {
         const horse = data.horses.find(item => item.id === id)
         const choice = draft.horses[id]
+        const fileField = `horses[${index}].insurance.file`
         return (
           <Card key={id} title={horse?.name ?? `#${id}`} actions={draft.horseIds.length > 1 && (
             <Button size="sm" variant="ghost" onClick={() => copyToAll(id)}>{t('bookingForm.copyToAll')}</Button>
@@ -73,7 +79,16 @@ export default function Step3ServicesPage() {
                 </div>
               </fieldset>
               <InsuranceChoice horseId={id} choice={choice} insurers={insurers.data ?? []}
-                missing={submitted && !insuranceReady(choice)} onChange={patch => setHorse(id, patch)} />
+                missing={submitted && !insuranceReady(choice)} fileError={fileErrors[fileField]} onChange={patch => {
+                  if (Object.hasOwn(patch, 'policyFile') && fileErrors[fileField]) {
+                    setFileErrors(current => {
+                      const remaining = { ...current }
+                      delete remaining[fileField]
+                      return remaining
+                    })
+                  }
+                  setHorse(id, patch)
+                }} />
             </div>
           </Card>
         )

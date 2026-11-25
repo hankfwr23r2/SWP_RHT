@@ -25,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -61,7 +62,8 @@ public class BookingDetailsServiceImpl implements BookingDetailsService {
     }
 
     @Override
-    public void saveHorse(HorseInput input, Horse horse, Booking booking, BookingAddress deliveryAddress, String ipAddress, LocalDate submittedOn) {
+    public void saveHorse(HorseInput input, Horse horse, Booking booking, BookingAddress deliveryAddress,
+            String ipAddress, LocalDate submittedOn, MultipartFile insuranceFile) {
         StallType stall = stalls.findById(input.stallTypeCode().trim())
                 .orElseThrow(() -> new BookingRuleException("Loại khoang không hợp lệ."));
         BookingHorse row = input.toEntity(booking, horse, stall);
@@ -78,7 +80,7 @@ public class BookingDetailsServiceImpl implements BookingDetailsService {
                 addOns.save(selection);
             }
         }
-        insurance.declare(row, input.insurance(), submittedOn, ipAddress);
+        insurance.declare(row, input.insurance(), submittedOn, ipAddress, insuranceFile);
     }
 
     @Override
