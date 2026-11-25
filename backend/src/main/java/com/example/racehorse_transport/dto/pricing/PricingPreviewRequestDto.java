@@ -27,5 +27,10 @@ public record PricingPreviewRequestDto(
 
     public record HorseSelection(@NotNull @Positive Long horseId,
                                  @NotBlank @Size(max = 30) String stallTypeCode,
-                                 @NotNull List<@NotNull @Positive Long> addOnServiceIds) {}
+                                 @NotNull List<@NotNull @Positive Long> addOnServiceIds,
+                                 @Positive Long deliveryAddressId) {
+        public HorseSelection(Long horseId, String stallTypeCode, List<Long> addOnServiceIds) {
+            this(horseId, stallTypeCode, addOnServiceIds, null);
+        }
+    }
 }

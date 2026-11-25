@@ -6,6 +6,7 @@ import { Field } from '@shared/ui/Field'
 import { Input } from '@shared/ui/Input'
 import { Select } from '@shared/ui/Select'
 import { localToIso } from '@backoffice/shared/localTime'
+import { deliveryAddresses } from './dispatchModel'
 import s from './Dispatch.module.css'
 
 // Nơi dừng: "L<id>" điểm mạng lưới, "P<id>" địa chỉ đón, "D<id>" địa chỉ giao
@@ -39,7 +40,9 @@ export function ManualStops({ stops, onChange, bookings, locations }: {
     ...locations.map(location => ({ value: `L${location.id}`, label: t(`dispatch.create.place${location.locationType === 'REST_STOP' ? 'Rest' : location.locationType === 'BORDER_GATE' ? 'Gate' : 'Hub'}`, { name: location.name }) })),
     ...bookings.flatMap(booking => [
       booking.pickupAddress && { value: `P${booking.pickupAddress.id}`, label: t('dispatch.create.placePickup', { code: booking.code, line: booking.pickupAddress.addressLine }) },
-      booking.deliveryAddress && { value: `D${booking.deliveryAddress.id}`, label: t('dispatch.create.placeDelivery', { code: booking.code, line: booking.deliveryAddress.addressLine }) },
+      ...deliveryAddresses(booking).map(address => ({
+        value: `D${address.id}`, label: t('dispatch.create.placeDelivery', { code: booking.code, line: address.addressLine }),
+      })),
     ].filter(Boolean) as { value: string; label: string }[]),
   ]
   const update = (index: number, patch: Partial<StopDraft>) => onChange(stops.map((stop, i) => (i === index ? { ...stop, ...patch } : stop)))

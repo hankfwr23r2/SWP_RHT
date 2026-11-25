@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card } from '@shared/ui/Card'
 import type { BookingDraft } from '../draft'
 import { addressText, findAddress, useBookingData } from '../loaders'
-import { bookingTypeOf, showDate, showDateTime } from '../model'
+import { bookingTypeOf, selectedDeliveryAddress, showDate, showDateTime } from '../model'
 import s from '../Booking.module.css'
 
 // Xem lại hành trình và từng con ngựa, có đường quay lại bước cần sửa
@@ -30,6 +30,9 @@ export function ReviewList({ draft }: { draft: BookingDraft }) {
         <dl className={s.review}>
           {draft.horseIds.map(id => {
             const choice = draft.horses[id]
+            const destination = findAddress(data, selectedDeliveryAddress(draft, id) ?? draft.deliveryAddressId)
+            const contact = destination?.id == null || destination.id === draft.deliveryAddressId
+              ? draft.parties.CONSIGNEE : draft.deliveryContacts[destination.id]
             const addOns = data.services.filter(service => choice?.addOnServiceIds.includes(service.id ?? 0)).map(service => service.name)
             return (
               <div key={id}>
@@ -37,6 +40,9 @@ export function ReviewList({ draft }: { draft: BookingDraft }) {
                 <dd>{[
                   data.stallTypes.find(stall => stall.code === choice?.stallTypeCode)?.name,
                   choice?.coverage && t(`bookingForm.services.coverage.${choice.coverage}`),
+                  destination && addressText(data, destination),
+                  contact?.fullName,
+                  contact?.phone,
                   ...addOns,
                 ].filter(Boolean).join(' · ')}</dd>
               </div>

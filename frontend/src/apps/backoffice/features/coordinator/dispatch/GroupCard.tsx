@@ -47,13 +47,13 @@ export function GroupCard({ group, index, kind, vehicles, onCreated }: {
   }
 
   return (
-    <Card title={t('dispatch.grouping.groupTitle', { n: index + 1, count: group.bookings?.length ?? 0 })}
+    <Card title={t('dispatch.grouping.groupTitle', { n: index + 1, count: new Set(group.bookings?.map(booking => booking.bookingId)).size })}
       actions={group.overLimit ? <Badge tone="warning">{t('dispatch.grouping.overHours')}</Badge> : undefined}>
       <div className={s.list}>
         <p className={s.muted}>{t('dispatch.grouping.summary', { seats: group.seats, km: group.routeKm, hours: group.hours })}</p>
         <ol className={s.list}>
           {(group.bookings ?? []).map(booking => (
-            <li key={booking.bookingId}>
+            <li key={`${booking.bookingId}-${booking.bookingAddressId}`}>
               <strong>{booking.bookingCode}</strong>{` · ${booking.addressLine} · `}{(booking.horses ?? []).map(horse => horse.horseName).join(', ')}
             </li>
           ))}

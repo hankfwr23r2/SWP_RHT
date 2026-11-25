@@ -47,6 +47,10 @@ public class BookingHorse {
     @JoinColumn(name = "stall_type_code", nullable = false)
     private StallType stallType;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "delivery_address_id")
+    private BookingAddress deliveryAddress;
+
     @Column(name = "diet_note", columnDefinition = "text")
     private String dietNote;
 

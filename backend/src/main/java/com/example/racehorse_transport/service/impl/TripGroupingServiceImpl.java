@@ -50,6 +50,11 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.racehorse_transport.dto.route.GeoPointDto;
+import com.example.racehorse_transport.exception.BookingRuleException;
+import com.example.racehorse_transport.service.DeliveryRouteService;
+import java.util.LinkedHashMap;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -62,6 +67,7 @@ public class TripGroupingServiceImpl implements TripGroupingService {
 
     private final DispatchBookingRepository bookings;
     private final BookingAddressRepository addresses;
+    private final DeliveryRouteService deliveryRoutes;
     private final BookingHorseRepository bookingHorses;
     private final HorseLegRepository legs;
     private final LocationRepository locations;
@@ -89,13 +95,14 @@ public class TripGroupingServiceImpl implements TripGroupingService {
 
         Map<Long, Entry> entries = new HashMap<>();
         List<Candidate> candidates = new ArrayList<>();
+        List<List<Entry>> multiPlace = new ArrayList<>();
         HorseLegType legType = pickup ? HorseLegType.PICKUP : HorseLegType.DELIVERY;
         for (Booking booking : found) {
             AddressRole role = pickup ? AddressRole.PICKUP : AddressRole.DELIVERY;
             BookingAddress address = addresses.findByBooking_Id(booking.getId()).stream().filter(a -> a.getAddressType() == role).findFirst().orElse(null);
-            List<BookingHorse> horses = bookingHorses.findForDetail(booking.getId()).stream()
-                    .filter(h -> h.getStatus() == BookingHorseStatus.ACTIVE)
-                    .filter(h -> {
+            List<BookingHorse> active = bookingHorses.findForDetail(booking.getId()).stream()
+                    .filter(h -> h.getStatus() == BookingHorseStatus.ACTIVE).toList();
+            List<BookingHorse> horses = active.stream().filter(h -> {
                         Set<HorseLegType> planned = legs.findByBookingHorse_IdOrderBySequenceNumber(h.getId()).stream()
                                 .filter(l -> !INACTIVE.contains(l.getStatus())).map(HorseLeg::getLegType).collect(Collectors.toSet());
                         // Chưa xếp chặng trục thì con ngựa chưa tới hub giao, chưa gom lượt giao được (quy tắc #7)
@@ -103,11 +110,26 @@ public class TripGroupingServiceImpl implements TripGroupingService {
                     })
                     .toList();
             if (address == null || horses.isEmpty()) continue;
+            if (!pickup) {
+                long destinationCount = active.stream().map(BookingHorse::getDeliveryAddress)
+                        .filter(Objects::nonNull).map(BookingAddress::getId).distinct().count();
+                if (destinationCount > 1 && horses.size() != active.size()) continue;
+                BookingAddress defaultAddress = address;
+                var byAddress = horses.stream().collect(Collectors.groupingBy(
+                        horse -> horse.getDeliveryAddress() == null ? defaultAddress : horse.getDeliveryAddress(),
+                        LinkedHashMap::new, Collectors.toList()));
+                if (byAddress.size() > 1) {
+                    multiPlace.add(byAddress.entrySet().stream().map(row -> new Entry(booking, row.getKey(), row.getValue(),
+                            booking.getDeparture().getPlannedDepartureAt(), arrivalOf(booking))).toList());
+                    continue;
+                }
+                address = byAddress.keySet().iterator().next();
+            }
             entries.put(booking.getId(), new Entry(booking, address, horses, booking.getDeparture().getPlannedDepartureAt(), arrivalOf(booking)));
             candidates.add(new Candidate(booking.getId(), point(address.getLatitude().doubleValue(), address.getLongitude().doubleValue()),
                     horses.stream().mapToInt(h -> StallSeatPolicy.seats(h.getStallType().getCode())).sum()));
         }
-        if (candidates.isEmpty()) return List.of();
+        if (candidates.isEmpty() && multiPlace.isEmpty()) return List.of();
 
         int capacity = vehicles.findAllByOrderByLicensePlateAsc().stream().filter(v -> v.getStatus() == VehicleStatus.ACTIVE)
                 .mapToInt(v -> v.getStandardStallCount() * StallSeatPolicy.seats("STANDARD") + v.getWideStallCount() * StallSeatPolicy.seats("WIDE"))
@@ -120,7 +142,49 @@ public class TripGroupingServiceImpl implements TripGroupingService {
         double maxHours = TripSchedulePolicy.rideLimitSeconds(false, rules) / 3600.0;
         Point hubPoint = point(hub.getLatitude().doubleValue(), hub.getLongitude().doubleValue());
         List<Group> groups = TripGroupingPolicy.group(hubPoint, candidates, capacity, maxHours, speed);
-        return groups.stream().map(group -> describe(group, entries, hub, hubPoint, pickup, speed, date, rules, window, maxHours)).toList();
+        List<TripGroupResponseDto> result = new ArrayList<>();
+        for (Group group : groups) {
+            result.add(describe(group, entries, hub, hubPoint, pickup, speed, date, rules, window, maxHours));
+        }
+        for (List<Entry> delivery : multiPlace) {
+            try {
+                result.add(describeDelivery(delivery, hub, rules, window));
+            } catch (BookingRuleException ex) {
+                // A newly unavailable route does not prevent suggestions for the other bookings.
+            }
+        }
+        return List.copyOf(result);
+    }
+
+    private TripGroupResponseDto describeDelivery(List<Entry> visits, Location hub, Rules rules, Window window) {
+        int seats = visits.stream().flatMap(visit -> visit.horses().stream())
+                .mapToInt(horse -> StallSeatPolicy.seats(horse.getStallType().getCode())).sum();
+        var plan = deliveryRoutes.plan(hub.getId(), visits.stream()
+                        .map(visit -> new GeoPointDto(
+                                visit.address().getLatitude().doubleValue(), visit.address().getLongitude().doubleValue())).toList(),
+                visits.stream().map(visit -> visit.horses().size()).toList(), seats);
+        var ordered = plan.order().stream().map(index -> visits.get(index - 1)).toList();
+        List<Integer> handled = new ArrayList<>(ordered.stream().map(visit -> visit.horses().size()).toList());
+        int horseCount = handled.stream().mapToInt(Integer::intValue).sum();
+        handled.addFirst(horseCount);
+        handled.addLast(0);
+        Instant ready = ordered.getFirst().arrivalAt().plus(TripSchedulePolicy.dwell(horseCount, rules));
+        Instant start = TripSchedulePolicy.deliveryDeparture(ready, window, BUSINESS_ZONE, handled, plan.drives(), rules);
+        List<StopTime> times = TripSchedulePolicy.schedule(start, handled, plan.drives(), rules);
+        List<SuggestedStopDto> stops = new ArrayList<>();
+        stops.add(new SuggestedStopDto(hub.getId(), null, TripStopType.HUB, times.getFirst().arrival(), times.getFirst().departure()));
+        List<GroupBookingDto> rows = new ArrayList<>();
+        for (int i = 0; i < ordered.size(); i++) {
+            Entry visit = ordered.get(i);
+            StopTime time = times.get(i + 1);
+            stops.add(new SuggestedStopDto(null, visit.address().getId(), TripStopType.DELIVERY, time.arrival(), time.departure()));
+            rows.add(new GroupBookingDto(visit.booking().getId(), visit.booking().getCode(), visit.address().getId(),
+                    visit.address().getAddressLine(), visit.horses().stream().map(horse -> new GroupHorseDto(
+                            horse.getId(), horse.getHorse().getName(), StallSeatPolicy.seats(horse.getStallType().getCode()))).toList()));
+        }
+        stops.add(new SuggestedStopDto(hub.getId(), null, TripStopType.HUB, times.getLast().arrival(), times.getLast().departure()));
+        return new TripGroupResponseDto(seats, round(plan.deliveryKm() + plan.returnKm()),
+                round(Duration.between(start, times.getLast().arrival()).toSeconds() / 3600.0), false, rows, stops);
     }
 
     private TripGroupResponseDto describe(Group group, Map<Long, Entry> entries, Location hub, Point hubPoint, boolean pickup, double speed,

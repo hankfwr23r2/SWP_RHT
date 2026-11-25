@@ -51,20 +51,21 @@ public class BookingDetailsServiceImpl implements BookingDetailsService {
     }
 
     @Override
-    public void saveAddress(AddressInput input, Province province, Booking booking) {
+    public BookingAddress saveAddress(AddressInput input, Province province, Booking booking) {
         CustomerAddress source = null;
         if (input.sourceCustomerAddressId() != null) {
             source = customerAddresses.findByIdAndCustomer_UserId(input.sourceCustomerAddressId(), booking.getCustomer().getUserId())
                     .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy địa chỉ trong sổ của khách."));
         }
-        addresses.save(input.toEntity(booking, province, source));
+        return addresses.save(input.toEntity(booking, province, source));
     }
 
     @Override
-    public void saveHorse(HorseInput input, Horse horse, Booking booking, String ipAddress, LocalDate submittedOn) {
+    public void saveHorse(HorseInput input, Horse horse, Booking booking, BookingAddress deliveryAddress, String ipAddress, LocalDate submittedOn) {
         StallType stall = stalls.findById(input.stallTypeCode().trim())
                 .orElseThrow(() -> new BookingRuleException("Loại khoang không hợp lệ."));
         BookingHorse row = input.toEntity(booking, horse, stall);
+        row.setDeliveryAddress(deliveryAddress);
         row.setStatus(BookingHorseStatus.ACTIVE);
         bookingHorses.save(row);
         if (input.addOns() != null) {

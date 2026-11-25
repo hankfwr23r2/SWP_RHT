@@ -4,12 +4,14 @@ import { Link, Navigate, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@shared/ui/Button'
 import { EmptyState } from '@shared/ui/EmptyState'
+import { AddressSelect } from './components/AddressSelect'
+import { Field } from '@shared/ui/Field'
 import { Input } from '@shared/ui/Input'
 import { BookingShell, StepActions } from './BookingShell'
 import { HorseSetup } from './components/HorseSetup'
 import { emptyHorse, useBookingDraft } from './draft'
-import { useBookingData } from './loaders'
-import { horsesReady, routeReady } from './model'
+import { useBookingData, findAddress } from './loaders'
+import { horsesReady, routeReady, bookingTypeOf, selectedDeliveryAddress } from './model'
 import s from './Booking.module.css'
 
 const SEARCH_FROM = 6
@@ -57,9 +59,18 @@ export default function Step2HorsesPage() {
     })
   }
 
+  const canChooseDelivery = draft.routing === 'LINEHAUL' && draft.deliveryMethod === 'COMPANY'
+    && bookingTypeOf(findAddress(data, draft.pickupAddressId), findAddress(data, draft.deliveryAddressId)) === 'INTERPROVINCE'
+  const contactsReady = draft.horseIds.every(id => {
+    const addressId = selectedDeliveryAddress(draft, id)
+    if (!addressId || addressId === draft.deliveryAddressId) return true
+    const contact = draft.deliveryContacts[addressId]
+    return Boolean(findAddress(data, addressId) && contact?.fullName.trim() && contact.phone.trim())
+  })
+
   const next = () => {
     setSubmitted(true)
-    if (horsesReady(draft) && !full && !busy.length) navigate('/booking/services')
+    if (horsesReady(draft) && !full && !busy.length && contactsReady) navigate('/booking/services')
   }
 
   return (
@@ -80,6 +91,9 @@ export default function Step2HorsesPage() {
       {shown.map(horse => {
         const id = horse.id!
         const on = draft.horseIds.includes(id)
+        const addressId = selectedDeliveryAddress(draft, id) ?? draft.deliveryAddressId
+        const otherDestination = addressId != null && addressId !== draft.deliveryAddressId
+        const contact = addressId == null ? undefined : draft.deliveryContacts[addressId]
         return (
           <article key={id} className={`${s.horse} ${on ? s.horseOn : ''}`}>
             <label className={s.horsePick}>
@@ -93,6 +107,21 @@ export default function Step2HorsesPage() {
             {on && draft.horses[id] && (
               <HorseSetup horseId={id} choice={draft.horses[id]} onChange={patch => setHorse(id, patch)}
                 onCopy={draft.horseIds.length > 1 ? () => copyToAll(id) : undefined} />
+            )}
+            {on && canChooseDelivery && (
+              <>
+                <AddressSelect label={t('bookingForm.horses.deliveryPlace')} value={addressId} exclude={draft.pickupAddressId}
+                  onChange={deliveryAddressId => setHorse(id, { deliveryAddressId })} />
+                {otherDestination && addressId != null && (['fullName', 'phone'] as const).map(field => (
+                  <Field key={field} label={t(`bookingForm.horses.deliveryContact.${field}`)} required
+                    error={submitted && !contact?.[field].trim() ? t('bookingForm.horses.deliveryContact.required') : undefined}>
+                    {control => <Input {...control} type={field === 'phone' ? 'tel' : 'text'} value={contact?.[field] ?? ''}
+                      onChange={event => save({ deliveryContacts: { ...draft.deliveryContacts, [addressId]: {
+                        fullName: contact?.fullName ?? '', phone: contact?.phone ?? '', [field]: event.target.value,
+                      } } })} />}
+                  </Field>
+                ))}
+              </>
             )}
           </article>
         )

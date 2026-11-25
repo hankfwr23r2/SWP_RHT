@@ -35,6 +35,22 @@ describe('dispatchModel', () => {
     expect(eligibleHorses(linehaul, [booking({ departureId: 8 })], [])).toEqual([])
   })
 
+  it('đề xuất hai điểm giao và đúng điểm xuống cho từng con trong cùng đơn', () => {
+    const multi = booking({ horses: [
+      { bookingHorseId: 50, status: 'ACTIVE', deliveryAddress: { id: 101 }, missingLegs: ['DELIVERY'] },
+      { bookingHorseId: 51, status: 'ACTIVE', deliveryAddress: { id: 102 }, missingLegs: ['DELIVERY'] },
+    ] })
+    const trip: VehicleTrip = { tripType: 'DELIVERY', stops: [
+      stop(40, 1, { locationId: 1 }), stop(41, 2, { bookingAddressId: 101 }),
+      stop(42, 3, { bookingAddressId: 102 }), stop(43, 4, { locationId: 1 }),
+    ] }
+    expect(placesFor('DELIVERY', 1, [multi])).toEqual([
+      { locationId: 1 }, { bookingAddressId: 101 }, { bookingAddressId: 102 }, { locationId: 1 },
+    ])
+    expect(eligibleHorses(trip, [multi], []).map(option => [option.horse.bookingHorseId, option.alight]))
+      .toEqual([[50, 41], [51, 42]])
+  })
+
   it('đếm chỗ đang dùng lớn nhất trên các đoạn', () => {
     const onTrip: TripHorse[] = [
       { seats: 2, leg: { boardTripStopId: 30, alightTripStopId: 33 } },

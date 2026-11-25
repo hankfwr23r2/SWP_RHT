@@ -55,6 +55,67 @@ class BookingSubmissionPostgresTest {
     @Autowired private JwtUtils jwt;
     @Autowired private MockMvc mvc;
 
+    @org.springframework.test.context.bean.override.mockito.MockitoBean
+    private DeliveryRouteService deliveryRoutes;
+
+    @Test
+    void savesTheDeliveryAddressOfEachHorseAndRejectsAnAddressFromAnotherBooking() {
+        String owner = customer();
+        LocalDate date = pickupDate();
+        var departure = data.departure("HCM-DN", date.plusDays(1), 4);
+        HorseInput first = horseInput(horse(owner), InsuranceCoverageOption.NONE, true, List.of());
+        HorseInput other = horseInput(horse(owner), InsuranceCoverageOption.NONE, true, List.of());
+        HorseInput second = new HorseInput(other.horseId(), other.stallTypeCode(), other.dietNote(), other.feedingsPerDay(),
+                other.feedSuppliedByOwner(), other.addOns(), other.insurance(), 1);
+        var original = request(departure.getId(), date, List.of(first, second));
+        var primary = original.addresses().stream().filter(address -> address.addressType() == AddressRole.DELIVERY)
+                .findFirst().orElseThrow();
+        var additional = new AddressInput(AddressRole.DELIVERY, "Điểm giao thứ hai", primary.provinceCode(), primary.countryCode(),
+                primary.latitude().add(new BigDecimal("0.01")), primary.longitude(), "Người nhận thứ hai", "0912345678", null, null);
+        var addresses = new java.util.ArrayList<>(original.addresses());
+        addresses.add(additional);
+        var request = new BookingCreateRequestDto(original.bookingType(), original.departureId(), date,
+                original.emergencySpendingLimit(), original.parties(), addresses, original.horses(), true);
+
+        var result = bookings.submit(owner, "192.0.2.5", request);
+
+        var detail = queries.get(owner, result.id());
+        assertThat(detail.horses()).extracting(horse -> detail.addresses().stream()
+                        .filter(address -> address.id().equals(horse.deliveryAddressId())).findFirst().orElseThrow().addressLine())
+                .containsExactly(primary.addressLine(), additional.addressLine());
+        assertThat(detail.addresses()).hasSize(3);
+        var otherBooking = bookings.submit(owner, "192.0.2.5", request(departure.getId(), date,
+                List.of(horseInput(horse(owner), InsuranceCoverageOption.NONE, true, List.of()))));
+        Long otherAddressId = queries.get(owner, otherBooking.id()).horses().getFirst().deliveryAddressId();
+        assertThatThrownBy(() -> jdbc.update("UPDATE booking_horse SET delivery_address_id = ? WHERE booking_id = ?",
+                otherAddressId, result.id())).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+        org.mockito.Mockito.verify(deliveryRoutes).plan(org.mockito.ArgumentMatchers.anyLong(),
+                org.mockito.ArgumentMatchers.anyList(), org.mockito.ArgumentMatchers.eq(List.of(1, 1)), org.mockito.ArgumentMatchers.eq(2));
+    }
+
+    @Test
+    void rejectsSecondDeliveryForAnOrderWithoutACompanyDelivery() {
+        String owner = customer();
+        LocalDate date = pickupDate();
+        var departure = data.departure("HCM-DN", date.plusDays(1), 4);
+        var primaryHorse = horseInput(horse(owner), InsuranceCoverageOption.NONE, true, List.of());
+        var other = horseInput(horse(owner), InsuranceCoverageOption.NONE, true, List.of());
+        var secondHorse = new HorseInput(other.horseId(), other.stallTypeCode(), null, null, false, List.of(), other.insurance(), 1);
+        var original = request(departure.getId(), date, List.of(primaryHorse, secondHorse));
+        var primary = original.addresses().stream().filter(address -> address.addressType() == AddressRole.DELIVERY)
+                .findFirst().orElseThrow();
+        var addresses = new java.util.ArrayList<>(original.addresses());
+        addresses.add(new AddressInput(AddressRole.DELIVERY, "Điểm tự nhận thứ hai", primary.provinceCode(), primary.countryCode(),
+                primary.latitude().add(new BigDecimal("0.01")), primary.longitude(), "Người nhận", "0912345678", null, null));
+        var request = new BookingCreateRequestDto(original.bookingType(), original.departureId(), date,
+                original.emergencySpendingLimit(), original.parties(), addresses, original.horses(),
+                true, TransferMethod.COMPANY, TransferMethod.SELF);
+
+        assertThatThrownBy(() -> bookings.submit(owner, "192.0.2.5", request))
+                .isInstanceOf(BookingRuleException.class).hasMessageContaining("đặt đơn riêng");
+        assertThat(queries.list(owner)).isEmpty();
+    }
+
     @Test
     void persistsAllRowsAndReservesStalls() {
         String owner = customer();

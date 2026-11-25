@@ -12,7 +12,7 @@ const departure = {
   bookingCutoffAt: '2099-01-16T22:00:00Z', availableStalls: 1,
 }
 
-async function open(page: Page, options: { feasible?: boolean; rejectFirst?: boolean; transfer?: object; noRules?: boolean } = {}) {
+async function open(page: Page, options: { feasible?: boolean; rejectFirst?: boolean; transfer?: object; noRules?: boolean; multiDelivery?: boolean } = {}) {
   const state = { created: [] as Record<string, unknown>[], priced: [] as Record<string, unknown>[], busy: 'BK-KHAC' as string | undefined }
   await page.addInitScript(() => {
     sessionStorage.setItem('SWP_SESSION_customer', JSON.stringify({ role: 'customer', name: 'Khách thử', username: 'customer.test' }))
@@ -22,21 +22,22 @@ async function open(page: Page, options: { feasible?: boolean; rejectFirst?: boo
     const request = route.request()
     const path = new URL(request.url()).pathname.replace('/api/v1', '')
     const reply = (data: unknown) => route.fulfill({ json: { status: 'success', data } })
-    if (path === '/customers/me/addresses') return reply(addresses)
+    if (path === '/customers/me/addresses') return reply(options.multiDelivery
+      ? [...addresses, { ...addresses[1], id: 3, label: 'Trại C', addressLine: 'Số 3', latitude: 16.1 }] : addresses)
     if (path === '/customers/me') return reply({ fullName: 'Khách thử', phone: '0900000000', address: 'Nhà khách' })
     if (path === '/countries') return reply([{ code: 'VN', name: 'Việt Nam' }])
     if (path === '/provinces') return reply([{ code: 'VN-79', name: 'TP.HCM', countryCode: 'VN' }, { code: 'VN-48', name: 'Đà Nẵng', countryCode: 'VN' }])
     if (path === '/horses') return reply([
       { id: 11, name: 'Gió Nam', microchip: '985000000000011', status: 'ACTIVE' },
       { id: 12, name: 'Đã nghỉ', microchip: '985000000000012', status: 'RETIRED' },
-      { id: 13, name: 'Sao Mai', microchip: '985000000000013', status: 'ACTIVE', activeBookingCode: state.busy },
+      { id: 13, name: 'Sao Mai', microchip: '985000000000013', status: 'ACTIVE', activeBookingCode: options.multiDelivery ? undefined : state.busy },
     ])
     if (path === '/stall-types') return reply([{ code: 'STANDARD', name: 'Khoang tiêu chuẩn', seats: 1 }, { code: 'WIDE', name: 'Khoang rộng', seats: 2 }])
     if (path === '/billable-services') return reply([
       { id: 31, code: 'VET_CHECK', name: 'Khám thú y', layer: 'ADD_ON', status: 'ACTIVE', autoApplied: false },
       { id: 32, code: 'LINEHAUL', name: 'Cước chuyến chính', layer: 'LINEHAUL', status: 'ACTIVE', autoApplied: true },
     ])
-    if (path === '/departures/suggestions') return reply({ routing: 'LINEHAUL', pickupHubCode: 'HUB-HCM', deliveryHubCode: 'HUB-DN', departures: [departure] })
+    if (path === '/departures/suggestions') return reply({ routing: 'LINEHAUL', pickupHubCode: 'HUB-HCM', deliveryHubCode: 'HUB-DN', departures: [options.multiDelivery ? { ...departure, availableStalls: 2 } : departure] })
     if (path === '/country-rules/preview') return reply({
       feasible: options.feasible ?? true, leadDays: 5,
       requirements: [{ id: 1, documentTypeName: 'Sổ tiêm phòng', submitterType: 'CUSTOMER', mandatory: true }],
@@ -211,4 +212,43 @@ test('mở thẳng bước sau khi chưa chọn chuyến thì quay về bước 
   await page.getByRole('checkbox', { name: /Gió Nam/ }).check()
   await expect(page.locator('details summary')).toContainText('12,500,000 ₫')
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0)
+})
+
+
+test('chọn nơi giao riêng cho con thứ hai và gửi giá xem trước theo từng con', async ({ page }) => {
+  const state = await open(page, { multiDelivery: true })
+  await chooseRoute(page)
+  await expect(page.getByText('Sổ tiêm phòng')).toBeVisible()
+  await page.getByRole('button', { name: /Tiếp tục/ }).click()
+  await page.getByRole('checkbox', { name: /Gió Nam/ }).check()
+  await page.getByRole('checkbox', { name: /Sao Mai/ }).check()
+  await page.getByRole('combobox', { name: /Nơi giao ngựa/ }).nth(1).click()
+  await page.getByRole('option', { name: 'Trại C' }).click()
+  await page.getByLabel(/Tên người nhận/).fill('Người nhận ở Trại C')
+  await page.getByLabel(/Điện thoại người nhận/).fill('0912345678')
+  await page.getByRole('button', { name: /Tiếp tục/ }).click()
+  await expect.poll(() => state.priced.at(-1)).toMatchObject({
+    deliveryAddressId: 2,
+    horses: [{ horseId: 11 }, { horseId: 13, deliveryAddressId: 3 }],
+  })
+  for (let i = 0; i < 2; i++) {
+    await page.getByText('Không mua bảo hiểm').nth(i).click()
+    await page.getByRole('checkbox', { name: /không có bảo hiểm/ }).nth(i).check()
+  }
+  await page.getByRole('button', { name: /Tiếp tục/ }).click()
+  await expect(page.getByText(/Người nhận ở Trại C/)).toBeVisible()
+  const mine = page.getByRole('button', { name: 'Dùng thông tin của tôi' })
+  for (let i = 0; i < 4; i++) await mine.nth(i).click()
+  await page.getByRole('checkbox', { name: /Tôi đồng ý với/ }).check()
+  await send(page)
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Đã gửi đơn BK-TEST')
+  expect(state.created).toHaveLength(1)
+  expect(state.created[0]).toMatchObject({
+    addresses: [
+      { addressType: 'PICKUP', sourceCustomerAddressId: 1 },
+      { addressType: 'DELIVERY', sourceCustomerAddressId: 2 },
+      { addressType: 'DELIVERY', sourceCustomerAddressId: 3, contactName: 'Người nhận ở Trại C', contactPhone: '0912345678' },
+    ],
+    horses: [{ horseId: 11, deliveryPlaceIndex: 0 }, { horseId: 13, deliveryPlaceIndex: 1 }],
+  })
 })

@@ -66,9 +66,13 @@ export default function Step1RoutePage() {
   const blocked = useTransferOptions(draft, save)
 
   const changeAddress = (side: 'pickupAddressId' | 'deliveryAddressId', id: number) =>
-    save({ [side]: id, routing: '', departure: null, pickupDate: '', pickupMethod: 'COMPANY', deliveryMethod: 'COMPANY' })
+    save({ [side]: id, horses: clearDeliveryChoices, routing: '', departure: null, pickupDate: '', pickupMethod: 'COMPANY', deliveryMethod: 'COMPANY' })
 
+  const clearDeliveryChoices = Object.fromEntries(Object.entries(draft.horses).map(([id, horse]) => [
+    id, { ...horse, deliveryAddressId: undefined },
+  ]))
   const swap = () => save({
+    horses: clearDeliveryChoices,
     pickupAddressId: draft.deliveryAddressId, deliveryAddressId: draft.pickupAddressId,
     routing: '', departure: null, pickupDate: '', pickupMethod: 'COMPANY', deliveryMethod: 'COMPANY',
   })

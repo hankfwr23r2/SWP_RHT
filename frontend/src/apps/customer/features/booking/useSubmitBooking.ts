@@ -13,14 +13,14 @@ export function useSubmitBooking() {
   const [error, setError] = useState('')
   const [fields, setFields] = useState<Record<string, string>>({})
 
-  const submit = async (draft: BookingDraft, pickup: CustomerAddress, delivery: CustomerAddress) => {
+  const submit = async (draft: BookingDraft, pickup: CustomerAddress, delivery: CustomerAddress, addressBook: CustomerAddress[]) => {
     if (sending.current) return
     sending.current = true
     setBusy(true)
     setError('')
     setFields({})
     try {
-      setOrder(await bookingOrdersApi.create(createRequest(draft, pickup, delivery)))
+      setOrder(await bookingOrdersApi.create(createRequest(draft, pickup, delivery, addressBook)))
       clearDraft()
     } catch (cause) {
       const failure = cause as Error & { fields?: Record<string, string> }

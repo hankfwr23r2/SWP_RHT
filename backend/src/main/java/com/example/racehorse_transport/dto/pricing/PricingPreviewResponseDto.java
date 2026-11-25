@@ -10,18 +10,24 @@ import java.util.List;
 
 public record PricingPreviewResponseDto(Long priceListId, String currencyCode, BookingType bookingType,
                                         BigDecimal depositRate, List<LegDistance> legs,
-                                        List<PriceLineResponseDto> lines, BigDecimal total) {
+                                        List<PriceLineResponseDto> lines, BigDecimal total, List<DeliveryEstimate> deliveryEstimates) {
+    public record DeliveryEstimate(Long customerAddressId, java.time.Instant arrivalAt) {}
     public record LegDistance(ServiceLayer layer, BigDecimal km, Long vehicleClassId) {}
 
     public static PricingPreviewResponseDto from(PricingInput input, PricingResult result) {
+        return from(input, result, List.of());
+    }
+
+    public static PricingPreviewResponseDto from(PricingInput input, PricingResult result, List<DeliveryEstimate> deliveryEstimates) {
         List<LegDistance> legs = new ArrayList<>();
-        input.roadLegs().forEach(leg -> legs.add(new LegDistance(leg.layer(), leg.km(), leg.vehicleClassId())));
+        var roads = result.selectedRoads() == null ? input.roadLegs() : result.selectedRoads();
+        roads.forEach(leg -> legs.add(new LegDistance(leg.layer(), leg.km(), leg.vehicleClassId())));
         if (input.routeId() != null) {
             int position = !legs.isEmpty() && legs.getFirst().layer() == ServiceLayer.PICKUP ? 1 : 0;
             legs.add(position, new LegDistance(ServiceLayer.LINEHAUL, input.linehaulKm(), null));
         }
         return new PricingPreviewResponseDto(result.priceListId(), result.currencyCode(), input.bookingType(),
                 result.depositRate(), List.copyOf(legs), result.lines().stream().map(PriceLineResponseDto::from).toList(),
-                result.total());
+                result.total(), deliveryEstimates);
     }
 }

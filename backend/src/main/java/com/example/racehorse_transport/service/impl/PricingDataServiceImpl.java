@@ -25,6 +25,8 @@ import java.util.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.racehorse_transport.service.DeliveryRouteService.Destination;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -53,7 +55,11 @@ public class PricingDataServiceImpl implements PricingDataService {
             throw new PricingRuleException("Thời điểm đón phải từ hiện tại trở đi.");
         }
         CustomerAddress pickup = ownedAddress(request.pickupAddressId(), username);
-        CustomerAddress delivery = ownedAddress(request.deliveryAddressId(), username);
+        Map<Long, List<PricingPreviewRequestDto.HorseSelection>> grouped = request.horses().stream()
+                .collect(Collectors.groupingBy(horse -> horse.deliveryAddressId() == null
+                        ? request.deliveryAddressId() : horse.deliveryAddressId(), LinkedHashMap::new,
+                        Collectors.toList()));
+        CustomerAddress delivery = ownedAddress(grouped.keySet().iterator().next(), username);
         BookingType type = bookingType(pickup, delivery);
         Selection selection = loadSelection(request, username);
         LocalDateTime pickupTime = LocalDateTime.ofInstant(request.pickupAt(), BUSINESS_ZONE);
@@ -80,7 +86,34 @@ public class PricingDataServiceImpl implements PricingDataService {
         PricingInput input = new PricingInput(PREVIEW_CURRENCY, LocalDate.ofInstant(now, BUSINESS_ZONE),
                 type, route == null ? null : route.getId(), route == null ? null : route.getDistanceKm(),
                 List.of(), selection.stalls(), selection.horseCount(), List.copyOf(addOns.values()), earlyPickupDays);
-        return new PreviewData(input, List.copyOf(plan.roadLegs()), vehicleClassId, weightTons, topSpeedKmh, pickupTime);
+        List<RoadSegment> segments = plan.roadLegs();
+        Long deliveryHubId = null;
+        List<Destination> destinations = List.of();
+        if (grouped.size() > 1) {
+            if (type != BookingType.INTERPROVINCE || route == null || request.deliveryMethod() != TransferMethod.COMPANY) {
+                throw new PricingRuleException("Chỉ đơn liên tỉnh đi trục do công ty giao mới có nhiều nơi giao. Vui lòng đặt đơn riêng.");
+            }
+            int limit = config.getInt("MAX_DELIVERY_PLACES");
+            if (grouped.size() > limit) {
+                throw new PricingRuleException("Đơn có tối đa " + limit + " nơi giao. Vui lòng đặt đơn riêng.");
+            }
+            deliveryHubId = route.getDestination().getId();
+            var deliveryPlaces = new ArrayList<Destination>();
+            for (var entry : grouped.entrySet()) {
+                CustomerAddress address = ownedAddress(entry.getKey(), username);
+                if (!domestic(address) || !deliveryHubId.equals(hubId(hub(address)))) {
+                    throw new PricingRuleException("Các nơi giao phải cùng hub đích. Vui lòng đặt đơn riêng.");
+                }
+                deliveryPlaces.add(new Destination(
+                        point(address), entry.getValue().size(), StallSeatPolicy.total(
+                                entry.getValue().stream().map(PricingPreviewRequestDto.HorseSelection::stallTypeCode).toList())));
+            }
+            destinations = List.copyOf(deliveryPlaces);
+            segments = segments.stream().filter(segment -> segment.layer() != ServiceLayer.DELIVERY).toList();
+        }
+        return new PreviewData(input, List.copyOf(segments), vehicleClassId, weightTons, topSpeedKmh, pickupTime, deliveryHubId, destinations, List.copyOf(grouped.keySet()),
+                deliveryHubId == null ? null : plan.departure().getPlannedDepartureAt()
+                        .plus(Duration.ofMinutes(route.getEstimatedDurationMinutes())));
     }
 
     @Override
