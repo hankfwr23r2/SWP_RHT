@@ -62,12 +62,12 @@ class MigrationTest {
     }
 
     @Test
-    void createsAllFiftyNineTables() {
+    void createsAllTables() {
         Integer tables = jdbc.queryForObject("""
                 SELECT count(*) FROM information_schema.tables
                 WHERE table_schema = 'public' AND table_type = 'BASE TABLE' AND table_name <> 'flyway_schema_history'""",
                 Integer.class);
-        assertThat(tables).isEqualTo(59);
+        assertThat(tables).isEqualTo(60);
     }
 
     @Test
