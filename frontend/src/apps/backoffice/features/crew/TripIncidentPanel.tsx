@@ -80,7 +80,7 @@ export function TripIncidentPanel({ run }: { run: CrewTrip }) {
       {!loaded && <Skeleton variant="block" lines={3} />}
       {error && <ErrorState message={error.message} onRetry={reload} />}
       {loaded && !error && !incidents?.length && (
-        <EmptyState title={t('incidents.emptyTitle')} description={t(canReport ? 'incidents.reportIfNeeded' : 'incidents.noIncidentsDescription')} />
+        <EmptyState title={t('incidents.emptyTitle')} description={t(canReport ? 'incidents.reportIfNeeded' : 'incidents.emptyDescription')} />
       )}
       <ul className={s.list}>
         {(incidents ?? []).map(incident => {

@@ -50,7 +50,7 @@ export function WaitingList({ bookings, onJourney, onAgent, onHub, next, onWeek 
                 : <Badge tone="success">{t('dispatch.board.complete')}</Badge>}
             </div>
             <ul className={s.horses}>
-              {(booking.horses ?? []).map(horse => (
+              {(booking.horses ?? []).filter(horse => all || horse.missingLegs?.length).map(horse => (
                 <li key={horse.bookingHorseId}>
                   <span><i className="fa-solid fa-horse-head" aria-hidden="true" /> {horse.horseName}{horse.deliveryAddress?.addressLine && ` · ${horse.deliveryAddress.addressLine}`}{horse.seats === 2 && ` · ${t('dispatch.stall.wide')}`}</span>
                   {(booking.bookingType === 'EXPORT' || booking.bookingType === 'IMPORT')

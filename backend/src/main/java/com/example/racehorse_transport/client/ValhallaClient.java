@@ -69,7 +69,10 @@ public class ValhallaClient {
         body.putObject("costing_options").putObject("truck").put("weight", weightTons).put("top_speed", topSpeedKmh)
                 .put("country_crossing_penalty", 43200);
         body.put("units", "kilometers");
-        body.putObject("date_time").put("type", 1).put("value", departLocal.truncatedTo(ChronoUnit.MINUTES).toString());
+        // Không có giờ đi thì bỏ qua giao thông theo giờ
+        if (departLocal != null) {
+            body.putObject("date_time").put("type", 1).put("value", departLocal.truncatedTo(ChronoUnit.MINUTES).toString());
+        }
 
         HttpResponse<String> response;
         try {

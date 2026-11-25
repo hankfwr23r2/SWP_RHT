@@ -21,7 +21,7 @@ export function OrderInfo({ data }: { data: OrderData }) {
           {booking.bookingType && <div><dt>{t('bookingForm.review.type')}</dt><dd>{t(`bookingForm.types.${booking.bookingType}`)}</dd></div>}
           {booking.requestedPickupDate && <div><dt>{t('bookingForm.summary.pickupDate')}</dt><dd>{showDate(booking.requestedPickupDate)}</dd></div>}
           <div><dt>{t('bookingForm.route.pickup')}</dt><dd>{address('PICKUP')?.addressLine}<br />{address('PICKUP')?.countryCode === 'VN' && detail.pickupMethod && t(`bookingForm.methods.pickup.${detail.pickupMethod}`)}</dd></div>
-          <div><dt>{t('bookingForm.route.delivery')}</dt><dd>{detail.addresses?.filter(item => item.addressType === 'DELIVERY').map(item => <div key={item.id}>{item.addressLine}</div>)}{address('DELIVERY')?.countryCode === 'VN' && detail.deliveryMethod && t(`bookingForm.methods.delivery.${detail.deliveryMethod}`)}</dd></div>
+          <div><dt>{t('bookingForm.route.delivery')}</dt><dd>{detail.addresses?.filter(item => item.addressType === 'DELIVERY').map(item => <div key={item.id}>{[item.addressLine, item.contactName, item.contactPhone].filter(Boolean).join(' · ')}</div>)}{address('DELIVERY')?.countryCode === 'VN' && detail.deliveryMethod && t(`bookingForm.methods.delivery.${detail.deliveryMethod}`)}</dd></div>
           {limit != null && <div><dt>{t('bookingForm.review.emergencyLimit')}</dt><dd>{money(limit)}</dd></div>}
           {booking.createdAt && <div><dt>{t('myOrders.info.created')}</dt><dd>{day(booking.createdAt)}</dd></div>}
         </dl>

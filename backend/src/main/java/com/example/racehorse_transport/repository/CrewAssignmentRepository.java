@@ -35,7 +35,8 @@ public interface CrewAssignmentRepository extends JpaRepository<CrewAssignment, 
                    (a.vehicleTrip.status = com.example.racehorse_transport.entity.enums.VehicleTripStatus.COMPLETED
                     AND EXISTS (SELECT 1 FROM Incident i WHERE i.vehicleTrip = a.vehicleTrip
                         AND i.status <> com.example.racehorse_transport.entity.enums.IncidentStatus.CLOSED)))
-            ORDER BY a.vehicleTrip.plannedStartAt
+            ORDER BY CASE WHEN a.vehicleTrip.status = com.example.racehorse_transport.entity.enums.VehicleTripStatus.COMPLETED THEN 1 ELSE 0 END,
+                     a.vehicleTrip.plannedStartAt
             """)
     List<CrewAssignment> findOpenOfUser(@Param("username") String username,
                                         @Param("released") CrewAssignmentStatus released,
