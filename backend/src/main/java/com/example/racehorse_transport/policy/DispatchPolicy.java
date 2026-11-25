@@ -9,6 +9,7 @@ import com.example.racehorse_transport.entity.enums.VehicleTripType;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -158,6 +159,10 @@ public final class DispatchPolicy {
     }
 
     // Ngựa đi trục phải có mặt ở hub trước giờ chạy theo HUB_CHECKIN_HOURS
+    public static Instant hubCheckinDeadline(Instant departureAt, int checkinHours) {
+        return departureAt.minus(checkinHours, ChronoUnit.HOURS);
+    }
+
     public static void requireAtHubBeforeDeadline(Instant arrival, Instant deadline) {
         if (arrival.isAfter(deadline)) {
             throw new DispatchRuleException("alightTripStopId", "Ngựa tới hub sau hạn có mặt của chuyến trục.", true);

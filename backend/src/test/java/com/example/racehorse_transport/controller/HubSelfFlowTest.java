@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -20,6 +21,9 @@ import com.example.racehorse_transport.support.TestData;
 import com.jayway.jsonpath.JsonPath;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -78,6 +82,34 @@ class HubSelfFlowTest {
         departure = jdbc.queryForObject("SELECT departure_id FROM booking WHERE id = ?", Long.class, booking);
         departAt = jdbc.queryForObject("SELECT planned_departure_at FROM departure WHERE id = ?", java.sql.Timestamp.class, departure).toInstant();
         lines = jdbc.queryForList("SELECT id FROM booking_horse WHERE booking_id = ? ORDER BY id", Long.class, booking);
+    }
+
+    @Test
+    void selfDropOffUsesTheConfiguredCheckinDeadlineForTheRevisedDeparture() throws Exception {
+        sql("UPDATE booking SET pickup_method = 'SELF' WHERE id = " + booking);
+        jdbc.update("UPDATE system_config SET config_value = '4' WHERE config_key = 'HUB_CHECKIN_HOURS'");
+        Instant revisedDeparture = departAt.plus(2, ChronoUnit.HOURS);
+        jdbc.update("UPDATE departure SET revised_departure_at = ? WHERE id = ?", java.sql.Timestamp.from(revisedDeparture), departure);
+        entityManager.clear();
+        Instant deadline = revisedDeparture.minus(4, ChronoUnit.HOURS);
+        String date = jdbc.queryForObject("SELECT departure_date FROM departure WHERE id = ?", java.sql.Date.class, departure).toString();
+
+        mvc.perform(get("/dispatch/bookings").param("from", date).param("to", date).header(HttpHeaders.AUTHORIZATION, coordinator))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[?(@.code == 'DEV-DOMESTIC-001')].hubCheckinDeadlineAt", contains(deadline.toString())));
+
+        String deadlineText = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy")
+                .withZone(ZoneId.of("Asia/Ho_Chi_Minh")).format(deadline);
+        String message = "Giờ hẹn phải trước hạn có mặt ở hub (" + deadlineText + ").";
+        long line = lines.getFirst();
+        appoint(line, deadline.plusSeconds(1)).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(message))
+                .andExpect(jsonPath("$.data.plannedStartAt").value(message));
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM horse_stay WHERE booking_horse_id = ?", Long.class, line)).isZero();
+
+        appoint(line, deadline).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.plannedStartAt").value(deadline.toString()))
+                .andExpect(jsonPath("$.data.plannedEndAt").value(revisedDeparture.toString()));
     }
 
     @Test

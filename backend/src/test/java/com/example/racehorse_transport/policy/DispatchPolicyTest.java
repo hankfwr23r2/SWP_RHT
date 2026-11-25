@@ -171,6 +171,19 @@ class DispatchPolicyTest {
     }
 
     @Test
+    void hubCheckinAllowsArrivalUpToTheConfiguredDeadline() {
+        Instant deadline = DispatchPolicy.hubCheckinDeadline(at("09:00"), 4);
+        assertThat(deadline).isEqualTo(at("05:00"));
+        assertThatCode(() -> DispatchPolicy.requireAtHubBeforeDeadline(deadline.minusSeconds(1), deadline)).doesNotThrowAnyException();
+        assertThatCode(() -> DispatchPolicy.requireAtHubBeforeDeadline(deadline, deadline)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> DispatchPolicy.requireAtHubBeforeDeadline(deadline.plusSeconds(1), deadline))
+                .isInstanceOfSatisfying(DispatchRuleException.class, error -> {
+                    assertThat(error.getField()).isEqualTo("alightTripStopId");
+                    assertThat(error.isConflict()).isTrue();
+                });
+    }
+
+    @Test
     void legStartsWherePreviousLegEnded() {
         assertThatCode(() -> DispatchPolicy.requireContinuous("L3", "L3")).doesNotThrowAnyException();
         assertThatThrownBy(() -> DispatchPolicy.requireContinuous("L3", "L4")).hasMessageContaining("chặng trước");

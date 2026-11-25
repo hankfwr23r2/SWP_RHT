@@ -52,7 +52,7 @@ Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A
 | **3.G4** | Không sửa được giờ, xe của lượt đã lập | Cho sửa khi lượt chưa chạy, kiểm lại mọi quy tắc, báo tổ lái và khách | `DispatchServiceImpl`, `TripScheduleServiceImpl` | Phối hợp đợt 4 (thông báo) |
 | **3.G6** | **Đã sửa.** Lượt chở ngựa phải có hộ tống đã nhận việc mới xuất phát được; lượt chạy rỗng không cần | | `TripExecutionPolicy`, `TripExecutionServiceImpl` | |
 | **3.G7** | **Đã sửa.** Xếp ngựa vào lượt đón, giao nhập giờ tay cũng kiểm thời gian ngồi xe theo kế hoạch: tối đa nửa giới hạn lái mỗi ngày (5 giờ), chạy thẳng tối đa 10 giờ | | `HorseLegServiceImpl`, `TripSchedulePolicy` | |
-| **3.G8** | Khách tự chở chỉ bị kiểm trước giờ chạy, không kiểm hạn có mặt 3 giờ | Giờ hẹn phải trước hạn có mặt ở hub | `HorseStayServiceImpl` (`planSelfDropOff`) | 1b đã gộp, làm được |
+| **3.G8** | **Đã sửa.** Màn đặt hẹn hiện hạn có mặt ở hub. Giờ hẹn tự chở muộn hơn hạn bị từ chối | | `HorseStayServiceImpl` (`planSelfDropOff`) | 1b đã gộp, làm được |
 | **3.G9** | Chưa có nút dồn chuyến, chạy xe nhỏ hơn, một khách thuê cả chuyến | Chọn phần thật sự cần; tài liệu có nêu | `DepartureDecisionServiceImpl` | **Chờ** đợt 5 |
 | **3.G10** | Đưa xe về phải nhờ quản lý xác nhận chuyến không có ngựa | Điều phối tự lập lượt về rỗng, không gắn chuyến bán | `DispatchServiceImpl` | THONG_BAO_LUONG_B đã nêu "vẫn lập lượt về rỗng" |
 | **3.G11** | Giờ lái tính theo ngày lịch, không theo 24 giờ liên tục | Cửa sổ trượt 24 giờ | `DispatchPolicy`, `CrewAssignmentServiceImpl` | Tra luật giao thông, hiện **chưa kiểm chứng** |
@@ -96,8 +96,9 @@ Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A
 | 2.F7 | Kiểm đủ giấy bắt buộc khi bàn giao đơn xuất cho đại lý ở cửa khẩu | Đã duyệt | |
 | 2.F10 | Kiểm bảo hiểm đã xác nhận khi nhận ngựa nhập từ đại lý ở cửa khẩu | Đã duyệt | |
 | 2.F4 | Cập nhật và xác nhận bảo hiểm mua hộ khi đơn Đang báo giá | Đã duyệt | #479 |
-| 3.G4, 3.G8, 3.G9, 3.G10, 3.G11 | | | |
+| 3.G4, 3.G9, 3.G10, 3.G11 | | | |
 | 3.G6, 3.G7 | Bắt buộc hộ tống đã nhận việc; kiểm giờ ngồi xe khi nhập giờ tay | Đã duyệt | #480 |
+| 3.G8 | Hiện hạn có mặt ở hub bằng giờ xuất phát hiệu lực trừ `HUB_CHECKIN_HOURS` và từ chối giờ hẹn muộn hơn hạn | Đã duyệt | |
 | 4.F1, 4.F2, 4.F3 | Luồng A làm thay theo yêu cầu người dùng | Đã duyệt | |
 | 4.F11 | | | |
 | 4.F12 | Kiểm đủ giấy bắt buộc khi bàn giao đơn xuất cho đại lý ở cửa khẩu | Đã duyệt | |

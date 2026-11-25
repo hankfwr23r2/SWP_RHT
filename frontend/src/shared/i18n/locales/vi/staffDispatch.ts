@@ -213,8 +213,10 @@ export const staffDispatch = {
       "col": "Tại hub",
       "open": "Hẹn nhận tại hub",
       "title": "Hẹn nhận tại hub · {{horse}} · {{code}}",
-      "hint": "Khách tự chở ngựa tới hub đầu tuyến trục. Giờ hẹn phải trước giờ xuất phát của chuyến.",
+      "hint": "Khách tự chở ngựa tới hub đầu tuyến trục.",
       "at": "Giờ hẹn",
+      "deadline": "Hạn có mặt ở hub là {{at}}.",
+      "late": "Giờ hẹn không được muộn hơn hạn có mặt ở hub.",
       "appoint": "Hẹn giờ",
       "done": "Đã hẹn nhận ngựa tại hub"
     },

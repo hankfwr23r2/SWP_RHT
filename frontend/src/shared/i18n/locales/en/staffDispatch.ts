@@ -213,8 +213,10 @@ export const staffDispatch = {
       "col": "At hub",
       "open": "Book hub drop-off",
       "title": "Hub drop-off · {{horse}} · {{code}}",
-      "hint": "The customer brings the horse to the linehaul origin hub. The appointment must be before the departure time.",
+      "hint": "The customer brings the horse to the linehaul origin hub.",
       "at": "Appointment",
+      "deadline": "The hub check-in deadline is {{at}}.",
+      "late": "The appointment must be at or before the hub check-in deadline.",
       "appoint": "Book",
       "done": "Hub drop-off booked"
     },
