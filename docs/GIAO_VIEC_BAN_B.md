@@ -20,6 +20,7 @@ Mã điểm (ví dụ 4.F1) trỏ tới mục "Điểm còn hở" trong [NGHIEP_
 | **Đợt 3** khiếu nại, nghiệm thu | `Incident*`, `Settlement*`; màn đơn của khách |
 | **Đợt 4** thông báo sự cố, Ốm và Nguy cấp, hủy lượt | `HealthLogServiceImpl`, `DispatchServiceImpl`, `IncidentServiceImpl` |
 | **Đợt 5** chuyến trễ | `Departure*`, `DepartureDecision*` |
+| **Phí giữ, cước giao lại, đóng đơn** (mục 13 phương án) | `Stabling*`, `DeliveryFailure*`, `Settlement*`, `ExtraCharge*` |
 | **Nhiều nơi giao cùng tuyến** | `Pricing*`, `HorseLeg*`, `TripGrouping*` |
 
 Điểm ghi **Chờ** ở mục 4 phụ thuộc việc của A: soạn phương án được ngay, sửa code sau khi phần đó gộp.
