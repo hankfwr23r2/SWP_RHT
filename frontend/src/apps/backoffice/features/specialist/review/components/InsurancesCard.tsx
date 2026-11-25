@@ -77,9 +77,11 @@ export function InsurancesCard({ horses, status, insurers, actions }: {
 }) {
   const { t } = useTranslation()
   const reviewing = status === 'UNDER_REVIEW' || status === 'NEEDS_RESUBMISSION'
+  const quoting = status === 'QUOTING'
   return <Card title={t('staffReview.insurance')}>
     {horses?.length ? <ul className={s.list}>{horses.map(horse =>
-      <HorseInsurance key={horse.id} horse={horse} editable={reviewing && horse.status === 'ACTIVE'} insurers={insurers} actions={actions} />
+      <HorseInsurance key={horse.id} horse={horse} insurers={insurers} actions={actions}
+        editable={horse.status === 'ACTIVE' && (reviewing || (quoting && horse.insurance?.coverageOption === 'ARRANGED'))} />
     )}</ul> : <EmptyState title={t('staffReview.noHorses')} description={t('staffReview.noInsuranceHint')} />}
   </Card>
 }
