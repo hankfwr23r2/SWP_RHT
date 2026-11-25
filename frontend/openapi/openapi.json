@@ -1073,6 +1073,40 @@
         },
         "type" : "object"
       },
+      "ApiResponseListPickupAddOnResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PickupAddOnResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListPickupMissResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PickupMissResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListPriceItemResponseDto" : {
         "properties" : {
           "data" : {
@@ -1511,6 +1545,34 @@
         },
         "type" : "object"
       },
+      "ApiResponsePickupAddOnResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/PickupAddOnResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponsePickupMissResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/PickupMissResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponsePlannedTripResponseDto" : {
         "properties" : {
           "data" : {
@@ -1842,6 +1904,21 @@
         },
         "type" : "object"
       },
+      "BalanceHoldContactRequestDto" : {
+        "properties" : {
+          "result" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "target" : {
+            "enum" : [ "CUSTOMER", "EMERGENCY_CONTACT" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "result", "target" ],
+        "type" : "object"
+      },
       "BillableServiceResponseDto" : {
         "properties" : {
           "autoApplied" : {
@@ -1983,6 +2060,10 @@
               "$ref" : "#/components/schemas/AddressSnapshot"
             },
             "type" : "array"
+          },
+          "balanceHoldAt" : {
+            "format" : "date-time",
+            "type" : "string"
           },
           "booking" : {
             "$ref" : "#/components/schemas/BookingResponseDto"
@@ -2400,6 +2481,16 @@
         },
         "type" : "object"
       },
+      "CompletePickupAddOnRequestDto" : {
+        "properties" : {
+          "serviceId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "serviceId" ],
+        "type" : "object"
+      },
       "ContactResponseDto" : {
         "properties" : {
           "hotline" : {
@@ -2718,6 +2809,13 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "balanceContactAllowed" : {
+            "type" : "boolean"
+          },
+          "balanceHoldAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
           "bookingCode" : {
             "type" : "string"
           },
@@ -2778,6 +2876,9 @@
           "vehicleTripId" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "waitingPickupBalance" : {
+            "type" : "boolean"
           }
         },
         "type" : "object"
@@ -3908,6 +4009,16 @@
       },
       "HandoverRefusalRequestDto" : {
         "properties" : {
+          "customerContact" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "emergencyContact" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
           "horseLegId" : {
             "format" : "int64",
             "type" : "integer"
@@ -3916,9 +4027,18 @@
             "maxLength" : 500,
             "minLength" : 0,
             "type" : "string"
+          },
+          "reasonCode" : {
+            "enum" : [ "SENDER_ABSENT", "CHIP_MISMATCH", "ORIGINAL_DOCUMENTS_MISSING", "HORSE_UNWELL", "HORSE_WILL_NOT_BOARD", "VEHICLE_FAILURE", "UNSUITABLE_STALL", "LATE_ARRIVAL", "CREW_SHORTAGE", "FLOOD", "ROAD_CLOSURE" ],
+            "type" : "string"
+          },
+          "senderContact" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
           }
         },
-        "required" : [ "horseLegId", "reason" ],
+        "required" : [ "horseLegId", "reason", "reasonCode" ],
         "type" : "object"
       },
       "HandoverResponseDto" : {
@@ -4536,6 +4656,10 @@
             "format" : "date-time",
             "type" : "string"
           },
+          "balanceHoldAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
           "bookingCode" : {
             "type" : "string"
           },
@@ -4572,6 +4696,9 @@
           "plannedStartAt" : {
             "format" : "date-time",
             "type" : "string"
+          },
+          "returnForBalance" : {
+            "type" : "boolean"
           },
           "stayType" : {
             "enum" : [ "ASSEMBLY", "QUARANTINE", "OVERNIGHT", "STABLING" ],
@@ -4971,6 +5098,9 @@
             "format" : "date-time",
             "type" : "string"
           },
+          "refundedPremiumAmount" : {
+            "type" : "number"
+          },
           "revisionReason" : {
             "type" : "string"
           },
@@ -5016,6 +5146,21 @@
           }
         },
         "required" : [ "coverageAmount", "currencyCode", "insurerPartyId" ],
+        "type" : "object"
+      },
+      "InsurancePremiumRefundRequestDto" : {
+        "properties" : {
+          "receiptReference" : {
+            "maxLength" : 120,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "refundedPremiumAmount" : {
+            "minimum" : 0.01,
+            "type" : "number"
+          }
+        },
+        "required" : [ "receiptReference", "refundedPremiumAmount" ],
         "type" : "object"
       },
       "InsuranceReopenRequestDto" : {
@@ -5913,6 +6058,141 @@
           }
         },
         "required" : [ "insurerPartyId", "policyNumber", "validFrom", "validTo" ],
+        "type" : "object"
+      },
+      "PickupAddOnResponseDto" : {
+        "properties" : {
+          "completedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "serviceId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "PickupHubTransferRequestDto" : {
+        "properties" : {
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
+        "type" : "object"
+      },
+      "PickupMissChoiceRequestDto" : {
+        "properties" : {
+          "choice" : {
+            "enum" : [ "DROP_HORSE", "RETRY_PICKUP", "SELF_DELIVERY", "CHANGE_DEPARTURE", "RESCHEDULE_PICKUP", "CANCEL_BOOKING" ],
+            "type" : "string"
+          },
+          "hubArrivalAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "phoneNote" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "pickupDate" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "required" : [ "choice" ],
+        "type" : "object"
+      },
+      "PickupMissLiabilityRequestDto" : {
+        "properties" : {
+          "liability" : {
+            "enum" : [ "CUSTOMER", "COMPANY", "FORCE_MAJEURE" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "liability" ],
+        "type" : "object"
+      },
+      "PickupMissPriceResponseDto" : {
+        "properties" : {
+          "balanceDue" : {
+            "type" : "number"
+          },
+          "currencyCode" : {
+            "type" : "string"
+          },
+          "forfeited" : {
+            "type" : "number"
+          },
+          "refund" : {
+            "type" : "number"
+          },
+          "total" : {
+            "type" : "number"
+          }
+        },
+        "type" : "object"
+      },
+      "PickupMissResponseDto" : {
+        "properties" : {
+          "availableChoices" : {
+            "items" : {
+              "enum" : [ "DROP_HORSE", "RETRY_PICKUP", "SELF_DELIVERY", "CHANGE_DEPARTURE", "RESCHEDULE_PICKUP", "CANCEL_BOOKING" ],
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "bookingHorseId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "choice" : {
+            "enum" : [ "DROP_HORSE", "RETRY_PICKUP", "SELF_DELIVERY", "CHANGE_DEPARTURE", "RESCHEDULE_PICKUP", "CANCEL_BOOKING" ],
+            "type" : "string"
+          },
+          "choiceDueAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "horseName" : {
+            "type" : "string"
+          },
+          "liability" : {
+            "enum" : [ "CUSTOMER", "COMPANY", "FORCE_MAJEURE" ],
+            "type" : "string"
+          },
+          "missedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "prices" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/PickupMissPriceResponseDto"
+            },
+            "type" : "object"
+          },
+          "reason" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "PickupWaitExtensionRequestDto" : {
+        "properties" : {
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
         "type" : "object"
       },
       "PlaceDto" : {
@@ -8987,6 +9267,80 @@
         "tags" : [ "agent-leg-controller" ]
       }
     },
+    "/booking-horses/{id}/complete-pickup-add-on" : {
+      "post" : {
+        "operationId" : "completePickupAddOn",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CompletePickupAddOnRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePickupAddOnResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "pickup-miss-controller" ]
+      }
+    },
+    "/booking-horses/{id}/confirm-pickup-liability" : {
+      "post" : {
+        "operationId" : "confirmPickupLiability",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PickupMissLiabilityRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePickupMissResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "pickup-miss-controller" ]
+      }
+    },
     "/booking-horses/{id}/health-logs" : {
       "get" : {
         "operationId" : "ofHorse",
@@ -9049,6 +9403,70 @@
           }
         },
         "tags" : [ "hub-handover-controller" ]
+      }
+    },
+    "/booking-horses/{id}/pickup-add-ons" : {
+      "get" : {
+        "operationId" : "pickupAddOns",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListPickupAddOnResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "pickup-miss-controller" ]
+      }
+    },
+    "/booking-horses/{id}/pickup-choices" : {
+      "post" : {
+        "operationId" : "chooseAfterPickupMiss",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PickupMissChoiceRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePickupMissResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "pickup-miss-controller" ]
       }
     },
     "/bookings" : {
@@ -9169,6 +9587,43 @@
           }
         },
         "tags" : [ "booking-review-controller" ]
+      }
+    },
+    "/bookings/{bookingId}/balance-hold-contacts" : {
+      "post" : {
+        "operationId" : "recordContact",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "bookingId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/BalanceHoldContactRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "balance-hold-controller" ]
       }
     },
     "/bookings/{bookingId}/delivery-complaints" : {
@@ -9379,6 +9834,43 @@
         "tags" : [ "delivery-complaint-controller" ]
       }
     },
+    "/bookings/{bookingId}/extend-pickup-payment-wait" : {
+      "post" : {
+        "operationId" : "extend",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "bookingId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PickupWaitExtensionRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "balance-hold-controller" ]
+      }
+    },
     "/bookings/{bookingId}/payments" : {
       "get" : {
         "operationId" : "payments",
@@ -9493,6 +9985,43 @@
           }
         },
         "tags" : [ "rating-controller" ]
+      }
+    },
+    "/bookings/{bookingId}/send-unclaimed-pickup-to-hub" : {
+      "post" : {
+        "operationId" : "sendToHub",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "bookingId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PickupHubTransferRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "balance-hold-controller" ]
       }
     },
     "/bookings/{bookingId}/settlement" : {
@@ -10196,6 +10725,51 @@
         "tags" : [ "booking-insurance-review-controller" ]
       }
     },
+    "/bookings/{id}/insurances/{insuranceId}/record-premium-refund" : {
+      "post" : {
+        "operationId" : "recordPremiumRefund",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "path",
+          "name" : "insuranceId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/InsurancePremiumRefundRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-insurance-review-controller" ]
+      }
+    },
     "/bookings/{id}/insurances/{insuranceId}/reopen" : {
       "post" : {
         "operationId" : "reopen",
@@ -10426,6 +11000,33 @@
           }
         },
         "tags" : [ "booking-cancellation-controller" ]
+      }
+    },
+    "/bookings/{id}/pickup-misses" : {
+      "get" : {
+        "operationId" : "listPickupMisses",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListPickupMissResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "pickup-miss-controller" ]
       }
     },
     "/bookings/{id}/refund-review" : {
@@ -12288,13 +12889,22 @@
         } ],
         "requestBody" : {
           "content" : {
-            "application/json" : {
+            "multipart/form-data" : {
               "schema" : {
-                "$ref" : "#/components/schemas/HandoverRefusalRequestDto"
+                "properties" : {
+                  "photo" : {
+                    "format" : "binary",
+                    "type" : "string"
+                  },
+                  "request" : {
+                    "$ref" : "#/components/schemas/HandoverRefusalRequestDto"
+                  }
+                },
+                "required" : [ "photo", "request" ],
+                "type" : "object"
               }
             }
-          },
-          "required" : true
+          }
         },
         "responses" : {
           "200" : {
