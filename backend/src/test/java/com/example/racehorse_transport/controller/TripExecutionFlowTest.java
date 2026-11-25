@@ -87,6 +87,100 @@ class TripExecutionFlowTest {
     }
 
     @Test
+    void driverReportsMaintenanceAtCompletionAndDispatchCannotUseTheVehicleAgain() throws Exception {
+        Staff admin = testData.staff(testData.unique("exec.admin"), "ADMIN");
+        Staff dispatcher = testData.staff(testData.unique("exec.notice"), "COORDINATOR");
+        long vehicle = readyToComplete();
+        Instant nextStart = Instant.now().plusSeconds(86400 * 30);
+        long nextTrip = id(planTransfer(vehicle, nextStart));
+        String nextCode = jdbc.queryForObject("SELECT code FROM vehicle_trip WHERE id = ?", String.class, nextTrip);
+        Staff nextDriver = testData.staff(testData.unique("exec.next.driver"), "DRIVER");
+        String nextDriverToken = token(nextDriver, "DRIVER");
+        mvc.perform(post("/vehicle-trips/{id}/crew-assignments", nextTrip).header(HttpHeaders.AUTHORIZATION, coordinator)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"staffId\":%d,\"crewRole\":\"DRIVER\"}".formatted(nextDriver.getUserId())))
+                .andExpect(status().isCreated());
+        acknowledge(nextDriverToken);
+
+        mvc.perform(post("/vehicle-trips/{id}/complete", trip).header(HttpHeaders.AUTHORIZATION, driver)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"endVehicleCondition":"NEEDS_MAINTENANCE","endVehicleNote":"  Phanh có tiếng kêu  ",
+                         "id":9999,"status":"CANCELLED","vehicleId":9999}
+                        """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.trip.id").value(trip))
+                .andExpect(jsonPath("$.data.trip.vehicleId").value(vehicle))
+                .andExpect(jsonPath("$.data.trip.status").value("COMPLETED"))
+                .andExpect(jsonPath("$.data.trip.endVehicleCondition").value("NEEDS_MAINTENANCE"))
+                .andExpect(jsonPath("$.data.trip.endVehicleNote").value("Phanh có tiếng kêu"));
+
+        entityManager.flush();
+        assertThat(jdbc.queryForObject("SELECT status FROM vehicle WHERE id = ?", String.class, vehicle)).isEqualTo("MAINTENANCE");
+        assertThat(jdbc.queryForObject("SELECT end_vehicle_condition FROM vehicle_trip WHERE id = ?", String.class, trip))
+                .isEqualTo("NEEDS_MAINTENANCE");
+        assertThat(jdbc.queryForList("""
+                SELECT new_data ->> 'reason' FROM audit_log
+                WHERE target_table = 'vehicle' AND target_id = ? AND new_data ->> 'status' = 'MAINTENANCE'
+                """, String.class, vehicle)).containsExactly("Phanh có tiếng kêu");
+        assertThat(jdbc.queryForList("""
+                SELECT r.user_id FROM notification n JOIN notification_recipient r ON r.notification_id = n.id
+                WHERE n.message LIKE ? AND r.user_id IN (?, ?)
+                """, Long.class, "%" + nextCode + "%", admin.getUserId(), dispatcher.getUserId()))
+                .containsExactlyInAnyOrder(admin.getUserId(), dispatcher.getUserId());
+        planTransfer(vehicle, nextStart.plusSeconds(86400)).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.data.vehicleId").value("Xe đang MAINTENANCE, không gán vào lượt mới được."));
+        act(nextDriverToken, "/vehicle-trips/" + nextTrip + "/start").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.data.vehicleId").isNotEmpty());
+    }
+
+    @Test
+    void completionWithoutBodyDefaultsToNormal() throws Exception {
+        long vehicle = readyToComplete();
+
+        act(driver, "/vehicle-trips/" + trip + "/complete").andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.trip.status").value("COMPLETED"))
+                .andExpect(jsonPath("$.data.trip.endVehicleCondition").value("NORMAL"));
+
+        entityManager.flush();
+        assertThat(jdbc.queryForObject("SELECT status FROM vehicle WHERE id = ?", String.class, vehicle)).isEqualTo("ACTIVE");
+    }
+
+    @Test
+    void driverCannotReportMaintenanceWithoutANote() throws Exception {
+        long vehicle = readyToComplete();
+
+        mvc.perform(post("/vehicle-trips/{id}/complete", trip).header(HttpHeaders.AUTHORIZATION, driver)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"endVehicleCondition":"NEEDS_MAINTENANCE","endVehicleNote":"   "}
+                        """))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.data.endVehicleNote").isNotEmpty());
+
+        assertThat(jdbc.queryForObject("SELECT status FROM vehicle_trip WHERE id = ?", String.class, trip)).isEqualTo("IN_PROGRESS");
+        assertThat(jdbc.queryForObject("SELECT status FROM vehicle WHERE id = ?", String.class, vehicle)).isEqualTo("ACTIVE");
+    }
+
+    private long readyToComplete() {
+        entityManager.flush();
+        jdbc.update("UPDATE vehicle_trip SET status = 'IN_PROGRESS', actual_start_at = now() WHERE id = ?", trip);
+        jdbc.update("UPDATE trip_stop SET actual_arrival_at = now(), actual_departure_at = now() WHERE vehicle_trip_id = ?", trip);
+        jdbc.update("UPDATE horse_leg SET status = 'COMPLETED', actual_start_at = now(), actual_end_at = now() WHERE id = ?", leg);
+        entityManager.clear();
+        return jdbc.queryForObject("SELECT vehicle_id FROM vehicle_trip WHERE id = ?", Long.class, trip);
+    }
+
+    private ResultActions planTransfer(long vehicle, Instant start) throws Exception {
+        long hub = locations.findByCode("HUB-HCM").orElseThrow().getId();
+        return mvc.perform(post("/vehicle-trips").header(HttpHeaders.AUTHORIZATION, coordinator)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"tripType":"TRANSFER","vehicleId":%d,"stops":[%s,%s]}
+                        """.formatted(vehicle, stop("locationId", hub, "HUB", start, 0),
+                        stop("locationId", hub, "HUB", start, 60))));
+    }
+
+    @Test
     void departureStartsAtTheFirstStopAndWaitsForAllNonCancelledLinehaulTrips() throws Exception {
         long departure = jdbc.queryForObject("SELECT departure_id FROM booking WHERE code = 'DEV-DOMESTIC-001'", Long.class);
         jdbc.update("""

@@ -17,4 +17,6 @@ public interface IncidentEvidenceService {
     List<EvidenceResponseDto> attachPhoto(Long incidentId, MultipartFile file, BigDecimal latitude, BigDecimal longitude, String documentType, String username);
 
     List<EvidenceResponseDto> photos(Long incidentId);
+
+    void requireVehicleSwapRecord(Long incidentId);
 }

@@ -29,7 +29,7 @@ export function IncidentEvidenceSection({ evidence, busy, canConfirm, onConfirm,
             options={[{ value: 'INCIDENT_PHOTO', label: t('incidents.photos') }, { value: 'VET_REPORT', label: t('incidents.vetReport') }]} />}
         </Field>
       )}
-      <EvidencePanel title={t('incidents.evidence')} load={async () => evidence}
+      <EvidencePanel title={t('incidents.evidence')} evidence={evidence}
         upload={onUpload ? file => onUpload(file, type) : undefined} />
       {canConfirm && (
         <Button disabled={!hasVetReport} loading={busy} onClick={() => void onConfirm()}>{t('incidents.confirmOnBehalf')}</Button>

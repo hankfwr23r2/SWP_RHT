@@ -37,10 +37,10 @@ import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.repository.RouteStopRepository;
 import com.example.racehorse_transport.repository.TripStopRepository;
-import com.example.racehorse_transport.repository.VehicleRepository;
 import com.example.racehorse_transport.repository.VehicleTripRepository;
 import com.example.racehorse_transport.service.DispatchService;
 import com.example.racehorse_transport.service.NotificationService;
+import com.example.racehorse_transport.service.VehicleService;
 import com.example.racehorse_transport.util.VehicleTripCodes;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -48,7 +48,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.time.Clock;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -66,12 +65,11 @@ public class DispatchServiceImpl implements DispatchService {
     private final TripStopRepository stops;
     private final CrewAssignmentRepository crew;
     private final HorseLegRepository legs;
-    private final VehicleRepository vehicles;
+    private final VehicleService vehicles;
     private final DepartureService departures;
     private final RouteStopRepository routeStops;
     private final LocationRepository locations;
     private final BookingAddressRepository bookingAddresses;
-    private final Clock clock;
     private final NotificationService notifications;
 
     @Override
@@ -92,8 +90,7 @@ public class DispatchServiceImpl implements DispatchService {
     @Override
     @Transactional
     public VehicleTripResponseDto createTrip(VehicleTripCreateRequestDto request) {
-        Vehicle vehicle = vehicles.findForUpdate(request.vehicleId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy xe " + request.vehicleId()));
+        Vehicle vehicle = vehicles.lockVehicle(request.vehicleId());
         DispatchPolicy.requireActiveVehicle(vehicle.getStatus());
         VehicleTrip trip = request.tripType() == VehicleTripType.LINEHAUL ? linehaul(request, vehicle) : local(request, vehicle);
         // Kiểm và dựng đủ điểm dừng trước khi ghi gì xuống DB
@@ -137,11 +134,7 @@ public class DispatchServiceImpl implements DispatchService {
     @Override
     @Transactional(readOnly = true)
     public List<DispatchVehicleResponseDto> vehicles() {
-        return vehicles.findAllByOrderByLicensePlateAsc().stream().map(vehicle -> trips
-                .findByVehicle_IdAndStatusNot(vehicle.getId(), VehicleTripStatus.CANCELLED).stream()
-                .max(Comparator.comparing(VehicleTrip::getPlannedEndAt))
-                .map(last -> DispatchVehicleResponseDto.from(vehicle, last.getEndLocation(), last.getPlannedEndAt()))
-                .orElseGet(() -> DispatchVehicleResponseDto.from(vehicle, vehicle.getHomeHubLocation(), null))).toList();
+        return vehicles.vehiclesForDispatch();
     }
 
     // Lượt trục: theo chuyến, đi từ điểm đầu tới điểm cuối tuyến, giờ theo giờ xuất phát của chuyến
@@ -242,18 +235,23 @@ public class DispatchServiceImpl implements DispatchService {
 
     @Override
     @Transactional
-    public VehicleTripResponseDto swapVehicle(Long tripId, Long vehicleId) {
+    public VehicleTripResponseDto swapVehicle(Long tripId, Long vehicleId, Long actorUserId, String reason, Instant changedAt) {
         VehicleTrip trip = trips.findForUpdate(tripId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lượt xe " + tripId));
         if (trip.getStatus() != VehicleTripStatus.IN_PROGRESS) {
             throw new DispatchRuleException("tripId", "Chỉ đổi xe khi lượt xe đang chạy.", true);
         }
-        Vehicle vehicle = vehicles.findById(vehicleId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy xe " + vehicleId));
-        if (vehicle.getId().equals(trip.getVehicle().getId())) {
+        Long currentId = trip.getVehicle().getId();
+        if (vehicleId.equals(currentId)) {
             throw new DispatchRuleException("vehicleId", "Chọn xe khác xe đang chạy.");
         }
+        // Khóa theo ID để hai yêu cầu đổi xe không giữ khóa theo thứ tự ngược nhau.
+        Vehicle first = vehicles.lockVehicle(Math.min(currentId, vehicleId));
+        Vehicle second = vehicles.lockVehicle(Math.max(currentId, vehicleId));
+        Vehicle current = currentId.equals(first.getId()) ? first : second;
+        Vehicle vehicle = vehicleId.equals(first.getId()) ? first : second;
         DispatchPolicy.requireActiveVehicle(vehicle.getStatus());
         // Xe cứu hộ tới từ nơi khác nên không áp quy tắc bắt đầu ở nơi lượt trước kết thúc; chỉ không trùng giờ phần còn lại của lượt
-        Interval rest = new Interval(clock.instant(), trip.getPlannedEndAt().isAfter(clock.instant()) ? trip.getPlannedEndAt() : clock.instant().plusSeconds(60));
+        Interval rest = new Interval(changedAt, trip.getPlannedEndAt().isAfter(changedAt) ? trip.getPlannedEndAt() : changedAt.plusSeconds(60));
         DispatchPolicy.requireNoOverlap("vehicleId", "Xe", rest, trips.findByVehicle_IdAndStatusNot(vehicle.getId(), VehicleTripStatus.CANCELLED).stream()
                 .filter(t -> !t.getId().equals(trip.getId())).map(t -> new Interval(t.getPlannedStartAt(), t.getPlannedEndAt())).toList());
         int capacity = vehicle.getStandardStallCount() * StallSeatPolicy.seats("STANDARD") + vehicle.getWideStallCount() * StallSeatPolicy.seats("WIDE");
@@ -264,6 +262,7 @@ public class DispatchServiceImpl implements DispatchService {
             throw new DispatchRuleException("vehicleId", "Xe " + vehicle.getLicensePlate() + " chỉ có " + capacity + " chỗ, sơ đồ khoang đang dùng tới chỗ " + used + ".", true);
         }
         trip.setVehicle(vehicle);
+        vehicles.markForMaintenance(current, actorUserId, reason, changedAt);
         trips.flush();
         return trip(trip.getId());
     }

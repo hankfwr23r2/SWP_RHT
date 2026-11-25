@@ -46,6 +46,13 @@ public interface VehicleTripRepository extends JpaRepository<VehicleTrip, Long> 
     // Mọi lượt chưa hủy của xe, để kiểm trùng giờ và nơi lượt trước kết thúc
     List<VehicleTrip> findByVehicle_IdAndStatusNot(Long vehicleId, VehicleTripStatus status);
 
+    @Query("""
+            SELECT t.code FROM VehicleTrip t
+            WHERE t.vehicle.id = :vehicleId AND t.status = :status AND t.plannedStartAt >= :from
+            ORDER BY t.plannedStartAt, t.id
+            """)
+    List<String> findUpcomingCodes(Long vehicleId, VehicleTripStatus status, Instant from);
+
     @EntityGraph(attributePaths = {"vehicle", "vehicle.vehicleClass", "departure", "departure.route", "startLocation", "endLocation"})
     @Query("SELECT t FROM VehicleTrip t WHERE t.plannedStartAt < :to AND t.plannedEndAt > :from ORDER BY t.plannedStartAt, t.id")
     List<VehicleTrip> findOverlapping(@Param("from") Instant from, @Param("to") Instant to);

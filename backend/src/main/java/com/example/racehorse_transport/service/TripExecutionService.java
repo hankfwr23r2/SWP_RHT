@@ -1,6 +1,6 @@
 package com.example.racehorse_transport.service;
 
-// Thực hiện lượt xe (B2): xuất phát, tới và rời điểm dừng, kết thúc. Chủ sở hữu giờ thực tế của vehicle_trip, trip_stop.
+// Thực hiện lượt xe (B2): xuất phát, tới và rời điểm dừng.
 // Trả về id lượt xe để nơi gọi lấy lại màn hình của tổ xe.
 public interface TripExecutionService {
 
@@ -12,6 +12,4 @@ public interface TripExecutionService {
     // Kiểm qua StopReadinessService (giao nhận dở, #32, #34); rời nơi nhận ngựa thì đơn sang IN_OPERATION.
     // earlyReason: lý do rời trạm nghỉ trước khi nghỉ đủ, có thể null
     Long depart(Long tripStopId, String earlyReason, String username);
-
-    void complete(Long vehicleTripId, String username);
 }

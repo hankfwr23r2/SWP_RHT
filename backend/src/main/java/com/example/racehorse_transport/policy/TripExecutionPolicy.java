@@ -2,6 +2,7 @@ package com.example.racehorse_transport.policy;
 
 import com.example.racehorse_transport.entity.enums.HandoverType;
 import com.example.racehorse_transport.entity.enums.TripStopType;
+import com.example.racehorse_transport.entity.enums.VehicleEndCondition;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import java.time.Duration;
@@ -104,6 +105,12 @@ public final class TripExecutionPolicy {
         }
         if (horsesStillOnBoard > 0) {
             throw new DispatchRuleException("status", "Còn " + horsesStillOnBoard + " con ngựa trên xe chưa bàn giao.", true);
+        }
+    }
+
+    public static void requireVehicleConditionNote(VehicleEndCondition condition, String note) {
+        if (condition == VehicleEndCondition.NEEDS_MAINTENANCE && (note == null || note.isBlank())) {
+            throw new DispatchRuleException("endVehicleNote", "Nhập ghi chú khi xe cần bảo dưỡng.");
         }
     }
 

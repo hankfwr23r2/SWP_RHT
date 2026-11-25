@@ -1,9 +1,8 @@
 // Chi tiết sự cố: phương án theo phiên bản, chi phí. Điều phối lập phương án, xử lý xong, đóng; quản lý duyệt, từ chối, duyệt chi phí
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { dispatchApi } from '@shared/api/dispatch'
 import { incidentsApi, type Incident, type ResolutionType } from '@shared/api/incidentOps'
-import { useLoad } from '@shared/hooks/useLoad'
+import { useAutoRefresh, useLoad } from '@shared/hooks/useLoad'
 import { formatVND } from '@shared/lib/format'
 import { Button } from '@shared/ui/Button'
 import { ErrorState } from '@shared/ui/ErrorState'
@@ -21,6 +20,7 @@ import { IncidentCostControls } from './IncidentCostControls'
 import { IncidentPlanApproval } from './IncidentPlanApproval'
 import { IncidentEvidenceSection } from './IncidentEvidenceSection'
 import { PlanRejectDialog } from './PlanRejectDialog'
+import { VehicleSwapControls } from './VehicleSwapControls'
 import s from './Incidents.module.css'
 
 const RESOLUTIONS: ResolutionType[] = ['CONTINUE', 'VET_TREATMENT', 'STABLE_NEARBY', 'TRANSFER_VEHICLE', 'RETURN_TO_HUB', 'CANCEL']
@@ -36,13 +36,12 @@ export function IncidentDetailModal({ incidentId, role, onClose, onChanged }: Pr
   const [estimatedCost, setEstimatedCost] = useState('')
   const [handler, setHandler] = useState('')
   const [rejecting, setRejecting] = useState<{ id: number; version: number }>()
-  const [vehicleId, setVehicleId] = useState('')
   const { data, loaded, error, reload } = useLoad(async () => {
     const [incident, costs, evidence] = await Promise.all([incidentsApi.incident(incidentId), incidentsApi.costs(incidentId), incidentsApi.photos(incidentId)])
     return { incident, costs, evidence }
   }, [incidentId], { toastOnError: false })
   const { data: parties } = useLoad(async () => (role === 'coordinator' ? incidentsApi.parties() : []), [role])
-  const { data: vehicles } = useLoad(async () => (role === 'coordinator' ? dispatchApi.vehicles() : []), [role])
+  useAutoRefresh(reload)
 
   const run = async (action: () => Promise<unknown>, done: string) => {
     setBusy(true)
@@ -122,16 +121,9 @@ export function IncidentDetailModal({ incidentId, role, onClose, onChanged }: Pr
           </ol>
         ) : <p className={s.muted}>{t('incidents.noPlans')}</p>}
         {/* Thực hiện phương án đã duyệt (B4): đổi xe cho lượt đang chạy, đưa ngựa về hub */}
-        {role === 'coordinator' && latest?.status === 'APPROVED' && latest.resolutionType === 'TRANSFER_VEHICLE' && incident.vehicleTripId && (
-          <div className={s.form}>
-            <p className={s.muted}>{t('incidents.swapVehicleHint')}</p>
-            <Field label={t('incidents.replacementVehicle')}>
-              {c => <Select {...c} value={vehicleId} onChange={setVehicleId} placeholder={t('incidents.replacementVehicle')}
-                options={(vehicles ?? []).map(v => ({ value: `${v.id}`, label: v.licensePlate ?? '', disabled: v.status !== 'ACTIVE' }))} />}
-            </Field>
-            <Button variant="primary" disabled={!vehicleId} loading={busy}
-              onClick={() => run(() => incidentsApi.swapVehicle(incidentId, Number(vehicleId)), t('incidents.done.swapped'))}>{t('incidents.swapVehicle')}</Button>
-          </div>
+        {role === 'coordinator' && open && latest?.status === 'APPROVED' && latest.resolutionType === 'TRANSFER_VEHICLE' && incident.vehicleTripId && (
+          <VehicleSwapControls busy={busy} hasRecord={data.evidence.some(file => file.documentTypeCode === 'VEHICLE_SWAP_RECORD')}
+            onSwap={vehicleId => run(() => incidentsApi.swapVehicle(incidentId, vehicleId), t('incidents.done.swapped'))} />
         )}
         {role === 'coordinator' && canReturn && latest?.status === 'APPROVED' && latest.resolutionType === 'RETURN_TO_HUB' && (
           <div className={s.form}>

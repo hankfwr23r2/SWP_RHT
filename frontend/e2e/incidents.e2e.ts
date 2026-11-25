@@ -182,18 +182,24 @@ test('điều phối thêm ảnh hiện trường và biên lai; quản lý xem 
   expect(uploads).toBe(1)
 })
 
-test('phương án đổi xe đã duyệt: điều phối chọn xe thay thế cho lượt đang chạy', async ({ page }) => {
+test('điều phối cần ảnh biên bản trước khi đổi xe', async ({ page }) => {
   const incident = { ...incidentState(), incidentType: 'VEHICLE_BREAKDOWN', vehicleTripId: 9, status: 'PLAN_ACTIVE',
     plans: [{ id: 41, version: 1, resolutionType: 'TRANSFER_VEHICLE', instructions: 'Gọi xe cứu hộ', status: 'APPROVED' }] as Record<string, unknown>[] }
   let swapped: unknown
+  let evidence = [{ id: 81, documentTypeCode: 'INCIDENT_PHOTO', fileName: 'hien-truong.jpg', fileUrl: 'https://cdn.example/hien-truong.jpg' }]
   await signIn(page, 'coordinator')
   await page.route('**/api/v1/**', async route => {
     const request = route.request()
     const path = new URL(request.url()).pathname.replace('/api/v1', '')
     if (path === '/incidents') return ok(route, [incident])
     if (path === '/incidents/5') return ok(route, incident)
+    if (path === '/incidents/5/photos') return ok(route, evidence)
     if (path === '/dispatch/vehicles') return ok(route, [{ id: 3, licensePlate: '51C-11111', status: 'ACTIVE' }, { id: 4, licensePlate: '51C-22222', status: 'MAINTENANCE' }])
-    if (path === '/incidents/5/vehicle-swap') { swapped = request.postDataJSON(); return ok(route, incident) }
+    if (path === '/incidents/5/vehicle-swap') {
+      swapped = request.postDataJSON()
+      incident.plans[0].status = 'DONE'
+      return ok(route, incident)
+    }
     return ok(route, [])
   })
   await page.goto('/backoffice/coordinator/incidents')
@@ -203,7 +209,45 @@ test('phương án đổi xe đã duyệt: điều phối chọn xe thay thế c
   await dialog.getByRole('combobox', { name: 'Xe thay thế' }).click()
   await expect(page.getByRole('option', { name: '51C-22222' })).toBeDisabled()
   await page.getByRole('option', { name: '51C-11111' }).click()
+  await expect(dialog.getByRole('button', { name: 'Đổi xe' })).toBeDisabled()
+  await expect(dialog.getByText(/Chưa có biên bản đổi xe/)).toBeVisible()
+
+  evidence = [...evidence, { id: 82, documentTypeCode: 'VEHICLE_SWAP_RECORD', fileName: 'bien-ban-doi-xe.jpg', fileUrl: 'https://cdn.example/bien-ban.jpg' }]
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  await expect(dialog.getByRole('link', { name: 'bien-ban-doi-xe.jpg' })).toBeVisible()
   await dialog.getByRole('button', { name: 'Đổi xe' }).click()
+  await page.getByRole('alertdialog', { name: 'Đổi xe' }).getByRole('button', { name: 'Đổi xe' }).click()
   await expect(page.getByText('Đã đổi xe')).toBeVisible()
   expect(swapped).toEqual({ vehicleId: 3 })
+})
+
+test('tổ xe tải ảnh biên bản của phương án đổi xe đã duyệt', async ({ page }) => {
+  await signIn(page, 'driver')
+  await page.setViewportSize({ width: 360, height: 844 })
+  const incident = { ...incidentState(), incidentType: 'VEHICLE_BREAKDOWN', status: 'PLAN_ACTIVE',
+    plans: [{ id: 41, version: 1, resolutionType: 'TRANSFER_VEHICLE', status: 'APPROVED' }] }
+  let submittedType: unknown
+  await page.route('**/api/v1/**', async route => {
+    const request = route.request()
+    const url = new URL(request.url())
+    const path = url.pathname.replace('/api/v1', '')
+    if (path === '/crew/vehicle-trips/9') return ok(route, {
+      trip: { id: 9, code: 'VT-AAAA0009', tripType: 'LINEHAUL', status: 'IN_PROGRESS', stops: [] },
+      horses: [], handovers: [],
+    })
+    if (path === '/vehicle-trips/9/incidents') return ok(route, [incident])
+    if (path === '/incidents/5/photos' && request.method() === 'POST') {
+      const form = await new Response(request.postDataBuffer(), { headers: { 'Content-Type': request.headers()['content-type'] } }).formData()
+      submittedType = url.searchParams.get('documentType')
+      return ok(route, [{ id: 82, documentTypeCode: submittedType, fileName: (form.get('file') as File).name, fileUrl: 'https://cdn.example/bien-ban.jpg' }])
+    }
+    return ok(route, [])
+  })
+  await page.goto('/backoffice/my-trips/9')
+  await page.getByLabel('Ảnh biên bản đổi xe đã ký').setInputFiles({
+    name: 'bien-ban-doi-xe.jpg', mimeType: 'image/jpeg', buffer: Buffer.from([1, 2, 3]),
+  })
+  await page.getByRole('button', { name: 'Tải biên bản đổi xe' }).click()
+  await expect(page.getByRole('link', { name: 'bien-ban-doi-xe.jpg' })).toBeVisible()
+  expect(submittedType).toBe('VEHICLE_SWAP_RECORD')
 })

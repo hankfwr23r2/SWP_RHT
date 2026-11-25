@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.dto.dispatch;
 
 import com.example.racehorse_transport.entity.VehicleTrip;
+import com.example.racehorse_transport.entity.enums.VehicleEndCondition;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import com.example.racehorse_transport.entity.enums.VehicleTripType;
 import com.example.racehorse_transport.policy.StallSeatPolicy;
@@ -14,6 +15,7 @@ public record VehicleTripResponseDto(
         Long vehicleId, String licensePlate, Integer vehicleSeats,
         Long startLocationId, String startLocationName, Long endLocationId, String endLocationName,
         Instant plannedStartAt, Instant plannedEndAt, Instant actualStartAt, Instant actualEndAt,
+        VehicleEndCondition endVehicleCondition, String endVehicleNote,
         List<TripStopResponseDto> stops, List<CrewAssignmentResponseDto> crew) {
 
     public static VehicleTripResponseDto from(VehicleTrip trip, List<TripStopResponseDto> stops, List<CrewAssignmentResponseDto> crew) {
@@ -25,6 +27,7 @@ public record VehicleTripResponseDto(
                 trip.getStartLocation().getId(), trip.getStartLocation().getName(),
                 trip.getEndLocation().getId(), trip.getEndLocation().getName(),
                 trip.getPlannedStartAt(), trip.getPlannedEndAt(), trip.getActualStartAt(), trip.getActualEndAt(),
+                trip.getEndVehicleCondition(), trip.getEndVehicleNote(),
                 stops, crew);
     }
 

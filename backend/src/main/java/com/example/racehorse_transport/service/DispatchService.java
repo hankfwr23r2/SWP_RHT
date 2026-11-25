@@ -23,7 +23,7 @@ public interface DispatchService {
 
     // Đổi xe do sự cố (B4, TRANSFER_VEHICLE): lượt đang chạy chuyển sang xe khác; ngựa, điểm dừng, tổ lái giữ nguyên.
     // Xe mới ACTIVE, không trùng giờ với lượt khác từ lúc này tới hết lượt, đủ chỗ cho sơ đồ khoang đang dùng
-    VehicleTripResponseDto swapVehicle(Long tripId, Long vehicleId);
+    VehicleTripResponseDto swapVehicle(Long tripId, Long vehicleId, Long actorUserId, String reason, Instant changedAt);
 
     // Xe để chọn khi lập lượt (kèm trạng thái, xe không ACTIVE bị khóa ở giao diện)
     List<DispatchVehicleResponseDto> vehicles();

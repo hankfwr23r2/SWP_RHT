@@ -15,15 +15,18 @@ import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.repository.IncidentPlanRepository;
 import com.example.racehorse_transport.repository.IncidentRepository;
+import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.TripStopRepository;
 import com.example.racehorse_transport.service.DispatchService;
 import com.example.racehorse_transport.service.IncidentActionService;
+import com.example.racehorse_transport.service.IncidentEvidenceService;
 import com.example.racehorse_transport.service.IncidentService;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,23 +40,30 @@ public class IncidentActionServiceImpl implements IncidentActionService {
     private final DispatchService dispatch;
     private final HorseLegRepository legs;
     private final TripStopRepository stops;
+    private final IncidentEvidenceService evidence;
+    private final StaffRepository staff;
     private final Clock clock;
 
     @Override
     @Transactional
     public IncidentResponseDto swapVehicle(Long incidentId, Long vehicleId, String username) {
-        Incident incident = approvedFor(incidentId, IncidentResolutionType.TRANSFER_VEHICLE);
-        dispatch.swapVehicle(tripOf(incident).getId(), vehicleId);
+        Incident incident = lockIncident(incidentId);
+        IncidentPlan plan = requireApprovedPlan(incidentId, IncidentResolutionType.TRANSFER_VEHICLE);
+        evidence.requireVehicleSwapRecord(incidentId);
+        Long actor = staff.findByUser_Username(username)
+                .orElseThrow(() -> new AccessDeniedException("Không tìm thấy hồ sơ nhân viên.")).getUserId();
+        dispatch.swapVehicle(tripOf(incident).getId(), vehicleId, actor,
+                "Đã thay xe do sự cố #" + incidentId + ".", clock.instant());
+        plan.setStatus(IncidentPlanStatus.DONE);
         return incidentViews.incident(incidentId);
     }
 
     @Override
     @Transactional
     public IncidentResponseDto returnToHub(Long incidentId, String username) {
-        Incident current = incidents.findForUpdate(incidentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố " + incidentId));
-        IncidentPolicy.requireResolutionAvailable(current.getIncidentType(), IncidentResolutionType.RETURN_TO_HUB);
-        Incident incident = approvedFor(incidentId, IncidentResolutionType.RETURN_TO_HUB);
+        Incident incident = lockIncident(incidentId);
+        IncidentPolicy.requireResolutionAvailable(incident.getIncidentType(), IncidentResolutionType.RETURN_TO_HUB);
+        requireApprovedPlan(incidentId, IncidentResolutionType.RETURN_TO_HUB);
         VehicleTrip trip = tripOf(incident);
         // Con đang trên xe: chỉ con của sự cố nếu sự cố gắn một con, không thì mọi con
         List<HorseLeg> onBoard = legs.findActiveOnTrip(trip.getId(), Set.of(HorseLegStatus.CANCELLED, HorseLegStatus.FAILED)).stream()
@@ -78,14 +88,22 @@ public class IncidentActionServiceImpl implements IncidentActionService {
         return incidentViews.incident(incidentId);
     }
 
-    private Incident approvedFor(Long incidentId, IncidentResolutionType type) {
-        Incident incident = incidents.findById(incidentId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố " + incidentId));
+    private Incident lockIncident(Long incidentId) {
+        return incidents.findForUpdate(incidentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố " + incidentId));
+    }
+
+    private IncidentPlan requireApprovedPlan(Long incidentId, IncidentResolutionType type) {
         List<IncidentPlan> versions = plans.findByIncident_IdOrderByVersion(incidentId);
         IncidentPlan latest = versions.isEmpty() ? null : versions.getLast();
+        if (latest != null && type == IncidentResolutionType.TRANSFER_VEHICLE
+                && latest.getResolutionType() == type && latest.getStatus() == IncidentPlanStatus.DONE) {
+            throw new DispatchRuleException("incidentId", "Phương án đổi xe đã được thực hiện.", true);
+        }
         if (latest == null || latest.getStatus() != IncidentPlanStatus.APPROVED || latest.getResolutionType() != type) {
             throw new DispatchRuleException("incidentId", "Sự cố chưa có phương án " + type + " đã được quản lý duyệt.", true);
         }
-        return incident;
+        return latest;
     }
 
     private static VehicleTrip tripOf(Incident incident) {

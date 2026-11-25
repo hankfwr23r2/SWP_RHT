@@ -1,5 +1,6 @@
 // Tổ xe thực hiện lượt xe theo điểm dừng (B2). Mọi thao tác trả về lượt xe nhìn từ tổ xe.
 import apiClient, { type ApiResponse } from './client'
+import { formResponseOptions, readFormResponse } from './customerAddresses'
 import type { components } from './generated/schema'
 
 type Schemas = components['schemas']
@@ -22,7 +23,8 @@ export type PickupMissReport = Schemas['HandoverRefusalRequestDto']
 export const tripExecutionApi = {
   trip: (tripId: number) => get<CrewTrip>(`/crew/vehicle-trips/${tripId}`),
   start: (tripId: number) => post<CrewTrip>(`/vehicle-trips/${tripId}/start`),
-  complete: (tripId: number) => post<CrewTrip>(`/vehicle-trips/${tripId}/complete`),
+  complete: async (tripId: number, endVehicleCondition: string, endVehicleNote?: string) =>
+    readFormResponse<CrewTrip>(await apiClient.post(`/vehicle-trips/${tripId}/complete`, { endVehicleCondition, endVehicleNote }, formResponseOptions)),
   arrive: (stopId: number) => post<CrewTrip>(`/trip-stops/${stopId}/arrive`),
   depart: (stopId: number, earlyReason?: string) => post<CrewTrip>(`/trip-stops/${stopId}/depart`, earlyReason ? { earlyReason } : undefined),
   openHandover: (stopId: number, handoverType: HandoverType, partyId?: number) =>

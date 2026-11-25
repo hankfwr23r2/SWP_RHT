@@ -1,11 +1,13 @@
 package com.example.racehorse_transport.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.example.racehorse_transport.PostgresIntegrationTest;
+import com.example.racehorse_transport.client.CloudinaryClient;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.security.JwtUtils;
@@ -17,11 +19,15 @@ import java.time.ZoneOffset;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +44,7 @@ class IncidentActionFlowTest {
     @Autowired private JwtUtils jwtUtils;
     @Autowired private LocationRepository locations;
     @Autowired private EntityManager entityManager;
+    @MockitoBean private CloudinaryClient cloudinary;
 
     private String coordinator;
     private String manager;
@@ -90,16 +97,66 @@ class IncidentActionFlowTest {
         swap(incident, rescue).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Sự cố chưa có phương án TRANSFER_VEHICLE đã được quản lý duyệt."));
         approve(incident, "TRANSFER_VEHICLE", party("Đội cứu hộ xe tải (mẫu)"));
+        uploadPhoto(incident, "VEHICLE_SWAP_RECORD", escort).andExpect(status().isOk());
         swap(incident, tooSmall).andExpect(status().isConflict()).andExpect(jsonPath("$.message", org.hamcrest.Matchers.containsString("chỉ có 1 chỗ")));
         long current = jdbc.queryForObject("SELECT vehicle_id FROM vehicle_trip WHERE id = ?", Long.class, trip);
         swap(incident, current).andExpect(status().isBadRequest());
-        swap(incident, rescue).andExpect(status().isOk());
+        swap(incident, rescue).andExpect(status().isOk()).andExpect(jsonPath("$.data.plans[0].status").value("DONE"));
         entityManager.flush();
         assertThat(jdbc.queryForObject("SELECT vehicle_id FROM vehicle_trip WHERE id = ?", Long.class, trip)).isEqualTo(rescue);
         // Ngựa vẫn trên lượt cũ, chặng không đổi
         assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE id = ?", String.class, leg)).isEqualTo("IN_PROGRESS");
         mvc.perform(post("/incidents/{id}/vehicle-swap", incident).header(HttpHeaders.AUTHORIZATION, escort).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"vehicleId\":%d}".formatted(rescue))).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void requiresTheCrewsSignedRecordAndSendsTheOldVehicleToMaintenance() throws Exception {
+        long incident = id(report("VEHICLE_BREAKDOWN", "COMPANY_FAULT"));
+        approve(incident, "TRANSFER_VEHICLE", party("Đội cứu hộ xe tải (mẫu)"));
+        Staff admin = testData.staff(testData.unique("action.admin"), "ADMIN");
+        Staff dispatcher = testData.staff(testData.unique("action.notice"), "COORDINATOR");
+        long current = jdbc.queryForObject("SELECT vehicle_id FROM vehicle_trip WHERE id = ?", Long.class, trip);
+        long rescue = testData.vehicle(2, 0).getId();
+        jdbc.update("""
+                INSERT INTO vehicle_trip (code, trip_type, vehicle_id, start_location_id, end_location_id,
+                                          planned_start_at, planned_end_at, status)
+                SELECT 'SWAP-FOLLOW-UP', 'TRANSFER', vehicle_id, end_location_id, end_location_id,
+                       planned_end_at + interval '1 day', planned_end_at + interval '25 hours', 'PLANNED'
+                FROM vehicle_trip WHERE id = ?
+                """, trip);
+        uploadPhoto(incident, "INCIDENT_PHOTO", escort).andExpect(status().isOk());
+
+        swap(incident, rescue).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Chưa có biên bản đổi xe. Tổ xe chụp biên bản đã ký trước khi đổi xe."));
+        assertThat(jdbc.queryForObject("SELECT vehicle_id FROM vehicle_trip WHERE id = ?", Long.class, trip)).isEqualTo(current);
+        assertThat(jdbc.queryForObject("SELECT status FROM vehicle WHERE id = ?", String.class, current)).isEqualTo("ACTIVE");
+
+        String outsider = token(testData.staff(testData.unique("action.other.escort"), "ESCORT"), "ESCORT");
+        uploadPhoto(incident, "VEHICLE_SWAP_RECORD", outsider).andExpect(status().isForbidden());
+        uploadPhoto(incident, "VEHICLE_SWAP_RECORD", coordinator).andExpect(status().isForbidden());
+        uploadPhoto(incident, "VEHICLE_SWAP_RECORD", escort).andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[1].documentTypeCode").value("VEHICLE_SWAP_RECORD"));
+        swap(incident, rescue).andExpect(status().isOk());
+
+        entityManager.flush();
+        assertThat(jdbc.queryForObject("SELECT vehicle_id FROM vehicle_trip WHERE id = ?", Long.class, trip)).isEqualTo(rescue);
+        assertThat(jdbc.queryForObject("SELECT status FROM vehicle WHERE id = ?", String.class, current)).isEqualTo("MAINTENANCE");
+        assertThat(jdbc.queryForObject("SELECT status FROM vehicle WHERE id = ?", String.class, rescue)).isEqualTo("ACTIVE");
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM audit_log WHERE target_table = 'vehicle' AND target_id = ?
+                  AND old_data ->> 'status' = 'ACTIVE' AND new_data ->> 'status' = 'MAINTENANCE'
+                """, Long.class, current)).isEqualTo(1L);
+        assertThat(jdbc.queryForList("""
+                SELECT r.user_id FROM notification n JOIN notification_recipient r ON r.notification_id = n.id
+                WHERE n.message LIKE '%SWAP-FOLLOW-UP%' AND r.user_id IN (?, ?)
+                """, Long.class, admin.getUserId(), dispatcher.getUserId()))
+                .containsExactlyInAnyOrder(admin.getUserId(), dispatcher.getUserId());
+        swap(incident, testData.vehicle(2, 0).getId()).andExpect(status().isConflict());
+        act(coordinator, "/incidents/" + incident + "/resolve").andExpect(status().isOk());
+        act(coordinator, "/incidents/" + incident + "/close").andExpect(status().isOk());
+        uploadPhoto(incident, "VEHICLE_SWAP_RECORD", escort).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Sự cố đã đóng, không thêm ảnh."));
     }
 
     @Test
@@ -147,6 +204,14 @@ class IncidentActionFlowTest {
     private ResultActions swap(long incident, long vehicle) throws Exception {
         return mvc.perform(post("/incidents/{id}/vehicle-swap", incident).header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"vehicleId\":%d}".formatted(vehicle)));
+    }
+
+    private ResultActions uploadPhoto(long incident, String type, String token) throws Exception {
+        Mockito.when(cloudinary.uploadFile(ArgumentMatchers.any(), ArgumentMatchers.anyString()))
+                .thenAnswer(call -> "https://cdn.example/incident-" + System.nanoTime() + ".jpg");
+        var photo = new MockMultipartFile("file", "bien-ban.jpg", "image/jpeg", new byte[] {1, 2, 3});
+        return mvc.perform(multipart("/incidents/{id}/photos", incident).file(photo).param("documentType", type)
+                .header(HttpHeaders.AUTHORIZATION, token));
     }
 
     private ResultActions act(String token, String path) throws Exception {
