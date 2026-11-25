@@ -197,6 +197,8 @@ class HubSelfFlowTest {
         deliver(stays.getFirst(), chip(lines.getFirst())).andExpect(status().isConflict());
 
         sql("UPDATE horse_stay SET balance_hold_at = now() - interval '8 days' WHERE id = " + stays.getLast());
+        // Phí giữ tính từ lúc xe trục của chuyến vừa lỡ thật sự chạy (mục 13.2)
+        sql("UPDATE vehicle_trip SET status = 'IN_PROGRESS', actual_start_at = now() - interval '8 days' WHERE id = " + trip);
         entityManager.clear();
         balanceHolds.process(booking);
         entityManager.flush();

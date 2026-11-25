@@ -136,7 +136,7 @@ class StablingClockServiceTest {
         when(staff.findUserIdsByRoleAndStatus("COORDINATOR",
                 com.example.racehorse_transport.entity.enums.AppUserStatus.ACTIVE)).thenReturn(recipients);
         service.remindMissingRedelivery();
-        verify(notifications).notify(eq(recipients), eq(3L), anyString(), anyString(), eq("/backoffice/coordinator/hub"));
+        verify(notifications).notify(eq(recipients), eq(3L), anyString(), anyString(), eq("/coordinator/hub"));
     }
 
     @Test
