@@ -115,7 +115,13 @@ public class CrewAssignmentServiceImpl implements CrewAssignmentService {
         } else if (tripStatus != VehicleTripStatus.PLANNED && tripStatus != VehicleTripStatus.DISPATCHED) {
             throw new DispatchRuleException("status", "Lượt xe đã kết thúc hoặc bị hủy, không gỡ nhân viên được.", true);
         }
-        assignment.setStatus(CrewAssignmentStatus.RELEASED);
+        if (assignment.getStatus() != CrewAssignmentStatus.RELEASED) {
+            assignment.setStatus(CrewAssignmentStatus.RELEASED);
+            notifications.notify(List.of(assignment.getStaff().getUserId()), null,
+                    "Đã gỡ khỏi lượt xe",
+                    "Bạn đã được gỡ khỏi lượt xe " + assignment.getVehicleTrip().getCode() + ".",
+                    "/my-trips");
+        }
         return dispatch.trip(assignment.getVehicleTrip().getId());
     }
 
