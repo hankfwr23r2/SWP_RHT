@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -119,6 +120,12 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(ApiResponseDto.error("Dữ liệu gửi lên không đúng định dạng."), HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(org.springframework.web.multipart.support.MissingServletRequestPartException.class)
+    public ResponseEntity<ApiResponseDto<Object>> handleMissingPart(
+            org.springframework.web.multipart.support.MissingServletRequestPartException ex) {
+        return ResponseEntity.badRequest().body(ApiResponseDto.error("Thiếu phần dữ liệu bắt buộc: " + ex.getRequestPartName()));
+    }
+
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ApiResponseDto<Object>> handleMissingParameter(MissingServletRequestParameterException ex) {
         return new ResponseEntity<>(ApiResponseDto.error("Thiếu tham số bắt buộc: " + ex.getParameterName()), HttpStatus.BAD_REQUEST);
@@ -128,6 +135,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiResponseDto<Object>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
         return new ResponseEntity<>(ApiResponseDto.error("Tham số không hợp lệ: " + ex.getName()), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ApiResponseDto<Object>> handleMediaTypeNotSupported(HttpMediaTypeNotSupportedException ex) {
+        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                .body(ApiResponseDto.error("API không hỗ trợ định dạng nội dung đã gửi."));
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)

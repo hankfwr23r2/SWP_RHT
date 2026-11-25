@@ -105,7 +105,8 @@ public class SystemConfigServiceImpl implements SystemConfigService {
                 getInt("DELIVERY_WINDOW_START_HOUR"), getInt("DELIVERY_WINDOW_END_HOUR"),
                 getInt("HUB_CHECKIN_HOURS"), getInt("HANDOVER_FREE_WAIT_MINUTES"), getInt("BALANCE_WAIT_MINUTES"),
                 getInt("DEPARTURE_DECISION_HOURS"),
-                Math.toIntExact(TripSchedulePolicy.rideLimitSeconds(false, rules) / 60));
+                Math.toIntExact(TripSchedulePolicy.rideLimitSeconds(false, rules) / 60),
+                getInt("STABLING_DAILY_FEE"));
     }
 
     private String text(String key) {

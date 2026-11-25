@@ -117,7 +117,7 @@ public class StablingClockServiceImpl implements StablingClockService {
             if (plannedRedelivery(current).isPresent()
                     || bookings.hasNotificationBetween(booking.getId(), title, current.getReadyAt(), now)) continue;
             notifications.notify(staff.findUserIdsByRoleAndStatus("COORDINATOR", AppUserStatus.ACTIVE), booking.getId(), title,
-                    "Khách đã sẵn sàng nhận ngựa. Hãy đưa khung giao lại cho đơn " + booking.getCode() + ".", "/backoffice/coordinator/hub");
+                    "Khách đã sẵn sàng nhận ngựa. Hãy đưa khung giao lại cho đơn " + booking.getCode() + ".", "/coordinator/hub");
         }
     }
 

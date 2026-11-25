@@ -262,6 +262,60 @@ class DeliveryFailureFlowTest {
     }
 
     @Test
+    void managerRecordsFinalReturnOnlyAfterWrittenNoticeMatures() throws Exception {
+        Trip first = plan("DIRECT", 0, stop("locationId", hcm, "HUB", 0), stop("bookingAddressId", pickup, "PICKUP", 60),
+                stop("bookingAddressId", delivery, "DELIVERY", 240), stop("locationId", hcm, "HUB", 480));
+        first.assign(line, 1, 2);
+        first.startAndReceiveAt(1);
+        first.act("/trip-stops/" + first.stops.get(1) + "/depart").andExpect(status().isOk());
+        first.act("/trip-stops/" + first.stops.get(2) + "/arrive").andExpect(status().isOk());
+        long handover = first.openHandover(2, "DELIVERY");
+        first.act("/handovers/" + handover + "/start-waiting").andExpect(status().isOk());
+        entityManager.flush();
+        jdbc.update("UPDATE handover SET wait_started_at = now() - interval '121 minutes' WHERE id = ?", handover);
+        entityManager.clear();
+        first.act("/handovers/" + handover + "/fail").andExpect(status().isOk());
+        first.act("/trip-stops/" + first.stops.get(2) + "/depart").andExpect(status().isOk());
+        first.act("/trip-stops/" + first.stops.get(3) + "/arrive").andExpect(status().isOk());
+        first.scanAndComplete(first.openHandover(3, "HUB_IN"));
+        entityManager.flush();
+
+        long stay = jdbc.queryForObject("SELECT id FROM horse_stay WHERE booking_horse_id = ? AND stay_type = 'STABLING'",
+                Long.class, line);
+        var manager = token(testData.staff(testData.unique("unclaimed.manager"), "MANAGER"), "MANAGER");
+        var request = new org.springframework.mock.web.MockMultipartFile("request", "", "application/json",
+                "{\"outcome\":\"RETURNED_TO_SENDER\",\"recipientName\":\"Sender\"}".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        var proof = new org.springframework.mock.web.MockMultipartFile("proof", "receipt.pdf", "application/pdf", new byte[]{1});
+        String endpoint = "/horse-stays/{id}/resolve-unclaimed";
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart(endpoint, stay)
+                .file(request).file(proof).header(HttpHeaders.AUTHORIZATION, manager)).andExpect(status().isConflict());
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart(endpoint, stay)
+                .file(request).header(HttpHeaders.AUTHORIZATION, manager)).andExpect(status().isBadRequest());
+
+        jdbc.update("""
+                UPDATE horse_stay SET actual_start_at = now() - interval '53 days',
+                    planned_start_at = now() - interval '53 days', planned_end_at = now() - interval '50 days'
+                WHERE id = ?
+                """, stay);
+        jdbc.update("""
+                INSERT INTO notification (booking_id, title, message, created_at)
+                VALUES (?, ?, 'Nhận lại ngựa', now() - interval '46 days')
+                """, booking, com.example.racehorse_transport.policy.BalanceHoldPolicy.WRITTEN_NOTICE_TITLE);
+        entityManager.clear();
+        org.mockito.Mockito.when(cloudinary.uploadFile(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyString()))
+                .thenReturn("https://example.test/unclaimed-proof.pdf");
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart(endpoint, stay)
+                .file(request).file(proof).header(HttpHeaders.AUTHORIZATION, manager)).andExpect(status().isOk());
+        entityManager.flush();
+        assertThat(bookingStatus()).isEqualTo("CANCELLED");
+        assertThat(jdbc.queryForObject("SELECT status FROM booking_horse WHERE id = ?", String.class, line)).isEqualTo("RETURNED");
+        assertThat(jdbc.queryForObject("SELECT actual_end_at IS NOT NULL FROM horse_stay WHERE id = ?", Boolean.class, stay)).isTrue();
+        assertThat(jdbc.queryForObject("""
+                SELECT h.unclaimed_outcome FROM handover h JOIN document d ON d.handover_id = h.id WHERE h.horse_stay_id = ?
+                """, String.class, stay)).isEqualTo("RETURNED_TO_SENDER");
+    }
+
+    @Test
     void schedulerTimesOutWaitsPastTheFreeWait() throws Exception {
         Trip trip = plan("DIRECT", 0, stop("locationId", hcm, "HUB", 0), stop("bookingAddressId", pickup, "PICKUP", 60),
                 stop("bookingAddressId", delivery, "DELIVERY", 240), stop("locationId", hcm, "HUB", 480));

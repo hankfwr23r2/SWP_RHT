@@ -51,6 +51,10 @@ public final class BookingStatusPolicy {
         return from != null && to != null && NEXT.getOrDefault(from, Set.of()).contains(to);
     }
 
+    public static boolean canCancelAfterUnclaimedReturns(BookingStatus from) {
+        return from == IN_OPERATION;
+    }
+
     public static Set<BookingStatus> nextOf(BookingStatus from) {
         return Set.copyOf(NEXT.getOrDefault(from, Set.of()));
     }

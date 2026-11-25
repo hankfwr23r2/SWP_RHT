@@ -234,6 +234,13 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public boolean canReturnUnpaid(List<HorseLeg> boarded) {
+        return !boarded.isEmpty() && boarded.stream().map(leg -> leg.getBookingHorse().getBooking())
+                .distinct().allMatch(cancellations::canReleaseUnpaidAtPickup);
+    }
+
+    @Override
     @Transactional(propagation = Propagation.MANDATORY)
     public void returnUnpaid(List<HorseLeg> boarded, Instant at, Long actorUserId) {
         // Hủy đơn trước mọi thao tác ghi: luồng A từ chối thì không có gì thay đổi. Khóa đơn theo ID tăng dần

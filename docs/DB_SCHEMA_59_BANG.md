@@ -985,6 +985,7 @@ Index: `(booking_horse_id, recorded_at)`, `trip_stop_id`, `horse_stay_id`, `vehi
 |---|---|---|---|---|
 | `id` | `bigint` | | PK, identity | |
 | `handover_type` | `varchar(30)` | | CK `PICKUP, HUB_IN, HUB_OUT, STAY_IN, STAY_OUT, AGENT, DELIVERY, RETURN, SHIFT` | `SHIFT` chờ migration |
+| `unclaimed_outcome` | `varchar(40)` | Có | `RETURNED_TO_SENDER`, `RETURNED_TO_AUTHORIZED_PERSON`, `RELEASED_BY_LEGAL_DOCUMENT`. Chỉ cho giao nhận `RETURN` đã `DONE` tại lưu trú. |
 | `trip_stop_id` | `bigint` | có | FK → trip_stop | Giao nhận tại điểm dừng của xe |
 | `horse_stay_id` | `bigint` | có | FK → horse_stay | Giao nhận khi nhập hoặc xuất trại, chuồng |
 | `from_party_id` | `bigint` | có | FK → party | Đối tác giao. NULL = công ty hoặc bên trong đơn |
@@ -1237,7 +1238,7 @@ Ràng buộc bảng:
 - `CHECK (incident_type <> 'COMPLAINT' OR booking_id IS NOT NULL)`
 - `CHECK (incident_type = 'COMPLAINT' OR (reported_by IS NOT NULL AND cause_type IS NOT NULL))`
 - Các trường riêng của khiếu nại chỉ dùng cho `COMPLAINT`. Khi có kết luận phải có lý do, người kết luận, thời điểm xử lý và trạng thái `CLOSED`.
-- Mỗi đơn có tối đa một `COMPLAINT` theo unique index có điều kiện. Service kiểm tra ngựa được chọn thuộc đơn, ảnh `COMPLAINT_PHOTO` và quyền khách hoặc quản lý trong cùng luồng ghi khiếu nại.
+- Mỗi đơn có tối đa một `COMPLAINT` chưa `CLOSED` theo unique index có điều kiện. Service kiểm tra ngựa được chọn thuộc đơn, ảnh `COMPLAINT_PHOTO` và quyền khách hoặc quản lý trong cùng luồng ghi khiếu nại.
 - `CHECK ((fit_confirmed_by IS NULL) = (fit_confirmed_at IS NULL))`
 
 Index: `booking_id`, `vehicle_trip_id`, `horse_leg_id`, `status`.
@@ -1275,6 +1276,7 @@ Index: `handler_party_id`.
 | `id` | `bigint` | | PK, identity | |
 | `category` | `varchar(30)` | | CK `TOLL, FUEL, STABLING, VET, RESCUE, REPAIR, WAITING, OTHER, REDELIVERY, PLANNED_STABLING` | WAITING chỉ giữ cho dữ liệu cũ |
 | `stabling_days` | `bigint` | có | CK dương, chỉ với `STABLING` gắn `horse_stay` | Snapshot số ngày tính trên dòng phí, dùng để tính chênh khi ngựa rời hub |
+| `stabling_delivery_credit` | `numeric(15,2)` | | Mặc định 0. Snapshot phần phí giữ cấn từ cước giao chưa chạy khi hủy sau giao hụt. `UnclaimedSettlementService` ghi. |
 | `stabling_deposit_credit` | `numeric(15,2)` | | Mặc định 0, từ 0 tới `amount`, chỉ khác 0 cho `STABLING` gắn `horse_stay` | Phần phí giữ được cấn cọc trên đơn đã hủy |
 | `description` | `varchar(500)` | | | |
 | `amount` | `numeric(15,2)` | | CK `> 0` | |

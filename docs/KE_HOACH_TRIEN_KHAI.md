@@ -667,23 +667,3 @@ Xong thì chạy Quality Gate và báo kết quả thật.
 | A8 | Quyết toán, hủy, đánh giá | A | 5 | Xong backend | #396, #397 |
 | B6 | Theo dõi, thông báo, báo cáo | B | 5 | Xong phần chính (6 PR): chuông thông báo, hành trình ngựa và tra cứu công khai, báo cáo vận hành, nhật ký hệ thống. Báo khách khi nhận, giao ngựa và qua cửa khẩu (#430). Báo cáo doanh thu `/reports/revenue` (#434). Màn Tổng quan `/manager` (#444). B6 xong | #388, #389, #390, #391, #392, #393, #430, #434, #444 |
 | E | Tích hợp, dọn dẹp, ERD, merge | A + B | 6 | Đang làm. B: xóa FE cũ xong, ngoại lệ `check-style` rỗng (#458–#461). `FullFlowIntegrationTest` có phần vận hành của 3 ca M3 (#463), chờ A viết phần thương mại trong cùng file | #458, #459, #460, #461, #463 |
-
----
-
-## Màn cũ đã ẩn, chờ cân nhắc xóa (ghi nhận 24/11/2026)
-
-Người dùng chốt: ẩn khỏi menu và đổi trang mở đầu, chưa xóa file. **25/11: đã xóa** Xe và lộ trình, Giám sát, Đội xe của điều phối, `/driver`, `/escort` (#459); bảng điều khiển, tiếp nhận, duyệt, sự cố cũ (#458). Các màn này gọi API đã bỏ nên mở bằng đường dẫn sẽ báo lỗi. Xóa khi bạn B xác nhận màn mới đã thay đủ.
-
-| Màn cũ | Đường dẫn | Màn thay thế |
-|---|---|---|
-| Tổng quan quản lý (`manager/dashboard`, kéo theo `manager/intake`, `manager/approvals`) | `/manager` | `/manager/orders` (đơn); `/manager` nay là màn Tổng quan mới `manager/overview` (B6) |
-| Doanh thu (`manager/reports`) | `/manager/reports` | Đã chuyển sang `/reports/revenue`, hiện lại trong menu (#434) |
-| Sự cố quản lý cũ (`manager/incidents`, không còn đường dẫn) | | `/manager/incidents` (bảng sự cố mới) |
-| Xe và lộ trình (`coordinator/fleet-plan`) | `/coordinator/fleet-plan` | `/coordinator/plans` và `/coordinator/dispatch` |
-| Giám sát (`coordinator/monitoring`) | `/coordinator/monitoring` | `/coordinator/tracking` |
-| Đội xe của điều phối (`coordinator/fleet`) | `/coordinator/fleet` | `/admin/vehicles` (quản trị viên) |
-| Sự cố điều phối cũ (`coordinator/incidents`, không còn đường dẫn) | | `/coordinator/incidents` (bảng sự cố mới) |
-| Chuyến của tôi (`driver`) | `/driver` | `/my-trips` |
-| Nhật ký sức khỏe (`escort`) | `/escort` | `/my-trips` |
-
-Code chỉ các màn trên dùng và xóa cùng lúc: `apps/backoffice/shared/{BookingEvidence,BookingParts,HomeReturnPanel,HorseDocsModal,IncidentField,IncidentMap,IncidentPlanView,InsurancePanel,InsuranceReconciliation,ManifestView,ResourcePicker,StaffPicker,staffWork,managerAction,useFieldTrips,loaders}`; phần gọi API cũ trong `shared/api/{bookings,delivery,documentRequirements,files,fleet,healthLogs,incidents,payments,routes,settlements,specialist,systemConfig}`; `shared/services`, `shared/types`, quy tắc nghiệp vụ trong `shared/lib` và `shared/config`. Trước khi xóa phải tìm lại nơi còn import.

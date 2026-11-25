@@ -525,7 +525,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["resolve_1"];
+        post: operations["resolve_2"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2286,6 +2286,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["refuse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horse-stays/{id}/resolve-unclaimed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["resolve_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4801,6 +4817,7 @@ export interface components {
             handovers?: components["schemas"]["HandoverResponseDto"][];
             horses?: components["schemas"]["TripHorseResponseDto"][];
             trip?: components["schemas"]["VehicleTripResponseDto"];
+            unpaidReturnStopIds?: number[];
         };
         CustodyRowResponseDto: {
             /** Format: int64 */
@@ -4833,6 +4850,8 @@ export interface components {
             /** @enum {string} */
             stayType?: "ASSEMBLY" | "QUARANTINE" | "OVERNIGHT" | "STABLING";
             tripCode?: string;
+            /** Format: int64 */
+            unclaimedStayId?: number;
             /** Format: int64 */
             vehicleTripId?: number;
             waitingPickupBalance?: boolean;
@@ -6876,6 +6895,8 @@ export interface components {
             pickupWindowEndHour?: number;
             /** Format: int32 */
             pickupWindowStartHour?: number;
+            /** Format: int32 */
+            stablingDailyFee?: number;
         };
         TripGroupResponseDto: {
             bookings?: components["schemas"]["GroupBookingDto"][];
@@ -6972,6 +6993,11 @@ export interface components {
             sequenceNumber?: number;
             /** @enum {string} */
             stopType?: "PICKUP" | "DELIVERY" | "HUB" | "REST" | "VITAL_CHECK" | "BORDER" | "QUARANTINE";
+        };
+        UnclaimedHorseResolutionRequestDto: {
+            /** @enum {string} */
+            outcome: "RETURNED_TO_SENDER" | "RETURNED_TO_AUTHORIZED_PERSON" | "RELEASED_BY_LEGAL_DOCUMENT";
+            recipientName: string;
         };
         VehicleClassResponseDto: {
             code?: string;
@@ -7905,7 +7931,7 @@ export interface operations {
             };
         };
     };
-    resolve_1: {
+    resolve_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -10875,6 +10901,36 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["HubRefusalRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    resolve_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    proof: string;
+                    request: components["schemas"]["UnclaimedHorseResolutionRequestDto"];
+                };
             };
         };
         responses: {

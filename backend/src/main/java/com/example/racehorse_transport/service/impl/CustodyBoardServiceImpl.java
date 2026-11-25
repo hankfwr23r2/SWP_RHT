@@ -122,7 +122,20 @@ public class CustodyBoardServiceImpl implements CustodyBoardService {
                 stay != null ? point(stay.getLocation(), null) : stop != null ? point(stop.getLocation(), stop.getBookingAddress()) : null,
                 lastCheck, log == null ? null : log.getHealthStatus(), next, holder == CustodyHolder.COMPANY && CareCheckPolicy.overdue(next, now),
                 moving != null && moving.getAgentParty() != null && moving.getLegType() == HorseLegType.DELIVERY ? moving.getId() : null,
-                waitingAtPickup, balanceContact, stay == null ? null : stay.getBalanceHoldAt());
+                waitingAtPickup, balanceContact, stay == null ? null : stay.getBalanceHoldAt(),
+                canResolveUnclaimed(stay, now) ? stay.getId() : null);
+    }
+
+    private boolean canResolveUnclaimed(HorseStay stay, Instant now) {
+        if (stay == null || stay.getBalanceHoldAt() != null
+                || stay.getStayType() != com.example.racehorse_transport.entity.enums.HorseStayType.STABLING
+                || stay.getLocation().getLocationType() != com.example.racehorse_transport.entity.enums.LocationType.HUB
+                || stay.getBookingHorse().getBooking().getStatus() != BookingStatus.IN_OPERATION) return false;
+        var start = stay.getPlannedStartAt().plus(configs.getInt("STABLING_WRITTEN_NOTICE_DAYS"), java.time.temporal.ChronoUnit.DAYS);
+        int noticeDays = configs.getInt("STABLING_MANAGER_NOTICE_DAYS");
+        return bookings.firstNoticeSince(stay.getBookingHorse().getBooking().getId(),
+                com.example.racehorse_transport.policy.BalanceHoldPolicy.WRITTEN_NOTICE_TITLE, start)
+                .filter(sent -> com.example.racehorse_transport.policy.BalanceHoldPolicy.writtenNoticeMature(now, sent, noticeDays)).isPresent();
     }
 
     // Điểm dừng gần nhất xe đã tới

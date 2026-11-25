@@ -66,9 +66,17 @@ public class HandoverServiceImpl implements HandoverService {
     @Transactional(readOnly = true)
     public CrewTripResponseDto crewTrip(Long vehicleTripId, String username) {
         requireCrew(vehicleTripId, username);
-        List<Long> stopIds = stops.findByVehicleTrip_IdOrderBySequenceNumber(vehicleTripId).stream().map(TripStop::getId).toList();
+        var tripStops = stops.findByVehicleTrip_IdOrderBySequenceNumber(vehicleTripId);
+        List<Long> stopIds = tripStops.stream().map(TripStop::getId).toList();
+        var unpaidReturnStopIds = tripStops.stream()
+                .filter(stop -> stop.getStopType() == com.example.racehorse_transport.entity.enums.TripStopType.PICKUP)
+                .filter(stop -> stop.getActualArrivalAt() != null && stop.getActualDepartureAt() == null)
+                .map(TripStop::getId)
+                .filter(id -> outcomes.canReturnUnpaid(legs.findByBoardTripStop_IdAndStatusIn(
+                        id, Set.of(HorseLegStatus.IN_PROGRESS))))
+                .toList();
         List<HandoverResponseDto> done = handovers.findByTripStop_IdInOrderById(stopIds).stream().map(this::describe).toList();
-        return new CrewTripResponseDto(dispatch.trip(vehicleTripId), horseLegs.horsesOnTrip(vehicleTripId), done);
+        return new CrewTripResponseDto(dispatch.trip(vehicleTripId), horseLegs.horsesOnTrip(vehicleTripId), done, unpaidReturnStopIds);
     }
 
     @Override

@@ -188,10 +188,14 @@ public class DeliveryComplaintServiceImpl implements DeliveryComplaintService {
     private ComplaintState state(Booking booking) {
         var deliveredAt = history.findFirstByBooking_IdAndToStatusOrderByChangedAtDescIdDesc(booking.getId(), BookingStatus.DELIVERED)
                 .map(BookingStatusHistory::getChangedAt).orElse(null);
-        var complaint = incidents.findByBooking_IdAndIncidentType(booking.getId(), IncidentType.COMPLAINT);
+        var complaints = incidents.findByBooking_IdAndIncidentTypeOrderByReportedAtDescIdDesc(
+                booking.getId(), IncidentType.COMPLAINT);
+        var open = complaints.stream().filter(row -> row.getStatus() != IncidentStatus.CLOSED).findFirst();
+        var complaint = open.or(() -> complaints.stream().findFirst());
         return new ComplaintState(booking, deliveredAt, clock.instant(),
                 Duration.ofDays(configs.getInt("SETTLEMENT_AUTO_CLOSE_DAYS")),
-                Duration.ofDays(configs.getInt("COMPLAINT_MANAGER_DEADLINE_DAYS")), complaint);
+                Duration.ofDays(configs.getInt("COMPLAINT_MANAGER_DEADLINE_DAYS")), complaint,
+                complaints.stream().anyMatch(row -> row.getReportedBy() == null));
     }
 
     private DeliveryComplaintResponseDto response(ComplaintState state, boolean managerView) {
@@ -224,19 +228,24 @@ public class DeliveryComplaintServiceImpl implements DeliveryComplaintService {
     }
 
     private record ComplaintState(Booking booking, Instant deliveredAt, Instant now, Duration customerWindow,
-                                  Duration managerWindow, Optional<Incident> complaint) {
+                                  Duration managerWindow, Optional<Incident> complaint, boolean customerSubmitted) {
         boolean customerCanRespond() {
             return DeliveryComplaintPolicy.canCustomerSubmit(booking.getStatus(), deliveredAt, now, customerWindow,
-                    booking.getDeliveryConfirmedAt() != null || complaint.isPresent());
+                    booking.getDeliveryConfirmedAt() != null || customerSubmitted || hasOpenComplaint());
         }
 
         boolean managerCanSubmit() {
             return DeliveryComplaintPolicy.canManagerSubmit(booking.getStatus(), deliveredAt, now,
-                    managerWindow, complaint.isPresent());
+                    managerWindow, hasOpenComplaint());
+        }
+
+        private boolean hasOpenComplaint() {
+            return complaint.filter(row -> row.getStatus() != IncidentStatus.CLOSED).isPresent();
         }
 
         ComplaintState withComplaint(Incident incident) {
-            return new ComplaintState(booking, deliveredAt, now, customerWindow, managerWindow, Optional.of(incident));
+            return new ComplaintState(booking, deliveredAt, now, customerWindow, managerWindow, Optional.of(incident),
+                    customerSubmitted || incident.getReportedBy() == null);
         }
     }
 }

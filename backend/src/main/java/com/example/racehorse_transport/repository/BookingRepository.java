@@ -113,6 +113,16 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             """)
     boolean hasNotificationBetween(Long bookingId, String title, Instant start, Instant end);
 
+    @Query("SELECT min(n.createdAt) FROM Notification n WHERE n.booking.id = :bookingId AND n.title = :title AND n.createdAt >= :start")
+    Optional<Instant> firstNoticeSince(Long bookingId, String title, Instant start);
+
+    @Query("""
+            SELECT count(a) FROM AuditLog a
+            WHERE a.targetTable = 'booking' AND a.targetId = :bookingId AND a.createdAt >= :since
+                AND a.action LIKE concat(:actionPrefix, '%')
+            """)
+    long countBalanceHoldContactsSince(Long bookingId, String actionPrefix, Instant since);
+
     @Query("""
             SELECT MIN(s.balanceHoldAt) FROM HorseStay s
             WHERE s.bookingHorse.booking.id = :bookingId AND s.actualEndAt IS NULL

@@ -122,6 +122,22 @@ class DeliveryComplaintFlowTest {
     }
 
     @Test
+    void managerCanRecordAnotherComplaintOnlyAfterClosingThePreviousOne() throws Exception {
+        submit(photo()).andExpect(status().isOk());
+        mvc.perform(multipart(PATH + "/submit-on-behalf", bookingId).file(photo())
+                .param("description", "While the first is open").header(HttpHeaders.AUTHORIZATION, manager))
+                .andExpect(status().isConflict());
+        json("/resolve", manager, "{\"decision\":\"ACCEPTED\",\"reason\":\"Reviewed evidence\"}")
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.managerCanSubmit").value(true));
+        submit(photo()).andExpect(status().isConflict());
+        mvc.perform(multipart(PATH + "/submit-on-behalf", bookingId).file(photo())
+                .param("description", "New complaint").header(HttpHeaders.AUTHORIZATION, manager))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.complaint.status").value("REPORTED"));
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM incident WHERE booking_id = ? AND incident_type = 'COMPLAINT'",
+                Integer.class, bookingId)).isEqualTo(2);
+    }
+
+    @Test
     void managerCanRecordLateComplaintForCompletedOrderWithoutReopeningIt() throws Exception {
         jdbc.update("UPDATE booking SET status = 'COMPLETED' WHERE id = ?", bookingId);
         jdbc.update("UPDATE booking_status_history SET changed_at = ? WHERE booking_id = ? AND to_status = 'DELIVERED'",

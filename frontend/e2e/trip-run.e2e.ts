@@ -228,23 +228,30 @@ test('quá hạn số dư thì hộ tống trả ngựa cho người gửi, còn
   run.horses[0].leg.status = 'IN_PROGRESS'
   run.handovers.push({ id: 50, handoverType: 'PICKUP', status: 'DONE', tripStopId: 2, horses: [] })
   let overdue = false
+  let allowed: number[] = []
   const sent: unknown[] = []
   await page.route('**/api/v1/**', async route => {
     const request = route.request()
     const path = new URL(request.url()).pathname.replace('/api/v1', '')
-    if (path === '/crew/vehicle-trips/9') return ok(route, run)
+    if (path === '/crew/vehicle-trips/9') return ok(route, { ...run, unpaidReturnStopIds: allowed })
     if (path === '/trip-stops/2/handovers') {
       sent.push(request.postDataJSON())
       if (!overdue) return route.fulfill({ status: 409, json: { status: 'error', message: 'Đơn chưa đủ điều kiện hủy do quá thời gian chờ trả số dư.' } })
       run.horses[0].leg.status = 'CANCELLED'
+      allowed = []
       run.handovers.push({ id: 51, handoverType: 'RETURN', status: 'DONE', tripStopId: 2, horses: [{ horseLegId: 70, bookingCode: 'BK-AAAA0001', horseName: 'Sao Mai' }] })
-      return ok(route, run)
+      return ok(route, { ...run, unpaidReturnStopIds: allowed })
     }
     return ok(route, [])
   })
   await page.goto('/backoffice/my-trips/9')
 
   const pickup = page.getByRole('list', { name: 'Điểm dừng' }).getByRole('listitem').filter({ has: page.locator('h2') }).nth(1)
+  // Máy chủ chưa cho thì không có nút
+  await expect(pickup).toContainText('Rời đi', { timeout: 15_000 })
+  await expect(pickup.getByRole('button', { name: 'Trả ngựa do quá hạn thanh toán' })).toHaveCount(0)
+  allowed = [2]
+  await page.reload()
   await pickup.getByRole('button', { name: 'Trả ngựa do quá hạn thanh toán' }).click({ timeout: 15_000 })
   const dialog = page.getByRole('alertdialog')
   await expect(dialog).toContainText('Trả lại ngựa đã nhận?')

@@ -76,7 +76,13 @@ public class BalanceHoldServiceImpl implements BalanceHoldService {
         var held = active.stream().filter(stay -> stay.getStayType() == HorseStayType.STABLING).toList();
         boolean paid = readiness.isPaidInFull(bookingId);
         if (!held.isEmpty()) {
-            notices.processHeld(booking, held, now, paid, charges.accrued(held, now));
+            var balance = held.stream().filter(stay -> stay.getBalanceHoldAt() != null).toList();
+            if (!balance.isEmpty()) notices.processHeld(booking, balance, now, paid, charges.accrued(balance, now));
+            var failed = held.stream().filter(stay -> stay.getBalanceHoldAt() == null).toList();
+            for (var stay : failed) {
+                var oneHorse = List.of(stay);
+                notices.processHeld(booking, oneHorse, now, paid, charges.accrued(oneHorse, now));
+            }
             charges.warnBeforeNextBlock(held, now);
         }
         if (booking.getStatus() != BookingStatus.CONFIRMED || paid) return;

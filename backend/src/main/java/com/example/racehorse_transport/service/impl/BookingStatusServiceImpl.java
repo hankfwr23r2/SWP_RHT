@@ -80,12 +80,27 @@ public class BookingStatusServiceImpl implements BookingStatusService {
         requireScheduleChange(bookingId, previousDeparture, cause, reason, actorId(username));
     }
 
+    @Override
+    @Transactional
+    public void cancelAfterUnclaimedReturns(Long bookingId, Long actorUserId) {
+        transition(bookingId, BookingStatus.CANCELLED, "Mọi con ngựa đã được trả sau thông báo nhận lại.",
+                actorUserId, null, null, true);
+    }
+
     private void transition(Long bookingId, BookingStatus toStatus, String reason, Long actorUserId,
                             Departure previousDeparture, ScheduleChangeCause cause) {
+        transition(bookingId, toStatus, reason, actorUserId, previousDeparture, cause, false);
+    }
+
+    private void transition(Long bookingId, BookingStatus toStatus, String reason, Long actorUserId,
+                            Departure previousDeparture, ScheduleChangeCause cause, boolean unclaimedReturns) {
         Booking booking = bookings.findForUpdate(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn " + bookingId));
         BookingStatus from = booking.getStatus();
-        if (!BookingStatusPolicy.canTransition(from, toStatus)) {
+        boolean allowed = unclaimedReturns
+                ? BookingStatusPolicy.canCancelAfterUnclaimedReturns(from)
+                : BookingStatusPolicy.canTransition(from, toStatus);
+        if (!allowed) {
             throw new IllegalStateException("Đơn " + booking.getCode() + " không chuyển được từ " + from + " sang " + toStatus + ".");
         }
         booking.setStatus(toStatus);
