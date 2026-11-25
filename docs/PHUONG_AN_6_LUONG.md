@@ -451,7 +451,7 @@ Khoảng 10 chỗ trong máy chủ và 10 màn đang dùng **một** địa ch�
 
 ## 13. Phí giữ ngựa và kết thúc đơn còn nợ (25/11/2026)
 
-**Đã chốt với người dùng:** người nhận tự tới hub thì **không chặn**; phí tính theo số lần đủ 24 giờ; đơn **không được treo mãi** vì khách không trả. **Người dùng chốt toàn bộ mục 13 ngày 25/11/2026. Code sửa sau khi 1b, đợt 2 và nhiều nơi giao gộp xong. Chỗ khác trong tài liệu này trái mục 13 thì theo mục 13.**
+**Đã chốt với người dùng:** người nhận tự tới hub thì **không chặn**; phí tính theo số lần đủ 24 giờ; đơn **không được treo mãi** vì khách không trả. **Người dùng chốt toàn bộ mục 13 ngày 25/11/2026. Code: phí giữ theo lần đủ 24 giờ (#466), đóng đơn tách công nợ và 13.5 điểm 1–5 (#469), công nợ (#470) đã gộp; phần còn lại đang làm. Chỗ khác trong tài liệu này trái mục 13 thì theo mục 13.**
 
 ### 13.1 Căn cứ
 
@@ -574,3 +574,52 @@ Phí giữ **ngừng cộng sau 30 lần đủ 24 giờ**: công ty vẫn chăm,
 | 13f | Trần phí giữ 30 ngày; Nợ khó thu ngày 30; gia hạn 14 ngày hoặc 3 kỳ; ngưỡng 200.000 đ | Có | Tự đề xuất (mốc 30 ngày gần IRT Anh 21) |
 
 **Đổi so với quyết định cũ:** "còn nợ bằng 0 mới đóng đơn" (6.17) thành 13.3; "lẻ ngày tính tròn một ngày" (5.25) thành 13.2; thêm đường hủy cho đơn Đang vận chuyển khi mọi con đã trả lại; mốc 24 giờ ở 9.2 cho đơn nhập bỏ; giao hụt không còn mặc nhiên là lỗi người nhận.
+
+---
+
+## 14. Giờ giao và xe trễ (25/11/2026)
+
+**Người dùng chốt 25/11/2026.** Thay quy tắc khung 60 phút cố định. Cách làm là **tự đề xuất**, chưa kiểm chứng với IRT hay hãng khác. Dòng 1 của bảng 13.2 đọc theo mục này.
+
+### 14.1 Ba mức báo giờ
+
+| Lúc | Khách được biết | Dùng để xét lỗi |
+|---|---|---|
+| Đặt đơn, báo giá | **Ngày** giao dự kiến, không hẹn giờ | Không |
+| Ngựa vào hub đích, điều phối phân lượt giao | Giờ dự kiến **từng điểm**, mọi điểm được báo từ đầu | Không |
+| Xe rời hub, rồi **mỗi lần rời một điểm** | Giờ mới của **tất cả** điểm còn lại; chỉ nhắn khi lệch quá ngưỡng (30 phút, `SCHEDULE_CHANGE_NOTICE_MINUTES`) | **Có**, lấy giờ báo gần nhất |
+
+Phân lượt trước khi xe trục tới vẫn được; thông báo lúc đó chỉ là dự kiến.
+
+### 14.2 Tính lại giờ
+
+> Giờ tới điểm kế = giờ rời thật + đường chạy kế hoạch (gồm nghỉ bắt buộc)
+>
+> Các điểm sau cộng thời gian bàn giao kế hoạch và đoạn đường kế hoạch
+
+Bàn giao kéo dài, chờ người nhận hay ngựa khó xuống xe đều nằm trong giờ rời thật. Kẹt tại điểm quá thời gian dừng kế hoạch hơn ngưỡng thì tính và nhắn ngay, không đợi xe rời. Trang đơn luôn hiện giờ mới nhất.
+
+**Ví dụ:** hub rời 06:00, A 07:00, B 10:30, C 11:30, mỗi nơi dừng 30 phút. Rời A lúc 08:30 thay vì 07:30: B được nhắn 11:30, C được nhắn 12:30 **cùng lúc**. Đúng giờ thì không ai nhận tin nào.
+
+### 14.3 Người nhận vắng thì ai chịu
+
+| Tình huống | Ai chịu |
+|---|---|
+| Xe tới trong giờ báo gần nhất ± 30 phút (`DELIVERY_TOLERANCE_MINUTES`) | Người nhận |
+| Xe tới sau khung đó | Công ty, không phí giữ |
+| Xe tới sớm | Chờ, đếm từ **đầu khung** |
+| Điểm trước bàn giao lâu, điểm sau đã được báo giờ mới mà vẫn vắng trong khung mới | Người nhận điểm sau |
+| Điểm trước bàn giao lâu, hệ thống không báo lại | Công ty |
+| Tắc đường, cấm đường | Điều phối ghi bất khả kháng, không ai chịu |
+
+Quản lý sửa kết luận trong **24 giờ**, có lý do, khách được báo; đã lập phí giữ cho lần đó thì không sửa được.
+
+### 14.4 Vượt giới hạn giữa đường
+
+Tính lại mà điểm nào rơi ngoài giờ giao (18:00) hoặc con nào ngồi xe quá giới hạn thì báo điều phối một lần, để đưa các con còn lại về hub, giao hôm sau, **công ty chịu**. Hệ thống không tự hủy lượt.
+
+| # | Nội dung | Nguồn |
+|---|---|---|
+| 14a | Không hẹn giờ cứng, chỉ hẹn ngày; báo giờ khi phân lượt | Người dùng |
+| 14b | Tính lại sau mỗi điểm, báo tất cả điểm còn lại | Người dùng |
+| 14c | Dung sai 30 phút, sửa kết luận 24 giờ | Tự đề xuất |

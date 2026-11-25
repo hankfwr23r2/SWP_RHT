@@ -105,7 +105,9 @@ Kết luận: **cơ chế giao tiếp** (REST/JSON + JWT + refresh cookie) khôn
 - [ ] Đánh giá chỉ cho cả đơn, hay cho từng tài xế/chuyến? Nếu cho tài xế/chuyến thì `booking_rating` phải đổi.
 - [x] Đã có `DocumentCompletenessPolicy` trong `backend/src/main/java/com/example/racehorse_transport/policy/` và `DocumentCompletenessPolicyTest`.
 - [x] ~~Một hub hay nhiều hub~~: đã chốt trụ sở + hub vệ tinh (mục 4). `AGENTS.md` đã ghi "xe về hub gốc".
-- [x] Seed dev đã có dữ liệu mẫu cho 6 tuyến một chiều.
+- [x] Seed dev có 10 tuyến một chiều, gồm hub Hà Nội.
+- [ ] Đơn xuất: giấy gốc có bàn giao cho đại lý ở cửa khẩu không? Hiện chỉ nhận từ khách và trả người nhận.
+- [ ] Danh sách chuồng gửi đêm có lọc theo nơi nghỉ không (phải thêm địa điểm cho đối tác)?
 - [ ] Bổ sung dữ liệu thật về điểm mạng lưới, vùng phục vụ của hub, tuyến, lịch chạy, bảng giá và quy định.
 
 ## 6. Bản đồ tài liệu
@@ -119,18 +121,25 @@ Kết luận: **cơ chế giao tiếp** (REST/JSON + JWT + refresh cookie) khôn
 | `docs/CAN_CU_PHAP_LY_VA_IRT.md` | Căn cứ pháp lý ba nước, đối chiếu IRT/Peden | Tham khảo |
 | `docs/MAN_HINH_VA_TAC_DONG.md` | Màn hình, thao tác, chặn, tác động | Mới nhất |
 | `docs/THONG_BAO_LUONG_B.md` | Thông báo của luồng A cho luồng B | Mới nhất |
+| `docs/NGHIEP_VU_6_LUONG.md` | Nghiệp vụ kể theo 6 luồng, điểm hở và trạng thái sửa | Mới nhất |
+| `docs/PHUONG_AN_6_LUONG.md` | Quy tắc đã chốt 25/11/2026 cho các điểm hở, mục 8–14 chi tiết | Mới nhất |
+| `docs/GIAO_VIEC_BAN_B.md`, `docs/KE_HOACH_GIAO_THANH_VIEN.md`, `docs/nghiem-thu/` | Việc giao cho bạn B và thành viên, mẫu nghiệm thu | Mới nhất |
+| `docs/CHAY_THU.md`, `docs/NGHIEM_THU.md` | Chạy thử một đơn; danh sách nghiệm thu theo màn | Mới nhất |
+| `docs/chinh-sach/` | Bản nháp ba chính sách khách đọc, chưa duyệt | Nháp |
 
 Đã xóa ngày 23/11/2026, còn trong lịch sử Git: `docs/database/` (ERD cũ 34 bảng), `SUA_TAI_KHOAN_VA_HO_SO.md`, `BAN_GIAO_TAI_KHOAN_VA_HO_SO.md`, `NGHIEM_THU_LUONG_A.md`, `admin-system-log.md`, `MO_HINH_NGHIEP_VU_MUC_1_2.md`, `backend/scripts/`.
 
 Đã xóa 24/11/2026, còn trong lịch sử Git: bảng đối chiếu tên cũ, bản Markdown và PDF của hướng dẫn tích hợp nội bộ, manifest bộ chính sách.
 
+Đã xóa 25/11/2026, còn trong lịch sử Git: `docs/BAN_GIAO_2026-11-25.md` (việc đã xong hoặc đã chuyển sang tài liệu khác), `docs/policy-release/` (bộ chính sách của quy trình cũ, script không còn chạy được).
+
 Khi có mâu thuẫn, **`DB_SCHEMA_59_BANG.md` là nguồn đúng**.
 
 ## 7. Việc tiếp theo
 
-1. Làm FE luồng A theo thứ tự PR ở [Kế hoạch triển khai](KE_HOACH_TRIEN_KHAI.md#fe-luồng-a).
-2. Luồng B nối các hợp đồng A7/A8 ở hub, cửa khẩu và khi trả ngựa tại chỗ, rồi hoàn tất phần vận hành còn lại theo [Thông báo luồng B](THONG_BAO_LUONG_B.md).
-3. Đợt cuối tích hợp hai luồng, kiểm thử E2E, dọn code cũ và sinh ERD từ DB thật theo [Kế hoạch triển khai](KE_HOACH_TRIEN_KHAI.md#8-đợt-cuối-tích-hợp-và-dọn-dẹp).
+1. Làm nốt mục 13.2 phần 2, 13.4 và mục 14 của [phương án 6 luồng](PHUONG_AN_6_LUONG.md).
+2. Gói G2–G5 và 30 điểm của bạn B: [kế hoạch thành viên](KE_HOACH_GIAO_THANH_VIEN.md), [giao việc bạn B](GIAO_VIEC_BAN_B.md).
+3. Tích hợp, nghiệm thu bằng tay và sinh ERD theo [Kế hoạch triển khai](KE_HOACH_TRIEN_KHAI.md#8-đợt-cuối-tích-hợp-và-dọn-dẹp).
 
 ## 8. Ràng buộc khi làm việc với repo này
 
@@ -154,3 +163,7 @@ Thay quy tắc một khoản số dư mỗi đơn bằng một khoản số dư 
 ## Đợt 1b bước 5 · Dời chuyến
 
 Đổi quyết định cũ: sau khi cọc, đổi chuyến không đòi đủ lại thời gian làm giấy, chỉ tính giấy phải làm lại (mục 10 của PHUONG_AN_6_LUONG).
+
+## Giờ giao · 25/11/2026
+
+Không hẹn giờ giao cứng, chỉ hẹn ngày. Giờ từng điểm được báo khi phân lượt, tính lại khi xe rời hub và rời từng điểm, báo mọi điểm còn lại nếu lệch. Xét lỗi theo giờ báo gần nhất (mục 14 của PHUONG_AN_6_LUONG).
