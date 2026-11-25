@@ -50,7 +50,7 @@ Muốn chạy hết một đơn trong một buổi (tua giờ, thanh toán giả
 
 ## Chưa làm, đừng báo lỗi
 
-- Chia nợ nhiều kỳ, đổi nơi giao sau khi cọc.
+- Đổi nơi giao sau khi cọc.
 - Các gói G2, G3, G5 và điểm của bạn B chưa ghi Đã sửa trong `NGHIEP_VU_6_LUONG.md`.
 
 ## Báo lỗi

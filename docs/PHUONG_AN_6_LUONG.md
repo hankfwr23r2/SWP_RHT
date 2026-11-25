@@ -451,7 +451,7 @@ Khoảng 10 chỗ trong máy chủ và 10 màn đang dùng **một** địa ch�
 
 ## 13. Phí giữ ngựa và kết thúc đơn còn nợ (25/11/2026)
 
-**Đã chốt với người dùng:** người nhận tự tới hub thì **không chặn**; phí tính theo số lần đủ 24 giờ; đơn **không được treo mãi** vì khách không trả. **Người dùng chốt toàn bộ mục 13 ngày 25/11/2026. Code: phí giữ theo lần đủ 24 giờ (#466), đóng đơn tách công nợ và 13.5 điểm 1–5 (#469), công nợ (#470) đồng hồ dừng và cước giao lại (#473), ngựa không người nhận và 13.5 điểm 7, 10, 11 (#472) đã gộp. Chưa làm: chia nợ tối đa 3 kỳ. Chỗ khác trong tài liệu này trái mục 13 thì theo mục 13.**
+**Đã chốt với người dùng:** người nhận tự tới hub thì **không chặn**; phí tính theo số lần đủ 24 giờ; đơn **không được treo mãi** vì khách không trả. **Người dùng chốt toàn bộ mục 13 ngày 25/11/2026. Code: phí giữ theo lần đủ 24 giờ (#466), đóng đơn tách công nợ và 13.5 điểm 1–5 (#469), công nợ (#470) đồng hồ dừng và cước giao lại (#473), ngựa không người nhận và 13.5 điểm 7, 10, 11 (#472) đã gộp. Không chia kỳ nợ. Chỗ khác trong tài liệu này trái mục 13 thì theo mục 13.**
 
 ### 13.1 Căn cứ
 
@@ -525,7 +525,7 @@ Chưa trả số dư: mốc 3 ngày hủy đơn đếm theo **giờ lịch** t�
 |---|---|---|
 | Ngày 0 | Báo khách | Trả trong 7 ngày |
 | Ngày 7 | Quá hạn, nhắc mỗi ngày | **Chưa đặt đơn mới được** |
-| Ngày 14 | Quản lý gọi; có thể **gia hạn một lần** tối đa 14 ngày hoặc **chia tối đa 3 kỳ** | Trả đúng kỳ thì được đặt đơn lại |
+| Ngày 14 | Quản lý gọi; có thể **gia hạn một lần** tối đa 14 ngày. Không chia kỳ | Được đặt đơn lại tới hạn mới |
 | Ngày 30 | Sang **Nợ khó thu**, ngừng nhắc mỗi ngày, gửi văn bản | Vẫn trả được, vẫn bị chặn |
 | Từ ngày 30 | Quản lý chọn: tiếp tục đòi, hoặc **xóa nợ** (lý do, tệp quyết định) | Xóa nợ thì khoản hết hiệu lực; mở lại quyền đặt đơn do quản lý quyết riêng |
 
@@ -571,7 +571,7 @@ Phí giữ **ngừng cộng sau 30 lần đủ 24 giờ**: công ty vẫn chăm,
 | 13c | Thu cước giao lại khi lỗi do khách | Có | IRT Đức §7.3 |
 | 13d | Đơn đóng khi còn khoản thu thêm | Có | NetSuite, ERPNext |
 | 13e | Chi phí chưa duyệt sau 14 ngày: công ty chịu; hóa đơn muộn tối đa 30 ngày | Có | Tự đề xuất |
-| 13f | Trần phí giữ 30 ngày; Nợ khó thu ngày 30; gia hạn 14 ngày hoặc 3 kỳ; ngưỡng 200.000 đ | Có | Tự đề xuất (mốc 30 ngày gần IRT Anh 21) |
+| 13f | Trần phí giữ 30 ngày; Nợ khó thu ngày 30; gia hạn một lần 14 ngày, không chia kỳ; ngưỡng 200.000 đ | Có | Tự đề xuất (mốc 30 ngày gần IRT Anh 21) |
 
 **Đổi so với quyết định cũ:** "còn nợ bằng 0 mới đóng đơn" (6.17) thành 13.3; "lẻ ngày tính tròn một ngày" (5.25) thành 13.2; thêm đường hủy cho đơn Đang vận chuyển khi mọi con đã trả lại; mốc 24 giờ ở 9.2 cho đơn nhập bỏ; giao hụt không còn mặc nhiên là lỗi người nhận.
 
