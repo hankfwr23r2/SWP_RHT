@@ -72,6 +72,9 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
                 || handover.getHandoverType() == HandoverType.PICKUP || (agent && boarding)) {
             bookings.forEach(booking -> paymentReadiness.lockBooking(booking.getId()));
         }
+        if (handover.getHandoverType() == HandoverType.PICKUP || (agent && boarding)) {
+            matched.forEach(leg -> pickupMisses.requirePickupCanComplete(leg, now));
+        }
         if (handover.getHandoverType() == HandoverType.HUB_OUT) {
             bookings.stream().filter(booking -> !paymentReadiness.isPaidInFull(booking.getId())).findFirst().ifPresent(booking -> {
                 throw new DispatchRuleException("payment", "Đơn " + booking.getCode()

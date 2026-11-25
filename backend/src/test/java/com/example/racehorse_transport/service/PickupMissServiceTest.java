@@ -9,6 +9,7 @@ import com.example.racehorse_transport.dto.operation.PickupMissLiabilityRequestD
 import com.example.racehorse_transport.entity.*;
 import com.example.racehorse_transport.entity.enums.*;
 import com.example.racehorse_transport.exception.BookingRuleException;
+import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.repository.*;
 import com.example.racehorse_transport.service.impl.PickupMissServiceImpl;
 import java.time.*;
@@ -113,10 +114,58 @@ class PickupMissServiceTest {
         var late = new PickupMissChoiceRequestDto(PickupMissChoice.SELF_DELIVERY, null, NOW.plus(Duration.ofHours(48)), null);
         assertThatThrownBy(() -> service.decide(3L, late, "owner")).isInstanceOf(BookingRuleException.class);
         Instant arrival = NOW.plus(Duration.ofHours(4));
+        var preparedRetry = new HorseLeg();
+        preparedRetry.setLegType(HorseLegType.PICKUP);
+        preparedRetry.setStatus(HorseLegStatus.PLANNED);
+        when(legs.findByBookingHorse_IdOrderBySequenceNumber(3L)).thenReturn(List.of(preparedRetry));
         var request = new PickupMissChoiceRequestDto(PickupMissChoice.SELF_DELIVERY, null, arrival, null);
         service.decide(3L, request, "owner");
         service.decide(3L, request, "owner");
         verify(stays).planSelfDropOff(3L, arrival);
+        assertThat(preparedRetry.getStatus()).isEqualTo(HorseLegStatus.CANCELLED);
+    }
+
+    @Test
+    void anotherHorseAwaitingPickupPreventsReleasingTheWholeBooking() {
+        trunk();
+        var other = new BookingHorse();
+        other.setId(4L);
+        other.setBooking(booking);
+        other.setStatus(BookingHorseStatus.ACTIVE);
+        when(horses.findByBooking_Id(2L)).thenReturn(List.of(horse, other));
+        service.record(3L, "Did not board", NOW.minus(Duration.ofHours(13)), 4L);
+
+        service.expire(3L);
+
+        verifyNoInteractions(cancellations);
+        assertThat(horse.getPickupMissChoice()).isNull();
+
+        when(bookings.hasReceivedHorses(2L)).thenReturn(true);
+        service.expire(3L);
+        service.expire(3L);
+
+        verify(bookingHorses).exclude(3L, "Did not board", 7L);
+        assertThat(horse.getPickupMissChoice()).isEqualTo(PickupMissChoice.DROP_HORSE);
+    }
+
+    @Test
+    void coordinatorMustRecordTheCustomersPhoneDecision() {
+        var coordinator = new AppUser();
+        coordinator.setId(9L);
+        var role = new Role();
+        role.setCode("COORDINATOR");
+        coordinator.setRole(role);
+        when(users.findByUsername("coordinator")).thenReturn(Optional.of(coordinator));
+        service.record(3L, "Did not board", NOW, 4L);
+        var date = LocalDate.of(2026, 12, 8);
+        var missingNote = new PickupMissChoiceRequestDto(PickupMissChoice.RESCHEDULE_PICKUP, null, null, date);
+        assertThatThrownBy(() -> service.decide(3L, missingNote, "coordinator"))
+                .isInstanceOf(BookingRuleException.class);
+        var confirmed = new PickupMissChoiceRequestDto(PickupMissChoice.RESCHEDULE_PICKUP, "Phone confirmation", null, date);
+        service.decide(3L, confirmed, "coordinator");
+        service.decide(3L, confirmed, "coordinator");
+        verify(evidence).audit(9L, "CHOOSE_AFTER_PICKUP_MISS", 3L,
+                java.util.Map.of("choice", "RESCHEDULE_PICKUP", "phoneNote", "Phone confirmation"));
     }
 
     @Test
@@ -135,6 +184,28 @@ class PickupMissServiceTest {
                 new PickupMissLiabilityRequestDto(PickupMissLiability.COMPANY), "manager"))
                 .isInstanceOf(BookingRuleException.class);
         verify(evidence).audit(eq(8L), eq("CONFIRM_PICKUP_MISS_LIABILITY"), eq(3L), anyMap());
+    }
+
+    @Test
+    void lastHorseCanBeMarkedForRemovalBeforeTheManagerConfirmsLiability() {
+        service.record(3L, "Chip mismatch", NOW, 4L);
+        var choice = new PickupMissChoiceRequestDto(PickupMissChoice.DROP_HORSE, null, null, null);
+        service.decide(3L, choice, "owner");
+        service.decide(3L, choice, "owner");
+        assertThat(horse.getStatus()).isEqualTo(BookingHorseStatus.ACTIVE);
+        verifyNoInteractions(cancellations);
+
+        var manager = new AppUser();
+        manager.setId(8L);
+        var role = new Role();
+        role.setCode("MANAGER");
+        manager.setRole(role);
+        when(users.findByUsername("manager")).thenReturn(Optional.of(manager));
+        var liability = new PickupMissLiabilityRequestDto(PickupMissLiability.CUSTOMER);
+        service.assignLiability(3L, liability, "manager");
+        service.assignLiability(3L, liability, "manager");
+        assertThat(horse.getStatus()).isEqualTo(BookingHorseStatus.EXCLUDED);
+        verify(cancellations).cancelAfterPickupMiss(2L, true, 8L);
     }
 
     @Test
@@ -175,6 +246,28 @@ class PickupMissServiceTest {
         service.expire(3L);
         service.expire(3L);
         verify(cancellations).releaseAfterPickupMiss(2L, false, null);
+    }
+
+    @Test
+    void confirmedRetryCannotBoardWhenTheRevisedPlanMissesCheckIn() {
+        trunk();
+        horse.setPickupMissChoice(PickupMissChoice.RETRY_PICKUP);
+        var leg = new HorseLeg();
+        leg.setId(10L);
+        leg.setBookingHorse(horse);
+        var hub = new TripStop();
+        leg.setAlightTripStop(hub);
+        hub.setPlannedArrivalAt(NOW.plus(Duration.ofHours(26)));
+        when(legs.existsByIdAndStatus(10L, HorseLegStatus.PLANNED)).thenReturn(true);
+        service.requirePickupCanComplete(leg, NOW);
+
+        hub.setPlannedArrivalAt(NOW.plus(Duration.ofHours(28)));
+        assertThatThrownBy(() -> service.requirePickupCanComplete(leg, NOW))
+                .isInstanceOf(DispatchRuleException.class);
+
+        when(legs.existsByIdAndStatus(10L, HorseLegStatus.PLANNED)).thenReturn(false);
+        assertThatThrownBy(() -> service.requirePickupCanComplete(leg, NOW))
+                .isInstanceOf(DispatchRuleException.class).hasMessageContaining("đã được xử lý");
     }
 
     private void trunk() {

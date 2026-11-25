@@ -1339,6 +1339,8 @@ Dòng hai: loại một con thì bỏ cước trục, dịch vụ và phí bảo
 3. **Đã sửa** · Chặn HUB_OUT của đơn chưa trả đủ số dư. T − 1 giờ thì nhả chỗ, gỡ chặng kế hoạch và đóng HUB_OUT còn mở nếu không còn con nào chờ lên xe. Lưu trú giữ có phí, trả ngựa tại hub và các mốc nhắc, hủy, thông báo theo mục 9.
 4. **Đã sửa** · Xe nhập được rời cửa khẩu về hub khi còn đơn chưa trả số dư. Chỉ đơn đã trả đủ mới sang Đang vận chuyển.
 5. **Đã sửa** · Xe chỉ rời nơi nhận khi mọi con đã nhận hoặc ghi đón hụt. Quét sai chip còn cần ghi lý do đón hụt nếu không thể nhận.
+
+   **Đã sửa** · Hết hạn chọn của một con không nhả chỗ của đơn khi con khác vẫn chờ đón. Chọn tự chở tới hub thì gỡ lượt đón lại đã xếp cho con đó.
 6. **Đã sửa** phần ghi nhận và lựa chọn · Nếu hụt cả đơn, khách có thể chọn xử lý trong hạn hoặc chuyển sang Cần chọn lại chuyến khi hết hạn. Quản lý chốt bên chịu. Quy tắc tính tiền thay thế theo mục 8.4 thuộc bước tiếp theo.
 
 **Bằng chứng giao nhận:**

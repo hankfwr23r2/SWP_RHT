@@ -192,6 +192,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Query("""
             SELECT count(hh) > 0 FROM HandoverHorse hh JOIN hh.handover h JOIN hh.horseLeg l
             WHERE l.bookingHorse.booking.id = :bookingId
+                AND hh.microchipMatched = true
+                AND l.status <> com.example.racehorse_transport.entity.enums.HorseLegStatus.CANCELLED
                 AND h.status = com.example.racehorse_transport.entity.enums.HandoverStatus.DONE
                 AND (h.handoverType = com.example.racehorse_transport.entity.enums.HandoverType.PICKUP
                      OR (h.handoverType = com.example.racehorse_transport.entity.enums.HandoverType.AGENT

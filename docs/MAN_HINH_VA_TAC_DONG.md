@@ -159,5 +159,5 @@ Công ty không vận hành nơi cách ly. Điều kiện cách ly thể hiện 
 |---|---|---|
 | Tổ lái, lần nhận tại điểm đón hoặc cửa khẩu | Chọn nguyên nhân, nhập diễn giải, ghi từng cuộc gọi nếu người gửi vắng, chụp ảnh | Ghi `booking_horse`, `document`, `audit_log`. Chặn hoàn tất nhận hoặc rời điểm còn con chưa xử lý |
 | Chi tiết đơn của khách | Xem lý do, bên chịu và hạn. Chọn A/B/C/D theo lựa chọn máy chủ, hoặc hẹn ngày mới cho đơn chạy thẳng | Lựa chọn được xử lý dưới khóa đơn |
-| Điều phối, Điều độ → Hành trình của đơn | Chọn theo xác nhận qua điện thoại, nhập nội dung cuộc gọi | Cùng hợp đồng lựa chọn với khách, nhật ký ghi tài khoản điều phối |
+| Điều phối, Điều độ → Hành trình của đơn | Chọn theo xác nhận qua điện thoại, nhập nội dung cuộc gọi | Cùng hợp đồng lựa chọn với khách, nhật ký ghi tài khoản điều phối và bảng điều độ tải lại sau khi lưu |
 | Chi tiết đơn của quản lý | Chốt bên chịu | Ghi kết luận và nhật ký, xem lại trên chi tiết đơn |

@@ -4,6 +4,7 @@ import com.example.racehorse_transport.dto.operation.PickupMissChoiceRequestDto;
 import com.example.racehorse_transport.dto.operation.PickupMissLiabilityRequestDto;
 import com.example.racehorse_transport.dto.operation.PickupMissResponseDto;
 import com.example.racehorse_transport.dto.operation.HandoverRefusalRequestDto;
+import com.example.racehorse_transport.entity.HorseLeg;
 import org.springframework.web.multipart.MultipartFile;
 import java.time.Instant;
 import java.util.List;
@@ -13,6 +14,7 @@ public interface PickupMissService {
     void recordAtStop(Long horseId, HandoverRefusalRequestDto request, MultipartFile photo,
                       Instant arrivedAt, Instant at, Long actorId);
     void requireSelfDeliveryBeforeCheckIn(Long horseId);
+    void requirePickupCanComplete(HorseLeg leg, Instant now);
 
     List<PickupMissResponseDto> list(Long bookingId, String username);
     PickupMissResponseDto decide(Long horseId, PickupMissChoiceRequestDto request, String username);

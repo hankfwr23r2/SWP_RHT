@@ -114,6 +114,9 @@ public class HorseLegServiceImpl implements HorseLegService {
         if (line.getStatus() != BookingHorseStatus.ACTIVE) {
             throw new DispatchRuleException("bookingHorseId", "Ngựa này đang " + line.getStatus() + ", không xếp xe được.", true);
         }
+        if (line.getPickupMissChoice() == com.example.racehorse_transport.entity.enums.PickupMissChoice.DROP_HORSE) {
+            throw new DispatchRuleException("bookingHorseId", "Khách đã chọn bỏ con ngựa này khỏi đơn.", true);
+        }
         if (!DISPATCHABLE.contains(booking.getStatus())) {
             throw new DispatchRuleException("bookingHorseId", "Đơn " + booking.getCode() + " đang " + booking.getStatus() + ", chưa xếp xe được.", true);
         }

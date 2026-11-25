@@ -46,3 +46,4 @@
 - `HandoverOutcomeService` chuyển lần ghi hụt sang `PickupMissService`. Ghi hụt hủy chặng kế hoạch của con hụt và giữ chỗ trục. Quyết định bỏ con mới gọi xử lý thương mại.
 - Điều phối lập lượt đón lại và phân công tài xế trước khi B xuất hiện. Lượt đón lại phải chờ khách hoặc điều phối ghi lựa chọn. C dùng lịch hẹn tập kết theo con.
 - Kiểm mọi con tại điểm đón/cửa khẩu trước hoàn tất giao nhận và trước lúc rời. Đơn đã nhận một phần tiếp tục đi. Scheduler gọi service xử lý hết hạn dưới khóa đơn.
+- Một con hết hạn không nhả chỗ của cả đơn khi con khác vẫn còn lượt đón hoặc phương án B/C đang có hiệu lực. Với B, kiểm lại giờ tới hub khi hoàn tất nhận. Với C, hủy chặng đón đã xếp cho con đó.

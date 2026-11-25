@@ -887,4 +887,6 @@ Tổ lái ghi từng con với nguyên nhân và ảnh. Với người gửi v�
 
 Quản lý chốt khách, công ty hoặc bất khả kháng chịu trách nhiệm. Khách hoặc điều phối ghi lựa chọn trên đơn, với ghi chú cuộc gọi khi chọn hộ. A bỏ ngựa khỏi đơn, B đón lại một lần trên chuyến nếu đã có lượt phù hợp và tài xế, C hẹn tự đưa tới hub, D đưa cả đơn sang chọn lại chuyến nếu chưa nhận con nào. Đơn nhập dùng A hoặc D. Đơn chạy thẳng dùng A hoặc hẹn ngày đón mới. Khách có thể hủy đơn chưa nhận ngựa sau khi có kết luận trách nhiệm.
 
-Hạn mặc định 12 giờ khi ghi sớm, 1 giờ sát chuyến và chặn tại mốc tập kết. Hết hạn chọn hoặc qua hạn tập kết mà B/C vẫn chưa nhận được ngựa, nếu đã nhận con khác thì bỏ con hụt. Nếu chưa nhận con nào, nhả chỗ và chuyển đơn sang Cần chọn lại chuyến.
+Hạn mặc định 12 giờ khi ghi sớm, 1 giờ sát chuyến và chặn tại mốc tập kết. Hết hạn chọn hoặc qua hạn tập kết mà B/C vẫn chưa nhận được ngựa, nếu đã nhận con khác thì bỏ con hụt. Nếu chưa nhận con nào và mọi con còn trong đơn đều đã hết hạn xử lý đón hụt, nhả chỗ và chuyển đơn sang Cần chọn lại chuyến. Khi chọn C, hệ thống hủy chặng đón lại đã xếp cho con đó. Khi nhận theo B, máy chủ kiểm lại hạn tập kết và giờ tới hub của lượt xe.
+
+Khách có thể chọn A cho con cuối cùng khi quản lý chưa chốt trách nhiệm. Hệ thống lưu quyết định, chặn xếp xe và chờ kết luận trước khi hủy đơn và xử lý tiền.

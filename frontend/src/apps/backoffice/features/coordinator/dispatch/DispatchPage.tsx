@@ -111,7 +111,7 @@ export default function DispatchPage() {
       {journeyOf && (
         <Modal title={t('dispatch.bookings.journeyTitle', { code: journeyOf.code })} onClose={() => setJourneyOf(undefined)}>
           <BookingJourney bookingId={journeyOf.id!} />
-          <PickupMissPanel bookingId={journeyOf.id!} mode="coordinator" />
+          <PickupMissPanel bookingId={journeyOf.id!} mode="coordinator" onChanged={() => void reload()} />
         </Modal>
       )}
     </div>

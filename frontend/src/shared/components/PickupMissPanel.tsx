@@ -31,6 +31,7 @@ export function PickupMissPanel({ bookingId, mode, onChanged }: { bookingId: num
   const needsDate = selfDelivery || choice === 'RESCHEDULE_PICKUP'
   const needsPhone = mode === 'coordinator' && Boolean(choice)
   const label = action && t('pickupMiss.' + ('choice' in action ? action.choice : action.liability))
+  const consequence = choice ? t('pickupMiss.consequence.' + choice) : t('pickupMiss.confirmLiability')
 
   const open = (next: Action) => {
     setDate('')
@@ -89,7 +90,7 @@ export function PickupMissPanel({ bookingId, mode, onChanged }: { bookingId: num
         <Modal title={label} onClose={() => { if (!busy) setAction(undefined) }}
           footer={<Button loading={busy} disabled={(needsDate && !date) || (needsPhone && !phoneNote.trim())}
             onClick={() => void save().catch(() => undefined)}>{t('pickupMiss.save')}</Button>}>
-          <p>{t('pickupMiss.confirm', { action: label })}</p>
+          <p>{consequence}</p>
           {needsDate && <Field label={t(selfDelivery ? 'pickupMiss.arrival' : 'pickupMiss.date')} required>
             {props => <Input {...props} type={selfDelivery ? 'datetime-local' : 'date'} value={date} onChange={e => setDate(e.target.value)} />}
           </Field>}
@@ -98,7 +99,7 @@ export function PickupMissPanel({ bookingId, mode, onChanged }: { bookingId: num
           </Field>}
         </Modal>
       ) : (
-        <ConfirmDialog title={label} message={t('pickupMiss.confirm', { action: label })}
+        <ConfirmDialog title={label} message={consequence} tone={choice === 'DROP_HORSE' || choice === 'CANCEL_BOOKING' ? 'danger' : 'primary'}
           confirmLabel={label ?? t('pickupMiss.save')} onCancel={() => setAction(undefined)} onConfirm={save} />
       ))}
     </Card>

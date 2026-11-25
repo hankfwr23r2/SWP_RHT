@@ -748,7 +748,7 @@ Index: `province_code`, `location_id`.
 | `added_at` | `timestamptz` | | default `now()` | |
 | `pickup_missed_at` | `timestamptz` | có | | Giờ ghi lần đón hụt gần nhất |
 | `pickup_choice_due_at` | `timestamptz` | có | Chỉ mục khi chưa chọn | Hạn quyết định cho lần hụt gần nhất |
-| `pickup_miss_reason` | `varchar(500)` | có | | Diễn giải lý do tại nơi đón |
+| `pickup_miss_reason` | `varchar(500)` | có | | Diễn giải lý do tại nơi đón. Mã nguyên nhân và kết quả từng cuộc gọi nằm trong sự kiện `PICKUP_MISSED` của `audit_log` |
 | `pickup_miss_liability` | `varchar(20)` | có | CK `CUSTOMER, COMPANY, FORCE_MAJEURE` | Quản lý chốt |
 | `pickup_miss_choice` | `varchar(24)` | có | CK `DROP_HORSE, RETRY_PICKUP, SELF_DELIVERY, CHANGE_DEPARTURE, RESCHEDULE_PICKUP, CANCEL_BOOKING` | Quyết định đã ghi dưới khóa đơn |
 | `pickup_retry_departure_id` | `bigint` | có | FK → departure | Chuyến đã dùng lượt đón lại |
