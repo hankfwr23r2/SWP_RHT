@@ -22,6 +22,7 @@ import { PageHeader } from '@shared/ui/PageHeader'
 import { localToIso } from '@backoffice/shared/localTime'
 import s from '@backoffice/shared/StaffPanels.module.css'
 import h from './Hub.module.css'
+import { HealthCheckTaskAction } from '@backoffice/shared/HealthCheckTaskAction'
 import { StayHealthAction } from '@backoffice/shared/StayHealthAction'
 import { HubStablingActions } from './HubStablingActions'
 
@@ -122,8 +123,11 @@ export default function HubPage() {
       stay.balanceHoldAt ? t('dispatch.stays.balanceHold') : t(`dispatch.stays.stayType.${stay.stayType}`) },
     { key: 'health', header: t('myTrips.run.health.status'), render: stay =>
       stay.id != null && stay.bookingHorseId != null && (
-        <StayHealthAction horseStayId={stay.id} bookingHorseId={stay.bookingHorseId}
-          horseName={stay.horseName} reported onSaved={reload} />
+        <span className={s.row}>
+          <StayHealthAction horseStayId={stay.id} bookingHorseId={stay.bookingHorseId}
+            horseName={stay.horseName} reported onSaved={reload} />
+          <HealthCheckTaskAction horseStayId={stay.id} bookingHorseId={stay.bookingHorseId} horseName={stay.horseName} />
+        </span>
       ) },
     { key: 'since', header: t('dispatch.stays.colSince'), render: stay => (stay.actualStartAt ? formatDateTime(new Date(stay.actualStartAt)) : '') },
     {
