@@ -75,10 +75,12 @@ test('hộ tống xuất phát, nhận ngựa có quét chip rồi rời điểm
       return ok(route, run)
     }
     if (path === '/handovers/50/horses') {
-      const { microchip } = request.postDataJSON() as { microchip: string }
+      const { microchip, entryMethod, manualReason } = request.postDataJSON()
       const horse = (run.handovers[0].horses as Record<string, unknown>[])[0]
       horse.scannedMicrochip = microchip
       horse.microchipMatched = microchip === CHIP
+      horse.entryMethod = entryMethod
+      horse.manualReason = manualReason
       return ok(route, run)
     }
     if (path === '/handovers/50/horses/70/photos') {
@@ -115,11 +117,16 @@ test('hộ tống xuất phát, nhận ngựa có quét chip rồi rời điểm
 
   await pickup.getByLabel('Tình trạng ngựa').fill('Khỏe')
   await pickup.getByLabel('Chip của Sao Mai').fill('985000000999999')
-  await pickup.getByRole('button', { name: 'Quét' }).click()
+  const checkChip = pickup.getByRole('button', { name: 'Quét' })
+  await pickup.getByLabel('Gõ tay (không quét được chip)').check()
+  await expect(checkChip).toBeDisabled()
+  await pickup.getByLabel('Lý do gõ tay').fill('Máy đọc hết pin')
+  await checkChip.click()
   await expect(pickup).toContainText('Sai chip')
   await pickup.getByLabel('Chip của Sao Mai').fill(CHIP)
-  await pickup.getByRole('button', { name: 'Quét' }).click()
+  await checkChip.click()
   await expect(pickup).toContainText('Đúng chip')
+  await expect(pickup.getByText('Gõ tay', { exact: true })).toBeVisible()
   // Chip đúng thì hiện số khoang để dẫn ngựa vào
   await expect(pickup).toContainText('Khoang số 2')
   await pickup.getByLabel('Ảnh tình trạng ngựa').setInputFiles(horsePhoto)
@@ -199,7 +206,7 @@ test('hộ tống giao ngựa với tình trạng, ảnh và mã nhận sáu s�
   await delivery.getByRole('button', { name: 'Hoàn tất giao nhận', exact: true }).click()
   await expect(delivery.getByRole('button', { name: 'Hoàn tất giao nhận', exact: true })).toHaveCount(0)
   expect(sent).toEqual({
-    scan: { horseLegId: 70, microchip: CHIP, conditionNote: 'Khỏe khi giao' },
+    scan: { horseLegId: 70, microchip: CHIP, conditionNote: 'Khỏe khi giao', entryMethod: 'SCAN' },
     photo: { name: 'horse.jpg', type: 'image/jpeg', bytes: [1, 2, 3] },
     complete: { recipients: { 'BK-AAAA0001': { recipientName: 'Nguyễn Văn An', collectionCode: '012345' } } },
   })

@@ -7,6 +7,9 @@ type Schemas = components['schemas']
 export type DeliveryRecipient = Schemas['DeliveryRecipientRequestDto']
 export type CrewTrip = Schemas['CrewTripResponseDto']
 export type Handover = Schemas['HandoverResponseDto']
+export type HandoverScanRequest = Schemas['HandoverScanRequestDto']
+export type HandoverHorse = Schemas['HandoverHorseDto']
+
 export type HandoverType = NonNullable<Schemas['HandoverCreateRequestDto']['handoverType']>
 export type HealthLog = Schemas['HealthLogResponseDto']
 export type HealthLogCreate = Schemas['HealthLogRequestDto']
@@ -33,7 +36,8 @@ export const tripExecutionApi = {
       ? post<CrewTrip>(`/trip-stops/${stopId}/handovers`, partyId ? { handoverType, partyId } : { handoverType })
       : post<CrewTrip>(`/trip-stops/${stopId}/handovers?incidentPlanId=${incidentPlanId}`, { handoverType, partyId }),
   stablePartners: () => get<StablePartner[]>('/stable-partners'),
-  scan: (handoverId: number, horseLegId: number, microchip: string, conditionNote?: string) => post<CrewTrip>(`/handovers/${handoverId}/horses`, { horseLegId, microchip, conditionNote }),
+  scan: async (handoverId: number, body: HandoverScanRequest) =>
+    readFormResponse<CrewTrip>(await apiClient.post(`/handovers/${handoverId}/horses`, body, formResponseOptions)),
   refuse: async (handoverId: number, request: PickupMissReport, photo: File) => {
     const body = new FormData()
     body.append('request', new Blob([JSON.stringify(request)], { type: 'application/json' }))

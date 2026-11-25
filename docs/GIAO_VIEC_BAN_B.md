@@ -85,7 +85,7 @@ Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A
 
 | Điểm | Đang thế nào | Gợi ý (chưa duyệt) | Xem ở | Lưu ý |
 |---|---|---|---|---|
-| **6.G15** | Không phân biệt quét chip với gõ tay | Lưu cách nhập; gõ tay thì ghi lý do | `HandoverServiceImpl`, `handover_horse` | 1b đã gộp, làm được |
+| **6.G15** | **Đã sửa.** Giao nhận của tổ xe lưu cách nhập chip từng con, bắt buộc lý do khi gõ tay và hiện nhãn cho điều phối | | `HandoverServiceImpl`, `handover_horse`, `TripRunPage` | |
 
 ## 5. Theo dõi
 
@@ -110,7 +110,7 @@ Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A
 | 5.G17, 5.G18 | Chỉ hộ tống xác nhận đủ sức, bắt buộc ảnh; 30 phút đếm từ lúc bắt đầu nghỉ | Đã duyệt | #486 |
 | 5.G5 | Lượt đón, giao, chạy thẳng phải kết thúc ở hub | Đã duyệt | #478 |
 | 5.G16 | Phương án (a), ảnh biên bản đã ký và đưa xe cũ vào bảo dưỡng | Đã duyệt | #482 |
-| 6.G15 | | | |
+| 6.G15 | Lưu `SCAN` hoặc `MANUAL` cho từng con, yêu cầu lý do gõ tay và hiển thị trong hành trình của điều phối. Request cũ mặc định `SCAN` | Đã duyệt | |
 
 ## 6. Luồng A giữ lại (22 điểm, đừng làm)
 

@@ -5,6 +5,7 @@ import com.example.racehorse_transport.entity.HandoverHorse;
 import com.example.racehorse_transport.entity.HorseLeg;
 import com.example.racehorse_transport.entity.enums.HandoverStatus;
 import com.example.racehorse_transport.entity.enums.HandoverType;
+import com.example.racehorse_transport.entity.enums.MicrochipEntryMethod;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -15,12 +16,15 @@ public record HandoverResponseDto(
         Long id, HandoverType handoverType, HandoverStatus status, Long tripStopId, String handledByName, Instant waitStartedAt, Instant handedAt, String note,
         List<HandoverHorseDto> horses, String partyName, Boolean recordAttached) {
 
-    // scanned == null: chưa quét
-    public record HandoverHorseDto(Long horseLegId, String bookingCode, String horseName, String scannedMicrochip, Boolean microchipMatched, String conditionNote, Boolean photoAttached) {
+    // scan == null: chưa nhập mã chip
+    public record HandoverHorseDto(Long horseLegId, String bookingCode, String horseName, String scannedMicrochip,
+                                  Boolean microchipMatched, String conditionNote, Boolean photoAttached,
+                                  MicrochipEntryMethod entryMethod, String manualReason) {
         static HandoverHorseDto from(HorseLeg leg, HandoverHorse scan, boolean photoAttached) {
             return new HandoverHorseDto(leg.getId(), leg.getBookingHorse().getBooking().getCode(), leg.getBookingHorse().getHorse().getName(),
                     scan == null ? null : scan.getScannedMicrochip(), scan == null ? null : scan.getMicrochipMatched(),
-                    scan == null ? null : scan.getConditionNote(), photoAttached);
+                    scan == null ? null : scan.getConditionNote(), photoAttached,
+                    scan == null ? null : scan.getMicrochipEntryMethod(), scan == null ? null : scan.getManualEntryReason());
         }
     }
 

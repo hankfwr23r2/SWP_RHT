@@ -719,7 +719,7 @@ Ba lớp trạng thái không trộn vào nhau:
 |---|---|---|
 | **Đơn** | Mốc mua bán: Đã xác nhận → Đang vận chuyển → Đã giao → Hoàn thành | Hệ thống, theo việc tổ lái làm |
 | **Lượt xe** | Xe đang ở đâu: Đã lập → Đang chạy → Hoàn thành | Tổ lái bấm theo điểm dừng |
-| **Con ngựa** | Đang trong tay ai, ở chặng nào, khỏe không | Mỗi lần quét chip, mỗi lần ghi sức khỏe |
+| **Con ngựa** | Đang trong tay ai, ở chặng nào, khỏe không | Mỗi lần giao nhận, mỗi lần ghi sức khỏe |
 
 ## Từ dùng trong luồng 4
 
@@ -728,7 +728,7 @@ Ba lớp trạng thái không trộn vào nhau:
 | **Điểm dừng** | Một nơi lượt xe ghé: hub, nhà khách, trạm nghỉ, cửa khẩu. Tổ lái bấm theo **từng điểm dừng, đúng thứ tự** |
 | **Phân công** | Ai **dự kiến** đi lượt xe này. Điều phối đổi được |
 | **Phụ trách** | Ai **đang giữ** con ngựa này. Là người **ký nhận gần nhất**, không sửa tay được |
-| **Bàn giao ca** | Hộ tống mới quét chip, ký nhận từng con ngay trên xe |
+| **Bàn giao ca** | Hộ tống mới kiểm tra chip, ký nhận từng con ngay trên xe |
 | **Mức sức khỏe** | Bình thường, Cần theo dõi, Ốm, Nguy cấp |
 | **Mức ăn, uống** | Bình thường, Ít, Bỏ |
 
@@ -747,7 +747,7 @@ Ba lớp trạng thái không trộn vào nhau:
 
 ### Bước 3. Ở nơi nhận ngựa
 
-- Tổ lái quét chip từng con, nhận giấy gốc, chụp biên bản, hoàn tất (chi tiết ở luồng 6). Quét đúng chip thì màn hình hiện **số khoang** để dẫn ngựa vào đúng chỗ.
+- Tổ lái kiểm tra chip từng con, nhận giấy gốc, chụp biên bản, hoàn tất (chi tiết ở luồng 6). Mã chip khớp thì màn hình hiện **số khoang** để dẫn ngựa vào đúng chỗ.
 - Nhận xong, khách được báo "Đã nhận ngựa" và yêu cầu trả số dư.
 - Bấm **Rời đi**: hệ thống chỉ cho rời khi mọi đơn có ngựa lên xe ở đây **đã trả đủ tiền**. Lúc xe rời, đơn sang **Đang vận chuyển** và khách hết quyền tự hủy.
 - "Nơi nhận ngựa" là nhà khách (xe đến đón), **hub** (khách tự chở), hoặc **cửa khẩu** (đơn nhập).
@@ -766,12 +766,12 @@ Ba lớp trạng thái không trộn vào nhau:
 
 ### Bước 6. Nghỉ đêm
 
-- Ở điểm nghỉ đêm, tổ xe có thể **gửi ngựa cho chuồng đối tác**: chọn chuồng, quét chip từng con, hoàn tất. Con ngựa chuyển sang chuồng đó giữ.
-- Sáng hôm sau **Nhận lại từ chuồng**, quét chip từng con. Còn con chưa nhận lại thì xe **không rời trạm được**.
+- Ở điểm nghỉ đêm, tổ xe có thể **gửi ngựa cho chuồng đối tác**: chọn chuồng, kiểm tra chip từng con, hoàn tất. Con ngựa chuyển sang chuồng đó giữ.
+- Sáng hôm sau **Nhận lại từ chuồng**, kiểm tra chip từng con. Còn con chưa nhận lại thì xe **không rời trạm được**.
 
 ### Bước 7. Thay hộ tống giữa đường
 
-- Điều phối thêm hộ tống mới vào lượt **đang chạy**. Người đó tự tới điểm dừng, bấm **Nhận bàn giao ca**, quét chip các con và ký.
+- Điều phối thêm hộ tống mới vào lượt **đang chạy**. Người đó tự tới điểm dừng, bấm **Nhận bàn giao ca**, kiểm tra chip các con và ký.
 - Ngựa vẫn trên xe, chặng không đổi, chỉ đổi **người phụ trách**. Người cũ chưa bàn giao hết thì điều phối không gỡ khỏi lượt được.
 
 ### Bước 8. Qua cửa khẩu (đơn quốc tế)
@@ -846,7 +846,7 @@ Ba lớp trạng thái không trộn vào nhau:
 ### Nghỉ đêm và đại lý
 
 - **4.18** Chỉ gửi đêm cho đối tác đang có vai trò **chuồng gửi** còn hiệu lực.
-- **4.19** Đại lý và chuồng **không có tài khoản**: tổ lái quét chip khi giao, nhận; điều phối nhập hộ mốc của đại lý.
+- **4.19** Đại lý và chuồng **không có tài khoản**: tổ lái kiểm tra chip khi giao, nhận; điều phối nhập hộ mốc của đại lý.
 
 ### Tra cứu công khai
 
@@ -937,7 +937,7 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 |---|---|---|---|
 | Đi tiếp | Nhẹ, nghỉ rồi đi | Không có | Không có thao tác thêm |
 | Thú y điều trị | Cần bác sĩ | **Bắt buộc** thú y | Điều phối hoặc hộ tống của lượt bấm **Ghi kết quả thú y**. Sổ sức khỏe ghi tên đối tác và nội dung cho ngựa thuộc sự cố, tại điểm xe đã tới gần nhất. |
-| Gửi chuồng gần | Phải dừng lâu | **Bắt buộc** chuồng gửi | Tổ xe mở lần giao nhận cho đúng đối tác tại điểm dừng mạng lưới. Quét chip và hoàn tất thì mở lưu trú. Nhận lại ngựa từ đối tác trước khi rời điểm dừng. |
+| Gửi chuồng gần | Phải dừng lâu | **Bắt buộc** chuồng gửi | Tổ xe mở lần giao nhận cho đúng đối tác tại điểm dừng mạng lưới. Kiểm tra chip và hoàn tất thì mở lưu trú. Nhận lại ngựa từ đối tác trước khi rời điểm dừng. |
 | Đổi xe | Xe không chạy được | Cứu hộ, không bắt buộc | Mở ô chọn xe thay (câu chuyện 2) |
 | Về hub | Ngựa còn trên xe nhưng không nên đi tiếp tới nơi giao | Cứu hộ, không bắt buộc | Mở nút **Đưa về hub** (điểm 5.13) |
 | Hủy chặng | Không đi tiếp được | Không có | Điều phối bấm **Thực hiện hủy chặng**. Ngựa về hub tập kết không phí. Các chặng phía sau còn `PLANNED` của những con này bị hủy và hệ thống ghi kiểm toán. |
@@ -1148,7 +1148,7 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 
 **Người tham gia:**
 
-- **Tài xế, hộ tống**: quét chip, chụp biên bản, nhận và trả giấy gốc, từ chối nhận, trả ngựa.
+- **Tài xế, hộ tống**: kiểm tra chip, chụp biên bản, nhận và trả giấy gốc, từ chối nhận, trả ngựa.
 - **Điều phối viên**: giao nhận tại hub với khách tự chở, tự tới lấy; ghi thay đại lý.
 - **Khách**: trả số dư, trả phụ phí, đánh giá.
 - **Quản lý**: duyệt chi phí, lập khoản thu thêm, đóng đơn, hoàn tiền.
@@ -1174,9 +1174,9 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 
 **Bước 1. Nhận ngựa ở nhà khách.** Để bắt đầu, xe tới điểm đón, tổ lái bấm **Nhận ngựa**. Hệ thống liệt kê các con cần nhận ở điểm này. Với từng con:
 
-- tổ lái **quét hoặc nhập số chip**; hệ thống so với chip trong hồ sơ ngựa;
+- tổ lái nhập mã chip theo từng con. Mặc định là quét (máy đọc chip nhập thẳng vào ô). Tổ lái tick **Gõ tay** khi không quét được thì phải ghi lý do. Hệ thống so mã với chip trong hồ sơ ngựa;
 - **đúng chip**: màn hình hiện số khoang để dẫn ngựa vào;
-- **sai chip**: con đó không được nhận trong lần này. Quét lại được;
+- **sai chip**: con đó không được nhận trong lần này. Có thể nhập lại mã để kiểm tra;
 - con không đủ điều kiện đi: bấm **Ghi đón hụt** (câu chuyện 2).
 
 **Bước 2. Nhận giấy gốc và ký biên bản.** Màn hình liệt kê các giấy đã duyệt của đơn; tổ lái đánh dấu từng giấy đã nhận hoặc không nhận bản gốc. Sau đó **chụp biên bản đã ký và tải lên**. Chưa có biên bản thì nút Hoàn tất bị khóa.
@@ -1187,9 +1187,9 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 
 **Bước 5. Xe rời nơi nhận.** Hệ thống chỉ cho rời khi mọi đơn có ngựa vừa lên xe ở đây đã trả đủ. Xe rời thì đơn sang **Đang vận chuyển**, khách hết quyền tự hủy. Quá 30 phút chưa trả: câu chuyện 3.
 
-**Bước 6. Giao vào hub, nhận từ hub.** Mỗi lần vào hoặc ra hub đều quét chip từng con và lưu tên người bấm thay cho chữ ký; **không cần biên bản**. Giao vào hub thì mở lưu trú tập kết; nhận ra khỏi hub thì đóng lưu trú đó.
+**Bước 6. Giao vào hub, nhận từ hub.** Mỗi lần vào hoặc ra hub đều kiểm tra chip từng con và lưu tên người bấm thay cho chữ ký; **không cần biên bản**. Giao vào hub thì mở lưu trú tập kết; nhận ra khỏi hub thì đóng lưu trú đó.
 
-**Bước 7. Giao cho người nhận.** Xe tới điểm giao, tổ lái bấm **Giao ngựa**, quét chip, ghi tình trạng và tải ảnh từng con, đánh dấu giấy gốc đã trả, tải biên bản đã ký, ghi họ tên người nhận và nhập mã hoặc kiểm xác nhận của khách, **Hoàn tất giao nhận**. Khách nhận thông báo **Đã giao ngựa**. Không gặp người nhận: luồng 5.
+**Bước 7. Giao cho người nhận.** Xe tới điểm giao, tổ lái bấm **Giao ngựa**, kiểm tra chip, ghi tình trạng và tải ảnh từng con, đánh dấu giấy gốc đã trả, tải biên bản đã ký, ghi họ tên người nhận và nhập mã hoặc kiểm xác nhận của khách, **Hoàn tất giao nhận**. Khách nhận thông báo **Đã giao ngựa**. Không gặp người nhận: luồng 5.
 
 **Bước 8. Đơn sang Đã giao.** Khi **con cuối cùng** còn trong đơn được giao, đơn tự sang **Đã giao**. Con đã bị loại thì không tính.
 
@@ -1223,7 +1223,7 @@ Các con khác vẫn nhận bình thường. Nếu đã ghi hụt cho mọi con 
 
 **Bước 14.** Hệ thống trong một lần bấm:
 
-- Nếu còn người nhận lại ở điểm đón, ghi trả ngựa và bàn giao giấy gốc. Dùng kết quả chip lúc nhận. Đơn sang **Cần chọn lại chuyến**, nhả chỗ và hủy các chặng kế hoạch. Số dư vẫn thanh toán được. Hết 30 ngày thì hủy đơn.
+- Nếu còn người nhận lại ở điểm đón, ghi trả ngựa và bàn giao giấy gốc. Dùng lại kết quả chip, cách nhập và lý do gõ tay đã ghi lúc nhận. Đơn sang **Cần chọn lại chuyến**, nhả chỗ và hủy các chặng kế hoạch. Số dư vẫn thanh toán được. Hết 30 ngày thì hủy đơn.
 - Nếu không có người nhận lại, điều phối xác nhận đưa ngựa về hub. Đơn nhập từ cửa khẩu vẫn về hub.
 - Tại hub, nhắc T − 3 giờ. Nếu chưa trả, nhả chỗ và gỡ khỏi lượt xe ở T − 1 giờ. Phí giữ tính từ T. Ngựa vẫn được chăm sóc sau khi hủy.
 
@@ -1237,9 +1237,9 @@ Tiền VNPAY về **sau** khi đơn đã hủy: không ghi vào đơn, báo qu�
 
 ### Câu chuyện 5. Đơn quốc tế
 
-**Bước 17. Đơn xuất.** Ở cửa khẩu, tổ lái bấm **Bàn giao với đại lý**, quét chip và tải biên bản đã ký. Hệ thống kiểm đủ giấy bắt buộc khi hoàn tất. Thiếu giấy thì ngựa vẫn trên xe. Bàn giao xong, chặng của đại lý tự chạy và khách được báo. Đại lý giao xong ở nước ngoài thì **điều phối bấm Đại lý đã giao**. Giao đủ các con thì đơn Đã giao.
+**Bước 17. Đơn xuất.** Ở cửa khẩu, tổ lái bấm **Bàn giao với đại lý**, kiểm tra chip và tải biên bản đã ký. Hệ thống kiểm đủ giấy bắt buộc khi hoàn tất. Thiếu giấy thì ngựa vẫn trên xe. Bàn giao xong, chặng của đại lý tự chạy và khách được báo. Đại lý giao xong ở nước ngoài thì **điều phối bấm Đại lý đã giao**. Giao đủ các con thì đơn Đã giao.
 
-**Bước 18. Đơn nhập.** Tổ lái nhận ngựa từ đại lý ở cửa khẩu, quét chip, đánh dấu bản gốc đã nhận và tải biên bản đã ký. Hệ thống **kiểm đủ giấy bắt buộc**, gồm giấy vận chuyển mẫu 14a, và **kiểm bảo hiểm đã xác nhận** cho từng con. Thiếu thì ngựa ở lại với đại lý. Nhận xong, hệ thống lập số dư và chờ 30 phút như bước 4.
+**Bước 18. Đơn nhập.** Tổ lái nhận ngựa từ đại lý ở cửa khẩu, kiểm tra chip, đánh dấu bản gốc đã nhận và tải biên bản đã ký. Hệ thống **kiểm đủ giấy bắt buộc**, gồm giấy vận chuyển mẫu 14a, và **kiểm bảo hiểm đã xác nhận** cho từng con. Thiếu thì ngựa ở lại với đại lý. Nhận xong, hệ thống lập số dư và chờ 30 phút như bước 4.
 
 ## 6.B. Bảng các lần giao nhận
 
@@ -1255,7 +1255,9 @@ Tiền VNPAY về **sau** khi đơn đã hủy: không ghi vào đơn, báo qu�
 | Giao người nhận | Điểm giao | Tổ lái | Từng con | **Bắt buộc** | Đánh dấu đã trả | Con cuối: Đã giao |
 | Trả tại hub (tự tới lấy) | Hub | Điều phối | Từng con | Không | Không | Con cuối: Đã giao |
 | Đại lý đã giao | Nước ngoài | Điều phối ghi thay | Không | Không | Không | Con cuối: Đã giao |
-| Trả ngựa quá hạn | Nhà khách, cửa khẩu | Tổ lái | Lấy lại kết quả cũ | Không | Không | Hủy đơn, mất cọc |
+| Trả ngựa quá hạn | Nhà khách, cửa khẩu | Tổ lái | Dùng lại kết quả chip và cách nhập lúc nhận | Không | Không | Hủy đơn, mất cọc |
+
+Khi tổ xe kiểm tra chip, hệ thống lưu cách nhập cho từng con. Điều phối xem nhãn **Gõ tay** và lý do ở mốc giao nhận trong hành trình.
 
 ## 6.C. Các hạn trong luồng 6
 
@@ -1290,6 +1292,7 @@ Dòng hai: loại một con thì bỏ cước trục, dịch vụ và phí bảo
 
 - **6.1** Chỉ giao nhận khi xe **đang ở điểm đó**: đã bấm Tới nơi, chưa bấm Rời đi. Người bấm phải trong tổ lái.
 - **6.2** So chip sau khi bỏ khoảng trắng và dấu gạch, không phân biệt hoa thường. Sai thì con đó không được tính.
+  API `POST /handovers/{id}/horses` dùng `SCAN` cho mã quét và mặc định `SCAN` nếu request cũ không gửi `entryMethod`. Gõ tay gửi `MANUAL` và phải có `manualReason` tối đa 500 ký tự. Thiếu lý do thì hệ thống trả lỗi 400.
 - **6.3** Hoàn tất cần ít nhất một con đúng chip. Con sai chip ở lại với bên giao; mở lần giao nhận khác được khi xe chưa rời.
 - **6.4** Nhận ở nhà khách, giao người nhận và giao nhận với đại lý ở cửa khẩu phải có **ảnh hoặc bản quét biên bản đã ký**.
 - **6.5** Giấy gốc: nhận lúc đón, trả lúc giao. Chỉ liệt kê giấy **đã duyệt**. Đánh dấu không bắt buộc để hoàn tất.
@@ -1324,7 +1327,7 @@ Dòng hai: loại một con thì bỏ cước trục, dịch vụ và phí bảo
 
 | # | Ở bước | Tình huống | Hệ thống sẽ |
 |---|---|---|---|
-| T63 | 1 | Quét sai chip một con trong hai con | Cho nhận con đúng; con sai không lên xe |
+| T63 | 1 | Mã chip của một trong hai con không khớp | Cho nhận con đúng; con sai không lên xe |
 | T64 | 2 | Bấm Hoàn tất khi chưa tải biên bản | Từ chối |
 | T65 | 3 | Không con nào đúng chip | Không hoàn tất được |
 | T66 | 4 | Khách trả ở phút thứ 40, tổ lái chưa bấm trả ngựa | Nhận tiền, xe được rời |
@@ -1364,7 +1367,7 @@ Dòng hai: loại một con thì bỏ cước trục, dịch vụ và phí bảo
 12. **Đã sửa.** Nhận ngựa thì đánh dấu từng giấy đã nhận hoặc không nhận bản gốc. Khi giao ngựa, xác nhận trả các bản gốc còn giữ của đơn theo lịch sử giao nhận đã hoàn tất. Khi chuyển ngựa ra cho đại lý, bàn giao các bản gốc đang giữ cùng ngựa.
 13. **Đã sửa một phần.** Chủ đơn xem biên bản và ảnh đã lưu ở từng lần giao nhận hoàn tất trong hành trình. Tệp cũ gắn vào lần giao nhận chung của nhiều đơn cần được phân quyền theo từng đơn trước khi hiển thị.
 14. **Đã sửa.** Trước khi hoàn tất nhận ở điểm đón, nhận từ đại lý, giao nhận tại hub với khách hoặc giao người nhận, từng con giao nhận phải có tình trạng và ít nhất một ảnh.
-15. Chip có thể **gõ tay**; hệ thống chưa phân biệt quét máy với gõ.
+15. **Đã sửa.** Giao nhận của tổ xe lưu cách nhập chip theo từng con. Gõ tay phải có lý do. Điều phối xem được nhãn **Gõ tay** và lý do trên hành trình.
 
 **Tiền và đóng đơn:**
 

@@ -18,6 +18,7 @@ import com.example.racehorse_transport.entity.enums.CrewRole;
 import com.example.racehorse_transport.entity.enums.HandoverStatus;
 import com.example.racehorse_transport.entity.enums.HandoverType;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
+import com.example.racehorse_transport.entity.enums.MicrochipEntryMethod;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
@@ -125,6 +126,8 @@ public class HandoverServiceImpl implements HandoverService {
     @Transactional
     public CrewTripResponseDto scan(Long handoverId, HandoverScanRequestDto request, String username) {
         Handover handover = pending(handoverId, username);
+        var entryMethod = Objects.requireNonNullElse(request.entryMethod(), MicrochipEntryMethod.SCAN);
+        String manualReason = TripExecutionPolicy.manualEntryReason(entryMethod, request.manualReason());
         HorseLeg leg = candidates(handover).stream().filter(l -> l.getId().equals(request.horseLegId())).findFirst()
                 .orElseThrow(() -> new DispatchRuleException("horseLegId", "Con ngựa này không thuộc lần giao nhận.", true));
         if (handover.getHandoverType() == HandoverType.HUB_OUT) {
@@ -140,9 +143,8 @@ public class HandoverServiceImpl implements HandoverService {
             created.setHorseLeg(leg);
             return created;
         });
-        scan.setScannedMicrochip(request.microchip().strip());
+        request.applyTo(scan, entryMethod, manualReason);
         scan.setMicrochipMatched(TripExecutionPolicy.chipMatches(request.microchip(), leg.getBookingHorse().getHorse().getMicrochip()));
-        scan.setConditionNote(request.conditionNote() == null || request.conditionNote().isBlank() ? null : request.conditionNote().strip());
         scans.saveAndFlush(scan);
         return crewTrip(handover.getTripStop().getVehicleTrip().getId(), username);
     }
@@ -224,7 +226,7 @@ public class HandoverServiceImpl implements HandoverService {
     }
 
     // Quá hạn trả số dư (#32): trả mọi con đã nhận lên xe ở nơi nhận này (điểm đón) trong một thao tác.
-    // Không quét lại chip: ghi lại chip đã quét đúng lúc nhận ngựa vài phút trước
+    // Dùng lại mã chip đã khớp và cách nhập lúc nhận ngựa
     private void returnUnpaid(TripStop stop, HandoverCreateRequestDto request, CrewAssignment member) {
         List<HorseLeg> boarded = legs.findByBoardTripStop_IdAndStatusIn(stop.getId(), Set.of(HorseLegStatus.IN_PROGRESS));
         if (boarded.isEmpty()) {
@@ -241,9 +243,12 @@ public class HandoverServiceImpl implements HandoverService {
             returned.setId(new HandoverHorseId(handover.getId(), leg.getId()));
             returned.setHandover(handover);
             returned.setHorseLeg(leg);
-            returned.setScannedMicrochip(scans.findFirstByHorseLeg_IdAndHandover_HandoverTypeAndMicrochipMatchedTrue(leg.getId(),
-                            HandoverType.PICKUP)
-                    .map(HandoverHorse::getScannedMicrochip).orElse(null));
+            scans.findFirstByHorseLeg_IdAndHandover_HandoverTypeAndMicrochipMatchedTrue(leg.getId(), HandoverType.PICKUP)
+                    .ifPresent(pickup -> {
+                        returned.setScannedMicrochip(pickup.getScannedMicrochip());
+                        returned.setMicrochipEntryMethod(pickup.getMicrochipEntryMethod());
+                        returned.setManualEntryReason(pickup.getManualEntryReason());
+                    });
             returned.setMicrochipMatched(true);
             scans.save(returned);
         }

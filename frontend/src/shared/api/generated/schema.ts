@@ -5958,9 +5958,12 @@ export interface components {
         HandoverHorseDto: {
             bookingCode?: string;
             conditionNote?: string;
+            /** @enum {string} */
+            entryMethod?: "SCAN" | "MANUAL";
             /** Format: int64 */
             horseLegId?: number;
             horseName?: string;
+            manualReason?: string;
             microchipMatched?: boolean;
             photoAttached?: boolean;
             scannedMicrochip?: string;
@@ -6010,8 +6013,14 @@ export interface components {
         };
         HandoverScanRequestDto: {
             conditionNote?: string;
+            /**
+             * @default SCAN
+             * @enum {string}
+             */
+            entryMethod: "SCAN" | "MANUAL";
             /** Format: int64 */
             horseLegId: number;
+            manualReason?: string;
             microchip: string;
         };
         HealthCheckAssigneeResponseDto: {
@@ -6552,6 +6561,8 @@ export interface components {
             submitterType?: "CUSTOMER" | "CONSIGNEE" | "COMPANY" | "AGENT";
         };
         JourneyHandoverDto: {
+            /** @enum {string} */
+            entryMethod?: "SCAN" | "MANUAL";
             evidence?: components["schemas"]["HandoverEvidenceResponseDto"][];
             fromPartyName?: string;
             /** Format: date-time */
@@ -6560,6 +6571,7 @@ export interface components {
             handoverType?: "PICKUP" | "HUB_IN" | "HUB_OUT" | "STAY_IN" | "STAY_OUT" | "AGENT" | "DELIVERY" | "RETURN" | "SHIFT";
             /** Format: int64 */
             id?: number;
+            manualReason?: string;
             microchipMatched?: boolean;
             placeName?: string;
             /** @enum {string} */

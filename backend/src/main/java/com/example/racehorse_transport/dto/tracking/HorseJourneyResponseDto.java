@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.example.racehorse_transport.entity.BookingAddress;
 import com.example.racehorse_transport.entity.Document;
 import com.example.racehorse_transport.entity.Handover;
+import com.example.racehorse_transport.entity.HandoverHorse;
 import com.example.racehorse_transport.entity.HorseLeg;
 import com.example.racehorse_transport.entity.HorseStay;
 import com.example.racehorse_transport.entity.Location;
@@ -14,6 +15,7 @@ import com.example.racehorse_transport.entity.enums.HandoverType;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
 import com.example.racehorse_transport.entity.enums.HorseLegType;
 import com.example.racehorse_transport.entity.enums.HorseStayType;
+import com.example.racehorse_transport.entity.enums.MicrochipEntryMethod;
 import com.example.racehorse_transport.entity.enums.QuarantineResult;
 import com.example.racehorse_transport.policy.CustomerNoticePolicy.HourWindow;
 import com.example.racehorse_transport.policy.TrackingPolicy.CustodyHolder;
@@ -63,15 +65,20 @@ public record HorseJourneyResponseDto(
     // placeName: điểm dừng của xe hoặc nơi lưu trú
     public record JourneyHandoverDto(Long id, HandoverType handoverType, HandoverStatus status, String placeName,
                               String fromPartyName, String toPartyName, Instant waitStartedAt, Instant handedAt, Boolean microchipMatched,
-                              List<HandoverEvidenceResponseDto> evidence) {
+                              List<HandoverEvidenceResponseDto> evidence,
+                              @JsonInclude(JsonInclude.Include.NON_NULL) MicrochipEntryMethod entryMethod,
+                              @JsonInclude(JsonInclude.Include.NON_NULL) String manualReason) {
 
-        // microchipMatched NULL: lần giao nhận chưa xong, con này chưa được quét
-        public static JourneyHandoverDto from(Handover handover, Boolean microchipMatched, List<HandoverEvidenceResponseDto> evidence) {
+        // row == null: lần giao nhận đang mở và chưa ghi kết quả chip của con này
+        public static JourneyHandoverDto from(Handover handover, HandoverHorse row, boolean includeChipEntry,
+                                              List<HandoverEvidenceResponseDto> evidence) {
             var stop = handover.getTripStop();
             String place = stop != null ? nameOf(stop.getLocation(), stop.getBookingAddress()) : handover.getHorseStay().getLocation().getName();
+            HandoverHorse chipEntry = includeChipEntry ? row : null;
             return new JourneyHandoverDto(handover.getId(), handover.getHandoverType(), handover.getStatus(), place,
                     nameOf(handover.getFromParty()), nameOf(handover.getToParty()), handover.getWaitStartedAt(), handover.getHandedAt(),
-                    microchipMatched, evidence);
+                    row == null ? null : row.getMicrochipMatched(), evidence,
+                    chipEntry == null ? null : chipEntry.getMicrochipEntryMethod(), chipEntry == null ? null : chipEntry.getManualEntryReason());
         }
     }
 

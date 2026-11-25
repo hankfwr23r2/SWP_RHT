@@ -18,6 +18,8 @@ export interface JourneyEntry {
   detail?: string
   windows?: ExpectedWindow[]
   evidence?: JourneyHandover['evidence']
+  entryMethod?: JourneyHandover['entryMethod']
+  manualReason?: JourneyHandover['manualReason']
 }
 
 const LEG_STATE: Record<string, JourneyState> = { PLANNED: 'planned', IN_PROGRESS: 'current', COMPLETED: 'done', FAILED: 'problem', CANCELLED: 'problem' }
@@ -43,6 +45,8 @@ export function journeyEntries(horse: HorseJourney): JourneyEntry[] {
     at: handover.handedAt ?? handover.waitStartedAt, planned: false, place: handover.placeName ?? '',
     detail: handover.toPartyName ?? handover.fromPartyName,
     evidence: handover.evidence,
+    entryMethod: handover.entryMethod,
+    manualReason: handover.manualReason,
   }))
   return [...legs, ...stays, ...handovers].sort(byTime)
 }

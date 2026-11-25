@@ -19,6 +19,7 @@ import { Textarea } from '@shared/ui/Textarea'
 import { StatusBadge, type StatusTone } from '@shared/ui/StatusBadge'
 import { useToast } from '@shared/ui/toast'
 import { PickupMissDialog } from './PickupMissDialog'
+import { HandoverChipForm } from './HandoverChipForm'
 import { HandoverPapersPanel } from './HandoverPapersPanel'
 import { HorseFeedingDetails } from './HorseFeedingDetails'
 import { StopHealthPanel } from './StopHealthPanel'
@@ -41,8 +42,6 @@ export default function TripRunPage() {
   const [busy, setBusy] = useState(false)
   const [completing, setCompleting] = useState(false)
   const [deliveryRecipients, setDeliveryRecipients] = useState<Record<number, Record<string, DeliveryRecipient>>>({})
-  const [conditions, setConditions] = useState<Record<string, string>>({})
-  const [chips, setChips] = useState<Record<number, string>>({})
   const [earlyReasons, setEarlyReasons] = useState<Record<number, string>>({})
   const [failing, setFailing] = useState<number>()
   const [returning, setReturning] = useState<number>()
@@ -54,7 +53,7 @@ export default function TripRunPage() {
   const incidents = useTripIncidents(tripId, data?.trip)
 
   // Mọi thao tác trả về lượt xe mới; lỗi hiện đúng lý do backend trả về
-  const run = async (action: () => Promise<CrewTrip>, done: string) => {
+  const run = async (action: () => Promise<CrewTrip>, done: string, onFields?: (fields: Record<string, string>) => void) => {
     setBusy(true)
     try {
       const next = await action()
@@ -62,6 +61,7 @@ export default function TripRunPage() {
       toast(done, 'success')
       return true
     } catch (e) {
+      if (e instanceof Error && 'fields' in e) onFields?.(e.fields as Record<string, string>)
       toast(e instanceof Error ? e.message : String(e), 'error')
       return false
     } finally {
@@ -93,11 +93,10 @@ export default function TripRunPage() {
       <ul className={s.list}>
         {(handover.horses ?? []).map(horse => {
           const legId = horse.horseLegId ?? 0
-          const conditionKey = `${handoverId}:${legId}`
           const needsPhoto = handover.handoverType === 'PICKUP' || handover.handoverType === 'DELIVERY'
             || handover.handoverType === 'AGENT' && receivesOriginals(data, handover)
           return (
-            <li key={legId} className={s.body}>
+            <li key={`${handoverId}:${legId}`} className={s.body}>
               <p className={s.line}>{horse.horseName} · {horse.bookingCode}</p>
               <HorseFeedingDetails horse={horse} />
               {/* Chip đúng thì chỉ chỗ dẫn ngựa vào (MAN_HINH 4.2, 6.1) */}
@@ -107,17 +106,9 @@ export default function TripRunPage() {
                 label={horse.microchipMatched === undefined || horse.microchipMatched === null ? t('myTrips.run.notScanned')
                   : horse.microchipMatched ? t('myTrips.run.matched') : t('myTrips.run.mismatched')}
               />
-              <Field label={t('myTrips.run.chip', { name: horse.horseName })}>
-                {c => <Input {...c} inputMode="numeric" value={chips[legId] ?? ''} onChange={e => setChips(current => ({ ...current, [legId]: e.target.value }))} />}
-              </Field>
-              {needsPhoto && <Field label={t('handoverEvidence.condition')} required>
-                {c => <Textarea {...c} maxLength={1000} value={conditions[conditionKey] ?? horse.conditionNote ?? ''}
-                  onChange={e => setConditions(current => ({ ...current, [conditionKey]: e.target.value }))} />}
-              </Field>}
-              <Button size="lg" fullWidth disabled={!chips[legId]?.trim() || needsPhoto && !(conditions[conditionKey] ?? horse.conditionNote)?.trim()} loading={busy}
-                onClick={() => run(() => tripExecutionApi.scan(handover.id ?? 0, legId, chips[legId].trim(), conditions[conditionKey] ?? horse.conditionNote), t('myTrips.run.done.scanned'))}>
-                {t('myTrips.run.scan')}
-              </Button>
+              {horse.entryMethod === 'MANUAL' && <StatusBadge tone="neutral" label={t('handoverEvidence.manualEntry')} />}
+              <HandoverChipForm horse={horse} needsCondition={needsPhoto} busy={busy}
+                onSave={(request, onFields) => run(() => tripExecutionApi.scan(handoverId, request), t('myTrips.run.done.scanned'), onFields)} />
               {horse.photoAttached && <StatusBadge tone="success" label={t('handoverEvidence.photoAttached')} />}
               {needsPhoto && horse.microchipMatched && <Field label={t('handoverEvidence.photo')} required>
                 {c => <Input {...c} type="file" accept="image/*" disabled={busy} onChange={e => {
