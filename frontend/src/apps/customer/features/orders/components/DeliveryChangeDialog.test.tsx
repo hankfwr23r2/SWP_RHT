@@ -27,8 +27,10 @@ it('previews only the selected address and confirms against the quoted total', a
     }} onClose={close} onChanged={refresh} />
   </ToastProvider></MemoryRouter>)
 
-  fireEvent.change(await screen.findByRole('combobox', { name: /Nơi giao hiện tại/ }), { target: { value: '3' } })
-  fireEvent.change(screen.getByRole('combobox', { name: /Địa chỉ đã lưu/ }), { target: { value: '4' } })
+  fireEvent.click(await screen.findByRole('combobox', { name: /Nơi giao hiện tại/ }))
+  fireEvent.click(screen.getByRole('option', { name: 'Old address' }))
+  fireEvent.click(screen.getByRole('combobox', { name: /Địa chỉ đã lưu/ }))
+  fireEvent.click(screen.getByRole('option', { name: /New address/ }))
   fireEvent.change(screen.getByRole('textbox', { name: /Người nhận/ }), { target: { value: 'Recipient' } })
   const preview = screen.getByRole('button', { name: 'Xem trước chi phí' })
   fireEvent.submit(preview.closest('form')!)

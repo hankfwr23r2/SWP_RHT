@@ -7,9 +7,9 @@ import { ConfirmDialog } from '@shared/ui/ConfirmDialog'
 import { EmptyState } from '@shared/ui/EmptyState'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { Field } from '@shared/ui/Field'
-import { FormSelect } from '@shared/ui/FormSelect'
 import { Input } from '@shared/ui/Input'
 import { Modal } from '@shared/ui/Modal'
+import { Select } from '@shared/ui/Select'
 import { Skeleton } from '@shared/ui/Skeleton'
 import { useDeliveryChange } from '@customer/features/orders/useDeliveryChange'
 import s from '@customer/features/orders/Orders.module.css'
@@ -64,24 +64,22 @@ export function DeliveryChangeDialog({ id, detail, onClose, onChanged }: {
     {!!change.addresses.data?.length && !change.addresses.error && !!places.length && (
       <form className={s.stack} onSubmit={preview} onChange={change.reset}>
         <Field label={t(`${key}.place`)} required error={change.fields.deliveryAddressId}>{field => (
-          <FormSelect {...field} value={selected} required disabled={change.busy} onChange={event => {
-            const id = event.target.value
-            const chosen = places.find(row => String(row.id) === id)
-            setSelected(id)
-            setAddress(chosen?.sourceCustomerAddressId == null ? '' : String(chosen.sourceCustomerAddressId))
-            setContact(chosen?.contactName ?? '')
-            setPhone(chosen?.contactPhone ?? '')
-          }}>
-            <option value="">{t(`${key}.choose`)}</option>
-            {places.map(row => <option key={row.id} value={row.id}>{row.addressLine}</option>)}
-          </FormSelect>
+          <Select {...field} value={selected} disabled={change.busy} placeholder={t(`${key}.choose`)}
+            options={places.map(row => ({ value: String(row.id), label: row.addressLine ?? '' }))}
+            onChange={id => {
+              const chosen = places.find(row => String(row.id) === id)
+              change.reset()
+              setSelected(id)
+              setAddress(chosen?.sourceCustomerAddressId == null ? '' : String(chosen.sourceCustomerAddressId))
+              setContact(chosen?.contactName ?? '')
+              setPhone(chosen?.contactPhone ?? '')
+            }} />
         )}</Field>
         {place && <div key={selected} className={s.stack}>
           <Field label={t(`${key}.address`)} required error={change.fields.customerAddressId}>{field => (
-            <FormSelect {...field} name="customerAddressId" required disabled={change.busy} value={address} onChange={event => setAddress(event.target.value)}>
-              <option value="">{t(`${key}.choose`)}</option>
-              {change.addresses.data?.map(address => <option key={address.id} value={address.id}>{address.label} · {address.addressLine}</option>)}
-            </FormSelect>
+            <Select {...field} value={address} disabled={change.busy} placeholder={t(`${key}.choose`)}
+              options={(change.addresses.data ?? []).map(row => ({ value: String(row.id), label: `${row.label} · ${row.addressLine}` }))}
+              onChange={value => { change.reset(); setAddress(value) }} />
           )}</Field>
           <Field label={t(`${key}.contact`)} required error={change.fields.contactName}>{field => (
             <Input {...field} name="contactName" required maxLength={200} disabled={change.busy} value={contact} onChange={event => setContact(event.target.value)} />
@@ -93,7 +91,7 @@ export function DeliveryChangeDialog({ id, detail, onClose, onChanged }: {
         {change.error && <p role="alert" className={s.error}>{change.error}</p>}
         {change.quote && <DeliveryChangePrice price={change.quote.price} />}
         <div className={s.row}>
-          <Button type="submit" loading={change.busy} disabled={!place}>{t(`${key}.preview`)}</Button>
+          <Button type="submit" loading={change.busy} disabled={!place || !address}>{t(`${key}.preview`)}</Button>
           {change.quote && <Button type="button" variant="primary" onClick={() => setConfirming(true)}>{t(`${key}.confirm`)}</Button>}
         </div>
       </form>
