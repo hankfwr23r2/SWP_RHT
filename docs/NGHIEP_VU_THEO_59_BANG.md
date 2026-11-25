@@ -939,7 +939,7 @@ Chi phí phía khách chưa duyệt: nhắc quản lý ngày 3, 7; đủ 14 ngà
 
 Nợ quá hạn từ 200.000 đ thì chưa đặt đơn mới được; nhỏ hơn chỉ nhắc. Khách khiếu nại mỗi khoản một lần: tạm dừng hạn và không chặn tới khi quản lý kết luận (chấp nhận thì hủy khoản, giữ nguyên thì hạn lùi đúng thời gian chờ). Ngày 14 báo quản lý gọi khách, gia hạn một lần tối đa 14 ngày. Ngày 30 là nợ khó thu: ngừng nhắc mỗi ngày, báo khách và quản lý một lần. Xóa nợ chỉ với nợ khó thu, cần lý do và tệp quyết định; quyền đặt đơn do quản lý mở riêng; khách muốn trả sau thì quản lý mở lại khoản.
 
-Chưa làm: chia tối đa 3 kỳ.
+Không chia kỳ: chỉ gia hạn một lần (người dùng chốt 25/11/2026).
 
 
 ## Đồng hồ phí giữ và giao lại ở hub · phần 2 của mục 13.2
