@@ -1,24 +1,51 @@
 package com.example.racehorse_transport.policy;
 
+import com.example.racehorse_transport.entity.Incident;
 import com.example.racehorse_transport.entity.enums.IncidentType;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import com.example.racehorse_transport.entity.enums.IncidentPlanStatus;
 import com.example.racehorse_transport.entity.enums.IncidentResolutionType;
+import com.example.racehorse_transport.entity.enums.IncidentSeverity;
 import com.example.racehorse_transport.entity.enums.IncidentStatus;
 import com.example.racehorse_transport.entity.enums.PartyRoleType;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Optional;
 
 // Quy tắc sự cố và phương án (B4), hàm thuần
 public final class IncidentPolicy {
 
+    public static final Comparator<Incident> DISPLAY_ORDER = Comparator
+            .comparing(Incident::getSeverity, Comparator.reverseOrder())
+            .thenComparing(Incident::getReportedAt, Comparator.reverseOrder())
+            .thenComparing(Incident::getId, Comparator.reverseOrder());
+
     private IncidentPolicy() {}
+
+    public static IncidentSeverity defaultSeverity(IncidentType type) {
+        return switch (type) {
+            case HEALTH, ACCIDENT -> IncidentSeverity.HIGH;
+            case VEHICLE_BREAKDOWN, HANDOVER_TIMEOUT, DOCUMENT -> IncidentSeverity.MEDIUM;
+            case DELAY, OTHER, COMPLAINT -> IncidentSeverity.LOW;
+        };
+    }
+
+    public static boolean blocksTrip(IncidentSeverity severity, IncidentStatus status, Instant tripUnlockedAt) {
+        return severity == IncidentSeverity.HIGH && isOpen(status)
+                && status != IncidentStatus.PLAN_ACTIVE && tripUnlockedAt == null;
+    }
 
     public static boolean requiresFit(IncidentType type, boolean hasHorse) {
         return type == IncidentType.HEALTH || (type == IncidentType.ACCIDENT && hasHorse);
+    }
+
+    public static void requireFitConfirmation(IncidentType type, boolean hasHorse) {
+        if (!requiresFit(type, hasHorse)) {
+            throw new DispatchRuleException("incidentType", "Sự cố này không yêu cầu xác nhận đủ sức.", true);
+        }
     }
 
     public static void requireReportable(VehicleTripStatus status, IncidentType type, boolean hasHorse) {
@@ -87,13 +114,34 @@ public final class IncidentPolicy {
         }
     }
 
+    public static void requireCanStartRest(IncidentStatus status, Instant restStartedAt, boolean fitConfirmed) {
+        requireActivePlanForFit(status);
+        if (restStartedAt != null) {
+            throw new DispatchRuleException("restStartedAt", "Đã bắt đầu cho ngựa nghỉ.", true);
+        }
+        if (fitConfirmed) {
+            throw new DispatchRuleException("fitConfirmedAt", "Đã xác nhận ngựa đủ sức đi tiếp.", true);
+        }
+    }
+
+    public static Instant fitEligibleAt(Instant restStartedAt, int minRestMinutes) {
+        return restStartedAt == null ? null : restStartedAt.plus(Duration.ofMinutes(minRestMinutes));
+    }
+
     // Xác nhận ngựa đủ sức đi tiếp khi phương án đang hiệu lực và đã nghỉ, chăm sóc đủ thời gian tối thiểu
-    public static void requireCanConfirmFit(IncidentStatus status, Instant reportedAt, Instant now, int minRestMinutes) {
+    public static void requireCanConfirmFit(IncidentStatus status, Instant restStartedAt, Instant now, int minRestMinutes) {
+        requireActivePlanForFit(status);
+        if (restStartedAt == null) {
+            throw new DispatchRuleException("restStartedAt", "Chưa bắt đầu cho ngựa nghỉ.", true);
+        }
+        if (now.isBefore(fitEligibleAt(restStartedAt, minRestMinutes))) {
+            throw new DispatchRuleException("status", "Ngựa chưa được nghỉ và chăm sóc đủ " + minRestMinutes + " phút.", true);
+        }
+    }
+
+    private static void requireActivePlanForFit(IncidentStatus status) {
         if (status != IncidentStatus.PLAN_ACTIVE) {
             throw new DispatchRuleException("status", "Phương án xử lý chưa được duyệt.", true);
-        }
-        if (Duration.between(reportedAt, now).compareTo(Duration.ofMinutes(minRestMinutes)) < 0) {
-            throw new DispatchRuleException("status", "Ngựa chưa được nghỉ và chăm sóc đủ " + minRestMinutes + " phút.", true);
         }
     }
 

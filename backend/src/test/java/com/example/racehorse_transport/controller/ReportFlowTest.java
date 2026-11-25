@@ -75,8 +75,8 @@ class ReportFlowTest {
         jdbc.update("UPDATE trip_stop SET actual_arrival_at = planned_arrival_at + interval '45 minutes' WHERE id = ?", stops.get(2).longValue());
         jdbc.update("UPDATE horse_leg SET status = 'COMPLETED' WHERE vehicle_trip_id = ?", trip);
         long incident = jdbc.queryForObject("""
-                INSERT INTO incident (booking_id, vehicle_trip_id, incident_type, cause_type, title, description, reported_by, status)
-                VALUES (?, ?, 'DELAY', 'FORCE_MAJEURE', 'Kẹt xe cao tốc', 'Tai nạn phía trước', ?, 'CLOSED') RETURNING id""",
+                INSERT INTO incident (booking_id, vehicle_trip_id, incident_type, severity, cause_type, title, description, reported_by, status)
+                VALUES (?, ?, 'DELAY', 'LOW', 'FORCE_MAJEURE', 'Kẹt xe cao tốc', 'Tai nạn phía trước', ?, 'CLOSED') RETURNING id""",
                 Long.class, booking, trip, coordinatorStaff.getUserId());
         jdbc.update("""
                 INSERT INTO cost_item (category, description, amount, currency_code, payer_type, vehicle_trip_id, incurred_at, recorded_by, approved_by, approved_at)

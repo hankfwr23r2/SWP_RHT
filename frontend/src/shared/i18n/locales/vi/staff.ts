@@ -24,6 +24,20 @@ export const staff = {
   },
   incidents: {
     departure: 'Chuyến liên quan: {{route}} · {{date}}',
+    severity: {
+      label: 'Mức độ',
+      LOW: 'Nhẹ',
+      MEDIUM: 'Vừa',
+      HIGH: 'Nặng',
+      default: 'Mặc định theo loại',
+      defaultsError: 'Không tải được mức mặc định theo loại sự cố.',
+      save: 'Lưu mức độ',
+    },
+    unlockTrip: {
+      action: 'Mở khóa lượt xe',
+      reason: 'Lý do mở khóa',
+      consequence: 'Thao tác gỡ khóa do sự cố này. Lý do được ghi vào nhật ký kiểm toán.',
+    },
     handoverCause: {
       told: "Giờ đã báo",
       arrived: "Giờ tới thật",
@@ -114,6 +128,10 @@ export const staff = {
     "evidenceType": "Loại tệp chứng cứ",
     "vetReport": "Kết quả thú y",
     "vetReportNeeded": "Tải kết quả thú y để xác nhận thay tổ lái.",
+    "restStartedAt": "Bắt đầu nghỉ lúc {{time}}",
+    "fitCheckPhoto": "Ảnh xác nhận đủ sức",
+    "fitCheckPhotoFile": "Chọn ảnh con ngựa",
+    "uploadFitCheckPhoto": "Tải ảnh xác nhận đủ sức",
     "vehicleSwapRecord": "Biên bản đổi xe",
     "vehicleSwapRecordFile": "Ảnh biên bản đổi xe đã ký",
     "uploadVehicleSwapRecord": "Tải biên bản đổi xe",

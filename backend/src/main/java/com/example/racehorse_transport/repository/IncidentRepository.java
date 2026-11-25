@@ -3,6 +3,7 @@ package com.example.racehorse_transport.repository;
 import com.example.racehorse_transport.entity.enums.IncidentType;
 
 import com.example.racehorse_transport.entity.Incident;
+import com.example.racehorse_transport.entity.enums.IncidentSeverity;
 import com.example.racehorse_transport.entity.enums.IncidentStatus;
 import jakarta.persistence.LockModeType;
 import java.util.Collection;
@@ -34,22 +35,37 @@ public interface IncidentRepository extends JpaRepository<Incident, Long> {
 
     boolean existsByVehicleTrip_IdAndHorseLegIsNullAndStatusIn(Long vehicleTripId, Collection<IncidentStatus> statuses);
 
-    @EntityGraph(attributePaths = {"vehicleTrip", "vehicleTrip.departure.route", "booking", "horseLeg", "horseLeg.bookingHorse.horse",
+    @EntityGraph(attributePaths = {"vehicleTrip", "vehicleTrip.departure.route", "booking", "horseLeg", "horseLeg.bookingHorse.horse", "horseLeg.vehicleTrip.departure.route",
             "horseLeg.alightTripStop", "reportedBy", "fitConfirmedBy", "causeConfirmedBy"})
     @Query("""
             SELECT i FROM Incident i LEFT JOIN i.horseLeg leg WHERE (i.status IN :statuses
                 AND i.incidentType <> com.example.racehorse_transport.entity.enums.IncidentType.COMPLAINT)
                 OR (i.incidentType = :deliveryType AND coalesce(leg.actualEndAt, i.reportedAt) >= :since)
-            ORDER BY i.reportedAt DESC, i.id DESC
             """)
     List<Incident> findForBoard(Collection<IncidentStatus> statuses, IncidentType deliveryType, java.time.Instant since);
 
     @EntityGraph(attributePaths = {"booking", "vehicleTrip", "vehicleTrip.departure.route", "horseLeg", "horseLeg.bookingHorse", "horseLeg.bookingHorse.horse",
-            "horseLeg.alightTripStop", "reportedBy", "fitConfirmedBy", "causeConfirmedBy"})
-    List<Incident> findByVehicleTrip_IdOrderByReportedAtDesc(Long vehicleTripId);
+            "horseLeg.vehicleTrip.departure.route", "horseLeg.alightTripStop", "reportedBy", "fitConfirmedBy", "causeConfirmedBy"})
+    @Query("""
+            SELECT i FROM Incident i LEFT JOIN i.horseLeg leg
+            WHERE coalesce(i.vehicleTrip.id, leg.vehicleTrip.id) = :vehicleTripId
+            """)
+    List<Incident> findForTrip(Long vehicleTripId);
+
+    @Query("""
+            SELECT i FROM Incident i LEFT JOIN i.horseLeg leg
+            WHERE coalesce(i.vehicleTrip.id, leg.vehicleTrip.id) = :vehicleTripId AND i.severity = :severity
+            """)
+    List<Incident> findForTripBySeverity(Long vehicleTripId, IncidentSeverity severity);
+
+    @Query("""
+            SELECT coalesce(i.vehicleTrip.id, leg.vehicleTrip.id) FROM Incident i LEFT JOIN i.horseLeg leg
+            WHERE i.id = :incidentId
+            """)
+    Optional<Long> findVehicleTripId(Long incidentId);
 
     @EntityGraph(attributePaths = {"booking", "vehicleTrip", "vehicleTrip.departure.route", "horseLeg", "horseLeg.bookingHorse", "horseLeg.bookingHorse.horse",
-            "horseLeg.alightTripStop", "reportedBy", "fitConfirmedBy", "causeConfirmedBy"})
+            "horseLeg.vehicleTrip.departure.route", "horseLeg.alightTripStop", "reportedBy", "fitConfirmedBy", "causeConfirmedBy"})
     @Query("SELECT i FROM Incident i WHERE i.id = :id AND i.incidentType <> com.example.racehorse_transport.entity.enums.IncidentType.COMPLAINT")
     Optional<Incident> findOneById(Long id);
 
@@ -74,6 +90,10 @@ public interface IncidentRepository extends JpaRepository<Incident, Long> {
     @Query("SELECT i FROM Incident i WHERE i.id = :id AND i.incidentType <> com.example.racehorse_transport.entity.enums.IncidentType.COMPLAINT")
     Optional<Incident> findForUpdate(@Param("id") Long id);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT i FROM Incident i WHERE i.id = :id")
+    Optional<Incident> findByIdForSeverityUpdate(Long id);
+
     @Query("""
             SELECT count(i) > 0 FROM Incident i
             LEFT JOIN i.booking b LEFT JOIN i.horseLeg affected LEFT JOIN i.vehicleTrip affectedTrip
@@ -91,5 +111,5 @@ public interface IncidentRepository extends JpaRepository<Incident, Long> {
     boolean hasDocumentType(@Param("incidentId") Long incidentId, @Param("code") String code);
 
     // Báo cáo chuyến
-    List<Incident> findByVehicleTrip_IdInOrderByReportedAt(Collection<Long> vehicleTripIds);
+    List<Incident> findByVehicleTrip_IdIn(Collection<Long> vehicleTripIds);
 }

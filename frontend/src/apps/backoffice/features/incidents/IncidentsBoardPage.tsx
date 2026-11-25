@@ -12,6 +12,7 @@ import { PageHeader } from '@shared/ui/PageHeader'
 import { Skeleton } from '@shared/ui/Skeleton'
 import { StatusBadge } from '@shared/ui/StatusBadge'
 import { Table, type TableColumn } from '@shared/ui/Table'
+import { IncidentSeverityBadge } from '@backoffice/shared/IncidentSeverity'
 import { IncidentDetailModal } from './IncidentDetailModal'
 import { HandoverCauseDialog } from './HandoverCauseDialog'
 import s from './Incidents.module.css'
@@ -26,6 +27,7 @@ export default function IncidentsBoardPage() {
   const columns: TableColumn<Incident>[] = [
     { key: 'title', header: t('incidents.colTitle'), render: i => i.title },
     { key: 'type', header: t('incidents.colType'), render: i => t(`incidents.type.${i.incidentType}`) },
+    { key: 'severity', header: t('incidents.severity.label'), render: i => <IncidentSeverityBadge severity={i.severity} /> },
     { key: 'trip', header: t('incidents.colTrip'), render: i => i.vehicleTripCode ?? '' },
     { key: 'horse', header: t('incidents.colHorse'), render: i => i.horseName ?? '' },
     { key: 'told', header: t('incidents.handoverCause.told'), render: i => i.deliveryFailure?.toldArrivalAt ? formatDateTime(new Date(i.deliveryFailure.toldArrivalAt)) : '' },
