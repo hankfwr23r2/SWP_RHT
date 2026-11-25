@@ -338,7 +338,8 @@ public class HandoverServiceImpl implements HandoverService {
         // Lần trả ngựa đã xong: các con là các con đã ghi trong lần đó (chặng đã hủy)
         List<HorseLeg> horses = handover.getHandoverType() == HandoverType.RETURN
                 ? byLeg.values().stream().map(HandoverHorse::getHorseLeg).toList() : candidates(handover);
-        return HandoverResponseDto.from(handover, horses, byLeg, evidence.hasRecord(handover.getId()));
+        return HandoverResponseDto.from(handover, horses, byLeg, evidence.hasRecord(handover.getId()),
+                evidence.photographedLegs(handover.getId()));
     }
 
     @Override

@@ -11,6 +11,9 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 
 public interface DocumentRepository extends JpaRepository<Document, Long> {
+
+    @Query("SELECT d.evidenceHorseLeg.id FROM Document d WHERE d.handover.id = :handoverId AND d.documentType.code = :code AND d.evidenceHorseLeg IS NOT NULL")
+    java.util.Set<Long> findEvidenceHorseLegIds(Long handoverId, String code);
     @Query("""
             SELECT d FROM Document d JOIN FETCH d.documentRequirement JOIN FETCH d.documentType
             WHERE d.booking.id = :bookingId

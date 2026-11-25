@@ -63,7 +63,7 @@ public class TripScheduleServiceImpl implements TripScheduleService {
         boolean direct = request.tripType() == VehicleTripType.DIRECT;
         List<GeoPointDto> points = input.places().stream().map(PlaceInput::point).toList();
         Instant around = request.startAt() != null ? request.startAt()
-                : input.readyAt() != null ? input.readyAt()
+                : input.readyAt() != null ? notPast(input.readyAt())
                 : input.pickupDate() != null ? input.pickupDate().atTime(input.pickupWindow().startHour(), 0).atZone(BUSINESS_ZONE).toInstant()
                 : clock.instant();
         List<RoadRouteDto.Leg> legs = roads.legs(points, LocalDateTime.ofInstant(around, BUSINESS_ZONE), input.weightTons(), input.topSpeedKmh());
@@ -75,7 +75,7 @@ public class TripScheduleServiceImpl implements TripScheduleService {
             start = switch (request.tripType()) {
                 case PICKUP, DIRECT -> TripSchedulePolicy.pickupDeparture(requirePickupDate(input), input.pickupWindow(), BUSINESS_ZONE, drives, input.rules());
                 case DELIVERY -> TripSchedulePolicy.deliveryDeparture(
-                        requireReady(input).plus(TripSchedulePolicy.dwell(horses.getFirst(), input.rules())),
+                        notPast(requireReady(input)).plus(TripSchedulePolicy.dwell(horses.getFirst(), input.rules())),
                         input.deliveryWindow(), BUSINESS_ZONE, horses, drives, input.rules());
                 default -> throw new DispatchRuleException("startAt", "Vui lòng chọn giờ xuất phát.");
             };
@@ -140,6 +140,12 @@ public class TripScheduleServiceImpl implements TripScheduleService {
             return "Ngựa tới hub sau hạn có mặt của chuyến trục. Chọn giờ xuất phát sớm hơn.";
         }
         return "Lượt xe lái quá " + input.rules().maxDriveHoursPerDay() + " giờ trong một ngày.";
+    }
+
+    // Giao lại: ngựa đã ở hub từ trước, giờ gợi ý không được ở quá khứ
+    private Instant notPast(Instant at) {
+        Instant now = clock.instant();
+        return at.isBefore(now) ? now : at;
     }
 
     private static java.time.LocalDate requirePickupDate(TripInput input) {

@@ -94,12 +94,30 @@ public class StallPlanServiceImpl implements StallPlanService {
         Optional<Integer> spot = others.stream().allMatch(h -> h.position() != null)
                 ? StallPlanPolicy.placeOne(added, others, segments(trip)) : Optional.empty();
         if (spot.isPresent()) {
+            if (rearrangeWithoutBlocking(onTrip, leg, spot.get(), all, segments(trip))) return;
             leg.setStallPosition(spot.get().shortValue());
             legs.flush();
             return;
         }
         // Đủ chỗ nhưng lẻ vị trí (hoặc còn con chưa xếp): dồn các con chưa lên xe; không được thì từ chối và nêu con vướng
         store(onTrip, StallPlanPolicy.suggest(all, segments(trip)));
+    }
+
+    // Vị trí trống gần đầu xe làm con xuống trước bị chắn thì xếp lại, nếu cách xếp lại ít cảnh báo hơn
+    private boolean rearrangeWithoutBlocking(List<HorseLeg> onTrip, HorseLeg added, int spot, List<StallHorse> all, List<Integer> segments) {
+        Map<Long, Integer> positions = current(onTrip);
+        positions.put(added.getId(), spot);
+        int before = StallPlanPolicy.warnings(all, positions).size();
+        if (before == 0) return false;
+        Map<Long, Integer> suggested;
+        try {
+            suggested = StallPlanPolicy.suggest(all, segments);
+        } catch (DispatchRuleException e) {
+            return false;
+        }
+        if (StallPlanPolicy.warnings(all, suggested).size() >= before) return false;
+        store(onTrip, suggested);
+        return true;
     }
 
     private void store(List<HorseLeg> onTrip, Map<Long, Integer> positions) {
