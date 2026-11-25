@@ -48,10 +48,12 @@ public class IncidentEvidenceServiceImpl implements IncidentEvidenceService {
     private final StaffRepository staff;
     private final CrewAssignmentRepository crew;
     private final Clock clock;
+    private final com.example.racehorse_transport.service.CoordinatorAssignmentService coordinators;
 
     @Override
     @Transactional
     public List<EvidenceResponseDto> attachReceipt(Long costItemId, MultipartFile file, String username) {
+        coordinators.requireCostWrite(costItemId, username);
         CostItem cost = costs.findById(costItemId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chi phí " + costItemId));
         if (cost.getApprovedAt() != null) {
             throw new DispatchRuleException("costItemId", "Chi phí đã được duyệt, không thêm biên lai.", true);
@@ -71,6 +73,7 @@ public class IncidentEvidenceServiceImpl implements IncidentEvidenceService {
     @Override
     @Transactional
     public List<EvidenceResponseDto> attachPhoto(Long incidentId, MultipartFile file, BigDecimal latitude, BigDecimal longitude, String documentType, String username) {
+        coordinators.requireIncidentWrite(incidentId, username);
         Incident incident = incidents.findForUpdate(incidentId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố " + incidentId));
         if (incident.getStatus() == IncidentStatus.CLOSED) {
             throw new DispatchRuleException("incidentId", "Sự cố đã đóng, không thêm ảnh.", true);

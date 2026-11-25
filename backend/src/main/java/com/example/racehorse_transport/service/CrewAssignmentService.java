@@ -8,9 +8,9 @@ import java.util.List;
 // Phân công tổ lái cho lượt xe và nhân viên xác nhận nhận việc. Chủ sở hữu crew_assignment: luồng B (B1).
 public interface CrewAssignmentService {
 
-    VehicleTripResponseDto assign(Long vehicleTripId, CrewAssignmentRequestDto request);
+    VehicleTripResponseDto assign(Long vehicleTripId, CrewAssignmentRequestDto request, String username);
 
-    VehicleTripResponseDto release(Long assignmentId);
+    VehicleTripResponseDto release(Long assignmentId, String username);
 
     List<MyCrewAssignmentResponseDto> mine(String username);
 

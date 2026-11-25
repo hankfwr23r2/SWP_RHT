@@ -15,7 +15,7 @@ import com.example.racehorse_transport.policy.HubStallPolicy;
 import com.example.racehorse_transport.repository.HorseStayRepository;
 import com.example.racehorse_transport.repository.HubStallRepository;
 import com.example.racehorse_transport.repository.LocationRepository;
-import com.example.racehorse_transport.repository.StaffRepository;
+import com.example.racehorse_transport.service.CoordinatorRecipientService;
 import com.example.racehorse_transport.service.HubStallService;
 import com.example.racehorse_transport.service.NotificationService;
 import java.util.Set;
@@ -30,7 +30,7 @@ public class HubStallServiceImpl implements HubStallService {
     private final LocationRepository locations;
     private final HubStallRepository stalls;
     private final HorseStayRepository stays;
-    private final StaffRepository staff;
+    private final CoordinatorRecipientService coordinators;
     private final NotificationService notifications;
 
     @Override
@@ -124,9 +124,9 @@ public class HubStallServiceImpl implements HubStallService {
     }
 
     private void warnCoordinators(HorseStay stay, Location hub) {
-        var recipients = staff.findUserIdsByRoleAndStatus("COORDINATOR", AppUserStatus.ACTIVE);
+        var line = stay.getBookingHorse();
+        var recipients = coordinators.forHorse(line, null);
         if (!recipients.isEmpty()) {
-            var line = stay.getBookingHorse();
             notifications.notify(recipients, line.getBooking().getId(), "Hub không còn ô thường trống",
                     line.getHorse().getName() + " đã vào " + hub.getName() + " và cần được xếp ô.", "/coordinator/hub");
         }

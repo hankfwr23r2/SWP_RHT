@@ -4,7 +4,7 @@ import { afterEach, expect, it, vi } from 'vitest'
 import apiClient from '@shared/api/client'
 import '@shared/i18n/staff'
 import { ToastProvider } from '@shared/ui/toast'
-import { HorseHealthHistory } from './HorseHealthHistory'
+import { HorseHealthHistory } from '@backoffice/shared/HorseHealthHistory'
 
 vi.mock('@shared/api/client', () => ({ default: { get: vi.fn() } }))
 afterEach(() => { cleanup(); vi.resetAllMocks() })

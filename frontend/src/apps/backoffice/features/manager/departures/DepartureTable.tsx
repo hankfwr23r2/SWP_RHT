@@ -13,11 +13,12 @@ interface Props {
   onConfirm: (row: DepartureDecision) => void
   onCancel: (row: DepartureDecision) => void
   onDelay: (row: DepartureDecision) => void
+  onAssign: (row: DepartureDecision) => void
 }
 
 const TONE = { OPEN: 'info', CLOSED: 'neutral', IN_PROGRESS: 'info', COMPLETED: 'success', CANCELLED: 'danger' } as const
 
-export function DepartureTable({ rows, busy, onConfirm, onCancel, onDelay }: Props) {
+export function DepartureTable({ rows, busy, onConfirm, onCancel, onDelay, onAssign }: Props) {
   const { t } = useTranslation()
   const columns: TableColumn<DepartureDecision>[] = [
     { key: 'route', header: t('mgr.departures.route'), render: row => <strong>{row.routeName}</strong> },
@@ -52,8 +53,12 @@ export function DepartureTable({ rows, busy, onConfirm, onCancel, onDelay }: Pro
         {row.receivedBookings?.map(order => <p key={order.id}><Link to={`/manager/orders/${order.id}`}>{order.code}</Link></p>)}
       </>
     ) },
+    { key: 'coordinator', header: t('coordAssignment.owner'), render: row => row.coordinatorName
+      ?? <StatusBadge tone="danger" label={t('coordAssignment.unassigned')} /> },
     { key: 'actions', header: t('mgr.departures.actions'), align: 'end', render: row => (
       <div className={s.row}>
+        {row.status !== 'COMPLETED' && row.status !== 'CANCELLED'
+          && <Button size="sm" disabled={busy} onClick={() => onAssign(row)}>{t('coordAssignment.assign')}</Button>}
         {row.confirmable && <Button size="sm" variant="primary" disabled={busy} onClick={() => onConfirm(row)}>{t('mgr.departures.confirm')}</Button>}
         {row.canRevise && <Button size="sm" disabled={busy} onClick={() => onDelay(row)}>{t('mgr.departures.delay.open')}</Button>}
         {(row.status === 'OPEN' || row.status === 'CLOSED') && !row.receivedBookings?.length

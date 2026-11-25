@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.service.CoordinatorAssignmentService;
 import com.example.racehorse_transport.dto.incident.IncidentSeverityRequestDto;
 import com.example.racehorse_transport.dto.incident.TripUnlockRequestDto;
 import com.example.racehorse_transport.entity.Incident;
@@ -33,6 +34,7 @@ public class IncidentSeverityServiceImpl implements IncidentSeverityService {
     private final StaffRepository staff;
     private final AuditService audit;
     private final Clock clock;
+    private final CoordinatorAssignmentService coordinators;
 
     @Override
     @Transactional(readOnly = true)
@@ -44,6 +46,7 @@ public class IncidentSeverityServiceImpl implements IncidentSeverityService {
     @Override
     @Transactional
     public void changeSeverity(Long incidentId, IncidentSeverityRequestDto request, String username) {
+        coordinators.requireIncidentWrite(incidentId, username);
         Incident incident = incidents.findByIdForSeverityUpdate(incidentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố " + incidentId));
         IncidentSeverity previous = incident.getSeverity();
@@ -62,6 +65,7 @@ public class IncidentSeverityServiceImpl implements IncidentSeverityService {
     @Override
     @Transactional
     public void unlockTrip(Long incidentId, TripUnlockRequestDto request, String username) {
+        coordinators.requireIncidentWrite(incidentId, username);
         Incident incident = incidents.findForUpdate(incidentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố " + incidentId));
         Long tripId = incidents.findVehicleTripId(incidentId).orElse(null);

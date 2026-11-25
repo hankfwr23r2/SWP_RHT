@@ -16,6 +16,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface CostItemRepository extends JpaRepository<CostItem, Long> {
+    @Query("select c.vehicleTrip.id from CostItem c where c.id = :id")
+    Optional<Long> findVehicleTripId(Long id);
     @Query("""
             SELECT c FROM CostItem c LEFT JOIN FETCH c.extraChargePayment
             WHERE c.horseStay.id = :stayId OR (

@@ -21,7 +21,7 @@ public record IncidentResponseDto(
         Instant restStartedAt, Instant fitEligibleAt,
         String fitConfirmedByName, Instant fitConfirmedAt, Instant resolvedAt, boolean requiresFit, List<PlanDto> plans, IncidentCauseType confirmedCauseType,
         String causeConfirmedByName, Instant causeConfirmedAt, DeliveryFailureDto deliveryFailure, Long departureId,
-        String departureRouteName, LocalDate departureDate, boolean blocksTrip) {
+        String departureRouteName, LocalDate departureDate, boolean blocksTrip, String coordinatorStaffCode) {
 
     public record DeliveryFailureDto(Instant toldArrivalAt, Instant actualArrivalAt, Long delayMinutes, boolean amendable) {}
 
@@ -53,6 +53,7 @@ public record IncidentResponseDto(
                 incident.getResolvedAt(), requiresFit, plans, incident.getConfirmedCauseType(),
                 incident.getCauseConfirmedBy() == null ? null : incident.getCauseConfirmedBy().getFullName(),
                 incident.getCauseConfirmedAt(), deliveryFailure, departure == null ? null : departure.getId(),
-                departure == null ? null : departure.getRoute().getName(), departure == null ? null : departure.getDepartureDate(), blocksTrip);
+                departure == null ? null : departure.getRoute().getName(), departure == null ? null : departure.getDepartureDate(), blocksTrip,
+                trip == null || trip.getCoordinator() == null ? null : trip.getCoordinator().getStaffCode());
     }
 }

@@ -9,6 +9,7 @@ const booking = {
 }
 const linehaul = {
   id: 9, code: 'VT-AAAA0009', tripType: 'LINEHAUL', status: 'PLANNED', departureId: 7, routeCode: 'HCM-DN', vehicleId: 3, licensePlate: '51C-12345',
+  coordinatorId: 12, coordinatorName: 'Nhân viên Test', coordinatorStaffCode: 'STF-CO', openIncidentCount: 0,
   vehicleSeats: 6, startLocationName: 'Hub HCM', endLocationName: 'Hub Đà Nẵng', plannedStartAt: '2031-03-05T23:00:00Z', plannedEndAt: '2031-03-06T20:00:00Z',
   stops: [
     { id: 20, sequenceNumber: 1, stopType: 'HUB', locationId: 1, locationName: 'Hub HCM', plannedArrivalAt: '2031-03-05T23:00:00Z' },
@@ -20,7 +21,9 @@ const linehaul = {
 const ok = (route: Route, data: unknown, status = 200) => route.fulfill({ status, json: { status: 'success', message: '', data } })
 
 async function signIn(page: Page, role: 'coordinator' | 'driver') {
-  await page.addInitScript(r => sessionStorage.setItem('SWP_SESSION_backoffice', JSON.stringify({ role: r, name: 'Nhân viên Test', username: `${r}@example.com` })), role)
+  await page.addInitScript(r => sessionStorage.setItem('SWP_SESSION_backoffice', JSON.stringify({
+    role: r, name: 'Nhân viên Test', username: `${r}@example.com`, staffCode: r === 'coordinator' ? 'STF-CO' : 'STF-1',
+  })), role)
 }
 
 // failBookings: danh sách đơn lỗi cho tới khi test đặt lại false (StrictMode gọi effect hai lần nên không dùng "lỗi một lần")
@@ -39,6 +42,12 @@ async function mockDispatch(page: Page, control: { failBookings?: boolean } = {}
     }
     if (method === 'GET' && path === '/vehicle-trips') return ok(route, [linehaul])
     if (method === 'GET' && path === '/vehicle-trips/9') return ok(route, linehaul)
+    if (method === 'GET' && path === '/coordinator/vehicle-trips') {
+      return ok(route, [{ trip: linehaul, currentPoint: 'Hub HCM', late: false, horseCount: horses.length }])
+    }
+    if (method === 'GET' && path === '/coordinator/vehicle-trips/9/horses') {
+      return ok(route, horses.map(horse => ({ horse, boarded: false, documentsComplete: true })))
+    }
     if (method === 'GET' && path === '/vehicle-trips/9/horse-legs') return ok(route, horses)
     if (method === 'POST' && path === '/vehicle-trips/9/horse-legs') {
       sent.horse = request.postDataJSON()
@@ -58,7 +67,8 @@ async function mockDispatch(page: Page, control: { failBookings?: boolean } = {}
     if (method === 'GET' && path === '/departures') return ok(route, [{ id: 7, routeCode: 'HCM-DN', plannedDepartureAt: '2031-03-05T23:00:00Z', status: 'OPEN', runConfirmed: true }])
     if (method === 'GET' && path === '/locations') return ok(route, [{ id: 1, name: 'Hub HCM', locationType: 'HUB' }])
     if (method === 'GET' && path === '/horse-stays') {
-      return ok(route, [{ id: 6, bookingHorseId: 50, bookingCode: booking.code, horseName: 'Sao Mai', stayType: 'ASSEMBLY', locationName: 'Hub HCM', actualStartAt: '2031-03-05T05:00:00Z', plannedEndAt: '2031-03-05T23:00:00Z' }])
+      return ok(route, [{ id: 6, bookingHorseId: 50, bookingCode: booking.code, horseName: 'Sao Mai', stayType: 'ASSEMBLY', locationName: 'Hub HCM', actualStartAt: '2031-03-05T05:00:00Z', plannedEndAt: '2031-03-05T23:00:00Z',
+        responsibleCoordinatorId: 12, responsibleCoordinatorName: 'Nhân viên Test' }])
     }
     if (method === 'POST' && path === '/vehicle-trips') {
       sent.trip = request.postDataJSON()

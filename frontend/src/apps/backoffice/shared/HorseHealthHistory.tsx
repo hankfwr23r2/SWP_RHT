@@ -5,7 +5,7 @@ import { ErrorState } from '@shared/ui/ErrorState'
 import { Modal } from '@shared/ui/Modal'
 import { Skeleton } from '@shared/ui/Skeleton'
 import { useHorseHealthHistory } from './useHorseHealthHistory'
-import s from './Tracking.module.css'
+import s from './HorseHealthHistory.module.css'
 
 export function HorseHealthHistory({ bookingHorseId, horseName, onClose }: {
   bookingHorseId: number

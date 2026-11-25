@@ -46,8 +46,9 @@ public class TripExecutionController {
     }
 
     @PostMapping("/vehicle-trips/{id}/start")
-    public ApiResponseDto<CrewTripResponseDto> start(@PathVariable Long id, Authentication authentication) {
-        execution.start(id, authentication.getName());
+    public ApiResponseDto<CrewTripResponseDto> start(@PathVariable Long id, Authentication authentication,
+            @Valid @RequestBody(required = false) com.example.racehorse_transport.dto.operation.TripStartRequestDto request) {
+        execution.start(id, authentication.getName(), request == null ? null : request.earlyReason());
         return ApiResponseDto.success(handovers.crewTrip(id, authentication.getName()), "Xe đã xuất phát");
     }
 

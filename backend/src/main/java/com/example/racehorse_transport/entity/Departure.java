@@ -29,6 +29,13 @@ import java.time.LocalDate;
 @Table(name = "departure")
 public class Departure {
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "coordinator_id")
+    private Staff coordinator;
+
+    @Column(name = "coordinator_reminded_on")
+    private LocalDate coordinatorRemindedOn;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")

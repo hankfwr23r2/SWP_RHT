@@ -14,6 +14,8 @@ import lombok.Getter;
 public class DepartureResponseDto {
 
     private Long id;
+    private Long coordinatorId;
+    private String coordinatorName;
     // NULL = chuyến đột xuất
     private Long departureScheduleId;
     private Long routeId;
@@ -38,6 +40,8 @@ public class DepartureResponseDto {
     public static DepartureResponseDto from(Departure departure, int availableStalls) {
         return DepartureResponseDto.builder()
                 .id(departure.getId())
+                .coordinatorId(departure.getCoordinator() == null ? null : departure.getCoordinator().getUserId())
+                .coordinatorName(departure.getCoordinator() == null ? null : departure.getCoordinator().getFullName())
                 .departureScheduleId(departure.getDepartureSchedule() == null ? null : departure.getDepartureSchedule().getId())
                 .routeId(departure.getRoute().getId())
                 .routeCode(departure.getRoute().getCode())

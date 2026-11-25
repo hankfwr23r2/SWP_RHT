@@ -197,6 +197,7 @@ export const staff = {
     documents: 'Orders missing documents: {{count}}',
   },
   staffMenus: {
+    '/coordinator/my-trips': 'My trips',
     '/manager/assignments': 'Assignments',
     '/coordinator/dispatch': 'Dispatch',
     '/my-trips': 'My trips',

@@ -33,7 +33,7 @@ public class StallPlanController {
     }
 
     @PostMapping("/vehicle-trips/{id}/stall-plan/apply")
-    public ApiResponseDto<StallPlanResponseDto> apply(@PathVariable Long id, @Valid @RequestBody StallPlanApplyRequestDto request) {
-        return ApiResponseDto.success(stallPlans.apply(id, request), "Đã lưu sơ đồ khoang");
+    public ApiResponseDto<StallPlanResponseDto> apply(@PathVariable Long id, @Valid @RequestBody StallPlanApplyRequestDto request, org.springframework.security.core.Authentication actor) {
+        return ApiResponseDto.success(stallPlans.apply(id, request, actor.getName()), "Đã lưu sơ đồ khoang");
     }
 }

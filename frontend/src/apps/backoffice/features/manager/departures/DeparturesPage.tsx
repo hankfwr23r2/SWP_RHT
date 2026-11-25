@@ -11,6 +11,7 @@ import { Input } from '@shared/ui/Input'
 import { PageHeader } from '@shared/ui/PageHeader'
 import { Skeleton } from '@shared/ui/Skeleton'
 import { ReasonDialog } from '@backoffice/shared/ReasonDialog'
+import { CoordinatorAssignmentDialog } from '@backoffice/shared/CoordinatorAssignmentDialog'
 import { moment, showDate } from '@backoffice/shared/staffFormat'
 import { useStaffAction } from '@backoffice/shared/useStaffAction'
 import { AdHocDialog } from './AdHocDialog'
@@ -19,7 +20,7 @@ import { DepartureTable } from './DepartureTable'
 import { useDecisions, useRoutesData } from './loaders'
 import s from '@backoffice/shared/StaffPanels.module.css'
 
-type Dialog = { kind: 'confirm' | 'cancel' | 'delay'; row: DepartureDecision } | { kind: 'create' } | null
+type Dialog = { kind: 'confirm' | 'cancel' | 'delay' | 'assign'; row: DepartureDecision } | { kind: 'create' } | null
 
 export default function DeparturesPage() {
   const { t } = useTranslation()
@@ -56,7 +57,8 @@ export default function DeparturesPage() {
     if (!loaded || !data) return <Skeleton lines={6} />
     if (!data.length) return <EmptyState icon={<i className="fa-solid fa-truck" />} title={t('mgr.departures.empty')} description={t('mgr.departures.emptyHint')} />
     return <DepartureTable rows={data} busy={busy} onConfirm={row => open({ kind: 'confirm', row })}
-      onCancel={row => open({ kind: 'cancel', row })} onDelay={row => open({ kind: 'delay', row })} />
+      onCancel={row => open({ kind: 'cancel', row })} onDelay={row => open({ kind: 'delay', row })}
+      onAssign={row => open({ kind: 'assign', row })} />
   }
 
   return (
@@ -70,6 +72,9 @@ export default function DeparturesPage() {
       {error && !dialog && <p className={s.error} role="alert">{error}</p>}
       {content()}
 
+      {dialog?.kind === 'assign' && dialog.row.id != null && <CoordinatorAssignmentDialog resource="departures"
+        id={dialog.row.id} currentId={dialog.row.coordinatorId} onClose={() => setDialog(null)}
+        onSaved={() => { setDialog(null); void reload() }} />}
       {dialog?.kind === 'confirm' && (
         <ConfirmDialog title={t('mgr.departures.confirmTitle')} confirmLabel={t('mgr.departures.confirm')} onConfirm={() => confirm(dialog.row)} onCancel={() => setDialog(null)}
           message={<>{name(dialog.row)}<br />{t('mgr.departures.confirmHint', { committed: dialog.row.committedStallCount, capacity: dialog.row.stallCapacity })}

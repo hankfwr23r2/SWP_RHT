@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.service.CoordinatorAssignmentService;
 import com.example.racehorse_transport.dto.dispatch.CrewAssignmentRequestDto;
 import com.example.racehorse_transport.dto.dispatch.MyCrewAssignmentResponseDto;
 import com.example.racehorse_transport.dto.dispatch.VehicleTripResponseDto;
@@ -55,7 +56,7 @@ public class CrewAssignmentServiceImpl implements CrewAssignmentService {
     private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm dd/MM").withZone(BUSINESS_ZONE);
 
     private final CrewAssignmentRepository assignments;
-    private final VehicleTripRepository trips;
+    private final CoordinatorAssignmentService coordinators;
     private final StaffRepository staff;
     private final DispatchService dispatch;
     private final NotificationService notifications;
@@ -67,9 +68,8 @@ public class CrewAssignmentServiceImpl implements CrewAssignmentService {
 
     @Override
     @Transactional
-    public VehicleTripResponseDto assign(Long vehicleTripId, CrewAssignmentRequestDto request) {
-        VehicleTrip trip = trips.findForUpdate(vehicleTripId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lượt xe " + vehicleTripId));
+    public VehicleTripResponseDto assign(Long vehicleTripId, CrewAssignmentRequestDto request, String username) {
+        VehicleTrip trip = coordinators.requireTripWrite(vehicleTripId, username);
         // Lượt đang chạy chỉ nhận thêm hộ tống thay ca giữa đường (người thay tự tới điểm dừng rồi ký SHIFT)
         boolean midway = trip.getStatus() == VehicleTripStatus.IN_PROGRESS;
         if (!midway && trip.getStatus() != VehicleTripStatus.PLANNED && trip.getStatus() != VehicleTripStatus.DISPATCHED) {
@@ -103,9 +103,9 @@ public class CrewAssignmentServiceImpl implements CrewAssignmentService {
 
     @Override
     @Transactional
-    public VehicleTripResponseDto release(Long assignmentId) {
+    public VehicleTripResponseDto release(Long assignmentId, String username) {
         CrewAssignment assignment = find(assignmentId);
-        VehicleTripStatus tripStatus = assignment.getVehicleTrip().getStatus();
+        VehicleTripStatus tripStatus = coordinators.requireTripWrite(assignment.getVehicleTrip().getId(), username).getStatus();
         if (tripStatus == VehicleTripStatus.IN_PROGRESS) {
             // Quy tắc #38: không rời ca khi còn phụ trách ngựa chưa bàn giao
             List<String> held = horsesHeldBy(assignment.getStaff().getUserId(), assignment.getVehicleTrip().getId());

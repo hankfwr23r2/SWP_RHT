@@ -348,7 +348,9 @@ class FullFlowIntegrationTest {
                 long assignment = ((Number) ((List<?>) JsonPath.read(mine, "$.data[?(@.vehicleTripId == %d)].id".formatted(id))).getFirst()).longValue();
                 act(member, "/crew-assignments/" + assignment + "/acknowledge").andExpect(status().isOk());
             }
-            act(driver, "/vehicle-trips/" + id + "/start").andExpect(status().isOk());
+            mvc.perform(post("/vehicle-trips/{id}/start", id).header(HttpHeaders.AUTHORIZATION, driver)
+                    .contentType(MediaType.APPLICATION_JSON).content("{\"earlyReason\":\"Đã sẵn sàng xuất phát sớm\"}"))
+                    .andExpect(status().isOk());
         }
 
         void arrive(int stop) throws Exception {

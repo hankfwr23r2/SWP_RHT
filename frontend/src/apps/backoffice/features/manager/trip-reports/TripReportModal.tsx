@@ -1,5 +1,9 @@
 // Báo cáo một lượt xe: điểm dừng (đúng giờ hay trễ), sức khỏe ngựa, sự cố, chi phí, đánh giá của khách
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { dispatchApi } from '@shared/api/dispatch'
+import { CoordinatorAssignmentDialog } from '@backoffice/shared/CoordinatorAssignmentDialog'
+import { Button } from '@shared/ui/Button'
 import { reportsApi, type TripReport } from '@shared/api/reports'
 import { useLoad } from '@shared/hooks/useLoad'
 import { formatDateTime, formatVND } from '@shared/lib/format'
@@ -22,6 +26,8 @@ const time = (at?: string) => (at ? formatDateTime(new Date(at)) : '—')
 export function TripReportModal({ tripId, onClose }: { tripId: number; onClose: () => void }) {
   const { t } = useTranslation()
   const { data, loaded, error, reload } = useLoad(() => reportsApi.trip(tripId), [tripId], { toastOnError: false })
+  const [assigning, setAssigning] = useState(false)
+  const trip = useLoad(() => dispatchApi.trip(tripId), [tripId], { toastOnError: false })
 
   const stops: TableColumn<Stop>[] = [
     { key: 'seq', header: '#', render: r => r.sequenceNumber },
@@ -74,7 +80,13 @@ export function TripReportModal({ tripId, onClose }: { tripId: number; onClose: 
 
   return (
     <Modal title={t('opsReport.detail.title', { code: data?.summary?.code ?? '' })} onClose={onClose} wide>
+      {trip.data && <p>
+        {trip.data.coordinatorName ?? t('coordAssignment.unassigned')}{' '}
+        <Button size="sm" onClick={() => setAssigning(true)}>{t('coordAssignment.assign')}</Button>
+      </p>}
       {body()}
+      {assigning && <CoordinatorAssignmentDialog resource="vehicle-trips" id={tripId} currentId={trip.data?.coordinatorId}
+        onClose={() => setAssigning(false)} onSaved={() => { setAssigning(false); void trip.reload() }} />}
     </Modal>
   )
 }

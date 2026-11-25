@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.service.CoordinatorAssignmentService;
 import static com.example.racehorse_transport.service.IncidentEvidenceService.FIT_CHECK_PHOTO;
 
 import com.example.racehorse_transport.dto.incident.PlanApproveRequestDto;
@@ -33,7 +34,6 @@ import com.example.racehorse_transport.repository.IncidentPlanRepository;
 import com.example.racehorse_transport.repository.IncidentRepository;
 import com.example.racehorse_transport.service.IncidentCostDecisionService;
 import com.example.racehorse_transport.service.IncidentPlanService;
-import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.service.IncidentService;
 import com.example.racehorse_transport.service.IncidentReportingService;
 import com.example.racehorse_transport.service.NotificationService;
@@ -59,7 +59,7 @@ public class IncidentServiceImpl implements IncidentService {
     private final IncidentPlanRepository plans;
     private final IncidentReportingService reporting;
     private final CrewAssignmentRepository crew;
-    private final StaffRepository staff;
+    private final CoordinatorAssignmentService coordinators;
     private final IncidentPlanService planExecution;
     private final IncidentCostDecisionService decisions;
     private final SystemConfigService configs;
@@ -94,6 +94,7 @@ public class IncidentServiceImpl implements IncidentService {
     @Override
     @Transactional
     public IncidentResponseDto propose(Long incidentId, IncidentPlanRequestDto request, String username) {
+        coordinators.requireIncidentWrite(incidentId, username);
         Incident incident = openIncident(incidentId);
         IncidentPolicy.requireResolutionAvailable(incident.getIncidentType(), request.resolutionType());
         Party handler = planExecution.handlerFor(request.resolutionType(), request.handlerPartyId());
@@ -113,7 +114,7 @@ public class IncidentServiceImpl implements IncidentService {
         if (incident.getStatus() == IncidentStatus.REPORTED) {
             incident.setStatus(IncidentStatus.PLAN_PENDING);
         }
-        List<Long> managers = staff.findUserIdsByRoleAndStatus("MANAGER", AppUserStatus.ACTIVE);
+        List<Long> managers = coordinators.activeManagerIds();
         if (!managers.isEmpty()) {
             notifications.notify(managers, incident.getBooking() == null ? null : incident.getBooking().getId(),
                     "Phương án sự cố chờ duyệt",
@@ -204,6 +205,7 @@ public class IncidentServiceImpl implements IncidentService {
     @Override
     @Transactional
     public IncidentResponseDto confirmFit(Long incidentId, String username) {
+        coordinators.requireIncidentWrite(incidentId, username);
         Incident incident = openIncident(incidentId);
         Staff member = currentStaff(username);
         boolean onBehalf = "COORDINATOR".equals(member.getUser().getRole().getCode());
@@ -230,6 +232,7 @@ public class IncidentServiceImpl implements IncidentService {
     @Override
     @Transactional
     public IncidentResponseDto resolve(Long incidentId, String username) {
+        coordinators.requireIncidentWrite(incidentId, username);
         Incident incident = openIncident(incidentId);
         boolean concernsHorse = IncidentPolicy.requiresFit(incident.getIncidentType(), incident.getHorseLeg() != null);
         IncidentPolicy.requireResolvable(incident.getStatus(), concernsHorse, incident.getFitConfirmedAt() != null);
@@ -245,6 +248,7 @@ public class IncidentServiceImpl implements IncidentService {
     @Override
     @Transactional
     public IncidentResponseDto close(Long incidentId, String username) {
+        coordinators.requireIncidentWrite(incidentId, username);
         Incident incident = incidents.findForUpdate(incidentId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố " + incidentId));
         if (incident.getStatus() != IncidentStatus.RESOLVED) {
             throw new DispatchRuleException("status", "Chỉ đóng sự cố đã xử lý xong.", true);
@@ -270,7 +274,7 @@ public class IncidentServiceImpl implements IncidentService {
     }
 
     private Staff currentStaff(String username) {
-        return staff.findByUser_Username(username).orElseThrow(() -> new AccessDeniedException("Không tìm thấy hồ sơ nhân viên."));
+        return coordinators.currentStaff(username);
     }
 
     private void requireEscort(Incident incident, Staff member, String message) {
@@ -309,7 +313,7 @@ public class IncidentServiceImpl implements IncidentService {
                             : "Phương án cho sự cố " + incident.getTitle() + " đã bị từ chối.",
                     trip == null ? "/coordinator/incidents" : "/my-trips/" + trip.getId());
         }
-        List<Long> coordinators = staff.findUserIdsByRoleAndStatus("COORDINATOR", AppUserStatus.ACTIVE);
+        List<Long> coordinators = reporting.coordinatorRecipients(incident);
         if (!coordinators.isEmpty()) {
             notifications.notify(coordinators, incident.getBooking() == null ? null : incident.getBooking().getId(),
                     approved ? "Phương án sự cố được duyệt" : "Phương án sự cố bị từ chối",

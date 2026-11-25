@@ -396,7 +396,9 @@ class DeliveryFailureFlowTest {
                 mvc.perform(post("/crew-assignments/{id}/acknowledge", assignment).header(HttpHeaders.AUTHORIZATION, member))
                         .andExpect(status().isOk());
             }
-            act("/vehicle-trips/" + id + "/start").andExpect(status().isOk());
+            mvc.perform(post("/vehicle-trips/{id}/start", id).header(HttpHeaders.AUTHORIZATION, driver)
+                    .contentType(MediaType.APPLICATION_JSON).content("{\"earlyReason\":\"Đã sẵn sàng xuất phát sớm\"}"))
+                    .andExpect(status().isOk());
         }
 
         void startAndReceiveAt(int pickupIndex) throws Exception {

@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.service.CoordinatorAssignmentService;
 import com.example.racehorse_transport.dto.incident.HandoverCauseRequestDto;
 import com.example.racehorse_transport.dto.incident.IncidentResponseDto;
 import com.example.racehorse_transport.entity.HorseLeg;
@@ -15,7 +16,6 @@ import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.CostItemRepository;
 import com.example.racehorse_transport.repository.HorseStayRepository;
 import com.example.racehorse_transport.repository.IncidentRepository;
-import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.service.AuditService;
 import com.example.racehorse_transport.service.DeliveryFaultService;
 import com.example.racehorse_transport.service.IncidentService;
@@ -35,7 +35,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class DeliveryFaultServiceImpl implements DeliveryFaultService {
     private final IncidentRepository incidents;
-    private final StaffRepository staff;
     private final BookingRepository bookings;
     private final HorseStayRepository stays;
     private final CostItemRepository costs;
@@ -44,11 +43,13 @@ public class DeliveryFaultServiceImpl implements DeliveryFaultService {
     private final NotificationService notifications;
     private final IncidentService incidentReads;
     private final Clock clock;
+    private final CoordinatorAssignmentService coordinators;
 
     @Override
     @Transactional
     public IncidentResponseDto amendCause(Long id, HandoverCauseRequestDto request, String username) {
-        var actor = staff.findByUser_Username(username).orElseThrow(() -> new AccessDeniedException("Không tìm thấy nhân viên."));
+        coordinators.requireIncidentWrite(id, username);
+        var actor = coordinators.currentStaff(username);
         var cause = request.cause().incidentCause();
         if (!DeliveryFaultPolicy.canSelect(actor.getUser().getRole().getCode(), cause)) {
             throw new AccessDeniedException("Bạn không có quyền chọn kết luận này.");

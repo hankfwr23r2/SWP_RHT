@@ -101,6 +101,7 @@ export const routes: AppRoute[] = [
   },
 
   { path: '/coordinator/dispatch', lazyPage: () => Promise.all([import('./features/coordinator/dispatch/DispatchPage'), dispatchTexts()]).then(([page]) => page), roles: CO, title: 'Điều độ', layout: 'staff', catalog: false },
+  { path: '/coordinator/my-trips', lazyPage: () => import('./features/coordinator/my-trips/CoordinatorMyTripsPage'), roles: CO, title: 'Lượt của tôi', layout: 'staff', catalog: false },
   { path: '/coordinator/plans', lazyPage: () => Promise.all([import('./features/coordinator/plans/PlansPage'), dispatchTexts()]).then(([page]) => page), roles: CO, title: 'Kế hoạch đơn', layout: 'staff', catalog: false },
   { path: '/coordinator/tracking', lazyPage: () => Promise.all([import('./features/coordinator/tracking/TrackingPage'), dispatchTexts()]).then(([page]) => page), roles: CO, title: 'Theo dõi', layout: 'staff', catalog: false },
   { path: '/coordinator/hub', lazyPage: () => Promise.all([import('./features/coordinator/hub/HubPage'), dispatchTexts()]).then(([page]) => page), roles: CO, title: 'Hub', layout: 'staff', catalog: false },

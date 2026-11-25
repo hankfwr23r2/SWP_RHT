@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.service.CoordinatorAssignmentService;
 import com.example.racehorse_transport.dto.incident.IncidentResponseDto;
 import com.example.racehorse_transport.entity.HorseLeg;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
@@ -36,7 +37,7 @@ public class IncidentReturnServiceImpl implements IncidentReturnService {
 
     private final IncidentPlanService plans;
     private final IncidentService incidentViews;
-    private final VehicleTripRepository trips;
+    private final CoordinatorAssignmentService coordinators;
     private final TripStopRepository stops;
     private final HorseLegRepository legs;
     private final HorseLegService horseLegs;
@@ -51,8 +52,7 @@ public class IncidentReturnServiceImpl implements IncidentReturnService {
         var plan = plans.lockApproved(incidentId, type, planId);
         var incident = plan.getIncident();
         Long tripId = IncidentPolicy.requireTrip(incident).getId();
-        var trip = trips.findForUpdate(tripId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lượt xe " + tripId));
+        var trip = coordinators.requireTripWrite(tripId, username);
         TripExecutionPolicy.requireInProgress(trip.getStatus());
         List<HorseLeg> onBoard = legs.findOnBoardForIncident(tripId, Set.of(HorseLegStatus.IN_PROGRESS)).stream()
                 .filter(leg -> incident.getHorseLeg() == null || leg.getId().equals(incident.getHorseLeg().getId()))

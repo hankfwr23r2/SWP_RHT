@@ -2,6 +2,7 @@ package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.dto.operation.HandoverRefusalRequestDto;
 import com.example.racehorse_transport.entity.BookingHorse;
+import com.example.racehorse_transport.entity.VehicleTrip;
 import com.example.racehorse_transport.entity.enums.AppUserStatus;
 import com.example.racehorse_transport.entity.enums.DocumentSubject;
 import com.example.racehorse_transport.exception.DispatchRuleException;
@@ -26,13 +27,13 @@ public class PickupMissEvidenceServiceImpl implements PickupMissEvidenceService 
     private final DocumentService documents;
     private final SystemConfigService configs;
     private final AuditService audit;
-    private final StaffRepository staff;
+    private final CoordinatorRecipientService coordinatorRecipients;
     private final NotificationService notifications;
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
     public void record(BookingHorse horse, HandoverRefusalRequestDto request, MultipartFile photo,
-                       Instant arrivedAt, Instant at, Long actorId) {
+                       Instant arrivedAt, Instant at, Long actorId, VehicleTrip trip) {
         Map<String, String> data = new HashMap<>(Map.of("reason", horse.getPickupMissReason()));
         if (request != null) {
             PickupMissPolicy.requireEvidence(request.reasonCode(), arrivedAt, at,
@@ -50,8 +51,8 @@ public class PickupMissEvidenceServiceImpl implements PickupMissEvidenceService 
         }
         audit(actorId, "PICKUP_MISSED", horse.getId(), data);
         var booking = horse.getBooking();
-        var recipients = new HashSet<>(staff.findUserIdsByRoleAndStatus("MANAGER", AppUserStatus.ACTIVE));
-        recipients.addAll(staff.findUserIdsByRoleAndStatus("COORDINATOR", AppUserStatus.ACTIVE));
+        var recipients = new HashSet<>(coordinatorRecipients.managers());
+        recipients.addAll(coordinatorRecipients.forTrip(trip));
         var customerId = booking.getCustomer().getUser().getId();
         recipients.remove(customerId);
         var deadline = java.time.format.DateTimeFormatter.ofPattern("HH:mm dd/MM/uuuu")

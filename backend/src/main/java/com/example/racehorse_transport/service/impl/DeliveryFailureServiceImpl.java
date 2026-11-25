@@ -48,7 +48,7 @@ public class DeliveryFailureServiceImpl implements DeliveryFailureService {
     private final HorseLegRepository legs;
     private final CrewAssignmentRepository crew;
     private final IncidentRepository incidents;
-    private final StaffRepository staff;
+    private final com.example.racehorse_transport.service.CoordinatorRecipientService coordinatorRecipients;
     private final NotificationService notifications;
     private final SystemConfigService configs;
     private final Clock clock;
@@ -141,10 +141,7 @@ public class DeliveryFailureServiceImpl implements DeliveryFailureService {
 
     private void notifyCoordinators(Handover handover, List<HorseLeg> undelivered) {
         if (undelivered.isEmpty()) return;
-        List<Long> coordinators = staff.findAllByOrderByStaffCodeAsc().stream()
-                .filter(s -> "COORDINATOR".equals(s.getUser().getRole().getCode()) && s.getEmploymentStatus() == EmploymentStatus.ACTIVE
-                        && s.getUser().getStatus() == AppUserStatus.ACTIVE)
-                .map(Staff::getUserId).toList();
+        List<Long> coordinators = coordinatorRecipients.forTrip(handover.getTripStop().getVehicleTrip());
         if (coordinators.isEmpty()) return;
         var booking = undelivered.getFirst().getBookingHorse().getBooking();
         notifications.notify(coordinators, booking.getId(), "Giao ngựa không thành",

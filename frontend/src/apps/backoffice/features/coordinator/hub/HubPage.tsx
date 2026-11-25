@@ -116,6 +116,7 @@ export default function HubPage() {
   ]
   const columns: TableColumn<HorseStay>[] = [
     { key: 'horse', header: t('dispatch.stays.colHorse'), render: stay => stay.horseName },
+    { key: 'coordinator', header: t('coordAssignment.owner'), render: stay => stay.responsibleCoordinatorName ?? t('coordAssignment.unassigned') },
     { key: 'booking', header: t('dispatch.stays.colBooking'), render: stay => stay.bookingCode },
     { key: 'stall', header: t('hubStalls.title'), render: stay => stay.canChangeHubStall && (
       <div className={s.legs}>

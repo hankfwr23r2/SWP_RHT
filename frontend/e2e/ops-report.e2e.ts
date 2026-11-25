@@ -9,6 +9,12 @@ test('quản lý xem số liệu vận hành và báo cáo một lượt xe', as
   await page.route('**/api/v1/**', async route => {
     const url = new URL(route.request().url())
     const path = url.pathname.replace('/api/v1', '')
+    if (path === '/vehicle-trips/9') {
+      return ok(route, { id: 9, coordinatorId: 12, coordinatorName: 'Điều phối Test' })
+    }
+    if (path === '/staff-workloads' && url.searchParams.get('role') === 'COORDINATOR') {
+      return ok(route, [{ staffId: 12, staffName: 'Điều phối Test', role: 'COORDINATOR', assignedCount: 1, lateTripCount: 0, openIncidentCount: 0 }])
+    }
     if (path === '/reports/operations') {
       ranges.push(`${url.searchParams.get('from')} ${url.searchParams.get('to')}`)
       return ok(route, { tripCount: 3, completedTripCount: 2, horsesDelivered: 4, arrivedStopCount: 8, lateStopCount: 2, onTimeRate: 0.75,

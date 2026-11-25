@@ -11,7 +11,8 @@ public record HorseStayResponseDto(Long id, Long bookingHorseId, String bookingC
                                    Instant plannedStartAt, TransferMethod pickupMethod, TransferMethod deliveryMethod,
                                    Instant balanceHoldAt, boolean returnForBalance, Instant readyAt,
                                    String dietNote, Short feedingsPerDay, Boolean feedSuppliedByOwner,
-                                   String hubStallCode, boolean canChangeHubStall, boolean suggestIsolation) {
+                                   String hubStallCode, boolean canChangeHubStall, boolean suggestIsolation,
+                                   Long responsibleCoordinatorId, String responsibleCoordinatorName) {
 
     public static HorseStayResponseDto from(HorseStay stay) {
         return from(stay, stay.getBalanceHoldAt() != null);
@@ -22,12 +23,18 @@ public record HorseStayResponseDto(Long id, Long bookingHorseId, String bookingC
     }
 
     public static HorseStayResponseDto from(HorseStay stay, boolean returnForBalance, boolean canChangeHubStall, boolean suggestIsolation) {
+        return from(stay, returnForBalance, canChangeHubStall, suggestIsolation, null);
+    }
+
+    public static HorseStayResponseDto from(HorseStay stay, boolean returnForBalance, boolean canChangeHubStall,
+                                            boolean suggestIsolation, com.example.racehorse_transport.entity.Staff owner) {
         var stall = stay.getHubStall();
         var line = stay.getBookingHorse();
         return new HorseStayResponseDto(stay.getId(), line.getId(), line.getBooking().getCode(), line.getHorse().getName(), stay.getStayType(),
                 stay.getLocation().getId(), stay.getLocation().getName(), stay.getPlannedEndAt(), stay.getActualStartAt(), stay.getActualEndAt(),
                 stay.getPlannedStartAt(), line.getBooking().getPickupMethod(), line.getBooking().getDeliveryMethod(),
                 stay.getBalanceHoldAt(), returnForBalance, stay.getReadyAt(), line.getDietNote(), line.getFeedingsPerDay(), line.getFeedSuppliedByOwner(),
-                stall == null ? null : stall.getCode(), canChangeHubStall, suggestIsolation);
+                stall == null ? null : stall.getCode(), canChangeHubStall, suggestIsolation,
+                owner == null ? null : owner.getUserId(), owner == null ? null : owner.getFullName());
     }
 }

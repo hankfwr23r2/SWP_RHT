@@ -67,7 +67,7 @@ class MigrationTest {
                 SELECT count(*) FROM information_schema.tables
                 WHERE table_schema = 'public' AND table_type = 'BASE TABLE' AND table_name <> 'flyway_schema_history'""",
                 Integer.class);
-        assertThat(tables).isEqualTo(61);
+        assertThat(tables).isEqualTo(62);
     }
 
     @Test

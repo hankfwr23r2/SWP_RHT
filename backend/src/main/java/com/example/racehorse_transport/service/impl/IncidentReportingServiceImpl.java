@@ -17,7 +17,7 @@ import com.example.racehorse_transport.policy.IncidentPolicy;
 import com.example.racehorse_transport.repository.CrewAssignmentRepository;
 import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.repository.IncidentRepository;
-import com.example.racehorse_transport.repository.StaffRepository;
+import com.example.racehorse_transport.service.CoordinatorRecipientService;
 import com.example.racehorse_transport.repository.VehicleTripRepository;
 import com.example.racehorse_transport.service.IncidentReportingService;
 import com.example.racehorse_transport.service.NotificationService;
@@ -37,7 +37,7 @@ public class IncidentReportingServiceImpl implements IncidentReportingService {
     private final HorseLegRepository legs;
     private final CrewAssignmentRepository crew;
     private final IncidentRepository incidents;
-    private final StaffRepository staff;
+    private final CoordinatorRecipientService recipients;
     private final NotificationService notifications;
 
     @Override
@@ -64,8 +64,18 @@ public class IncidentReportingServiceImpl implements IncidentReportingService {
         return saved.getId();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<Long> coordinatorRecipients(Incident incident) {
+        var trip = incident.getVehicleTrip();
+        if (trip == null && incident.getHorseLeg() != null) {
+            trip = incident.getHorseLeg().getVehicleTrip();
+        }
+        return recipients.forTrip(trip);
+    }
+
     private void notifyIncidentReported(Incident incident) {
-        List<Long> coordinators = staff.findUserIdsByRoleAndStatus("COORDINATOR", AppUserStatus.ACTIVE);
+        List<Long> coordinators = coordinatorRecipients(incident);
         if (!coordinators.isEmpty()) {
             notifications.notify(coordinators,
                     incident.getBooking() == null ? null : incident.getBooking().getId(),

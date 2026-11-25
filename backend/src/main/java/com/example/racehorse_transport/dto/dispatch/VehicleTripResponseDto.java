@@ -16,9 +16,14 @@ public record VehicleTripResponseDto(
         Long startLocationId, String startLocationName, Long endLocationId, String endLocationName,
         Instant plannedStartAt, Instant plannedEndAt, Instant actualStartAt, Instant actualEndAt,
         VehicleEndCondition endVehicleCondition, String endVehicleNote,
-        List<TripStopResponseDto> stops, List<CrewAssignmentResponseDto> crew) {
+        List<TripStopResponseDto> stops, List<CrewAssignmentResponseDto> crew, Long coordinatorId, String coordinatorName, long openIncidentCount, String coordinatorStaffCode, boolean takeOverAllowed) {
 
     public static VehicleTripResponseDto from(VehicleTrip trip, List<TripStopResponseDto> stops, List<CrewAssignmentResponseDto> crew) {
+        return from(trip, stops, crew, 0, false);
+    }
+
+    public static VehicleTripResponseDto from(VehicleTrip trip, List<TripStopResponseDto> stops,
+            List<CrewAssignmentResponseDto> crew, long openIncidentCount, boolean takeOverAllowed) {
         var vehicle = trip.getVehicle();
         var departure = trip.getDeparture();
         return new VehicleTripResponseDto(trip.getId(), trip.getCode(), trip.getTripType(), trip.getStatus(),
@@ -28,7 +33,10 @@ public record VehicleTripResponseDto(
                 trip.getEndLocation().getId(), trip.getEndLocation().getName(),
                 trip.getPlannedStartAt(), trip.getPlannedEndAt(), trip.getActualStartAt(), trip.getActualEndAt(),
                 trip.getEndVehicleCondition(), trip.getEndVehicleNote(),
-                stops, crew);
+                stops, crew,
+                trip.getCoordinator() == null ? null : trip.getCoordinator().getUserId(),
+                trip.getCoordinator() == null ? null : trip.getCoordinator().getFullName(), openIncidentCount,
+                trip.getCoordinator() == null ? null : trip.getCoordinator().getStaffCode(), takeOverAllowed);
     }
 
     static int seatsOf(int standardStallCount, int wideStallCount) {

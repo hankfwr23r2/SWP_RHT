@@ -35,6 +35,7 @@ export const STAFF_MENUS: Record<StaffRole, [path: string, label: string, opt?: 
   coordinator: [
     ['/coordinator/plans', 'Kế hoạch đơn', { icon: 'fa-calendar-check' }],
     ['/coordinator/dispatch', 'Điều độ', { icon: 'fa-diagram-project' }],
+    ['/coordinator/my-trips', 'Lượt của tôi', { icon: 'fa-truck' }],
     ['/coordinator/tracking', 'Theo dõi', { icon: 'fa-location-dot' }],
     ['/coordinator/hub', 'Hub', { icon: 'fa-warehouse' }],
     ['/coordinator/incidents', 'Sự cố', { icon: 'fa-triangle-exclamation' }],

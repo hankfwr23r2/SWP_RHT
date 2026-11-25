@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.service.CoordinatorAssignmentService;
 import com.example.racehorse_transport.dto.dispatch.StallPlanApplyRequestDto;
 import com.example.racehorse_transport.dto.dispatch.StallPlanApplyRequestDto.StallAssignmentDto;
 import com.example.racehorse_transport.dto.dispatch.StallPlanResponseDto;
@@ -39,6 +40,7 @@ public class StallPlanServiceImpl implements StallPlanService {
 
     private final VehicleTripRepository trips;
     private final HorseLegRepository legs;
+    private final CoordinatorAssignmentService coordinators;
 
     @Override
     @Transactional(readOnly = true)
@@ -59,9 +61,9 @@ public class StallPlanServiceImpl implements StallPlanService {
 
     @Override
     @Transactional
-    public StallPlanResponseDto apply(Long vehicleTripId, StallPlanApplyRequestDto request) {
+    public StallPlanResponseDto apply(Long vehicleTripId, StallPlanApplyRequestDto request, String username) {
         // Khóa lượt xe: hai điều phối cùng lưu thì người sau thấy sơ đồ đã đổi (quy tắc #40)
-        VehicleTrip trip = trips.findForUpdate(vehicleTripId).orElseThrow(() -> notFound(vehicleTripId));
+        VehicleTrip trip = coordinators.requireTripWrite(vehicleTripId, username);
         requireEditable(trip);
         List<HorseLeg> onTrip = active(trip);
         Map<Long, StallAssignmentDto> sent = request.horses().stream()

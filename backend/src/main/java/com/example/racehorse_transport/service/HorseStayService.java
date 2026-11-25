@@ -37,7 +37,6 @@ public interface HorseStayService {
     // Scheduler mỗi sáng: ngựa giữ sau giao thất bại đã quá hạn thì nhắc khách và quản lý, kèm phí tạm tính. Trả số con quá hạn
     int remindOverdueStabling();
 
-    List<HorseStayResponseDto> activeAt(Long locationId);
 
     // Nghỉ đêm ở trạm (STAY_IN): mở lưu trú OVERNIGHT do đối tác chuồng vận hành, dự kiến tới giờ rời trạm
     void openOvernight(HorseLeg leg, TripStop stop, Party operator, Instant at);

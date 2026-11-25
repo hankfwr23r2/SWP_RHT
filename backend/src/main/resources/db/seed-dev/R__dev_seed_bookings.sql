@@ -220,3 +220,21 @@ BEGIN
                (v_booking, 'AWAITING_DEPOSIT', 'CONFIRMED', v_user, now() - interval '2 days', 'Dữ liệu mẫu');
     END LOOP;
 END $$;
+
+-- Giao một chuyến mẫu cho điều phối, giữ các chuyến còn lại để xem nhắc chưa phân công.
+DO $$
+BEGIN
+    IF to_regclass('coordinator_assignment_history') IS NOT NULL THEN
+        WITH assigned AS (
+            UPDATE departure d SET coordinator_id = coordinator.user_id
+            FROM staff coordinator, app_user account
+            WHERE d.id = (SELECT max(id) FROM departure WHERE departure_schedule_id IS NOT NULL)
+              AND d.coordinator_id IS NULL
+              AND account.username = 'coordinator.dev' AND coordinator.user_id = account.id
+            RETURNING d.id, d.coordinator_id
+        )
+        INSERT INTO coordinator_assignment_history (departure_id, to_staff_id, changed_by, reason, changed_at)
+        SELECT assigned.id, assigned.coordinator_id, manager.id, 'Phân công chuyến mẫu', now()
+        FROM assigned CROSS JOIN app_user manager WHERE manager.username = 'manager.dev';
+    END IF;
+END $$;
