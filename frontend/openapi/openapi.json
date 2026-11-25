@@ -1107,6 +1107,23 @@
         },
         "type" : "object"
       },
+      "ApiResponseListPlanDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PlanDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListPriceItemResponseDto" : {
         "properties" : {
           "data" : {
@@ -2502,6 +2519,16 @@
         },
         "type" : "object"
       },
+      "CostApproveRequestDto" : {
+        "properties" : {
+          "emergencyOverrideReason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "CostItemRequestDto" : {
         "properties" : {
           "amount" : {
@@ -2518,9 +2545,6 @@
           "currencyCode" : {
             "pattern" : "^[A-Z]{3}$",
             "type" : "string"
-          },
-          "customerConsulted" : {
-            "type" : "boolean"
           },
           "description" : {
             "maxLength" : 500,
@@ -2545,6 +2569,13 @@
       },
       "CostItemResponseDto" : {
         "properties" : {
+          "agentRecoveredAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "agentRecoveryRequired" : {
+            "type" : "boolean"
+          },
           "amount" : {
             "type" : "number"
           },
@@ -2565,8 +2596,19 @@
           "currencyCode" : {
             "type" : "string"
           },
+          "customerAgreed" : {
+            "type" : "boolean"
+          },
           "customerConsulted" : {
             "type" : "boolean"
+          },
+          "customerResponseAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "customerResponseDueAt" : {
+            "format" : "date-time",
+            "type" : "string"
           },
           "description" : {
             "type" : "string"
@@ -4955,7 +4997,18 @@
           "bookingCode" : {
             "type" : "string"
           },
+          "causeConfirmedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "causeConfirmedByName" : {
+            "type" : "string"
+          },
           "causeType" : {
+            "enum" : [ "COMPANY_FAULT", "HORSE_CONDITION", "CUSTOMER_DOCS", "AGENT_FAULT", "FORCE_MAJEURE", "RECIPIENT_ABSENT" ],
+            "type" : "string"
+          },
+          "confirmedCauseType" : {
             "enum" : [ "COMPANY_FAULT", "HORSE_CONDITION", "CUSTOMER_DOCS", "AGENT_FAULT", "FORCE_MAJEURE", "RECIPIENT_ABSENT" ],
             "type" : "string"
           },
@@ -6060,6 +6113,17 @@
         "required" : [ "insurerPartyId", "policyNumber", "validFrom", "validTo" ],
         "type" : "object"
       },
+      "PhoneCostConsentRequestDto" : {
+        "properties" : {
+          "note" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "note" ],
+        "type" : "object"
+      },
       "PickupAddOnResponseDto" : {
         "properties" : {
           "completedAt" : {
@@ -6208,8 +6272,21 @@
         },
         "type" : "object"
       },
+      "PlanApproveRequestDto" : {
+        "properties" : {
+          "confirmedCauseType" : {
+            "enum" : [ "COMPANY_FAULT", "HORSE_CONDITION", "CUSTOMER_DOCS", "AGENT_FAULT", "FORCE_MAJEURE", "RECIPIENT_ABSENT" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "PlanDto" : {
         "properties" : {
+          "customerAgreedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
           "decidedAt" : {
             "format" : "date-time",
             "type" : "string"
@@ -10398,6 +10475,60 @@
         "tags" : [ "incident-controller" ]
       }
     },
+    "/bookings/{id}/customer-cost-items" : {
+      "get" : {
+        "operationId" : "customerCosts",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListCostItemResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "incident-controller" ]
+      }
+    },
+    "/bookings/{id}/customer-incident-plans" : {
+      "get" : {
+        "operationId" : "customerPlans",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListPlanDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "incident-controller" ]
+      }
+    },
     "/bookings/{id}/documents" : {
       "get" : {
         "operationId" : "list_7",
@@ -11130,6 +11261,33 @@
         "tags" : [ "booking-review-controller" ]
       }
     },
+    "/bookings/{id}/reopen-quote" : {
+      "post" : {
+        "operationId" : "reopenExpiredQuote",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBookingResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-review-controller" ]
+      }
+    },
     "/bookings/{id}/report-document-delay" : {
       "post" : {
         "operationId" : "reportDocumentDelay",
@@ -11368,6 +11526,33 @@
         "tags" : [ "incident-controller" ]
       }
     },
+    "/cost-items/{id}/accept" : {
+      "post" : {
+        "operationId" : "acceptCost",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCostItemResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "incident-controller" ]
+      }
+    },
     "/cost-items/{id}/approve" : {
       "post" : {
         "operationId" : "approveCost",
@@ -11380,6 +11565,106 @@
             "type" : "integer"
           }
         } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CostApproveRequestDto"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCostItemResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "incident-controller" ]
+      }
+    },
+    "/cost-items/{id}/decline" : {
+      "post" : {
+        "operationId" : "declineCost",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCostItemResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "incident-controller" ]
+      }
+    },
+    "/cost-items/{id}/mark-recovered" : {
+      "post" : {
+        "operationId" : "markRecovered",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCostItemResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "incident-controller" ]
+      }
+    },
+    "/cost-items/{id}/phone-consent" : {
+      "post" : {
+        "operationId" : "phoneConsent",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PhoneCostConsentRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
         "responses" : {
           "200" : {
             "content" : {
@@ -13522,6 +13807,33 @@
         "tags" : [ "hub-service-area-controller" ]
       }
     },
+    "/incident-plans/{id}/accept" : {
+      "post" : {
+        "operationId" : "acceptPlan",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "incident-controller" ]
+      }
+    },
     "/incident-plans/{id}/approve" : {
       "post" : {
         "operationId" : "approvePlan",
@@ -13534,6 +13846,15 @@
             "type" : "integer"
           }
         } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PlanApproveRequestDto"
+              }
+            }
+          }
+        },
         "responses" : {
           "200" : {
             "content" : {
