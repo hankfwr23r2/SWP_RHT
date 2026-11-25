@@ -9,17 +9,16 @@ import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.HandoverStatus;
 import com.example.racehorse_transport.entity.enums.HandoverType;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
-import com.example.racehorse_transport.entity.enums.IncidentType;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.policy.TripExecutionPolicy;
 import com.example.racehorse_transport.repository.HorseLegRepository;
-import com.example.racehorse_transport.repository.IncidentRepository;
 import com.example.racehorse_transport.service.BookingCancellationService;
 import com.example.racehorse_transport.service.PickupMissService;
 import com.example.racehorse_transport.service.BookingStatusService;
 import com.example.racehorse_transport.service.DocumentCompletenessService;
 import com.example.racehorse_transport.service.HandoverOutcomeService;
 import com.example.racehorse_transport.service.HorseStayService;
+import com.example.racehorse_transport.service.MissedDeliveryService;
 import com.example.racehorse_transport.service.NotificationService;
 import com.example.racehorse_transport.service.PaymentService;
 import com.example.racehorse_transport.dto.operation.HandoverRefusalRequestDto;
@@ -46,7 +45,7 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
     private final BookingCancellationService cancellations;
     private final DocumentCompletenessService documents;
     private final NotificationService notifications;
-    private final IncidentRepository incidents;
+    private final MissedDeliveryService missedDeliveries;
     private final PaymentReadinessService paymentReadiness;
 
     @Override
@@ -107,8 +106,7 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
             // Giao thất bại (B5): xe về hub, giao con vào hub thì giữ và chăm sóc tại hub; chặng thất bại giữ nguyên
             if (leg.getStatus() == HorseLegStatus.FAILED) {
                 // Không gặp người nhận thì giữ có phí người nhận chịu; về hub do sự cố khác thì tập kết chờ giao lại
-                if (incidents.existsByHorseLeg_IdAndIncidentTypeAndConfirmedCauseType(leg.getId(), IncidentType.HANDOVER_TIMEOUT,
-                        com.example.racehorse_transport.entity.enums.IncidentCauseType.RECIPIENT_ABSENT)) {
+                if (missedDeliveries.isRecipientAbsent(leg.getId())) {
                     horseStays.openFailedDeliveryStabling(leg, handover.getTripStop().getLocation(), now, actorUserId);
                 } else {
                     horseStays.openReturnAssembly(leg, handover.getTripStop().getLocation(), now);
@@ -123,6 +121,9 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
             } else {
                 leg.setStatus(HorseLegStatus.COMPLETED);
                 leg.setActualEndAt(now);
+                if (handover.getHandoverType() == HandoverType.DELIVERY) {
+                    missedDeliveries.resolve(leg.getBookingHorse().getId(), now, actorUserId);
+                }
                 if (handover.getHandoverType() == HandoverType.HUB_IN) {
                     horseStays.openAssembly(leg, now);
                 }
@@ -172,8 +173,10 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
             payments.requestBalance(booking.getId(), handover.getHandedAt());
         } else if (handover.getHandoverType() == HandoverType.RETURN) {
             handover.getHorseStay().setActualEndAt(handover.getHandedAt());
+            missedDeliveries.resolve(leg.getBookingHorse().getId(), handover.getHandedAt(), actorUserId);
         } else if (handover.getHandoverType() == HandoverType.DELIVERY) {
             horseStays.closeActive(leg.getBookingHorse().getId(), handover.getHandedAt(), actorUserId);
+            missedDeliveries.resolve(leg.getBookingHorse().getId(), handover.getHandedAt(), actorUserId);
             if (booking.getStatus() == BookingStatus.IN_OPERATION && legs.countActiveHorsesNotDelivered(booking.getId()) == 0) {
                 bookingStatus.transition(booking.getId(), BookingStatus.DELIVERED, "Người nhận đã nhận đủ ngựa tại hub", actorUserId);
             }
