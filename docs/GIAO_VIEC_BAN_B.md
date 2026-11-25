@@ -31,7 +31,7 @@ Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A
 
 | Điểm | Đang thế nào | Gợi ý (chưa duyệt) | Xem ở | Lưu ý |
 |---|---|---|---|---|
-| **1.F5** | Tiếp nhận, thẩm định, báo giá, hoàn tiền không có hạn riêng | Hạn nội bộ trong cấu hình, quá hạn thì nhắc nhân viên. Không tự đổi trạng thái đơn | `BookingReviewServiceImpl`, `RefundServiceImpl`, `scheduler/` | |
+| **1.F5** | **Đã sửa.** Ba hạn nội bộ (tiếp nhận, thẩm định, gửi báo giá) tính theo giờ; hoàn tiền giữ `REFUND_DUE_DAYS` và lịch nhắc sẵn có. Hệ thống quét mỗi giờ và nhắc đúng người phụ trách tối đa một lần mỗi bước mỗi đơn trong ngày | | `BookingDeadlineReminderScheduler`, `BookingDeadlineReminderServiceImpl` | |
 
 ### Luồng 2 (7 điểm)
 
@@ -91,7 +91,7 @@ Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A
 
 | Điểm | Phương án | Duyệt | PR |
 |---|---|---|---|
-| 1.F5 | | | |
+| 1.F5 | Đặt hạn theo giờ cho tiếp nhận, thẩm định, gửi báo giá. Quét mỗi giờ, nhắc theo vai trò và giữ trạng thái đơn | Đã duyệt | |
 | 2.F2, 2.F5, 2.F8 | | | |
 | 2.F9 | Dùng lại giấy theo ngựa đã duyệt và còn hạn khi yêu cầu cùng loại giấy | Đã duyệt | |
 | 2.F7 | Kiểm đủ giấy bắt buộc khi bàn giao đơn xuất cho đại lý ở cửa khẩu | Đã duyệt | |

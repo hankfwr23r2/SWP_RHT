@@ -29,6 +29,14 @@ public interface BookingStatusHistoryRepository extends JpaRepository<BookingSta
             """)
     List<Long> findBookingIdsWithStatusBefore(BookingStatus status, Instant cutoff);
 
+    @Query("""
+            SELECT h.booking.id FROM BookingStatusHistory h
+            WHERE h.booking.status = :status AND h.toStatus = :status
+            GROUP BY h.booking.id
+            HAVING MAX(h.changedAt) <= :cutoff
+            """)
+    List<Long> findBookingIdsWithLatestStatusEntryThrough(BookingStatus status, Instant cutoff);
+
     Optional<BookingStatusHistory> findFirstByBooking_IdOrderByChangedAtDescIdDesc(Long bookingId);
 
     List<BookingStatusHistory> findByBooking_IdOrderByChangedAtAscIdAsc(Long bookingId);
