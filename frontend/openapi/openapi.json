@@ -3224,6 +3224,26 @@
         },
         "type" : "object"
       },
+      "DeliveryFailureDto" : {
+        "properties" : {
+          "actualArrivalAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "amendable" : {
+            "type" : "boolean"
+          },
+          "delayMinutes" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "toldArrivalAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "DeliveryRecipientRequestDto" : {
         "properties" : {
           "collectionCode" : {
@@ -3990,6 +4010,21 @@
             "type" : "integer"
           }
         },
+        "type" : "object"
+      },
+      "HandoverCauseRequestDto" : {
+        "properties" : {
+          "cause" : {
+            "enum" : [ "RECIPIENT_ABSENT", "COMPANY_FAULT", "FORCE_MAJEURE" ],
+            "type" : "string"
+          },
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "cause", "reason" ],
         "type" : "object"
       },
       "HandoverCompleteRequestDto" : {
@@ -5076,6 +5111,9 @@
           "confirmedCauseType" : {
             "enum" : [ "COMPANY_FAULT", "HORSE_CONDITION", "CUSTOMER_DOCS", "AGENT_FAULT", "FORCE_MAJEURE", "RECIPIENT_ABSENT" ],
             "type" : "string"
+          },
+          "deliveryFailure" : {
+            "$ref" : "#/components/schemas/DeliveryFailureDto"
           },
           "description" : {
             "type" : "string"
@@ -14372,6 +14410,43 @@
           }
         },
         "tags" : [ "incident-controller" ]
+      }
+    },
+    "/incidents/{id}/handover-cause" : {
+      "post" : {
+        "operationId" : "amendHandoverCause",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/HandoverCauseRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseIncidentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "delivery-fault-controller" ]
       }
     },
     "/incidents/{id}/photos" : {

@@ -16,7 +16,9 @@ public record IncidentResponseDto(
         Long vehicleTripId, String vehicleTripCode, Long horseLegId, String horseName, String bookingCode,
         BigDecimal latitude, BigDecimal longitude, String reportedByName, Instant reportedAt,
         String fitConfirmedByName, Instant fitConfirmedAt, Instant resolvedAt, boolean requiresFit, List<PlanDto> plans, IncidentCauseType confirmedCauseType,
-        String causeConfirmedByName, Instant causeConfirmedAt) {
+        String causeConfirmedByName, Instant causeConfirmedAt, DeliveryFailureDto deliveryFailure) {
+
+    public record DeliveryFailureDto(Instant toldArrivalAt, Instant actualArrivalAt, Long delayMinutes, boolean amendable) {}
 
     public record PlanDto(Long id, Integer version, IncidentResolutionType resolutionType, String instructions, BigDecimal estimatedCost,
                           Long handlerPartyId, String handlerPartyName, IncidentPlanStatus status, String proposedByName, Instant proposedAt,
@@ -30,7 +32,7 @@ public record IncidentResponseDto(
         }
     }
 
-    public static IncidentResponseDto from(Incident incident, boolean requiresFit, List<PlanDto> plans) {
+    public static IncidentResponseDto from(Incident incident, boolean requiresFit, List<PlanDto> plans, DeliveryFailureDto deliveryFailure) {
         var trip = incident.getVehicleTrip();
         var leg = incident.getHorseLeg();
         var booking = incident.getBooking();
@@ -39,10 +41,10 @@ public record IncidentResponseDto(
                 trip == null ? null : trip.getId(), trip == null ? null : trip.getCode(),
                 leg == null ? null : leg.getId(), leg == null ? null : leg.getBookingHorse().getHorse().getName(),
                 booking == null ? null : booking.getCode(), incident.getLatitude(), incident.getLongitude(),
-                incident.getReportedBy().getFullName(), incident.getReportedAt(),
+                incident.getReportedBy() == null ? null : incident.getReportedBy().getFullName(), incident.getReportedAt(),
                 incident.getFitConfirmedBy() == null ? null : incident.getFitConfirmedBy().getFullName(), incident.getFitConfirmedAt(),
                 incident.getResolvedAt(), requiresFit, plans, incident.getConfirmedCauseType(),
                 incident.getCauseConfirmedBy() == null ? null : incident.getCauseConfirmedBy().getFullName(),
-                incident.getCauseConfirmedAt());
+                incident.getCauseConfirmedAt(), deliveryFailure);
     }
 }

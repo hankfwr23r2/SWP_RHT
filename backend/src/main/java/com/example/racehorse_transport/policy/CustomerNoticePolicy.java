@@ -96,6 +96,13 @@ public final class CustomerNoticePolicy {
         return CLOCK.format(window.from()) + "–" + CLOCK.format(window.to()) + " ngày " + DAY.format(window.from());
     }
 
+    public static String deliveryWindowText(HourWindow window) {
+        if (!window.from().atZone(ZONE).toLocalDate().equals(window.to().atZone(ZONE).toLocalDate())) {
+            return moment(window.from()) + " – " + moment(window.to());
+        }
+        return text(window);
+    }
+
     private static String plan(ExpectedTimes times) {
         String pickup = times.pickup() == null ? null : "đến đón ngựa " + text(window(times.pickup()));
         String delivery = times.delivery() == null ? null : "giao ngựa " + text(window(times.delivery()));

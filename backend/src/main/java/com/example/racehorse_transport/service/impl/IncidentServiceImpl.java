@@ -7,7 +7,6 @@ import com.example.racehorse_transport.dto.incident.IncidentResponseDto;
 import com.example.racehorse_transport.dto.incident.IncidentResponseDto.PlanDto;
 import com.example.racehorse_transport.dto.incident.PlanRejectRequestDto;
 import com.example.racehorse_transport.entity.Booking;
-import com.example.racehorse_transport.entity.HorseLeg;
 import com.example.racehorse_transport.entity.Incident;
 import com.example.racehorse_transport.entity.IncidentPlan;
 import com.example.racehorse_transport.entity.Party;
@@ -20,15 +19,19 @@ import com.example.racehorse_transport.entity.enums.CrewAssignmentStatus;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.IncidentPolicy;
+import com.example.racehorse_transport.policy.DeliveryEtaPolicy;
+import com.example.racehorse_transport.policy.DeliveryFaultPolicy;
+import com.example.racehorse_transport.entity.enums.IncidentType;
+import java.time.Duration;
+import java.time.Instant;
 import com.example.racehorse_transport.repository.CrewAssignmentRepository;
-import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.repository.IncidentPlanRepository;
 import com.example.racehorse_transport.repository.IncidentRepository;
 import com.example.racehorse_transport.repository.PartyRepository;
 import com.example.racehorse_transport.service.IncidentCostDecisionService;
 import com.example.racehorse_transport.repository.StaffRepository;
-import com.example.racehorse_transport.repository.VehicleTripRepository;
 import com.example.racehorse_transport.service.IncidentService;
+import com.example.racehorse_transport.service.IncidentReportingService;
 import com.example.racehorse_transport.service.NotificationService;
 import com.example.racehorse_transport.service.SystemConfigService;
 import java.time.Clock;
@@ -49,8 +52,7 @@ public class IncidentServiceImpl implements IncidentService {
 
     private final IncidentRepository incidents;
     private final IncidentPlanRepository plans;
-    private final VehicleTripRepository trips;
-    private final HorseLegRepository legs;
+    private final IncidentReportingService reporting;
     private final CrewAssignmentRepository crew;
     private final StaffRepository staff;
     private final PartyRepository parties;
@@ -62,7 +64,8 @@ public class IncidentServiceImpl implements IncidentService {
     @Override
     @Transactional(readOnly = true)
     public List<IncidentResponseDto> open() {
-        return describe(incidents.findByStatusInOrderByReportedAtDesc(OPEN));
+        return describe(incidents.findForBoard(OPEN, IncidentType.HANDOVER_TIMEOUT,
+                clock.instant().minus(DeliveryFaultPolicy.AMENDMENT_PERIOD)));
     }
 
     @Override
@@ -80,24 +83,7 @@ public class IncidentServiceImpl implements IncidentService {
     @Override
     @Transactional
     public IncidentResponseDto report(IncidentReportRequestDto request, String username) {
-        VehicleTrip trip = trips.findForUpdate(request.vehicleTripId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lượt xe " + request.vehicleTripId()));
-        Staff reporter = crew.findFirstByVehicleTrip_IdAndStaff_User_UsernameAndStatusNot(trip.getId(), username, CrewAssignmentStatus.RELEASED)
-                .orElseThrow(() -> new AccessDeniedException("Bạn không ở trong tổ lái của lượt xe này.")).getStaff();
-        IncidentPolicy.requireReportable(trip.getStatus(), request.incidentType(), request.horseLegId() != null);
-        HorseLeg leg = null;
-        if (request.horseLegId() != null) {
-            leg = legs.findById(request.horseLegId()).filter(l -> l.getVehicleTrip() != null && l.getVehicleTrip().getId().equals(trip.getId()))
-                    .orElseThrow(() -> new DispatchRuleException("horseLegId", "Con ngựa này không ở trên lượt xe."));
-        } else {
-            IncidentPolicy.requireNoOpenTripIncident(incidents.existsByVehicleTrip_IdAndHorseLegIsNullAndStatusIn(trip.getId(), OPEN));
-        }
-        Incident incident = request.toEntity(trip, leg, leg == null ? null : leg.getBookingHorse().getBooking());
-        incident.setReportedBy(reporter);
-        incident.setStatus(IncidentStatus.REPORTED);
-        Incident saved = incidents.saveAndFlush(incident);
-        notifyIncidentReported(saved);
-        return incident(saved.getId());
+        return incident(reporting.report(request, username));
     }
 
     @Override
@@ -267,24 +253,6 @@ public class IncidentServiceImpl implements IncidentService {
         return staff.findByUser_Username(username).orElseThrow(() -> new AccessDeniedException("Không tìm thấy hồ sơ nhân viên."));
     }
 
-    private void notifyIncidentReported(Incident incident) {
-        List<Long> coordinators = staff.findUserIdsByRoleAndStatus("COORDINATOR", AppUserStatus.ACTIVE);
-        if (!coordinators.isEmpty()) {
-            notifications.notify(coordinators,
-                    incident.getBooking() == null ? null : incident.getBooking().getId(),
-                    "Sự cố mới",
-                    "Có sự cố mới: " + incident.getTitle() + ".",
-                    "/coordinator/incidents");
-        }
-        if (incident.getHorseLeg() != null) {
-            Booking booking = incident.getHorseLeg().getBookingHorse().getBooking();
-            notifications.notify(List.of(booking.getCustomer().getUser().getId()), booking.getId(),
-                    "Sự cố vận chuyển",
-                    "Đơn " + booking.getCode() + " có sự cố: " + incident.getTitle() + ".",
-                    "/orders/" + booking.getId());
-        }
-    }
-
     private void notifyPlanDecision(IncidentPlan plan, Incident incident, boolean approved) {
         VehicleTrip trip = incident.getVehicleTrip() != null ? incident.getVehicleTrip()
                 : incident.getHorseLeg() == null ? null : incident.getHorseLeg().getVehicleTrip();
@@ -321,6 +289,21 @@ public class IncidentServiceImpl implements IncidentService {
         if (found.isEmpty()) return List.of();
         Map<Long, List<PlanDto>> byIncident = plans.findByIncident_IdInOrderByIncident_IdAscVersionAsc(found.stream().map(Incident::getId).toList()).stream()
                 .collect(Collectors.groupingBy(p -> p.getIncident().getId(), Collectors.mapping(PlanDto::from, Collectors.toList())));
-        return found.stream().map(i -> IncidentResponseDto.from(i, IncidentPolicy.requiresFit(i.getIncidentType(), i.getHorseLeg() != null), byIncident.getOrDefault(i.getId(), List.of()))).toList();
+        Instant now = clock.instant();
+        return found.stream().map(i -> IncidentResponseDto.from(i,
+                IncidentPolicy.requiresFit(i.getIncidentType(), i.getHorseLeg() != null),
+                byIncident.getOrDefault(i.getId(), List.of()), deliveryFailure(i, now))).toList();
+    }
+
+    private IncidentResponseDto.DeliveryFailureDto deliveryFailure(Incident incident, Instant now) {
+        if (incident.getIncidentType() != IncidentType.HANDOVER_TIMEOUT || incident.getHorseLeg() == null) return null;
+        var stop = incident.getHorseLeg().getAlightTripStop();
+        if (stop == null) return null;
+        var told = DeliveryEtaPolicy.reference(stop.getToldArrivalAt(), stop.getPlannedArrivalAt());
+        var actual = stop.getActualArrivalAt();
+        Long delay = told == null || actual == null ? null : Duration.between(told, actual).toMinutes();
+        var failedAt = incident.getHorseLeg().getActualEndAt();
+        return new IncidentResponseDto.DeliveryFailureDto(told, actual, delay,
+                DeliveryFaultPolicy.canAmend(incident.getIncidentType(), failedAt == null ? incident.getReportedAt() : failedAt, now));
     }
 }

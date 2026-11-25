@@ -23,7 +23,8 @@ import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.TripStopRepository;
 import com.example.racehorse_transport.service.NotificationService;
 import com.example.racehorse_transport.service.SystemConfigService;
-import com.example.racehorse_transport.policy.TripExecutionPolicy;
+import com.example.racehorse_transport.policy.DeliveryEtaPolicy;
+import com.example.racehorse_transport.entity.enums.IncidentCauseType;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -44,18 +45,19 @@ class DeliveryFailureServiceImplTest {
             incidents, mock(StaffRepository.class), mock(NotificationService.class), configs,
             Clock.fixed(now, ZoneOffset.UTC), stops);
 
-    @Test
-    void lateTruckMakesTheCompanyResponsible() {
-        assertThat(TripExecutionPolicy.arrivedAfterWindow(now, now.plusSeconds(3600), 60)).isFalse();
-        assertThat(TripExecutionPolicy.arrivedAfterWindow(now, now.plusSeconds(3601), 60)).isTrue();
-        assertThat(TripExecutionPolicy.arrivedAfterWindow(now, null, 60)).isFalse();
-
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(booleans = {false, true})
+    void lateTruckMakesTheCompanyResponsibleUnlessTheNewTimeWasAnnounced(boolean announced) {
         var trip = new VehicleTrip();
         trip.setId(1L);
         trip.setStatus(VehicleTripStatus.IN_PROGRESS);
         var stop = stop(trip, 12L, 3, TripStopType.DELIVERY);
         stop.setPlannedArrivalAt(now.minusSeconds(9000));
         stop.setActualArrivalAt(now.minusSeconds(3600));
+        if (announced) {
+            stop.setToldArrivalAt(stop.getActualArrivalAt().minusSeconds(1800));
+            stop.setToldAt(stop.getPlannedArrivalAt().minusSeconds(3600));
+        }
         var waiting = handover(stop);
         waiting.setWaitStartedAt(now.minusSeconds(7200));
         var horse = new com.example.racehorse_transport.entity.Horse();
@@ -67,14 +69,34 @@ class DeliveryFailureServiceImplTest {
         leg.setBookingHorse(line);
         when(configs.getInt("INTERMEDIATE_WAIT_MINUTES")).thenReturn(60);
         when(configs.getInt("HANDOVER_FREE_WAIT_MINUTES")).thenReturn(120);
-        when(configs.getInt("DELIVERY_NOTICE_WINDOW_MINUTES")).thenReturn(60);
+        when(configs.getInt(DeliveryEtaPolicy.TOLERANCE)).thenReturn(30);
         when(stops.findByVehicleTrip_IdOrderBySequenceNumber(1L)).thenReturn(List.of(stop));
         when(handovers.findWaitingSince(HandoverStatus.PENDING, now.minusSeconds(3600))).thenReturn(List.of(waiting));
         when(legs.findByAlightTripStop_IdAndStatusIn(12L, Set.of(HorseLegStatus.IN_PROGRESS))).thenReturn(List.of(leg));
 
         assertThat(service.timeoutExpired()).isEqualTo(1);
         verify(incidents).save(org.mockito.ArgumentMatchers.argThat(row -> row.getConfirmedCauseType()
-                == com.example.racehorse_transport.entity.enums.IncidentCauseType.COMPANY_FAULT));
+                == (announced ? IncidentCauseType.RECIPIENT_ABSENT : IncidentCauseType.COMPANY_FAULT)));
+    }
+
+    @Test
+    void waitingStartsAtOpeningOfTheAnnouncedWindowWhenTheTruckArrivesEarly() {
+        var trip = new VehicleTrip();
+        trip.setId(1L);
+        trip.setStatus(VehicleTripStatus.IN_PROGRESS);
+        var stop = stop(trip, 12L, 3, TripStopType.DELIVERY);
+        stop.setToldArrivalAt(now.plusSeconds(3600));
+        var handover = handover(stop);
+        handover.setHandoverType(com.example.racehorse_transport.entity.enums.HandoverType.DELIVERY);
+        handover.setWaitStartedAt(null);
+        when(handovers.findForUpdate(1L)).thenReturn(Optional.of(handover));
+        when(crew.findFirstByVehicleTrip_IdAndStaff_User_UsernameAndStatusNot(1L, "groom", CrewAssignmentStatus.RELEASED))
+                .thenReturn(Optional.of(new com.example.racehorse_transport.entity.CrewAssignment()));
+        when(configs.getInt(DeliveryEtaPolicy.TOLERANCE)).thenReturn(30);
+
+        service.startWaiting(1L, "groom");
+
+        assertThat(handover.getWaitStartedAt()).isEqualTo(now.plusSeconds(1800));
     }
 
     @Test

@@ -15,6 +15,16 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface VehicleTripRepository extends JpaRepository<VehicleTrip, Long> {
+    @Query("""
+            SELECT t.id FROM VehicleTrip t WHERE t.status = :status AND t.tripType IN :types
+                AND EXISTS (SELECT s.id FROM TripStop s WHERE s.vehicleTrip = t
+                    AND s.actualArrivalAt IS NOT NULL AND s.actualDepartureAt IS NULL
+                    AND EXISTS (SELECT p.id FROM TripStop p WHERE p.vehicleTrip = t
+                        AND p.sequenceNumber < s.sequenceNumber AND p.actualDepartureAt IS NOT NULL))
+            ORDER BY t.id
+            """)
+    List<Long> findHeldTripIds(VehicleTripStatus status, Collection<VehicleTripType> types);
+
     boolean existsByVehicle_IdAndStatusNotIn(Long vehicleId, Collection<VehicleTripStatus> statuses);
 
     boolean existsByDeparture_IdAndTripTypeAndStatusNotIn(Long departureId,

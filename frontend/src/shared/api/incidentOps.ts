@@ -4,6 +4,7 @@ import type { components } from './generated/schema'
 
 type Schemas = components['schemas']
 export type Incident = Schemas['IncidentResponseDto']
+export type HandoverCauseChange = Schemas['HandoverCauseRequestDto']
 export type IncidentPlan = Schemas['PlanDto']
 export type IncidentReport = Schemas['IncidentReportRequestDto']
 export type IncidentPlanCreate = Schemas['IncidentPlanRequestDto']
@@ -27,6 +28,7 @@ const upload = async (url: string, file: File, params?: Record<string, number | 
 export const incidentsApi = {
   open: () => get<Incident[]>('/incidents'),
   incident: (id: number) => get<Incident>(`/incidents/${id}`),
+  amendHandoverCause: (id: number, body: HandoverCauseChange) => post<Incident>(`/incidents/${id}/handover-cause`, body),
   ofTrip: (tripId: number) => get<Incident[]>(`/vehicle-trips/${tripId}/incidents`),
   report: (body: IncidentReport) => post<Incident>('/incidents', body),
   propose: (incidentId: number, body: IncidentPlanCreate) => post<Incident>(`/incidents/${incidentId}/plans`, body),

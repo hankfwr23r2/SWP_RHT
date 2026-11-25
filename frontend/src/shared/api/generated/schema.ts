@@ -2500,6 +2500,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/incidents/{id}/handover-cause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["amendHandoverCause"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/incidents/{id}/photos": {
         parameters: {
             query?: never;
@@ -4847,6 +4863,15 @@ export interface components {
             /** Format: int64 */
             customerAddressId?: number;
         };
+        DeliveryFailureDto: {
+            /** Format: date-time */
+            actualArrivalAt?: string;
+            amendable?: boolean;
+            /** Format: int64 */
+            delayMinutes?: number;
+            /** Format: date-time */
+            toldArrivalAt?: string;
+        };
         DeliveryRecipientRequestDto: {
             collectionCode?: string;
             recipientName: string;
@@ -5147,6 +5172,11 @@ export interface components {
             horseName?: string;
             /** Format: int32 */
             seats?: number;
+        };
+        HandoverCauseRequestDto: {
+            /** @enum {string} */
+            cause: "RECIPIENT_ABSENT" | "COMPANY_FAULT" | "FORCE_MAJEURE";
+            reason: string;
         };
         HandoverCompleteRequestDto: {
             recipients?: {
@@ -5544,6 +5574,7 @@ export interface components {
             causeType?: "COMPANY_FAULT" | "HORSE_CONDITION" | "CUSTOMER_DOCS" | "AGENT_FAULT" | "FORCE_MAJEURE" | "RECIPIENT_ABSENT";
             /** @enum {string} */
             confirmedCauseType?: "COMPANY_FAULT" | "HORSE_CONDITION" | "CUSTOMER_DOCS" | "AGENT_FAULT" | "FORCE_MAJEURE" | "RECIPIENT_ABSENT";
+            deliveryFailure?: components["schemas"]["DeliveryFailureDto"];
             description?: string;
             /** Format: date-time */
             fitConfirmedAt?: string;
@@ -11150,6 +11181,32 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIncidentResponseDto"];
+                };
+            };
+        };
+    };
+    amendHandoverCause: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HandoverCauseRequestDto"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {

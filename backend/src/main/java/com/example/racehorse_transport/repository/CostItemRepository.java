@@ -1,5 +1,7 @@
 package com.example.racehorse_transport.repository;
 
+import com.example.racehorse_transport.entity.enums.CostCategory;
+
 import java.util.Optional;
 import org.springframework.data.jpa.repository.Lock;
 import jakarta.persistence.LockModeType;
@@ -33,6 +35,8 @@ public interface CostItemRepository extends JpaRepository<CostItem, Long> {
     BigDecimal sumStablingDepositCredit(Long bookingId);
 
     boolean existsByHorseStay_Id(Long horseStayId);
+
+    boolean existsByHorseStay_IdAndCategory(Long horseStayId, CostCategory category);
 
     @EntityGraph(attributePaths = {"booking", "incident", "recordedBy", "approvedBy"})
     List<CostItem> findByIncident_IdOrderByIncurredAt(Long incidentId);

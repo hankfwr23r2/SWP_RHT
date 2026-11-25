@@ -63,6 +63,18 @@ public interface HorseStayRepository extends JpaRepository<HorseStay, Long> {
     @Query("SELECT s FROM HorseStay s WHERE s.id = :stayId")
     Optional<HorseStay> findForUpdate(Long stayId);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            SELECT s FROM HorseStay s WHERE s.bookingHorse.id = :horseId
+                AND EXISTS (SELECT hh.id FROM HandoverHorse hh JOIN hh.handover h JOIN h.tripStop stop
+                    WHERE hh.horseLeg.id = :failedLegId AND h.handedAt = s.actualStartAt
+                        AND stop.location = s.location
+                        AND h.handoverType = com.example.racehorse_transport.entity.enums.HandoverType.HUB_IN
+                        AND h.status = com.example.racehorse_transport.entity.enums.HandoverStatus.DONE)
+            ORDER BY s.id
+            """)
+    List<HorseStay> findReturnStaysForUpdate(Long horseId, Long failedLegId);
+
     @Query("SELECT s.bookingHorse.booking.id FROM HorseStay s WHERE s.id = :stayId")
     Optional<Long> findBookingId(Long stayId);
 

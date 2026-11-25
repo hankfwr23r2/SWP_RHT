@@ -1,6 +1,8 @@
 package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.dto.tracking.HorseJourneyResponseDto.HandoverEvidenceResponseDto;
+import com.example.racehorse_transport.policy.DeliveryEtaPolicy;
+import com.example.racehorse_transport.service.SystemConfigService;
 import com.example.racehorse_transport.repository.DocumentRepository;
 
 import com.example.racehorse_transport.dto.tracking.BookingJourneyResponseDto;
@@ -64,6 +66,7 @@ public class TrackingServiceImpl implements TrackingService {
     private final HandoverRepository handovers;
     private final DocumentRepository documents;
     private final PublicTrackingGuard guard;
+    private final SystemConfigService configs;
 
     // Dữ liệu thô của một đơn, gom theo con ngựa
     // openHandovers: giao nhận chưa DONE ở điểm lên, xuống xe của các chặng (chưa quét con nào thì không có handover_horse)
@@ -143,29 +146,34 @@ public class TrackingServiceImpl implements TrackingService {
         Map<Long, List<Document>> evidence = handoverIds.isEmpty() ? Map.of()
                 : documents.findHandoverEvidenceForBooking(booking.getId(), handoverIds).stream()
                         .collect(Collectors.groupingBy(document -> document.getHandover().getId()));
+        int tolerance = configs.getInt(DeliveryEtaPolicy.TOLERANCE);
         return new BookingJourneyResponseDto(booking.getId(), booking.getCode(), booking.getStatus(),
-                journey.lines().stream().map(line -> horseJourney(line, journey, evidence)).toList());
+                journey.lines().stream().map(line -> horseJourney(line, journey, evidence, tolerance)).toList());
     }
 
     private HorseJourneyResponseDto horseJourney(BookingHorse line, Journey journey,
-                                                 Map<Long, List<Document>> evidence) {
+                                                 Map<Long, List<Document>> evidence, int tolerance) {
         List<HandoverHorse> rows = journey.of(journey.handovers(), line);
         HandoverHorse last = lastDone(rows);
         CustodyHolder holder = holder(last);
         return new HorseJourneyResponseDto(line.getId(), line.getHorse().getName(), line.getHorse().getMicrochip(), line.getStatus(),
                 holder, holder == CustodyHolder.PARTY ? last.getHandover().getToParty().getDisplayName() : null,
                 last == null ? null : last.getHandover().getHandedAt(),
-                journey.of(journey.legs(), line).stream().map(TrackingServiceImpl::journeyLeg).toList(),
+                journey.of(journey.legs(), line).stream().map(leg -> journeyLeg(leg, tolerance)).toList(),
                 journey.of(journey.stays(), line).stream().map(HorseJourneyResponseDto.JourneyStayDto::from).toList(),
                 handoversOf(line, journey, evidence));
     }
 
     // Chặng đã gỡ khỏi lượt xe thì khung giờ không còn đúng
-    private static HorseJourneyResponseDto.JourneyLegDto journeyLeg(HorseLeg leg) {
+    private static HorseJourneyResponseDto.JourneyLegDto journeyLeg(HorseLeg leg, int tolerance) {
         ExpectedTimes expected = leg.getStatus() == HorseLegStatus.CANCELLED ? new ExpectedTimes(null, null) : CustomerNoticePolicy.expectedTimes(leg);
+        var stop = leg.getAlightTripStop();
+        var delivery = expected.delivery() == null ? null : CustomerNoticePolicy.window(expected.delivery());
+        if (expected.delivery() != null && stop != null && stop.getToldArrivalAt() != null) {
+            delivery = DeliveryEtaPolicy.window(stop.getToldArrivalAt(), tolerance);
+        }
         return HorseJourneyResponseDto.JourneyLegDto.from(leg,
-                expected.pickup() == null ? null : CustomerNoticePolicy.window(expected.pickup()),
-                expected.delivery() == null ? null : CustomerNoticePolicy.window(expected.delivery()));
+                expected.pickup() == null ? null : CustomerNoticePolicy.window(expected.pickup()), delivery);
     }
 
     // Giao nhận đã có dòng của con này, cộng các lần chưa xong ở điểm lên, xuống xe của nó, xếp theo thứ tự lập

@@ -112,11 +112,6 @@ public final class TripExecutionPolicy {
     }
 
     // Xe tới sau khung giờ đã báo thì người nhận vắng không phải lỗi của khách (mục 13.2)
-    public static boolean arrivedAfterWindow(Instant plannedArrivalAt, Instant actualArrivalAt, int windowMinutes) {
-        return plannedArrivalAt != null && actualArrivalAt != null
-                && actualArrivalAt.isAfter(plannedArrivalAt.plus(Duration.ofMinutes(windowMinutes)));
-    }
-
     // Không gặp người nhận: chỉ khi đã chờ hết thời gian chờ miễn phí (mục 6.6, B5)
     public static void requireFreeWaitOver(Instant waitStartedAt, Instant now, int freeWaitMinutes) {
         if (waitStartedAt == null) {

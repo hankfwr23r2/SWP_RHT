@@ -3,13 +3,11 @@ package com.example.racehorse_transport.service.impl;
 import com.example.racehorse_transport.service.DepartureService;
 import com.example.racehorse_transport.entity.enums.VehicleTripType;
 import com.example.racehorse_transport.entity.CrewAssignment;
-import com.example.racehorse_transport.entity.HorseLeg;
 import com.example.racehorse_transport.entity.TripStop;
 import com.example.racehorse_transport.entity.VehicleTrip;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.CrewAssignmentStatus;
 import com.example.racehorse_transport.entity.enums.CrewRole;
-import com.example.racehorse_transport.entity.enums.HorseInsuranceStatus;
 import com.example.racehorse_transport.entity.enums.HandoverStatus;
 import com.example.racehorse_transport.entity.enums.HandoverType;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
@@ -19,19 +17,16 @@ import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.TripExecutionPolicy;
 import com.example.racehorse_transport.repository.CrewAssignmentRepository;
-import com.example.racehorse_transport.repository.HorseInsuranceRepository;
 import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.repository.TripStopRepository;
 import com.example.racehorse_transport.repository.VehicleTripRepository;
 import com.example.racehorse_transport.service.BookingStatusService;
-import com.example.racehorse_transport.service.DocumentCompletenessService;
 import com.example.racehorse_transport.service.StopReadinessService;
 import com.example.racehorse_transport.service.TripExecutionService;
-import com.example.racehorse_transport.service.NotificationService;
+import com.example.racehorse_transport.service.TripProgressNoticeService;
+import com.example.racehorse_transport.service.TripPickupReadinessService;
 import java.time.Clock;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
@@ -42,19 +37,16 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class TripExecutionServiceImpl implements TripExecutionService {
 
-    private static final Set<HorseLegStatus> NOT_STARTED = Set.of(HorseLegStatus.PLANNED);
-
     private final VehicleTripRepository trips;
     private final TripStopRepository stops;
     private final CrewAssignmentRepository crew;
     private final HorseLegRepository legs;
-    private final HorseInsuranceRepository insurances;
-    private final DocumentCompletenessService documents;
+    private final TripPickupReadinessService startChecks;
     private final StopReadinessService readiness;
     private final BookingStatusService bookingStatus;
     private final Clock clock;
     private final DepartureService departures;
-    private final NotificationService notifications;
+    private final TripProgressNoticeService notices;
 
     @Override
     @Transactional
@@ -73,57 +65,19 @@ public class TripExecutionServiceImpl implements TripExecutionService {
             throw new DispatchRuleException("stallPlan", "Còn ngựa chưa có vị trí khoang: " + String.join(", ", unplaced)
                     + ". Xếp sơ đồ khoang trước khi xuất phát.", true);
         }
-        // Đơn có ngựa lên xe ở địa chỉ đón trên lượt này: đủ giấy và bảo hiểm từng con đã xác nhận
-        Map<Long, String> bookings = new LinkedHashMap<>();
-        for (TripStop stop : stops.findByVehicleTrip_IdOrderBySequenceNumber(trip.getId())) {
-            if (stop.getStopType() != TripStopType.PICKUP) continue;
-            for (HorseLeg leg : legs.findByBoardTripStop_IdAndStatusIn(stop.getId(), NOT_STARTED)) {
-                var horse = leg.getBookingHorse();
-                if (horse.getPickupMissedAt() != null && horse.getPickupMissChoice() == null) {
-                    throw new DispatchRuleException("pickup", "Còn ngựa chưa chọn cách xử lý đón hụt.", true);
-                }
-                var booking = horse.getBooking();
-                bookings.put(booking.getId(), booking.getCode());
-                boolean insured = insurances.findByBookingHorse_Id(leg.getBookingHorse().getId())
-                        .map(i -> i.getStatus() == HorseInsuranceStatus.CONFIRMED).orElse(false);
-                if (!insured) {
-                    throw new DispatchRuleException("insurance", "Bảo hiểm của " + leg.getBookingHorse().getHorse().getName()
-                            + " (đơn " + booking.getCode() + ") chưa được xác nhận.", true);
-                }
-            }
-        }
-        bookings.forEach((id, code) -> {
-            if (!documents.isComplete(id)) {
-                throw new DispatchRuleException("documents", "Đơn " + code + " còn thiếu giấy tờ bắt buộc.", true);
-            }
-        });
+        startChecks.requireReady(trip.getId());
         trip.setStatus(VehicleTripStatus.IN_PROGRESS);
         trip.setActualStartAt(clock.instant());
         if (trip.getTripType() == VehicleTripType.LINEHAUL) {
-            notifyLinehaulDeparted(trip);
+            notices.notifyLinehaulDeparted(trip);
         }
-    }
-
-    private void notifyLinehaulDeparted(VehicleTrip trip) {
-        Map<Long, HorseLeg> oneLegPerBooking = new LinkedHashMap<>();
-        for (HorseLeg leg : legs.findActiveOnTrip(trip.getId(),
-                Set.of(HorseLegStatus.CANCELLED, HorseLegStatus.FAILED, HorseLegStatus.COMPLETED))) {
-            oneLegPerBooking.putIfAbsent(leg.getBookingHorse().getBooking().getId(), leg);
-        }
-        oneLegPerBooking.forEach((bookingId, leg) -> {
-            var booking = leg.getBookingHorse().getBooking();
-            notifications.notify(List.of(booking.getCustomer().getUser().getId()), bookingId,
-                    "Xe trục đã xuất phát",
-                    "Xe trục của đơn " + booking.getCode() + " đã xuất phát.",
-                    "/orders/" + bookingId);
-        });
     }
 
     @Override
     @Transactional
     public Long arrive(Long tripStopId, String username) {
+        VehicleTrip trip = lockTripOf(tripStopId);
         TripStop stop = findStop(tripStopId);
-        VehicleTrip trip = trips.findForUpdate(stop.getVehicleTrip().getId()).orElseThrow();
         requireCrew(trip.getId(), username);
         TripExecutionPolicy.requireInProgress(trip.getStatus());
         TripStop previous = previousOf(stop);
@@ -135,8 +89,8 @@ public class TripExecutionServiceImpl implements TripExecutionService {
     @Override
     @Transactional
     public Long depart(Long tripStopId, String earlyReason, String username) {
+        VehicleTrip trip = lockTripOf(tripStopId);
         TripStop stop = findStop(tripStopId);
-        VehicleTrip trip = trips.findForUpdate(stop.getVehicleTrip().getId()).orElseThrow();
         CrewAssignment member = requireCrew(trip.getId(), username);
         TripExecutionPolicy.requireInProgress(trip.getStatus());
         readiness.requireCanLeave(stop, earlyReason, member.getStaff().getUserId());
@@ -147,6 +101,7 @@ public class TripExecutionServiceImpl implements TripExecutionService {
             departures.linehaulDeparted(trip.getDeparture().getId());
         }
         stop.setActualDepartureAt(clock.instant());
+        notices.departed(stop);
         return trip.getId();
     }
 
@@ -188,6 +143,11 @@ public class TripExecutionServiceImpl implements TripExecutionService {
 
     private TripStop findStop(Long id) {
         return stops.findById(id).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy điểm dừng " + id));
+    }
+
+    private VehicleTrip lockTripOf(Long stopId) {
+        return stops.findTripId(stopId).flatMap(trips::findForUpdate)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lượt xe của điểm dừng " + stopId));
     }
 
     private TripStop previousOf(TripStop stop) {

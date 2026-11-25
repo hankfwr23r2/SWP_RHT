@@ -29,6 +29,12 @@ import java.time.Instant;
 @Table(name = "vehicle_trip")
 public class VehicleTrip {
 
+    @Column(name = "delivery_window_warned_at")
+    private Instant deliveryWindowWarnedAt;
+
+    @Column(name = "delivery_ride_warned_at")
+    private Instant deliveryRideWarnedAt;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")

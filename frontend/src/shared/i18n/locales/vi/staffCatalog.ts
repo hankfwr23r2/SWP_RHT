@@ -370,7 +370,7 @@ export const staffCatalog = {
         "STABLING_MORNING_HOUR": "Mốc tính phí khi đủ 24 giờ ngoài giờ mở cửa",
         "STABLING_MAX_BLOCKS": "Số lần 24 giờ tối đa tính phí giữ",
         "STABLING_WARNING_HOURS": "Báo trước mốc tính phí giữ kế tiếp",
-        "DELIVERY_NOTICE_WINDOW_MINUTES": "Khung giờ giao đã báo",
+        "DELIVERY_TOLERANCE_MINUTES": "Dung sai giờ giao đã báo",
         "QUOTATION_VALID_HOURS": "Hiệu lực báo giá từ lúc gửi",
         "DEPARTURE_GENERATION_WEEKS": "Số tuần tạo chuyến trước",
         "OTP_EXPIRY_MINUTES": "Thời hạn mã xác minh",
