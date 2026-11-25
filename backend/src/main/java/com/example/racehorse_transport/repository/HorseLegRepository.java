@@ -15,6 +15,11 @@ import org.springframework.data.repository.query.Param;
 public interface HorseLegRepository extends JpaRepository<HorseLeg, Long> {
     List<HorseLeg> findByBookingHorse_IdOrderBySequenceNumber(Long bookingHorseId);
 
+    @Query("SELECT DISTINCT l.bookingHorse.id FROM HorseLeg l WHERE l.bookingHorse.id IN :horseIds "
+            + "AND l.legType = :type AND l.status IN :statuses")
+    java.util.Set<Long> findLiveLegHorseIds(Collection<Long> horseIds,
+            com.example.racehorse_transport.entity.enums.HorseLegType type, Collection<HorseLegStatus> statuses);
+
     boolean existsByIdAndStatus(Long id, HorseLegStatus status);
 
     @Query("""

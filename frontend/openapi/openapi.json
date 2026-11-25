@@ -364,6 +364,20 @@
         },
         "type" : "object"
       },
+      "ApiResponseDeliveryChangeResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/DeliveryChangeResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseDeliveryComplaintResponseDto" : {
         "properties" : {
           "data" : {
@@ -2217,6 +2231,12 @@
           "booking" : {
             "$ref" : "#/components/schemas/BookingResponseDto"
           },
+          "canChangeDelivery" : {
+            "type" : "boolean"
+          },
+          "deliveryChangeDisabledReason" : {
+            "type" : "string"
+          },
           "deliveryMethod" : {
             "enum" : [ "COMPANY", "SELF" ],
             "type" : "string"
@@ -3379,6 +3399,71 @@
           }
         },
         "required" : [ "days" ],
+        "type" : "object"
+      },
+      "DeliveryChangeConfirmRequestDto" : {
+        "properties" : {
+          "expectedTotal" : {
+            "minimum" : 0,
+            "type" : "number"
+          },
+          "selection" : {
+            "$ref" : "#/components/schemas/DeliveryChangeRequestDto"
+          }
+        },
+        "required" : [ "expectedTotal", "selection" ],
+        "type" : "object"
+      },
+      "DeliveryChangeRequestDto" : {
+        "properties" : {
+          "contactName" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "contactPhone" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "pattern" : "[+0-9() .-]+",
+            "type" : "string"
+          },
+          "customerAddressId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "deliveryAddressId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "contactName", "contactPhone", "customerAddressId", "deliveryAddressId" ],
+        "type" : "object"
+      },
+      "DeliveryChangeResponseDto" : {
+        "properties" : {
+          "currencyCode" : {
+            "type" : "string"
+          },
+          "difference" : {
+            "type" : "number"
+          },
+          "estimatedDeliveryDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "newBalance" : {
+            "type" : "number"
+          },
+          "newDeliveryCharge" : {
+            "type" : "number"
+          },
+          "newTotal" : {
+            "type" : "number"
+          },
+          "oldDeliveryCharge" : {
+            "type" : "number"
+          }
+        },
         "type" : "object"
       },
       "DeliveryComplaintResponseDto" : {
@@ -10680,7 +10765,7 @@
     },
     "/bookings/{bookingId}/delivery-complaints/confirm" : {
       "post" : {
-        "operationId" : "confirm_2",
+        "operationId" : "confirm_3",
         "parameters" : [ {
           "in" : "path",
           "name" : "bookingId",
@@ -11273,7 +11358,7 @@
     },
     "/bookings/{id}/cancellation-preview" : {
       "get" : {
-        "operationId" : "preview_2",
+        "operationId" : "preview_3",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -11364,7 +11449,7 @@
     },
     "/bookings/{id}/confirm-collection" : {
       "post" : {
-        "operationId" : "confirm_1",
+        "operationId" : "confirm_2",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -11468,6 +11553,80 @@
           }
         },
         "tags" : [ "incident-controller" ]
+      }
+    },
+    "/bookings/{id}/delivery-change" : {
+      "post" : {
+        "operationId" : "confirm_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DeliveryChangeConfirmRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseDeliveryChangeResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "delivery-change-controller" ]
+      }
+    },
+    "/bookings/{id}/delivery-change/preview" : {
+      "post" : {
+        "operationId" : "preview_2",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DeliveryChangeRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseDeliveryChangeResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "delivery-change-controller" ]
       }
     },
     "/bookings/{id}/documents" : {

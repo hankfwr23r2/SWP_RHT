@@ -19,6 +19,8 @@ export type BookingStatus = NonNullable<BookingOrder['status']>
 export type BookingSummary = Schemas['BookingSummaryResponseDto']
 export type BookingDetail = Schemas['BookingDetailResponseDto']
 export type BookingCancellation = Schemas['BookingCancellationResponseDto']
+export type DeliveryChangeSelection = Schemas['DeliveryChangeRequestDto']
+export type DeliveryChangePreview = Schemas['DeliveryChangeResponseDto']
 export type BookingDelay = Schemas['BookingDelayResponseDto']
 export type BookingReschedule = Schemas['BookingRescheduleRequestDto']
 export type InsuranceRevision = Schemas['PersonalInsuranceRevisionRequestDto']
@@ -36,6 +38,10 @@ export const bookingOrdersApi = {
     readFormResponse<BookingOrder>(await apiClient.post('/bookings', body, formResponseOptions)),
   list: async () => (await apiClient.get<ApiResponse<BookingSummary[]>>('/bookings')).data.data,
   detail: async (id: number) => (await apiClient.get<ApiResponse<BookingDetail>>(`/bookings/${id}`)).data.data,
+  previewDeliveryChange: async (id: number, body: DeliveryChangeSelection) =>
+    readFormResponse<DeliveryChangePreview>(await apiClient.post(`/bookings/${id}/delivery-change/preview`, body, formResponseOptions)),
+  confirmDeliveryChange: async (id: number, body: Schemas['DeliveryChangeConfirmRequestDto']) =>
+    readFormResponse<DeliveryChangePreview>(await apiClient.post(`/bookings/${id}/delivery-change`, body, formResponseOptions)),
   cancellationPreview: async (id: number) =>
     (await apiClient.get<ApiResponse<BookingCancellation>>(`/bookings/${id}/cancellation-preview`)).data.data,
   delay: async (id: number) =>

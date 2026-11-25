@@ -10,7 +10,7 @@ import java.util.List;
 // intakeByName: nhân viên đã tiếp nhận đơn, chỉ trả cho nhân viên
 public record BookingDetailResponseDto(BookingResponseDto booking, List<PartySnapshot> parties,
         List<AddressSnapshot> addresses, List<HorseDetail> horses, String reviewReason,
-        TransferMethod pickupMethod, TransferMethod deliveryMethod, String intakeByName, boolean rated, Instant balanceHoldAt, boolean assignedToMe) {
+        TransferMethod pickupMethod, TransferMethod deliveryMethod, String intakeByName, boolean rated, Instant balanceHoldAt, boolean assignedToMe, boolean canChangeDelivery, String deliveryChangeDisabledReason) {
 
     public static BookingDetailResponseDto from(Booking booking, List<BookingParty> parties,
                                                  List<BookingAddress> addresses, List<HorseDetail> horses) {
@@ -28,7 +28,12 @@ public record BookingDetailResponseDto(BookingResponseDto booking, List<PartySna
         return new BookingDetailResponseDto(BookingResponseDto.from(booking),
                 parties.stream().map(PartySnapshot::from).toList(),
                 addresses.stream().map(AddressSnapshot::from).toList(), List.copyOf(horses), reviewReason,
-                booking.getPickupMethod(), booking.getDeliveryMethod(), intakeByName, rated, balanceHoldAt, assignedToMe);
+                booking.getPickupMethod(), booking.getDeliveryMethod(), intakeByName, rated, balanceHoldAt, assignedToMe, false, null);
+    }
+
+    public BookingDetailResponseDto withDeliveryChange(String reason) {
+        return new BookingDetailResponseDto(booking, parties, addresses, horses, reviewReason, pickupMethod,
+                deliveryMethod, intakeByName, rated, balanceHoldAt, assignedToMe, reason == null, reason);
     }
 
     public record PartySnapshot(BookingPartyRole bookingRole, String fullName, String phone,

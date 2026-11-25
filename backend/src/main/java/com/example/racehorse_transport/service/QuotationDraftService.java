@@ -11,6 +11,13 @@ import java.util.List;
 import java.util.Optional;
 
 public interface QuotationDraftService {
+    record DeliveryReplacement(Quotation quotation,
+            com.example.racehorse_transport.dto.booking.DeliveryChangeResponseDto preview) {}
+
+    DeliveryReplacement replaceDelivery(Quotation previous, List<BookingHorse> active,
+            List<com.example.racehorse_transport.entity.Payment> payments, DeliveryRouteService.DeliveryPricing delivery,
+            java.time.LocalDate date, java.math.BigDecimal expected);
+
     QuotationResponseDto create(Long bookingId);
 
     List<Instant> validateInsurance(Quotation quotation, Instant now);

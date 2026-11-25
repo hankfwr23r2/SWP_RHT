@@ -50,6 +50,7 @@ public class BookingQueryServiceImpl implements BookingQueryService {
     private final BookingStatusHistoryRepository history;
     private final StaffRepository staff;
     private final BookingRatingRepository ratings;
+    private final com.example.racehorse_transport.service.DeliveryChangeService deliveryChanges;
 
     @Override
     public List<BookingSummaryResponseDto> list(String username) {
@@ -60,7 +61,7 @@ public class BookingQueryServiceImpl implements BookingQueryService {
     public BookingDetailResponseDto get(String username, Long id) {
         Booking booking = bookings.findByIdAndCustomer_User_Username(id, username)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn."));
-        return detail(booking, null, false);
+        return detail(booking, null, false).withDeliveryChange(deliveryChanges.disabledReason(booking));
     }
 
     @Override

@@ -557,7 +557,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["confirm_2"];
+        post: operations["confirm_3"];
         delete?: never;
         options?: never;
         head?: never;
@@ -827,7 +827,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["preview_2"];
+        get: operations["preview_3"];
         put?: never;
         post?: never;
         delete?: never;
@@ -877,7 +877,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["confirm_1"];
+        post: operations["confirm_2"];
         delete?: never;
         options?: never;
         head?: never;
@@ -926,6 +926,38 @@ export interface paths {
         get: operations["customerPlans"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/delivery-change": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["confirm_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/delivery-change/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["preview_2"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4267,6 +4299,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseDeliveryChangeResponseDto: {
+            data?: components["schemas"]["DeliveryChangeResponseDto"];
+            message?: string;
+            status?: string;
+        };
         ApiResponseDeliveryComplaintResponseDto: {
             data?: components["schemas"]["DeliveryComplaintResponseDto"];
             message?: string;
@@ -4872,6 +4909,8 @@ export interface components {
             /** Format: date-time */
             balanceHoldAt?: string;
             booking?: components["schemas"]["BookingResponseDto"];
+            canChangeDelivery?: boolean;
+            deliveryChangeDisabledReason?: string;
             /** @enum {string} */
             deliveryMethod?: "COMPANY" | "SELF";
             horses?: components["schemas"]["HorseDetail"][];
@@ -5299,6 +5338,28 @@ export interface components {
         DebtExtensionRequestDto: {
             /** Format: int32 */
             days: number;
+        };
+        DeliveryChangeConfirmRequestDto: {
+            expectedTotal: number;
+            selection: components["schemas"]["DeliveryChangeRequestDto"];
+        };
+        DeliveryChangeRequestDto: {
+            contactName: string;
+            contactPhone: string;
+            /** Format: int64 */
+            customerAddressId: number;
+            /** Format: int64 */
+            deliveryAddressId: number;
+        };
+        DeliveryChangeResponseDto: {
+            currencyCode?: string;
+            difference?: number;
+            /** Format: date */
+            estimatedDeliveryDate?: string;
+            newBalance?: number;
+            newDeliveryCharge?: number;
+            newTotal?: number;
+            oldDeliveryCharge?: number;
         };
         DeliveryComplaintResponseDto: {
             /** Format: int64 */
@@ -8486,7 +8547,7 @@ export interface operations {
             };
         };
     };
-    confirm_2: {
+    confirm_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -8926,7 +8987,7 @@ export interface operations {
             };
         };
     };
-    preview_2: {
+    preview_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -8996,7 +9057,7 @@ export interface operations {
             };
         };
     };
-    confirm_1: {
+    confirm_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -9080,6 +9141,58 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListPlanDto"];
+                };
+            };
+        };
+    };
+    confirm_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeliveryChangeConfirmRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDeliveryChangeResponseDto"];
+                };
+            };
+        };
+    };
+    preview_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeliveryChangeRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDeliveryChangeResponseDto"];
                 };
             };
         };
