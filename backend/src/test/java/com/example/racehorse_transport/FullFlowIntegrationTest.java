@@ -42,10 +42,10 @@ import org.springframework.transaction.annotation.Transactional;
 // Mốc M3 (docs/KE_HOACH_TRIEN_KHAI.md mục 8): chạy trọn 3 ví dụ của docs/NGHIEP_VU_THEO_59_BANG.md mục 6.
 // Mỗi ca gồm 3 đoạn, cùng một file theo kế hoạch:
 //   1. Thương mại tới CONFIRMED (luồng A): đặt đơn, thẩm định giấy và bảo hiểm, báo giá, cọc, quản lý xác nhận chạy chuyến.
-//      CHƯA VIẾT. Tạm thời confirmedBooking() lấy đơn CONFIRMED của dữ liệu mẫu (R__dev_seed_bookings.sql),
-//      ghi giấy bắt buộc đã duyệt và xác nhận chạy chuyến bằng SQL. Luồng A thay hàm này bằng các bước thật qua API.
+//      Viết ở CommercialFlowIntegrationTest (lập báo giá không chạy được trong transaction của test này).
+//      Ở đây confirmedBooking() lấy đơn CONFIRMED của dữ liệu mẫu, ghi giấy đã duyệt và xác nhận chạy chuyến bằng SQL.
 //   2. Vận hành tới DELIVERED (luồng B): điều độ, đón, gửi hub, chặng trục, giao hoặc bàn giao đại lý. Đi qua API như tổ xe.
-//   3. Sau khi giao (luồng A): quyết toán, đóng đơn, đánh giá. CHƯA VIẾT, thêm vào cuối mỗi ca.
+//   3. Sau khi giao (luồng A): khách xác nhận, quản lý đóng đơn, khách đánh giá (settle, ở ca chạy thẳng).
 @PostgresIntegrationTest
 @AutoConfigureMockMvc
 @Transactional
@@ -97,6 +97,7 @@ class FullFlowIntegrationTest {
         trip.complete();
 
         assertThat(bookingStatus(order)).isEqualTo("DELIVERED");
+        settle(order);
         journey(order).andExpect(jsonPath("$.data.horses[0].holder").value("CONSIGNEE"))
                 .andExpect(jsonPath("$.data.horses[0].legs[*].legType").value(org.hamcrest.Matchers.contains("DIRECT")))
                 .andExpect(jsonPath("$.data.horses[0].handovers[*].handoverType").value(org.hamcrest.Matchers.contains("PICKUP", "DELIVERY")));
@@ -266,6 +267,22 @@ class FullFlowIntegrationTest {
                 VALUES (?, ?, 'https://example.test/papers/' || md5(random()::text) || '.pdf', 'giay.pdf',
                         (SELECT min(id) FROM app_user), 'APPROVED', (SELECT min(id) FROM app_user), now(), ?)
                 """.formatted(ownerColumn), requirement.documentTypeId(), requirement.id(), ownerId);
+    }
+
+    // ===================== Đoạn 3: sau khi giao =====================
+
+    private void settle(Case order) throws Exception {
+        entityManager.flush();
+        String owner = jdbc.queryForObject("SELECT u.username FROM booking b JOIN app_user u ON u.id = b.customer_id WHERE b.id = ?", String.class, order.id());
+        String customer = "Bearer " + jwtUtils.generateToken(owner, List.of("CUSTOMER"));
+        String manager = token(testData.staff(testData.unique("m3.manager"), "MANAGER"), "MANAGER");
+        mvc.perform(post("/bookings/{id}/settlement/complete", order.id()).header(HttpHeaders.AUTHORIZATION, manager)).andExpect(status().isConflict());
+        mvc.perform(post("/bookings/{id}/delivery-complaints/confirm", order.id()).header(HttpHeaders.AUTHORIZATION, customer)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"confirmed\":true}")).andExpect(status().isOk());
+        mvc.perform(post("/bookings/{id}/settlement/complete", order.id()).header(HttpHeaders.AUTHORIZATION, manager)).andExpect(status().isOk());
+        assertThat(bookingStatus(order)).isEqualTo("COMPLETED");
+        mvc.perform(post("/bookings/{id}/ratings", order.id()).header(HttpHeaders.AUTHORIZATION, customer)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"score\":5,\"comment\":\"Ngựa tới nơi khỏe\"}")).andExpect(status().is2xxSuccessful());
     }
 
     // ===================== Đoạn 2: vận hành (luồng B) =====================
