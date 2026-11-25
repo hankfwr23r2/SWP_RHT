@@ -545,7 +545,7 @@ Năm loại lượt xe:
 ### Bước 6. Đơn chạy thẳng, tự chở và quốc tế
 
 - **Chạy thẳng:** lập một lượt Chạy thẳng, có thể gom nhiều đơn cùng vùng. Không cần chờ quản lý quyết định chuyến.
-- **Khách tự chở tới hub:** điều phối bấm **Hẹn nhận tại hub**, chọn giờ; khách được báo giờ và tên hub. Vẫn phải xếp con ngựa vào lượt trục trước.
+- **Khách tự chở tới hub:** điều phối bấm **Hẹn nhận tại hub**, xem hạn có mặt và chọn giờ không muộn hơn hạn. Khách được báo giờ và tên hub. Vẫn phải xếp con ngựa vào lượt trục trước khi nhận.
 - **Người nhận tự đến hub:** hẹn giờ sau khi ngựa tới hub (luồng 6).
 - **Đơn xuất:** sau khi có lượt trục tới cửa khẩu, lập **chặng đại lý** từ cửa khẩu tới nhà người nhận, chọn đại lý của đúng nước đó.
 - **Đơn nhập:** lập chặng đại lý **trước**, từ nhà người gửi tới cửa khẩu nơi chuyến trục xuất phát; rồi mới xếp trục và giao.
@@ -597,7 +597,7 @@ Cùng chuyến 05:00 ngày 08/12:
 | 06/12 05:00 | 48 giờ | **Quản lý** | Từ lúc này được bấm **Chạy**. Không bấm thì không lập được lượt trục |
 | Sau khi bấm Chạy | | **Điều phối** | Lập lượt trục, rồi giao |
 | 07/12 06:00–18:00 | | Xe đón | Đón ở nhà khách, đưa ngựa về hub trong khung giờ |
-| 08/12 02:00 | 3 giờ | **Điều phối, khách tự chở** | **Hạn có mặt ở hub**. Lượt đón nào tới hub muộn hơn thì hệ thống không cho xếp |
+| 08/12 02:00 | 3 giờ | **Điều phối, khách tự chở** | **Hạn có mặt ở hub**. Hệ thống từ chối xếp lượt đón tới muộn hoặc đặt giờ hẹn tự chở sau mốc này |
 | 08/12 05:00 | 0 | Tổ lái | Xe trục chạy. Muốn xuất phát: có tài xế nhận việc, đủ vị trí khoang |
 
 ## 3.D. Các điểm nghiệp vụ
@@ -658,7 +658,7 @@ Cùng chuyến 05:00 ngày 08/12:
 ### Đại lý và tự chở
 
 - **3.33** Đại lý phải đang có vai trò đại lý còn hiệu lực và **ở đúng nước** của địa chỉ. Đơn nhập phải chọn **đúng cửa khẩu** chuyến trục xuất phát.
-- **3.34** Giờ hẹn tự chở phải trước giờ chạy của chuyến. Mỗi con chỉ có một lịch hẹn.
+- **3.34** Giờ hẹn tự chở phải không muộn hơn hạn có mặt ở hub, tính bằng giờ xuất phát hiệu lực trừ `HUB_CHECKIN_HOURS`. Mỗi con chỉ có một lịch hẹn.
 
 ## 3.E. Tình huống và cách hệ thống xử lý
 
@@ -698,7 +698,7 @@ Theo cách hàng không, đã trình bày và chờ duyệt cuối:
 5. **Hủy lượt xe hoặc gỡ người thì tổ lái không được báo.**
 6. **Đã sửa.** Lượt chở ngựa phải có hộ tống đã nhận việc mới xuất phát được.
 7. **Đã sửa.** Nhập giờ tay cũng kiểm thời gian ngồi xe theo kế hoạch: đón, giao tối đa 5 giờ, chạy thẳng tối đa 10 giờ.
-8. **Giờ hẹn khách tự chở chỉ kiểm trước giờ chạy**, không kiểm hạn có mặt 3 giờ như xe công ty.
+8. **Đã sửa.** Màn đặt hẹn khách tự chở hiện hạn có mặt ở hub và hệ thống từ chối giờ hẹn muộn hơn hạn.
 9. **Dồn chuyến, chạy xe nhỏ hơn, một khách thuê cả chuyến**: tài liệu có nêu, chưa có nút riêng. Hiện chỉ có Chạy, Hủy, Tạo chuyến đột xuất.
 10. **Đưa xe về phải nhờ quản lý xác nhận một chuyến không có ngựa.** Hỏi: cho điều phối tự lập lượt về rỗng?
 11. **Giờ lái mỗi ngày tính theo ngày lịch**, không theo 24 giờ liên tục: lái 8 giờ tối hôm trước và 8 giờ sáng hôm sau vẫn hợp lệ.
@@ -1230,7 +1230,7 @@ Tiền VNPAY về **sau** khi đơn đã hủy: không ghi vào đơn, báo qu�
 
 ### Câu chuyện 4. Khách tự chở tới hub, tự tới hub nhận
 
-**Bước 15. Nhận tại hub.** Điều phối hẹn giờ trước giờ chạy của chuyến, khách được báo. Khi khách tới, **điều phối viên** (không phải tổ lái) nhập chip và bấm nhận. Hệ thống đòi: đã xếp lượt xe trục cho con đó, bảo hiểm đã xác nhận, đủ giấy bắt buộc, chip đúng. Xong thì lập số dư như bước 4. **Xe trục chỉ rời hub khi đơn đã trả đủ**, nếu ngựa đã lên xe.
+**Bước 15. Nhận tại hub.** Điều phối chọn giờ hẹn không muộn hơn hạn có mặt ở hub. Khách được báo giờ hẹn. Khi khách tới, **điều phối viên** (không phải tổ lái) nhập chip và bấm nhận. Hệ thống đòi: đã xếp lượt xe trục cho con đó, bảo hiểm đã xác nhận, đủ giấy bắt buộc, chip đúng. Xong thì lập số dư như bước 4. **Xe trục chỉ rời hub khi đơn đã trả đủ**, nếu ngựa đã lên xe.
 
 **Bước 16. Trả tại hub.** Ngựa tới hub đích, điều phối hẹn giờ, khách được báo. Người nhận tới, điều phối nhập chip và bấm trả. Con cuối thì đơn Đã giao. Quá giờ hẹn thì gửi chuồng, người nhận chịu phí (luồng 5).
 

@@ -5774,6 +5774,8 @@ export interface components {
             /** Format: int64 */
             departureId?: number;
             horses?: components["schemas"]["HorseDto"][];
+            /** Format: date-time */
+            hubCheckinDeadlineAt?: string;
             /** Format: int64 */
             id?: number;
             pickupAddress?: components["schemas"]["AddressDto"];

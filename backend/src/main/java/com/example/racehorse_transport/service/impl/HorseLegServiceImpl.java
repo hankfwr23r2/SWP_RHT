@@ -37,6 +37,7 @@ import com.example.racehorse_transport.service.CustomerNoticeService;
 import com.example.racehorse_transport.service.HorseLegService;
 import com.example.racehorse_transport.service.StallPlanService;
 import com.example.racehorse_transport.service.SystemConfigService;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -73,6 +74,7 @@ public class HorseLegServiceImpl implements HorseLegService {
         if (to.isBefore(from)) {
             throw new DispatchRuleException("to", "Khoảng ngày không hợp lệ.");
         }
+        int hubCheckinHours = configs.getInt("HUB_CHECKIN_HOURS");
         List<DispatchBookingResponseDto> result = new ArrayList<>();
         for (Booking booking : dispatchBookings.findDispatchable(DISPATCHABLE, from, to)) {
             Map<AddressRole, BookingAddress> addresses = bookingAddresses.findByBooking_Id(booking.getId()).stream()
@@ -90,8 +92,9 @@ public class HorseLegServiceImpl implements HorseLegService {
                         own.stream().filter(leg -> !INACTIVE.contains(leg.status())).map(HorseLegResponseDto::legType).toList()));
             }).toList();
             var departure = booking.getDeparture();
+            Instant departureAt = departure == null ? null : DepartureDelayPolicy.effectiveTime(departure);
             result.add(DispatchBookingResponseDto.from(booking, addresses.get(AddressRole.PICKUP), addresses.get(AddressRole.DELIVERY),
-                    horses, departure == null ? null : DepartureDelayPolicy.effectiveTime(departure)));
+                    horses, departureAt, departureAt == null ? null : DispatchPolicy.hubCheckinDeadline(departureAt, hubCheckinHours)));
         }
         return result;
     }
@@ -190,7 +193,7 @@ public class HorseLegServiceImpl implements HorseLegService {
         }
         if (legType == HorseLegType.PICKUP && booking.getDeparture() != null) {
             DispatchPolicy.requireAtHubBeforeDeadline(alight.getPlannedArrivalAt(),
-                    DepartureDelayPolicy.effectiveTime(booking.getDeparture()).minusSeconds(configs.getInt("HUB_CHECKIN_HOURS") * 3600L));
+                    DispatchPolicy.hubCheckinDeadline(DepartureDelayPolicy.effectiveTime(booking.getDeparture()), configs.getInt("HUB_CHECKIN_HOURS")));
         }
 
         HorseLeg leg = new HorseLeg();

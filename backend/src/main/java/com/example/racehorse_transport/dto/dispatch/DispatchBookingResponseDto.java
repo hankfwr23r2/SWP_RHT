@@ -16,7 +16,7 @@ import java.util.List;
 // Đơn chờ xếp xe ở bảng điều độ: địa chỉ đón và giao, chuyến trục, từng con ngựa với các chặng đã lập
 public record DispatchBookingResponseDto(
         Long id, String code, BookingType bookingType, BookingStatus status, LocalDate requestedPickupDate,
-        Long departureId, String routeCode, Instant plannedDepartureAt,
+        Long departureId, String routeCode, Instant plannedDepartureAt, Instant hubCheckinDeadlineAt,
         AddressDto pickupAddress, AddressDto deliveryAddress, List<HorseDto> horses,
         TransferMethod pickupMethod, TransferMethod deliveryMethod) {
 
@@ -38,16 +38,16 @@ public record DispatchBookingResponseDto(
 
     public static DispatchBookingResponseDto from(Booking booking, BookingAddress pickup, BookingAddress delivery, List<HorseDto> horses) {
         var departure = booking.getDeparture();
-        return from(booking, pickup, delivery, horses, departure == null ? null : departure.getPlannedDepartureAt());
+        return from(booking, pickup, delivery, horses, departure == null ? null : departure.getPlannedDepartureAt(), null);
     }
 
     public static DispatchBookingResponseDto from(Booking booking, BookingAddress pickup, BookingAddress delivery,
-                                                   List<HorseDto> horses, Instant departureAt) {
+                                                   List<HorseDto> horses, Instant departureAt, Instant hubCheckinDeadlineAt) {
         var departure = booking.getDeparture();
         return new DispatchBookingResponseDto(booking.getId(), booking.getCode(), booking.getBookingType(), booking.getStatus(),
                 booking.getRequestedPickupDate(),
                 departure == null ? null : departure.getId(), departure == null ? null : departure.getRoute().getCode(),
-                departureAt,
+                departureAt, hubCheckinDeadlineAt,
                 AddressDto.from(pickup), AddressDto.from(delivery), horses, booking.getPickupMethod(), booking.getDeliveryMethod());
     }
 }

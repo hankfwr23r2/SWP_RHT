@@ -30,6 +30,8 @@ import com.example.racehorse_transport.service.CustomerNoticeService;
 import com.example.racehorse_transport.service.HorseStayService;
 import com.example.racehorse_transport.service.HubStallService;
 import com.example.racehorse_transport.service.StablePartnerService;
+import com.example.racehorse_transport.policy.DepartureDelayPolicy;
+import com.example.racehorse_transport.policy.DispatchPolicy;
 import com.example.racehorse_transport.policy.HubStallPolicy;
 import com.example.racehorse_transport.service.NotificationService;
 import com.example.racehorse_transport.service.SystemConfigService;
@@ -213,13 +215,15 @@ public class HorseStayServiceImpl implements HorseStayService {
                 && booking.getStatus() != BookingStatus.IN_OPERATION)) {
             throw new DispatchRuleException("bookingHorseId", "Đơn " + booking.getCode() + " không ở trạng thái hẹn nhận ngựa được.", true);
         }
-        Location hub = booking.getDeparture().getRoute().getOrigin();
-        Instant departAt = booking.getDeparture().getPlannedDepartureAt();
+        Departure departure = booking.getDeparture();
+        Location hub = departure.getRoute().getOrigin();
         if (hub.getLocationType() != LocationType.HUB) {
             throw new DispatchRuleException("bookingHorseId", "Tuyến của đơn không bắt đầu ở hub.");
         }
-        if (!plannedStartAt.isBefore(departAt)) {
-            throw new DispatchRuleException("plannedStartAt", "Giờ hẹn phải trước giờ xuất phát của chuyến.");
+        Instant departAt = DepartureDelayPolicy.effectiveTime(departure);
+        Instant deadline = DispatchPolicy.hubCheckinDeadline(departAt, configs.getInt("HUB_CHECKIN_HOURS"));
+        if (plannedStartAt.isAfter(deadline)) {
+            throw new DispatchRuleException("plannedStartAt", "Giờ hẹn phải trước hạn có mặt ở hub (" + TIME.format(deadline) + ").");
         }
         if (stays.findByBookingHorse_IdInOrderById(List.of(line.getId())).stream().anyMatch(s -> s.getActualEndAt() == null)) {
             throw new DispatchRuleException("bookingHorseId", "Con ngựa đã có lịch hẹn hoặc đang lưu trú.", true);
