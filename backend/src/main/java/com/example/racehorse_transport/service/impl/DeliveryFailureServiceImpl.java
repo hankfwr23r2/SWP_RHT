@@ -84,11 +84,17 @@ public class DeliveryFailureServiceImpl implements DeliveryFailureService {
         return expired.size();
     }
 
+    // Chờ ngắn chỉ áp dụng cho đơn giao nhiều nơi; lượt gom nhiều đơn giữ thời gian chờ như cũ
+    private static boolean sameBooking(TripStop first, TripStop second) {
+        return first.getBookingAddress() != null && second.getBookingAddress() != null
+                && first.getBookingAddress().getBooking().getId().equals(second.getBookingAddress().getBooking().getId());
+    }
+
     private int waitMinutes(Handover handover) {
         var current = handover.getTripStop();
         boolean intermediate = stops.findByVehicleTrip_IdOrderBySequenceNumber(current.getVehicleTrip().getId()).stream()
                 .anyMatch(stop -> stop.getSequenceNumber() > current.getSequenceNumber()
-                        && stop.getStopType() == TripStopType.DELIVERY);
+                        && stop.getStopType() == TripStopType.DELIVERY && sameBooking(stop, current));
         return configs.getInt(intermediate ? "INTERMEDIATE_WAIT_MINUTES" : FREE_WAIT);
     }
 

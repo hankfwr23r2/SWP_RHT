@@ -43,6 +43,22 @@ class DeliveryFailureServiceImplTest {
             Clock.fixed(now, ZoneOffset.UTC), stops);
 
     @Test
+    void stopsOfDifferentBookingsKeepTheFullWait() {
+        var trip = new VehicleTrip();
+        trip.setId(1L);
+        trip.setStatus(VehicleTripStatus.IN_PROGRESS);
+        var first = stop(trip, 11L, 2, TripStopType.DELIVERY);
+        var other = stop(trip, 12L, 3, TripStopType.DELIVERY);
+        other.getBookingAddress().getBooking().setId(8L);
+        when(configs.getInt("INTERMEDIATE_WAIT_MINUTES")).thenReturn(60);
+        when(configs.getInt("HANDOVER_FREE_WAIT_MINUTES")).thenReturn(120);
+        when(stops.findByVehicleTrip_IdOrderBySequenceNumber(1L)).thenReturn(List.of(first, other));
+        when(handovers.findWaitingSince(HandoverStatus.PENDING, now.minusSeconds(3600))).thenReturn(List.of(handover(first)));
+
+        assertThat(service.timeoutExpired()).isZero();
+    }
+
+    @Test
     void timesOutOnlyTheIntermediateStopAfterOneHour() {
         var trip = new VehicleTrip();
         trip.setId(1L);
@@ -97,6 +113,13 @@ class DeliveryFailureServiceImplTest {
         stop.setVehicleTrip(trip);
         stop.setSequenceNumber(number);
         stop.setStopType(type);
+        if (type == TripStopType.DELIVERY) {
+            var booking = new com.example.racehorse_transport.entity.Booking();
+            booking.setId(7L);
+            var address = new com.example.racehorse_transport.entity.BookingAddress();
+            address.setBooking(booking);
+            stop.setBookingAddress(address);
+        }
         return stop;
     }
 }

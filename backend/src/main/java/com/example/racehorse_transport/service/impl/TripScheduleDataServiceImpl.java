@@ -23,6 +23,7 @@ import com.example.racehorse_transport.policy.TripSchedulePolicy.Rules;
 import com.example.racehorse_transport.policy.TripSchedulePolicy.Window;
 import com.example.racehorse_transport.repository.BookingAddressRepository;
 import com.example.racehorse_transport.repository.BookingHorseRepository;
+import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.service.DispatchService;
 import com.example.racehorse_transport.service.HorseLegService;
@@ -39,6 +40,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.racehorse_transport.entity.enums.BookingHorseStatus;
+import com.example.racehorse_transport.entity.enums.HorseLegStatus;
+import com.example.racehorse_transport.entity.enums.HorseLegType;
 import java.util.stream.Collectors;
 
 @Service
@@ -51,6 +54,7 @@ public class TripScheduleDataServiceImpl implements TripScheduleDataService {
     private final SystemConfigService configs;
     private final DispatchService dispatch;
     private final HorseLegService horseLegs;
+    private final HorseLegRepository legs;
 
     @Override
     @Transactional(readOnly = true)
@@ -89,8 +93,13 @@ public class TripScheduleDataServiceImpl implements TripScheduleDataService {
         boolean multiPlace = false;
         var selected = lines.stream().map(BookingHorse::getId).collect(Collectors.toSet());
         for (Booking booking : lines.stream().map(BookingHorse::getBooking).distinct().toList()) {
+            // Con đã giao hoặc giao hụt (giao lại) không bắt buộc đi cùng lượt
             var active = bookingHorses.findForDetail(booking.getId()).stream()
-                    .filter(horse -> horse.getStatus() == BookingHorseStatus.ACTIVE).toList();
+                    .filter(horse -> horse.getStatus() == BookingHorseStatus.ACTIVE)
+                    .filter(horse -> legs.findByBookingHorse_IdOrderBySequenceNumber(horse.getId()).stream()
+                            .noneMatch(leg -> leg.getLegType() == HorseLegType.DELIVERY
+                                    && (leg.getStatus() == HorseLegStatus.FAILED || leg.getStatus() == HorseLegStatus.COMPLETED)))
+                    .toList();
             boolean multiple = active.stream().map(BookingHorse::getDeliveryAddress).filter(Objects::nonNull)
                     .map(BookingAddress::getId).distinct().count() > 1;
             if (multiple && active.stream().anyMatch(horse -> !selected.contains(horse.getId()))) {

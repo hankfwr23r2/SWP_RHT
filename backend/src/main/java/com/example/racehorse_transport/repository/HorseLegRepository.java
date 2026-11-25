@@ -110,9 +110,10 @@ public interface HorseLegRepository extends JpaRepository<HorseLeg, Long> {
               AND NOT EXISTS (SELECT own FROM HorseLeg own
                   WHERE own.bookingHorse = h AND own.vehicleTrip.id = :tripId
                     AND own.status = com.example.racehorse_transport.entity.enums.HorseLegStatus.PLANNED)
-              AND NOT EXISTS (SELECT failed FROM HorseLeg failed WHERE failed.bookingHorse = h
-                  AND failed.legType = com.example.racehorse_transport.entity.enums.HorseLegType.DELIVERY
-                  AND failed.status = com.example.racehorse_transport.entity.enums.HorseLegStatus.FAILED)
+              AND NOT EXISTS (SELECT done FROM HorseLeg done WHERE done.bookingHorse = h
+                  AND done.legType = com.example.racehorse_transport.entity.enums.HorseLegType.DELIVERY
+                  AND done.status IN (com.example.racehorse_transport.entity.enums.HorseLegStatus.FAILED,
+                      com.example.racehorse_transport.entity.enums.HorseLegStatus.COMPLETED))
             """)
     boolean hasIncompleteMultiPlaceDelivery(Long tripId);
 }
