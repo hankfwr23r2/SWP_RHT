@@ -1,5 +1,29 @@
 // App khách: trang chủ, đặt chuyến, đơn, ngựa, hồ sơ, thanh toán
 export const customer = {
+  deliveryComplaint: {
+    title: 'Delivery confirmation and complaints',
+    none: 'No complaint recorded',
+    confirmed: 'The customer confirmed safe receipt of the horses.',
+    open: 'Complaint under review',
+    closed: 'Complaint resolved',
+    horse: 'Horse involved',
+    wholeBooking: 'Entire booking',
+    description: 'Complaint details',
+    photos: 'Supporting photos',
+    reply: 'Manager response',
+    decision: 'Decision',
+    reason: 'Decision reason',
+    ACCEPTED: 'Accepted',
+    REJECTED: 'Rejected',
+    saved: 'Delivery response saved.',
+    failed: 'Unable to save the response. Please try again.',
+    confirm: 'Confirm safe receipt',
+    submit: 'File a complaint',
+    send: 'Send complaint',
+    windowClosed: 'The in-app response window has ended. Contact the company if you need help.',
+    confirmEffect: 'Your confirmation lets the manager consider closing the booking early. You cannot withdraw it.',
+    sendEffect: 'Your complaint and photos will be sent to the manager for review. You cannot withdraw it.',
+  },
   home: {
     hero: {
       slide1: {

@@ -674,6 +674,7 @@ Index: `document_type_id`, `gate_location_id`.
 | `pickup_method` | `varchar(30)` | | default `COMPANY`, CK `COMPANY, SELF` | Đầu đón: công ty tới đón, hoặc khách tự chở ngựa tới hub |
 | `delivery_method` | `varchar(30)` | | default `COMPANY`, CK `COMPANY, SELF` | Đầu giao: công ty giao tận nơi, hoặc người nhận tới hub. `SELF` chỉ dùng cho đầu trong nước của đơn đi trục (kiểm ở service) |
 | `waybill_number` | `varchar(30)` | có | UK | Số vận đơn, cấp sau khi khách đặt cọc |
+| `delivery_confirmed_at` | `timestamptz` | có | | Thời điểm khách xác nhận đã nhận ngựa ổn. Hạn khiếu nại tính từ mốc `DELIVERED` trong `booking_status_history`. |
 | `emergency_spending_limit` | `numeric(15,2)` | có | CK `>= 0` | Hạn mức chi khẩn cấp không cần hỏi khách |
 | `original_booking_id` | `bigint` | có | FK → booking | Đơn này là chuyến hồi hương của đơn nào |
 | `status` | `varchar(30)` | | CK, xem bên dưới | |
@@ -1192,8 +1193,8 @@ Index: `payment_id`.
 | `booking_id` | `bigint` | có | FK → booking | |
 | `vehicle_trip_id` | `bigint` | có | FK → vehicle_trip | Một sự cố xe có thể ảnh hưởng nhiều đơn |
 | `horse_leg_id` | `bigint` | có | FK → horse_leg | Sự cố của riêng một con ngựa |
-| `incident_type` | `varchar(30)` | | CK `HEALTH, VEHICLE_BREAKDOWN, ACCIDENT, DELAY, DOCUMENT, HANDOVER_TIMEOUT, OTHER` | |
-| `cause_type` | `varchar(30)` | | CK `COMPANY_FAULT, HORSE_CONDITION, CUSTOMER_DOCS, AGENT_FAULT, FORCE_MAJEURE, RECIPIENT_ABSENT` | Nguyên nhân do tổ lái đề xuất |
+| `incident_type` | `varchar(30)` | | CK `HEALTH, VEHICLE_BREAKDOWN, ACCIDENT, DELAY, DOCUMENT, HANDOVER_TIMEOUT, OTHER, COMPLAINT` | |
+| `cause_type` | `varchar(30)` | chỉ với `COMPLAINT` | CK `COMPANY_FAULT, HORSE_CONDITION, CUSTOMER_DOCS, AGENT_FAULT, FORCE_MAJEURE, RECIPIENT_ABSENT` | Nguyên nhân do tổ lái đề xuất; trống với `COMPLAINT` |
 | `confirmed_cause_type` | `varchar(30)` | có | Cùng tập giá trị với `cause_type` | Nguyên nhân quản lý chốt khi duyệt phương án |
 | `cause_confirmed_by` | `bigint` | có | FK → staff.user_id | Quản lý chốt, để trống với sự cố hệ thống |
 | `cause_confirmed_at` | `timestamptz` | có | Cùng có với `confirmed_cause_type` | Giờ chốt |
@@ -1201,15 +1202,24 @@ Index: `payment_id`.
 | `description` | `text` | | | |
 | `latitude` | `numeric(9,6)` | có | | |
 | `longitude` | `numeric(9,6)` | có | | |
-| `reported_by` | `bigint` | | FK → staff(user_id) | |
+| `reported_by` | `bigint` | chỉ với `COMPLAINT` | FK → staff(user_id) | Có thể trống khi khách tự gửi khiếu nại |
 | `reported_at` | `timestamptz` | | default `now()` | |
 | `status` | `varchar(30)` | | CK `REPORTED, PLAN_PENDING, PLAN_ACTIVE, RESOLVED, CLOSED` | |
 | `fit_confirmed_by` | `bigint` | có | FK → staff(user_id) | Người xác nhận ngựa đủ sức khỏe đi tiếp |
 | `fit_confirmed_at` | `timestamptz` | có | | |
 | `resolved_at` | `timestamptz` | có | | |
+| `booking_horse_id` | `bigint` | có | FK → booking_horse | Ngựa được chọn trong khiếu nại. Trống khi khiếu nại cả đơn. |
+| `complaint_reply` | `text` | có | | Nội dung quản lý trả lời khiếu nại |
+| `complaint_decision` | `varchar(30)` | có | CK `ACCEPTED, REJECTED` | Kết luận khiếu nại |
+| `complaint_decision_reason` | `text` | có | | Lý do kết luận |
+| `complaint_decided_by` | `bigint` | có | FK → staff(user_id) | Quản lý kết luận khiếu nại |
 
 Ràng buộc bảng:
 - `CHECK (num_nonnulls(booking_id, vehicle_trip_id, horse_leg_id) >= 1)`
+- `CHECK (incident_type <> 'COMPLAINT' OR booking_id IS NOT NULL)`
+- `CHECK (incident_type = 'COMPLAINT' OR (reported_by IS NOT NULL AND cause_type IS NOT NULL))`
+- Các trường riêng của khiếu nại chỉ dùng cho `COMPLAINT`. Khi có kết luận phải có lý do, người kết luận, thời điểm xử lý và trạng thái `CLOSED`.
+- Mỗi đơn có tối đa một `COMPLAINT` theo unique index có điều kiện. Service kiểm tra ngựa được chọn thuộc đơn, ảnh `COMPLAINT_PHOTO` và quyền khách hoặc quản lý trong cùng luồng ghi khiếu nại.
 - `CHECK ((fit_confirmed_by IS NULL) = (fit_confirmed_at IS NULL))`
 
 Index: `booking_id`, `vehicle_trip_id`, `horse_leg_id`, `status`.
@@ -1446,7 +1456,8 @@ Giá trị khởi đầu của các tham số chốt ngày 23/11/2026, thêm b�
 | `DOCUMENT_REMINDER_DAYS` | 5 | Nhắc thiếu giấy trước chuyến |
 | `AUTHORITY_DELAY_REFUND_MISSES` | 2 | Số lần lỡ chuyến do cơ quan cấp giấy để hoàn cọc vận chuyển khi hủy. Đơn vị `COUNT`, giới hạn 1–10 |
 | `PRICE_HOLD_DAYS` | 30 | Giữ giá khi đổi chuyến, tính từ ngày chạy của chuyến vừa lỡ |
-| `SETTLEMENT_AUTO_CLOSE_DAYS` | 7 | Tự đóng đơn không phát sinh |
+| `SETTLEMENT_AUTO_CLOSE_DAYS` | 7 | Hạn khiếu nại trên ứng dụng kể từ lúc đơn sang `DELIVERED`; sau hạn mới xét tự đóng đơn không phát sinh |
+| `COMPLAINT_MANAGER_DEADLINE_DAYS` | 14 | Hạn quản lý nhập khiếu nại thay khách kể từ lúc đơn sang `DELIVERED` |
 | `SCHEDULE_CHOICE_REMINDER_1..4_DAYS` | 3, 7, 14, 25 | Nhắc chọn lại lịch sau đón hụt |
 | `EXTRA_CHARGE_DUE_DAYS` | 7 | Hạn khoản thu thêm từ lúc lập, 1–30 ngày |
 | `STABLING_DAILY_FEE` | 1.000.000 đ | Phí giữ tại hub mỗi con mỗi ngày |

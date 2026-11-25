@@ -8,5 +8,6 @@ public enum IncidentType {
     DELAY,
     DOCUMENT,
     HANDOVER_TIMEOUT,
-    OTHER
+    OTHER,
+    COMPLAINT
 }

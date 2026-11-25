@@ -1,5 +1,29 @@
 // App khách: trang chủ, đặt chuyến, đơn, ngựa, hồ sơ, thanh toán
 export const customer = {
+  deliveryComplaint: {
+    title: 'Xác nhận giao ngựa và khiếu nại',
+    none: 'Chưa có khiếu nại',
+    confirmed: 'Khách đã xác nhận nhận ngựa ổn.',
+    open: 'Khiếu nại đang được xem xét',
+    closed: 'Khiếu nại đã có kết luận',
+    horse: 'Ngựa liên quan',
+    wholeBooking: 'Cả đơn',
+    description: 'Nội dung khiếu nại',
+    photos: 'Ảnh minh chứng',
+    reply: 'Phản hồi của quản lý',
+    decision: 'Kết luận',
+    reason: 'Lý do kết luận',
+    ACCEPTED: 'Chấp nhận',
+    REJECTED: 'Không chấp nhận',
+    saved: 'Đã lưu phản hồi giao ngựa.',
+    failed: 'Không thể lưu phản hồi. Vui lòng thử lại.',
+    confirm: 'Xác nhận đã nhận ngựa ổn',
+    submit: 'Khiếu nại',
+    send: 'Gửi khiếu nại',
+    windowClosed: 'Hạn phản hồi trên ứng dụng đã hết. Liên hệ công ty nếu cần hỗ trợ.',
+    confirmEffect: 'Xác nhận sẽ cho phép quản lý xét đóng đơn sớm. Bạn không thể rút lại xác nhận.',
+    sendEffect: 'Khiếu nại và ảnh sẽ được gửi cho quản lý xem xét. Bạn không thể rút lại khiếu nại.',
+  },
   home: {
     hero: {
       slide1: {

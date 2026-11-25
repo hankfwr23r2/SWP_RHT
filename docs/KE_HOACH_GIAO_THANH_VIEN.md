@@ -19,7 +19,7 @@ Mỗi gói một người. G1, G2, G3 làm song song được.
 
 1. Đọc [AGENTS.md](../AGENTS.md), rồi mục được dẫn ở gói của mình. Nghiệp vụ đã duyệt, nhưng **cách làm và danh sách file** vẫn trình trưởng nhóm trước khi sửa (mục 1.1).
 2. Nhánh từ `redesign/system-v2` mới nhất: `feat/g1-complaint`, `feat/g2-notice`, `feat/g3-delay`, `feat/g5-handover-rest`. Không làm trên `main`. Commit theo Conventional Commits.
-3. **Migration:** G1 dùng `V202611270900` đến `0959`, G3 dùng `V202611271000` đến `1059`, G5 dùng `V202611271100` đến `1159`. Không sửa migration cũ. G2 không cần migration.
+3. **Migration:** G1 đã gộp `V202611270900` đến `0902`; G3 dùng `V202611291000` đến `1059`, G5 dùng `V202611291100` đến `1159`. Không sửa migration cũ. G2 không cần migration.
 4. Đừng sửa file ở cột "Đừng đụng" của gói. Cần sửa thì hỏi luồng A.
 5. Mở PR vào `redesign/system-v2`, CI xanh cả ba. **Không tự gộp.** Luồng A đọc PR và file nghiệm thu rồi gộp.
 6. Mỗi gói nộp **một file nghiệm thu** theo [mẫu](nghiem-thu/MAU_NGHIEM_THU.md), nằm trong chính PR đó. Thiếu file thì chưa coi là xong.
