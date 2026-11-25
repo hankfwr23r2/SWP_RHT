@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.entity;
 
+import com.example.racehorse_transport.entity.enums.ComplaintDecision;
 import com.example.racehorse_transport.entity.enums.IncidentCauseType;
 import com.example.racehorse_transport.entity.enums.IncidentStatus;
 import com.example.racehorse_transport.entity.enums.IncidentType;
@@ -58,7 +59,7 @@ public class Incident {
 
     // Nguyên nhân, quyết định ai chịu chi phí
     @Enumerated(EnumType.STRING)
-    @Column(name = "cause_type", length = 30, nullable = false)
+    @Column(name = "cause_type", length = 30)
     private IncidentCauseType causeType;
 
     @Column(name = "title", length = 200, nullable = false)
@@ -73,8 +74,8 @@ public class Incident {
     @Column(name = "longitude", precision = 9, scale = 6)
     private BigDecimal longitude;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "reported_by", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reported_by")
     private Staff reportedBy;
 
     // DB đặt giá trị mặc định now() lúc thêm dòng
@@ -96,4 +97,22 @@ public class Incident {
 
     @Column(name = "resolved_at")
     private Instant resolvedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "booking_horse_id")
+    private BookingHorse bookingHorse;
+
+    @Column(name = "complaint_reply", columnDefinition = "text")
+    private String complaintReply;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "complaint_decision", length = 30)
+    private ComplaintDecision complaintDecision;
+
+    @Column(name = "complaint_decision_reason", columnDefinition = "text")
+    private String complaintDecisionReason;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "complaint_decided_by")
+    private Staff complaintDecidedBy;
 }

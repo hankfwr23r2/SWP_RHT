@@ -10,6 +10,7 @@ import { Button } from '@shared/ui/Button'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { StaffBookingInfo } from '@backoffice/shared/StaffBookingInfo'
 import { CancelPanel } from './components/CancelPanel'
+import { DeliveryComplaintPanel } from './components/DeliveryComplaintPanel'
 import { DocumentDelayPanel } from './components/DocumentDelayPanel'
 import { IntakePanel } from './components/IntakePanel'
 import { PaymentsPanel } from './components/PaymentsPanel'
@@ -47,6 +48,9 @@ export default function ManagerOrderPage() {
           <PaymentsPanel data={data} />
           <PickupMissPanel bookingId={data.id} mode="manager" renderAddOns={id => <PickupAddOnPanel horseId={id} />} />
           {status === 'CONFIRMED' && <DocumentDelayPanel bookingId={data.id} />}
+          {(status === 'DELIVERED' || status === 'COMPLETED') && (
+            <DeliveryComplaintPanel key={data.id} bookingId={data.id} horses={data.detail.horses ?? []} onChange={revalidate} />
+          )}
           {canSettle(status) && <div id="order-settle" className={s.anchor}><SettlementPanel data={data} /></div>}
           {canCancel(status) && <CancelPanel bookingId={data.id} />}
         </div>
