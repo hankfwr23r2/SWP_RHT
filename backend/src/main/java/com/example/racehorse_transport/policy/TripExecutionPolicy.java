@@ -79,6 +79,16 @@ public final class TripExecutionPolicy {
         }
     }
 
+    public static boolean isStableHandover(HandoverType type) {
+        return type == HandoverType.STAY_IN || type == HandoverType.STAY_OUT;
+    }
+
+    public static void requireNetworkStableStop(boolean hasLocation) {
+        if (!hasLocation) {
+            throw new DispatchRuleException("tripStopId", "Không gửi chuồng tại địa chỉ khách được. Chọn đổi xe hoặc đưa về hub.", true);
+        }
+    }
+
     // Ngựa nhận lên xe (đón, ra hub) hay trả xuống (giao, vào hub)
     // fromPartner: đối tác là bên giao (AGENT đơn nhập: đại lý giao cho công ty, ngựa lên xe)
     public static boolean isBoarding(HandoverType type, boolean fromPartner) {

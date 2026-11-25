@@ -4,7 +4,6 @@ import com.example.racehorse_transport.service.PaymentReadinessService;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Handover;
 import com.example.racehorse_transport.entity.HorseLeg;
-import com.example.racehorse_transport.entity.Party;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.HandoverStatus;
 import com.example.racehorse_transport.entity.enums.HandoverType;
@@ -158,11 +157,6 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
     @Transactional(readOnly = true)
     public boolean canBoardAtHub(Long bookingId) {
         return paymentReadiness.isPaidInFull(bookingId);
-    }
-
-    @Override
-    public Party stablePartner(Long partyId) {
-        return horseStays.requireStablePartner(partyId);
     }
 
     @Override

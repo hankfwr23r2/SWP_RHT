@@ -241,13 +241,29 @@ public class HorseLegServiceImpl implements HorseLegService {
     @Transactional
     public int cancelPlannedLegsOfBooking(Long bookingId) {
         List<HorseLeg> planned = legs.findByBookingHorse_Booking_IdAndStatus(bookingId, HorseLegStatus.PLANNED);
-        planned.forEach(leg -> {
-            leg.setStatus(HorseLegStatus.CANCELLED);
-            leg.setStallPosition(null);
-        });
+        planned.forEach(HorseLegServiceImpl::cancelPlanned);
         notices.clearHubAppointmentsAndNotify(bookingId, planned.size());
         legs.flush();
         return planned.size();
+    }
+
+    @Override
+    @Transactional
+    public List<Long> cancelPlannedLegsAfter(List<HorseLeg> affectedLegs) {
+        affectedLegs.stream().map(leg -> leg.getBookingHorse().getBooking().getId()).distinct().sorted()
+                .forEach(bookingId -> dispatchBookings.findForUpdate(bookingId).orElseThrow());
+        List<HorseLeg> planned = affectedLegs.stream()
+                .flatMap(leg -> legs.findByBookingHorse_IdOrderBySequenceNumber(leg.getBookingHorse().getId()).stream()
+                        .filter(next -> next.getSequenceNumber() > leg.getSequenceNumber() && next.getStatus() == HorseLegStatus.PLANNED))
+                .toList();
+        planned.forEach(HorseLegServiceImpl::cancelPlanned);
+        legs.flush();
+        return planned.stream().map(HorseLeg::getId).toList();
+    }
+
+    private static void cancelPlanned(HorseLeg leg) {
+        leg.setStatus(HorseLegStatus.CANCELLED);
+        leg.setStallPosition(null);
     }
 
     private static void requireNotStarted(VehicleTrip trip) {

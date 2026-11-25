@@ -45,6 +45,20 @@ public interface HorseLegRepository extends JpaRepository<HorseLeg, Long> {
     @Query("SELECT l FROM HorseLeg l WHERE l.vehicleTrip.id = :tripId AND l.status NOT IN :inactive ORDER BY l.boardTripStop.sequenceNumber, l.id")
     List<HorseLeg> findActiveOnTrip(@Param("tripId") Long tripId, @Param("inactive") Collection<HorseLegStatus> inactive);
 
+    @EntityGraph(attributePaths = {"bookingHorse", "bookingHorse.horse", "bookingHorse.booking", "boardTripStop", "alightTripStop"})
+    @Query("""
+            SELECT l FROM HorseLeg l WHERE l.vehicleTrip.id = :tripId AND l.status IN :statuses
+              AND NOT EXISTS (SELECT s.id FROM HorseStay s WHERE s.bookingHorse = l.bookingHorse
+                  AND s.stayType = com.example.racehorse_transport.entity.enums.HorseStayType.OVERNIGHT
+                  AND s.actualStartAt IS NOT NULL AND s.actualEndAt IS NULL)
+              AND NOT EXISTS (SELECT hh.horseLeg.id FROM HandoverHorse hh WHERE hh.horseLeg = l
+                  AND hh.handover.handoverType = com.example.racehorse_transport.entity.enums.HandoverType.HUB_IN
+                  AND hh.handover.status = com.example.racehorse_transport.entity.enums.HandoverStatus.DONE
+                  AND hh.microchipMatched = true)
+            ORDER BY l.id
+            """)
+    List<HorseLeg> findOnBoardForIncident(Long tripId, Collection<HorseLegStatus> statuses);
+
     // Con giao thất bại của lượt xe chưa được giao vào hub (B5): còn trên xe
     @Query("""
             SELECT count(l) FROM HorseLeg l WHERE l.vehicleTrip.id = :tripId AND l.status = :failed AND NOT EXISTS (

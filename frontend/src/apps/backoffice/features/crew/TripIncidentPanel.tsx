@@ -16,6 +16,7 @@ import { useToast } from '@shared/ui/toast'
 import { EvidencePanel } from '@backoffice/shared/EvidencePanel'
 import { IncidentCostForm } from '@backoffice/shared/IncidentCostForm'
 import { IncidentSeverityBadge } from '@backoffice/shared/IncidentSeverity'
+import { VetResultControl } from '@backoffice/shared/VetResultControl'
 import { TripIncidentEvidence } from './TripIncidentEvidence'
 import { TripIncidentReportDialog } from './TripIncidentReportDialog'
 import { useTripIncidents } from './useTripIncidents'
@@ -106,6 +107,10 @@ function TripIncidentPanelContent({ run, query }: { run: CrewTrip; query: TripIn
               <p className={s.line}>{incident.title}{incident.horseName ? ` · ${incident.horseName}` : ''}</p>
               <StatusBadge tone={open ? 'warning' : 'success'} label={t(`incidents.status.${incident.status}`)} />
               <IncidentSeverityBadge severity={incident.severity} />
+              {session?.role === 'escort' && incident.status === 'PLAN_ACTIVE'
+                && latest?.status === 'APPROVED' && latest.resolutionType === 'VET_TREATMENT' && (
+                <VetResultControl key={latest.id} incidentId={id} planId={latest.id} partnerName={latest.handlerPartyName} disabled={busy} onSaved={reload} />
+              )}
               {incident.status !== 'CLOSED' && (
                 <TripIncidentEvidence incident={incident}
                   fitActions={canHandleFit ? { busy, startRest: () => startRest(id), confirmFit: () => confirmFit(id) } : undefined}

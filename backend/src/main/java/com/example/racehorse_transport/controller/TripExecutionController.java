@@ -13,6 +13,7 @@ import com.example.racehorse_transport.service.HandoverService;
 import com.example.racehorse_transport.service.TripCompletionService;
 import com.example.racehorse_transport.service.TripExecutionService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 // Tổ xe thực hiện lượt xe theo từng điểm dừng (docs/MAN_HINH_VA_TAC_DONG.md mục 4.1–4.5, 6.1, 6.5)
@@ -70,9 +72,10 @@ public class TripExecutionController {
 
     @PostMapping("/trip-stops/{id}/handovers")
     public ResponseEntity<ApiResponseDto<CrewTripResponseDto>> createHandover(@PathVariable Long id, Authentication authentication,
+                                                                               @RequestParam(required = false) @Positive(message = "Mã phương án phải là số dương.") Long incidentPlanId,
                                                                                @Valid @RequestBody HandoverCreateRequestDto request) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponseDto.success(handovers.create(id, request, authentication.getName()), "Đã mở lần giao nhận"));
+                .body(ApiResponseDto.success(handovers.create(id, request, incidentPlanId, authentication.getName()), "Đã mở lần giao nhận"));
     }
 
     @PostMapping("/handovers/{id}/horses")

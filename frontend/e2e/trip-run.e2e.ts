@@ -459,7 +459,7 @@ test('nghỉ đêm ở trạm: hộ tống gửi chuồng đối tác rồi sán
       const body = request.postDataJSON() as { handoverType: string }
       sent.push(body)
       // Giả lập lần gửi chuồng đã xong để thấy bước nhận lại
-      run.handovers.push({ id: 60 + sent.length, handoverType: body.handoverType, status: 'DONE', tripStopId: 2, horses: [] })
+      run.handovers.push({ id: 60 + sent.length, handoverType: body.handoverType, status: 'DONE', tripStopId: 2, horses: [{ horseLegId: 70, microchipMatched: true }] })
       return ok(route, run)
     }
     return ok(route, [])

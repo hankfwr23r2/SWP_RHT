@@ -1,6 +1,8 @@
 package com.example.racehorse_transport.policy;
 
 import com.example.racehorse_transport.entity.Incident;
+import com.example.racehorse_transport.entity.IncidentPlan;
+import com.example.racehorse_transport.entity.VehicleTrip;
 import com.example.racehorse_transport.entity.enums.IncidentType;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import com.example.racehorse_transport.entity.enums.IncidentPlanStatus;
@@ -13,6 +15,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
 
 // Quy tắc sự cố và phương án (B4), hàm thuần
@@ -71,6 +74,47 @@ public final class IncidentPolicy {
 
     public static boolean isOpen(IncidentStatus status) {
         return status != IncidentStatus.RESOLVED && status != IncidentStatus.CLOSED;
+    }
+
+    public static VehicleTrip requireTrip(Incident incident) {
+        VehicleTrip trip = incident.getVehicleTrip();
+        if (trip == null && incident.getHorseLeg() != null) {
+            trip = incident.getHorseLeg().getVehicleTrip();
+        }
+        if (trip == null) {
+            throw new DispatchRuleException("incidentId", "Sự cố không gắn lượt xe.", true);
+        }
+        return trip;
+    }
+
+    public static boolean isApprovedExecution(IncidentStatus status, IncidentPlan latest, IncidentResolutionType type) {
+        return status == IncidentStatus.PLAN_ACTIVE && latest != null
+                && latest.getStatus() == IncidentPlanStatus.APPROVED && latest.getResolutionType() == type;
+    }
+
+    public static void requireApprovedExecution(IncidentStatus status, IncidentPlan latest, IncidentResolutionType type) {
+        if (latest != null && latest.getResolutionType() == type && latest.getStatus() == IncidentPlanStatus.DONE) {
+            String message = type == IncidentResolutionType.TRANSFER_VEHICLE
+                    ? "Phương án đổi xe đã được thực hiện." : "Phương án đã được thực hiện.";
+            throw new DispatchRuleException("incidentId", message, true);
+        }
+        if (!isApprovedExecution(status, latest, type)) {
+            throw new DispatchRuleException("incidentId", "Sự cố chưa có phương án " + type + " đã được quản lý duyệt.", true);
+        }
+    }
+
+    public static boolean requiresExecution(IncidentResolutionType type) {
+        return type == IncidentResolutionType.VET_TREATMENT || type == IncidentResolutionType.STABLE_NEARBY
+                || type == IncidentResolutionType.CANCEL;
+    }
+
+    public static void requireExecutedBeforeResolve(List<IncidentPlan> versions) {
+        if (versions.isEmpty()) return;
+        IncidentPlan latest = versions.getLast();
+        if (versions.stream().anyMatch(plan -> requiresExecution(plan.getResolutionType())
+                && (plan.getStatus() == IncidentPlanStatus.APPROVED || plan == latest && plan.getStatus() != IncidentPlanStatus.DONE))) {
+            throw new DispatchRuleException("status", "Cần thực hiện phương án sự cố trước khi báo đã xử lý xong.", true);
+        }
     }
 
     // Lượt xe đang có sự cố chưa đóng thì không báo sự cố mới cho cả lượt (mục 7.1)
