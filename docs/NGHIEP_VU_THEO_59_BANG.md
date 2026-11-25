@@ -325,7 +325,7 @@ Hai nhánh chạy song song. Mỗi nhánh tự lưu trạng thái trên đối t
 
 Khách có thể từ chối báo giá đang chờ phản hồi và ghi lý do. Báo giá sang `REJECTED`, đơn về `QUOTING` và giữ chỗ.
 
-Quá `expires_at` mà chưa cọc thì scheduler chuyển báo giá sang `EXPIRED` và đơn sang `QUOTE_EXPIRED`. Nếu có phiên VNPAY đang chờ xác nhận, scheduler đợi thêm theo cấu hình VNPAY để ghi nhận khoản tiền đã trả trước hạn. Đơn hết hạn thì nhả chỗ và rời chuyến trong cùng transaction. Tiền về sai thời điểm hoặc sau khi hủy: lưu giao dịch, báo quản lý số tiền, mã giao dịch và lý do để quản lý hoàn ngoài hệ thống; khách thấy "Đã nhận tiền, cần đối soát" và không phải trả lại. Hệ thống không tự khôi phục chỗ.
+Quá `expires_at` mà chưa cọc thì scheduler chuyển báo giá sang `EXPIRED` và đơn sang `QUOTE_EXPIRED`, rồi báo khách. Khách cũng nhận thông báo khi hệ thống xác nhận đã nhận cọc. Quản lý nhận thông báo khi đơn sang Đang báo giá và khi khách chấp nhận hoặc từ chối báo giá. Nếu có phiên VNPAY đang chờ xác nhận, scheduler đợi thêm theo cấu hình VNPAY để ghi nhận khoản tiền đã trả trước hạn. Đơn hết hạn thì nhả chỗ và rời chuyến trong cùng transaction. Tiền về sai thời điểm hoặc sau khi hủy: lưu giao dịch, báo quản lý số tiền, mã giao dịch và lý do để quản lý hoàn ngoài hệ thống; khách thấy "Đã nhận tiền, cần đối soát" và không phải trả lại. Hệ thống không tự khôi phục chỗ.
 
 ---
 
@@ -353,7 +353,7 @@ Với đầu `SELF`, điều phối hẹn giờ tại hub và chuẩn bị `hors
 
 Chưa trả đủ **không** chặn xe đi đón. Số dư thu sau khi nhận ngựa (GĐ6).
 
-**Đã cọc mà giấy không kịp (A8).** Chuyên viên có danh sách đơn thiếu giấy, hệ thống nhắc khách từ 5 ngày trước chuyến. Tới mốc 48 giờ quản lý chọn nguyên nhân kèm lý do, đơn chuyển `SCHEDULE_CHANGE_REQUIRED` và nhả chỗ:
+**Đã cọc mà giấy không kịp (A8).** Danh sách của chuyên viên gồm đơn có chuyến và đơn liên tỉnh chạy thẳng. Hệ thống kiểm giấy theo ngày chạy hoặc ngày đón, và nhắc theo cửa sổ cấu hình trước ngày đó. Giấy khách nộp thì báo khách, giấy của công ty, người nhận hoặc đại lý thì báo chuyên viên. Khi từ chối giấy cũng báo đúng bên nộp. Với đơn có chuyến, tới mốc 48 giờ quản lý chọn nguyên nhân kèm lý do, đơn chuyển `SCHEDULE_CHANGE_REQUIRED` và nhả chỗ:
 
 | Nguyên nhân | Đổi chuyến | Không đi nữa |
 |---|---|---|

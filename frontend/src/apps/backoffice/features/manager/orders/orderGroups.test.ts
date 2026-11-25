@@ -25,6 +25,7 @@ describe('nhóm đơn của quản lý', () => {
     expect(canSettle('DELIVERED')).toBe(true)
     expect(canSettle('QUOTING')).toBe(false)
     expect(canReject('UNDER_REVIEW')).toBe(true)
+    expect(canReject('NEEDS_RESUBMISSION')).toBe(false)
     expect(canReject('QUOTING')).toBe(false)
   })
 })

@@ -21,6 +21,7 @@ import com.example.racehorse_transport.service.RefundService;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -164,6 +165,9 @@ public class PaymentResultServiceImpl implements PaymentResultService {
                 booking.setWaybillNumber("WB-" + Long.toString(booking.getId(), 36).toUpperCase(Locale.ROOT));
             }
             statuses.transition(booking.getId(), BookingStatus.CONFIRMED, "Đã nhận đủ tiền cọc VNPAY.", null);
+            notifications.notify(List.of(booking.getCustomer().getUser().getId()), booking.getId(),
+                    "Đặt cọc thành công", "Đã nhận tiền cọc của đơn " + booking.getCode() + ".",
+                    "/orders/" + booking.getId());
         }
     }
 

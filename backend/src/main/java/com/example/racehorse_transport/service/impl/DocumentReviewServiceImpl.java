@@ -4,8 +4,10 @@ import com.example.racehorse_transport.dto.booking.BookingDocumentResponseDto;
 import com.example.racehorse_transport.dto.booking.BookingDocumentChecklistResponseDto;
 import com.example.racehorse_transport.dto.booking.BookingDocumentChecklistResponseDto.Item;
 import com.example.racehorse_transport.policy.DocumentCompletenessPolicy;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
-import static com.example.racehorse_transport.policy.BookingSubmissionPolicy.businessDate;
+import java.util.Arrays;
 import com.example.racehorse_transport.dto.booking.DocumentUploadRequestDto;
 import com.example.racehorse_transport.dto.booking.PartnerDocumentUploadRequestDto;
 import com.example.racehorse_transport.dto.booking.DocumentApprovalRequestDto;
@@ -18,11 +20,13 @@ import com.example.racehorse_transport.policy.BookingReviewPolicy;
 import com.example.racehorse_transport.policy.DocumentReviewPolicy;
 import com.example.racehorse_transport.repository.*;
 import com.example.racehorse_transport.service.*;
+import static com.example.racehorse_transport.policy.BookingSubmissionPolicy.businessDate;
 import java.time.Clock;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -59,10 +63,10 @@ public class DocumentReviewServiceImpl implements DocumentReviewService {
                 .filter(row -> requirementIds.contains(row.getDocumentRequirement().getId())).toList();
         List<BookingHorse> active = horses.findForDetail(bookingId).stream()
                 .filter(horse -> horse.getStatus() == BookingHorseStatus.ACTIVE).toList();
-        LocalDate today = businessDate(clock.instant());
+        LocalDate requiredOn = DocumentCompletenessPolicy.requiredOn(booking, businessDate(clock.instant()));
         List<Item> items = resolved.requirements().stream().flatMap(requirement -> switch (requirement.ownerType()) {
-            case HORSE, BOOKING_HORSE -> active.stream().map(horse -> checklistItem(requirement, bookingId, horse, rows, today));
-            default -> java.util.stream.Stream.of(checklistItem(requirement, bookingId, null, rows, today));
+            case HORSE, BOOKING_HORSE -> active.stream().map(horse -> checklistItem(requirement, bookingId, horse, rows, requiredOn));
+            default -> java.util.stream.Stream.of(checklistItem(requirement, bookingId, null, rows, requiredOn));
         }).toList();
         return new BookingDocumentChecklistResponseDto(resolved.requirementsDependOnGate(), items,
                 rows.stream().map(row -> BookingDocumentResponseDto.from(row, bookingHorseId(row, active))).toList());
@@ -78,9 +82,9 @@ public class DocumentReviewServiceImpl implements DocumentReviewService {
     }
 
     private static Item checklistItem(DocumentRequirementResponseDto requirement, Long bookingId, BookingHorse horse,
-            List<Document> rows, LocalDate today) {
+            List<Document> rows, LocalDate requiredOn) {
         boolean satisfied = rows.stream().anyMatch(row ->
-                DocumentCompletenessPolicy.satisfies(row, requirement, bookingId, horse, today));
+                DocumentCompletenessPolicy.satisfies(row, requirement, bookingId, horse, requiredOn));
         return Item.from(requirement, horse == null ? null : horse.getId(), satisfied,
                 DocumentReviewPolicy.requiredForQuoting(requirement), Boolean.TRUE.equals(requirement.mandatory()));
     }
@@ -95,7 +99,7 @@ public class DocumentReviewServiceImpl implements DocumentReviewService {
         }
         DocumentRequirementResponseDto requirement = requirement(booking, request.requirementId());
         DocumentReviewPolicy.requireCustomerUpload(booking.getStatus(), requirement);
-        return attach(bookingId, request, requirement, customer.getId());
+        return attach(bookingId, request, requirement, customer.getId(), DocumentCompletenessPolicy.requiredOn(booking, businessDate(clock.instant())));
     }
 
     @Override
@@ -104,7 +108,8 @@ public class DocumentReviewServiceImpl implements DocumentReviewService {
         Booking booking = lockBooking(bookingId);
         DocumentRequirementResponseDto requirement = requirement(booking, request.requirementId());
         DocumentReviewPolicy.requirePartnerUpload(booking.getStatus(), requirement.submitterType());
-        return attach(bookingId, request.toUploadRequest(), requirement, reviewer(username).getUserId());
+        return attach(bookingId, request.toUploadRequest(), requirement, reviewer(username).getUserId(),
+                DocumentCompletenessPolicy.requiredOn(booking, businessDate(clock.instant())));
     }
 
     private DocumentRequirementResponseDto requirement(Booking booking, Long requirementId) {
@@ -114,20 +119,20 @@ public class DocumentReviewServiceImpl implements DocumentReviewService {
     }
 
     private BookingDocumentResponseDto attach(Long bookingId, DocumentUploadRequestDto request,
-            DocumentRequirementResponseDto requirement, Long uploaderId) {
+            DocumentRequirementResponseDto requirement, Long uploaderId, LocalDate requiredOn) {
         BookingHorse horse = ownerHorse(bookingId, request.bookingHorseId(), requirement.ownerType());
         Long owner = switch (requirement.ownerType()) {
             case HORSE -> horse.getHorse().getId();
             case BOOKING_HORSE -> horse.getId();
             default -> bookingId;
         };
-        LocalDate today = businessDate(clock.instant());
         if (documents.findForBookingReview(bookingId).stream().anyMatch(document ->
                 DocumentCompletenessPolicy.matchesOwnerAndRequirement(document, requirement, bookingId, horse)
                         && (document.getStatus() == DocumentStatus.UPLOADED
-                                || DocumentCompletenessPolicy.satisfies(document, requirement, bookingId, horse, today)))) {
+                                || DocumentCompletenessPolicy.satisfies(document, requirement, bookingId, horse, requiredOn)))) {
             throw BookingRuleException.conflict("Giấy tờ của yêu cầu này đang chờ duyệt hoặc còn hiệu lực.");
         }
+        requireSupportedFile(request.file());
         Long id = attachments.attach(request.file(), requirement.documentTypeCode(), requirement.ownerType(),
                 owner, uploaderId);
         Document document = documents.findById(id)
@@ -167,10 +172,31 @@ public class DocumentReviewServiceImpl implements DocumentReviewService {
         document.setReviewNote(note);
         document.setStatus(outcome);
         if (outcome == DocumentStatus.REJECTED) {
-            notifications.notify(List.of(booking.getCustomer().getUser().getId()), bookingId,
-                    "Giấy tờ cần bổ sung", note, null);
+            boolean customer = document.getDocumentRequirement().getSubmitterType() == DocumentSubmitter.CUSTOMER;
+            var recipients = customer ? List.of(booking.getCustomer().getUser().getId())
+                    : staff.findUserIdsByRoleAndStatus("SPECIALIST", AppUserStatus.ACTIVE);
+            if (!recipients.isEmpty()) {
+                notifications.notify(recipients, bookingId, "Giấy tờ cần bổ sung", note,
+                        customer ? "/orders/" + bookingId : "/specialist/review/" + bookingId);
+            }
         }
         return BookingDocumentResponseDto.from(document);
+    }
+
+    private static void requireSupportedFile(MultipartFile file) {
+        try (var input = file.getInputStream()) {
+            byte[] header = input.readNBytes(8);
+            if (Arrays.equals(header, new byte[] {(byte) 0x89, 'P', 'N', 'G', 13, 10, 26, 10})
+                    || (header.length >= 5 && "%PDF-".equals(new String(header, 0, 5,
+                            StandardCharsets.US_ASCII)))
+                    || (header.length >= 3 && header[0] == (byte) 0xff
+                            && header[1] == (byte) 0xd8 && header[2] == (byte) 0xff)) {
+                return;
+            }
+        } catch (IOException failure) {
+            throw new BookingRuleException("Không đọc được tệp giấy tờ.");
+        }
+        throw new BookingRuleException("Giấy tờ phải là tệp PDF, JPG hoặc PNG.");
     }
 
     private Staff reviewer(String username) {

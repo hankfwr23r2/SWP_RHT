@@ -3879,6 +3879,7 @@ export interface components {
             parties?: components["schemas"]["PartySnapshot"][];
             /** @enum {string} */
             pickupMethod?: "COMPANY" | "SELF";
+            rated?: boolean;
             reviewReason?: string;
         };
         BookingDocumentChecklistResponseDto: {

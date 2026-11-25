@@ -1982,6 +1982,9 @@
             "enum" : [ "COMPANY", "SELF" ],
             "type" : "string"
           },
+          "rated" : {
+            "type" : "boolean"
+          },
           "reviewReason" : {
             "type" : "string"
           }
