@@ -1658,8 +1658,9 @@ Mọi số tiền cộng với nhau phải cùng `currency_code` với báo giá
    - xe xuất phát đón (LOCAL không có, INTERPROVINCE, EXPORT): mọi giấy bắt buộc;
    - nhận ngựa ở cửa khẩu (IMPORT): mọi giấy bắt buộc, vì `IMPORT_TRANSPORT_CERT` chỉ có khi ngựa tới nơi.
 5. Với mỗi yêu cầu:
-   - nếu `document_type.owner_type` là `HORSE` hoặc `BOOKING_HORSE` thì **mỗi** `booking_horse` ACTIVE phải có một `document` APPROVED, còn hạn, có `document_requirement_id` này;
-   - nếu là `BOOKING` thì chỉ cần một `document` cho cả đơn.
+   - nếu `document_type.owner_type` là `HORSE` thì **mỗi** `booking_horse` ACTIVE phải có một `document` APPROVED, còn hạn, cùng `document_type_id` và cùng `horse_id`. Giấy có thể đã được duyệt theo quy định khác.
+   - nếu là `BOOKING_HORSE` thì **mỗi** `booking_horse` ACTIVE phải có một `document` APPROVED, còn hạn, gắn với dòng ngựa trong đơn và có `document_requirement_id` này.
+   - nếu là `BOOKING` thì cần một `document` APPROVED, còn hạn, gắn với đơn và có `document_requirement_id` này.
 6. Kết quả gồm danh sách yêu cầu, con ngựa (nếu có) và trạng thái đạt hay chưa. Repository nạp dữ liệu, còn `DocumentCompletenessPolicy` quyết định đạt hay không. Policy này cần unit test với nhiều trường hợp.
 
 ---

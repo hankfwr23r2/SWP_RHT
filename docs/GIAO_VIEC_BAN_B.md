@@ -42,7 +42,7 @@ Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A
 | **2.F5** | Không rút được giấy đã duyệt khi phát hiện giả hoặc sai | Chuyên viên thu hồi, bắt buộc lý do, báo bên nộp; chặn xe như thiếu giấy | `DocumentReviewServiceImpl`, `DocumentReviewPolicy` | Giấy đã theo xe thì cần quy định riêng |
 | **2.F7** | **Đã sửa.** Đơn xuất phải đủ giấy bắt buộc khi bàn giao cho đại lý ở cửa khẩu. Thiếu giấy thì ngựa vẫn trên xe. | | `HandoverOutcomeServiceImpl` | Trùng 4.F12 |
 | **2.F8** | Xuất Lào thiếu sổ tiêm, nhập Lào thiếu xét nghiệm so với Campuchia | Hỏi nhóm cố ý hay thiếu; tra [CAN_CU_PHAP_LY_VA_IRT.md](CAN_CU_PHAP_LY_VA_IRT.md) | `db/seed-dev/R__dev_seed_base.sql` (`document_requirement`) | Pháp lý Lào **chưa kiểm chứng** |
-| **2.F9** | Hộ chiếu đã duyệt cho đơn liên tỉnh vẫn phải nộp lại cho đơn xuất | Giấy theo ngựa còn hạn dùng chung cho mọi quy định | `DocumentCompletenessPolicy` | Giấy theo đơn thì không dùng chung |
+| **2.F9** | **Đã sửa.** Giấy theo ngựa đã duyệt, còn hạn được dùng cho mọi quy định yêu cầu cùng loại giấy. | | `DocumentCompletenessPolicy` | Giấy theo đơn hoặc theo ngựa trong đơn chỉ dùng cho đơn đó |
 | **2.F10** | **Đã sửa.** Chỉ nhận ngựa nhập từ đại lý ở cửa khẩu khi bảo hiểm từng con đã được xác nhận. | | `HandoverOutcomeServiceImpl` | |
 
 ### Luồng 3 (7 điểm)
@@ -92,7 +92,8 @@ Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A
 | Điểm | Phương án | Duyệt | PR |
 |---|---|---|---|
 | 1.F5 | | | |
-| 2.F2, 2.F5, 2.F8, 2.F9 | | | |
+| 2.F2, 2.F5, 2.F8 | | | |
+| 2.F9 | Dùng lại giấy theo ngựa đã duyệt và còn hạn khi yêu cầu cùng loại giấy | Đã duyệt | |
 | 2.F7 | Kiểm đủ giấy bắt buộc khi bàn giao đơn xuất cho đại lý ở cửa khẩu | Đã duyệt | |
 | 2.F10 | Kiểm bảo hiểm đã xác nhận khi nhận ngựa nhập từ đại lý ở cửa khẩu | Đã duyệt | |
 | 2.F4 | Cập nhật và xác nhận bảo hiểm mua hộ khi đơn Đang báo giá | Đã duyệt | #479 |

@@ -25,6 +25,14 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 
     @Query("""
             SELECT d FROM Document d JOIN FETCH d.documentType
+            WHERE d.horse.id IN (SELECT h.horse.id FROM BookingHorse h WHERE h.booking.id = :bookingId AND h.status = ACTIVE)
+                AND d.documentRequirement IS NULL AND d.status = APPROVED
+            ORDER BY d.id
+            """)
+    List<Document> findApprovedHorseDocumentsWithoutRequirement(Long bookingId);
+
+    @Query("""
+            SELECT d FROM Document d JOIN FETCH d.documentType
             WHERE EXISTS (
                 SELECT 1 FROM HandoverDocument paper
                 WHERE paper.document = d AND paper.direction = RECEIVED AND paper.handover.status = DONE
