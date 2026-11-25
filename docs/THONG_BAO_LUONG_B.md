@@ -3,6 +3,8 @@
 > Agent luồng B đọc tài liệu này sau `AGENTS.md`, trước khi bắt đầu task. Quy trình duyệt theo mục 1.1 của `AGENTS.md`.
 > Cập nhật 24/11/2026. Backend A6b, A7 và A8 đã merge qua PR #394–#397. PR #398 đã nối lập số dư, kiểm thanh toán và thao tác không nhận ngựa tại điểm đón trên `origin/redesign/system-v2`.
 
+> **25/11/2026 · 30 điểm hở giao cho bạn B:** xem [GIAO_VIEC_BAN_B.md](GIAO_VIEC_BAN_B.md), gồm gợi ý, file liên quan, vùng luồng A đang sửa và số migration dành cho B.
+
 ## Việc luồng B còn phải làm
 
 Đọc [Nghiệp vụ](NGHIEP_VU_THEO_59_BANG.md), [Màn hình và tác động](MAN_HINH_VA_TAC_DONG.md) và các quy tắc #26, #28–#38 trong [Đặc tả DB](DB_SCHEMA_59_BANG.md).
