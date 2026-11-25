@@ -354,25 +354,31 @@ class DeliveryFailureFlowTest {
 
     private Trip plan(String type, int offsetMinutes, String... stops) throws Exception {
         Staff driver = testData.staff(testData.unique("redeliver.driver"), "DRIVER");
+        Staff escort = testData.staff(testData.unique("redeliver.escort"), "ESCORT");
         String body = "{\"tripType\":\"%s\",\"vehicleId\":%d,\"stops\":[%s]}".formatted(type, testData.vehicle(2, 0).getId(), String.join(",", stops));
         String created = mvc.perform(post("/vehicle-trips").header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         long id = ((Number) JsonPath.read(created, "$.data.id")).longValue();
         List<Long> stopIds = ((List<Number>) JsonPath.read(created, "$.data.stops[*].id")).stream().map(Number::longValue).toList();
-        mvc.perform(post("/vehicle-trips/{id}/crew-assignments", id).header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"staffId\":%d,\"crewRole\":\"DRIVER\"}".formatted(driver.getUserId()))).andExpect(status().isCreated());
-        return new Trip(id, stopIds, token(driver, "DRIVER"));
+        for (Staff member : List.of(driver, escort)) {
+            mvc.perform(post("/vehicle-trips/{id}/crew-assignments", id).header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"staffId\":%d,\"crewRole\":\"%s\"}".formatted(member.getUserId(), member == driver ? "DRIVER" : "ESCORT")))
+                    .andExpect(status().isCreated());
+        }
+        return new Trip(id, stopIds, token(driver, "DRIVER"), token(escort, "ESCORT"));
     }
 
     private final class Trip {
         final long id;
         final List<Long> stops;
         final String driver;
+        final String escort;
 
-        Trip(long id, List<Long> stops, String driver) {
+        Trip(long id, List<Long> stops, String driver, String escort) {
             this.id = id;
             this.stops = stops;
             this.driver = driver;
+            this.escort = escort;
         }
 
         void assign(long bookingHorse, int board, int alight) throws Exception {
@@ -382,8 +388,12 @@ class DeliveryFailureFlowTest {
         }
 
         void acknowledgeAndStart() throws Exception {
-            String mine = mvc.perform(get("/crew-assignments/mine").header(HttpHeaders.AUTHORIZATION, driver)).andReturn().getResponse().getContentAsString();
-            act("/crew-assignments/" + ((Number) JsonPath.read(mine, "$.data[0].id")).longValue() + "/acknowledge").andExpect(status().isOk());
+            for (String member : List.of(driver, escort)) {
+                String mine = mvc.perform(get("/crew-assignments/mine").header(HttpHeaders.AUTHORIZATION, member)).andReturn().getResponse().getContentAsString();
+                long assignment = ((Number) JsonPath.read(mine, "$.data[0].id")).longValue();
+                mvc.perform(post("/crew-assignments/{id}/acknowledge", assignment).header(HttpHeaders.AUTHORIZATION, member))
+                        .andExpect(status().isOk());
+            }
             act("/vehicle-trips/" + id + "/start").andExpect(status().isOk());
         }
 

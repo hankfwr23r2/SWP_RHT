@@ -35,11 +35,24 @@ public final class HealthLogPolicy {
         }
     }
 
-    // Quy tắc #34: đã nghỉ đủ ở trạm; rời sớm phải có lý do
-    public static void requireRested(Instant arrivedAt, Instant now, int minRestMinutes, String earlyReason) {
-        boolean rested = !Duration.between(arrivedAt, now).minusMinutes(minRestMinutes).isNegative();
+    public static boolean isOvernightRest(Instant plannedArrivalAt, Instant plannedDepartureAt, int overnightRestHours) {
+        return Duration.between(plannedArrivalAt, plannedDepartureAt).compareTo(Duration.ofHours(overnightRestHours)) >= 0;
+    }
+
+    public static boolean requireRested(Instant arrivedAt, Instant now, int minRestMinutes, String earlyReason) {
+        return requireRested(arrivedAt, now, Duration.ofMinutes(minRestMinutes), minRestMinutes + " phút", earlyReason);
+    }
+
+    public static boolean requireOvernightRested(Instant arrivedAt, Instant now, int overnightRestHours, String earlyReason) {
+        return requireRested(arrivedAt, now, Duration.ofHours(overnightRestHours), overnightRestHours + " giờ", earlyReason);
+    }
+
+    // Quy tắc #34: trả về false khi rời sớm có lý do.
+    private static boolean requireRested(Instant arrivedAt, Instant now, Duration minimumRest, String minimumLabel, String earlyReason) {
+        boolean rested = Duration.between(arrivedAt, now).compareTo(minimumRest) >= 0;
         if (!rested && (earlyReason == null || earlyReason.isBlank())) {
-            throw new DispatchRuleException("earlyReason", "Chưa nghỉ đủ " + minRestMinutes + " phút. Rời sớm phải ghi lý do.", true);
+            throw new DispatchRuleException("earlyReason", "Chưa nghỉ đủ " + minimumLabel + ". Rời sớm phải ghi lý do.", true);
         }
+        return rested;
     }
 }

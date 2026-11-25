@@ -67,6 +67,16 @@ public class TripProgressNoticeServiceImpl implements TripProgressNoticeService 
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
+    public void notifyEarlyOvernightDeparture(TripStop stop, String earlyReason) {
+        var recipients = staff.findUserIdsByRoleAndStatus("COORDINATOR", AppUserStatus.ACTIVE);
+        if (recipients.isEmpty()) return;
+        notifications.notify(recipients, null, "Rời điểm nghỉ đêm sớm",
+                "Lượt " + stop.getVehicleTrip().getCode() + " rời " + label(stop) + " trước khi đủ giờ nghỉ đêm. "
+                        + "Tổ lái ghi lý do “" + earlyReason.strip() + "”.", null);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
     public void departed(TripStop stop) {
         var trip = stop.getVehicleTrip();
         if (SUPPORTED.contains(trip.getTripType())) {

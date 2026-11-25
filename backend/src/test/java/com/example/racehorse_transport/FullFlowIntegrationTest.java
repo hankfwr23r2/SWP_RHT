@@ -340,12 +340,14 @@ class FullFlowIntegrationTest {
             }
         }
 
-        // Tài xế xác nhận nhận việc rồi xuất phát
+        // Tài xế và hộ tống xác nhận nhận việc trước khi xuất phát
         void start() throws Exception {
-            String mine = mvc.perform(get("/crew-assignments/mine").header(HttpHeaders.AUTHORIZATION, driver))
-                    .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
-            long assignment = ((Number) ((List<?>) JsonPath.read(mine, "$.data[?(@.vehicleTripId == %d)].id".formatted(id))).getFirst()).longValue();
-            act(driver, "/crew-assignments/" + assignment + "/acknowledge").andExpect(status().isOk());
+            for (String member : List.of(driver, escort)) {
+                String mine = mvc.perform(get("/crew-assignments/mine").header(HttpHeaders.AUTHORIZATION, member))
+                        .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+                long assignment = ((Number) ((List<?>) JsonPath.read(mine, "$.data[?(@.vehicleTripId == %d)].id".formatted(id))).getFirst()).longValue();
+                act(member, "/crew-assignments/" + assignment + "/acknowledge").andExpect(status().isOk());
+            }
             act(driver, "/vehicle-trips/" + id + "/start").andExpect(status().isOk());
         }
 

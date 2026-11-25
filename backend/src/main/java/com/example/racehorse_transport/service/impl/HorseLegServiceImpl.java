@@ -25,6 +25,7 @@ import com.example.racehorse_transport.policy.DispatchPolicy;
 import com.example.racehorse_transport.policy.DispatchPolicy.Occupancy;
 import com.example.racehorse_transport.policy.LegNeedsPolicy;
 import com.example.racehorse_transport.policy.StallSeatPolicy;
+import com.example.racehorse_transport.policy.TripSchedulePolicy;
 import com.example.racehorse_transport.repository.BookingAddressRepository;
 import com.example.racehorse_transport.repository.BookingHorseRepository;
 import com.example.racehorse_transport.repository.DispatchBookingRepository;
@@ -45,7 +46,6 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.example.racehorse_transport.policy.TripSchedulePolicy;
 
 @Service
 @RequiredArgsConstructor
@@ -159,9 +159,6 @@ public class HorseLegServiceImpl implements HorseLegService {
         HorseLeg last = chain.stream().filter(existing -> existing.getStatus() != HorseLegStatus.CANCELLED)
                 .reduce((first, next) -> next).orElse(null);
         HorseLeg failed = last != null && last.getStatus() == HorseLegStatus.FAILED ? last : null;
-        if (legType == HorseLegType.DELIVERY && failed == null) {
-            requireSharedDeliveryTrip(booking, trip, tripStops, board, alight);
-        }
         if (failed != null) {
             // Giao thất bại: xe đưa ngựa về nơi lượt đó kết thúc (về hub); chặng mới đi tiếp từ đó (B5)
             DispatchPolicy.requireContinuous("L" + failed.getVehicleTrip().getEndLocation().getId(), placeKey(board));
@@ -182,6 +179,15 @@ public class HorseLegServiceImpl implements HorseLegService {
         DispatchPolicy.requireCapacity(occupancies, trip.getVehicle().getStandardStallCount() * StallSeatPolicy.seats("STANDARD")
                 + trip.getVehicle().getWideStallCount() * StallSeatPolicy.seats("WIDE"));
         DispatchPolicy.requirePlannedWindow(board.getPlannedDepartureAt(), alight.getPlannedArrivalAt());
+        if (legType != HorseLegType.LINEHAUL) {
+            int maxDriveHoursPerDay = configs.getInt("MAX_DRIVE_HOURS_PER_DAY");
+            var rules = new TripSchedulePolicy.Rules(0, 0, maxDriveHoursPerDay, 0, 0);
+            TripSchedulePolicy.requirePlannedRideWithinLimit(board.getPlannedDepartureAt(), alight.getPlannedArrivalAt(),
+                    legType == HorseLegType.DIRECT, rules);
+            if (legType == HorseLegType.DELIVERY && failed == null) {
+                requireSharedDeliveryTrip(booking, trip, tripStops, board, maxDriveHoursPerDay);
+            }
+        }
         if (legType == HorseLegType.PICKUP && booking.getDeparture() != null) {
             DispatchPolicy.requireAtHubBeforeDeadline(alight.getPlannedArrivalAt(),
                     DepartureDelayPolicy.effectiveTime(booking.getDeparture()).minusSeconds(configs.getInt("HUB_CHECKIN_HOURS") * 3600L));
@@ -298,7 +304,7 @@ public class HorseLegServiceImpl implements HorseLegService {
     }
 
     // Khóa so sánh nơi chốn: "L<id>" điểm mạng lưới, "A<id>" địa chỉ của đơn
-    private void requireSharedDeliveryTrip(Booking booking, VehicleTrip trip, List<TripStop> tripStops, TripStop board, TripStop alight) {
+    private void requireSharedDeliveryTrip(Booking booking, VehicleTrip trip, List<TripStop> tripStops, TripStop board, int maxDriveHoursPerDay) {
         List<BookingHorse> active = bookingHorses.findForDetail(booking.getId()).stream()
                 .filter(horse -> horse.getStatus() == BookingHorseStatus.ACTIVE).toList();
         var destinations = active.stream().map(BookingHorse::getDeliveryAddress).filter(Objects::nonNull)
@@ -315,9 +321,8 @@ public class HorseLegServiceImpl implements HorseLegService {
             throw new DispatchRuleException("places", "Lượt giao nhiều nơi phải xuất phát và quay về hub đích.", true);
         }
         var rules = new TripSchedulePolicy.Rules(
-                configs.getInt("MAX_CONTINUOUS_HOURS"), configs.getInt("MIN_REST_MINUTES"), configs.getInt("MAX_DRIVE_HOURS_PER_DAY"), 0, 0);
-        TripSchedulePolicy.requireMultiPlaceWindow(
-                board.getPlannedDepartureAt(), alight.getPlannedArrivalAt(),
+                configs.getInt("MAX_CONTINUOUS_HOURS"), configs.getInt("MIN_REST_MINUTES"), maxDriveHoursPerDay, 0, 0);
+        TripSchedulePolicy.requireMultiPlaceDrivingLimit(
                 tripStops.stream().map(stop -> new DispatchPolicy.Interval(stop.getPlannedArrivalAt(), stop.getPlannedDepartureAt())).toList(), rules);
         boolean alreadyAssigned = legs.findByBookingHorse_IdInOrderByBookingHorse_IdAscSequenceNumberAsc(
                         active.stream().map(BookingHorse::getId).toList()).stream()

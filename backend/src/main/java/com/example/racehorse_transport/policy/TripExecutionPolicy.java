@@ -23,6 +23,12 @@ public final class TripExecutionPolicy {
         }
     }
 
+    public static void requireEscortAcknowledged(boolean escortAcknowledged) {
+        if (!escortAcknowledged) {
+            throw new DispatchRuleException("crew", "Lượt chở ngựa phải có hộ tống đã nhận việc.", true);
+        }
+    }
+
     public static void requireInProgress(VehicleTripStatus status) {
         if (status != VehicleTripStatus.IN_PROGRESS) {
             throw new DispatchRuleException("status", "Lượt xe chưa xuất phát hoặc đã kết thúc.", true);

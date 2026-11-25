@@ -58,8 +58,13 @@ public class TripExecutionServiceImpl implements TripExecutionService {
         if (trip.getTripType() == VehicleTripType.DELIVERY && legs.hasIncompleteMultiPlaceDelivery(trip.getId())) {
             throw new DispatchRuleException("bookingHorseIds", "Cần xếp đủ ngựa của đơn nhiều nơi giao trước khi xuất phát.", true);
         }
+        var activeLegs = legs.findActiveOnTrip(trip.getId(), Set.of(HorseLegStatus.CANCELLED, HorseLegStatus.FAILED));
+        if (activeLegs.stream().anyMatch(leg -> leg.getStatus() == HorseLegStatus.PLANNED || leg.getStatus() == HorseLegStatus.IN_PROGRESS)) {
+            TripExecutionPolicy.requireEscortAcknowledged(
+                    crew.existsByVehicleTrip_IdAndCrewRoleAndStatus(trip.getId(), CrewRole.ESCORT, CrewAssignmentStatus.ACKNOWLEDGED));
+        }
         // Quy tắc #40: sơ đồ khoang chốt trước khi lượt xe bắt đầu, mọi con (kể cả con đón ở điểm sau) phải có vị trí
-        List<String> unplaced = legs.findActiveOnTrip(trip.getId(), Set.of(HorseLegStatus.CANCELLED, HorseLegStatus.FAILED)).stream()
+        List<String> unplaced = activeLegs.stream()
                 .filter(leg -> leg.getStallPosition() == null).map(leg -> leg.getBookingHorse().getHorse().getName()).toList();
         if (!unplaced.isEmpty()) {
             throw new DispatchRuleException("stallPlan", "Còn ngựa chưa có vị trí khoang: " + String.join(", ", unplaced)
@@ -93,7 +98,7 @@ public class TripExecutionServiceImpl implements TripExecutionService {
         TripStop stop = findStop(tripStopId);
         CrewAssignment member = requireCrew(trip.getId(), username);
         TripExecutionPolicy.requireInProgress(trip.getStatus());
-        readiness.requireCanLeave(stop, earlyReason, member.getStaff().getUserId());
+        boolean earlyOvernightDeparture = readiness.requireCanLeave(stop, earlyReason, member.getStaff().getUserId());
         if (stop.getStopType() == TripStopType.PICKUP || stop.getStopType() == TripStopType.BORDER || stop.getStopType() == TripStopType.HUB) {
             leavePickup(stop, member.getStaff().getUserId());
         }
@@ -101,6 +106,9 @@ public class TripExecutionServiceImpl implements TripExecutionService {
             departures.linehaulDeparted(trip.getDeparture().getId());
         }
         stop.setActualDepartureAt(clock.instant());
+        if (earlyOvernightDeparture) {
+            notices.notifyEarlyOvernightDeparture(stop, earlyReason);
+        }
         notices.departed(stop);
         return trip.getId();
     }

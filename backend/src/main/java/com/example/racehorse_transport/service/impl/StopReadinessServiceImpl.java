@@ -61,7 +61,7 @@ public class StopReadinessServiceImpl implements StopReadinessService {
 
     @Override
     @Transactional
-    public void requireCanLeave(TripStop stop, String earlyReason, Long actorUserId) {
+    public boolean requireCanLeave(TripStop stop, String earlyReason, Long actorUserId) {
         closeEmptyHubOut(stop);
         TripExecutionPolicy.requireCanDepart(stop.getActualArrivalAt() != null, stop.getActualDepartureAt() != null,
                 handovers.countByTripStop_IdAndStatus(stop.getId(), HandoverStatus.PENDING));
@@ -70,14 +70,16 @@ public class StopReadinessServiceImpl implements StopReadinessService {
             throw new DispatchRuleException("tripStopId", "Còn ngựa chưa nhận hoặc chưa ghi đón hụt.", true);
         }
         requireNoHorseLeftAtStable(stop);
+        boolean earlyOvernightDeparture = false;
         if (stop.getStopType() == TripStopType.PICKUP) {
             requirePaid(stop);
         } else if (REST_STOPS.contains(stop.getStopType())) {
-            requireRestStopDone(stop, earlyReason, actorUserId);
+            earlyOvernightDeparture = requireRestStopDone(stop, earlyReason, actorUserId);
         }
         if (stop.getVehicleTrip().getTripType() == com.example.racehorse_transport.entity.enums.VehicleTripType.LINEHAUL) {
             stablingTimeline.chargePlannedStaysOnDeparture(stop.getId(), clock.instant());
         }
+        return earlyOvernightDeparture;
     }
 
     private void closeEmptyHubOut(TripStop stop) {
@@ -129,7 +131,7 @@ public class StopReadinessServiceImpl implements StopReadinessService {
     }
 
     // Quy tắc #34: mọi con đang trên xe đã ghi uống và ăn ở trạm này, và đã nghỉ đủ; rời sớm thì ghi lý do vào nhật ký
-    private void requireRestStopDone(TripStop stop, String earlyReason, Long actorUserId) {
+    private boolean requireRestStopDone(TripStop stop, String earlyReason, Long actorUserId) {
         int sequence = stop.getSequenceNumber();
         List<HorseLeg> onBoard = legs.findActiveOnTrip(stop.getVehicleTrip().getId(), Set.of(HorseLegStatus.CANCELLED, HorseLegStatus.FAILED)).stream()
                 .filter(l -> l.getStatus() == HorseLegStatus.IN_PROGRESS
@@ -141,11 +143,15 @@ public class StopReadinessServiceImpl implements StopReadinessService {
         HealthLogPolicy.requireAllLogged(onBoard.stream().filter(l -> !logged.contains(l.getBookingHorse().getId()))
                 .map(l -> l.getBookingHorse().getHorse().getName()).toList());
         Instant now = clock.instant();
-        int minRest = configs.getInt("MIN_REST_MINUTES");
-        HealthLogPolicy.requireRested(stop.getActualArrivalAt(), now, minRest, earlyReason);
-        if (now.isBefore(stop.getActualArrivalAt().plusSeconds(60L * minRest))) {
+        int overnightRestHours = configs.getInt("OVERNIGHT_REST_HOURS");
+        boolean overnight = HealthLogPolicy.isOvernightRest(stop.getPlannedArrivalAt(), stop.getPlannedDepartureAt(), overnightRestHours);
+        boolean rested = overnight
+                ? HealthLogPolicy.requireOvernightRested(stop.getActualArrivalAt(), now, overnightRestHours, earlyReason)
+                : HealthLogPolicy.requireRested(stop.getActualArrivalAt(), now, configs.getInt("MIN_REST_MINUTES"), earlyReason);
+        if (!rested) {
             audit.record(actorUserId, "LEAVE_REST_STOP_EARLY", "trip_stop", stop.getId(),
                     Map.of("arrivedAt", stop.getActualArrivalAt().toString()), Map.of("leftAt", now.toString(), "reason", earlyReason.strip()));
         }
+        return overnight && !rested;
     }
 }

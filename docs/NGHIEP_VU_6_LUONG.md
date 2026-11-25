@@ -695,8 +695,8 @@ Theo cách hàng không, đã trình bày và chờ duyệt cuối:
 3. **Đã sửa** · Chuyến cập nhật khi xe trục đầu tiên rời điểm đầu và khi các lượt trục hoàn tất.
 4. **Không sửa được giờ của lượt đã lập**: muốn đổi giờ hoặc đổi xe phải gỡ ngựa, hủy lượt, lập lại.
 5. **Hủy lượt xe hoặc gỡ người thì tổ lái không được báo.**
-6. **Không bắt buộc có hộ tống**: chỉ cần một tài xế nhận việc là xe chạy được, dù chở ngựa.
-7. **Nhập giờ tay không kiểm giới hạn 5 giờ ngồi xe**; chỉ lượt do hệ thống tính giờ mới kiểm. Giới hạn 10 giờ của tài xế thì vẫn kiểm khi phân công.
+6. **Đã sửa.** Lượt chở ngựa phải có hộ tống đã nhận việc mới xuất phát được.
+7. **Đã sửa.** Nhập giờ tay cũng kiểm thời gian ngồi xe theo kế hoạch: đón, giao tối đa 5 giờ, chạy thẳng tối đa 10 giờ.
 8. **Giờ hẹn khách tự chở chỉ kiểm trước giờ chạy**, không kiểm hạn có mặt 3 giờ như xe công ty.
 9. **Dồn chuyến, chạy xe nhỏ hơn, một khách thuê cả chuyến**: tài liệu có nêu, chưa có nút riêng. Hiện chỉ có Chạy, Hủy, Tạo chuyến đột xuất.
 10. **Đưa xe về phải nhờ quản lý xác nhận một chuyến không có ngựa.** Hỏi: cho điều phối tự lập lượt về rỗng?
@@ -874,7 +874,7 @@ Ba lớp trạng thái không trộn vào nhau:
 3. **Khách không xem được nhật ký sức khỏe.** Dòng thời gian của khách chỉ có chặng, lưu trú, giao nhận.
 4. **Ghi Ốm hoặc Nguy cấp không báo ai và không mở sự cố.** Chỉ "bỏ uống hai lần" mới báo điều phối. Đề xuất: Ốm và Nguy cấp báo ngay điều phối và gợi ý mở sự cố.
 5. **Không ghi sức khỏe lúc nhận ngựa**, dù tài liệu yêu cầu khám khi nhận. Lúc quét chip chỉ có ô tình trạng, màn hình chưa hiện ô này. Nhịp tim, nhịp thở có ở máy chủ nhưng chưa có ô nhập.
-6. **Nghỉ đêm không bị kiểm 10 giờ.** Điểm nghỉ đêm Tuy Hòa kế hoạch nghỉ 10 giờ nhưng chỉ bị kiểm 30 phút như trạm thường.
+6. **Đã sửa.** Điểm nghỉ đêm phải nghỉ đủ OVERNIGHT_REST_HOURS (10 giờ); rời sớm phải ghi lý do và hệ thống báo điều phối.
 7. **Xuất phát không kiểm giờ kế hoạch**: có thể xuất phát trước hoặc sau nhiều giờ. Đi trễ không báo điều phối hay khách, chỉ thấy trong báo cáo.
 8. **Chuyến không chuyển sang Đang chạy hay Đã xong** khi xe trục chạy (cũng nêu ở luồng 3).
 9. **Khách không được báo** khi ngựa tới hub, khi xe trục chạy, khi tới hub đích; chỉ báo lúc nhận, qua cửa khẩu và giao.
