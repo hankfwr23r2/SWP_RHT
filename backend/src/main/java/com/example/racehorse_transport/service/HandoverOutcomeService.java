@@ -13,6 +13,8 @@ public interface HandoverOutcomeService {
     // kiểm đủ giấy #35) thì lập khoản số dư; bàn giao đại lý thì chặng đại lý liền kề bắt đầu hoặc kết thúc; giao xong con cuối thì đơn DELIVERED (#16)
     void complete(Handover handover, List<HorseLeg> matched, Instant at, Long actorUserId);
 
+    boolean canBoardAtHub(Long bookingId);
+
     // Không nhận một con ở nơi nhận (điểm đón, cửa khẩu với đơn nhập, hub với khách tự chở): luồng A loại khỏi đơn, nhả chỗ, thay báo giá;
     // ở đây hủy các chặng chưa chạy, kết thúc chặng đại lý đang chở (ngựa ở lại với đại lý), bỏ lịch hẹn ở hub
     void refuse(Long bookingHorseId, String reason, Instant at, Long actorUserId);

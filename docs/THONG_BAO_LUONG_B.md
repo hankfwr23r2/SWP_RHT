@@ -27,6 +27,11 @@
 - **Giao diện.** Hiện “Hệ thống” khi `booking_status_history.changed_by` là NULL.
 - **Chờ B xác nhận.** Có thể xóa `QUARANTINE`, `QUARANTINE_FARM` và cột `quarantine_result` khỏi DB không? A6b đã thêm `water_intake`, `feed_intake`. B xác nhận việc dùng hai cột này và việc bổ sung `SHIFT` vào `handover_type` qua migration do B phụ trách.
 
+## Đợt 1b · Thanh toán tại nơi nhận
+
+- Kiểm số dư dưới khóa đơn khi hoàn tất HUB_OUT. Xe nhập được rời cửa khẩu về hub và đơn giữ CONFIRMED nếu chưa trả đủ. Thao tác RETURN do nợ số dư chỉ dùng tại địa chỉ đón.
+- Khoản số dư VNPAY còn mở có thể thanh toán khi đơn đang SCHEDULE_CHANGE_REQUIRED. Lịch giữ và trả ngựa theo mục 9 cần kiểm tra riêng.
+
 ## Đợt 1a · 25/11/2026
 
 - Luồng A gọi `HorseLegService.cancelPlannedLegsOfBooking` qua `BookingStatusService`. Luồng B bỏ cả lịch hẹn tập kết chưa bắt đầu và báo điều phối trong cùng giao dịch.

@@ -6,4 +6,6 @@ public interface PaymentReadinessService {
 
     // Luồng B kiểm đơn đã trả đủ trước khi xe rời nơi nhận ngựa (GĐ6).
     boolean isPaidInFull(Long bookingId);
+
+    void lockBooking(Long bookingId);
 }

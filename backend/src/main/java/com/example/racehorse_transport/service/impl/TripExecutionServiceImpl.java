@@ -140,12 +140,13 @@ public class TripExecutionServiceImpl implements TripExecutionService {
         }
     }
 
-    // Đã qua kiểm thanh toán (#32): đơn có ngựa đã nhận lên xe ở điểm đón này sang IN_OPERATION
+    // Đơn nhập có thể rời cửa khẩu về hub khi chưa thanh toán.
     private void leavePickup(TripStop stop, Long actorUserId) {
         legs.findByBoardTripStop_IdAndStatusIn(stop.getId(), Set.of(HorseLegStatus.IN_PROGRESS)).stream()
                 .map(leg -> leg.getBookingHorse().getBooking())
                 .filter(booking -> booking.getStatus() == BookingStatus.CONFIRMED)
-                .map(booking -> booking.getId()).distinct()
+                .map(booking -> booking.getId()).distinct().sorted()
+                .filter(readiness::isPaidInFullForDeparture)
                 .forEach(id -> bookingStatus.transition(id, BookingStatus.IN_OPERATION, "Đã nhận ngựa và xe rời nơi nhận", actorUserId));
     }
 

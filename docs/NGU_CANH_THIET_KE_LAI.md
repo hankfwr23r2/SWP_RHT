@@ -135,3 +135,7 @@ Khi có mâu thuẫn, **`DB_SCHEMA_59_BANG.md` là nguồn đúng**.
 
 - Mọi quy tắc làm việc nằm ở `AGENTS.md`: **không được sửa file khi người dùng chưa đồng ý**, chỉ sửa trong phạm vi đã duyệt, sau khi sửa code phải chạy Quality Gate (`mvnw verify`, `npm run lint`, `npx tsc -b`, `npm test`, `npm run build`).
 - Commit và PR **không** thêm dòng attribution `Co-Authored-By` hay "Generated with Claude Code".
+
+### Quyết định 25/11/2026 về số dư tại nơi nhận
+
+Tại hub, kiểm số dư khi đưa ngựa lên xe. Đơn nhập chưa thanh toán đi từ cửa khẩu về hub và giữ trạng thái Đã xác nhận. Đơn Cần chọn lại chuyến được thanh toán số dư còn mở. Xem phương án đã duyệt, mục 9 và 10.

@@ -409,7 +409,7 @@ Với `pickup_method = SELF`, kiểm giấy trước khi ký nhận tại hub, g
 | 9 | Trả đủ: ngựa lên đúng vị trí `stall_position` (màn hình hiện "Khoang số…") | `horse_leg` PICKUP: `status = IN_PROGRESS`, `actual_start_at` |
 | 10 | Rời điểm đón | `trip_stop.actual_departure_at`, `booking.status = IN_OPERATION` |
 
-**Không trả đủ trong 30 phút:** tổ xe trả ngựa và giấy gốc tại chỗ (`handover` RETURN), quản lý hủy đơn do khách (5.4), nhả chỗ. Các đơn khác trên xe đi tiếp. Link VNPAY mở trước hạn mà chưa có kết quả thì chờ thêm 5 phút sau hạn. Với đơn IMPORT, nơi nhận là cửa khẩu và quy tắc như trên, ngựa trả lại đại lý.
+**Không trả đủ trong 30 phút:** tổ xe trả ngựa và giấy gốc tại chỗ (`handover` RETURN), quản lý hủy đơn do khách (5.4), nhả chỗ. Các đơn khác trên xe đi tiếp. Link VNPAY mở trước hạn mà chưa có kết quả thì chờ thêm 5 phút sau hạn. Với đơn IMPORT nhận tại cửa khẩu, xe trục đưa ngựa về hub. Nếu số dư chưa đủ khi xe rời cửa khẩu thì đơn vẫn CONFIRMED. Tại hub, hệ thống kiểm số dư khi hoàn tất HUB_OUT. Đơn SCHEDULE_CHANGE_REQUIRED có thể thanh toán khoản số dư còn mở.
 
 **Ngoại lệ ở bước 4–5:**
 - Chip không khớp: không nhận con đó, ghi `incident` loại DOCUMENT.

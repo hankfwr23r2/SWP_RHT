@@ -26,9 +26,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -47,13 +49,19 @@ public class StopReadinessServiceImpl implements StopReadinessService {
     private final Clock clock;
 
     @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public boolean isPaidInFullForDeparture(Long bookingId) {
+        payments.lockBooking(bookingId);
+        return payments.isPaidInFull(bookingId);
+    }
+
+    @Override
     @Transactional
     public void requireCanLeave(TripStop stop, String earlyReason, Long actorUserId) {
         TripExecutionPolicy.requireCanDepart(stop.getActualArrivalAt() != null, stop.getActualDepartureAt() != null,
                 handovers.countByTripStop_IdAndStatus(stop.getId(), HandoverStatus.PENDING));
         requireNoHorseLeftAtStable(stop);
-        // Nơi nhận ngựa: điểm đón, cửa khẩu với đơn nhập (nhận từ đại lý), hub với khách tự chở tới (SELF)
-        if (stop.getStopType() == TripStopType.PICKUP || stop.getStopType() == TripStopType.BORDER || stop.getStopType() == TripStopType.HUB) {
+        if (stop.getStopType() == TripStopType.PICKUP) {
             requirePaid(stop);
         } else if (REST_STOPS.contains(stop.getStopType())) {
             requireRestStopDone(stop, earlyReason, actorUserId);
@@ -75,7 +83,7 @@ public class StopReadinessServiceImpl implements StopReadinessService {
 
     // Quy tắc #32: mọi đơn có ngựa đã nhận lên xe ở điểm đón này phải trả đủ
     private void requirePaid(TripStop stop) {
-        Map<Long, String> boarded = new LinkedHashMap<>();
+        Map<Long, String> boarded = new TreeMap<>();
         for (HorseLeg leg : legs.findByBoardTripStop_IdAndStatusIn(stop.getId(), Set.of(HorseLegStatus.IN_PROGRESS))) {
             // Đơn đã IN_OPERATION là đã trả đủ khi rời nơi nhận trước đó
             if (leg.getBookingHorse().getBooking().getStatus() != BookingStatus.CONFIRMED) continue;
@@ -83,7 +91,7 @@ public class StopReadinessServiceImpl implements StopReadinessService {
         }
         if (boarded.isEmpty()) return;
         boarded.forEach((id, code) -> {
-            if (!payments.isPaidInFull(id)) {
+            if (!isPaidInFullForDeparture(id)) {
                 throw new DispatchRuleException("payment", "Đơn " + code + " chưa trả đủ. Xe chưa rời nơi nhận được.", true);
             }
         });

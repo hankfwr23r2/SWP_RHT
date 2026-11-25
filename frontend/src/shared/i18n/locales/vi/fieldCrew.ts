@@ -25,7 +25,7 @@ export const fieldCrew = {
       "unpaidReturn": {
         "action": "Trả ngựa do quá hạn thanh toán",
         "title": "Trả lại ngựa đã nhận?",
-        "message": "Khách chưa trả số dư khi đã quá thời gian chờ. Mọi con đã nhận ở điểm này được trả lại (cho người gửi, hoặc cho đại lý ở cửa khẩu) và đơn bị hủy. Nếu khách còn đang thanh toán qua VNPAY, hệ thống sẽ từ chối và bạn chờ thêm.",
+        "message": "Khách chưa trả số dư khi đã quá thời gian chờ. Mọi con đã nhận ở địa chỉ đón được trả lại cho người gửi và đơn bị hủy. Nếu khách còn đang thanh toán qua VNPAY, hệ thống sẽ từ chối và bạn chờ thêm.",
         "done": "Đã trả ngựa và hủy đơn"
       },
       "refusal": {

@@ -77,7 +77,8 @@ public final class PaymentPolicy {
                     && payment.getQuotation().getStatus() == QuotationStatus.ACCEPTED
                     && payment.getDueAt() != null
                     && now.isBefore(DepositPaymentWindowPolicy.expiresAt(payment.getDueAt()));
-            case BALANCE -> booking.getStatus() == BookingStatus.CONFIRMED
+            case BALANCE -> (booking.getStatus() == BookingStatus.CONFIRMED
+                    || booking.getStatus() == BookingStatus.SCHEDULE_CHANGE_REQUIRED)
                     && payment.getQuotation().getStatus() == QuotationStatus.ACCEPTED;
             case EXTRA_CHARGE -> acceptsExtraChargePayment(booking.getStatus())
                     && payment.getQuotation() != null && payment.getQuotation().getStatus() == QuotationStatus.ACCEPTED;

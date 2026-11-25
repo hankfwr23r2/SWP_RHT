@@ -114,20 +114,30 @@ class HubSelfFlowTest {
         acknowledge();
         act(driver, "/vehicle-trips/" + trip + "/start").andExpect(status().isOk());
         act(driver, "/trip-stops/" + stops.getFirst() + "/arrive").andExpect(status().isOk());
+        for (int attempt = 0; attempt < 2; attempt++) {
+            mvc.perform(post("/trip-stops/{id}/handovers", stops.getFirst()).header(HttpHeaders.AUTHORIZATION, escort)
+                    .contentType(MediaType.APPLICATION_JSON).content("{\"handoverType\":\"HUB_OUT\"}"))
+                    .andExpect(status().isConflict());
+        }
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM handover WHERE trip_stop_id = ? AND handover_type = 'HUB_OUT'",
+                Integer.class, stops.getFirst())).isZero();
+        sql("UPDATE payment SET status = 'PAID', paid_at = now() WHERE booking_id = " + booking + " AND payment_type = 'BALANCE'");
         long hubOut = handoverId(mvc.perform(post("/trip-stops/{id}/handovers", stops.getFirst()).header(HttpHeaders.AUTHORIZATION, escort)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"handoverType\":\"HUB_OUT\"}")).andExpect(status().isCreated()));
         for (long line : lines) {
             mvc.perform(post("/handovers/{id}/horses", hubOut).header(HttpHeaders.AUTHORIZATION, escort).contentType(MediaType.APPLICATION_JSON)
                     .content("{\"horseLegId\":%d,\"microchip\":\"%s\"}".formatted(leg(trip, line), chip(line)))).andExpect(status().isOk());
         }
+        sql("UPDATE payment SET status = 'PENDING', paid_at = NULL WHERE booking_id = " + booking + " AND payment_type = 'BALANCE'");
+        act(escort, "/handovers/" + hubOut + "/complete").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message", startsWith("Đơn DEV-DOMESTIC-001 chưa trả đủ")));
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM horse_stay WHERE id IN (" + join(stays) + ") AND actual_end_at IS NULL", Long.class))
+                .isEqualTo(lines.size());
+        sql("UPDATE payment SET status = 'PAID', paid_at = now() WHERE booking_id = " + booking + " AND payment_type = 'BALANCE'");
         act(escort, "/handovers/" + hubOut + "/complete").andExpect(status().isOk());
         assertThat(jdbc.queryForObject("SELECT count(*) FROM horse_stay WHERE id IN (" + join(stays) + ") AND actual_end_at IS NOT NULL", Long.class))
                 .isEqualTo(lines.size());
 
-        // Hub là nơi nhận của đầu SELF: chưa trả đủ thì xe không rời hub (#32)
-        act(driver, "/trip-stops/" + stops.getFirst() + "/depart").andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message", startsWith("Đơn DEV-DOMESTIC-001 chưa trả đủ")));
-        sql("UPDATE payment SET status = 'PAID', paid_at = now() WHERE booking_id = " + booking + " AND payment_type = 'BALANCE'");
         act(driver, "/trip-stops/" + stops.getFirst() + "/depart").andExpect(status().isOk());
         assertThat(bookingStatus()).isEqualTo("IN_OPERATION");
     }

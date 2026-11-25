@@ -159,30 +159,21 @@ class BorderAgentFlowTest {
     }
 
     @Test
-    void importBalanceOverdueAtTheGateReturnsTheHorseToTheAgent() throws Exception {
+    void importBalanceOverdueAtTheGateAllowsTransportToHub() throws Exception {
         long[] received = receiveImportAtTheGate();
         long trip = received[0];
         long gateStop = received[1];
         // Nhận ở cửa khẩu xong thì lập khoản số dư (seed có sẵn số dư đã trả nên đã bỏ đi)
         assertThat(jdbc.queryForObject("SELECT status FROM payment WHERE booking_id = ? AND payment_type = 'BALANCE'", String.class, booking)).isEqualTo("PENDING");
-        mvc.perform(post("/trip-stops/{id}/depart", gateStop).header(HttpHeaders.AUTHORIZATION, driver)).andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message", startsWith("Đơn DEV-EXPORT-001 chưa trả đủ")));
-        // Còn trong hạn: luồng A từ chối hủy
-        returnAt(gateStop).andExpect(status().isConflict());
-
         entityManager.flush();
         jdbc.update("UPDATE payment SET due_at = now() - interval '1 minute' WHERE booking_id = ? AND payment_type = 'BALANCE'", booking);
         entityManager.clear();
-        returnAt(gateStop).andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.handovers[1].handoverType").value("RETURN"))
-                .andExpect(jsonPath("$.data.handovers[1].partyName").value("Đại lý vận tải Campuchia (mẫu)"))
-                .andExpect(jsonPath("$.data.handovers[1].horses[0].scannedMicrochip").value(chip));
-        assertThat(legStatus(legOnTrip(trip))).isEqualTo("CANCELLED");
-        assertThat(bookingStatus()).isEqualTo("CANCELLED");
-        // Hành trình: ngựa đang ở đại lý
-        mvc.perform(get("/bookings/{id}/journey", booking).header(HttpHeaders.AUTHORIZATION, coordinator)).andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.horses[0].holder").value("PARTY"));
+        returnAt(gateStop).andExpect(status().isBadRequest());
         mvc.perform(post("/trip-stops/{id}/depart", gateStop).header(HttpHeaders.AUTHORIZATION, driver)).andExpect(status().isOk());
+        assertThat(legStatus(legOnTrip(trip))).isEqualTo("IN_PROGRESS");
+        assertThat(bookingStatus()).isEqualTo("CONFIRMED");
+        mvc.perform(get("/bookings/{id}/journey", booking).header(HttpHeaders.AUTHORIZATION, coordinator)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.horses[0].holder").value("COMPANY"));
     }
 
     @Test

@@ -1,6 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.repository.BookingRepository;
+import com.example.racehorse_transport.service.PaymentReadinessService;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Handover;
 import com.example.racehorse_transport.entity.HorseLeg;
@@ -45,7 +45,7 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
     private final DocumentCompletenessService documents;
     private final NotificationService notifications;
     private final IncidentRepository incidents;
-    private final BookingRepository bookingRows;
+    private final PaymentReadinessService paymentReadiness;
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
@@ -56,9 +56,13 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
         List<Booking> bookings = matched.stream().map(l -> l.getBookingHorse().getBooking()).distinct()
                 .sorted(Comparator.comparing(Booking::getId)).toList();
         if (handover.getHandoverType() == HandoverType.HUB_IN || handover.getHandoverType() == HandoverType.HUB_OUT) {
-            bookings.forEach(booking -> bookingRows.findForUpdate(booking.getId()).orElseThrow());
+            bookings.forEach(booking -> paymentReadiness.lockBooking(booking.getId()));
         }
         if (handover.getHandoverType() == HandoverType.HUB_OUT) {
+            bookings.stream().filter(booking -> !paymentReadiness.isPaidInFull(booking.getId())).findFirst().ifPresent(booking -> {
+                throw new DispatchRuleException("payment", "Đơn " + booking.getCode()
+                        + " chưa trả đủ. Chưa thể đưa ngựa lên xe tại hub.", true);
+            });
             matched.forEach(leg -> horseStays.requireStablingPaid(leg.getBookingHorse().getId()));
         }
         if (agent && boarding) {
@@ -128,6 +132,12 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
                     .forEach(b -> bookingStatus.transition(b.getId(), BookingStatus.DELIVERED, "Đã giao xong mọi con ngựa", actorUserId));
         }
         notifyCustomers(handover, matched);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean canBoardAtHub(Long bookingId) {
+        return paymentReadiness.isPaidInFull(bookingId);
     }
 
     @Override
