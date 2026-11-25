@@ -27,7 +27,8 @@ public interface IncidentRepository extends JpaRepository<Incident, Long> {
     boolean existsById(@Param("id") Long id);
 
     // Con giao thất bại do không gặp người nhận (B5) thì giữ có phí; về hub do sự cố khác thì tập kết không phí
-    boolean existsByHorseLeg_IdAndIncidentType(Long horseLegId, IncidentType incidentType);
+    boolean existsByHorseLeg_IdAndIncidentTypeAndConfirmedCauseType(Long horseLegId, IncidentType incidentType,
+            com.example.racehorse_transport.entity.enums.IncidentCauseType cause);
 
     boolean existsByVehicleTrip_IdAndHorseLegIsNullAndStatusIn(Long vehicleTripId, Collection<IncidentStatus> statuses);
 

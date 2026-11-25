@@ -9,7 +9,6 @@ import com.example.racehorse_transport.entity.enums.AppUserStatus;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.PaymentStatus;
 import com.example.racehorse_transport.entity.enums.PaymentType;
-import com.example.racehorse_transport.policy.StablingPolicy;
 import com.example.racehorse_transport.policy.BalanceHoldPolicy;
 import com.example.racehorse_transport.repository.BookingStatusHistoryRepository;
 import com.example.racehorse_transport.repository.BookingRepository;
@@ -78,7 +77,7 @@ public class BalanceHoldNoticeServiceImpl implements BalanceHoldNoticeService {
     public void holdStarted(Booking booking, Instant base) {
         String title = "Ngựa đang ở hub chờ chọn lại lịch";
         String message = "Ngựa vẫn được chăm sóc. Phí giữ từ " + base.atZone(ZONE).toLocalDateTime()
-                + " là " + config.getInt("STABLING_DAILY_FEE") + " đ/con/ngày. Bạn có thể đến nhận ngựa bất cứ lúc nào.";
+                + " là " + config.getInt("STABLING_DAILY_FEE") + " đ/con cho mỗi 24 giờ trọn vẹn. Bạn có thể đến nhận ngựa bất cứ lúc nào.";
         send(booking, title, message, true);
     }
 
@@ -135,7 +134,7 @@ public class BalanceHoldNoticeServiceImpl implements BalanceHoldNoticeService {
     }
 
     @Override
-    public void processHeld(Booking booking, List<HorseStay> held, Instant now, boolean paid) {
+    public void processHeld(Booking booking, List<HorseStay> held, Instant now, boolean paid, BigDecimal accrued) {
         boolean isBalanceHold = held.stream().anyMatch(stay -> stay.getBalanceHoldAt() != null);
         Instant base = held.stream().map(BalanceHoldNoticeServiceImpl::chargedFrom).min(Instant::compareTo).orElseThrow();
         if (now.isBefore(base)) return;
@@ -144,9 +143,6 @@ public class BalanceHoldNoticeServiceImpl implements BalanceHoldNoticeService {
         var date = now.atZone(ZONE).toLocalDate();
         Instant morning = date.atTime(LocalTime.of(config.getInt("STABLING_REMINDER_HOUR"), 0)).atZone(ZONE).toInstant();
         if (!now.isBefore(morning) && now.isBefore(cancelAt)) {
-            int daily = config.getInt("STABLING_DAILY_FEE");
-            BigDecimal accrued = held.stream().map(stay -> StablingPolicy.fee(chargedFrom(stay), now, daily))
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
             remind(booking, "Liên hệ nhận ngựa tại hub", "Phí giữ tạm tính " + accrued.toPlainString()
                     + " đ. Điều phối cần liên hệ khách hôm nay.", morning, morning.plus(1, ChronoUnit.DAYS), true);
         }
@@ -180,7 +176,7 @@ public class BalanceHoldNoticeServiceImpl implements BalanceHoldNoticeService {
     }
 
     private static Instant chargedFrom(HorseStay stay) {
-        return stay.getBalanceHoldAt() == null ? stay.getActualStartAt() : stay.getBalanceHoldAt();
+        return stay.getBalanceHoldAt() == null ? stay.getPlannedStartAt() : stay.getBalanceHoldAt();
     }
 
     private void remind(Booking booking, String title, String message, Instant from, Instant to, boolean email) {

@@ -8,7 +8,7 @@ import java.util.List;
 public interface BalanceHoldNoticeService {
     void remindBalance(Booking booking, Instant reminder, Instant cutoff, Instant now);
     void holdStarted(Booking booking, Instant base);
-    void processHeld(Booking booking, List<HorseStay> held, Instant now, boolean paid);
+    void processHeld(Booking booking, List<HorseStay> held, Instant now, boolean paid, java.math.BigDecimal accrued);
     boolean waitingForGateway(Long bookingId, Instant cutoff, Instant now);
     void releaseForUnpaidHub(Long bookingId);
     List<Long> expiredPickupReturns(Instant now);

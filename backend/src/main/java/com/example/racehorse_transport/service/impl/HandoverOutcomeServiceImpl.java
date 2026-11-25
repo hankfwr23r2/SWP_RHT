@@ -106,7 +106,8 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
             // Giao thất bại (B5): xe về hub, giao con vào hub thì giữ và chăm sóc tại hub; chặng thất bại giữ nguyên
             if (leg.getStatus() == HorseLegStatus.FAILED) {
                 // Không gặp người nhận thì giữ có phí người nhận chịu; về hub do sự cố khác thì tập kết chờ giao lại
-                if (incidents.existsByHorseLeg_IdAndIncidentType(leg.getId(), IncidentType.HANDOVER_TIMEOUT)) {
+                if (incidents.existsByHorseLeg_IdAndIncidentTypeAndConfirmedCauseType(leg.getId(), IncidentType.HANDOVER_TIMEOUT,
+                        com.example.racehorse_transport.entity.enums.IncidentCauseType.RECIPIENT_ABSENT)) {
                     horseStays.openFailedDeliveryStabling(leg, handover.getTripStop().getLocation(), now, actorUserId);
                 } else {
                     horseStays.openReturnAssembly(leg, handover.getTripStop().getLocation(), now);

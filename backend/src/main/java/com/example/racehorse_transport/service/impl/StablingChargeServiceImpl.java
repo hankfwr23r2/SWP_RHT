@@ -27,7 +27,9 @@ import com.example.racehorse_transport.service.StablingChargeService;
 import com.example.racehorse_transport.service.SystemConfigService;
 import java.time.Clock;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -85,11 +87,11 @@ public class StablingChargeServiceImpl implements StablingChargeService {
             String title = "Quá hạn giữ ngựa tại hub";
             if (bookings.hasNotificationBetween(booking.getId(), title, start, end)) continue;
             String horse = stay.getBookingHorse().getHorse().getName();
-            String accrued = money(StablingPolicy.fee(stay.getActualStartAt(), now, configs.getInt(DAILY_FEE)).longValue());
+            String accrued = money(accrued(List.of(stay), now).longValue());
             String link = "/orders/" + booking.getId();
             notifications.notify(List.of(booking.getCustomer().getUser().getId()), booking.getId(), title,
                     horse + " đã quá hạn giữ tại " + stay.getLocation().getName() + " từ " + TIME.format(stay.getPlannedEndAt())
-                            + ". Phí lưu chuồng và chăm sóc tạm tính " + accrued + " và vẫn tính mỗi ngày. Liên hệ công ty để nhận ngựa.", link);
+                            + ". Phí lưu chuồng và chăm sóc tạm tính " + accrued + " và vẫn tính cho mỗi 24 giờ trọn vẹn. Liên hệ công ty để nhận ngựa.", link);
             sent++;
         }
         return sent;
@@ -133,7 +135,8 @@ public class StablingChargeServiceImpl implements StablingChargeService {
         if (stay.getStayType() != HorseStayType.STABLING) return;
         var booking = stay.getBookingHorse().getBooking();
         lockBooking(booking.getId());
-        var previous = costs.findByHorseStay_Id(stay.getId()).stream().filter(CostPayerPolicy::isScheduledStablingFee).toList();
+        var previous = costs.findByHorseStay_BookingHorse_Id(stay.getBookingHorse().getId()).stream()
+                .filter(CostPayerPolicy::isScheduledStablingFee).toList();
         // Phiếu lập theo quy trình cũ không có số ngày. Giữ nguyên khoản đã ghi.
         long billedDays = previous.stream().mapToLong(cost -> cost.getStablingDays() == null ? 1 : cost.getStablingDays()).sum();
         for (CostItem cost : previous) {
@@ -143,17 +146,15 @@ public class StablingChargeServiceImpl implements StablingChargeService {
             }
         }
         var holdAt = stay.getBalanceHoldAt();
-        long totalDays = holdAt == null ? StablingPolicy.days(stay.getActualStartAt(), through)
-                : StablingPolicy.holdDays(holdAt, through);
-        long newDays = totalDays - billedDays;
+        long newDays = StablingPolicy.blocks(runs(stay), through, hours(), maxBlocks()) - billedDays;
         if (newDays <= 0) return;
 
         Instant now = clock.instant();
         Staff actor = staff.getReferenceById(actorUserId);
         CostItem fee = new CostItem();
         fee.setCategory(CostCategory.STABLING);
-        fee.setDescription("Lưu chuồng và chăm sóc tại " + stay.getLocation().getName() + " · " + newDays + " ngày");
-        fee.setAmount(StablingPolicy.feeForDays(newDays, configs.getInt(DAILY_FEE)));
+        fee.setDescription("Lưu chuồng và chăm sóc tại " + stay.getLocation().getName() + " · " + newDays + " lần 24 giờ");
+        fee.setAmount(StablingPolicy.fee(newDays, unitPrice(stay)));
         fee.setStablingDays(newDays);
         fee.setCurrencyCode("VND");
         fee.setPayerType(holdAt == null ? CostPayerType.CONSIGNEE : CostPayerType.CUSTOMER);
@@ -173,6 +174,57 @@ public class StablingChargeServiceImpl implements StablingChargeService {
         if (fee.getAmount().compareTo(fee.getStablingDepositCredit()) > 0) {
             extraCharges.createStablingCharge(booking.getId(), fee.getId());
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BigDecimal accrued(List<HorseStay> held, Instant through) {
+        return held.stream().map(stay -> StablingPolicy.fee(
+                StablingPolicy.blocks(runs(stay), through, hours(), maxBlocks()), unitPrice(stay)))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void warnBeforeNextBlock(List<HorseStay> held, Instant now) {
+        for (HorseStay stay : held) {
+            StablingPolicy.nextMark(runs(stay), now, hours(), maxBlocks()).ifPresent(mark -> {
+                var booking = stay.getBookingHorse().getBooking();
+                var from = mark.minus(Duration.ofHours(configs.getInt("STABLING_WARNING_HOURS")));
+                String title = "Sắp tính thêm phí giữ · " + stay.getBookingHorse().getHorse().getName();
+                if (now.isBefore(from) || !now.isBefore(mark)
+                        || bookings.hasNotificationBetween(booking.getId(), title, from, mark)) return;
+                notifications.notify(List.of(booking.getCustomer().getUser().getId()), booking.getId(), title,
+                        "Tới " + TIME.format(mark) + " sẽ tính thêm " + money(unitPrice(stay).longValue())
+                                + " nếu ngựa vẫn ở " + stay.getLocation().getName() + ".", "/orders/" + booking.getId());
+            });
+        }
+    }
+
+    // Mọi lần giữ do khách của con ngựa trong đơn, gồm lần đang xét
+    private List<StablingPolicy.Run> runs(HorseStay current) {
+        return stays.findByBookingHorse_IdInOrderById(List.of(current.getBookingHorse().getId())).stream()
+                .filter(stay -> stay.getStayType() == HorseStayType.STABLING && stay.getActualStartAt() != null)
+                .map(stay -> new StablingPolicy.Run(chargedFrom(stay), stay.getActualEndAt())).toList();
+    }
+
+    // Chưa trả số dư: giờ chạy; người nhận vắng: lúc vào hub; hẹn tới hub mà trễ: giờ hẹn
+    private static Instant chargedFrom(HorseStay stay) {
+        return stay.getBalanceHoldAt() == null ? stay.getPlannedStartAt() : stay.getBalanceHoldAt();
+    }
+
+    private BigDecimal unitPrice(HorseStay stay) {
+        return stay.getStablingUnitPrice() != null ? stay.getStablingUnitPrice() : BigDecimal.valueOf(configs.getInt(DAILY_FEE));
+    }
+
+    private int maxBlocks() {
+        return configs.getInt("STABLING_MAX_BLOCKS");
+    }
+
+    private StablingPolicy.Hours hours() {
+        return new StablingPolicy.Hours(LocalTime.of(configs.getInt("STABLING_OPEN_HOUR"), 0),
+                LocalTime.of(configs.getInt("STABLING_CLOSE_HOUR"), 0), LocalTime.of(configs.getInt("STABLING_MORNING_HOUR"), 0),
+                ZoneId.of("Asia/Ho_Chi_Minh"));
     }
 
     private void lockBooking(Long bookingId) {

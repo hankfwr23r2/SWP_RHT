@@ -934,6 +934,7 @@ Index: `vehicle_trip_id`, `agent_party_id`, `board_trip_stop_id`, `alight_trip_s
 | `actual_start_at` | `timestamptz` | có | | |
 | `actual_end_at` | `timestamptz` | có | | |
 | `balance_hold_at` | `timestamptz` | có | Chỉ trên `STABLING` đã bắt đầu | Mốc T bắt đầu tính phí do giữ sau khi chưa trả số dư. Có thể muộn hơn lúc công ty nhận ngựa |
+| `stabling_unit_price` | `numeric(15,2)` | có | Dương, chỉ trên `STABLING` | Snapshot đơn giá mỗi 24 giờ lúc bắt đầu giữ; trống thì dùng cấu hình |
 | `quarantine_result` | `varchar(30)` | có | CK `PASSED, FAILED` | Ngừng dùng cùng `QUARANTINE` |
 
 Ràng buộc bảng:
@@ -1460,7 +1461,11 @@ Giá trị khởi đầu của các tham số chốt ngày 23/11/2026, thêm b�
 | `COMPLAINT_MANAGER_DEADLINE_DAYS` | 14 | Hạn quản lý nhập khiếu nại thay khách kể từ lúc đơn sang `DELIVERED` |
 | `SCHEDULE_CHOICE_REMINDER_1..4_DAYS` | 3, 7, 14, 25 | Nhắc chọn lại lịch sau đón hụt |
 | `EXTRA_CHARGE_DUE_DAYS` | 7 | Hạn khoản thu thêm từ lúc lập, 1–30 ngày |
-| `STABLING_DAILY_FEE` | 1.000.000 đ | Phí giữ tại hub mỗi con mỗi ngày |
+| `STABLING_DAILY_FEE` | 1.000.000 đ | Phí giữ cho mỗi 24 giờ trọn vẹn, phần lẻ không tính |
+| `STABLING_OPEN_HOUR`, `STABLING_CLOSE_HOUR`, `STABLING_MORNING_HOUR` | 6, 18, 8 | Mốc 24 giờ rơi ngoài giờ mở cửa thì dời tới 08:00 |
+| `STABLING_MAX_BLOCKS` | 30 | Số lần 24 giờ tối đa tính phí |
+| `STABLING_WARNING_HOURS` | 3 | Báo trước mốc tính phí kế tiếp |
+| `DELIVERY_NOTICE_WINDOW_MINUTES` | 60 | Khung giờ giao đã báo; xe tới sau khung là lỗi công ty (số mẫu, tự đề xuất) |
 | `HANDOVER_FREE_WAIT_MINUTES` | 1 | 1440 |
 
 ### 15.5 `route_cache`: bộ đệm kết quả tính lộ trình
@@ -1492,7 +1497,7 @@ Có hai cách xử lý giá trị dẫn xuất:
 | `quotation.total_amount` | Tổng các dòng báo giá | `QuotationService`, lúc tạo hoặc sửa bản DRAFT. Bất biến sau khi SENT | `CHECK (total_amount >= 0)` |
 | `quotation.pass_through_amount` | Phần thu hộ (bảo hiểm, lệ phí nhà nước) | Như trên | `CHECK (pass_through_amount BETWEEN 0 AND total_amount)` |
 | `quotation.deposit_amount` | Tiền cọc, gồm **toàn bộ** phần thu hộ | Như trên, tính bằng `DepositPolicy` | `CHECK (deposit_amount BETWEEN pass_through_amount AND total_amount)` |
-| `cost_item.stabling_days` | Snapshot số ngày của từng dòng phí giữ đã tính | `StablingChargeService`, khi tạo dòng phí theo biểu | Dương, chỉ áp dụng với khoản STABLING có `horse_stay_id` |
+| `cost_item.stabling_days` | Snapshot số lần đủ 24 giờ của từng dòng phí giữ đã tính | `StablingChargeService`, khi tạo dòng phí theo biểu | Dương, chỉ áp dụng với khoản STABLING có `horse_stay_id` |
 | `cost_item.stabling_deposit_credit` | Snapshot phần phí đã cấn vào tiền cọc | `StablingChargeService`, khi chốt phí trên đơn đã hủy dưới khóa đơn | Tổng phần đã cấn của đơn không vượt tiền cọc thực nhận |
 | `departure.booked_stall_count` | Số chỗ đã được đặt (khoang rộng 2 chỗ) | `DepartureService`, cộng khi đặt chỗ, trừ khi nhả chỗ (hủy, từ chối, báo giá hết hạn, loại ngựa). Luôn giữ `SELECT … FOR UPDATE` trên dòng `departure` | `CHECK (booked_stall_count BETWEEN 0 AND stall_capacity)`: DB chặn bán quá chỗ |
 

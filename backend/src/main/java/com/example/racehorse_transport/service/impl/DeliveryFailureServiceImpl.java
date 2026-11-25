@@ -57,7 +57,10 @@ public class DeliveryFailureServiceImpl implements DeliveryFailureService {
     public Long startWaiting(Long handoverId, String username) {
         Handover handover = lockOnCrew(handoverId, username);
         TripExecutionPolicy.requireCanStartWaiting(handover.getHandoverType(), handover.getStatus() == HandoverStatus.PENDING, handover.getWaitStartedAt() != null);
-        handover.setWaitStartedAt(clock.instant());
+        // Tới sớm thì thời gian chờ đếm từ đầu khung giờ đã báo
+        Instant now = clock.instant();
+        Instant planned = handover.getTripStop().getPlannedArrivalAt();
+        handover.setWaitStartedAt(planned != null && planned.isAfter(now) ? planned : now);
         return handover.getTripStop().getVehicleTrip().getId();
     }
 
@@ -99,9 +102,12 @@ public class DeliveryFailureServiceImpl implements DeliveryFailureService {
         return configs.getInt(intermediate ? "INTERMEDIATE_WAIT_MINUTES" : FREE_WAIT);
     }
 
-    // Con chưa giao được: chặng FAILED; mỗi con một sự cố HANDOVER_TIMEOUT (người nhận vắng nên chi phí do người nhận chịu); báo điều phối
+    // Con chưa giao được: chặng FAILED; mỗi con một sự cố HANDOVER_TIMEOUT (người nhận vắng thì người nhận chịu, xe trễ thì công ty chịu); báo điều phối
     private void markFailed(Handover handover) {
         Instant now = clock.instant();
+        var stop = handover.getTripStop();
+        var cause = TripExecutionPolicy.arrivedAfterWindow(stop.getPlannedArrivalAt(), stop.getActualArrivalAt(),
+                configs.getInt("DELIVERY_NOTICE_WINDOW_MINUTES")) ? IncidentCauseType.COMPANY_FAULT : IncidentCauseType.RECIPIENT_ABSENT;
         List<HorseLeg> undelivered = legs.findByAlightTripStop_IdAndStatusIn(handover.getTripStop().getId(), Set.of(HorseLegStatus.IN_PROGRESS));
         for (HorseLeg leg : undelivered) {
             leg.setStatus(HorseLegStatus.FAILED);
@@ -111,11 +117,13 @@ public class DeliveryFailureServiceImpl implements DeliveryFailureService {
             incident.setHorseLeg(leg);
             incident.setBooking(leg.getBookingHorse().getBooking());
             incident.setIncidentType(IncidentType.HANDOVER_TIMEOUT);
-            incident.setCauseType(IncidentCauseType.RECIPIENT_ABSENT);
-            incident.setConfirmedCauseType(IncidentCauseType.RECIPIENT_ABSENT);
+            incident.setCauseType(cause);
+            incident.setConfirmedCauseType(cause);
             incident.setCauseConfirmedAt(now);
             incident.setTitle("Không gặp người nhận: " + leg.getBookingHorse().getHorse().getName());
-            incident.setDescription("Đã chờ hết thời gian chờ miễn phí tại điểm giao, không gặp người nhận.");
+            incident.setDescription(cause == IncidentCauseType.COMPANY_FAULT
+                    ? "Xe tới sau khung giờ đã báo, không gặp người nhận. Không tính phí giữ."
+                    : "Đã chờ hết thời gian chờ miễn phí tại điểm giao, không gặp người nhận.");
             incident.setReportedBy(handover.getHandledBy());
             incident.setStatus(IncidentStatus.REPORTED);
             incidents.save(incident);
