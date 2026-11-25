@@ -13,7 +13,7 @@ import com.example.racehorse_transport.policy.BalanceHoldPolicy;
 import com.example.racehorse_transport.repository.BookingStatusHistoryRepository;
 import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.PaymentRepository;
-import com.example.racehorse_transport.repository.StaffRepository;
+import com.example.racehorse_transport.service.CoordinatorRecipientService;
 import com.example.racehorse_transport.service.BalanceHoldNoticeService;
 import com.example.racehorse_transport.service.BookingCancellationService;
 import com.example.racehorse_transport.service.NotificationService;
@@ -41,7 +41,7 @@ public class BalanceHoldNoticeServiceImpl implements BalanceHoldNoticeService {
     private static final String WRITTEN = BalanceHoldPolicy.WRITTEN_NOTICE_TITLE;
     private final BookingRepository bookings;
     private final PaymentRepository payments;
-    private final StaffRepository staff;
+    private final CoordinatorRecipientService coordinatorRecipients;
     private final PaymentCheckoutService checkout;
     private final BookingCancellationService cancellations;
     private final SystemConfigService config;
@@ -175,7 +175,7 @@ public class BalanceHoldNoticeServiceImpl implements BalanceHoldNoticeService {
         if (!isBalanceHold && bookings.firstNoticeSince(booking.getId(), WRITTEN, writtenAt)
                 .filter(sent -> !sent.isAfter(escalationBefore)).isPresent()) {
             String title = "Cần quản lý xử lý ngựa chưa có người nhận";
-            var managers = staff.findUserIdsByRoleAndStatus("MANAGER", AppUserStatus.ACTIVE);
+            var managers = coordinatorRecipients.managers();
             if (!managers.isEmpty() && !bookings.hasNotificationBetween(booking.getId(), title, writtenAt, now.plusSeconds(60))) {
                 notifications.notify(managers, booking.getId(), title, "Ngựa còn được chăm sóc tại hub. Quản lý cần ghi kết quả bàn giao cùng tệp chứng minh.",
                         "/manager/orders/" + booking.getId());
@@ -204,7 +204,7 @@ public class BalanceHoldNoticeServiceImpl implements BalanceHoldNoticeService {
     private void send(Booking booking, String title, String message, boolean email) {
         var customer = booking.getCustomer().getUser();
         notifications.notify(List.of(customer.getId()), booking.getId(), title, message, "/orders/" + booking.getId());
-        var coordinators = staff.findUserIdsByRoleAndStatus("COORDINATOR", AppUserStatus.ACTIVE);
+        var coordinators = coordinatorRecipients.forHubBooking(booking.getId());
         if (!coordinators.isEmpty()) {
             notifications.notify(coordinators, booking.getId(), title + " · điều phối", message, null);
         }

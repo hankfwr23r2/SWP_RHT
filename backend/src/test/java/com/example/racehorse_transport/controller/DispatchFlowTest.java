@@ -248,6 +248,28 @@ class DispatchFlowTest {
     }
 
     @Test
+    void managerAssignsTheDepartureAndOnlyItsCoordinatorCanWriteTheTrip() throws Exception {
+        var manager = bearer(testData.staff(testData.unique("dispatch.manager"), "MANAGER"), "MANAGER");
+        var person = testData.staff(testData.unique("dispatch.owner"), "COORDINATOR");
+        var owner = bearer(person, "COORDINATOR");
+        mvc.perform(post("/departures/{id}/assign-coordinator", departure.getId())
+                        .header(HttpHeaders.AUTHORIZATION, manager).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"coordinatorId\":%d}".formatted(person.getUserId())))
+                .andExpect(status().isOk());
+        long tripId = tripId(createLinehaul().andExpect(jsonPath("$.data.coordinatorId").value(person.getUserId())));
+        cancel(tripId, "{\"reason\":\"Đổi lịch\"}").andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Lượt xe do " + person.getFullName() + " phụ trách."));
+        mvc.perform(post("/vehicle-trips/{id}/take-over", tripId)
+                        .header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\":\"Bàn giao ca\"}"))
+                .andExpect(status().isConflict());
+        mvc.perform(get("/coordinator/vehicle-trips").header(HttpHeaders.AUTHORIZATION, owner))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data[0].trip.id").value(tripId));
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM coordinator_assignment_history WHERE vehicle_trip_id = ?",
+                Long.class, tripId)).isEqualTo(1L);
+    }
+
+    @Test
     void tripsAreListedByTimeWindowAndRolesAreEnforced() throws Exception {
         long tripId = tripId(createLinehaul());
         String manager = bearer(testData.staff(testData.unique("dispatch.manager"), "MANAGER"), "MANAGER");

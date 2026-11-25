@@ -50,6 +50,7 @@ export function WeekBoard({ weekStart, vehicles, trips, onOpen, onReturn }: {
                   <span className={s.blockTitle}><i className={`fa-solid ${ICON[trip.tripType ?? ''] ?? 'fa-truck'}`} aria-hidden="true" /> {t(`tripWords.type.${trip.tripType}`)} · {trip.endLocationName}</span>
                   <span className={s.blockMeta}>{[trip.plannedStartAt, trip.plannedEndAt].flatMap(at => (at ? [clock.format(new Date(at))] : [])).join(' – ')}</span>
                   <span className={s.blockMeta}>{trip.code} · {t(`tripWords.status.${trip.status}`)}</span>
+                  <span className={s.blockMeta}>{trip.coordinatorName ?? t('coordAssignment.unassigned')}</span>
                   {lacksDriver(trip) && <span className={s.warn}><i className="fa-solid fa-triangle-exclamation" aria-hidden="true" /> {t('dispatch.board.noDriver')}</span>}
                 </button>
               )

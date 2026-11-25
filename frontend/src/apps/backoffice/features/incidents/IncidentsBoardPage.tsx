@@ -36,6 +36,7 @@ export default function IncidentsBoardPage() {
     { key: 'status', header: t('incidents.colStatus'), render: i => <StatusBadge tone={i.status === 'PLAN_PENDING' ? 'warning' : 'info'} label={t(`incidents.status.${i.status}`)} /> },
     { key: 'open', header: '', align: 'end', render: i => <Button size="sm" onClick={() => setOpenId(i.id)}>{t('incidents.view')}</Button> },
     { key: 'amend', header: '', align: 'end', render: i => i.deliveryFailure?.amendable && i.id !== undefined &&
+      (role === 'manager' || !i.coordinatorStaffCode || i.coordinatorStaffCode === session?.staffCode) &&
       (role === 'manager' || (i.confirmedCauseType ?? i.causeType) !== 'FORCE_MAJEURE') &&
       <Button size="sm" onClick={() => setAmending(i)}>{t('incidents.handoverCause.edit')}</Button> },
   ]
@@ -49,7 +50,8 @@ export default function IncidentsBoardPage() {
     <div className={s.page}>
       <PageHeader title={t('incidents.title')} description={t('incidents.description')} />
       {content()}
-      {openId !== undefined && <IncidentDetailModal incidentId={openId} role={role} onClose={() => setOpenId(undefined)} onChanged={() => void reload()} />}
+      {openId !== undefined && <IncidentDetailModal incidentId={openId} role={role} staffCode={session?.staffCode}
+        onClose={() => setOpenId(undefined)} onChanged={() => void reload()} />}
       {amending && <HandoverCauseDialog incident={amending} role={role} onClose={() => setAmending(undefined)} onChanged={reload} />}
     </div>
   )

@@ -10,6 +10,7 @@ import com.example.racehorse_transport.policy.BookingReviewPolicy;
 import com.example.racehorse_transport.repository.*;
 import com.example.racehorse_transport.service.BookingAssignmentService;
 import com.example.racehorse_transport.service.NotificationService;
+import com.example.racehorse_transport.service.CoordinatorWorkloadService;
 import java.time.Clock;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ public class BookingAssignmentServiceImpl implements BookingAssignmentService {
     private final BookingSpecialistHistoryRepository history;
     private final NotificationService notifications;
     private final Clock clock;
+    private final CoordinatorWorkloadService coordinatorWorkloads;
 
     @Override
     public AppUser actor(String username) {
@@ -106,6 +108,9 @@ public class BookingAssignmentServiceImpl implements BookingAssignmentService {
     @Override
     public List<StaffWorkloadResponseDto> workloads(String role, String username) {
         manager(username);
+        if ("COORDINATOR".equals(role)) {
+            return coordinatorWorkloads.workloads();
+        }
         if (!"SPECIALIST".equals(role)) {
             throw new BookingRuleException("role", "Vai trò chưa được hỗ trợ.");
         }
@@ -132,6 +137,9 @@ public class BookingAssignmentServiceImpl implements BookingAssignmentService {
 
     @Override
     public void requireNoWork(Staff person) {
+        if ("COORDINATOR".equals(person.getUser().getRole().getCode())) {
+            coordinatorWorkloads.requireNoWork(person.getUserId());
+        }
         if ("SPECIALIST".equals(person.getUser().getRole().getCode())) {
             BookingAssignmentPolicy.requireNoWork(
                     bookings.countBySpecialist_UserIdAndStatusNotIn(person.getUserId(), CLOSED_WORKLOAD));

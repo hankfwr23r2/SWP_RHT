@@ -687,6 +687,40 @@
         },
         "type" : "object"
       },
+      "ApiResponseListCoordinatorTripHorseResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CoordinatorTripHorseResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListCoordinatorTripResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CoordinatorTripResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListCostItemResponseDto" : {
         "properties" : {
           "data" : {
@@ -2768,6 +2802,72 @@
         },
         "type" : "object"
       },
+      "CoordinatorAssignmentRequestDto" : {
+        "properties" : {
+          "coordinatorId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "coordinatorId" ],
+        "type" : "object"
+      },
+      "CoordinatorTakeOverRequestDto" : {
+        "properties" : {
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
+        "type" : "object"
+      },
+      "CoordinatorTripHorseResponseDto" : {
+        "properties" : {
+          "boarded" : {
+            "type" : "boolean"
+          },
+          "documentsComplete" : {
+            "type" : "boolean"
+          },
+          "horse" : {
+            "$ref" : "#/components/schemas/TripHorseResponseDto"
+          },
+          "lastCheckAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "nextCheckAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "CoordinatorTripResponseDto" : {
+        "properties" : {
+          "currentPoint" : {
+            "type" : "string"
+          },
+          "horseCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "late" : {
+            "type" : "boolean"
+          },
+          "trip" : {
+            "$ref" : "#/components/schemas/VehicleTripResponseDto"
+          }
+        },
+        "type" : "object"
+      },
       "CostApproveRequestDto" : {
         "properties" : {
           "emergencyOverrideReason" : {
@@ -3177,6 +3277,13 @@
           },
           "point" : {
             "$ref" : "#/components/schemas/GeoPointDto"
+          },
+          "responsibleCoordinatorId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "responsibleCoordinatorName" : {
+            "type" : "string"
           },
           "stayType" : {
             "enum" : [ "ASSEMBLY", "QUARANTINE", "OVERNIGHT", "STABLING" ],
@@ -3658,6 +3765,13 @@
           "confirmable" : {
             "type" : "boolean"
           },
+          "coordinatorId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "coordinatorName" : {
+            "type" : "string"
+          },
           "decisionAt" : {
             "format" : "date-time",
             "type" : "string"
@@ -3746,6 +3860,13 @@
           },
           "bookingCutoffAt" : {
             "format" : "date-time",
+            "type" : "string"
+          },
+          "coordinatorId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "coordinatorName" : {
             "type" : "string"
           },
           "delayReason" : {
@@ -5397,6 +5518,13 @@
             "format" : "date-time",
             "type" : "string"
           },
+          "responsibleCoordinatorId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "responsibleCoordinatorName" : {
+            "type" : "string"
+          },
           "returnForBalance" : {
             "type" : "boolean"
           },
@@ -5744,6 +5872,9 @@
           },
           "confirmedCauseType" : {
             "enum" : [ "COMPANY_FAULT", "HORSE_CONDITION", "CUSTOMER_DOCS", "AGENT_FAULT", "FORCE_MAJEURE", "RECIPIENT_ABSENT" ],
+            "type" : "string"
+          },
+          "coordinatorStaffCode" : {
             "type" : "string"
           },
           "deliveryFailure" : {
@@ -8782,6 +8913,14 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "lateTripCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "openIncidentCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
           "role" : {
             "type" : "string"
           },
@@ -9359,6 +9498,16 @@
         },
         "type" : "object"
       },
+      "TripStartRequestDto" : {
+        "properties" : {
+          "earlyReason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "TripStopRequestDto" : {
         "properties" : {
           "bookingAddressId" : {
@@ -9622,6 +9771,16 @@
           "code" : {
             "type" : "string"
           },
+          "coordinatorId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "coordinatorName" : {
+            "type" : "string"
+          },
+          "coordinatorStaffCode" : {
+            "type" : "string"
+          },
           "crew" : {
             "items" : {
               "$ref" : "#/components/schemas/CrewAssignmentResponseDto"
@@ -9653,6 +9812,10 @@
           "licensePlate" : {
             "type" : "string"
           },
+          "openIncidentCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
           "plannedEndAt" : {
             "format" : "date-time",
             "type" : "string"
@@ -9680,6 +9843,9 @@
               "$ref" : "#/components/schemas/TripStopResponseDto"
             },
             "type" : "array"
+          },
+          "takeOverAllowed" : {
+            "type" : "boolean"
           },
           "tripType" : {
             "enum" : [ "PICKUP", "LINEHAUL", "DELIVERY", "TRANSFER", "DIRECT" ],
@@ -12812,6 +12978,51 @@
         "tags" : [ "booking-review-controller" ]
       }
     },
+    "/coordinator/vehicle-trips" : {
+      "get" : {
+        "operationId" : "mine_2",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListCoordinatorTripResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "coordinator-assignment-controller" ]
+      }
+    },
+    "/coordinator/vehicle-trips/{id}/horses" : {
+      "get" : {
+        "operationId" : "horses",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListCoordinatorTripHorseResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "coordinator-assignment-controller" ]
+      }
+    },
     "/cost-items" : {
       "post" : {
         "operationId" : "recordCost",
@@ -13895,6 +14106,43 @@
           }
         },
         "tags" : [ "departure-controller" ]
+      }
+    },
+    "/departures/{id}/assign-coordinator" : {
+      "post" : {
+        "operationId" : "assignDeparture",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CoordinatorAssignmentRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "coordinator-assignment-controller" ]
       }
     },
     "/departures/{id}/cancel" : {
@@ -18825,6 +19073,43 @@
         "tags" : [ "dispatch-controller" ]
       }
     },
+    "/vehicle-trips/{id}/assign-coordinator" : {
+      "post" : {
+        "operationId" : "assignTrip",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CoordinatorAssignmentRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "coordinator-assignment-controller" ]
+      }
+    },
     "/vehicle-trips/{id}/cancel" : {
       "post" : {
         "operationId" : "cancelTrip",
@@ -19127,6 +19412,15 @@
             "type" : "integer"
           }
         } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TripStartRequestDto"
+              }
+            }
+          }
+        },
         "responses" : {
           "200" : {
             "content" : {
@@ -19140,6 +19434,43 @@
           }
         },
         "tags" : [ "trip-execution-controller" ]
+      }
+    },
+    "/vehicle-trips/{id}/take-over" : {
+      "post" : {
+        "operationId" : "takeOver",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CoordinatorTakeOverRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "coordinator-assignment-controller" ]
       }
     },
     "/vehicles" : {

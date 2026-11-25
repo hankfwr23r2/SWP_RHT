@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.service.CoordinatorAssignmentService;
 import com.example.racehorse_transport.policy.IncidentPolicy;
 import com.example.racehorse_transport.dto.incident.IncidentResponseDto;
 import com.example.racehorse_transport.entity.Incident;
@@ -31,12 +32,14 @@ public class IncidentActionServiceImpl implements IncidentActionService {
     private final IncidentEvidenceService evidence;
     private final StaffRepository staff;
     private final Clock clock;
+    private final CoordinatorAssignmentService coordinators;
     private final HealthLogService healthLogs;
     private final IncidentReturnService returns;
 
     @Override
     @Transactional
     public IncidentResponseDto swapVehicle(Long incidentId, Long vehicleId, String username) {
+        coordinators.requireIncidentWrite(incidentId, username);
         IncidentPlan plan = plans.lockApproved(incidentId, IncidentResolutionType.TRANSFER_VEHICLE, null);
         evidence.requireVehicleSwapRecord(incidentId);
         Long actor = staff.findByUser_Username(username)
@@ -62,6 +65,7 @@ public class IncidentActionServiceImpl implements IncidentActionService {
     @Override
     @Transactional
     public IncidentResponseDto recordVetResult(Long incidentId, Long planId, String note, String username) {
+        coordinators.requireIncidentWrite(incidentId, username);
         IncidentPlan plan = plans.lockApproved(incidentId, IncidentResolutionType.VET_TREATMENT, planId);
         if (plan.getHandlerParty() == null) {
             throw new DispatchRuleException("handlerPartyId", "Phương án chưa có đối tác thú y.", true);

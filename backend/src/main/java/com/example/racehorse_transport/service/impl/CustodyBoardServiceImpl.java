@@ -60,6 +60,7 @@ public class CustodyBoardServiceImpl implements CustodyBoardService {
     private final SystemConfigService configs;
     private final Clock clock;
     private final BookingRepository bookings;
+    private final com.example.racehorse_transport.service.CoordinatorRecipientService coordinators;
 
     @Override
     @Transactional(readOnly = true)
@@ -114,6 +115,8 @@ public class CustodyBoardServiceImpl implements CustodyBoardService {
                 || line.getBooking().getStatus() == BookingStatus.CONFIRMED
                     && stay.getStayType() == com.example.racehorse_transport.entity.enums.HorseStayType.ASSEMBLY
                     && bookings.hasOutstandingPickupReturnPayments(line.getBooking().getId()));
+        var owner = stay == null ? moving == null || moving.getVehicleTrip() == null ? null : moving.getVehicleTrip().getCoordinator()
+                : coordinators.atHub(line);
         return new CustodyRowResponseDto(line.getId(), line.getHorse().getName(), line.getBooking().getId(), line.getBooking().getCode(),
                 holder, holder == CustodyHolder.PARTY ? last.getToParty().getDisplayName() : last.getHandledBy().getFullName(), last.getHandedAt(),
                 stay == null ? null : stay.getStayType(), moving == null ? null : moving.getLegType(),
@@ -125,7 +128,8 @@ public class CustodyBoardServiceImpl implements CustodyBoardService {
                 moving != null && moving.getAgentParty() != null && moving.getLegType() == HorseLegType.DELIVERY ? moving.getId() : null,
                 waitingAtPickup, balanceContact, stay == null ? null : stay.getBalanceHoldAt(),
                 canResolveUnclaimed(stay, now) ? stay.getId() : null,
-                stay != null && HealthLogPolicy.canRecordStay(stay.getLocation().getLocationType(), stay.getStayType(), stay.getOperatorParty() != null) ? stay.getId() : null);
+                stay != null && HealthLogPolicy.canRecordStay(stay.getLocation().getLocationType(), stay.getStayType(), stay.getOperatorParty() != null) ? stay.getId() : null,
+                owner == null ? null : owner.getUserId(), owner == null ? null : owner.getFullName());
     }
 
     private boolean canResolveUnclaimed(HorseStay stay, Instant now) {

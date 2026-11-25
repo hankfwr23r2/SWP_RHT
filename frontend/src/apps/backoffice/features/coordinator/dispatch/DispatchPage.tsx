@@ -1,6 +1,7 @@
 // Điều độ (điều phối viên): đơn chờ xếp xe và lượt xe trong tuần (docs/MAN_HINH_VA_TAC_DONG.md mục 3.9)
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useAuth } from '@shared/auth/AuthContext'
 import { PickupMissPanel } from '@shared/components/PickupMissPanel'
 import { dispatchApi, type DispatchBooking, type DispatchHorse, type DispatchVehicle, type VehicleTrip } from '@shared/api/dispatch'
 import { BookingJourney } from '@shared/components/HorseJourney'
@@ -35,6 +36,8 @@ const today = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_
 
 export default function DispatchPage() {
   const { t } = useTranslation()
+  const { session } = useAuth()
+  const [onlyMine, setOnlyMine] = useState(false)
   const [weekStart, setWeekStart] = useState(() => mondayOf(today()))
   const [grouping, setGrouping] = useState(false)
   // true: lập lượt mới; một xe: lập lượt đưa xe đó về
@@ -62,7 +65,9 @@ export default function DispatchPage() {
         <WaitingList bookings={data.bookings} next={data.next} onWeek={setWeekStart} onJourney={setJourneyOf}
           onAgent={(booking, horse) => setAgentOf({ bookingId: booking.id ?? 0, bookingHorseId: horse.bookingHorseId ?? 0 })}
           onHub={(booking, horse) => setHubOf({ booking, horse })} />
-        <WeekBoard weekStart={weekStart} vehicles={data.vehicles} trips={data.trips} onOpen={(trip: VehicleTrip) => setOpenTripId(trip.id)} onReturn={setCreating} />
+        <WeekBoard weekStart={weekStart} vehicles={data.vehicles}
+          trips={onlyMine ? data.trips.filter(trip => trip.coordinatorStaffCode != null && trip.coordinatorStaffCode === session?.staffCode) : data.trips}
+          onOpen={(trip: VehicleTrip) => setOpenTripId(trip.id)} onReturn={setCreating} />
       </div>
     )
   }
@@ -79,6 +84,7 @@ export default function DispatchPage() {
               {control => <Input {...control} type="date" value={weekStart} onChange={e => e.target.value && setWeekStart(mondayOf(e.target.value))} />}
             </Field>
             <Button aria-label={t('dispatch.board.next')} icon={<i className="fa-solid fa-chevron-right" />} onClick={() => setWeekStart(addDays(weekStart, 7))} />
+            <Button aria-pressed={onlyMine} onClick={() => setOnlyMine(value => !value)}>{t('coordAssignment.mine')}</Button>
             <Button variant="primary" icon={<i className="fa-solid fa-route" />} onClick={() => setGrouping(true)}>{t('dispatch.board.group')}</Button>
             <Button icon={<i className="fa-solid fa-plus" />} onClick={() => setCreating(true)}>{t('dispatch.newTrip')}</Button>
           </div>

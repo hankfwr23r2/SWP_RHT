@@ -241,8 +241,13 @@ class TripExecutionFlowTest {
                 .andExpect(jsonPath("$.message").value("Lượt chở ngựa phải có hộ tống đã nhận việc."));
 
         acknowledge(escort);
+        mvc.perform(post("/vehicle-trips/{id}/start", trip).header(HttpHeaders.AUTHORIZATION, driver))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.data.earlyReason").exists());
         act(driver, "/vehicle-trips/" + trip + "/start").andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.trip.status").value("IN_PROGRESS"));
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM audit_log WHERE target_table = 'vehicle_trip' AND target_id = ? AND action = 'EARLY_TRIP_START'",
+                Long.class, trip)).isEqualTo(1L);
     }
 
     @Test
@@ -751,6 +756,10 @@ class TripExecutionFlowTest {
     }
 
     private ResultActions act(String token, String path) throws Exception {
+        if (path.endsWith("/start")) {
+            return mvc.perform(post(path).header(HttpHeaders.AUTHORIZATION, token)
+                    .contentType(MediaType.APPLICATION_JSON).content("{\"earlyReason\":\"Đã sẵn sàng xuất phát sớm\"}"));
+        }
         return mvc.perform(HandoverEvidenceFixtures.complete(mvc, jdbc, jwtUtils, path).header(HttpHeaders.AUTHORIZATION, token));
     }
 

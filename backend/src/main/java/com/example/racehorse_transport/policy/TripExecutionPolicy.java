@@ -12,6 +12,10 @@ import java.util.Collection;
 // Quy tắc thực hiện lượt xe tại điểm dừng (B2), hàm thuần
 public final class TripExecutionPolicy {
 
+    public static boolean startsEarly(java.time.Instant planned, java.time.Instant actual, int thresholdMinutes) {
+        return actual.isBefore(planned.minusSeconds(thresholdMinutes * 60L));
+    }
+
     private TripExecutionPolicy() {}
 
     // Xe xuất phát khi lượt chưa chạy và tài xế đã xác nhận nhận việc (GĐ5)

@@ -1412,6 +1412,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/coordinator/vehicle-trips": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["mine_2"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/coordinator/vehicle-trips/{id}/horses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["horses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/cost-items": {
         parameters: {
             query?: never;
@@ -1870,6 +1902,22 @@ export interface paths {
         get: operations["suggestions"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/departures/{id}/assign-coordinator": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["assignDeparture"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4020,6 +4068,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vehicle-trips/{id}/assign-coordinator": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["assignTrip"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/vehicle-trips/{id}/cancel": {
         parameters: {
             query?: never;
@@ -4158,6 +4222,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["start"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vehicle-trips/{id}/take-over": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["takeOver"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4486,6 +4566,16 @@ export interface components {
         };
         ApiResponseListBookingSummaryResponseDto: {
             data?: components["schemas"]["BookingSummaryResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListCoordinatorTripHorseResponseDto: {
+            data?: components["schemas"]["CoordinatorTripHorseResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListCoordinatorTripResponseDto: {
+            data?: components["schemas"]["CoordinatorTripResponseDto"][];
             message?: string;
             status?: string;
         };
@@ -5183,6 +5273,30 @@ export interface components {
             hotline?: string;
             officeAddress?: string;
         };
+        CoordinatorAssignmentRequestDto: {
+            /** Format: int64 */
+            coordinatorId: number;
+            reason?: string;
+        };
+        CoordinatorTakeOverRequestDto: {
+            reason: string;
+        };
+        CoordinatorTripHorseResponseDto: {
+            boarded?: boolean;
+            documentsComplete?: boolean;
+            horse?: components["schemas"]["TripHorseResponseDto"];
+            /** Format: date-time */
+            lastCheckAt?: string;
+            /** Format: date-time */
+            nextCheckAt?: string;
+        };
+        CoordinatorTripResponseDto: {
+            currentPoint?: string;
+            /** Format: int32 */
+            horseCount?: number;
+            late?: boolean;
+            trip?: components["schemas"]["VehicleTripResponseDto"];
+        };
         CostApproveRequestDto: {
             emergencyOverrideReason?: string;
         };
@@ -5350,6 +5464,9 @@ export interface components {
             nextCheckAt?: string;
             placeName?: string;
             point?: components["schemas"]["GeoPointDto"];
+            /** Format: int64 */
+            responsibleCoordinatorId?: number;
+            responsibleCoordinatorName?: string;
             /** @enum {string} */
             stayType?: "ASSEMBLY" | "QUARANTINE" | "OVERNIGHT" | "STABLING";
             tripCode?: string;
@@ -5513,6 +5630,9 @@ export interface components {
             /** Format: int32 */
             committedStallCount?: number;
             confirmable?: boolean;
+            /** Format: int64 */
+            coordinatorId?: number;
+            coordinatorName?: string;
             /** Format: date-time */
             decisionAt?: string;
             delayReason?: string;
@@ -5551,6 +5671,9 @@ export interface components {
             bookedStallCount?: number;
             /** Format: date-time */
             bookingCutoffAt?: string;
+            /** Format: int64 */
+            coordinatorId?: number;
+            coordinatorName?: string;
             delayReason?: string;
             /** Format: date-time */
             delayedAt?: string;
@@ -6182,6 +6305,9 @@ export interface components {
             plannedStartAt?: string;
             /** Format: date-time */
             readyAt?: string;
+            /** Format: int64 */
+            responsibleCoordinatorId?: number;
+            responsibleCoordinatorName?: string;
             returnForBalance?: boolean;
             /** @enum {string} */
             stayType?: "ASSEMBLY" | "QUARANTINE" | "OVERNIGHT" | "STABLING";
@@ -6302,6 +6428,7 @@ export interface components {
             causeType?: "COMPANY_FAULT" | "HORSE_CONDITION" | "CUSTOMER_DOCS" | "AGENT_FAULT" | "FORCE_MAJEURE" | "RECIPIENT_ABSENT";
             /** @enum {string} */
             confirmedCauseType?: "COMPANY_FAULT" | "HORSE_CONDITION" | "CUSTOMER_DOCS" | "AGENT_FAULT" | "FORCE_MAJEURE" | "RECIPIENT_ABSENT";
+            coordinatorStaffCode?: string;
             deliveryFailure?: components["schemas"]["DeliveryFailureDto"];
             /** Format: date */
             departureDate?: string;
@@ -7440,6 +7567,10 @@ export interface components {
         StaffWorkloadResponseDto: {
             /** Format: int64 */
             assignedCount?: number;
+            /** Format: int64 */
+            lateTripCount?: number;
+            /** Format: int64 */
+            openIncidentCount?: number;
             role?: string;
             /** Format: int64 */
             staffId?: number;
@@ -7664,6 +7795,9 @@ export interface components {
             /** @enum {string} */
             tripType?: "PICKUP" | "LINEHAUL" | "DELIVERY" | "TRANSFER" | "DIRECT";
         };
+        TripStartRequestDto: {
+            earlyReason?: string;
+        };
         TripStopRequestDto: {
             /** Format: int64 */
             bookingAddressId?: number;
@@ -7770,6 +7904,10 @@ export interface components {
             /** Format: date-time */
             actualStartAt?: string;
             code?: string;
+            /** Format: int64 */
+            coordinatorId?: number;
+            coordinatorName?: string;
+            coordinatorStaffCode?: string;
             crew?: components["schemas"]["CrewAssignmentResponseDto"][];
             /** Format: int64 */
             departureId?: number;
@@ -7782,6 +7920,8 @@ export interface components {
             /** Format: int64 */
             id?: number;
             licensePlate?: string;
+            /** Format: int64 */
+            openIncidentCount?: number;
             /** Format: date-time */
             plannedEndAt?: string;
             /** Format: date-time */
@@ -7793,6 +7933,7 @@ export interface components {
             /** @enum {string} */
             status?: "PLANNED" | "DISPATCHED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
             stops?: components["schemas"]["TripStopResponseDto"][];
+            takeOverAllowed?: boolean;
             /** @enum {string} */
             tripType?: "PICKUP" | "LINEHAUL" | "DELIVERY" | "TRANSFER" | "DIRECT";
             /** Format: int64 */
@@ -10044,6 +10185,48 @@ export interface operations {
             };
         };
     };
+    mine_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListCoordinatorTripResponseDto"];
+                };
+            };
+        };
+    };
+    horses: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListCoordinatorTripHorseResponseDto"];
+                };
+            };
+        };
+    };
     recordCost: {
         parameters: {
             query?: never;
@@ -10918,6 +11101,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseDepartureSuggestionResponse"];
+                };
+            };
+        };
+    };
+    assignDeparture: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CoordinatorAssignmentRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
                 };
             };
         };
@@ -14750,6 +14959,32 @@ export interface operations {
             };
         };
     };
+    assignTrip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CoordinatorAssignmentRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
     cancelTrip: {
         parameters: {
             query?: never;
@@ -14977,7 +15212,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TripStartRequestDto"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -14986,6 +15225,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseCrewTripResponseDto"];
+                };
+            };
+        };
+    };
+    takeOver: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CoordinatorTakeOverRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
                 };
             };
         };

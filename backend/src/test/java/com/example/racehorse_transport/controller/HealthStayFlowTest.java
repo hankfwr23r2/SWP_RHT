@@ -199,7 +199,7 @@ class HealthStayFlowTest {
         log(stops.get(2), null, "NORMAL", "REFUSED", "REDUCED").andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.healthStatus").value("WATCH"));
         entityManager.flush();
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM notification_recipient r JOIN notification n ON n.id = r.notification_id WHERE r.user_id = ? AND n.title NOT LIKE 'Vượt%'", Integer.class, coordinatorStaff.getUserId()))
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM notification_recipient r JOIN notification n ON n.id = r.notification_id WHERE r.user_id = ? AND n.title LIKE 'Ngựa bỏ uống%'", Integer.class, coordinatorStaff.getUserId()))
                 .isEqualTo(1);
         mvc.perform(get("/booking-horses/{id}/health-logs", line).header(HttpHeaders.AUTHORIZATION, coordinator))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data[0].healthStatus").value("WATCH"));
@@ -397,7 +397,8 @@ class HealthStayFlowTest {
             mvc.perform(post("/crew-assignments/{id}/acknowledge", ((Number) JsonPath.read(mine, "$.data[0].id")).longValue()).header(HttpHeaders.AUTHORIZATION, member))
                     .andExpect(status().isOk());
         }
-        act("/vehicle-trips/" + trip + "/start").andExpect(status().isOk());
+        mvc.perform(post("/vehicle-trips/{id}/start", trip).header(HttpHeaders.AUTHORIZATION, driver).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"earlyReason\":\"Đã sẵn sàng xuất phát sớm\"}")).andExpect(status().isOk());
         act("/trip-stops/" + stops.get(0) + "/arrive").andExpect(status().isOk());
         act("/trip-stops/" + stops.get(0) + "/depart").andExpect(status().isOk());
         act("/trip-stops/" + stops.get(1) + "/arrive").andExpect(status().isOk());

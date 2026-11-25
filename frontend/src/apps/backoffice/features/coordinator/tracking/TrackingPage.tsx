@@ -5,7 +5,7 @@ import { custodyApi, type CustodyRow } from '@shared/api/custody'
 import { dispatchApi } from '@shared/api/dispatch'
 import { HealthCheckTaskAction } from '@backoffice/shared/HealthCheckTaskAction'
 import { StayHealthAction } from '@backoffice/shared/StayHealthAction'
-import { HorseHealthHistory } from './HorseHealthHistory'
+import { HorseHealthHistory } from '@backoffice/shared/HorseHealthHistory'
 import { BookingJourney } from '@shared/components/HorseJourney'
 import { useLoad } from '@shared/hooks/useLoad'
 import { formatDateTime } from '@shared/lib/format'
@@ -70,6 +70,7 @@ export default function TrackingPage() {
               <p className={s.line}><i className="fa-solid fa-location-dot" aria-hidden="true" /> {row.placeName ?? t('tracking.unknownPlace')}{row.tripCode && ` · ${row.tripCode}`}</p>
               <p className={s.line}><i className="fa-solid fa-user-check" aria-hidden="true" /> {t(row.holder === 'PARTY' ? 'tracking.heldByPartner' : 'tracking.heldBy', { name: row.holderName })}
                 {row.holderSince && ` · ${t('tracking.since', { at: formatDateTime(new Date(row.holderSince)) })}`}</p>
+              {row.responsibleCoordinatorName && <p className={s.line}>{t('coordAssignment.owner')} · {row.responsibleCoordinatorName}</p>}
               <p className={s.line}><i className="fa-solid fa-heart-pulse" aria-hidden="true" /> {row.lastCheckAt ? t('tracking.lastCheck', { at: formatDateTime(new Date(row.lastCheckAt)) }) : t('tracking.noCheck')}
                 {row.nextCheckAt && row.holder === 'COMPANY' && ` · ${t('tracking.nextCheck', { at: formatDateTime(new Date(row.nextCheckAt)) })}`}</p>
               <div className={s.chips}>

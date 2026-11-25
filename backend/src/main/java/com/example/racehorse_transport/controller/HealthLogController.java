@@ -5,7 +5,7 @@ import com.example.racehorse_transport.dto.health.HealthLogRequestDto;
 import com.example.racehorse_transport.dto.health.HealthLogResponseDto;
 import com.example.racehorse_transport.dto.health.HorseStayResponseDto;
 import com.example.racehorse_transport.service.HealthLogService;
-import com.example.racehorse_transport.service.HorseStayService;
+import com.example.racehorse_transport.service.HorseStayQueryService;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class HealthLogController {
 
     private final HealthLogService healthLogs;
-    private final HorseStayService stays;
+    private final HorseStayQueryService stays;
 
     @PostMapping("/health-logs")
     @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT', 'COORDINATOR')")

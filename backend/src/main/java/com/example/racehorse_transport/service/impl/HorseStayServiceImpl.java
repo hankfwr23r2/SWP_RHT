@@ -310,14 +310,4 @@ public class HorseStayServiceImpl implements HorseStayService {
                 .map(HorseStayResponseDto::from).toList();
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<HorseStayResponseDto> activeAt(Long locationId) {
-        var unpaid = java.util.Set.copyOf(stays.findUnpaidAssemblyStayIds(locationId));
-        var sick = java.util.Set.copyOf(stays.findStaysWithSickHorses(locationId));
-        return stays.findByLocation_IdAndActualStartAtIsNotNullAndActualEndAtIsNullOrderByActualStartAt(locationId).stream()
-                .map(stay -> HorseStayResponseDto.from(stay, stay.getBalanceHoldAt() != null || unpaid.contains(stay.getId()),
-                        HubStallPolicy.isCompanyHubStay(stay), HubStallPolicy.suggestIsolation(stay, sick.contains(stay.getId()))))
-                .toList();
-    }
 }

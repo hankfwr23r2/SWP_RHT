@@ -24,6 +24,17 @@ public interface DepartureRepository extends JpaRepository<Departure, Long> {
     @Query("SELECT d FROM Departure d WHERE d.id = :id")
     Optional<Departure> findForUpdate(@Param("id") Long id);
 
+    @Query("""
+            select d.id from Departure d where d.coordinator is null and d.status in :statuses
+            and coalesce(d.revisedDepartureAt, d.plannedDepartureAt) between :now and :cutoff
+            and (d.coordinatorRemindedOn is null or d.coordinatorRemindedOn < :today)
+            order by d.id
+            """)
+    List<Long> findUnassignedReminderCandidates(Collection<DepartureStatus> statuses,
+            Instant now, Instant cutoff, java.time.LocalDate today);
+
+    boolean existsByCoordinator_UserIdAndStatusIn(Long staffId, java.util.Collection<DepartureStatus> statuses);
+
     @Query("SELECT d FROM Departure d JOIN FETCH d.route r JOIN FETCH r.origin o JOIN FETCH r.destination dest LEFT JOIN FETCH o.counterpartCountry LEFT JOIN FETCH dest.counterpartCountry WHERE d.id = :id")
     Optional<Departure> findWithRoute(@Param("id") Long id);
 

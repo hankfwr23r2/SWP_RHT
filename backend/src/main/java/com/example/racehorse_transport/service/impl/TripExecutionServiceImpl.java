@@ -48,9 +48,9 @@ public class TripExecutionServiceImpl implements TripExecutionService {
 
     @Override
     @Transactional
-    public void start(Long vehicleTripId, String username) {
+    public void start(Long vehicleTripId, String username, String earlyReason) {
         VehicleTrip trip = trips.findForUpdate(vehicleTripId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lượt xe " + vehicleTripId));
-        requireCrew(trip.getId(), username);
+        CrewAssignment member = requireCrew(trip.getId(), username);
         TripExecutionPolicy.requireStartable(trip.getStatus(),
                 crew.existsByVehicleTrip_IdAndCrewRoleAndStatus(trip.getId(), CrewRole.DRIVER, CrewAssignmentStatus.ACKNOWLEDGED));
         if (trip.getTripType() == VehicleTripType.DELIVERY && legs.hasIncompleteMultiPlaceDelivery(trip.getId())) {
@@ -69,8 +69,13 @@ public class TripExecutionServiceImpl implements TripExecutionService {
                     + ". Xếp sơ đồ khoang trước khi xuất phát.", true);
         }
         tripReadiness.requireReadyToStart(trip);
+        var startedAt = clock.instant();
+        boolean early = readiness.recordEarlyStart(trip, startedAt, earlyReason, member);
         trip.setStatus(VehicleTripStatus.IN_PROGRESS);
-        trip.setActualStartAt(clock.instant());
+        trip.setActualStartAt(startedAt);
+        if (early) {
+            notices.notifyEarlyStart(trip, earlyReason.strip());
+        }
         if (trip.getTripType() == VehicleTripType.LINEHAUL) {
             notices.notifyLinehaulDeparted(trip);
         }

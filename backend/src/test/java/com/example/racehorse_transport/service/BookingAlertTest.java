@@ -56,11 +56,12 @@ class BookingAlertTest {
         line.getHorse().setName("Sao");
         line.setPickupMissReason("Người gửi vắng");
         line.setPickupChoiceDueAt(NOW);
-        when(staff.findUserIdsByRoleAndStatus("COORDINATOR", AppUserStatus.ACTIVE)).thenReturn(List.of(10L, 20L));
+        var coordinators = mock(com.example.racehorse_transport.service.CoordinatorRecipientService.class);
+        when(coordinators.forTrip(null)).thenReturn(List.of(10L, 20L));
         var evidence = new PickupMissEvidenceServiceImpl(mock(DocumentService.class), configs,
-                mock(AuditService.class), staff, notifications);
+                mock(AuditService.class), coordinators, notifications);
 
-        evidence.record(line, null, null, null, NOW.minusSeconds(1), 20L);
+        evidence.record(line, null, null, null, NOW.minusSeconds(1), 20L, null);
 
         verify(notifications).notify(eq(List.of(10L)), eq(1L), eq("Đón hụt"),
                 argThat(message -> message.contains("Sao") && message.contains("Người gửi vắng")

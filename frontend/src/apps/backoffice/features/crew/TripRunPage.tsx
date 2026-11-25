@@ -23,6 +23,7 @@ import { HandoverPapersPanel } from './HandoverPapersPanel'
 import { HorseFeedingDetails } from './HorseFeedingDetails'
 import { StopHealthPanel } from './StopHealthPanel'
 import { StableHandoverDialog } from './StableHandoverDialog'
+import { TripStartForm } from './TripStartForm'
 import { TripCompletionDialog } from './TripCompletionDialog'
 import { TripIncidentPanel } from './TripIncidentPanel'
 import { useTripIncidents } from './useTripIncidents'
@@ -175,11 +176,8 @@ export default function TripRunPage() {
         description={`${trip.licensePlate} · ${trip.startLocationName} → ${trip.endLocationName}`} />
       <StatusBadge tone={trip.status === 'COMPLETED' ? 'success' : trip.status === 'IN_PROGRESS' ? 'info' : 'neutral'} label={t(`tripWords.status.${trip.status}`)} />
       {tripBlocked && <p className={s.warning} role="status">{t('myTrips.run.incident.tripBlocked')}</p>}
-      {canStart(data) && (
-        <Button variant="primary" size="lg" fullWidth loading={busy} onClick={() => run(() => tripExecutionApi.start(tripId), t('myTrips.run.done.started'))}>
-          {t('myTrips.run.start')}
-        </Button>
-      )}
+      {canStart(data) && <TripStartForm busy={busy}
+        onStart={reason => run(() => tripExecutionApi.start(tripId, reason), t('myTrips.run.done.started'))} />}
       <ol className={s.list} aria-label={t('myTrips.run.stops')}>
         {(trip.stops ?? []).map(stop => {
           const state = stopState(stop)

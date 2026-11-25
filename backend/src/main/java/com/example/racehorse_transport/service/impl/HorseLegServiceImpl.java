@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.service.CoordinatorAssignmentService;
 import com.example.racehorse_transport.policy.DepartureDelayPolicy;
 import com.example.racehorse_transport.service.RedeliveryChargeService;
 import com.example.racehorse_transport.dto.dispatch.DispatchBookingResponseDto;
@@ -56,7 +57,7 @@ public class HorseLegServiceImpl implements HorseLegService {
     private static final Set<HorseLegStatus> INACTIVE = Set.of(HorseLegStatus.CANCELLED, HorseLegStatus.FAILED);
 
     private final HorseLegRepository legs;
-    private final VehicleTripRepository trips;
+    private final CoordinatorAssignmentService coordinators;
     private final TripStopRepository stops;
     private final BookingHorseRepository bookingHorses;
     private final BookingAddressRepository bookingAddresses;
@@ -98,7 +99,7 @@ public class HorseLegServiceImpl implements HorseLegService {
     @Override
     @Transactional(readOnly = true)
     public List<TripHorseResponseDto> horsesOnTrip(Long vehicleTripId) {
-        if (!trips.existsById(vehicleTripId)) {
+        if (!coordinators.tripExists(vehicleTripId)) {
             throw new ResourceNotFoundException("Không tìm thấy lượt xe " + vehicleTripId);
         }
         // Gồm cả con giao thất bại: còn trên xe tới khi giao vào hub (B5)
@@ -109,8 +110,7 @@ public class HorseLegServiceImpl implements HorseLegService {
     @Transactional
     public List<TripHorseResponseDto> assign(Long vehicleTripId, HorseLegRequestDto request, String username) {
         // Khóa lượt xe: hai người gán ngựa cùng lúc không vượt sức chứa
-        VehicleTrip trip = trips.findForUpdate(vehicleTripId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lượt xe " + vehicleTripId));
+        VehicleTrip trip = coordinators.requireTripWrite(vehicleTripId, username);
         requireNotStarted(trip);
         BookingHorse line = bookingHorses.findById(request.bookingHorseId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngựa trong đơn " + request.bookingHorseId()));
@@ -220,12 +220,12 @@ public class HorseLegServiceImpl implements HorseLegService {
 
     @Override
     @Transactional
-    public List<TripHorseResponseDto> cancel(Long horseLegId) {
+    public List<TripHorseResponseDto> cancel(Long horseLegId, String username) {
         HorseLeg leg = legs.findWithTrip(horseLegId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chặng " + horseLegId));
         if (leg.getStatus() != HorseLegStatus.PLANNED) {
             throw new DispatchRuleException("status", "Chỉ gỡ được chặng chưa chạy.", true);
         }
-        VehicleTrip trip = trips.findForUpdate(leg.getVehicleTrip().getId()).orElseThrow();
+        VehicleTrip trip = coordinators.requireTripWrite(leg.getVehicleTrip().getId(), username);
         requireNotStarted(trip);
         boolean hasLaterLeg = legs.findByBookingHorse_IdOrderBySequenceNumber(leg.getBookingHorse().getId()).stream()
                 .anyMatch(l -> l.getSequenceNumber() > leg.getSequenceNumber() && !INACTIVE.contains(l.getStatus()));

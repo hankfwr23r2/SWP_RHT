@@ -447,7 +447,11 @@ class HubSelfFlowTest {
     }
 
     private ResultActions act(String token, String path) throws Exception {
-        return mvc.perform(post(path).header(HttpHeaders.AUTHORIZATION, token));
+        var request = post(path).header(HttpHeaders.AUTHORIZATION, token);
+        if (path.endsWith("/start")) {
+            request.contentType(MediaType.APPLICATION_JSON).content("{\"earlyReason\":\"Đã sẵn sàng xuất phát sớm\"}");
+        }
+        return mvc.perform(request);
     }
 
     private String content(org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder request, String token) throws Exception {

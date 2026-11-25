@@ -1,6 +1,7 @@
 // Chữ hiển thị tiếng Việt, chia theo khu vực. Khóa mới đặt vào file của khu vực dùng nó.
 // vi và en phải có cùng các khóa (locales.test.ts).
 import { common } from './common'
+import { coordinatorAssignment } from './coordinatorAssignment'
 import { customer } from './customer'
 import { staff } from './staff'
 import { staffDispatch } from './staffDispatch'
@@ -16,6 +17,7 @@ import { staffNetwork } from './staffNetwork'
 
 export const vi = {
   ...common,
+  ...coordinatorAssignment,
   ...customer,
   ...staff, ...staffDispatch, ...staffManager,
   ...manager,

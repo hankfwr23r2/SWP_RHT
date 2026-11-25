@@ -15,11 +15,12 @@ public interface DispatchService {
 
     VehicleTripResponseDto trip(Long id);
 
+    List<VehicleTripResponseDto> ownedTrips(Long staffId);
+
     // LINEHAUL chép điểm dừng từ tuyến của chuyến; loại khác lấy điểm dừng điều phối gửi lên
-    VehicleTripResponseDto createTrip(VehicleTripCreateRequestDto request);
+    VehicleTripResponseDto createTrip(VehicleTripCreateRequestDto request, String username);
 
     // Hủy lượt chưa chạy và chưa có ngựa; gỡ tổ lái khỏi lượt
-    VehicleTripResponseDto cancelTrip(Long id, VehicleTripCancelRequestDto request);
 
     // Đổi xe do sự cố (B4, TRANSFER_VEHICLE): lượt đang chạy chuyển sang xe khác; ngựa, điểm dừng, tổ lái giữ nguyên.
     // Xe mới ACTIVE, không trùng giờ với lượt khác từ lúc này tới hết lượt, đủ chỗ cho sơ đồ khoang đang dùng

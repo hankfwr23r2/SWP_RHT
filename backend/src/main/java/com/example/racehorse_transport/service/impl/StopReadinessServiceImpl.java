@@ -1,6 +1,9 @@
 package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.entity.HorseHealthLog;
+import com.example.racehorse_transport.entity.CrewAssignment;
+import com.example.racehorse_transport.entity.VehicleTrip;
+import com.example.racehorse_transport.entity.enums.CrewRole;
 import com.example.racehorse_transport.entity.HorseLeg;
 import com.example.racehorse_transport.entity.TripStop;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
@@ -84,6 +87,23 @@ public class StopReadinessServiceImpl implements StopReadinessService {
             stablingTimeline.chargePlannedStaysOnDeparture(stop.getId(), clock.instant());
         }
         return earlyOvernightDeparture;
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public boolean recordEarlyStart(VehicleTrip trip, Instant startedAt, String reason, CrewAssignment member) {
+        if (!TripExecutionPolicy.startsEarly(trip.getPlannedStartAt(), startedAt, configs.getInt("EARLY_START_MINUTES"))) {
+            return false;
+        }
+        if (member.getCrewRole() != CrewRole.DRIVER) {
+            throw new org.springframework.security.access.AccessDeniedException("Tài xế phải xác nhận khi xuất phát sớm.");
+        }
+        if (reason == null || reason.isBlank()) {
+            throw new DispatchRuleException("earlyReason", "Nhập lý do xuất phát sớm.");
+        }
+        audit.record(member.getStaff().getUserId(), "EARLY_TRIP_START", "vehicle_trip", trip.getId(), null,
+                Map.of("reason", reason.strip(), "plannedStartAt", trip.getPlannedStartAt(), "actualStartAt", startedAt));
+        return true;
     }
 
     private void closeEmptyHubOut(TripStop stop) {

@@ -22,7 +22,8 @@ export type PickupMissReport = Schemas['HandoverRefusalRequestDto']
 
 export const tripExecutionApi = {
   trip: (tripId: number) => get<CrewTrip>(`/crew/vehicle-trips/${tripId}`),
-  start: (tripId: number) => post<CrewTrip>(`/vehicle-trips/${tripId}/start`),
+  start: (tripId: number, earlyReason?: string) =>
+    post<CrewTrip>(`/vehicle-trips/${tripId}/start`, earlyReason ? { earlyReason } : undefined),
   complete: async (tripId: number, endVehicleCondition: string, endVehicleNote?: string) =>
     readFormResponse<CrewTrip>(await apiClient.post(`/vehicle-trips/${tripId}/complete`, { endVehicleCondition, endVehicleNote }, formResponseOptions)),
   arrive: (stopId: number) => post<CrewTrip>(`/trip-stops/${stopId}/arrive`),

@@ -13,7 +13,7 @@ public interface StallPlanService {
     StallPlanResponseDto suggest(Long vehicleTripId);
 
     // Lưu cả xe khi lượt xe chưa xuất phát; sơ đồ gửi kèm khác dữ liệu thật thì 409
-    StallPlanResponseDto apply(Long vehicleTripId, StallPlanApplyRequestDto request);
+    StallPlanResponseDto apply(Long vehicleTripId, StallPlanApplyRequestDto request, String username);
 
     // Gọi khi gán ngựa vào xe (đang giữ khóa lượt xe): đặt con mới vào chỗ trống, không đủ thì dồn các con chưa lên xe
     void placeNew(HorseLeg leg);

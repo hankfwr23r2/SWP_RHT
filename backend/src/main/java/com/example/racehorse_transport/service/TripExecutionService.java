@@ -5,7 +5,7 @@ package com.example.racehorse_transport.service;
 public interface TripExecutionService {
 
     // Kiểm tài xế đã nhận việc, đủ giấy (DocumentCompletenessService) và bảo hiểm CONFIRMED của các đơn đón trên lượt
-    void start(Long vehicleTripId, String username);
+    void start(Long vehicleTripId, String username, String earlyReason);
 
     Long arrive(Long tripStopId, String username);
 

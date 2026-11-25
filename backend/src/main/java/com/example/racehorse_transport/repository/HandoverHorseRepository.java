@@ -15,6 +15,9 @@ import java.util.Optional;
 
 public interface HandoverHorseRepository extends JpaRepository<HandoverHorse, HandoverHorseId> {
 
+    Optional<HandoverHorse> findFirstByHorseLeg_BookingHorse_IdAndHandover_HandoverTypeAndHandover_StatusAndMicrochipMatchedTrueOrderByHandover_HandedAtDescHandover_IdDesc(
+            Long bookingHorseId, HandoverType type, HandoverStatus status);
+
     List<HandoverHorse> findById_HandoverId(Long handoverId);
 
     @Query("""

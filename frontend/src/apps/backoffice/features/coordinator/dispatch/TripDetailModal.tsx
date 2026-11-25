@@ -1,6 +1,7 @@
 // Chi tiết một lượt xe: điểm dừng, tổ lái (phân công, gỡ), ngựa trên xe (xếp, gỡ), hủy lượt
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useAuth } from '@shared/auth/AuthContext'
 import { dispatchApi, type CrewAssignment, type DispatchBooking, type TripHorse } from '@shared/api/dispatch'
 import { useLoad } from '@shared/hooks/useLoad'
 import { Button } from '@shared/ui/Button'
@@ -17,6 +18,7 @@ import { TRIP_STATUS_TONE, eligibleHorses, peakSeats } from './dispatchModel'
 import { StallPlanSection } from './StallPlanSection'
 import { TripMap } from './TripMap'
 import { TripTimeline } from './TripTimeline'
+import { TripTakeOverButton } from './TripTakeOverButton'
 import { TripCrewSection } from './TripCrewSection'
 import b from './Board.module.css'
 import s from './Dispatch.module.css'
@@ -32,6 +34,7 @@ type Pending = { kind: 'release'; member: CrewAssignment } | { kind: 'removeHors
 
 export function TripDetailModal({ tripId, bookings, onClose, onChanged }: Props) {
   const { t } = useTranslation()
+  const { session } = useAuth()
   const toast = useToast()
   const [horseKey, setHorseKey] = useState('')
   const [pending, setPending] = useState<Pending>()
@@ -67,7 +70,10 @@ export function TripDetailModal({ tripId, bookings, onClose, onChanged }: Props)
   if (error || !data) return <Modal title={t('dispatch.trips.view')} onClose={onClose} wide><ErrorState message={error?.message} onRetry={reload} /></Modal>
 
   const { trip, horses } = data
-  const editable = trip.status === 'PLANNED' || trip.status === 'DISPATCHED'
+  const owner = trip.coordinatorStaffCode != null && trip.coordinatorStaffCode === session?.staffCode
+  const readOnly = trip.coordinatorId != null && !owner
+  const canTakeOver = !owner && trip.takeOverAllowed
+  const editable = !readOnly && (trip.status === 'PLANNED' || trip.status === 'DISPATCHED')
   const options = eligibleHorses(trip, bookings, horses)
   const chosen = options.find(option => `${option.horse.bookingHorseId}` === horseKey)
 
@@ -83,6 +89,8 @@ export function TripDetailModal({ tripId, bookings, onClose, onChanged }: Props)
         <div className={s.sectionHead}>
           <StatusBadge tone={TRIP_STATUS_TONE[trip.status ?? 'PLANNED']} label={t(`tripWords.status.${trip.status}`)} />
           {!editable && <span className={s.muted}>{t('dispatch.detail.locked')}</span>}
+          <span>{trip.coordinatorName ?? t('coordAssignment.unassigned')}</span>
+          {canTakeOver && <TripTakeOverButton tripId={tripId} onSaved={async () => { onChanged(); await reload() }} />}
         </div>
       </div>
 
@@ -100,7 +108,7 @@ export function TripDetailModal({ tripId, bookings, onClose, onChanged }: Props)
         </div>
       </section>
 
-      <TripCrewSection key={`${tripId}-${trip.status}`} tripId={tripId} trip={trip} busy={busy}
+      <TripCrewSection key={`${tripId}-${trip.status}`} tripId={tripId} trip={trip} busy={busy} readOnly={readOnly}
         onAssign={(staffId, role) => run(() => dispatchApi.assignCrew(tripId, staffId, role), t('dispatch.done.assigned'))}
         onRelease={member => setPending({ kind: 'release', member })} />
 
@@ -138,7 +146,7 @@ export function TripDetailModal({ tripId, bookings, onClose, onChanged }: Props)
         ) : <p className={s.muted}>{t('dispatch.detail.noEligible')}</p>)}
       </section>
 
-      <StallPlanSection tripId={tripId} refreshKey={horses.map(item => `${item.leg?.id}:${item.leg?.stallPosition}`).join(',')} />
+      <StallPlanSection tripId={tripId} readOnly={readOnly} refreshKey={horses.map(item => `${item.leg?.id}:${item.leg?.stallPosition}`).join(',')} />
 
       {pending?.kind === 'release' && (
         <ConfirmDialog

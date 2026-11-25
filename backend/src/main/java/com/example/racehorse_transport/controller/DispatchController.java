@@ -18,6 +18,7 @@ import com.example.racehorse_transport.entity.enums.VehicleTripType;
 import com.example.racehorse_transport.service.CrewAssignmentService;
 import com.example.racehorse_transport.service.CrewPositionService;
 import com.example.racehorse_transport.service.DispatchService;
+import com.example.racehorse_transport.service.TripCancellationService;
 import com.example.racehorse_transport.service.HorseLegService;
 import com.example.racehorse_transport.service.TripGroupingService;
 import com.example.racehorse_transport.service.TripScheduleService;
@@ -45,6 +46,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class DispatchController {
 
     private final DispatchService dispatch;
+    private final TripCancellationService cancellations;
     private final CrewAssignmentService crew;
     private final CrewPositionService positions;
     private final HorseLegService horseLegs;
@@ -66,23 +68,23 @@ public class DispatchController {
     }
 
     @PostMapping("/vehicle-trips")
-    public ResponseEntity<ApiResponseDto<VehicleTripResponseDto>> createTrip(@Valid @RequestBody VehicleTripCreateRequestDto request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponseDto.success(dispatch.createTrip(request), "Đã lập lượt xe"));
+    public ResponseEntity<ApiResponseDto<VehicleTripResponseDto>> createTrip(@Valid @RequestBody VehicleTripCreateRequestDto request, Authentication actor) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponseDto.success(dispatch.createTrip(request, actor.getName()), "Đã lập lượt xe"));
     }
 
     @PostMapping("/vehicle-trips/{id}/cancel")
-    public ApiResponseDto<VehicleTripResponseDto> cancelTrip(@PathVariable Long id, @Valid @RequestBody VehicleTripCancelRequestDto request) {
-        return ApiResponseDto.success(dispatch.cancelTrip(id, request), "Đã hủy lượt xe");
+    public ApiResponseDto<VehicleTripResponseDto> cancelTrip(@PathVariable Long id, @Valid @RequestBody VehicleTripCancelRequestDto request, Authentication actor) {
+        return ApiResponseDto.success(cancellations.cancel(id, request, actor.getName()), "Đã hủy lượt xe");
     }
 
     @PostMapping("/vehicle-trips/{id}/crew-assignments")
-    public ResponseEntity<ApiResponseDto<VehicleTripResponseDto>> assignCrew(@PathVariable Long id, @Valid @RequestBody CrewAssignmentRequestDto request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponseDto.success(crew.assign(id, request), "Đã phân công"));
+    public ResponseEntity<ApiResponseDto<VehicleTripResponseDto>> assignCrew(@PathVariable Long id, @Valid @RequestBody CrewAssignmentRequestDto request, Authentication actor) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponseDto.success(crew.assign(id, request, actor.getName()), "Đã phân công"));
     }
 
     @PostMapping("/crew-assignments/{id}/release")
-    public ApiResponseDto<VehicleTripResponseDto> releaseCrew(@PathVariable Long id) {
-        return ApiResponseDto.success(crew.release(id), "Đã gỡ nhân viên khỏi lượt xe");
+    public ApiResponseDto<VehicleTripResponseDto> releaseCrew(@PathVariable Long id, Authentication actor) {
+        return ApiResponseDto.success(crew.release(id, actor.getName()), "Đã gỡ nhân viên khỏi lượt xe");
     }
 
     @GetMapping("/dispatch/vehicles")
@@ -134,7 +136,7 @@ public class DispatchController {
     }
 
     @PostMapping("/horse-legs/{id}/cancel")
-    public ApiResponseDto<List<TripHorseResponseDto>> cancelLeg(@PathVariable Long id) {
-        return ApiResponseDto.success(horseLegs.cancel(id), "Đã gỡ ngựa khỏi lượt xe");
+    public ApiResponseDto<List<TripHorseResponseDto>> cancelLeg(@PathVariable Long id, Authentication actor) {
+        return ApiResponseDto.success(horseLegs.cancel(id, actor.getName()), "Đã gỡ ngựa khỏi lượt xe");
     }
 }

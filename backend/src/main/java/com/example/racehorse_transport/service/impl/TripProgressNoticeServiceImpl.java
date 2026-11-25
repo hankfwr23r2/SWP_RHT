@@ -12,7 +12,7 @@ import com.example.racehorse_transport.policy.CustomerNoticePolicy;
 import com.example.racehorse_transport.policy.DeliveryEtaPolicy;
 import com.example.racehorse_transport.policy.TripSchedulePolicy;
 import com.example.racehorse_transport.repository.HorseLegRepository;
-import com.example.racehorse_transport.repository.StaffRepository;
+import com.example.racehorse_transport.service.CoordinatorRecipientService;
 import com.example.racehorse_transport.repository.TripStopRepository;
 import com.example.racehorse_transport.repository.VehicleTripRepository;
 import com.example.racehorse_transport.service.NotificationService;
@@ -43,7 +43,7 @@ public class TripProgressNoticeServiceImpl implements TripProgressNoticeService 
     private final VehicleTripRepository trips;
     private final TripStopRepository stops;
     private final HorseLegRepository legs;
-    private final StaffRepository staff;
+    private final CoordinatorRecipientService coordinatorRecipients;
     private final NotificationService notifications;
     private final SystemConfigService configs;
     private final Clock clock;
@@ -67,8 +67,17 @@ public class TripProgressNoticeServiceImpl implements TripProgressNoticeService 
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
+    public void notifyEarlyStart(VehicleTrip trip, String reason) {
+        var recipients = coordinatorRecipients.forTrip(trip);
+        if (!recipients.isEmpty()) {
+            notifications.notify(recipients, null, "Lượt xe xuất phát sớm", trip.getCode() + ". " + reason, "/coordinator/dispatch");
+        }
+    }
+
+    @Override
+    @Transactional
     public void notifyEarlyOvernightDeparture(TripStop stop, String earlyReason) {
-        var recipients = staff.findUserIdsByRoleAndStatus("COORDINATOR", AppUserStatus.ACTIVE);
+        var recipients = coordinatorRecipients.forTrip(stop.getVehicleTrip());
         if (recipients.isEmpty()) return;
         notifications.notify(recipients, null, "Rời điểm nghỉ đêm sớm",
                 "Lượt " + stop.getVehicleTrip().getCode() + " rời " + label(stop) + " trước khi đủ giờ nghỉ đêm. "
@@ -173,7 +182,7 @@ public class TripProgressNoticeServiceImpl implements TripProgressNoticeService 
 
     private boolean warn(VehicleTrip trip, String title, List<String> points) {
         if (points.isEmpty()) return false;
-        var recipients = staff.findUserIdsByRoleAndStatus("COORDINATOR", AppUserStatus.ACTIVE);
+        var recipients = coordinatorRecipients.forTrip(trip);
         if (recipients.isEmpty()) return false;
         notifications.notify(recipients, null, title,
                 "Lượt " + trip.getCode() + ", " + String.join(", ", points)

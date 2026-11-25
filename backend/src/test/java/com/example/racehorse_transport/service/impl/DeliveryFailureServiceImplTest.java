@@ -42,7 +42,7 @@ class DeliveryFailureServiceImplTest {
     private final SystemConfigService configs = mock(SystemConfigService.class);
     private final IncidentRepository incidents = mock(IncidentRepository.class);
     private final DeliveryFailureServiceImpl service = new DeliveryFailureServiceImpl(handovers, legs, crew,
-            incidents, mock(StaffRepository.class), mock(NotificationService.class), configs,
+            incidents, mock(com.example.racehorse_transport.service.CoordinatorRecipientService.class), mock(NotificationService.class), configs,
             Clock.fixed(now, ZoneOffset.UTC), stops);
 
     @org.junit.jupiter.params.ParameterizedTest

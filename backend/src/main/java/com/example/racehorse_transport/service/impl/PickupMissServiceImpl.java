@@ -66,6 +66,10 @@ public class PickupMissServiceImpl implements PickupMissService {
             throw BookingRuleException.conflict("Ngựa không còn chờ nhận.");
         }
         var journey = legs.findByBookingHorse_IdOrderBySequenceNumber(horseId);
+        var trip = journey.stream().filter(leg -> leg.getStatus() == HorseLegStatus.PLANNED)
+                .filter(leg -> leg.getLegType() == com.example.racehorse_transport.entity.enums.HorseLegType.PICKUP
+                        || leg.getLegType() == com.example.racehorse_transport.entity.enums.HorseLegType.DIRECT)
+                .map(leg -> leg.getVehicleTrip()).filter(java.util.Objects::nonNull).findFirst().orElse(null);
         journey.stream().filter(leg -> leg.getStatus() == HorseLegStatus.PLANNED)
                 .forEach(leg -> leg.setStatus(HorseLegStatus.CANCELLED));
         // Đơn nhập hụt ở cửa khẩu: chặng đại lý đang chở kết thúc, ngựa ở lại với đại lý
@@ -83,7 +87,7 @@ public class PickupMissServiceImpl implements PickupMissService {
                 Duration.ofHours(configs.getInt("PICKUP_CHOICE_SHORT_HOURS")));
         horse.setPickupChoiceDueAt(dueAt);
         horse.setPickupMissChoice(null);
-        evidence.record(horse, request, photo, arrivedAt, at, actorId);
+        evidence.record(horse, request, photo, arrivedAt, at, actorId, trip);
         legs.flush();
     }
 

@@ -17,7 +17,7 @@ import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import com.example.racehorse_transport.entity.enums.VehicleTripType;
 import com.example.racehorse_transport.policy.DeliveryEtaPolicy;
 import com.example.racehorse_transport.repository.HorseLegRepository;
-import com.example.racehorse_transport.repository.StaffRepository;
+import com.example.racehorse_transport.service.CoordinatorRecipientService;
 import com.example.racehorse_transport.repository.TripStopRepository;
 import com.example.racehorse_transport.repository.VehicleTripRepository;
 import com.example.racehorse_transport.service.NotificationService;
@@ -38,7 +38,7 @@ class TripProgressNoticeServiceImplTest {
     private final Booking booking = new Booking();
     private final VehicleTripRepository trips = mock(VehicleTripRepository.class);
     private final TripStopRepository stops = mock(TripStopRepository.class);
-    private final StaffRepository staff = mock(StaffRepository.class);
+    private final CoordinatorRecipientService staff = mock(CoordinatorRecipientService.class);
     private final HorseLegRepository legs = mock(HorseLegRepository.class);
     private final SystemConfigService configs = mock(SystemConfigService.class);
     private final NotificationService notifications = mock(NotificationService.class);
@@ -74,7 +74,7 @@ class TripProgressNoticeServiceImplTest {
         hub.setActualDepartureAt(hubDeparture.plusSeconds(9 * 3600));
         when(stops.findByVehicleTrip_IdOrderBySequenceNumber(1L)).thenReturn(List.of(hub, delivery));
         when(legs.findActiveOnTrip(eq(1L), any())).thenReturn(List.of(horse));
-        when(staff.findUserIdsByRoleAndStatus("COORDINATOR", AppUserStatus.ACTIVE)).thenReturn(List.of(8L));
+        when(staff.forTrip(trip)).thenReturn(List.of(8L));
 
         service.departed(hub);
         service.departed(hub);

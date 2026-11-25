@@ -225,8 +225,8 @@ class DeliveryFailureFlowTest {
         long stay = jdbc.queryForObject("SELECT id FROM horse_stay WHERE booking_horse_id = ? AND stay_type = 'STABLING' AND actual_end_at IS NULL",
                 Long.class, line);
         jdbc.update("""
-                UPDATE horse_stay SET actual_start_at = now() - interval '30 hours',
-                    planned_start_at = now() - interval '30 hours' WHERE id = ?
+                UPDATE horse_stay SET actual_start_at = now() - interval '40 hours',
+                    planned_start_at = now() - interval '40 hours' WHERE id = ?
                 """, stay);
         entityManager.clear();
         recordReady(stay);
@@ -396,7 +396,9 @@ class DeliveryFailureFlowTest {
                 mvc.perform(post("/crew-assignments/{id}/acknowledge", assignment).header(HttpHeaders.AUTHORIZATION, member))
                         .andExpect(status().isOk());
             }
-            act("/vehicle-trips/" + id + "/start").andExpect(status().isOk());
+            mvc.perform(post("/vehicle-trips/{id}/start", id).header(HttpHeaders.AUTHORIZATION, driver)
+                    .contentType(MediaType.APPLICATION_JSON).content("{\"earlyReason\":\"Đã sẵn sàng xuất phát sớm\"}"))
+                    .andExpect(status().isOk());
         }
 
         void startAndReceiveAt(int pickupIndex) throws Exception {

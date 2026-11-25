@@ -27,7 +27,7 @@ import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.CostItemRepository;
 import com.example.racehorse_transport.repository.HorseStayRepository;
 import com.example.racehorse_transport.repository.IncidentRepository;
-import com.example.racehorse_transport.repository.StaffRepository;
+import com.example.racehorse_transport.service.CoordinatorAssignmentService;
 import com.example.racehorse_transport.service.AuditService;
 import com.example.racehorse_transport.service.IncidentService;
 import com.example.racehorse_transport.service.NotificationService;
@@ -47,15 +47,15 @@ class DeliveryFaultServiceImplTest {
     private final HorseStay stay = new HorseStay();
     private final Role role = new Role();
     private final IncidentRepository incidents = mock(IncidentRepository.class);
-    private final StaffRepository staff = mock(StaffRepository.class);
+    private final CoordinatorAssignmentService staff = mock(CoordinatorAssignmentService.class);
     private final BookingRepository bookings = mock(BookingRepository.class);
     private final HorseStayRepository stays = mock(HorseStayRepository.class);
     private final CostItemRepository costs = mock(CostItemRepository.class);
     private final SystemConfigService configs = mock(SystemConfigService.class);
     private final AuditService audit = mock(AuditService.class);
     private final NotificationService notices = mock(NotificationService.class);
-    private final DeliveryFaultServiceImpl service = new DeliveryFaultServiceImpl(incidents, staff, bookings, stays, costs,
-            configs, audit, notices, mock(IncidentService.class), Clock.fixed(now, ZoneOffset.UTC));
+    private final DeliveryFaultServiceImpl service = new DeliveryFaultServiceImpl(incidents, bookings, stays, costs,
+            configs, audit, notices, mock(IncidentService.class), Clock.fixed(now, ZoneOffset.UTC), staff);
 
     @BeforeEach
     void setUp() {
@@ -90,7 +90,7 @@ class DeliveryFaultServiceImplTest {
         stay.setStayType(HorseStayType.ASSEMBLY);
         stay.setActualStartAt(now.minusSeconds(900));
         when(incidents.findForUpdate(1L)).thenReturn(Optional.of(incident));
-        when(staff.findByUser_Username("operator")).thenReturn(Optional.of(actor));
+        when(staff.currentStaff("operator")).thenReturn(actor);
         when(bookings.findForUpdate(2L)).thenReturn(Optional.of(booking));
         when(stays.findReturnStaysForUpdate(3L, 5L)).thenReturn(List.of(stay));
         when(configs.getInt("STABLING_DAILY_FEE")).thenReturn(500000);

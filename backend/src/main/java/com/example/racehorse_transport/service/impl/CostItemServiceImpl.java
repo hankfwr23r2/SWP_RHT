@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.service.CoordinatorAssignmentService;
 import com.example.racehorse_transport.dto.incident.CostItemRequestDto;
 import com.example.racehorse_transport.dto.incident.CostItemResponseDto;
 import com.example.racehorse_transport.entity.Booking;
@@ -41,6 +42,7 @@ public class CostItemServiceImpl implements CostItemService {
     private final PaymentRepository payments;
     private final StaffRepository staff;
     private final Clock clock;
+    private final CoordinatorAssignmentService coordinators;
     private final IncidentCostDecisionService decisions;
 
     @Override
@@ -58,6 +60,12 @@ public class CostItemServiceImpl implements CostItemService {
     @Override
     @Transactional
     public CostItemResponseDto record(CostItemRequestDto request, String username) {
+        if (request.incidentId() != null) {
+            coordinators.requireIncidentWrite(request.incidentId(), username);
+        }
+        if (request.vehicleTripId() != null) {
+            coordinators.requireTripWrite(request.vehicleTripId(), username);
+        }
         CostPayerPolicy.requireRecordableCategory(request.category());
         Incident incident = request.incidentId() == null ? null : incidents.findForUpdate(request.incidentId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố " + request.incidentId()));
@@ -137,6 +145,7 @@ public class CostItemServiceImpl implements CostItemService {
     @Override
     @Transactional
     public CostItemResponseDto recordPhoneConsent(Long costItemId, String note, String username) {
+        coordinators.requireCostWrite(costItemId, username);
         var cost = lockCost(costItemId);
         requirePendingResponse(cost);
         var coordinator = staff.findByUser_Username(username).orElseThrow(() -> new AccessDeniedException("Không tìm thấy nhân viên."));

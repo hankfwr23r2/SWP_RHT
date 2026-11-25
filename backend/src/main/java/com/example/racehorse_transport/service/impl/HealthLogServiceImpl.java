@@ -26,7 +26,7 @@ import com.example.racehorse_transport.repository.CrewAssignmentRepository;
 import com.example.racehorse_transport.repository.HorseHealthLogRepository;
 import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.repository.HorseStayRepository;
-import com.example.racehorse_transport.repository.StaffRepository;
+import com.example.racehorse_transport.service.CoordinatorRecipientService;
 import com.example.racehorse_transport.repository.TripStopRepository;
 import com.example.racehorse_transport.service.HealthLogService;
 import com.example.racehorse_transport.service.HealthCheckTaskService;
@@ -55,7 +55,7 @@ public class HealthLogServiceImpl implements HealthLogService {
     private final HorseStayRepository stays;
     private final HorseLegRepository legs;
     private final CrewAssignmentRepository crew;
-    private final StaffRepository staff;
+    private final CoordinatorRecipientService coordinators;
     private final NotificationService notifications;
     private final Clock clock;
     private final HealthCheckTaskService healthTasks;
@@ -111,11 +111,11 @@ public class HealthLogServiceImpl implements HealthLogService {
                 .filter(previous -> HealthLogPolicy.refusedWaterTwice(request.waterIntake(), previous.getWaterIntake()))
                 .ifPresent(previous -> {
                     log.setHealthStatus(HealthLogPolicy.atLeastWatch(request.healthStatus()));
-                    notifyCoordinators(line);
+                    notifyCoordinators(line, stop == null ? null : stop.getVehicleTrip());
                 });
         HorseHealthLog saved = save(log, recorder, recordedAt);
         if (saved.getHealthStatus() == HealthStatus.SICK || saved.getHealthStatus() == HealthStatus.CRITICAL) {
-            notifyCoordinatorsForHealth(line, saved.getHealthStatus());
+            notifyCoordinatorsForHealth(line, saved.getHealthStatus(), stop == null ? null : stop.getVehicleTrip());
         }
         return HealthLogResponseDto.from(saved);
     }
@@ -159,8 +159,7 @@ public class HealthLogServiceImpl implements HealthLogService {
     }
 
     private Staff recorder(String username) {
-        return staff.findByUser_Username(username)
-                .orElseThrow(() -> new AccessDeniedException("Không tìm thấy hồ sơ nhân viên."));
+        return coordinators.staffByUsername(username);
     }
 
     private static String roleOf(Staff recorder) {
@@ -206,21 +205,18 @@ public class HealthLogServiceImpl implements HealthLogService {
         return stay;
     }
 
-    private void notifyCoordinators(BookingHorse line) {
-        List<Long> coordinators = staff.findAllByOrderByStaffCodeAsc().stream()
-                .filter(s -> "COORDINATOR".equals(s.getUser().getRole().getCode()) && s.getEmploymentStatus() == EmploymentStatus.ACTIVE
-                        && s.getUser().getStatus() == AppUserStatus.ACTIVE)
-                .map(Staff::getUserId).toList();
-        if (coordinators.isEmpty()) return;
-        notifications.notify(coordinators, line.getBooking().getId(), "Ngựa bỏ uống hai lần dừng liền",
+    private void notifyCoordinators(BookingHorse line, VehicleTrip trip) {
+        List<Long> recipients = coordinators.forHorse(line, trip);
+        if (recipients.isEmpty()) return;
+        notifications.notify(recipients, line.getBooking().getId(), "Ngựa bỏ uống hai lần dừng liền",
                 line.getHorse().getName() + " (đơn " + line.getBooking().getCode() + ") không uống nước ở hai lần dừng liền, đã chuyển sang theo dõi.", null);
     }
 
-    private void notifyCoordinatorsForHealth(BookingHorse line, HealthStatus status) {
-        List<Long> coordinators = staff.findUserIdsByRoleAndStatus("COORDINATOR", AppUserStatus.ACTIVE);
-        if (coordinators.isEmpty()) return;
+    private void notifyCoordinatorsForHealth(BookingHorse line, HealthStatus status, VehicleTrip trip) {
+        List<Long> recipients = coordinators.forHorse(line, trip);
+        if (recipients.isEmpty()) return;
         String label = status == HealthStatus.CRITICAL ? "Nguy cấp" : "Ốm";
-        notifications.notify(coordinators, line.getBooking().getId(),
+        notifications.notify(recipients, line.getBooking().getId(),
                 "Sức khỏe ngựa " + label,
                 line.getHorse().getName() + " (đơn " + line.getBooking().getCode() + ") được ghi " + label + ".",
                 "/coordinator/incidents");

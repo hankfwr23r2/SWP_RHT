@@ -34,7 +34,7 @@ public class StablingClockServiceImpl implements StablingClockService {
     private final BookingRepository bookings;
     private final HorseStayRepository stays;
     private final HorseLegRepository legs;
-    private final StaffRepository staff;
+    private final com.example.racehorse_transport.service.CoordinatorRecipientService coordinatorRecipients;
     private final StablingChargeService charges;
     private final RedeliveryChargeService redelivery;
     private final NotificationService notifications;
@@ -61,8 +61,7 @@ public class StablingClockServiceImpl implements StablingClockService {
         if (!canReady(stay, now)) {
             throw new DispatchRuleException("stayId", "Ngựa đang có hẹn tự nhận hoặc đang giữ do chưa trả số dư.", true);
         }
-        Long actor = callNote == null ? null : staff.findByUser_Username(username)
-                .orElseThrow(() -> new AccessDeniedException("Không tìm thấy hồ sơ nhân viên.")).getUserId();
+        Long actor = callNote == null ? null : coordinatorRecipients.staffByUsername(username).getUserId();
         charges.chargeThrough(stay, now, actor);
         stay.setCollectionReportedAt(null);
         stay.setCollectionExpectedAt(null);
@@ -116,7 +115,7 @@ public class StablingClockServiceImpl implements StablingClockService {
             String title = "Chưa lập lượt giao lại · " + stay.getId();
             if (plannedRedelivery(current).isPresent()
                     || bookings.hasNotificationBetween(booking.getId(), title, current.getReadyAt(), now)) continue;
-            notifications.notify(staff.findUserIdsByRoleAndStatus("COORDINATOR", AppUserStatus.ACTIVE), booking.getId(), title,
+            notifications.notify(coordinatorRecipients.forHorse(current.getBookingHorse(), null), booking.getId(), title,
                     "Khách đã sẵn sàng nhận ngựa. Hãy đưa khung giao lại cho đơn " + booking.getCode() + ".", "/coordinator/hub");
         }
     }

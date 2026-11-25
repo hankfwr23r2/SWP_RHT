@@ -5,12 +5,10 @@ import com.example.racehorse_transport.policy.DepartureDelayPolicy;
 import com.example.racehorse_transport.dto.dispatch.CrewAssignmentResponseDto;
 import com.example.racehorse_transport.dto.dispatch.TripStopRequestDto;
 import com.example.racehorse_transport.dto.dispatch.TripStopResponseDto;
-import com.example.racehorse_transport.dto.dispatch.VehicleTripCancelRequestDto;
 import com.example.racehorse_transport.dto.dispatch.VehicleTripCreateRequestDto;
 import com.example.racehorse_transport.dto.dispatch.VehicleTripResponseDto;
 import com.example.racehorse_transport.dto.dispatch.DispatchVehicleResponseDto;
 import com.example.racehorse_transport.entity.BookingAddress;
-import com.example.racehorse_transport.entity.CrewAssignment;
 import com.example.racehorse_transport.entity.Departure;
 import com.example.racehorse_transport.entity.Location;
 import com.example.racehorse_transport.entity.RouteStop;
@@ -19,7 +17,6 @@ import com.example.racehorse_transport.entity.Vehicle;
 import com.example.racehorse_transport.entity.VehicleTrip;
 import com.example.racehorse_transport.entity.enums.AddressRole;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
-import com.example.racehorse_transport.entity.enums.CrewAssignmentStatus;
 import com.example.racehorse_transport.entity.enums.DepartureStatus;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
 import com.example.racehorse_transport.entity.enums.TripStopType;
@@ -39,7 +36,7 @@ import com.example.racehorse_transport.repository.RouteStopRepository;
 import com.example.racehorse_transport.repository.TripStopRepository;
 import com.example.racehorse_transport.repository.VehicleTripRepository;
 import com.example.racehorse_transport.service.DispatchService;
-import com.example.racehorse_transport.service.NotificationService;
+import com.example.racehorse_transport.service.CoordinatorAssignmentService;
 import com.example.racehorse_transport.service.VehicleService;
 import com.example.racehorse_transport.util.VehicleTripCodes;
 import java.time.Instant;
@@ -70,7 +67,7 @@ public class DispatchServiceImpl implements DispatchService {
     private final RouteStopRepository routeStops;
     private final LocationRepository locations;
     private final BookingAddressRepository bookingAddresses;
-    private final NotificationService notifications;
+    private final CoordinatorAssignmentService assignments;
 
     @Override
     @Transactional(readOnly = true)
@@ -89,7 +86,7 @@ public class DispatchServiceImpl implements DispatchService {
 
     @Override
     @Transactional
-    public VehicleTripResponseDto createTrip(VehicleTripCreateRequestDto request) {
+    public VehicleTripResponseDto createTrip(VehicleTripCreateRequestDto request, String username) {
         Vehicle vehicle = vehicles.lockVehicle(request.vehicleId());
         DispatchPolicy.requireActiveVehicle(vehicle.getStatus());
         VehicleTrip trip = request.tripType() == VehicleTripType.LINEHAUL ? linehaul(request, vehicle) : local(request, vehicle);
@@ -101,34 +98,9 @@ public class DispatchServiceImpl implements DispatchService {
         trip.setCode(newCode());
         trip.setStatus(VehicleTripStatus.PLANNED);
         VehicleTrip saved = trips.save(trip);
+        assignments.assignAtCreation(saved, username);
         stops.saveAll(plannedStops);
         return trip(saved.getId());
-    }
-
-    @Override
-    @Transactional
-    public VehicleTripResponseDto cancelTrip(Long id, VehicleTripCancelRequestDto request) {
-        VehicleTrip trip = trips.findForUpdate(id).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lượt xe " + id));
-        if (trip.getStatus() != VehicleTripStatus.PLANNED && trip.getStatus() != VehicleTripStatus.DISPATCHED) {
-            throw new DispatchRuleException("status", "Chỉ hủy được lượt xe chưa chạy.", true);
-        }
-        if (legs.existsByVehicleTrip_IdAndStatusNot(id, HorseLegStatus.CANCELLED)) {
-            throw new DispatchRuleException("status", "Lượt xe còn ngựa. Gỡ ngựa khỏi lượt trước khi hủy.", true);
-        }
-        trip.setStatus(VehicleTripStatus.CANCELLED);
-        if (trip.getTripType() == VehicleTripType.LINEHAUL) {
-            departures.linehaulCompleted(trip.getDeparture().getId());
-        }
-        for (CrewAssignment assignment : crew.findByVehicleTrip_IdInOrderById(List.of(id))) {
-            if (assignment.getStatus() == CrewAssignmentStatus.RELEASED) continue;
-            assignment.setStatus(CrewAssignmentStatus.RELEASED);
-            assignment.setNote(request.reason().strip());
-            notifications.notify(List.of(assignment.getStaff().getUserId()), null,
-                    "Lượt xe đã hủy",
-                    "Lượt xe " + trip.getCode() + " đã hủy. Lý do: " + request.reason().strip(),
-                    "/my-trips");
-        }
-        return trip(id);
     }
 
     @Override
@@ -294,8 +266,20 @@ public class DispatchServiceImpl implements DispatchService {
                 .collect(Collectors.groupingBy(s -> s.getVehicleTrip().getId(), Collectors.mapping(TripStopResponseDto::from, Collectors.toList())));
         Map<Long, List<CrewAssignmentResponseDto>> crewByTrip = crew.findByVehicleTrip_IdInOrderById(ids).stream()
                 .collect(Collectors.groupingBy(a -> a.getVehicleTrip().getId(), Collectors.mapping(CrewAssignmentResponseDto::from, Collectors.toList())));
-        return found.stream().map(t -> VehicleTripResponseDto.from(t, stopsByTrip.getOrDefault(t.getId(), List.of()),
-                crewByTrip.getOrDefault(t.getId(), List.of()))).toList();
+        return found.stream().map(trip -> {
+            long openIncidents = assignments.openIncidents(trip.getId());
+            boolean takeOverAllowed = com.example.racehorse_transport.policy.CoordinatorAssignmentPolicy.canTakeOver(
+                    trip.getStatus(), openIncidents > 0);
+            return VehicleTripResponseDto.from(trip, stopsByTrip.getOrDefault(trip.getId(), List.of()),
+                    crewByTrip.getOrDefault(trip.getId(), List.of()), openIncidents, takeOverAllowed);
+        }).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<VehicleTripResponseDto> ownedTrips(Long staffId) {
+        return describe(trips.findByCoordinator_UserIdAndStatusNotInOrderByPlannedStartAtAscIdAsc(staffId,
+                com.example.racehorse_transport.policy.CoordinatorAssignmentPolicy.CLOSED_TRIPS));
     }
 
     private VehicleTrip findTrip(Long id) {

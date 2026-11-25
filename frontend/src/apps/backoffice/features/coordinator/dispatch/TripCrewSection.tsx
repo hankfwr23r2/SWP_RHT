@@ -14,16 +14,17 @@ interface Props {
   tripId: number
   trip: VehicleTrip
   busy: boolean
+  readOnly?: boolean
   onRelease: (member: CrewAssignment) => void
   onAssign: (staffId: number, role: CrewRole) => Promise<void>
 }
 
-export function TripCrewSection({ tripId, trip, busy, onRelease, onAssign }: Props) {
+export function TripCrewSection({ tripId, trip, busy, onRelease, onAssign, readOnly }: Props) {
   const { t } = useTranslation()
   const [crewRole, setCrewRole] = useState<CrewRole>('DRIVER')
   const [staffId, setStaffId] = useState('')
-  const running = trip.status === 'IN_PROGRESS'
-  const editable = trip.status === 'PLANNED' || trip.status === 'DISPATCHED'
+  const running = !readOnly && trip.status === 'IN_PROGRESS'
+  const editable = !readOnly && (trip.status === 'PLANNED' || trip.status === 'DISPATCHED')
   const role = running ? 'ESCORT' : crewRole
   const crew = (trip.crew ?? []).filter(member => member.status !== 'RELEASED')
   const { data: candidates, loaded, error, reload } = useLoad(

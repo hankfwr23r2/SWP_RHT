@@ -15,7 +15,7 @@ import s from './Dispatch.module.css'
 type Row = NonNullable<StallPlan['horses']>[number]
 
 // refreshKey đổi khi gán hoặc gỡ ngựa thì tải lại sơ đồ
-export function StallPlanSection({ tripId, refreshKey }: { tripId: number; refreshKey: string }) {
+export function StallPlanSection({ tripId, refreshKey, readOnly }: { tripId: number; refreshKey: string; readOnly?: boolean }) {
   const { t } = useTranslation()
   const toast = useToast()
   const [draft, setDraft] = useState<Record<number, number>>({})
@@ -68,7 +68,7 @@ export function StallPlanSection({ tripId, refreshKey }: { tripId: number; refre
     {
       key: 'position',
       header: t('dispatch.stall.colPosition'),
-      render: row => (plan.editable && !row.locked
+      render: row => (!readOnly && plan.editable && !row.locked
         ? <Select aria-label={t('dispatch.stall.positionOf', { name: row.horseName })} value={String(positionOf(row) ?? '')} options={options}
             placeholder="–" onChange={value => setDraft(current => ({ ...current, [row.horseLegId ?? 0]: Number(value) }))} />
         : positionOf(row) ?? '–'),
@@ -90,7 +90,7 @@ export function StallPlanSection({ tripId, refreshKey }: { tripId: number; refre
           {shown.map(text => <li key={text} className={s.muted}>{text}</li>)}
         </ul>
       )}
-      {plan.editable && (
+      {!readOnly && plan.editable && (
         <div className={s.toolbar}>
           <Button loading={busy} onClick={() => void suggest()}>{t('dispatch.stall.suggest')}</Button>
           <Button variant="primary" disabled={!changed} loading={busy} onClick={() => void save()}>{t('dispatch.stall.save')}</Button>

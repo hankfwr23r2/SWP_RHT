@@ -128,7 +128,8 @@ class StallPlanFlowTest {
                 .andExpect(jsonPath("$.message", startsWith("Còn ngựa chưa có vị trí khoang")));
         mvc.perform(post("/vehicle-trips/{id}/stall-plan/apply", trip).header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"horses\":[{\"horseLegId\":%d,\"stallPosition\":1}]}".formatted(standard))).andExpect(status().isOk());
-        mvc.perform(post("/vehicle-trips/{id}/start", trip).header(HttpHeaders.AUTHORIZATION, driver)).andExpect(status().isOk());
+        mvc.perform(post("/vehicle-trips/{id}/start", trip).header(HttpHeaders.AUTHORIZATION, driver)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"earlyReason\":\"Đã sẵn sàng xuất phát sớm\"}")).andExpect(status().isOk());
 
         apply(List.of(new long[] {standard, 1, 2})).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Lượt xe đã xuất phát hoặc đã kết thúc, sơ đồ khoang đã khóa."));

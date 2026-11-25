@@ -29,7 +29,7 @@ import com.example.racehorse_transport.repository.QuotationRepository;
 import com.example.racehorse_transport.repository.VehicleTripRepository;
 import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.repository.HorseStayRepository;
-import com.example.racehorse_transport.repository.StaffRepository;
+import com.example.racehorse_transport.service.CoordinatorRecipientService;
 import com.example.racehorse_transport.service.impl.StablingClockServiceImpl;
 import com.example.racehorse_transport.service.impl.StablingTimelineServiceImpl;
 import com.example.racehorse_transport.policy.StablingPolicy.Run;
@@ -46,7 +46,7 @@ class StablingClockServiceTest {
     private static final Instant NOW = Instant.parse("2031-01-14T03:00:00Z");
     private final BookingRepository bookings = mock(BookingRepository.class);
     private final HorseStayRepository stays = mock(HorseStayRepository.class);
-    private final StaffRepository staff = mock(StaffRepository.class);
+    private final CoordinatorRecipientService staff = mock(CoordinatorRecipientService.class);
     private final NotificationService notifications = mock(NotificationService.class);
     private final StablingChargeService charges = mock(StablingChargeService.class);
     private final SystemConfigService configs = mock(SystemConfigService.class);
@@ -84,7 +84,7 @@ class StablingClockServiceTest {
     void coordinatorReadinessFinalizesHoldingFeesAndRecordsCall() {
         var actor = new Staff();
         actor.setUserId(15L);
-        when(staff.findByUser_Username("dispatcher")).thenReturn(Optional.of(actor));
+        when(staff.staffByUsername("dispatcher")).thenReturn(actor);
         service.ready(4L, "dispatcher", "  Confirmed with customer  ");
         verify(charges).chargeThrough(stay, NOW, 15L);
         assertThat(stay.getReadyAt()).isEqualTo(NOW);
@@ -133,8 +133,7 @@ class StablingClockServiceTest {
         stay.setEarliestRedeliveryAt(NOW);
         stay.setChosenRedeliveryAt(NOW.plusSeconds(7200));
         var recipients = List.of(15L);
-        when(staff.findUserIdsByRoleAndStatus("COORDINATOR",
-                com.example.racehorse_transport.entity.enums.AppUserStatus.ACTIVE)).thenReturn(recipients);
+        when(staff.forHorse(stay.getBookingHorse(), null)).thenReturn(recipients);
         service.remindMissingRedelivery();
         verify(notifications).notify(eq(recipients), eq(3L), anyString(), anyString(), eq("/coordinator/hub"));
     }

@@ -33,6 +33,19 @@ public interface IncidentRepository extends JpaRepository<Incident, Long> {
 
     List<Incident> findByHorseLeg_BookingHorse_IdAndIncidentTypeAndStatusNotOrderById(Long bookingHorseId, IncidentType incidentType, IncidentStatus status);
 
+    @Query("""
+            select count(i) from Incident i left join i.horseLeg leg
+            where coalesce(i.vehicleTrip.id, leg.vehicleTrip.id) = :tripId and i.status not in :statuses
+            """)
+    long countOpenForTrip(Long tripId, Collection<IncidentStatus> statuses);
+
+    @Query("""
+            select count(i) from Incident i left join i.horseLeg leg
+            left join i.vehicleTrip trip left join leg.vehicleTrip legTrip
+            where coalesce(trip.coordinator.userId, legTrip.coordinator.userId) = :staffId and i.status not in :statuses
+            """)
+    long countOpenForCoordinator(Long staffId, Collection<IncidentStatus> statuses);
+
     boolean existsByVehicleTrip_IdAndHorseLegIsNullAndStatusIn(Long vehicleTripId, Collection<IncidentStatus> statuses);
 
     @EntityGraph(attributePaths = {"vehicleTrip", "vehicleTrip.departure.route", "booking", "horseLeg", "horseLeg.bookingHorse.horse", "horseLeg.vehicleTrip.departure.route",

@@ -74,6 +74,7 @@ class TripScheduleFlowTest {
     @AfterEach
     void cleanUp() {
         if (createdTrip != null) {
+            jdbc.update("DELETE FROM coordinator_assignment_history WHERE vehicle_trip_id = ?", createdTrip);
             jdbc.update("DELETE FROM horse_leg WHERE vehicle_trip_id = ?", createdTrip);
             jdbc.update("DELETE FROM trip_stop WHERE vehicle_trip_id = ?", createdTrip);
             jdbc.update("DELETE FROM vehicle_trip WHERE id = ?", createdTrip);

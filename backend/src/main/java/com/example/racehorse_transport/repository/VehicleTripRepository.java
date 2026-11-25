@@ -32,6 +32,22 @@ public interface VehicleTripRepository extends JpaRepository<VehicleTrip, Long> 
     boolean existsByDeparture_IdAndTripTypeAndStatusNotIn(Long departureId,
             VehicleTripType tripType, Collection<VehicleTripStatus> statuses);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    List<VehicleTrip> findByDeparture_IdAndTripTypeAndStatusNotInOrderById(Long departureId,
+            VehicleTripType type, Collection<VehicleTripStatus> statuses);
+
+    long countByCoordinator_UserIdAndStatusNotIn(Long staffId, Collection<VehicleTripStatus> statuses);
+
+    @Query("""
+            select count(t) from VehicleTrip t where t.coordinator.userId = :staffId and t.status not in :closed
+            and ((t.actualStartAt is null and t.plannedStartAt < :now) or t.plannedEndAt < :now)
+            """)
+    long countLate(Long staffId, Collection<VehicleTripStatus> closed, Instant now);
+
+    @EntityGraph(attributePaths = {"vehicle", "vehicle.vehicleClass", "departure", "departure.route", "startLocation", "endLocation", "coordinator"})
+    List<VehicleTrip> findByCoordinator_UserIdAndStatusNotInOrderByPlannedStartAtAscIdAsc(
+            Long staffId, Collection<VehicleTripStatus> closed);
+
     boolean existsByCode(String code);
 
     @Query("""
@@ -53,11 +69,11 @@ public interface VehicleTripRepository extends JpaRepository<VehicleTrip, Long> 
             """)
     List<String> findUpcomingCodes(Long vehicleId, VehicleTripStatus status, Instant from);
 
-    @EntityGraph(attributePaths = {"vehicle", "vehicle.vehicleClass", "departure", "departure.route", "startLocation", "endLocation"})
+    @EntityGraph(attributePaths = {"vehicle", "vehicle.vehicleClass", "departure", "departure.route", "startLocation", "endLocation", "coordinator"})
     @Query("SELECT t FROM VehicleTrip t WHERE t.plannedStartAt < :to AND t.plannedEndAt > :from ORDER BY t.plannedStartAt, t.id")
     List<VehicleTrip> findOverlapping(@Param("from") Instant from, @Param("to") Instant to);
 
-    @EntityGraph(attributePaths = {"vehicle", "vehicle.vehicleClass", "departure", "departure.route", "startLocation", "endLocation"})
+    @EntityGraph(attributePaths = {"vehicle", "vehicle.vehicleClass", "departure", "departure.route", "startLocation", "endLocation", "coordinator"})
     Optional<VehicleTrip> findOneById(Long id);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
@@ -65,7 +81,7 @@ public interface VehicleTripRepository extends JpaRepository<VehicleTrip, Long> 
     Optional<VehicleTrip> findForUpdate(@Param("id") Long id);
 
     // Báo cáo chuyến: lượt xe bắt đầu (kế hoạch) trong khoảng, bỏ lượt đã hủy
-    @EntityGraph(attributePaths = {"vehicle", "startLocation", "endLocation"})
+    @EntityGraph(attributePaths = {"vehicle", "startLocation", "endLocation", "coordinator"})
     List<VehicleTrip> findByPlannedStartAtGreaterThanEqualAndPlannedStartAtLessThanAndStatusNotOrderByPlannedStartAtAscIdAsc(
             Instant from, Instant to, VehicleTripStatus excluded);
 }
