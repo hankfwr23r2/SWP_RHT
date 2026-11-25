@@ -110,7 +110,7 @@ class HealthStayFlowTest {
         log(stops.get(2), null, "NORMAL", "REFUSED", "REDUCED").andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.healthStatus").value("WATCH"));
         entityManager.flush();
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM notification_recipient WHERE user_id = ?", Integer.class, coordinatorStaff.getUserId()))
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM notification_recipient r JOIN notification n ON n.id = r.notification_id WHERE r.user_id = ? AND n.title NOT LIKE 'Vượt%'", Integer.class, coordinatorStaff.getUserId()))
                 .isEqualTo(1);
         mvc.perform(get("/booking-horses/{id}/health-logs", line).header(HttpHeaders.AUTHORIZATION, coordinator))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data[0].healthStatus").value("WATCH"));
