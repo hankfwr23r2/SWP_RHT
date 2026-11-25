@@ -46,6 +46,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -133,6 +134,91 @@ class QuotationPaymentPostgresTest {
         assertThatThrownBy(() -> quotations.send(draft.id(), fixture.manager()))
                 .isInstanceOf(BookingRuleException.class).hasMessageContaining("đã hết hạn");
         assertThat(bookingStatus(fixture)).isEqualTo("QUOTING");
+    }
+
+    @Test
+    void specialistRefreshesExpiredArrangedInsuranceWhileQuoting() throws Exception {
+        var fixture = fixture(BookingType.LOCAL, BookingStatus.QUOTING);
+        long booking = fixture.booking().getId();
+        data.bookingAddress(fixture.booking(), AddressRole.PICKUP);
+        data.bookingAddress(fixture.booking(), AddressRole.DELIVERY);
+        long horse = attachHorse(fixture, "STANDARD");
+        var specialist = data.staff(data.unique("requote-specialist"), "SPECIALIST");
+        String specialistAuth = auth(specialist.getUser().getUsername(), "SPECIALIST");
+        String managerAuth = auth(fixture.manager(), "MANAGER");
+        long insurer = sampleInsurer();
+        Instant oldDeadline = START.plusSeconds(120);
+        long insurance = jdbc.queryForObject("""
+                INSERT INTO horse_insurance (booking_horse_id, coverage_option, insurer_party_id, coverage_amount,
+                    premium_amount, currency_code, quote_expires_at, status, confirmed_by, confirmed_at)
+                VALUES (?, 'ARRANGED', ?, 100000, 2500, 'VND', ?, 'CONFIRMED', ?, ?) RETURNING id
+                """, Long.class, horse, insurer, java.sql.Timestamp.from(oldDeadline), specialist.getUserId(),
+                java.sql.Timestamp.from(START));
+        when(maps.route(any(), any(), anyInt(), anyInt()))
+                .thenReturn(new PricingRouteService.RoadEstimate(new BigDecimal("35"), 600));
+        var draft = quotations.createDraft(booking);
+
+        when(clock.instant()).thenReturn(oldDeadline.plusSeconds(1));
+        mvc.perform(post("/bookings/{id}/quotations", booking).header(HttpHeaders.AUTHORIZATION, managerAuth))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("đã hết hạn")));
+
+        String reopen = """
+                {"reason":"Báo giá của hãng đã hết hạn."}
+                """;
+        insuranceAction(booking, insurance, specialistAuth, "reopen", reopen).andExpect(status().isOk());
+        assertThat(jdbc.queryForObject("""
+                SELECT new_data::jsonb ->> 'reason' FROM audit_log
+                WHERE action = 'REOPEN_INSURANCE' AND target_table = 'horse_insurance' AND target_id = ?
+                    AND actor_user_id = ?
+                """, String.class, insurance, specialist.getUserId())).isEqualTo("Báo giá của hãng đã hết hạn.");
+        Instant newDeadline = START.plusSeconds(3600);
+        insuranceAction(booking, insurance, specialistAuth, "record-evidence", """
+                {"insurerPartyId":%d,"coverageAmount":100000,"premiumAmount":4200,"currencyCode":"VND","quoteExpiresAt":"%s"}
+                """.formatted(insurer, newDeadline)).andExpect(status().isOk());
+        insuranceAction(booking, insurance, specialistAuth, "confirm", "{}").andExpect(status().isOk());
+        assertThat(bookingStatus(fixture)).isEqualTo("QUOTING");
+
+        mvc.perform(post("/quotations/{id}/send", draft.id()).header(HttpHeaders.AUTHORIZATION, managerAuth))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("đã thay đổi")));
+        mvc.perform(post("/bookings/{id}/quotations", booking).header(HttpHeaders.AUTHORIZATION, managerAuth))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.status").value("DRAFT"));
+        assertThat(jdbc.queryForObject("""
+                SELECT unit_price FROM quotation_line
+                WHERE quotation_id = ? AND booking_horse_id = ? AND line_type = 'INSURANCE' AND is_pass_through
+                """, BigDecimal.class, draft.id(), horse)).isEqualByComparingTo("4200");
+
+        mvc.perform(post("/quotations/{id}/send", draft.id()).header(HttpHeaders.AUTHORIZATION, managerAuth))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.expiresAt").value(newDeadline.toString()));
+        assertThat(bookingStatus(fixture)).isEqualTo("AWAITING_DEPOSIT");
+        insuranceAction(booking, insurance, specialistAuth, "reopen", reopen).andExpect(status().isConflict());
+    }
+
+    @Test
+    void specialistCannotEditPersonalInsuranceWhileQuoting() throws Exception {
+        var fixture = fixture(BookingType.LOCAL, BookingStatus.QUOTING);
+        long booking = fixture.booking().getId();
+        long horse = attachHorse(fixture, "STANDARD");
+        var specialist = data.staff(data.unique("personal-specialist"), "SPECIALIST");
+        String specialistAuth = auth(specialist.getUser().getUsername(), "SPECIALIST");
+        long insurer = sampleInsurer();
+        long insurance = jdbc.queryForObject("""
+                INSERT INTO horse_insurance (booking_horse_id, coverage_option, insurer_party_id, policy_number,
+                    valid_from, valid_to, coverage_amount, currency_code, status, confirmed_by, confirmed_at)
+                VALUES (?, 'PERSONAL', ?, 'HD-01', '2027-01-01', '2027-02-01', 100000, 'VND', 'CONFIRMED', ?, ?)
+                RETURNING id
+                """, Long.class, horse, insurer, specialist.getUserId(), java.sql.Timestamp.from(START));
+
+        insuranceAction(booking, insurance, specialistAuth, "reopen", """
+                {"reason":"Cập nhật hợp đồng."}
+                """).andExpect(status().isConflict());
+        jdbc.update("UPDATE horse_insurance SET status = 'DRAFT', confirmed_by = NULL, confirmed_at = NULL WHERE id = ?",
+                insurance);
+        insuranceAction(booking, insurance, specialistAuth, "record-evidence", """
+                {"insurerPartyId":%d,"coverageAmount":200000,"currencyCode":"VND"}
+                """.formatted(insurer)).andExpect(status().isConflict());
+        insuranceAction(booking, insurance, specialistAuth, "confirm", "{}").andExpect(status().isConflict());
     }
 
     @Test
@@ -829,6 +915,16 @@ class QuotationPaymentPostgresTest {
 
     private String auth(String username, String role) {
         return "Bearer " + jwt.generateToken(username, List.of(role));
+    }
+
+    private long sampleInsurer() {
+        return jdbc.queryForObject("SELECT id FROM party WHERE display_name = 'Công ty bảo hiểm (mẫu)'", Long.class);
+    }
+
+    private ResultActions insuranceAction(long booking, long insurance, String auth, String action, String body)
+            throws Exception {
+        return mvc.perform(post("/bookings/{id}/insurances/{insuranceId}/{action}", booking, insurance, action)
+                .header(HttpHeaders.AUTHORIZATION, auth).contentType("application/json").content(body));
     }
 
     private static Map<String, String> callback(String reference, String transaction, int vnd, Instant paidAt, boolean success) {

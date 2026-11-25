@@ -38,7 +38,7 @@ Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A
 | Điểm | Đang thế nào | Gợi ý (chưa duyệt) | Xem ở | Lưu ý |
 |---|---|---|---|---|
 | **2.F2** | Khách tự có bảo hiểm chỉ khai số hợp đồng, không tải tệp | Dùng loại giấy `INSURANCE_POLICY` đã khai, bắt buộc tệp khi khách tự mua | `InsuranceServiceImpl`, màn thẩm định | |
-| **2.F4** | Báo giá bảo hiểm hết hạn lúc đơn Đang báo giá thì kẹt | Cho sửa bảo hiểm mua hộ khi Đang báo giá, lập lại bản nháp | `InsuranceServiceImpl`, `InsuranceReviewPolicy`, `QuotationDraftServiceImpl` | **Chờ** 1b (`QuotationDraft*`). Ưu tiên |
+| **2.F4** | **Đã sửa.** Chuyên viên cập nhật và xác nhận bảo hiểm mua hộ khi đơn Đang báo giá. Quản lý lập lại bản nháp theo phí mới | | `InsuranceServiceImpl`, `InsurancesCard.tsx` | |
 | **2.F5** | Không rút được giấy đã duyệt khi phát hiện giả hoặc sai | Chuyên viên thu hồi, bắt buộc lý do, báo bên nộp; chặn xe như thiếu giấy | `DocumentReviewServiceImpl`, `DocumentReviewPolicy` | Giấy đã theo xe thì cần quy định riêng |
 | **2.F7** | Giấy không kiểm lại ở cửa khẩu đơn xuất | Kiểm đủ giấy lúc bàn giao đại lý, giống chiều nhập | `HandoverOutcomeServiceImpl` | 1b đã gộp, làm được. Trùng 4.F12 |
 | **2.F8** | Xuất Lào thiếu sổ tiêm, nhập Lào thiếu xét nghiệm so với Campuchia | Hỏi nhóm cố ý hay thiếu; tra [CAN_CU_PHAP_LY_VA_IRT.md](CAN_CU_PHAP_LY_VA_IRT.md) | `db/seed-dev/R__dev_seed_base.sql` (`document_requirement`) | Pháp lý Lào **chưa kiểm chứng** |
@@ -92,7 +92,8 @@ Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A
 | Điểm | Phương án | Duyệt | PR |
 |---|---|---|---|
 | 1.F5 | | | |
-| 2.F2, 2.F4, 2.F5, 2.F7, 2.F8, 2.F9, 2.F10 | | | |
+| 2.F2, 2.F5, 2.F7, 2.F8, 2.F9, 2.F10 | | | |
+| 2.F4 | Cập nhật và xác nhận bảo hiểm mua hộ khi đơn Đang báo giá | Đã duyệt | |
 | 3.G4, 3.G6, 3.G7, 3.G8, 3.G9, 3.G10, 3.G11 | | | |
 | 4.F1, 4.F2, 4.F3, 4.F6, 4.F10, 4.F11, 4.F12 | | | |
 | 5.G14, 5.G15, 5.G16, 5.G17, 5.G18, 5.G22 | | | |

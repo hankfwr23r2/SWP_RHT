@@ -330,7 +330,7 @@ Lúc đặt đơn khách đã chọn một trong ba cách cho mỗi con. Chuyên
   2. đã biết cửa khẩu nếu giấy phụ thuộc cửa khẩu;
   3. mọi con có bảo hiểm đã xác nhận, hợp đồng tự có phủ đủ ngày, báo giá mua hộ còn hạn;
   4. đơn đi trục đã có chuyến.
-- Từ đây bảo hiểm **khóa lại**, không sửa được nữa.
+- Khi đơn Đang báo giá, chuyên viên vẫn có thể mở lại bảo hiểm mua hộ, ghi báo giá hãng và xác nhận lại. Quản lý lập lại bản nháp để lấy phí mới. Các thao tác này bị khóa khi báo giá đang chờ khách phản hồi hoặc đặt cọc.
 
 ### Bước 6. Sau khi khách cọc: công ty làm giấy còn lại (đợt 2)
 
@@ -439,7 +439,7 @@ Tiếp ví dụ chuyến chạy **05:00 thứ Ba 08/12** (liên tỉnh), khách 
 - **2.17** Không mua bảo hiểm: khách ký cam kết **cho từng con**, hệ thống lưu phiên bản điều khoản, thời điểm và địa chỉ mạng.
 - **2.18** Công ty bảo hiểm phải là đối tác đang có vai trò bảo hiểm còn hiệu lực.
 - **2.19** Giá trị khai báo của ngựa **không có nghĩa là đã mua bảo hiểm**.
-- **2.20** Chỉ sửa bảo hiểm khi đơn Đang thẩm định hoặc Cần bổ sung.
+- **2.20** Sửa bảo hiểm khi đơn Đang thẩm định hoặc Cần bổ sung. Khi đơn Đang báo giá, chuyên viên chỉ có thể mở lại, ghi báo giá và xác nhận bảo hiểm mua hộ.
 
 ### Chặn và nhắc
 
@@ -455,7 +455,7 @@ Tiếp ví dụ chuyến chạy **05:00 thứ Ba 08/12** (liên tỉnh), khách 
 | T14 | 2 | Khách nộp lại giấy đang chờ duyệt | Không nhận, báo giấy đang chờ duyệt hoặc còn hiệu lực |
 | T15 | 3 | Giấy bị từ chối | Báo khách lý do, mở lại nút Nộp giấy cho dòng đó |
 | T16 | 4 | Hợp đồng khách tự có không phủ ngày chuyến chạy | Không cho xác nhận. Chuyên viên yêu cầu bổ sung, khách sửa hợp đồng |
-| T17 | 4 | Báo giá của hãng bảo hiểm hết hạn khi chưa gửi báo giá cho khách | Không cho gửi, báo tên con ngựa. Hiện đơn bị kẹt ở đây (điểm còn hở 4) |
+| T17 | 4 | Báo giá của hãng bảo hiểm hết hạn khi chưa gửi báo giá cho khách | Chặn lập hoặc gửi báo giá, báo tên ngựa. Chuyên viên cập nhật và xác nhận báo giá hãng, sau đó quản lý lập lại bản nháp |
 | T18 | 5 | Đơn quốc tế chưa gắn chuyến nên chưa biết cửa khẩu | Coi là chưa đủ giấy, chưa cho báo giá |
 | T19 | 6 | Sổ tiêm của khách hết hạn sau khi đã cọc | Đơn hiện lại ở Đơn thiếu giấy; khách nộp bản mới, chuyên viên duyệt |
 | T20 | 7 | Tới mốc quyết định vẫn thiếu giấy | Quản lý báo không kịp, đơn nhả chỗ, sang Cần chọn lại chuyến |
@@ -468,7 +468,7 @@ Tiếp ví dụ chuyến chạy **05:00 thứ Ba 08/12** (liên tỉnh), khách 
 1. **Đã sửa.** Nhắc thiếu giấy và báo giấy bị từ chối theo bên nộp. Giấy khách nộp báo khách. Giấy của công ty, người nhận hoặc đại lý báo chuyên viên.
 2. **Không có chỗ tải tệp hợp đồng bảo hiểm.** Khách tự có chỉ khai số hợp đồng và ngày; chuyên viên không có tệp để kiểm. Loại giấy "Hợp đồng bảo hiểm" đã khai nhưng chưa dùng.
 3. **Đã sửa.** Giấy được duyệt phải còn hiệu lực đến hết mốc ngày chạy của chuyến hoặc ngày đón của đơn chạy thẳng.
-4. **Báo giá bảo hiểm hết hạn lúc đơn Đang báo giá thì kẹt** (T17): bảo hiểm đã khóa, đơn không quay về thẩm định được; chỉ còn hủy hoặc chờ bị nhả chỗ ở mốc quyết định. Đề xuất: cho sửa bảo hiểm mua hộ khi Đang báo giá.
+4. **Đã sửa.** Khi đơn Đang báo giá (T17), chuyên viên mở lại bảo hiểm mua hộ kèm lý do, ghi báo giá hãng mới và xác nhận. Quản lý lập lại bản nháp theo phí mới.
 5. **Không rút lại được giấy đã duyệt** nếu phát hiện giả hoặc sai.
 6. **Đã sửa phần nhắc và danh sách.** Đơn liên tỉnh chạy thẳng được nhắc theo ngày đón và hiện trong danh sách Đơn thiếu giấy sau khi đã cọc. Thao tác báo giấy không kịp vẫn áp dụng cho đơn có chuyến.
 7. **Sau khi xe trục rời hub, giấy không được kiểm lại** ở cửa khẩu đơn xuất. Tài liệu có nêu cán bộ cửa khẩu xác nhận giấy, code chưa có.

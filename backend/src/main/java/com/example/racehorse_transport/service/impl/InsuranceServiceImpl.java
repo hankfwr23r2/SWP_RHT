@@ -87,8 +87,7 @@ public class InsuranceServiceImpl implements InsuranceService {
     @Transactional
     public void recordEvidence(Long bookingId, Long insuranceId, InsuranceEvidenceRequestDto request) {
         Booking booking = lockBooking(bookingId);
-        requireReview(booking);
-        HorseInsurance insurance = activeInsurance(bookingId, insuranceId);
+        HorseInsurance insurance = editableInsurance(booking, insuranceId);
         InsuranceReviewPolicy.requireStatus(insurance, HorseInsuranceStatus.DRAFT);
         InsuranceReviewPolicy.validateEvidence(insurance.getCoverageOption(), request.coverageAmount(),
                 request.premiumAmount(), request.currencyCode(), request.quoteExpiresAt(), clock.instant());
@@ -101,8 +100,7 @@ public class InsuranceServiceImpl implements InsuranceService {
     @Transactional
     public void confirm(Long bookingId, Long insuranceId, String username) {
         Booking booking = lockBooking(bookingId);
-        requireReview(booking);
-        HorseInsurance insurance = activeInsurance(bookingId, insuranceId);
+        HorseInsurance insurance = editableInsurance(booking, insuranceId);
         InsuranceReviewPolicy.validateConfirmation(insurance, booking.getRequestedPickupDate(), departureDate(booking),
                 clock.instant());
         if (insurance.getCoverageOption() != InsuranceCoverageOption.NONE) {
@@ -134,8 +132,7 @@ public class InsuranceServiceImpl implements InsuranceService {
     @Transactional
     public void reopen(Long bookingId, Long insuranceId, String username, String reason) {
         Booking booking = lockBooking(bookingId);
-        requireReview(booking);
-        HorseInsurance insurance = activeInsurance(bookingId, insuranceId);
+        HorseInsurance insurance = editableInsurance(booking, insuranceId);
         InsuranceReviewPolicy.requireStatus(insurance, HorseInsuranceStatus.CONFIRMED);
         String note = BookingReviewPolicy.requireReason(reason);
         Staff actor = reviewer(username);
@@ -198,6 +195,18 @@ public class InsuranceServiceImpl implements InsuranceService {
 
     private static void requireReview(Booking booking) {
         BookingReviewPolicy.requireStatus(booking.getStatus(), BookingStatus.UNDER_REVIEW, BookingStatus.NEEDS_RESUBMISSION);
+    }
+
+    private HorseInsurance editableInsurance(Booking booking, Long insuranceId) {
+        boolean quoting = booking.getStatus() == BookingStatus.QUOTING;
+        if (!quoting) {
+            requireReview(booking);
+        }
+        HorseInsurance insurance = activeInsurance(booking.getId(), insuranceId);
+        if (quoting && insurance.getCoverageOption() != InsuranceCoverageOption.ARRANGED) {
+            throw BookingRuleException.conflict("Chỉ bảo hiểm mua hộ được cập nhật khi đơn đang báo giá.");
+        }
+        return insurance;
     }
 
     private Booking lockBooking(Long id) {

@@ -368,8 +368,11 @@ class BookingReviewServiceTest {
     void reopenRequiresReasonAndReviewStatusAndConfirmedInsurance() {
         assertThatThrownBy(() -> insurance.reopen(BOOKING_ID, INSURANCE_ID, "specialist", " "))
                 .isInstanceOf(BookingRuleException.class).hasMessageContaining("lý do");
+        // Đang báo giá chỉ mở lại được bảo hiểm mua hộ (2.F4); bảo hiểm khách tự có vẫn bị khóa
         booking.setStatus(QUOTING);
-        assertConflict(() -> insurance.reopen(BOOKING_ID, INSURANCE_ID, "specialist", "Đổi chuyến"), "trạng thái");
+        cover.setCoverageOption(InsuranceCoverageOption.PERSONAL);
+        assertConflict(() -> insurance.reopen(BOOKING_ID, INSURANCE_ID, "specialist", "Đổi chuyến"), "mua hộ");
+        cover.setCoverageOption(InsuranceCoverageOption.ARRANGED);
         assertThat(cover.getStatus()).isEqualTo(HorseInsuranceStatus.CONFIRMED);
         assertThat(cover.getConfirmedAt()).isEqualTo(NOW);
         booking.setStatus(NEEDS_RESUBMISSION);
