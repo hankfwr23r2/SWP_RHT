@@ -13,6 +13,8 @@ import java.util.List;
 // Thời gian ngựa ở một nơi, không trên xe (B3). Chủ sở hữu horse_stay.
 public interface HorseStayService {
 
+    void openBalanceHold(Long bookingId, Instant chargedFrom);
+
     // Giao vào hub xong: mở lưu trú tập kết ở hub, dự kiến tới khi chặng sau bắt đầu
     void openAssembly(HorseLeg alightedLeg, Instant at);
 

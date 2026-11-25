@@ -1,6 +1,7 @@
 // Điều độ (điều phối viên): đơn chờ xếp xe và lượt xe trong tuần (docs/MAN_HINH_VA_TAC_DONG.md mục 3.9)
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { PickupMissPanel } from '@shared/components/PickupMissPanel'
 import { dispatchApi, type DispatchBooking, type DispatchHorse, type DispatchVehicle, type VehicleTrip } from '@shared/api/dispatch'
 import { BookingJourney } from '@shared/components/HorseJourney'
 import { useLoad } from '@shared/hooks/useLoad'
@@ -110,6 +111,7 @@ export default function DispatchPage() {
       {journeyOf && (
         <Modal title={t('dispatch.bookings.journeyTitle', { code: journeyOf.code })} onClose={() => setJourneyOf(undefined)}>
           <BookingJourney bookingId={journeyOf.id!} />
+          <PickupMissPanel bookingId={journeyOf.id!} mode="coordinator" onChanged={() => void reload()} />
         </Modal>
       )}
     </div>

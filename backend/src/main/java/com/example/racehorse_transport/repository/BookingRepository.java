@@ -107,8 +107,93 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     boolean hasNotificationBetween(Long bookingId, String title, Instant start, Instant end);
 
     @Query("""
+            SELECT MIN(s.balanceHoldAt) FROM HorseStay s
+            WHERE s.bookingHorse.booking.id = :bookingId AND s.actualEndAt IS NULL
+            """)
+    Optional<Instant> findActiveBalanceHoldAt(Long bookingId);
+
+    @Query("""
+            SELECT count(p) > 0 FROM Payment p
+            WHERE p.booking.id = :bookingId
+                AND p.status = com.example.racehorse_transport.entity.enums.PaymentStatus.PENDING
+                AND (p.paymentType = com.example.racehorse_transport.entity.enums.PaymentType.BALANCE
+                    OR EXISTS (SELECT c.id FROM CostItem c WHERE c.extraChargePayment = p
+                        AND c.horseStay.balanceHoldAt IS NOT NULL AND c.horseStay.actualEndAt IS NOT NULL))
+            """)
+    boolean hasOutstandingPickupReturnPayments(Long bookingId);
+
+    @Query("""
+            SELECT count(s) > 0 FROM HorseStay s WHERE s.bookingHorse.booking.id = :bookingId
+                AND s.balanceHoldAt IS NOT NULL AND s.actualEndAt > s.balanceHoldAt
+                AND EXISTS (SELECT h.id FROM Handover h WHERE h.horseStay = s
+                    AND h.handoverType = com.example.racehorse_transport.entity.enums.HandoverType.RETURN
+                    AND h.status = com.example.racehorse_transport.entity.enums.HandoverStatus.DONE)
+                AND NOT EXISTS (SELECT a.id FROM AuditLog a WHERE a.targetTable = 'horse_stay'
+                    AND a.targetId = s.id AND a.action = 'BALANCE_HOLD_BILLED')
+            """)
+    boolean hasUnbilledHoldingReturn(Long bookingId);
+
+    @Query("""
+            SELECT MAX(h.handedAt) FROM Handover h
+            WHERE h.horseStay.bookingHorse.booking.id = :bookingId AND h.horseStay.balanceHoldAt IS NOT NULL
+                AND h.handoverType = com.example.racehorse_transport.entity.enums.HandoverType.RETURN
+                AND h.status = com.example.racehorse_transport.entity.enums.HandoverStatus.DONE
+                AND NOT EXISTS (SELECT s.id FROM HorseStay s WHERE s.bookingHorse.booking.id = :bookingId
+                    AND s.balanceHoldAt IS NOT NULL AND s.actualEndAt IS NULL)
+            """)
+    Optional<Instant> findReturnedBalanceHoldAt(Long bookingId);
+
+    @Query("""
+            SELECT DISTINCT s.bookingHorse.booking.id FROM HorseStay s
+            WHERE s.balanceHoldAt IS NOT NULL AND s.actualEndAt <= :cutoff
+                AND s.bookingHorse.booking.status = com.example.racehorse_transport.entity.enums.BookingStatus.SCHEDULE_CHANGE_REQUIRED
+            ORDER BY s.bookingHorse.booking.id
+            """)
+    List<Long> findReturnedBalanceHoldIds(Instant cutoff);
+
+    @Query("""
+            SELECT h.booking.id FROM BookingStatusHistory h WHERE h.reason = :reason
+                AND h.booking.status = h.toStatus AND h.changedAt <= :cutoff
+                AND NOT EXISTS (SELECT n.id FROM BookingStatusHistory n
+                    WHERE n.booking = h.booking AND n.id > h.id)
+            ORDER BY h.booking.id
+            """)
+    List<Long> findScheduleChangesByReason(String reason, Instant cutoff);
+
+    @Query("""
+            SELECT COUNT(h) > 0 FROM BookingStatusHistory h
+            WHERE h.booking.id = :bookingId AND h.booking.status = h.toStatus AND h.reason = :reason
+                AND NOT EXISTS (SELECT n.id FROM BookingStatusHistory n WHERE n.booking = h.booking AND n.id > h.id)
+            """)
+    boolean hasLatestStatusReason(Long bookingId, String reason);
+
+    @Query("""
+            SELECT DISTINCT l.bookingHorse.booking.id FROM HorseLeg l
+            WHERE l.status = com.example.racehorse_transport.entity.enums.HorseLegStatus.IN_PROGRESS
+                AND l.boardTripStop.stopType = com.example.racehorse_transport.entity.enums.TripStopType.PICKUP
+                AND l.boardTripStop.actualDepartureAt IS NULL
+                AND l.bookingHorse.booking.status = com.example.racehorse_transport.entity.enums.BookingStatus.CONFIRMED
+                AND EXISTS (SELECT p.id FROM Payment p WHERE p.booking = l.bookingHorse.booking
+                    AND p.paymentType = com.example.racehorse_transport.entity.enums.PaymentType.BALANCE
+                    AND p.status = com.example.racehorse_transport.entity.enums.PaymentStatus.PENDING)
+            ORDER BY l.bookingHorse.booking.id
+            """)
+    List<Long> findWaitingPickupBalanceIds();
+
+    @Query("""
+            SELECT MIN(l.actualStartAt) FROM HorseLeg l
+            WHERE l.bookingHorse.booking.id = :bookingId
+                AND l.status = com.example.racehorse_transport.entity.enums.HorseLegStatus.IN_PROGRESS
+                AND l.boardTripStop.stopType = com.example.racehorse_transport.entity.enums.TripStopType.PICKUP
+                AND l.boardTripStop.actualDepartureAt IS NULL
+            """)
+    Optional<Instant> findWaitingPickupSince(Long bookingId);
+
+    @Query("""
             SELECT count(hh) > 0 FROM HandoverHorse hh JOIN hh.handover h JOIN hh.horseLeg l
             WHERE l.bookingHorse.booking.id = :bookingId
+                AND hh.microchipMatched = true
+                AND l.status <> com.example.racehorse_transport.entity.enums.HorseLegStatus.CANCELLED
                 AND h.status = com.example.racehorse_transport.entity.enums.HandoverStatus.DONE
                 AND (h.handoverType = com.example.racehorse_transport.entity.enums.HandoverType.PICKUP
                      OR (h.handoverType = com.example.racehorse_transport.entity.enums.HandoverType.AGENT

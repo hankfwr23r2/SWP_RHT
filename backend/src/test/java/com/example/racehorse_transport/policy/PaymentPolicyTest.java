@@ -84,7 +84,11 @@ class PaymentPolicyTest {
         var signedAmount = new BigDecimal("6000");
 
         assertThat(PaymentPolicy.canApply(payment, booking, session, now, now, 5, signedAmount)).isTrue();
+        booking.setStatus(BookingStatus.SCHEDULE_CHANGE_REQUIRED);
+        assertThat(PaymentPolicy.isOpen(payment, booking, now)).isTrue();
+        assertThat(PaymentPolicy.canApply(payment, booking, session, now, now, 5, signedAmount)).isTrue();
         booking.setStatus(BookingStatus.CANCELLED);
+        assertThat(PaymentPolicy.isOpen(payment, booking, now)).isFalse();
         assertThat(PaymentPolicy.canApply(payment, booking, session, now, now, 5, signedAmount)).isFalse();
     }
 

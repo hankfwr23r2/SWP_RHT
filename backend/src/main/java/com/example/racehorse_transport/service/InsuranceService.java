@@ -7,6 +7,8 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface InsuranceService {
+    void recordPremiumRefund(Long bookingId, Long insuranceId,
+            com.example.racehorse_transport.dto.booking.InsurancePremiumRefundRequestDto request, String username);
 
     void recordEvidence(Long bookingId, Long insuranceId, com.example.racehorse_transport.dto.booking.InsuranceEvidenceRequestDto request);
 

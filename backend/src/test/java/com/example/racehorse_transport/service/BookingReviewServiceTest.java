@@ -54,15 +54,40 @@ class BookingReviewServiceTest {
     private final BookingRoutingService routing = mock(BookingRoutingService.class);
     private final NotificationService notifications = mock(NotificationService.class);
     private final AuditService audit = mock(AuditService.class);
+    private final BookingHorseService bookingHorses = mock(BookingHorseService.class);
     private final DocumentCompletenessServiceImpl completeness = spy(new DocumentCompletenessServiceImpl(
             bookings, mock(BookingAddressRepository.class), horses, documents, mock(RegulationService.class), CLOCK));
     private final DocumentReviewService docs = new DocumentReviewServiceImpl(
             bookings, horses, documents, requirements, staff, attachments, completeness, notifications, CLOCK);
     private final InsuranceService insurance = new InsuranceServiceImpl(
-            roles, mock(TermsAcceptanceRepository.class), insurances, bookings, staff, notifications, audit, CLOCK);
+            roles, mock(TermsAcceptanceRepository.class), insurances, bookings, staff, notifications, audit, CLOCK,
+            bookingHorses);
     private final BookingStatusHistoryRepository history = mock(BookingStatusHistoryRepository.class);
     private final BookingStatusService statuses = mock(BookingStatusService.class);
     private BookingReviewService review;
+
+    @Test
+    void recordedPremiumRefundUpdatesExcludedHorseQuotationOnlyOnce() {
+        booking.setStatus(IN_OPERATION);
+        horse.setPickupMissLiability(PickupMissLiability.CUSTOMER);
+        horse.setStatus(BookingHorseStatus.EXCLUDED);
+        cover.setCoverageOption(InsuranceCoverageOption.ARRANGED);
+        cover.setPremiumAmount(new BigDecimal("1500000"));
+        var request = new InsurancePremiumRefundRequestDto(new BigDecimal("500000"), "INS-057");
+
+        insurance.recordPremiumRefund(BOOKING_ID, INSURANCE_ID, request, "specialist");
+        insurance.recordPremiumRefund(BOOKING_ID, INSURANCE_ID, request, "specialist");
+
+        assertThat(cover.getRefundedPremiumAmount()).isEqualByComparingTo("500000");
+        verify(bookings, times(2)).findForUpdate(BOOKING_ID);
+        verify(bookingHorses).reviseExcludedInsurance(horse);
+        verify(audit).record(STAFF_ID, "RECORD_INSURANCE_PREMIUM_REFUND", "horse_insurance", INSURANCE_ID,
+                null, Map.of("refundedPremiumAmount", new BigDecimal("500000"), "receiptReference", "INS-057"));
+        assertThatThrownBy(() -> insurance.recordPremiumRefund(BOOKING_ID, INSURANCE_ID,
+                new InsurancePremiumRefundRequestDto(new BigDecimal("1500001"), "INS-058"), "specialist"))
+                .isInstanceOf(BookingRuleException.class);
+        verifyNoMoreInteractions(bookingHorses);
+    }
 
     @BeforeEach
     void setup() {

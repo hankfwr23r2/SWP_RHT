@@ -1,6 +1,22 @@
 // Coordinator planning, dispatch, tracking and hub pages; loaded with the page
 export const staffDispatch = {
   "tracking": {
+    "balance": {
+      "open": "Balance follow-up",
+      "title": "Balance follow-up · {{code}}",
+      "action": "Action",
+      "contact": "Log call",
+      "extend": "Extend waiting time",
+      "transfer": "Send horse to hub",
+      "transferConfirm": "Confirm that no one is available to take the horse back at pickup. The horse will travel to the next safe hub for care.",
+      "target": "Contact called",
+      "CUSTOMER": "Customer",
+      "EMERGENCY_CONTACT": "Emergency contact",
+      "result": "Call outcome",
+      "reason": "Reason",
+      "saved": "Follow-up saved",
+      "failed": "Could not save follow-up"
+    },
     "title": "Tracking",
     "subtitle": "Every horse held by the company or a partner. Overdue checks come first.",
     "list": "Horses being held",
@@ -99,6 +115,12 @@ export const staffDispatch = {
       }
     },
     "stays": {
+      "balanceHold": "Held at hub due to unpaid balance",
+      "returnHeld": "Return held horse",
+      "returnHeldTitle": "Return {{horse}} · {{code}}",
+      "returnHeldHint": "Check the microchip, verify the recipient and return the original papers.",
+      "returnHeldDone": "Horse returned",
+      "confirmReturnHeld": "The stay ends when the horse is handed back. Any accrued fee is handled on the order.",
       "subtitle": "Appointments and horses at the hub.",
       "collect": "Set pickup time",
       "collectTitle": "Consignee pickup time · {{horse}} · {{code}}",

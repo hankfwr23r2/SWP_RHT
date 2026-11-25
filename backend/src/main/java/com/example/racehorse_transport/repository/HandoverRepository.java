@@ -14,10 +14,23 @@ import org.springframework.data.repository.query.Param;
 
 public interface HandoverRepository extends JpaRepository<Handover, Long> {
 
+    @Query("""
+            SELECT h.id FROM Handover h WHERE h.status = com.example.racehorse_transport.entity.enums.HandoverStatus.PENDING
+                AND h.handoverType = com.example.racehorse_transport.entity.enums.HandoverType.HUB_OUT
+                AND EXISTS (SELECT l.id FROM HorseLeg l WHERE l.boardTripStop = h.tripStop
+                    AND l.bookingHorse.booking.id = :bookingId
+                    AND l.status = com.example.racehorse_transport.entity.enums.HorseLegStatus.PLANNED)
+            ORDER BY h.id
+            """)
+    List<Long> findPendingHubOutIds(Long bookingId);
+
     @EntityGraph(attributePaths = {"tripStop", "handledBy"})
     List<Handover> findByTripStop_IdInOrderById(Collection<Long> tripStopIds);
 
     long countByTripStop_IdAndStatus(Long tripStopId, HandoverStatus status);
+
+    List<Handover> findByTripStop_IdAndHandoverTypeAndStatusOrderById(
+            Long tripStopId, com.example.racehorse_transport.entity.enums.HandoverType handoverType, HandoverStatus status);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT h FROM Handover h WHERE h.id = :id")

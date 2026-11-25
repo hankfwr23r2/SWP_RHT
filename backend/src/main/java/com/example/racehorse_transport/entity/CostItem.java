@@ -113,6 +113,10 @@ public class CostItem {
     @Column(name = "agent_recovered_at")
     private Instant agentRecoveredAt;
 
+    // snapshot: phần phí giữ đã cấn vào tiền cọc của đơn hủy
+    @Column(name = "stabling_deposit_credit", nullable = false, precision = 15, scale = 2)
+    private BigDecimal stablingDepositCredit = BigDecimal.ZERO;
+
     @Column(name = "incurred_at", nullable = false)
     private Instant incurredAt;
 

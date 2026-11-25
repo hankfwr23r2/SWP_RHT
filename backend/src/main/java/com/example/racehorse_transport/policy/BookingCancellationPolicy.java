@@ -109,4 +109,10 @@ public final class BookingCancellationPolicy {
     public static Breakdown refundAll(BigDecimal paid) {
         return new Breakdown(paid, BigDecimal.ZERO, BigDecimal.ZERO);
     }
+
+    public static Breakdown pickupMissAmounts(boolean customerLiable, Quotation quotation, List<Payment> payments) {
+        var refundable = amounts(Outcome.FREE, false, quotation, List.of(), payments).refundable();
+        var forfeited = customerLiable ? PaymentPolicy.paidDeposit(payments).min(refundable) : BigDecimal.ZERO;
+        return new Breakdown(refundable.subtract(forfeited), BigDecimal.ZERO, forfeited);
+    }
 }

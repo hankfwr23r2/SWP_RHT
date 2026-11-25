@@ -5,6 +5,8 @@ import com.example.racehorse_transport.entity.HorseStay;
 import java.time.Instant;
 
 public interface StablingChargeService {
+
+    void chargeReturnedBalanceHolds(Long bookingId);
     int remindOverdueStabling();
     void precharge(HorseLeg replacement, String username);
     void requirePaid(HorseStay stay);

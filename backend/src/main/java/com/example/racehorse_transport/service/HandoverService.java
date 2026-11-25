@@ -4,6 +4,7 @@ import com.example.racehorse_transport.dto.operation.CrewTripResponseDto;
 import com.example.racehorse_transport.dto.operation.HandoverCompleteRequestDto;
 import com.example.racehorse_transport.dto.operation.HandoverCreateRequestDto;
 import com.example.racehorse_transport.dto.operation.HandoverRefusalRequestDto;
+import org.springframework.web.multipart.MultipartFile;
 import com.example.racehorse_transport.dto.operation.HandoverScanRequestDto;
 import com.example.racehorse_transport.entity.Handover;
 import java.util.Set;
@@ -23,7 +24,7 @@ public interface HandoverService {
     CrewTripResponseDto complete(Long handoverId, HandoverCompleteRequestDto request, String username);
 
     // Không nhận một con ở lần nhận ngựa từ khách (PICKUP): con đó bị loại khỏi đơn, các chặng chưa chạy bị hủy; hết con để nhận thì lần giao nhận FAILED
-    CrewTripResponseDto refuse(Long handoverId, HandoverRefusalRequestDto request, String username);
+    CrewTripResponseDto refuse(Long handoverId, HandoverRefusalRequestDto request, MultipartFile photo, String username);
 
     // Lần giao nhận đang mở mà người này ở trong tổ lái; đơn của các con trong lần giao nhận (dùng cho biên bản và giấy gốc)
     Handover pendingForCrew(Long handoverId, String username);

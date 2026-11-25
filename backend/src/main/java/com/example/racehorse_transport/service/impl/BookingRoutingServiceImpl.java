@@ -2,6 +2,7 @@ package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.dto.booking.BookingCreateRequestDto;
 import com.example.racehorse_transport.dto.booking.BookingCreateRequestDto.AddressInput;
+import com.example.racehorse_transport.dto.regulation.RegulationPreviewResponseDto;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.BookingAddress;
 import com.example.racehorse_transport.entity.Departure;
@@ -9,21 +10,26 @@ import com.example.racehorse_transport.entity.Province;
 import com.example.racehorse_transport.entity.Route;
 import com.example.racehorse_transport.entity.enums.ActiveStatus;
 import com.example.racehorse_transport.entity.enums.AddressRole;
+import com.example.racehorse_transport.entity.enums.BookingHorseStatus;
 import com.example.racehorse_transport.entity.enums.BookingType;
 import com.example.racehorse_transport.exception.BookingRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.BookingSubmissionPolicy;
 import com.example.racehorse_transport.policy.DepartureRoutePolicy;
+import com.example.racehorse_transport.policy.DocumentCompletenessPolicy;
 import com.example.racehorse_transport.policy.RegulationPolicy;
 import com.example.racehorse_transport.policy.HubResolutionPolicy;
 import com.example.racehorse_transport.repository.BookingAddressRepository;
+import com.example.racehorse_transport.repository.BookingHorseRepository;
 import com.example.racehorse_transport.repository.DepartureRepository;
+import com.example.racehorse_transport.repository.DocumentRepository;
 import com.example.racehorse_transport.repository.HubServiceAreaRepository;
 import com.example.racehorse_transport.repository.ProvinceRepository;
 import com.example.racehorse_transport.repository.RouteRepository;
 import com.example.racehorse_transport.service.BookingRoutingService;
 import com.example.racehorse_transport.service.RegulationService;
 import java.time.Clock;
+import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -39,6 +45,8 @@ public class BookingRoutingServiceImpl implements BookingRoutingService {
     private final DepartureRepository departures;
     private final BookingAddressRepository bookingAddresses;
     private final RegulationService regulations;
+    private final BookingHorseRepository horses;
+    private final DocumentRepository documents;
     private final Clock clock;
 
     @Override
@@ -74,8 +82,11 @@ public class BookingRoutingServiceImpl implements BookingRoutingService {
                 DepartureRoutePolicy.counterpartCountryCode(booking.getBookingType(), pickup.getCountry().getCode(), delivery.getCountry().getCode()));
         BookingSubmissionPolicy.validatePickupDate(booking.getBookingType(), booking.getRequestedPickupDate(), replacement.getDepartureDate());
         Long gate = DepartureRoutePolicy.gateId(route, booking.getBookingType());
-        long leadDays = regulations.resolve(booking.getBookingType(), pickup.getCountry().getCode(),
-                delivery.getCountry().getCode(), booking.getRequestedPickupDate(), gate).leadDays();
+        var resolved = regulations.resolve(booking.getBookingType(), pickup.getCountry().getCode(),
+                delivery.getCountry().getCode(), booking.getRequestedPickupDate(), gate);
+        // Đã cọc thì chỉ tính giấy phải làm lại; chưa cọc thì tính đủ như lúc đặt
+        long leadDays = booking.getWaybillNumber() == null ? resolved.leadDays()
+                : redoLeadDays(booking, resolved, replacement.getDepartureDate());
         if (!RegulationPolicy.feasible(leadDays, clock.instant(), replacement.getBookingCutoffAt())) {
             throw BookingRuleException.conflict("Không đủ thời gian chuẩn bị giấy tờ cho chuyến mới.");
         }
@@ -107,6 +118,29 @@ public class BookingRoutingServiceImpl implements BookingRoutingService {
         if (!RegulationPolicy.feasible(days, today, pickupDate)) {
             throw BookingRuleException.conflict("Không kịp làm giấy trước ngày đón.");
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void requireDirectLeadTime(Booking booking, LocalDate pickupDate) {
+        if (booking.getBookingType() == BookingType.LOCAL) {
+            return;
+        }
+        List<BookingAddress> addresses = bookingAddresses.findAddressesForDetail(booking.getId());
+        var resolved = regulations.resolve(booking.getBookingType(),
+                bookingAddress(addresses, AddressRole.PICKUP).getCountry().getCode(),
+                bookingAddress(addresses, AddressRole.DELIVERY).getCountry().getCode(), pickupDate, null);
+        if (!RegulationPolicy.feasible(redoLeadDays(booking, resolved, pickupDate),
+                BookingSubmissionPolicy.businessDate(clock.instant()), pickupDate)) {
+            throw BookingRuleException.conflict("Không đủ thời gian làm lại giấy tờ cho ngày đón mới.");
+        }
+    }
+
+    private long redoLeadDays(Booking booking, RegulationPreviewResponseDto resolved, LocalDate on) {
+        var active = horses.findForDetail(booking.getId()).stream()
+                .filter(horse -> horse.getStatus() == BookingHorseStatus.ACTIVE).toList();
+        return RegulationPolicy.redoLeadDays(resolved.rule(), DocumentCompletenessPolicy.missingTypes(booking.getId(),
+                active, resolved.requirements(), documents.findForBookingReview(booking.getId()), on));
     }
 
     private Departure lock(Long id) {

@@ -76,8 +76,8 @@ class MigrationTest {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM province", Integer.class)).isEqualTo(77);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM role", Integer.class)).isEqualTo(7);
         assertThat(jdbc.queryForObject("SELECT name FROM role WHERE code = 'ESCORT'", String.class)).isEqualTo("Nhân viên hộ tống");
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM app_user WHERE username LIKE '%.dev'", Integer.class)).isEqualTo(12);
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM route_stop", Integer.class)).isEqualTo(30);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM app_user WHERE username LIKE '%.dev'", Integer.class)).isEqualTo(15);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM route_stop", Integer.class)).isEqualTo(72);
     }
 
     @Test

@@ -104,8 +104,8 @@ Chi tiết ở **mục 8**. Tóm tắt: khách chọn **bỏ con đó** (trừ t
 | Đại lý giao không bằng chứng (6.G9) | Công ty đứng ra với khách | Điều phối phải tải ảnh hoặc biên bản đại lý gửi; báo khách |
 | Giấy gốc (6.G10–G12) | Đức §6.2: công ty giữ cẩn thận giấy khách giao | Phải đánh dấu từng giấy **đã nhận hoặc không nhận bản gốc** mới hoàn tất. Giao hoặc trả ngựa thì phải trả hết bản đã nhận |
 | Khách không xem biên bản (6.G13) | Tài liệu nhóm | Hiện biên bản và ảnh ở từng lần giao nhận trên đơn |
-| Chưa có khiếu nại (6.G18) | IRT: **7 ngày** kể từ lúc giao (Úc 18, Anh 12, Đức §14.2). LTM 237.1đ: công ty miễn trách nếu không nhận khiếu nại trong **14 ngày** | Khách gửi khiếu nại trên đơn trong **7 ngày** (đã chốt), kèm ảnh. Có khiếu nại mở thì **không đóng được đơn**. Ngày 8–14 vẫn nhận qua quản lý, đơn mở lại xét. Không thêm bảng: dùng `incident` gắn đơn, thêm loại Khiếu nại |
-| Không có bước nghiệm thu (6.G24) | Tự đề xuất | Đơn Đã giao: khách bấm **Xác nhận đã nhận ngựa ổn** hoặc **Khiếu nại**. Xác nhận thì đóng sớm; không bấm thì chờ hết 7 ngày |
+| Chưa có khiếu nại (6.G18) | IRT: **7 ngày** kể từ lúc giao (Úc 18, Anh 12, Đức §14.2). LTM 237.1đ: công ty miễn trách nếu không nhận khiếu nại trong **14 ngày** | Khách gửi khiếu nại trên đơn trong **7 ngày** (đã chốt), kèm ảnh. Có khiếu nại mở thì **không đóng được đơn**. Ngày 8–14 vẫn nhận qua quản lý, **xét lại vụ việc**; đơn đã Hoàn thành thì giữ Hoàn thành. Đếm từ lúc **đơn sang Đã giao** (con cuối). Không thêm bảng: dùng `incident` gắn đơn, thêm loại Khiếu nại |
+| Không có bước nghiệm thu (6.G24) | Tự đề xuất | Đơn Đã giao: khách bấm **Xác nhận đã nhận ngựa ổn** hoặc **Khiếu nại**. Xác nhận thì **quản lý** được đóng sớm, hệ thống không tự đóng sớm; không bấm thì chờ hết 7 ngày. Đã xác nhận thì không rút lại, có vấn đề thì gọi công ty, quản lý nhập thay trong 14 ngày |
 
 ## 5. Đợt 4. Thông báo và các sửa nhỏ
 
@@ -124,7 +124,7 @@ IRT Đức §6.5: báo khách **ngay** khi biết có hư hại. Áp dụng chun
 |---|---|---|---|
 | Bảng | Không thêm bảng. Thêm cột ghi đón hụt (lý do, bên chịu, giờ) cho ngựa trong đơn, cấu hình các hạn mới | Cột chốt nguyên nhân, cột khách trả lời chi phí | Cột tên người nhận, mã xác nhận; loại sự cố Khiếu nại |
 | Màn hình | Hub, lượt xe, sự cố, quyết toán | Sự cố, đơn của khách | Lượt xe, hub, đơn của khách |
-| Luồng A làm | 1.1, 1.3, 1.7; phần tiền, đổi chuyến, màn khách của 1.2, 1.5 | Khách trả lời chi phí, mở lại báo giá | Khiếu nại, nghiệm thu, xem biên bản |
+| Luồng A làm | 1.1, 1.3, 1.7; phần tiền, đổi chuyến, màn khách của 1.2, 1.5 | Khách trả lời chi phí, mở lại báo giá | Xem biên bản. Khiếu nại và nghiệm thu: gói **G1** của thành viên |
 | Luồng B làm | 1.4, 1.6; phần hiện trường của 1.2, 1.5 | Chốt nguyên nhân, phương án, quá hạn giữ | Mã xác nhận, ảnh, biên bản, giấy gốc |
 | Kiểm | Test từng quy tắc, chạy tay 5 loại đơn và 4 tình huống kẹt | Test, chạy tay | Test, chạy tay |
 
@@ -140,7 +140,7 @@ Danh sách file cụ thể được trình trước khi làm **từng đợt**, 
 | 1c | Thời gian chờ ở điểm đón | 30 phút, điều phối gia hạn nếu còn kịp | A to B, Two Hearts |
 | 2 | Phí giữ do người nhận vắng | Khách trả trước khi xe giao lại rời hub; tự tới nhận thì không chặn | Bản cũ (thu đủ trước khi đi), Two Hearts |
 | 3 | Phí chờ ở điểm giao sau 120 phút | Không thu, chỉ thu phí giữ ở hub | Bản cũ không thu phí chờ; BLDS 538.3 |
-| 4 | Hạn khiếu nại | 7 ngày trên app, ngày 8–14 qua quản lý | IRT 7 ngày; LTM 14 ngày |
+| 4 | Hạn khiếu nại | 7 ngày trên app, ngày 8–14 qua quản lý, đếm từ lúc đơn sang Đã giao | IRT 7 ngày; LTM 14 ngày |
 | 5 | Xác nhận người nhận | Mã 6 số trên đơn và email của khách | Tự đề xuất |
 | 6 | Chưa trả số dư | Mục 9: liên hệ, lỡ chuyến thì giữ 3 ngày, cấn cọc vào phí giữ | Góp ý của bạn; bản cũ; IRT Anh 5 |
 | 6a | Đơn nhập ở cửa khẩu chưa trả | Đưa về hub giữ thay vì trả đại lý. **Đổi quyết định đã chốt** | Tránh đưa ngựa quay lại biên giới |
@@ -295,7 +295,7 @@ Chuyến 05:00 08/12, hẹn đón 09:00 07/12, một con sai chip: hạn có m�
 | 8 | T + 7 ngày | Gửi thông báo bằng văn bản yêu cầu nhận lại ngựa, bắt đầu đếm 45 ngày (mượn mốc của LTM 239). Đề nghị **chở ngựa về địa chỉ người gửi**, khách trả một lượt cước đón | |
 | 9 | 45 ngày sau thông báo | Báo quản lý xử lý ngoài hệ thống. Hệ thống không bán ngựa | |
 
-Đơn nhập ở cửa khẩu: lập số dư lúc nhận từ đại lý, xe trục **vẫn chở ngựa về hub** (đơn giữ Đã xác nhận, chưa sang Đang vận chuyển). Chưa trả thì chưa lập lượt giao. Không có chuyến để lỡ, nên **T là 24 giờ sau khi ngựa vào hub**.
+Đơn nhập ở cửa khẩu: lập số dư lúc nhận từ đại lý, xe trục **vẫn chở ngựa về hub** (đơn giữ Đã xác nhận, chưa sang Đang vận chuyển). Chưa trả thì chưa lập lượt giao. Không có chuyến để lỡ, nên **T là lúc giao xong ngựa vào hub** (sửa theo mục 13).
 
 Hai hạn khác nhau có chủ đích: **3 ngày** khi công ty **đang giữ ngựa** (phải chăm, chiếm chuồng); **30 ngày** khi ngựa **đã về nhà** (chỉ giữ giá).
 
@@ -307,7 +307,7 @@ Hai hạn khác nhau có chủ đích: **3 ngày** khi công ty **đang giữ ng
 | **Đón ngựa về, giữ đơn** | Phí giữ tới lúc đón, cộng vào số dư. Trả đủ khi chọn lịch mới | Trả ngựa ngay; chọn chuyến trong 30 ngày |
 | **Đón ngựa về, hủy đơn** | Phí giữ **cấn vào cọc**; phần vượt cọc thành khoản thu thêm, **không chặn đón ngựa** | Trả ngay |
 
-**Ví dụ:** cọc 8.761.000 đ, hai con ở hub 3 ngày rồi đón về và hủy: phí giữ 2 × 3 × 1.000.000 = 6.000.000 đ, cấn vào cọc, khách **không trả thêm**. Nếu trả tiền và đi chuyến 15/12 mà ngựa ở lại hub 7 ngày: phí giữ 14.000.000 đ; đưa về rồi 14/12 chở lại thì chỉ trả những ngày đã ở.
+**Ví dụ:** cọc 8.761.000 đ, hai con ở hub 3 ngày rồi đón về và hủy: phí giữ 2 × 3 × 1.000.000 = 6.000.000 đ, cấn vào cọc, khách **không trả thêm**. Nếu trả tiền ở giờ thứ 30 và đi chuyến 15/12: phí giữ 2 × 1.000.000 đ, sau đó lưu chuồng kế hoạch 800.000 đ/con/ngày (mục 13.2); đưa về rồi 14/12 chở lại thì không trả phần lưu chuồng.
 
 ### 9.4 Dùng chung một khuôn
 
@@ -446,3 +446,131 @@ Khoảng 10 chỗ trong máy chủ và 10 màn đang dùng **một** địa ch�
 | 12c | Số nơi tối đa | 3 |
 | 12d | Chờ ở nơi chưa phải cuối | 60 phút |
 | 12e | Xuống dọc đường (Nha Trang, Quy Nhơn…) | **Không**: đó là trạm nghỉ, không có hub và xe trung chuyển; giữ quy tắc lên ở đầu tuyến, xuống ở cuối tuyến (3.10) |
+
+---
+
+## 13. Phí giữ ngựa và kết thúc đơn còn nợ (25/11/2026)
+
+**Đã chốt với người dùng:** người nhận tự tới hub thì **không chặn**; phí tính theo số lần đủ 24 giờ; đơn **không được treo mãi** vì khách không trả. **Người dùng chốt toàn bộ mục 13 ngày 25/11/2026. Code sửa sau khi 1b, đợt 2 và nhiều nơi giao gộp xong. Chỗ khác trong tài liệu này trái mục 13 thì theo mục 13.**
+
+### 13.1 Căn cứ
+
+| Nguồn | Nội dung | Mức kiểm chứng |
+|---|---|---|
+| IRT Anh 5, Mỹ 6; Úc 14; Anh 18 | Khách trả tiền lưu khi chờ; người được chỉ định không trả thì khách trả; tính chung công nợ của khách | Đọc bản gốc |
+| IRT Anh 21 | Công nợ quá 30 ngày mới tính lãi | Đọc bản gốc |
+| [NetSuite](https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/section_N1220604.html), [ERPNext](https://docs.frappe.io/erpnext/user/manual/en/selling/articles/close-sales-order) | Đóng đơn không làm mất hóa đơn; **trạng thái đơn tách khỏi công nợ** | Qua kết quả tìm kiếm, **chưa kiểm chứng** |
+| [Tạp chí Tòa án, BLDS 429](https://tapchitoaan.vn/index.php/thoi-hieu-khoi-kien-ap-dung-doi-voi-loai-hop-dong-co-dieu-kien-theo-quy-dinh-tai-dieu-429-blds-2015) | Thời hiệu khởi kiện hợp đồng 3 năm | Qua kết quả tìm kiếm, **chưa kiểm chứng** |
+| LTM 239 | Báo bằng văn bản, sau 45 ngày mới được định đoạt | Đọc trên trang luật |
+| [Horse & Hound](https://www.horseandhound.co.uk/?p=647680), BHS | Chủ trại vẫn chịu trách nhiệm chăm ngựa bị bỏ lại; muốn xử lý phải có thông báo và đúng thủ tục | Qua kết quả tìm kiếm, **chưa kiểm chứng** |
+
+### 13.2 Cách tính phí giữ
+
+**Mức đã chốt với người dùng:** đếm số lần **đủ 24 giờ**, mỗi lần **1.000.000 đ** (số mẫu, cấu hình). Phần lẻ chưa đủ 24 giờ **không tính**.
+
+| Ngựa ở hub | Cách cũ | Cách mới |
+|---|---:|---:|
+| Dưới 24 giờ | 1.000.000 | 0 |
+| Từ 24 đến dưới 48 giờ | 1.000.000 hoặc 2.000.000 | 1.000.000 |
+| Từ 48 đến dưới 72 giờ | 2.000.000 hoặc 3.000.000 | 2.000.000 |
+| 68 giờ | 3.000.000 | 2.000.000 |
+| Đúng 72 giờ | 3.000.000 | 3.000.000 |
+
+Không tính theo ngày lịch. Lưu chuồng **theo kế hoạch** (800.000 đ/ngày, có trong báo giá) giữ cách cũ.
+
+**Nguyên tắc: chỉ tính thời gian mà *khách* làm ngựa phải ở lại.** Thời gian công ty bận xe, đóng cửa hay báo trễ thì không tính. Đồng hồ vì vậy có **chạy** và **dừng**, cộng dồn lại rồi mới đếm số lần đủ 24 giờ.
+
+| Bước | Quy tắc |
+|---|---|
+| **1. Ai có lỗi** | Xe tới **trong khung giờ đã báo** mà không có người nhận: khách. Xe tới **trễ hơn khung**: công ty, **không tính phí**. Tới sớm: 120 phút chờ đếm từ **đầu khung giờ** |
+| **2. Bắt đầu chạy** | Mốc **muộn nhất**: ngựa giao xong vào hub (có quét chip) và hệ thống đã gửi thông báo cho **khách** (người nhận không có tài khoản thì điều phối gọi và ghi lại). Khách tự tới trễ: giờ hẹn. Chưa trả số dư: giờ xe trục **thật sự** chạy |
+| **3. Dừng** | Khách báo **sẵn sàng nhận** và trả đủ phí giữ tới lúc đó, cước giao lại. Trả qua VNPAY thì lấy giờ giao dịch thành công |
+| **4. Công ty phải** | Đưa ít nhất một khung giờ trong **24 giờ** kể từ lúc khách báo. Chờ xe thì đồng hồ **vẫn dừng** |
+| **5. Chạy lại** | Khách chọn khung muộn hơn khung sớm nhất được đưa, hoặc lại vắng |
+| **6. Cộng dồn** | Cộng mọi lần giữ do khách của **con đó trong đơn**. Không được miễn 24 giờ lần nữa |
+| **7. Ngoài giờ** | Mốc đủ 24 giờ rơi ngoài giờ nhận ngựa (06:00–18:00) thì dời tới **08:00** lần mở cửa kế tiếp |
+| **8. Kết thúc** | Ngựa rời hub |
+
+Khách tự tới hub: báo giờ tới **trong vòng 24 giờ** và tới trước giờ báo cộng 2 giờ thì đồng hồ dừng từ lúc báo; không tới thì tính lại từ lúc báo. Không cần trả trước.
+
+Chưa trả số dư: mốc 3 ngày hủy đơn đếm theo **giờ lịch** từ T, không theo đồng hồ phí.
+
+**Trước mỗi mốc 24 giờ, hệ thống báo trước 3 giờ** số tiền sắp phát sinh. Khách luôn thấy đồng hồ và số tiền. Đơn giá chụp tại lúc bắt đầu, đổi cấu hình không ảnh hưởng.
+
+**Giao lại không miễn phí** khi lỗi do khách: thêm **một lượt giao** (cước giao và nhiên liệu đoạn giao của báo giá, theo con giao lại). Hiện hệ thống **chưa thu** khoản này. Khách trả cùng phí giữ trước khi xe đi (IRT Đức §7.3: chi phí phát sinh cần thiết khách trả). Lỗi công ty thì miễn.
+
+**Đã trả số dư, chờ chuyến sau ở hub:** từ lúc trả và chọn chuyến, tính theo lưu chuồng **kế hoạch** 800.000 đ/ngày, không tính phí giữ nữa. Khách có thể đưa ngựa về.
+
+**Thử bốn tình huống** (một con):
+
+| Tình huống | Đồng hồ chạy | Phí giữ |
+|---|---:|---:|
+| Vào hub 18:00 thứ Hai; 10:00 thứ Ba khách báo sẵn sàng; công ty chỉ có xe 14:00 thứ Năm | 16 giờ | 0 |
+| Như trên nhưng công ty có khung 14:00 thứ Ba, khách chọn 14:00 thứ Năm | 16 + 48 = 64 giờ | 2.000.000 |
+| Vắng lần một giữ 20 giờ, giao lại, vắng lần hai giữ 20 giờ | 40 giờ | 1.000.000 |
+| Xe tới trễ 2 giờ so với khung, người nhận đã về | 0 | 0 |
+
+### 13.3 Kết thúc đơn: tách việc chở khỏi công nợ
+
+**Đơn Hoàn thành khi đủ bốn điều**, dù còn khoản thu thêm chưa trả:
+
+1. Mọi con đã giao hoặc đã có kết quả cuối.
+2. Không còn sự cố, khiếu nại (6.G18) mở; và khách đã xác nhận nhận ổn **hoặc** đã đủ 7 ngày. Khiếu nại **khoản thu** (13.5 dòng 6) không chặn đóng đơn.
+3. Mọi chi phí phía khách đã duyệt hoặc bị từ chối, và khoản duyệt đã thành khoản thu.
+4. Không còn khoản hoàn chờ chuyển (đây là nợ của **công ty**, không được bỏ qua).
+
+Đủ bốn điều và qua 7 ngày từ lúc giao thì **hệ thống tự đóng**. Khoản chưa trả nằm ở **công nợ của khách**, vẫn trả được sau khi đơn đóng. Số dư chính không bao giờ thành nợ kiểu này, vì chưa trả thì xe không chở.
+
+| Mốc, từ lúc lập khoản thu | Hệ thống | Khách |
+|---|---|---|
+| Ngày 0 | Báo khách | Trả trong 7 ngày |
+| Ngày 7 | Quá hạn, nhắc mỗi ngày | **Chưa đặt đơn mới được** |
+| Ngày 14 | Quản lý gọi; có thể **gia hạn một lần** tối đa 14 ngày hoặc **chia tối đa 3 kỳ** | Trả đúng kỳ thì được đặt đơn lại |
+| Ngày 30 | Sang **Nợ khó thu**, ngừng nhắc mỗi ngày, gửi văn bản | Vẫn trả được, vẫn bị chặn |
+| Từ ngày 30 | Quản lý chọn: tiếp tục đòi, hoặc **xóa nợ** (lý do, tệp quyết định) | Xóa nợ thì khoản hết hiệu lực; mở lại quyền đặt đơn do quản lý quyết riêng |
+
+Không bao giờ tự xóa nợ. Không tính lãi. Không giữ ngựa, giấy của đơn khác để đòi.
+
+### 13.4 Đơn mà ngựa chưa có người nhận
+
+Treo thật sự là khi **ngựa còn ở hub**. Đơn và việc giữ ngựa có mốc kết thúc:
+
+| Trường hợp | Kết thúc |
+|---|---|
+| Chưa trả số dư, hết 3 ngày | **Đơn hủy**. Việc giữ ngựa tách ra, theo dõi ở trang Theo dõi tới khi trả ngựa |
+| Giao hụt, hết 3 ngày không hẹn lại | Nhắc mỗi ngày; ngày 7 gửi văn bản và đề nghị **chở về người gửi** |
+| Văn bản đủ 45 ngày | Quản lý **phải** ghi kết quả: trả người gửi, trả người được ủy quyền, hoặc bàn giao theo văn bản pháp lý. Bắt buộc tệp |
+| Sau khi ghi kết quả | Còn con khác đã giao: đơn **Đã giao** rồi đóng. Mọi con đều trả lại: đơn **Hủy** |
+
+Phí giữ **ngừng cộng sau 30 lần đủ 24 giờ**: công ty vẫn chăm, nhưng nợ không phình quá giá trị chuyến chở.
+
+### 13.5 Chỗ dễ kẹt và cách gỡ
+
+| # | Kẽ hở | Cách gỡ |
+|---|---|---|
+| 1 | Quản lý quên duyệt chi phí nên đơn treo | Nhắc ngày 3, 7. Quá **14 ngày** sau khi giao chưa duyệt thì **công ty chịu** |
+| 2 | Hóa đơn đến sau nhiều tháng | Chỉ thu khách khi lập trong **30 ngày** sau khi giao |
+| 3 | Sự cố đã xử lý xong nhưng quên đóng | Tự đóng 7 ngày sau Đã xử lý, khi không còn chi phí chờ. Không áp dụng cho khiếu nại: kết luận xong là đóng ngay |
+| 4 | Sự cố chưa xử lý | Không tự đóng; nhắc mỗi ngày tới khi xử lý |
+| 5 | Công ty chậm hoàn tiền | Hạn **7 ngày**, quá hạn nhắc mỗi ngày. Đơn không đóng vì đây là nợ của công ty |
+| 6 | Khách **không đồng ý** khoản thu | Bấm **Khiếu nại khoản này** (khác khiếu nại về ngựa ở 6.G18, không dùng loại `COMPLAINT`): dừng đếm quá hạn, không chặn đặt đơn tới khi quản lý kết luận. Mỗi khoản một lần |
+| 7 | Lập tài khoản khác để né nợ | Kiểm nợ theo tài khoản, số điện thoại và **chip ngựa**. Trùng thì chuyển quản lý xem, không tự khóa người lạ |
+| 8 | Nợ rất nhỏ mà bị chặn | Dưới **200.000 đ** chỉ nhắc, không chặn |
+| 9 | Khách trả sau khi đã xóa nợ | Quản lý mở lại khoản rồi nhận; không nhận tự động |
+| 10 | Khách chưa từng được biết phí này | Hiện mức phí ở bước xem lại đơn và trong điều khoản khách chấp nhận; chưa chấp nhận điều khoản có phí thì không thu |
+| 11 | Đơn hủy khi ngựa đã đi một phần đường | Không hoàn phần đã chạy. Cước giao **chưa chạy** dùng trừ phí, còn dư thì hoàn |
+| 12 | Ngựa bệnh trong lúc giữ | Chăm và chữa như sự cố; phí thú y theo nguyên nhân, không gộp vào phí giữ |
+| 13 | Tranh cãi "đã báo chưa" | Lấy giờ hệ thống gửi thành công; gọi điện phải ghi nhật ký. Gửi lỗi mọi kênh thì đồng hồ chưa chạy |
+
+### 13.6 Bảng chốt
+
+| # | Nội dung | Chốt | Nguồn |
+|---|---|---|---|
+| 13a | Mức | **Đã chốt**: mỗi 24 giờ trọn vẹn 1.000.000 đ | Người dùng |
+| 13b | Chỉ tính thời gian do khách, cộng dồn | Có | IRT Anh 5 (chờ ngoài tầm công ty thì khách trả); phần dừng đồng hồ **tự đề xuất** |
+| 13c | Thu cước giao lại khi lỗi do khách | Có | IRT Đức §7.3 |
+| 13d | Đơn đóng khi còn khoản thu thêm | Có | NetSuite, ERPNext |
+| 13e | Chi phí chưa duyệt sau 14 ngày: công ty chịu; hóa đơn muộn tối đa 30 ngày | Có | Tự đề xuất |
+| 13f | Trần phí giữ 30 ngày; Nợ khó thu ngày 30; gia hạn 14 ngày hoặc 3 kỳ; ngưỡng 200.000 đ | Có | Tự đề xuất (mốc 30 ngày gần IRT Anh 21) |
+
+**Đổi so với quyết định cũ:** "còn nợ bằng 0 mới đóng đơn" (6.17) thành 13.3; "lẻ ngày tính tròn một ngày" (5.25) thành 13.2; thêm đường hủy cho đơn Đang vận chuyển khi mọi con đã trả lại; mốc 24 giờ ở 9.2 cho đơn nhập bỏ; giao hụt không còn mặc nhiên là lỗi người nhận.

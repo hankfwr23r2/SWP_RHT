@@ -4,6 +4,7 @@ import com.example.racehorse_transport.dto.operation.CrewTripResponseDto;
 import com.example.racehorse_transport.dto.operation.HandoverCompleteRequestDto;
 import com.example.racehorse_transport.dto.operation.HandoverCreateRequestDto;
 import com.example.racehorse_transport.dto.operation.HandoverRefusalRequestDto;
+import org.springframework.web.multipart.MultipartFile;
 import com.example.racehorse_transport.dto.operation.HandoverResponseDto;
 import com.example.racehorse_transport.dto.operation.HandoverScanRequestDto;
 import com.example.racehorse_transport.entity.CrewAssignment;
@@ -18,7 +19,6 @@ import com.example.racehorse_transport.entity.enums.CrewRole;
 import com.example.racehorse_transport.entity.enums.HandoverStatus;
 import com.example.racehorse_transport.entity.enums.HandoverType;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
-import com.example.racehorse_transport.entity.enums.TripStopType;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
@@ -104,8 +104,13 @@ public class HandoverServiceImpl implements HandoverService {
         if (request.handoverType() == HandoverType.SHIFT && member.getCrewRole() != CrewRole.ESCORT) {
             throw new DispatchRuleException("handoverType", "Chỉ hộ tống nhận bàn giao ca.", true);
         }
-        if (candidates(handover).isEmpty()) {
+        List<HorseLeg> candidates = candidates(handover);
+        if (candidates.isEmpty()) {
             throw new DispatchRuleException("handoverType", "Không có con ngựa nào cần giao nhận loại này ở điểm dừng này.", true);
+        }
+        if (handover.getHandoverType() == HandoverType.HUB_OUT && candidates.stream()
+                .map(leg -> leg.getBookingHorse().getBooking().getId()).distinct().noneMatch(outcomes::canBoardAtHub)) {
+            throw new DispatchRuleException("payment", "Các đơn chờ tại hub chưa trả đủ số dư.", true);
         }
         handover.setStatus(HandoverStatus.PENDING);
         handovers.saveAndFlush(handover);
@@ -118,6 +123,12 @@ public class HandoverServiceImpl implements HandoverService {
         Handover handover = pending(handoverId, username);
         HorseLeg leg = candidates(handover).stream().filter(l -> l.getId().equals(request.horseLegId())).findFirst()
                 .orElseThrow(() -> new DispatchRuleException("horseLegId", "Con ngựa này không thuộc lần giao nhận.", true));
+        if (handover.getHandoverType() == HandoverType.HUB_OUT) {
+            var booking = leg.getBookingHorse().getBooking();
+            if (!outcomes.canBoardAtHub(booking.getId())) {
+                throw new DispatchRuleException("payment", "Đơn " + booking.getCode() + " chưa trả đủ số dư.", true);
+            }
+        }
         HandoverHorse scan = scans.findById(new HandoverHorseId(handover.getId(), leg.getId())).orElseGet(() -> {
             HandoverHorse created = new HandoverHorse();
             created.setId(new HandoverHorseId(handover.getId(), leg.getId()));
@@ -142,6 +153,14 @@ public class HandoverServiceImpl implements HandoverService {
         List<HandoverHorse> results = scans.findById_HandoverId(handover.getId()).stream()
                 .filter(r -> r.getHorseLeg().getStatus() != HorseLegStatus.CANCELLED).toList();
         TripExecutionPolicy.requireSomeMatched(results.stream().map(HandoverHorse::getMicrochipMatched).toList());
+        if (handover.getHandoverType() == HandoverType.PICKUP
+                || (handover.getHandoverType() == HandoverType.AGENT && handover.getFromParty() != null)) {
+            var matchedIds = results.stream().filter(r -> Boolean.TRUE.equals(r.getMicrochipMatched()))
+                    .map(r -> r.getId().getHorseLegId()).collect(Collectors.toSet());
+            if (candidates(handover).stream().anyMatch(leg -> !matchedIds.contains(leg.getId()))) {
+                throw new DispatchRuleException("horseLegId", "Còn ngựa chưa nhận hoặc chưa ghi đón hụt.", true);
+            }
+        }
         // Nhận và giao ngựa phải có biên bản đã ký (MAN_HINH 4.3, 6.5)
         if (needsRecord(handover) && !evidence.hasRecord(handover.getId())) {
             throw new DispatchRuleException("record", "Chưa có biên bản giao nhận. Chụp biên bản đã ký trước khi hoàn tất.", true);
@@ -171,7 +190,7 @@ public class HandoverServiceImpl implements HandoverService {
 
     @Override
     @Transactional
-    public CrewTripResponseDto refuse(Long handoverId, HandoverRefusalRequestDto request, String username) {
+    public CrewTripResponseDto refuse(Long handoverId, HandoverRefusalRequestDto request, MultipartFile photo, String username) {
         Handover handover = pending(handoverId, username);
         Long tripId = handover.getTripStop().getVehicleTrip().getId();
         Long actorId = requireCrew(tripId, username).getStaff().getUserId();
@@ -182,7 +201,8 @@ public class HandoverServiceImpl implements HandoverService {
         }
         HorseLeg leg = candidates(handover).stream().filter(l -> l.getId().equals(request.horseLegId())).findFirst()
                 .orElseThrow(() -> new DispatchRuleException("horseLegId", "Con ngựa này không thuộc lần giao nhận.", true));
-        outcomes.refuse(leg.getBookingHorse().getId(), request.reason().strip(), clock.instant(), actorId);
+        outcomes.refuseAtStop(leg.getBookingHorse().getId(), request, photo,
+                handover.getTripStop().getActualArrivalAt(), clock.instant(), actorId);
         // Không còn con nào để nhận thì lần giao nhận kết thúc là không thành, xe được rời điểm dừng
         if (candidates(handover).isEmpty()) {
             handover.setStatus(HandoverStatus.FAILED);
@@ -192,24 +212,16 @@ public class HandoverServiceImpl implements HandoverService {
         return crewTrip(tripId, username);
     }
 
-    // Quá hạn trả số dư (#32): trả mọi con đã nhận lên xe ở nơi nhận này (điểm đón, hoặc cửa khẩu với đơn nhập) trong một thao tác.
+    // Quá hạn trả số dư (#32): trả mọi con đã nhận lên xe ở nơi nhận này (điểm đón) trong một thao tác.
     // Không quét lại chip: ghi lại chip đã quét đúng lúc nhận ngựa vài phút trước
     private void returnUnpaid(TripStop stop, HandoverCreateRequestDto request, CrewAssignment member) {
         List<HorseLeg> boarded = legs.findByBoardTripStop_IdAndStatusIn(stop.getId(), Set.of(HorseLegStatus.IN_PROGRESS));
         if (boarded.isEmpty()) {
             throw new DispatchRuleException("handoverType", "Không có con ngựa nào cần giao nhận loại này ở điểm dừng này.", true);
         }
-        // Đơn nhập nhận ở cửa khẩu: ngựa trả lại cho đại lý đã giao (NGHIEP_VU GĐ6)
-        boolean border = stop.getStopType() == TripStopType.BORDER;
-        Map<Long, Party> agents = new LinkedHashMap<>();
-        if (border) boarded.stream().map(l -> adjacentAgent(l, false)).filter(Objects::nonNull).forEach(p -> agents.put(p.getId(), p));
-        if (border && agents.size() != 1) {
-            throw new DispatchRuleException("handoverType", "Không xác định được đại lý nhận lại ngựa ở cửa khẩu này.", true);
-        }
         var now = clock.instant();
         outcomes.returnUnpaid(boarded, now, member.getStaff().getUserId());
         Handover handover = request.toEntity(stop, member.getStaff());
-        if (border) handover.setToParty(agents.values().iterator().next());
         handover.setStatus(HandoverStatus.DONE);
         handover.setHandedAt(now);
         handovers.saveAndFlush(handover);
@@ -219,7 +231,7 @@ public class HandoverServiceImpl implements HandoverService {
             returned.setHandover(handover);
             returned.setHorseLeg(leg);
             returned.setScannedMicrochip(scans.findFirstByHorseLeg_IdAndHandover_HandoverTypeAndMicrochipMatchedTrue(leg.getId(),
-                            border ? HandoverType.AGENT : HandoverType.PICKUP)
+                            HandoverType.PICKUP)
                     .map(HandoverHorse::getScannedMicrochip).orElse(null));
             returned.setMicrochipMatched(true);
             scans.save(returned);

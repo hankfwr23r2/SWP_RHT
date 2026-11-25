@@ -28,7 +28,10 @@ export function useStaffFormAction() {
       if (fieldErrors && typeof fieldErrors === 'object') {
         setFields(Object.fromEntries(Object.entries(fieldErrors).filter(([, value]) => typeof value === 'string')))
       }
-      toast(t('staffNetwork.actionError'), 'error')
+      // Lỗi nghiệp vụ (4xx) có lý do của máy chủ; lỗi mạng hay 5xx thì báo chung
+      const status = cause instanceof Error && 'status' in cause ? Number(cause.status) : 0
+      const reason = cause instanceof Error && status >= 400 && status < 500 ? cause.message : ''
+      toast(reason || t('staffNetwork.actionError'), 'error')
       return false
     } finally {
       running.current = false

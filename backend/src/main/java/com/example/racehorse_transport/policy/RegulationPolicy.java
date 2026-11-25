@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.policy;
 
+import com.example.racehorse_transport.dto.regulation.CountryRuleResponseDto;
 import com.example.racehorse_transport.entity.CountryRule;
 import com.example.racehorse_transport.entity.DocumentRequirement;
 import com.example.racehorse_transport.entity.Location;
@@ -13,10 +14,13 @@ import java.time.ZoneId;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public final class RegulationPolicy {
 
     private static final String VIETNAM = "VN";
+    // Giấy phép: tính theo permit_lead_days; các giấy khác theo certificate_lead_days
+    private static final Set<String> PERMIT_TYPES = Set.of("IMPORT_PERMIT", "IMPORT_APPROVAL");
     private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     private RegulationPolicy() {
@@ -59,6 +63,16 @@ public final class RegulationPolicy {
 
     public static long leadDays(CountryRule rule) {
         return (long) rule.getPermitLeadDays() + rule.getCertificateLeadDays();
+    }
+
+    // Đổi lịch sau khi cọc: giấy đã duyệt còn hạn thì không tính; thiếu loại nào tính thời gian của loại đó
+    public static long redoLeadDays(CountryRuleResponseDto rule, Set<String> missingTypeCodes) {
+        if (rule == null || missingTypeCodes.isEmpty()) {
+            return 0;
+        }
+        boolean permit = missingTypeCodes.stream().anyMatch(PERMIT_TYPES::contains);
+        boolean certificate = !PERMIT_TYPES.containsAll(missingTypeCodes);
+        return (permit ? rule.permitLeadDays() : 0L) + (certificate ? rule.certificateLeadDays() : 0L);
     }
 
     public static boolean feasible(long leadDays, Instant now, Instant bookingCutoffAt) {

@@ -7,6 +7,7 @@ import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.HandoverStatus;
 import com.example.racehorse_transport.entity.enums.HandoverType;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
+import com.example.racehorse_transport.entity.enums.PickupMissChoice;
 import com.example.racehorse_transport.entity.enums.TripStopType;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.policy.HealthLogPolicy;
@@ -17,6 +18,7 @@ import com.example.racehorse_transport.repository.HorseHealthLogRepository;
 import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.service.AuditService;
 import com.example.racehorse_transport.service.PaymentReadinessService;
+import com.example.racehorse_transport.service.PickupBalanceService;
 import com.example.racehorse_transport.service.StopReadinessService;
 import com.example.racehorse_transport.service.SystemConfigService;
 import java.time.Clock;
@@ -26,9 +28,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -45,18 +49,44 @@ public class StopReadinessServiceImpl implements StopReadinessService {
     private final SystemConfigService configs;
     private final AuditService audit;
     private final Clock clock;
+    private final PickupBalanceService pickupBalances;
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public boolean isPaidInFullForDeparture(Long bookingId) {
+        payments.lockBooking(bookingId);
+        return payments.isPaidInFull(bookingId);
+    }
 
     @Override
     @Transactional
     public void requireCanLeave(TripStop stop, String earlyReason, Long actorUserId) {
+        closeEmptyHubOut(stop);
         TripExecutionPolicy.requireCanDepart(stop.getActualArrivalAt() != null, stop.getActualDepartureAt() != null,
                 handovers.countByTripStop_IdAndStatus(stop.getId(), HandoverStatus.PENDING));
+        if ((stop.getStopType() == TripStopType.PICKUP || stop.getStopType() == TripStopType.BORDER)
+                && !legs.findByBoardTripStop_IdAndStatusIn(stop.getId(), Set.of(HorseLegStatus.PLANNED)).isEmpty()) {
+            throw new DispatchRuleException("tripStopId", "Còn ngựa chưa nhận hoặc chưa ghi đón hụt.", true);
+        }
         requireNoHorseLeftAtStable(stop);
-        // Nơi nhận ngựa: điểm đón, cửa khẩu với đơn nhập (nhận từ đại lý), hub với khách tự chở tới (SELF)
-        if (stop.getStopType() == TripStopType.PICKUP || stop.getStopType() == TripStopType.BORDER || stop.getStopType() == TripStopType.HUB) {
+        if (stop.getStopType() == TripStopType.PICKUP) {
             requirePaid(stop);
         } else if (REST_STOPS.contains(stop.getStopType())) {
             requireRestStopDone(stop, earlyReason, actorUserId);
+        }
+    }
+
+    private void closeEmptyHubOut(TripStop stop) {
+        if (stop.getStopType() != TripStopType.HUB) return;
+        for (var open : handovers.findByTripStop_IdAndHandoverTypeAndStatusOrderById(
+                stop.getId(), HandoverType.HUB_OUT, HandoverStatus.PENDING)) {
+            handovers.findForUpdate(open.getId()).filter(row -> row.getStatus() == HandoverStatus.PENDING)
+                    .filter(row -> legs.findByBoardTripStop_IdAndStatusIn(stop.getId(),
+                            Set.of(HorseLegStatus.PLANNED, HorseLegStatus.IN_PROGRESS)).isEmpty())
+                    .ifPresent(row -> {
+                        row.setStatus(HandoverStatus.FAILED);
+                        row.setHandedAt(clock.instant());
+                    });
         }
     }
 
@@ -75,16 +105,21 @@ public class StopReadinessServiceImpl implements StopReadinessService {
 
     // Quy tắc #32: mọi đơn có ngựa đã nhận lên xe ở điểm đón này phải trả đủ
     private void requirePaid(TripStop stop) {
-        Map<Long, String> boarded = new LinkedHashMap<>();
+        Map<Long, HorseLeg> boarded = new TreeMap<>();
         for (HorseLeg leg : legs.findByBoardTripStop_IdAndStatusIn(stop.getId(), Set.of(HorseLegStatus.IN_PROGRESS))) {
-            // Đơn đã IN_OPERATION là đã trả đủ khi rời nơi nhận trước đó
-            if (leg.getBookingHorse().getBooking().getStatus() != BookingStatus.CONFIRMED) continue;
-            boarded.put(leg.getBookingHorse().getBooking().getId(), leg.getBookingHorse().getBooking().getCode());
+            var horse = leg.getBookingHorse();
+            if (horse.getPickupMissChoice() == PickupMissChoice.RETRY_PICKUP) {
+                boarded.put(horse.getBooking().getId(), leg);
+            } else if (horse.getBooking().getStatus() == BookingStatus.CONFIRMED) {
+                boarded.putIfAbsent(horse.getBooking().getId(), leg);
+            }
         }
-        if (boarded.isEmpty()) return;
-        boarded.forEach((id, code) -> {
-            if (!payments.isPaidInFull(id)) {
-                throw new DispatchRuleException("payment", "Đơn " + code + " chưa trả đủ. Xe chưa rời nơi nhận được.", true);
+        boarded.forEach((id, leg) -> {
+            var horse = leg.getBookingHorse();
+            if (!isPaidInFullForDeparture(id) && (horse.getPickupMissChoice() == PickupMissChoice.RETRY_PICKUP
+                    || !pickupBalances.canLeaveForHub(id))) {
+                throw new DispatchRuleException("payment", "Đơn " + horse.getBooking().getCode()
+                        + " chưa trả đủ. Xe chưa rời nơi nhận được.", true);
             }
         });
     }

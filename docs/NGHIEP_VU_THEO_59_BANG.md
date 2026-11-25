@@ -409,11 +409,10 @@ Với `pickup_method = SELF`, kiểm giấy trước khi ký nhận tại hub, g
 | 9 | Trả đủ: ngựa lên đúng vị trí `stall_position` (màn hình hiện "Khoang số…") | `horse_leg` PICKUP: `status = IN_PROGRESS`, `actual_start_at` |
 | 10 | Rời điểm đón | `trip_stop.actual_departure_at`, `booking.status = IN_OPERATION` |
 
-**Không trả đủ trong 30 phút:** tổ xe trả ngựa và giấy gốc tại chỗ (`handover` RETURN), quản lý hủy đơn do khách (5.4), nhả chỗ. Các đơn khác trên xe đi tiếp. Link VNPAY mở trước hạn mà chưa có kết quả thì chờ thêm 5 phút sau hạn. Với đơn IMPORT, nơi nhận là cửa khẩu và quy tắc như trên, ngựa trả lại đại lý.
+**Không trả đủ trong 30 phút:** tổ xe trả ngựa và giấy gốc tại chỗ (`handover` RETURN), quản lý hủy đơn do khách (5.4), nhả chỗ. Các đơn khác trên xe đi tiếp. Link VNPAY mở trước hạn mà chưa có kết quả thì chờ thêm 5 phút sau hạn. Với đơn IMPORT nhận tại cửa khẩu, xe trục đưa ngựa về hub. Nếu số dư chưa đủ khi xe rời cửa khẩu thì đơn vẫn CONFIRMED. Tại hub, hệ thống kiểm số dư khi hoàn tất HUB_OUT. Đơn SCHEDULE_CHANGE_REQUIRED có thể thanh toán khoản số dư còn mở.
 
 **Ngoại lệ ở bước 4–5:**
-- Chip không khớp: không nhận con đó, ghi `incident` loại DOCUMENT.
-- Ngựa không đủ sức khỏe: loại khỏi đơn (`booking_horse.status = EXCLUDED`), hủy các `horse_leg` còn lại của con đó, trừ `departure.booked_stall_count`, và điều chỉnh báo giá bằng phiên bản mới (SUPERSEDED bản cũ và ACCEPTED bản mới trong cùng transaction). Nếu đã trả dư, kể cả khi VNPAY xác nhận số dư theo link cũ sau khi thay báo giá, lập khoản hoàn phần dư.
+- Chip không khớp hoặc ngựa chưa đủ điều kiện lên xe: ghi đón hụt và giữ ngựa trong đơn. Khách hoặc điều phối chọn cách xử lý, quản lý chốt bên chịu. Chỉ quyết định bỏ con mới chuyển `booking_horse.status` sang EXCLUDED và xử lý chỗ trục, báo giá và khoản hoàn.
 
 **Mốc không hoàn tiền:** khi khách đã trả đủ hoặc xe đã rời nơi nhận thì khách không tự hủy được (5.4).
 
@@ -501,6 +500,12 @@ Sau khi bàn giao cho đại lý, công ty **vẫn chịu trách nhiệm với k
 | Tại cửa khẩu | Công ty giao cho đại lý: `handover` AGENT, `to_party_id` = đại lý | Đại lý giao cho công ty: `handover` AGENT, `from_party_id` = đại lý. **Thiếu giấy vận chuyển mẫu 14a (`IMPORT_TRANSPORT_CERT`) thì không cho nhận** |
 | Sau đó | Nước đến tự xử lý, không nằm trong trách nhiệm nơi cách ly của công ty | Xe trục chở về hub rồi giao tới địa chỉ chủ ngựa |
 
+**Chờ số dư sau khi nhận ngựa.** Tại nhà khách, nhắc phút 0, 15 và 25. Điều phối ghi kết quả gọi khách và liên hệ khẩn cấp vào nhật ký đơn. Nếu còn đủ thời gian tới hub và thời gian ngồi xe của ngựa khác, điều phối có thể gia hạn 30 phút một lần. Quá hạn, trả ngựa và giấy tờ cho người gửi nếu có người nhận lại, nhả chỗ và chuyển đơn sang Cần chọn lại chuyến trong 30 ngày. Nếu vắng người nhận lại, điều phối xác nhận đưa ngựa về hub bằng điểm dừng an toàn của lượt xe.
+
+Tại hub, nhắc cuối ở T − 3 giờ. Ở T − 1 giờ, nếu chưa trả đủ thì nhả chỗ, hủy chặng kế hoạch và kết thúc HUB_OUT còn mở khi điểm dừng hết ngựa chờ lên xe. Phiên VNPAY còn hiệu lực được chờ kết quả tối đa 5 phút. Với đơn nhập, xe cửa khẩu vẫn đưa ngựa về hub và chỉ lập lượt giao tiếp sau khi khách trả số dư. Mốc T của đơn nhập là 24 giờ sau lúc ngựa vào hub.
+
+Ngựa còn tại hub tiếp tục được chăm sóc hai lần mỗi ngày. Lưu trú STABLING tính phí từ T theo biểu phí phía máy chủ. Nhắc lúc 8:00 trong thời gian chờ phản hồi. Đơn không phản hồi hết hạn ba ngày thì hủy nếu điều phối đã ghi ít nhất ba lần gọi. Phí giữ được cấn vào cọc khi chốt phí. Gửi yêu cầu nhận lại bằng văn bản sau bảy ngày và báo quản lý 45 ngày kể từ văn bản. Khách có thể trả số dư và chọn lịch sau, nhận lại ngựa rồi chọn lịch trong 30 ngày, hoặc hủy và nhận lại. Bàn giao ngựa trực tiếp vẫn thực hiện khi còn nợ.
+
 Giả định của đợt này: địa chỉ giao của đơn nhập là nơi chủ ngựa cách ly. Luật yêu cầu niêm phong xe về nơi cách ly nên ghé hub là đơn giản hóa; quy tắc niêm phong đã bỏ qua (`NGU_CANH_THIET_KE_LAI.md` mục 4).
 
 #### 7.5 Ở nước đến (đơn EXPORT)
@@ -510,6 +515,8 @@ Giả định của đợt này: địa chỉ giao của đơn nhập là nơi c
 ---
 
 ### GĐ8. Giao ngựa
+
+> **Đã chốt 25/11/2026, code chưa sửa:** phí giữ, cước giao lại và cách đóng đơn theo mục 13 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md).
 
 Với `delivery_method = SELF`, trả ngựa tại hub và ghi `handover` DELIVERY gắn với `horse_stay`. Quá giờ hẹn thì gửi chuồng, báo khách khi bắt đầu giữ và tính phí theo `STABLING_DAILY_FEE` khi rời hub.
 
@@ -568,13 +575,15 @@ Khoản thu thêm đến hạn sau `EXTRA_CHARGE_DUE_DAYS` kể từ lúc lập.
 
 ### GĐ10. Đóng đơn
 
+> **Đã chốt 25/11/2026, code chưa sửa:** phí giữ, cước giao lại và cách đóng đơn theo mục 13 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md).
+
 | Việc | Bảng |
 |---|---|
 | Đã trả đủ: số còn nợ theo `SettlementPolicy` bằng 0. Đơn không có khoản phát sinh tự đóng sau 7 ngày kể từ khi giao | `booking.status = COMPLETED` |
 | Khách đánh giá một lần khi đơn ở `DELIVERED` hoặc `COMPLETED` | `booking_rating` |
 | Thông báo cho các bên | `notification`, `notification_recipient` |
 
-Hạn khiếu nại là 7 ngày kể từ `handover` DELIVERY DONE.
+Hạn khiếu nại là 7 ngày kể từ lúc đơn sang `DELIVERED` (con cuối đã giao); ngày 8–14 quản lý nhập thay. Đơn đã `COMPLETED` thì giữ nguyên.
 
 ---
 
@@ -877,3 +886,27 @@ Các class migration một lần sẽ **bỏ** khi chuyển sang Flyway: `Bookin
 | **Bỏ** | `DetailsJson`, `quote_lines_json`, tính giá ở frontend, khóa giá trong `system_config`, ModelMapper, các class migration một lần |
 
 **Mở lại báo giá hết hạn.** Quản lý mở lại khi kịp giấy, còn hạn đặt và đủ chỗ trên chuyến vừa nhả. Hệ thống giữ lại chỗ trong cùng giao dịch, chuyển đơn sang `QUOTING` và báo khách. Đơn chạy thẳng kiểm ngày đón còn ở tương lai và kịp giấy. Bản nháp mới tính theo bảng giá hiện hành và báo giá chạy thẳng ghi rằng loại bớt ngựa không giảm cước xe. Đơn trục cũ đã mất tham chiếu chuyến trước đợt này không thể giữ lại chỗ bằng thao tác mở lại.
+
+## Đón hụt tại nơi nhận
+
+Tổ lái ghi từng con với nguyên nhân và ảnh. Với người gửi vắng, ghi kết quả gọi người gửi, khách và liên hệ khẩn cấp sau thời gian chờ theo cấu hình. Tại cửa khẩu, ngựa chưa nhận vẫn do đại lý giữ. Khi ghi hụt, ngựa vẫn ACTIVE, chỗ trên chuyến và báo giá hiện hành được giữ. Các chặng kế hoạch của con đó được gỡ để điều phối lập lại. Hoàn tất lần nhận và rời điểm đón hoặc cửa khẩu cần mọi con đã nhận hoặc đã ghi hụt.
+
+Quản lý chốt khách, công ty hoặc bất khả kháng chịu trách nhiệm. Khách hoặc điều phối ghi lựa chọn trên đơn, với ghi chú cuộc gọi khi chọn hộ. A bỏ ngựa khỏi đơn, B đón lại một lần trên chuyến nếu đã có lượt phù hợp và tài xế, C hẹn tự đưa tới hub, D đưa cả đơn sang chọn lại chuyến nếu chưa nhận con nào. Đơn nhập dùng A hoặc D. Đơn chạy thẳng dùng A hoặc hẹn ngày đón mới. Khách có thể hủy đơn chưa nhận ngựa sau khi có kết luận trách nhiệm.
+
+Hạn mặc định 12 giờ khi ghi sớm, 1 giờ sát chuyến và chặn tại mốc tập kết. Hết hạn chọn hoặc qua hạn tập kết mà B/C vẫn chưa nhận được ngựa, nếu đã nhận con khác thì bỏ con hụt. Nếu chưa nhận con nào và mọi con còn trong đơn đều đã hết hạn xử lý đón hụt, nhả chỗ và chuyển đơn sang Cần chọn lại chuyến. Khi chọn C, hệ thống hủy chặng đón lại đã xếp cho con đó. Khi nhận theo B, máy chủ kiểm lại hạn tập kết và giờ tới hub của lượt xe.
+
+Khách có thể chọn A cho con cuối cùng khi quản lý chưa chốt trách nhiệm. Hệ thống lưu quyết định, chặn xếp xe và chờ kết luận trước khi hủy đơn và xử lý tiền.
+
+## Đợt 1b bước 4 · Tiền sau đón hụt
+
+Đơn giữ lịch sử báo giá. Thao tác loại ngựa, tính phí lượt đón lại hoặc miễn cước đón tạo phiên bản thay thế. Nếu do khách, bỏ cước theo con và dịch vụ chưa làm, giữ phí bảo hiểm và dịch vụ đã xác nhận làm, rồi áp sàn bằng cọc đã trả. Do công ty hoặc bất khả kháng, bỏ các dòng theo con và tính lại các chặng đường bộ theo hạng xe nhỏ nhất đủ chỗ. Khi toàn bộ ngựa tự vào hub do công ty đón hụt, bỏ dòng cước đón.
+
+Phí lượt đón lại dùng bảng giá trên báo giá đã chốt và quãng đường đón đã báo. Mỗi lượt xe chỉ có một nhóm dòng thu cho đơn. Nếu số dư trước đã trả, lần nhận tiếp theo lập một khoản số dư bổ sung còn thiếu với hạn từ giờ nhận. Nếu khách trả dư, ghi khoản hoàn chờ xử lý. Hủy khi chưa nhận con nào giữ cọc nếu khách chịu trách nhiệm, hoàn hết phần chưa hoàn nếu do công ty hoặc bất khả kháng.
+
+Phí bảo hiểm giữ lại chỉ gồm phần hãng chưa hoàn. Chuyên viên ghi tổng hoàn theo chứng từ, hệ thống trừ phần đó trên báo giá thay thế và kiểm phần khách đã trả dư.
+
+## Đợt 1b bước 5 · Dời chuyến
+
+Đơn đã cọc đổi chuyến chỉ tính thời gian giấy phải làm lại: giấy đã duyệt còn hạn tới ngày chạy mới không tính; thiếu giấy phép (`IMPORT_PERMIT`, `IMPORT_APPROVAL`) tính `permit_lead_days`, thiếu giấy khác tính `certificate_lead_days`. Đơn chưa cọc vẫn tính đủ. Đơn chạy thẳng xác định theo định tuyến hub, đổi ngày đón trong 30 ngày kể từ lần hụt, kiểm giấy và bảo hiểm cho ngày mới; hủy được sau khi quản lý chốt bên chịu.
+
+Đơn chờ chọn lại lịch vì đón hụt, hoặc vì trả ngựa tại nơi đón, được nhắc ngày 3, 7, 14, 25 (`SCHEDULE_CHOICE_REMINDER_1..4_DAYS`). Đủ `PRICE_HOLD_DAYS` thì đơn đón hụt hủy theo nguyên nhân: mọi con do khách thì mất cọc, có con không do khách thì hoàn 100%; chưa chốt bên chịu thì nhắc quản lý mỗi ngày, không tự hủy.

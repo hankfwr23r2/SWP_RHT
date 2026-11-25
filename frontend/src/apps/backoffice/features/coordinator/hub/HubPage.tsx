@@ -6,6 +6,7 @@ import { dispatchApi, type HorseStay } from '@shared/api/dispatch'
 import { useLoad } from '@shared/hooks/useLoad'
 import { formatDateTime } from '@shared/lib/format'
 import { Button } from '@shared/ui/Button'
+import { ConfirmDialog } from '@shared/ui/ConfirmDialog'
 import { EmptyState } from '@shared/ui/EmptyState'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { Field } from '@shared/ui/Field'
@@ -23,7 +24,7 @@ import s from '@backoffice/shared/StaffPanels.module.css'
 import h from './Hub.module.css'
 
 // Nhận, trả ngựa (quét chip); không nhận (có lý do); hẹn giờ người nhận tới; gửi chuồng khi quá giờ hẹn (phí người nhận chịu)
-type Action = { stay: HorseStay; kind: 'receive' | 'refuse' | 'deliver' | 'collect' | 'stable' }
+type Action = { stay: HorseStay; kind: 'receive' | 'refuse' | 'deliver' | 'collect' | 'stable' | 'returnHeld' }
 
 export default function HubPage() {
   const { t } = useTranslation()
@@ -39,6 +40,7 @@ export default function HubPage() {
   const [note, setNote] = useState('')
   const [collectAt, setCollectAt] = useState('')
   const [busy, setBusy] = useState(false)
+  const [confirmReturn, setConfirmReturn] = useState(false)
   // Hub gốc của xe (trụ sở) đứng đầu và được chọn sẵn
   const { data: hubs } = useLoad(async () => {
     const [locations, vehicles] = await Promise.all([dispatchApi.locations(), dispatchApi.vehicles()])
@@ -52,7 +54,7 @@ export default function HubPage() {
     return { appointments, stays }
   }, [hubId], { toastOnError: false })
 
-  const isHubHandover = action?.kind === 'receive' || action?.kind === 'deliver'
+  const isHubHandover = action?.kind === 'receive' || action?.kind === 'deliver' || action?.kind === 'returnHeld'
   const { data: papers, loaded: papersLoaded, error: papersError, reload: reloadPapers } = useLoad(
     () => isHubHandover && action?.stay.id
       ? dispatchApi.hubHandoverPapers(action.stay.id, action.kind === 'receive')
@@ -79,6 +81,7 @@ export default function HubPage() {
         }, photo, record)
       }
       toast(t(`dispatch.stays.${action.kind}Done`), 'success')
+      setConfirmReturn(false)
       setAction(undefined)
       void reload()
     } catch (e) {
@@ -106,7 +109,8 @@ export default function HubPage() {
   const columns: TableColumn<HorseStay>[] = [
     { key: 'horse', header: t('dispatch.stays.colHorse'), render: stay => stay.horseName },
     { key: 'booking', header: t('dispatch.stays.colBooking'), render: stay => stay.bookingCode },
-    { key: 'type', header: t('dispatch.stays.colType'), render: stay => t(`dispatch.stays.stayType.${stay.stayType}`) },
+    { key: 'type', header: t('dispatch.stays.colType'), render: stay =>
+      stay.balanceHoldAt ? t('dispatch.stays.balanceHold') : t(`dispatch.stays.stayType.${stay.stayType}`) },
     { key: 'since', header: t('dispatch.stays.colSince'), render: stay => (stay.actualStartAt ? formatDateTime(new Date(stay.actualStartAt)) : '') },
     {
       key: 'until',
@@ -124,6 +128,9 @@ export default function HubPage() {
       header: '',
       // Người nhận tự tới hub; backend kiểm ngựa đã tới bằng chặng cuối. Quá giờ hẹn thì gửi chuồng
       render: stay => {
+        if (stay.returnForBalance) {
+          return <Button size="sm" onClick={() => open(stay, 'returnHeld')}>{t('dispatch.stays.returnHeld')}</Button>
+        }
         if (stay.stayType !== 'STABLING' && (stay.deliveryMethod !== 'SELF' || stay.stayType !== 'ASSEMBLY')) return null
         const overdue = stay.stayType === 'ASSEMBLY' && stay.plannedEndAt && new Date(stay.plannedEndAt).getTime() < Date.now()
         return (
@@ -163,24 +170,25 @@ export default function HubPage() {
         </Field>
       </div>
       {content()}
-      {action && (
+      {action && !confirmReturn && (
         <Modal title={t(`dispatch.stays.${action.kind}Title`, { horse: action.stay.horseName, code: action.stay.bookingCode })} onClose={() => setAction(undefined)}
           footer={(
             <>
               <Button onClick={() => setAction(undefined)}>{t('ui.cancel')}</Button>
-              <Button variant={action.kind === 'refuse' ? 'danger' : 'primary'} loading={busy} onClick={() => void submit()}
+              <Button variant={action.kind === 'refuse' ? 'danger' : 'primary'} loading={busy}
+                onClick={() => action.kind === 'returnHeld' ? setConfirmReturn(true) : void submit()}
                 disabled={action.kind === 'collect' ? !collectAt : action.kind === 'stable' ? false : action.kind === 'refuse' ? !note.trim() : !chip.trim() || !note.trim() || !photo || !record || !papersMarked || action.kind === 'deliver' && !recipientName.trim()}>
                 {t(`dispatch.stays.${action.kind}`)}
               </Button>
             </>
           )}>
           <p className={s.hint}>{t(`dispatch.stays.${action.kind}Hint`)}</p>
-          {(action.kind === 'receive' || action.kind === 'deliver') && (
+          {(action.kind === 'receive' || action.kind === 'deliver' || action.kind === 'returnHeld') && (
             <Field label={t('dispatch.stays.chip')} required>
               {c => <Input {...c} inputMode="numeric" value={chip} onChange={e => setChip(e.target.value)} data-autofocus />}
             </Field>
           )}
-          {(action.kind === 'receive' || action.kind === 'deliver') && (
+          {isHubHandover && (
             <>
               <Field label={t('handoverEvidence.photo')} required>
                 {c => <Input {...c} type="file" accept="image/*" onChange={e => setPhoto(e.target.files?.[0])} />}
@@ -229,6 +237,10 @@ export default function HubPage() {
             </Field>
           )}
         </Modal>
+      )}
+      {confirmReturn && (
+        <ConfirmDialog title={t('dispatch.stays.returnHeld')} message={t('dispatch.stays.confirmReturnHeld')}
+          confirmLabel={t('dispatch.stays.returnHeld')} onConfirm={submit} onCancel={() => setConfirmReturn(false)} />
       )}
     </div>
   )

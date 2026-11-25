@@ -73,7 +73,7 @@ public class PaymentServiceImpl implements PaymentService {
     public void requestBalance(Long bookingId, Instant receivedAt) {
         Booking booking = bookings.findForUpdate(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn."));
-        if (booking.getStatus() != BookingStatus.CONFIRMED || receivedAt == null) {
+        if ((booking.getStatus() != BookingStatus.CONFIRMED && booking.getStatus() != BookingStatus.IN_OPERATION) || receivedAt == null) {
             throw BookingRuleException.conflict("Chỉ lập khoản số dư khi nhận ngựa của đơn đã xác nhận.");
         }
         var quotation = quotations.findByBooking_IdAndStatus(bookingId, QuotationStatus.ACCEPTED)
@@ -82,7 +82,7 @@ public class PaymentServiceImpl implements PaymentService {
         if (existing.stream().noneMatch(p -> p.getPaymentType() == PaymentType.DEPOSIT && p.getStatus() == PaymentStatus.PAID)) {
             throw BookingRuleException.conflict("Đơn chưa trả cọc.");
         }
-        if (existing.stream().anyMatch(p -> p.getPaymentType() == PaymentType.BALANCE)) {
+        if (existing.stream().anyMatch(p -> p.getPaymentType() == PaymentType.BALANCE && p.getStatus() == PaymentStatus.PENDING)) {
             return;
         }
         var outstanding = PaymentPolicy.outstanding(quotation, existing);
@@ -156,6 +156,12 @@ public class PaymentServiceImpl implements PaymentService {
                     }
                 });
         return outstanding;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BigDecimal outstanding(Quotation quotation) {
+        return PaymentPolicy.outstanding(quotation, payments.findByBooking_IdOrderById(quotation.getBooking().getId()));
     }
 
     @Override

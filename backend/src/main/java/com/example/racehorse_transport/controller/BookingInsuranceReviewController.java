@@ -31,6 +31,14 @@ public class BookingInsuranceReviewController {
         return ApiResponseDto.success(null, "Đã cập nhật bảo hiểm.");
     }
 
+    @PostMapping("/{insuranceId}/record-premium-refund")
+    @PreAuthorize("hasRole('SPECIALIST')")
+    public ApiResponseDto<Void> recordPremiumRefund(@PathVariable Long id, @PathVariable Long insuranceId,
+            @Valid @RequestBody InsurancePremiumRefundRequestDto request, Authentication authentication) {
+        insurance.recordPremiumRefund(id, insuranceId, request, authentication.getName());
+        return ApiResponseDto.success(null, "Đã ghi phí bảo hiểm được hoàn.");
+    }
+
     @PostMapping("/{insuranceId}/request-revision")
     @PreAuthorize("hasRole('SPECIALIST')")
     public ApiResponseDto<Void> requestRevision(@PathVariable Long id, @PathVariable Long insuranceId, Authentication authentication, @Valid @RequestBody InsuranceRevisionReasonRequestDto request) {

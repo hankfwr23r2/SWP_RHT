@@ -8,6 +8,8 @@ import com.example.racehorse_transport.entity.enums.DocumentStatus;
 import com.example.racehorse_transport.entity.enums.DocumentSubmitter;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public final class DocumentCompletenessPolicy {
     private DocumentCompletenessPolicy() {}
@@ -42,6 +44,14 @@ public final class DocumentCompletenessPolicy {
                     && horse.getId().equals(document.getBookingHorse().getId());
             default -> false;
         };
+    }
+
+    // Mã các loại giấy bắt buộc chưa có bản duyệt còn hạn vào ngày đó
+    public static Set<String> missingTypes(Long bookingId, List<BookingHorse> activeHorses,
+            List<DocumentRequirementResponseDto> requirements, List<Document> documents, LocalDate on) {
+        return requirements.stream()
+                .filter(requirement -> !isComplete(bookingId, activeHorses, List.of(requirement), documents, on))
+                .map(DocumentRequirementResponseDto::documentTypeCode).collect(Collectors.toSet());
     }
 
     public static boolean isComplete(Long bookingId, List<BookingHorse> activeHorses,

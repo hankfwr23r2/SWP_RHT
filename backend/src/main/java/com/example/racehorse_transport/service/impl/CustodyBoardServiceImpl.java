@@ -13,6 +13,7 @@ import com.example.racehorse_transport.entity.Location;
 import com.example.racehorse_transport.entity.TripStop;
 import com.example.racehorse_transport.entity.enums.BookingHorseStatus;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
+import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.entity.enums.HandoverStatus;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
 import com.example.racehorse_transport.entity.enums.HorseLegType;
@@ -45,7 +46,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class CustodyBoardServiceImpl implements CustodyBoardService {
 
     // Ngựa được nhận khi đơn còn CONFIRMED (chờ trả số dư) hoặc đang vận hành
-    private static final Set<BookingStatus> HELD_STATUSES = Set.of(BookingStatus.CONFIRMED, BookingStatus.IN_OPERATION);
+    private static final Set<BookingStatus> HELD_STATUSES = Set.of(BookingStatus.CONFIRMED, BookingStatus.IN_OPERATION,
+            BookingStatus.SCHEDULE_CHANGE_REQUIRED, BookingStatus.CANCELLED);
     private static final Set<CustodyHolder> HELD = Set.of(CustodyHolder.COMPANY, CustodyHolder.PARTY);
 
     private final BookingHorseRepository bookingHorses;
@@ -56,6 +58,7 @@ public class CustodyBoardServiceImpl implements CustodyBoardService {
     private final HorseHealthLogRepository healthLogs;
     private final SystemConfigService configs;
     private final Clock clock;
+    private final BookingRepository bookings;
 
     @Override
     @Transactional(readOnly = true)
@@ -72,10 +75,12 @@ public class CustodyBoardServiceImpl implements CustodyBoardService {
         Map<Long, List<HorseStay>> staysByHorse = stays.findByBookingHorse_IdInOrderById(ids).stream()
                 .collect(Collectors.groupingBy(stay -> stay.getBookingHorse().getId()));
         int maxHours = configs.getInt("MAX_CONTINUOUS_HOURS");
+        var waitingAtPickup = Set.copyOf(bookings.findWaitingPickupBalanceIds());
         Instant now = clock.instant();
         return lines.stream()
                 .map(line -> row(line, scansByHorse.getOrDefault(line.getId(), List.of()), legsByHorse.getOrDefault(line.getId(), List.of()),
-                        staysByHorse.getOrDefault(line.getId(), List.of()), maxHours, now))
+                        staysByHorse.getOrDefault(line.getId(), List.of()), maxHours, now,
+                        waitingAtPickup.contains(line.getBooking().getId())))
                 .filter(Objects::nonNull)
                 .sorted(Comparator.comparing((CustodyRowResponseDto row) -> !row.careOverdue())
                         .thenComparing(CustodyRowResponseDto::nextCheckAt).thenComparing(CustodyRowResponseDto::bookingHorseId))
@@ -83,7 +88,7 @@ public class CustodyBoardServiceImpl implements CustodyBoardService {
     }
 
     private CustodyRowResponseDto row(BookingHorse line, List<HandoverHorse> horseScans, List<HorseLeg> horseLegs, List<HorseStay> horseStays,
-                                      int maxHours, Instant now) {
+                                      int maxHours, Instant now, boolean waitingAtPickup) {
         Handover last = horseScans.stream()
                 .filter(scan -> scan.getHandover().getStatus() == HandoverStatus.DONE && Boolean.TRUE.equals(scan.getMicrochipMatched()))
                 .map(HandoverHorse::getHandover)
@@ -96,11 +101,18 @@ public class CustodyBoardServiceImpl implements CustodyBoardService {
             return null;
         }
         HorseStay stay = horseStays.stream().filter(s -> s.getActualStartAt() != null && s.getActualEndAt() == null).findFirst().orElse(null);
+        if ((line.getBooking().getStatus() == BookingStatus.CANCELLED
+                || line.getBooking().getStatus() == BookingStatus.SCHEDULE_CHANGE_REQUIRED)
+                && (stay == null || stay.getBalanceHoldAt() == null)) return null;
         HorseLeg moving = stay != null ? null : horseLegs.stream().filter(leg -> leg.getStatus() == HorseLegStatus.IN_PROGRESS).findFirst().orElse(null);
         HorseHealthLog log = healthLogs.findFirstByBookingHorse_IdOrderByRecordedAtDesc(line.getId()).orElse(null);
         Instant lastCheck = log == null ? null : log.getRecordedAt();
         Instant next = CareCheckPolicy.nextCheckAt(last.getHandedAt(), lastCheck, stay == null, maxHours);
         TripStop stop = moving == null || moving.getVehicleTrip() == null ? null : lastReached(moving.getVehicleTrip().getId());
+        boolean balanceContact = waitingAtPickup || stay != null && (stay.getBalanceHoldAt() != null
+                || line.getBooking().getStatus() == BookingStatus.CONFIRMED
+                    && stay.getStayType() == com.example.racehorse_transport.entity.enums.HorseStayType.ASSEMBLY
+                    && bookings.hasOutstandingPickupReturnPayments(line.getBooking().getId()));
         return new CustodyRowResponseDto(line.getId(), line.getHorse().getName(), line.getBooking().getId(), line.getBooking().getCode(),
                 holder, holder == CustodyHolder.PARTY ? last.getToParty().getDisplayName() : last.getHandledBy().getFullName(), last.getHandedAt(),
                 stay == null ? null : stay.getStayType(), moving == null ? null : moving.getLegType(),
@@ -109,7 +121,8 @@ public class CustodyBoardServiceImpl implements CustodyBoardService {
                 stay != null ? stay.getLocation().getName() : stop != null ? nameOf(stop.getLocation(), stop.getBookingAddress()) : null,
                 stay != null ? point(stay.getLocation(), null) : stop != null ? point(stop.getLocation(), stop.getBookingAddress()) : null,
                 lastCheck, log == null ? null : log.getHealthStatus(), next, holder == CustodyHolder.COMPANY && CareCheckPolicy.overdue(next, now),
-                moving != null && moving.getAgentParty() != null && moving.getLegType() == HorseLegType.DELIVERY ? moving.getId() : null);
+                moving != null && moving.getAgentParty() != null && moving.getLegType() == HorseLegType.DELIVERY ? moving.getId() : null,
+                waitingAtPickup, balanceContact, stay == null ? null : stay.getBalanceHoldAt());
     }
 
     // Điểm dừng gần nhất xe đã tới

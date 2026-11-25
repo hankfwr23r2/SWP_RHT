@@ -74,8 +74,12 @@ public class HubHandoverServiceImpl implements HubHandoverService {
     @Override
     @Transactional
     public HorseStayResponseDto receive(Long horseStayId, HubHandoverRequestDto request, MultipartFile photo, MultipartFile signedRecord, String username) {
+        Long bookingId = stays.findBookingId(horseStayId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lưu trú " + horseStayId));
+        bookings.findForUpdate(bookingId).orElseThrow();
         HorseStay stay = awaitingSelfDropOff(horseStayId);
         Booking booking = stay.getBookingHorse().getBooking();
+        outcomes.requireSelfDeliveryBeforeCheckIn(stay.getBookingHorse().getId());
         // Đầu SELF không có chặng đón: ngựa được ghi vào chặng trục sẽ lên xe ở chính hub này
         HorseLeg next = chain(stay).stream().findFirst()
                 .filter(l -> l.getStatus() == HorseLegStatus.PLANNED && l.getBoardTripStop() != null
@@ -102,6 +106,9 @@ public class HubHandoverServiceImpl implements HubHandoverService {
     @Override
     @Transactional
     public void refuse(Long horseStayId, HubRefusalRequestDto request, String username) {
+        Long bookingId = stays.findBookingId(horseStayId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lưu trú " + horseStayId));
+        bookings.findForUpdate(bookingId).orElseThrow();
         HorseStay stay = awaitingSelfDropOff(horseStayId);
         outcomes.refuse(stay.getBookingHorse().getId(), request.reason().strip(), clock.instant(), actor(username).getUserId());
     }
@@ -118,9 +125,22 @@ public class HubHandoverServiceImpl implements HubHandoverService {
             throw new DispatchRuleException("horseStayId", "Chỉ giao nhận với khách ở lưu trú tập kết hoặc gửi chuồng tại hub.", true);
         }
         Booking booking = stay.getBookingHorse().getBooking();
-        if ((booking.getDeliveryMethod() != TransferMethod.SELF && stay.getStayType() != HorseStayType.STABLING)
+        boolean unpaidAssembly = stay.getStayType() == HorseStayType.ASSEMBLY && booking.getStatus() == BookingStatus.CONFIRMED
+                && bookings.hasReceivedHorses(bookingId) && !outcomes.canBoardAtHub(bookingId);
+        if ((booking.getDeliveryMethod() != TransferMethod.SELF && stay.getStayType() != HorseStayType.STABLING && !unpaidAssembly)
                 || stay.getActualStartAt() == null || stay.getActualEndAt() != null) {
             throw new DispatchRuleException("horseStayId", "Con ngựa này không chờ người nhận tới hub.", true);
+        }
+        if (stay.getBalanceHoldAt() != null || unpaidAssembly) {
+            requireChip(stay, request);
+            var leg = legs.findByBookingHorse_IdOrderBySequenceNumber(stay.getBookingHorse().getId()).stream()
+                    .reduce((first, next) -> next)
+                    .orElseThrow(() -> new DispatchRuleException("horseStayId", "Không tìm thấy chặng gắn với lần nhận ngựa.", true));
+            Instant now = clock.instant();
+            if (unpaidAssembly) outcomes.prepareUnpaidHubReturn(stay, now);
+            Handover handover = record(stay, leg, HandoverType.RETURN, request, photo, signedRecord, username, now);
+            outcomes.atHub(handover, leg, handover.getHandledBy().getUserId());
+            return HorseStayResponseDto.from(stay);
         }
         if (booking.getStatus() != BookingStatus.IN_OPERATION) {
             throw new DispatchRuleException("horseStayId", "Đơn " + booking.getCode() + " không ở trạng thái giao ngựa được.", true);
@@ -158,10 +178,12 @@ public class HubHandoverServiceImpl implements HubHandoverService {
     private HorseStay awaitingSelfDropOff(Long horseStayId) {
         HorseStay stay = assemblyStay(horseStayId);
         Booking booking = stay.getBookingHorse().getBooking();
-        if (booking.getPickupMethod() != TransferMethod.SELF || stay.getActualStartAt() != null) {
+        if ((booking.getPickupMethod() != TransferMethod.SELF && stay.getBookingHorse().getPickupMissChoice()
+                != com.example.racehorse_transport.entity.enums.PickupMissChoice.SELF_DELIVERY) || stay.getActualStartAt() != null) {
             throw new DispatchRuleException("horseStayId", "Lịch hẹn này không chờ nhận ngựa khách tự chở tới.", true);
         }
-        if (stay.getBookingHorse().getStatus() != BookingHorseStatus.ACTIVE || booking.getStatus() != BookingStatus.CONFIRMED) {
+        if (stay.getBookingHorse().getStatus() != BookingHorseStatus.ACTIVE
+                || (booking.getStatus() != BookingStatus.CONFIRMED && booking.getStatus() != BookingStatus.IN_OPERATION)) {
             throw new DispatchRuleException("horseStayId", "Đơn " + booking.getCode() + " không ở trạng thái nhận ngựa được.", true);
         }
         return stay;

@@ -25,15 +25,33 @@ export const fieldCrew = {
       "unpaidReturn": {
         "action": "Trả ngựa do quá hạn thanh toán",
         "title": "Trả lại ngựa đã nhận?",
-        "message": "Khách chưa trả số dư khi đã quá thời gian chờ. Mọi con đã nhận ở điểm này được trả lại (cho người gửi, hoặc cho đại lý ở cửa khẩu) và đơn bị hủy. Nếu khách còn đang thanh toán qua VNPAY, hệ thống sẽ từ chối và bạn chờ thêm. Xác nhận đã trả toàn bộ giấy tờ gốc công ty đang giữ cùng với ngựa.",
-        "done": "Đã trả ngựa và hủy đơn"
+        "message": "Xác nhận có người nhận lại ngựa và giấy tờ gốc tại nơi đón. Đơn chuyển sang Cần chọn lại chuyến. Nếu VNPAY đang xác nhận giao dịch, hãy chờ thêm.",
+        "done": "Đã trả ngựa và mở lại lựa chọn lịch"
       },
       "refusal": {
-        "refuse": "Không nhận",
-        "title": "Không nhận {{name}}?",
-        "message": "Con này bị loại khỏi đơn, chỗ trên chuyến được nhả và báo giá được tính lại cho các con còn lại. Quản lý được báo. Các con khác vẫn nhận bình thường.",
+        "reasonCode": "Nguyên nhân",
+        "senderContact": "Kết quả gọi người gửi",
+        "customerContact": "Kết quả gọi khách",
+        "emergencyContact": "Kết quả gọi liên hệ khẩn cấp",
+        "photo": "Ảnh tại điểm đón",
+        "reasons": {
+          "SENDER_ABSENT": "Người gửi vắng",
+          "CHIP_MISMATCH": "Sai chip",
+          "ORIGINAL_DOCUMENTS_MISSING": "Thiếu giấy gốc",
+          "HORSE_UNWELL": "Ngựa ốm",
+          "HORSE_WILL_NOT_BOARD": "Ngựa không lên xe",
+          "VEHICLE_FAILURE": "Xe hỏng",
+          "UNSUITABLE_STALL": "Khoang không phù hợp",
+          "LATE_ARRIVAL": "Xe tới trễ",
+          "CREW_SHORTAGE": "Thiếu tổ lái",
+          "FLOOD": "Bão lũ",
+          "ROAD_CLOSURE": "Cấm đường",
+        },
+        "refuse": "Ghi đón hụt",
+        "title": "Ghi đón hụt cho {{name}}?",
+        "message": "Ghi lại lý do. Ngựa vẫn trong đơn và khách sẽ chọn cách xử lý.",
         "reason": "Lý do không nhận",
-        "done": "Đã ghi không nhận ngựa"
+        "done": "Đã ghi đón hụt"
       },
       "delivery": {
         "startWaiting": "Bắt đầu chờ người nhận",

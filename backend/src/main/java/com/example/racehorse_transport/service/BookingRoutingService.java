@@ -14,6 +14,8 @@ public interface BookingRoutingService {
 
     void validateReopenPickup(com.example.racehorse_transport.entity.Booking booking, Long departureId);
 
+    void requireDirectLeadTime(com.example.racehorse_transport.entity.Booking booking, java.time.LocalDate pickupDate);
+
     boolean requiresDeparture(com.example.racehorse_transport.entity.Booking booking);
 
     record SubmissionRouting(AddressInput pickup, AddressInput delivery, Province pickupProvince,

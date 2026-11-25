@@ -81,7 +81,9 @@ public class HorseLegServiceImpl implements HorseLegService {
             List<HorseDto> horses = lines.stream().map(line -> {
                 List<HorseLegResponseDto> own = legsByHorse.getOrDefault(line.getId(), List.of());
                 return HorseDto.from(line, own, LegNeedsPolicy.missing(line.getStatus(), booking.getBookingType(), booking.getDeparture() != null,
-                        booking.getPickupMethod(), booking.getDeliveryMethod(),
+                        line.getPickupMissChoice() == com.example.racehorse_transport.entity.enums.PickupMissChoice.SELF_DELIVERY
+                                ? com.example.racehorse_transport.entity.enums.TransferMethod.SELF : booking.getPickupMethod(),
+                        booking.getDeliveryMethod(),
                         own.stream().filter(leg -> !INACTIVE.contains(leg.status())).map(HorseLegResponseDto::legType).toList()));
             }).toList();
             result.add(DispatchBookingResponseDto.from(booking, addresses.get(AddressRole.PICKUP), addresses.get(AddressRole.DELIVERY), horses));
@@ -112,6 +114,9 @@ public class HorseLegServiceImpl implements HorseLegService {
         if (line.getStatus() != BookingHorseStatus.ACTIVE) {
             throw new DispatchRuleException("bookingHorseId", "Ngựa này đang " + line.getStatus() + ", không xếp xe được.", true);
         }
+        if (line.getPickupMissChoice() == com.example.racehorse_transport.entity.enums.PickupMissChoice.DROP_HORSE) {
+            throw new DispatchRuleException("bookingHorseId", "Khách đã chọn bỏ con ngựa này khỏi đơn.", true);
+        }
         if (!DISPATCHABLE.contains(booking.getStatus())) {
             throw new DispatchRuleException("bookingHorseId", "Đơn " + booking.getCode() + " đang " + booking.getStatus() + ", chưa xếp xe được.", true);
         }
@@ -124,6 +129,10 @@ public class HorseLegServiceImpl implements HorseLegService {
         requireAddressesOfBooking(booking, board, alight);
 
         HorseLegType legType = HorseLegType.valueOf(trip.getTripType().name());
+        if (legType == HorseLegType.PICKUP && line.getPickupMissChoice()
+                == com.example.racehorse_transport.entity.enums.PickupMissChoice.SELF_DELIVERY) {
+            throw new DispatchRuleException("bookingHorseId", "Khách đã chọn tự chở con này tới hub.", true);
+        }
         Map<AddressRole, Long> addressIds = bookingAddresses.findByBooking_Id(booking.getId()).stream()
                 .collect(Collectors.toMap(BookingAddress::getAddressType, BookingAddress::getId));
         requireLegFitsBooking(legType, trip, booking, line, tripStops, board, alight, addressIds);
@@ -133,6 +142,13 @@ public class HorseLegServiceImpl implements HorseLegService {
             throw new DispatchRuleException("bookingHorseId", "Ngựa đã có trên lượt xe này.", true);
         }
         HorseLeg previous = chain.stream().filter(l -> !INACTIVE.contains(l.getStatus())).reduce((first, second) -> second).orElse(null);
+        if (legType == HorseLegType.DELIVERY && booking.getBookingType()
+                == com.example.racehorse_transport.entity.enums.BookingType.IMPORT
+                && booking.getStatus() == BookingStatus.CONFIRMED
+                && (previous == null || previous.getStatus() != HorseLegStatus.COMPLETED
+                    || dispatchBookings.hasPendingBalance(booking.getId()))) {
+            throw new DispatchRuleException("payment", "Chỉ xếp giao đơn nhập khi ngựa đã tới hub và khách đã trả số dư.", true);
+        }
         HorseLeg last = chain.stream().filter(existing -> existing.getStatus() != HorseLegStatus.CANCELLED)
                 .reduce((first, next) -> next).orElse(null);
         HorseLeg failed = last != null && last.getStatus() == HorseLegStatus.FAILED ? last : null;
@@ -181,7 +197,7 @@ public class HorseLegServiceImpl implements HorseLegService {
         legs.saveAndFlush(leg);
         // Hệ thống tự xếp vị trí khoang ngay khi gán ngựa (NGHIEP_VU GĐ5), điều phối chỉnh ở sơ đồ khoang
         stallPlans.placeNew(leg);
-        if (leg.getReplacedHorseLeg() != null) {
+        if (leg.getReplacedHorseLeg() != null || leg.getLegType() == HorseLegType.LINEHAUL || leg.getLegType() == HorseLegType.DELIVERY) {
             stablingCharges.precharge(leg, username);
         }
         notices.legAssigned(leg);

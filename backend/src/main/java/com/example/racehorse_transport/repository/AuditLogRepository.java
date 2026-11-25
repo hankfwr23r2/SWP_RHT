@@ -15,6 +15,11 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface AuditLogRepository extends JpaRepository<AuditLog, Long>, JpaSpecificationExecutor<AuditLog> {
 
+    boolean existsByTargetTableAndTargetIdAndActionAndCreatedAtGreaterThanEqual(
+            String targetTable, Long targetId, String action, Instant from);
+    long countByTargetTableAndTargetIdAndActionStartingWithAndCreatedAtGreaterThanEqual(
+            String targetTable, Long targetId, String action, Instant from);
+
     // Các cặp bảng, hành động đã có trong nhật ký (bộ lọc của trang nhật ký hệ thống)
     @Query("SELECT DISTINCT a.targetTable, a.action FROM AuditLog a ORDER BY a.targetTable, a.action")
     List<Object[]> findTargetActions();
