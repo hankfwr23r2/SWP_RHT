@@ -13,10 +13,8 @@ import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.DispatchPolicy;
-import com.example.racehorse_transport.policy.DispatchPolicy.Interval;
 import com.example.racehorse_transport.repository.CrewAssignmentRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
-import com.example.racehorse_transport.repository.VehicleTripRepository;
 import com.example.racehorse_transport.service.CrewAssignmentService;
 import com.example.racehorse_transport.service.CrewPositionService;
 import com.example.racehorse_transport.service.DispatchService;
@@ -30,13 +28,6 @@ import com.example.racehorse_transport.entity.HorseLeg;
 import com.example.racehorse_transport.entity.enums.HandoverStatus;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
 import com.example.racehorse_transport.policy.TrackingPolicy;
-import com.example.racehorse_transport.policy.TripSchedulePolicy;
-import com.example.racehorse_transport.policy.TripSchedulePolicy.Rules;
-import com.example.racehorse_transport.repository.TripStopRepository;
-import com.example.racehorse_transport.service.SystemConfigService;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.TreeMap;
 import com.example.racehorse_transport.policy.TrackingPolicy.CustodyHolder;
 import com.example.racehorse_transport.repository.HandoverHorseRepository;
 import com.example.racehorse_transport.repository.HorseLegRepository;
@@ -62,8 +53,6 @@ public class CrewAssignmentServiceImpl implements CrewAssignmentService {
     private final NotificationService notifications;
     private final HorseLegRepository legs;
     private final HandoverHorseRepository scans;
-    private final TripStopRepository stops;
-    private final SystemConfigService configs;
     private final CrewPositionService positions;
 
     @Override
@@ -85,13 +74,7 @@ public class CrewAssignmentServiceImpl implements CrewAssignmentService {
         if (assignments.existsByVehicleTrip_IdAndStaff_UserIdAndStatusNot(trip.getId(), member.getUserId(), CrewAssignmentStatus.RELEASED)) {
             throw new DispatchRuleException("staffId", "Nhân viên đã có trong lượt xe này.", true);
         }
-        if (!midway) {
-            positions.requireAtStart(member, trip);
-        }
-        requireStaffFree(member, trip);
-        if (request.crewRole() == CrewRole.DRIVER) {
-            requireDailyDriving(member, trip);
-        }
+        positions.requireSchedule(member, request.crewRole(), trip, midway);
         CrewAssignment assignment = request.toEntity(trip, member);
         assignment.setStatus(CrewAssignmentStatus.ASSIGNED);
         assignments.save(assignment);
@@ -163,29 +146,6 @@ public class CrewAssignmentServiceImpl implements CrewAssignmentService {
                 .forEach(row -> holder.put(row.getHorseLeg().getBookingHorse().getId(), row.getHandover().getHandledBy().getUserId()));
         return onboard.stream().filter(l -> userId.equals(holder.get(l.getBookingHorse().getId())))
                 .map(l -> l.getBookingHorse().getHorse().getName()).toList();
-    }
-
-    private void requireStaffFree(Staff member, VehicleTrip trip) {
-        List<VehicleTrip> others = assignments.findActiveOfStaff(member.getUserId(), CrewAssignmentStatus.RELEASED, VehicleTripStatus.CANCELLED)
-                .stream().map(CrewAssignment::getVehicleTrip).filter(t -> !t.getId().equals(trip.getId())).toList();
-        DispatchPolicy.requireNoOverlap("staffId", "Nhân viên", new Interval(trip.getPlannedStartAt(), trip.getPlannedEndAt()),
-                others.stream().map(t -> new Interval(t.getPlannedStartAt(), t.getPlannedEndAt())).toList());
-    }
-
-    // Tài xế không lái quá giới hạn mỗi ngày, tính gộp mọi lượt; hai tài xế trên một xe thì mỗi người tính đủ
-    private void requireDailyDriving(Staff member, VehicleTrip trip) {
-        List<Long> tripIds = new ArrayList<>(assignments.findActiveOfStaff(member.getUserId(), CrewAssignmentStatus.RELEASED, VehicleTripStatus.CANCELLED)
-                .stream().map(a -> a.getVehicleTrip().getId()).toList());
-        tripIds.add(trip.getId());
-        Map<Long, List<Interval>> planned = new TreeMap<>();
-        stops.findByVehicleTrip_IdInOrderByVehicleTrip_IdAscSequenceNumberAsc(Set.copyOf(tripIds)).forEach(stop -> planned
-                .computeIfAbsent(stop.getVehicleTrip().getId(), id -> new ArrayList<>())
-                .add(new Interval(stop.getPlannedArrivalAt(), stop.getPlannedDepartureAt())));
-        Rules rules = new Rules(configs.getInt("MAX_CONTINUOUS_HOURS"), configs.getInt("MIN_REST_MINUTES"), configs.getInt("MAX_DRIVE_HOURS_PER_DAY"), 0, 0);
-        Map<LocalDate, Long> total = TripSchedulePolicy.drivingByDay(planned.values(), BUSINESS_ZONE, rules);
-        // Chỉ xét những ngày lượt đang phân công có lái
-        total.keySet().retainAll(TripSchedulePolicy.drivingByDay(List.of(planned.getOrDefault(trip.getId(), List.of())), BUSINESS_ZONE, rules).keySet());
-        TripSchedulePolicy.requireDailyDriving("staffId", member.getFullName(), total, rules);
     }
 
     private CrewAssignment find(Long id) {

@@ -62,6 +62,28 @@ class DispatchDtoTest {
     }
 
     @Test
+    void tripUpdateAppliesVehicleAndPlannedTimesOnly() {
+        VehicleTrip trip = trip();
+        trip.setId(13L);
+        trip.setActualStartAt(START);
+        var status = trip.getStatus();
+        var departure = trip.getDeparture();
+        var vehicle = new Vehicle();
+
+        new VehicleTripUpdateRequestDto(9L, END, null).applyTo(trip, vehicle, END, END.plusSeconds(7200));
+
+        assertThat(trip.getVehicle()).isSameAs(vehicle);
+        assertThat(trip.getPlannedStartAt()).isEqualTo(END);
+        assertThat(trip.getPlannedEndAt()).isEqualTo(END.plusSeconds(7200));
+        assertThat(trip.getId()).isEqualTo(13L);
+        assertThat(trip.getCode()).isEqualTo("VT-ABCDEFGH");
+        assertThat(trip.getStatus()).isEqualTo(status);
+        assertThat(trip.getDeparture()).isSameAs(departure);
+        assertThat(trip.getActualStartAt()).isEqualTo(START);
+        assertThat(trip.getActualEndAt()).isNull();
+    }
+
+    @Test
     void createsStopWithoutActualTimes() {
         VehicleTrip trip = new VehicleTrip();
         BookingAddress address = new BookingAddress();

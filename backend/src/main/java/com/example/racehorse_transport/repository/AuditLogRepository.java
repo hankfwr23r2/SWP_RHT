@@ -6,8 +6,10 @@ import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -16,6 +18,9 @@ import org.springframework.data.jpa.repository.Query;
 public interface AuditLogRepository extends JpaRepository<AuditLog, Long>, JpaSpecificationExecutor<AuditLog> {
 
     long countByTargetTableAndTargetIdAndAction(String targetTable, Long targetId, String action);
+
+    @Query("SELECT DISTINCT a.targetId FROM AuditLog a WHERE a.targetTable = :targetTable AND a.targetId IN :targetIds AND a.action = :action")
+    Set<Long> findTargetsWithAction(String targetTable, Collection<Long> targetIds, String action);
 
     boolean existsByTargetTableAndTargetIdAndActionAndCreatedAtGreaterThanEqual(
             String targetTable, Long targetId, String action, Instant from);

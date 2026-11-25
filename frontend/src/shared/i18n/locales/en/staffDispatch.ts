@@ -312,6 +312,23 @@ export const staffDispatch = {
       "placePickup": "Pickup {{code}}: {{line}}",
       "placeDelivery": "Delivery {{code}}: {{line}}"
     },
+    "edit": {
+      "title": "Edit trip",
+      "save": "Save changes",
+      "saved": "Trip updated",
+      "failed": "Couldn't update the trip",
+      "notice": "Saving sends an update to the crew and customers with horses on this trip.",
+      "linehaul": "Linehaul times follow the departure schedule. You can change the vehicle.",
+      "schedule": "Trip schedule",
+      "keep": "Keep current times",
+      "shift": "Shift the whole trip",
+      "stops": "Edit individual stop times",
+      "start": "New start time",
+      "shiftHint": "All stops shift by the same amount as the start time.",
+      "stop": "Stop {{n}} · {{name}}",
+      "noVehicles": "No vehicles to choose from",
+      "noVehiclesHint": "Close this dialog and try again once a vehicle appears on the dispatch board."
+    },
     "done": {
       "created": "Trip {{code}} created",
       "assigned": "Assigned",

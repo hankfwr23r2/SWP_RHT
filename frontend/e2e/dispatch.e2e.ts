@@ -40,9 +40,10 @@ async function signIn(page: Page, role: 'coordinator' | 'driver') {
 }
 
 // failBookings: danh sách đơn lỗi cho tới khi test đặt lại false (StrictMode gọi effect hai lần nên không dùng "lỗi một lần")
-async function mockDispatch(page: Page, control: { failBookings?: boolean; vehicleAway?: boolean } = {}) {
+async function mockDispatch(page: Page, control: { failBookings?: boolean; vehicleAway?: boolean; replacementAvailable?: boolean } = {}) {
   const sent: Record<string, unknown> = {}
   let horses: unknown[] = []
+  let changedTrip: typeof linehaul | undefined
   await page.route('**/api/v1/**', async route => {
     const request = route.request()
     const path = new URL(request.url()).pathname.replace('/api/v1', '')
@@ -53,8 +54,13 @@ async function mockDispatch(page: Page, control: { failBookings?: boolean; vehic
       }
       return ok(route, [booking])
     }
-    if (method === 'GET' && path === '/vehicle-trips') return ok(route, [linehaul])
-    if (method === 'GET' && path === '/vehicle-trips/9') return ok(route, linehaul)
+    if (method === 'GET' && path === '/vehicle-trips') return ok(route, [changedTrip ?? linehaul])
+    if (method === 'GET' && path === '/vehicle-trips/9') return ok(route, changedTrip ?? linehaul)
+    if (method === 'PATCH' && path === '/vehicle-trips/9') {
+      sent.edit = request.postDataJSON()
+      changedTrip = { ...linehaul, vehicleId: 5, licensePlate: '51C-44444' }
+      return ok(route, changedTrip)
+    }
     if (method === 'GET' && path === '/vehicle-trips/10') return ok(route, returnTrip)
     if (method === 'GET' && path === '/vehicle-trips/10/horse-legs') return ok(route, [])
     if (method === 'GET' && path === '/coordinator/vehicle-trips') {
@@ -79,7 +85,8 @@ async function mockDispatch(page: Page, control: { failBookings?: boolean; vehic
     if (method === 'GET' && path === '/dispatch/vehicles') {
       if (control.vehicleAway) return ok(route, [{ id: 3, licensePlate: '51C-12345', status: 'ACTIVE', standardStallCount: 6,
         currentLocationId: 2, currentLocationName: 'Hub Đà Nẵng', homeHubLocationId: 1, homeHubLocationCode: 'HUB-HCM', freeFrom: returnStart }])
-      return ok(route, [{ id: 3, licensePlate: '51C-12345', status: 'ACTIVE', standardStallCount: 6 }, { id: 4, licensePlate: '51C-99999', status: 'MAINTENANCE' }])
+      return ok(route, [{ id: 3, licensePlate: '51C-12345', status: 'ACTIVE', standardStallCount: 6 }, { id: 4, licensePlate: '51C-99999', status: 'MAINTENANCE' },
+        ...(control.replacementAvailable ? [{ id: 5, licensePlate: '51C-44444', status: 'ACTIVE', standardStallCount: 6 }] : [])])
     }
     if (method === 'GET' && path === '/departures') return ok(route, [{ id: 7, routeCode: 'HCM-DN', plannedDepartureAt: '2031-03-05T23:00:00Z', status: 'OPEN', runConfirmed: true }])
     if (method === 'GET' && path === '/locations') return ok(route, [{ id: 1, name: 'Hub HCM', locationType: 'HUB' }])
@@ -154,6 +161,25 @@ test('điều phối lập lượt xe trục từ chuyến; xe bảo dưỡng b�
 
   await expect(page.getByText('Đã lập lượt xe VT-NEW00001')).toBeVisible()
   expect(sent.trip).toEqual({ tripType: 'LINEHAUL', vehicleId: 3, departureId: 7 })
+})
+
+test('điều phối phụ trách đổi xe lượt trục từ màn điều độ', async ({ page }) => {
+  await signIn(page, 'coordinator')
+  const sent = await mockDispatch(page, { replacementAvailable: true })
+  await page.goto('/backoffice/coordinator/dispatch')
+  await page.getByLabel('Tuần bắt đầu từ').fill('2031-03-05')
+  await page.getByRole('region', { name: 'Lượt xe trong tuần' }).getByRole('button', { name: /VT-AAAA0009/ }).click()
+  const detail = page.getByRole('dialog', { name: /VT-AAAA0009/ })
+  await detail.getByRole('button', { name: 'Sửa lượt' }).click()
+  const edit = page.getByRole('dialog', { name: 'Sửa lượt' })
+  await expect(edit.getByRole('combobox', { name: 'Lịch lượt xe' })).toHaveCount(0)
+  await edit.getByRole('combobox', { name: 'Xe' }).click()
+  await page.getByRole('option', { name: '51C-44444' }).click()
+  await edit.getByRole('button', { name: 'Lưu thay đổi' }).click()
+
+  await expect(detail).toContainText('51C-44444')
+  await expect(page.getByText('Đã cập nhật lượt xe')).toBeVisible()
+  expect(sent.edit).toEqual({ vehicleId: 5 })
 })
 
 test('điều phối lập lượt về rỗng từ lịch xe', async ({ page }) => {

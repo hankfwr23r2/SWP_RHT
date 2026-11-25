@@ -105,6 +105,12 @@ public class StallPlanServiceImpl implements StallPlanService {
         store(onTrip, StallPlanPolicy.suggest(all, segments(trip)));
     }
 
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void repack(VehicleTrip trip, List<HorseLeg> onTrip) {
+        store(onTrip, StallPlanPolicy.suggest(horses(onTrip), segments(trip)));
+    }
+
     // Vị trí trống gần đầu xe làm con xuống trước bị chắn thì xếp lại, nếu cách xếp lại ít cảnh báo hơn
     private boolean rearrangeWithoutBlocking(List<HorseLeg> onTrip, HorseLeg added, int spot, List<StallHorse> all, List<Integer> segments) {
         Map<Long, Integer> positions = current(onTrip);

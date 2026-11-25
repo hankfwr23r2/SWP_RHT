@@ -4081,7 +4081,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        patch: operations["updateTrip"];
         trace?: never;
     };
     "/vehicle-trips/{id}/assign-coordinator": {
@@ -7657,6 +7657,14 @@ export interface components {
         StopDepartRequestDto: {
             earlyReason?: string;
         };
+        StopTimeRequestDto: {
+            /** Format: date-time */
+            plannedArrivalAt: string;
+            /** Format: date-time */
+            plannedDepartureAt: string;
+            /** Format: int64 */
+            stopId: number;
+        };
         SuggestedStopDto: {
             /** Format: int64 */
             bookingAddressId?: number;
@@ -7953,6 +7961,7 @@ export interface components {
             /** Format: int64 */
             id?: number;
             licensePlate?: string;
+            manualStopTimesEditable?: boolean;
             /** Format: int64 */
             openIncidentCount?: number;
             /** Format: date-time */
@@ -7973,6 +7982,13 @@ export interface components {
             vehicleId?: number;
             /** Format: int32 */
             vehicleSeats?: number;
+        };
+        VehicleTripUpdateRequestDto: {
+            /** Format: date-time */
+            plannedStartAt?: string;
+            stops?: components["schemas"]["StopTimeRequestDto"][];
+            /** Format: int64 */
+            vehicleId?: number;
         };
         VehicleUpdateRequestDto: {
             /** Format: int64 */
@@ -15015,6 +15031,32 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVehicleTripResponseDto"];
+                };
+            };
+        };
+    };
+    updateTrip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VehicleTripUpdateRequestDto"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {

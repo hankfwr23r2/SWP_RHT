@@ -47,6 +47,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -118,83 +119,23 @@ public class HorseLegServiceImpl implements HorseLegService {
         BookingHorse line = bookingHorses.findById(request.bookingHorseId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngựa trong đơn " + request.bookingHorseId()));
         Booking booking = dispatchBookings.findForUpdate(line.getBooking().getId()).orElseThrow();
-        if (line.getStatus() != BookingHorseStatus.ACTIVE) {
-            throw new DispatchRuleException("bookingHorseId", "Ngựa này đang " + line.getStatus() + ", không xếp xe được.", true);
-        }
-        if (line.getPickupMissChoice() == com.example.racehorse_transport.entity.enums.PickupMissChoice.DROP_HORSE) {
-            throw new DispatchRuleException("bookingHorseId", "Khách đã chọn bỏ con ngựa này khỏi đơn.", true);
-        }
-        if (!DISPATCHABLE.contains(booking.getStatus())) {
-            throw new DispatchRuleException("bookingHorseId", "Đơn " + booking.getCode() + " đang " + booking.getStatus() + ", chưa xếp xe được.", true);
-        }
-
+        HorseLegType legType = HorseLegType.valueOf(trip.getTripType().name());
+        requireAssignable(line, booking, legType);
         List<TripStop> tripStops = stops.findByVehicleTrip_IdOrderBySequenceNumber(trip.getId());
         TripStop board = stopOf(tripStops, request.boardTripStopId());
         TripStop alight = stopOf(tripStops, request.alightTripStopId());
-        DispatchPolicy.requireBoardBeforeAlight(board != null, alight != null,
-                board == null ? 0 : board.getSequenceNumber(), alight == null ? 0 : alight.getSequenceNumber());
-        requireAddressesOfBooking(booking, board, alight);
-
-        HorseLegType legType = HorseLegType.valueOf(trip.getTripType().name());
-        if (legType == HorseLegType.PICKUP && line.getPickupMissChoice()
-                == com.example.racehorse_transport.entity.enums.PickupMissChoice.SELF_DELIVERY) {
-            throw new DispatchRuleException("bookingHorseId", "Khách đã chọn tự chở con này tới hub.", true);
-        }
-        Map<AddressRole, Long> addressIds = bookingAddresses.findByBooking_Id(booking.getId()).stream()
-                .collect(Collectors.toMap(BookingAddress::getAddressType, BookingAddress::getId, (first, next) -> first));
-        if (line.getDeliveryAddress() != null) {
-            addressIds.put(AddressRole.DELIVERY, line.getDeliveryAddress().getId());
-        }
-        requireLegFitsBooking(legType, trip, booking, line, tripStops, board, alight, addressIds);
+        Long pickupAddressId = requireStopsForLeg(legType, trip, booking, line, tripStops, board, alight);
 
         List<HorseLeg> chain = legs.findByBookingHorse_IdOrderBySequenceNumber(line.getId());
         if (chain.stream().anyMatch(l -> !INACTIVE.contains(l.getStatus()) && l.getVehicleTrip() != null && l.getVehicleTrip().getId().equals(trip.getId()))) {
             throw new DispatchRuleException("bookingHorseId", "Ngựa đã có trên lượt xe này.", true);
         }
-        HorseLeg previous = chain.stream().filter(l -> !INACTIVE.contains(l.getStatus())).reduce((first, second) -> second).orElse(null);
-        if (legType == HorseLegType.DELIVERY && booking.getBookingType()
-                == com.example.racehorse_transport.entity.enums.BookingType.IMPORT
-                && booking.getStatus() == BookingStatus.CONFIRMED
-                && (previous == null || previous.getStatus() != HorseLegStatus.COMPLETED
-                    || dispatchBookings.hasPendingBalance(booking.getId()))) {
-            throw new DispatchRuleException("payment", "Chỉ xếp giao đơn nhập khi ngựa đã tới hub và khách đã trả số dư.", true);
-        }
-        HorseLeg last = chain.stream().filter(existing -> existing.getStatus() != HorseLegStatus.CANCELLED)
-                .reduce((first, next) -> next).orElse(null);
-        HorseLeg failed = last != null && last.getStatus() == HorseLegStatus.FAILED ? last : null;
-        if (failed != null) {
-            // Giao thất bại: xe đưa ngựa về nơi lượt đó kết thúc (về hub); chặng mới đi tiếp từ đó (B5)
-            DispatchPolicy.requireContinuous("L" + failed.getVehicleTrip().getEndLocation().getId(), placeKey(board));
-            DispatchPolicy.requireAfterPreviousLeg(failed.getVehicleTrip().getPlannedEndAt(), board.getPlannedDepartureAt());
-        } else if (previous != null) {
-            DispatchPolicy.requireContinuous(endKey(previous), placeKey(board));
-            DispatchPolicy.requireAfterPreviousLeg(previous.getPlannedEndAt(), board.getPlannedDepartureAt());
-        } else if (legType != HorseLegType.LINEHAUL) {
-            // Chặng đầu tiên đi từ địa chỉ đón; riêng chặng trục có thể là chặng đầu (khách tự đưa ngựa tới hub, hoặc nhận ở cửa khẩu)
-            DispatchPolicy.requireContinuous("A" + addressIds.get(AddressRole.PICKUP), placeKey(board));
-        }
-
+        HorseLeg failed = requireAfterPredecessor(legType, booking, chain, board, pickupAddressId);
         List<Occupancy> occupancies = new ArrayList<>(legs.findActiveOnTrip(trip.getId(), INACTIVE).stream()
-                .map(l -> new Occupancy(l.getBoardTripStop().getSequenceNumber(), l.getAlightTripStop().getSequenceNumber(),
-                        StallSeatPolicy.seats(l.getBookingHorse().getStallType().getCode())))
-                .toList());
-        occupancies.add(new Occupancy(board.getSequenceNumber(), alight.getSequenceNumber(), StallSeatPolicy.seats(line.getStallType().getCode())));
-        DispatchPolicy.requireCapacity(occupancies, trip.getVehicle().getStandardStallCount() * StallSeatPolicy.seats("STANDARD")
-                + trip.getVehicle().getWideStallCount() * StallSeatPolicy.seats("WIDE"));
-        DispatchPolicy.requirePlannedWindow(board.getPlannedDepartureAt(), alight.getPlannedArrivalAt());
-        if (legType != HorseLegType.LINEHAUL) {
-            int maxDriveHoursPerDay = configs.getInt("MAX_DRIVE_HOURS_PER_DAY");
-            var rules = new TripSchedulePolicy.Rules(0, 0, maxDriveHoursPerDay, 0, 0);
-            TripSchedulePolicy.requirePlannedRideWithinLimit(board.getPlannedDepartureAt(), alight.getPlannedArrivalAt(),
-                    legType == HorseLegType.DIRECT, rules);
-            if (legType == HorseLegType.DELIVERY && failed == null) {
-                requireSharedDeliveryTrip(booking, trip, tripStops, board, maxDriveHoursPerDay);
-            }
-        }
-        if (legType == HorseLegType.PICKUP && booking.getDeparture() != null) {
-            DispatchPolicy.requireAtHubBeforeDeadline(alight.getPlannedArrivalAt(),
-                    DispatchPolicy.hubCheckinDeadline(DepartureDelayPolicy.effectiveTime(booking.getDeparture()), configs.getInt("HUB_CHECKIN_HOURS")));
-        }
+                .map(HorseLegServiceImpl::occupancy).toList());
+        occupancies.add(occupancy(board, alight, line));
+        requireCapacity(trip, occupancies);
+        requireLegTimes(legType, trip, booking, tripStops, board, alight, failed);
 
         HorseLeg leg = new HorseLeg();
         leg.setBookingHorse(line);
@@ -267,6 +208,131 @@ public class HorseLegServiceImpl implements HorseLegService {
     private static void cancelPlanned(HorseLeg leg) {
         leg.setStatus(HorseLegStatus.CANCELLED);
         leg.setStallPosition(null);
+    }
+
+@Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public List<HorseLeg> replanTrip(VehicleTrip trip, List<TripStop> tripStops) {
+        // Khóa đơn trước khi đọc chặng: đổi chuyến/hủy đơn có thể đồng thời gỡ chặng kế hoạch.
+        legs.findActiveBookingIdsOnTrip(trip.getId(), INACTIVE)
+                .forEach(bookingId -> dispatchBookings.findForUpdate(bookingId).orElseThrow());
+        List<HorseLeg> onTrip = legs.findActiveOnTrip(trip.getId(), INACTIVE);
+        for (HorseLeg leg : onTrip) {
+            if (leg.getStatus() != HorseLegStatus.PLANNED || leg.getActualStartAt() != null || leg.getActualEndAt() != null) {
+                throw new DispatchRuleException("status", "Lượt xe đã có chặng bắt đầu, không sửa được.", true);
+            }
+            BookingHorse line = leg.getBookingHorse();
+            Booking booking = line.getBooking();
+            var type = leg.getLegType();
+            requireAssignable(line, booking, type);
+            var board = leg.getBoardTripStop();
+            var alight = leg.getAlightTripStop();
+            Long pickupAddressId = requireStopsForLeg(type, trip, booking, line, tripStops, board, alight);
+            var chain = legs.findByBookingHorse_IdOrderBySequenceNumber(line.getId());
+            var before = chain.stream().filter(other -> other.getSequenceNumber() < leg.getSequenceNumber()).toList();
+            HorseLeg failed = requireAfterPredecessor(type, booking, before, board, pickupAddressId);
+            requireLegTimes(type, trip, booking, tripStops, board, alight, failed);
+            chain.stream().filter(other -> other.getSequenceNumber() > leg.getSequenceNumber() && !INACTIVE.contains(other.getStatus()))
+                    .findFirst().ifPresent(next -> {
+                        DispatchPolicy.requireContinuous(placeKey(alight), startKey(next));
+                        DispatchPolicy.requireAfterPreviousLeg(alight.getPlannedArrivalAt(), next.getPlannedStartAt());
+                    });
+        }
+        requireCapacity(trip, onTrip.stream().map(HorseLegServiceImpl::occupancy).toList());
+        onTrip.forEach(leg -> {
+            leg.setPlannedStartAt(leg.getBoardTripStop().getPlannedDepartureAt());
+            leg.setPlannedEndAt(leg.getAlightTripStop().getPlannedArrivalAt());
+        });
+        return onTrip;
+    }
+
+    private static void requireAssignable(BookingHorse line, Booking booking, HorseLegType legType) {
+        if (line.getStatus() != BookingHorseStatus.ACTIVE) {
+            throw new DispatchRuleException("bookingHorseId", "Ngựa này đang " + line.getStatus() + ", không xếp xe được.", true);
+        }
+        if (line.getPickupMissChoice() == com.example.racehorse_transport.entity.enums.PickupMissChoice.DROP_HORSE) {
+            throw new DispatchRuleException("bookingHorseId", "Khách đã chọn bỏ con ngựa này khỏi đơn.", true);
+        }
+        if (!DISPATCHABLE.contains(booking.getStatus())) {
+            throw new DispatchRuleException("bookingHorseId", "Đơn " + booking.getCode() + " đang " + booking.getStatus() + ", chưa xếp xe được.", true);
+        }
+        if (legType == HorseLegType.PICKUP && line.getPickupMissChoice()
+                == com.example.racehorse_transport.entity.enums.PickupMissChoice.SELF_DELIVERY) {
+            throw new DispatchRuleException("bookingHorseId", "Khách đã chọn tự chở con này tới hub.", true);
+        }
+    }
+
+    private Long requireStopsForLeg(HorseLegType legType, VehicleTrip trip, Booking booking, BookingHorse line,
+                                    List<TripStop> tripStops, TripStop board, TripStop alight) {
+        DispatchPolicy.requireBoardBeforeAlight(board != null && trip.getId().equals(board.getVehicleTrip().getId()),
+                alight != null && trip.getId().equals(alight.getVehicleTrip().getId()),
+                board == null ? 0 : board.getSequenceNumber(), alight == null ? 0 : alight.getSequenceNumber());
+        requireAddressesOfBooking(booking, board, alight);
+        Map<AddressRole, Long> addressIds = bookingAddresses.findByBooking_Id(booking.getId()).stream()
+                .collect(Collectors.toMap(BookingAddress::getAddressType, BookingAddress::getId, (first, next) -> first));
+        if (line.getDeliveryAddress() != null) {
+            addressIds.put(AddressRole.DELIVERY, line.getDeliveryAddress().getId());
+        }
+        requireLegFitsBooking(legType, trip, booking, line, tripStops, board, alight, addressIds);
+        return addressIds.get(AddressRole.PICKUP);
+    }
+
+    private HorseLeg requireAfterPredecessor(HorseLegType legType, Booking booking, List<HorseLeg> chain,
+                                             TripStop board, Long pickupAddressId) {
+        HorseLeg previous = chain.stream().filter(l -> !INACTIVE.contains(l.getStatus())).reduce((first, second) -> second).orElse(null);
+        if (legType == HorseLegType.DELIVERY && booking.getBookingType()
+                == com.example.racehorse_transport.entity.enums.BookingType.IMPORT
+                && booking.getStatus() == BookingStatus.CONFIRMED
+                && (previous == null || previous.getStatus() != HorseLegStatus.COMPLETED
+                    || dispatchBookings.hasPendingBalance(booking.getId()))) {
+            throw new DispatchRuleException("payment", "Chỉ xếp giao đơn nhập khi ngựa đã tới hub và khách đã trả số dư.", true);
+        }
+        HorseLeg last = chain.stream().filter(existing -> existing.getStatus() != HorseLegStatus.CANCELLED)
+                .reduce((first, next) -> next).orElse(null);
+        HorseLeg failed = last != null && last.getStatus() == HorseLegStatus.FAILED ? last : null;
+        if (failed != null) {
+            // Giao thất bại: xe đưa ngựa về nơi lượt đó kết thúc (về hub); chặng mới đi tiếp từ đó (B5)
+            DispatchPolicy.requireContinuous("L" + failed.getVehicleTrip().getEndLocation().getId(), placeKey(board));
+            DispatchPolicy.requireAfterPreviousLeg(failed.getVehicleTrip().getPlannedEndAt(), board.getPlannedDepartureAt());
+        } else if (previous != null) {
+            DispatchPolicy.requireContinuous(endKey(previous), placeKey(board));
+            DispatchPolicy.requireAfterPreviousLeg(previous.getPlannedEndAt(), board.getPlannedDepartureAt());
+        } else if (legType != HorseLegType.LINEHAUL) {
+            // Chặng đầu tiên đi từ địa chỉ đón; riêng chặng trục có thể là chặng đầu (khách tự đưa ngựa tới hub, hoặc nhận ở cửa khẩu)
+            DispatchPolicy.requireContinuous("A" + pickupAddressId, placeKey(board));
+        }
+        return failed;
+    }
+
+    private void requireLegTimes(HorseLegType legType, VehicleTrip trip, Booking booking, List<TripStop> tripStops,
+                                 TripStop board, TripStop alight, HorseLeg failed) {
+        DispatchPolicy.requirePlannedWindow(board.getPlannedDepartureAt(), alight.getPlannedArrivalAt());
+        if (legType != HorseLegType.LINEHAUL) {
+            int maxDriveHoursPerDay = configs.getInt("MAX_DRIVE_HOURS_PER_DAY");
+            var rules = new TripSchedulePolicy.Rules(0, 0, maxDriveHoursPerDay, 0, 0);
+            TripSchedulePolicy.requirePlannedRideWithinLimit(board.getPlannedDepartureAt(), alight.getPlannedArrivalAt(),
+                    legType == HorseLegType.DIRECT, rules);
+            if (legType == HorseLegType.DELIVERY && failed == null) {
+                requireSharedDeliveryTrip(booking, trip, tripStops, board, maxDriveHoursPerDay);
+            }
+        }
+        if (legType == HorseLegType.PICKUP && booking.getDeparture() != null) {
+            DispatchPolicy.requireAtHubBeforeDeadline(alight.getPlannedArrivalAt(),
+                    DispatchPolicy.hubCheckinDeadline(DepartureDelayPolicy.effectiveTime(booking.getDeparture()), configs.getInt("HUB_CHECKIN_HOURS")));
+        }
+    }
+
+    private static Occupancy occupancy(HorseLeg leg) {
+        return occupancy(leg.getBoardTripStop(), leg.getAlightTripStop(), leg.getBookingHorse());
+    }
+
+    private static Occupancy occupancy(TripStop board, TripStop alight, BookingHorse line) {
+        return new Occupancy(board.getSequenceNumber(), alight.getSequenceNumber(), StallSeatPolicy.seats(line.getStallType().getCode()));
+    }
+
+    private static void requireCapacity(VehicleTrip trip, List<Occupancy> occupancies) {
+        DispatchPolicy.requireCapacity(occupancies, trip.getVehicle().getStandardStallCount() * StallSeatPolicy.seats("STANDARD")
+                + trip.getVehicle().getWideStallCount() * StallSeatPolicy.seats("WIDE"));
     }
 
     private static void requireNotStarted(VehicleTrip trip) {
@@ -358,5 +424,9 @@ public class HorseLegServiceImpl implements HorseLegService {
 
     private static String endKey(HorseLeg leg) {
         return leg.getToLocation() != null ? "L" + leg.getToLocation().getId() : "A" + leg.getToBookingAddress().getId();
+    }
+
+    private static String startKey(HorseLeg leg) {
+        return leg.getFromLocation() != null ? "L" + leg.getFromLocation().getId() : "A" + leg.getFromBookingAddress().getId();
     }
 }

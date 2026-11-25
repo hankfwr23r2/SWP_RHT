@@ -4,6 +4,8 @@ import com.example.racehorse_transport.dto.dispatch.DispatchBookingResponseDto;
 import com.example.racehorse_transport.dto.dispatch.HorseLegRequestDto;
 import com.example.racehorse_transport.dto.dispatch.TripHorseResponseDto;
 import com.example.racehorse_transport.entity.HorseLeg;
+import com.example.racehorse_transport.entity.TripStop;
+import com.example.racehorse_transport.entity.VehicleTrip;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -18,6 +20,9 @@ public interface HorseLegService {
 
     // Gán ngựa vào lượt xe, tạo chặng mới nối tiếp chuỗi chặng của con ngựa
     List<TripHorseResponseDto> assign(Long vehicleTripId, HorseLegRequestDto request, String username);
+
+    // Gọi khi sửa kế hoạch, đang giữ khóa lượt xe.
+    List<HorseLeg> replanTrip(VehicleTrip trip, List<TripStop> tripStops);
 
     // Gỡ chặng chưa chạy, chỉ khi đó là chặng cuối của con ngựa
     List<TripHorseResponseDto> cancel(Long horseLegId, String username);

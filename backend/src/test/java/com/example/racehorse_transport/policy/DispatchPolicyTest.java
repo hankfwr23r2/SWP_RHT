@@ -4,11 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.example.racehorse_transport.entity.VehicleTrip;
 import com.example.racehorse_transport.entity.enums.CrewRole;
 import com.example.racehorse_transport.entity.enums.EmploymentStatus;
 import com.example.racehorse_transport.entity.enums.LocationType;
 import com.example.racehorse_transport.entity.enums.TripStopType;
 import com.example.racehorse_transport.entity.enums.VehicleStatus;
+import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import com.example.racehorse_transport.entity.enums.VehicleTripType;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.policy.DispatchPolicy.Interval;
@@ -35,6 +37,46 @@ class DispatchPolicyTest {
         assertThatCode(() -> DispatchPolicy.requirePlannedWindow(at("06:00"), at("10:00"))).doesNotThrowAnyException();
         assertThatThrownBy(() -> DispatchPolicy.requirePlannedWindow(at("10:00"), at("10:00")))
                 .isInstanceOf(DispatchRuleException.class).hasMessageContaining("sau giờ bắt đầu");
+    }
+
+    @Test
+    void uniformShiftPreservesTravelAndDwellTimes() {
+        var times = List.of(window("06:00", "06:30"), window("08:00", "08:45"), window("11:00", "11:00"));
+        var shifted = DispatchPolicy.shiftStops(times, at("06:00"), at("07:15"));
+
+        assertThat(shifted).containsExactly(window("07:15", "07:45"), window("09:15", "10:00"), window("12:15", "12:15"));
+        assertThat(DispatchPolicy.requireStopSchedule(shifted)).isEqualTo(window("07:15", "12:15"));
+    }
+
+    @Test
+    void onlyPlannedTripsAllowEditsAndLinehaulKeepsItsTimes() {
+        assertThatCode(() -> DispatchPolicy.requireTripPlanEditable(VehicleTripStatus.PLANNED, false, VehicleTripType.LINEHAUL, false))
+                .doesNotThrowAnyException();
+        assertThatCode(() -> DispatchPolicy.requireTripPlanEditable(VehicleTripStatus.PLANNED, false, VehicleTripType.PICKUP, true))
+                .doesNotThrowAnyException();
+        assertThatThrownBy(() -> DispatchPolicy.requireTripPlanEditable(VehicleTripStatus.PLANNED, false, VehicleTripType.LINEHAUL, true))
+                .hasMessageContaining("chỉ được đổi xe");
+        assertThatThrownBy(() -> DispatchPolicy.requireTripPlanEditable(VehicleTripStatus.DISPATCHED, false, VehicleTripType.PICKUP, false))
+                .hasMessageContaining("chưa xuất phát");
+        assertThatThrownBy(() -> DispatchPolicy.requireTripPlanEditable(VehicleTripStatus.PLANNED, true, VehicleTripType.PICKUP, false))
+                .hasMessageContaining("chưa xuất phát");
+    }
+
+    @Test
+    void findsTheTripsImmediatelyBeforeAndAfterTheWindow() {
+        VehicleTrip before = scheduledTrip(window("06:00", "07:00"));
+        VehicleTrip after = scheduledTrip(window("09:00", "11:00"));
+        var neighbors = DispatchPolicy.neighbors(List.of(after, scheduledTrip(window("12:00", "13:30")), before), window("07:00", "09:00"));
+
+        assertThat(neighbors.previous()).isSameAs(before);
+        assertThat(neighbors.next()).isSameAs(after);
+    }
+
+    private static VehicleTrip scheduledTrip(Interval window) {
+        VehicleTrip trip = new VehicleTrip();
+        trip.setPlannedStartAt(window.start());
+        trip.setPlannedEndAt(window.end());
+        return trip;
     }
 
     @Test

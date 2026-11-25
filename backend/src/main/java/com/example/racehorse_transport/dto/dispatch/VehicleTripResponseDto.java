@@ -16,14 +16,15 @@ public record VehicleTripResponseDto(
         Long startLocationId, String startLocationName, Long endLocationId, String endLocationName,
         Instant plannedStartAt, Instant plannedEndAt, Instant actualStartAt, Instant actualEndAt,
         VehicleEndCondition endVehicleCondition, String endVehicleNote,
-        List<TripStopResponseDto> stops, List<CrewAssignmentResponseDto> crew, Long coordinatorId, String coordinatorName, long openIncidentCount, String coordinatorStaffCode, boolean takeOverAllowed) {
+        List<TripStopResponseDto> stops, List<CrewAssignmentResponseDto> crew, Long coordinatorId, String coordinatorName,
+        long openIncidentCount, String coordinatorStaffCode, boolean takeOverAllowed, boolean manualStopTimesEditable) {
 
     public static VehicleTripResponseDto from(VehicleTrip trip, List<TripStopResponseDto> stops, List<CrewAssignmentResponseDto> crew) {
-        return from(trip, stops, crew, 0, false);
+        return from(trip, stops, crew, 0, false, false);
     }
 
     public static VehicleTripResponseDto from(VehicleTrip trip, List<TripStopResponseDto> stops,
-            List<CrewAssignmentResponseDto> crew, long openIncidentCount, boolean takeOverAllowed) {
+            List<CrewAssignmentResponseDto> crew, long openIncidentCount, boolean takeOverAllowed, boolean manualStopTimesEditable) {
         var vehicle = trip.getVehicle();
         var departure = trip.getDeparture();
         return new VehicleTripResponseDto(trip.getId(), trip.getCode(), trip.getTripType(), trip.getStatus(),
@@ -36,7 +37,7 @@ public record VehicleTripResponseDto(
                 stops, crew,
                 trip.getCoordinator() == null ? null : trip.getCoordinator().getUserId(),
                 trip.getCoordinator() == null ? null : trip.getCoordinator().getFullName(), openIncidentCount,
-                trip.getCoordinator() == null ? null : trip.getCoordinator().getStaffCode(), takeOverAllowed);
+                trip.getCoordinator() == null ? null : trip.getCoordinator().getStaffCode(), takeOverAllowed, manualStopTimesEditable);
     }
 
     static int seatsOf(int standardStallCount, int wideStallCount) {

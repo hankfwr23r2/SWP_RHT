@@ -540,13 +540,13 @@ Năm loại lượt xe:
 
 - Điều phối bấm **Gom tự động**, chọn ngày, hub, loại lượt Đón. Hệ thống gợi ý các **nhóm đơn cùng hướng** đón chung một xe, kèm số chỗ, số km, số giờ ước lượng.
 - Chọn xe rồi bấm **Xem giờ và bản đồ**: hệ thống tính giờ **theo đường xe tải thật**, tự cộng thời gian lên ngựa và nghỉ bắt buộc.
-- Giờ xuất phát do hệ thống tính ngược: **tới nhà khách đầu tiên lúc 06:00 ngày khách chọn**. Điều phối chỉ sửa được giờ xuất phát rồi bấm tính lại.
+- Giờ xuất phát do hệ thống tính ngược để **tới nhà khách đầu tiên lúc 06:00 ngày khách chọn**. Khi lập lượt theo giờ hệ thống tính, điều phối có thể chọn giờ xuất phát rồi bấm tính lại.
 - Bấm **Lập lượt xe**: tạo lượt, điểm dừng, gắn ngựa và xếp vị trí khoang trong một lần.
 
 ### Bước 4. Xếp lượt trục
 
 - Chỉ làm được **sau khi quản lý bấm Chạy**. Điều phối bấm **Lập lượt xe**, loại **Trục**, chọn xe rồi chọn chuyến. Danh sách chỉ có chuyến xuất phát **từ nơi xe đang ở**; chuyến chưa được xác nhận chạy thì hiện nhưng khóa.
-- Điểm dừng và trạm nghỉ **chép từ tuyến**, giờ cộng từ giờ chạy của chuyến. Điều phối không sửa.
+- Điểm dừng và trạm nghỉ **chép từ tuyến**, giờ cộng từ giờ chạy của chuyến. Sau khi lập lượt, điều phối phụ trách có thể đổi xe khi lượt còn `PLANNED`.
 - Xếp từng con vào xe. Ngựa cùng một đơn phải chung một xe trục. Chuyến đông có thể chia hai xe.
 
 ### Bước 5. Xếp lượt giao
@@ -576,7 +576,8 @@ Năm loại lượt xe:
 
 ### Bước 9. Báo khách
 
-- Khi con ngựa được xếp vào lượt đón, giao hoặc chạy thẳng, khách được báo **khung một giờ** xe dự kiến đến. Giờ dời **quá 30 phút** (cấu hình) so với lần báo trước thì báo lại; lệch ít hơn thì không làm phiền.
+- Khi con ngựa được xếp vào lượt đón, giao hoặc chạy thẳng, khách được báo **khung một giờ** xe dự kiến đến. Khi xe đang chạy, hệ thống báo lại nếu giờ giao dự kiến dời **quá 30 phút** (cấu hình) so với lần báo trước.
+- Khi điều phối lưu thay đổi giờ hoặc xe của lượt đã lập, hệ thống báo tổ lái còn được phân công và gửi một thông báo cho mỗi đơn còn ngựa trên lượt. Với lượt đón, giao hoặc chạy thẳng, thông báo cho khách kèm khung giờ dự kiến đến các điểm của đơn.
 
 ### Bước 10. Đưa xe về trụ sở
 
@@ -674,6 +675,12 @@ Cùng chuyến 05:00 ngày 08/12:
 - **3.33** Đại lý phải đang có vai trò đại lý còn hiệu lực và **ở đúng nước** của địa chỉ. Đơn nhập phải chọn **đúng cửa khẩu** chuyến trục xuất phát.
 - **3.34** Giờ hẹn tự chở phải không muộn hơn hạn có mặt ở hub, tính bằng giờ xuất phát hiệu lực trừ `HUB_CHECKIN_HOURS`. Mỗi con chỉ có một lịch hẹn.
 
+### Sửa lượt xe đã lập
+
+- Điều phối phụ trách mở **Sửa lượt** khi lượt còn `PLANNED`. Có thể đổi xe hoặc dời đều cả lượt ngoài trục. Với lượt có ghi nhận lập bằng giờ nhập tay, có thể sửa giờ từng điểm dừng. Lượt cũ chưa có thông tin nguồn giờ hỗ trợ dời đều nếu là lượt ngoài trục.
+- Hệ thống kiểm lại thứ tự giờ, lịch và vị trí của xe và tổ lái, sức chứa, giờ lái trong ngày, giờ ngựa ngồi xe, hạn tới hub và thứ tự các chặng của ngựa. Khi đổi xe, hệ thống xếp lại sơ đồ khoang trên xe mới.
+- Việc lưu cập nhật đồng thời giờ lượt xe, điểm dừng và các chặng đã xếp. Lượt trục lấy giờ từ chuyến và chỉ cho đổi xe tại màn Điều độ.
+
 ## 3.E. Tình huống và cách hệ thống xử lý
 
 | # | Ở bước | Tình huống | Hệ thống sẽ |
@@ -708,7 +715,7 @@ Theo cách hàng không, đã trình bày và chờ duyệt cuối:
 1. **Đã sửa** · Đơn rời chuyến được gỡ chặng chưa chạy, vị trí khoang và lịch hẹn hub.
 2. **Quên xác nhận chạy thì đơn đứng yên** (T25). Đã có đề xuất ở 3.F.
 3. **Đã sửa** · Chuyến cập nhật khi xe trục đầu tiên rời điểm đầu và khi các lượt trục hoàn tất.
-4. **Không sửa được giờ của lượt đã lập**: muốn đổi giờ hoặc đổi xe phải gỡ ngựa, hủy lượt, lập lại.
+4. **Đã sửa.** Điều phối phụ trách sửa xe và giờ của lượt `PLANNED`, kiểm lại quy tắc khi lập và báo tổ lái, khách của các đơn có ngựa trên lượt. Lượt trục chỉ đổi xe.
 5. **Hủy lượt xe hoặc gỡ người thì tổ lái không được báo.**
 6. **Đã sửa.** Lượt chở ngựa phải có hộ tống đã nhận việc mới xuất phát được.
 7. **Đã sửa.** Nhập giờ tay cũng kiểm thời gian ngồi xe theo kế hoạch: đón, giao tối đa 5 giờ, chạy thẳng tối đa 10 giờ.
