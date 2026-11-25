@@ -3,6 +3,8 @@
 > Agent luồng B đọc tài liệu này sau `AGENTS.md`, trước khi bắt đầu task. Quy trình duyệt theo mục 1.1 của `AGENTS.md`.
 > Cập nhật 24/11/2026. Backend A6b, A7 và A8 đã merge qua PR #394–#397. PR #398 đã nối lập số dư, kiểm thanh toán và thao tác không nhận ngựa tại điểm đón trên `origin/redesign/system-v2`.
 
+> **25/11/2026 · 30 điểm hở giao cho bạn B:** xem [GIAO_VIEC_BAN_B.md](GIAO_VIEC_BAN_B.md), gồm gợi ý, file liên quan, vùng luồng A đang sửa và số migration dành cho B.
+
 ## Việc luồng B còn phải làm
 
 Đọc [Nghiệp vụ](NGHIEP_VU_THEO_59_BANG.md), [Màn hình và tác động](MAN_HINH_VA_TAC_DONG.md) và các quy tắc #26, #28–#38 trong [Đặc tả DB](DB_SCHEMA_59_BANG.md).
@@ -53,3 +55,9 @@
 Giao nhận lần sau gọi lại `PaymentService.requestBalance` lúc nhận, kể cả đơn IN_OPERATION. Service khóa đơn, đọc báo giá đã chấp nhận và chỉ lập khoản số dư khi có tiền thiếu và chưa có số dư chờ. Trước khi rời điểm đón lại, kiểm trả đủ dưới khóa đơn. Giá theo lượt đón lại gắn với chặng thuộc lượt xe đã xếp. Luồng A xử lý phiên bản báo giá, đối soát số dư và khoản hoàn trong giao dịch của lựa chọn.
 
 Chuyên viên ghi số phí bảo hiểm đã hoàn lũy kế theo chứng từ. Nếu con đã bị loại do khách, luồng A lập báo giá thay thế và đối soát trong giao dịch giữ khóa đơn.
+
+## Trả lời ba việc luồng B chờ · 25/11/2026
+
+1. **Người nhận tự tới hub lấy ngựa khi còn phí giữ.** Người dùng chốt: **không chặn**. Hàm đã có từ đợt 1a: `StablingChargeService.chargeThrough` chốt phí và lập khoản thu (`ExtraChargeService.createStablingCharge`, được khi đơn `IN_OPERATION`) ngay lúc ngựa rời hub; khách trả trong 7 ngày. Chỉ xe công ty **giao lại** mới bị chặn ở `HUB_OUT` khi phí chưa trả. Có test `DeliveryFailureFlowTest.consigneeCanCollectAtTheHubWhileTheRedeliveryChargeIsUnpaid`. B không gọi thêm gì. Cách tính phí sẽ đổi theo mục 13 của PHUONG_AN_6_LUONG, luồng A làm.
+2. **Miền Bắc trong dữ liệu mẫu.** Thêm hub vệ tinh Hà Nội phục vụ 17 tỉnh (gồm Thanh Hóa, Nghệ An, Hà Tĩnh; Điện Biên cố ý để ngoài vùng phục vụ để còn tỉnh thử nhánh báo chưa phục vụ), trạm Đồng Hới, Vinh, Thanh Hóa, bốn tuyến `DN-HN`, `HN-DN`, `HCM-HN`, `HN-HCM` mỗi tuyến một chuyến mỗi tuần (thứ Năm, Bảy, Tư, Hai, 05:00), giá mẫu, hai xe 9 chỗ, hai tài xế, một hộ tống, sáu chuồng gửi. Km và giờ chạy tính bằng Valhalla 25/11/2026 cho xe tải 10 tấn, 80 km/h; thỏa 4 giờ liên tục, 10 giờ giữa hai lần nghỉ đêm. Vẫn là **số mẫu**. Xe và nhân viên vẫn thuộc trụ sở nên xe đi Bắc phải lập lượt về. Miền Bắc đi Lào, Campuchia: chưa có tuyến.
+3. **Màn quản trị báo lỗi.** `useStaffFormAction` hiện lý do máy chủ trả khi bị từ chối (4xx); lỗi 5xx hoặc mất mạng vẫn báo chung.

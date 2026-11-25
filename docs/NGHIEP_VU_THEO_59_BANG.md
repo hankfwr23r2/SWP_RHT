@@ -516,6 +516,8 @@ Giả định của đợt này: địa chỉ giao của đơn nhập là nơi c
 
 ### GĐ8. Giao ngựa
 
+> **Đã chốt 25/11/2026, code chưa sửa:** phí giữ, cước giao lại và cách đóng đơn theo mục 13 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md).
+
 Với `delivery_method = SELF`, trả ngựa tại hub và ghi `handover` DELIVERY gắn với `horse_stay`. Quá giờ hẹn thì gửi chuồng, báo khách khi bắt đầu giữ và tính phí theo `STABLING_DAILY_FEE` khi rời hub.
 
 Giao ngựa **đối xứng với đón ngựa**. **Ai:** tài xế và hộ tống (giao trong nước), hoặc đại lý (giao ở nước ngoài). **Trạng thái:** `IN_OPERATION` → `DELIVERED`.
@@ -573,13 +575,15 @@ Khoản thu thêm đến hạn sau `EXTRA_CHARGE_DUE_DAYS` kể từ lúc lập.
 
 ### GĐ10. Đóng đơn
 
+> **Đã chốt 25/11/2026, code chưa sửa:** phí giữ, cước giao lại và cách đóng đơn theo mục 13 của [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md).
+
 | Việc | Bảng |
 |---|---|
 | Đã trả đủ: số còn nợ theo `SettlementPolicy` bằng 0. Đơn không có khoản phát sinh tự đóng sau 7 ngày kể từ khi giao | `booking.status = COMPLETED` |
 | Khách đánh giá một lần khi đơn ở `DELIVERED` hoặc `COMPLETED` | `booking_rating` |
 | Thông báo cho các bên | `notification`, `notification_recipient` |
 
-Hạn khiếu nại là 7 ngày kể từ `handover` DELIVERY DONE.
+Hạn khiếu nại là 7 ngày kể từ lúc đơn sang `DELIVERED` (con cuối đã giao); ngày 8–14 quản lý nhập thay. Đơn đã `COMPLETED` thì giữ nguyên.
 
 ---
 

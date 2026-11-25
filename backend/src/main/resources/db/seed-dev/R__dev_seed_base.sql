@@ -7,7 +7,7 @@
 -- Dữ liệu nền đầy đủ sẽ bổ sung riêng (xem docs/NGU_CANH_THIET_KE_LAI.md, câu hỏi còn mở).
 --
 -- Tài khoản thử: mọi tài khoản dưới đây dùng chung mật khẩu thử DevSeed@2026 (chỉ dùng cho dev/test).
---   admin.dev, manager.dev, coordinator.dev, specialist.dev, driver1.dev … driver4.dev, escort1.dev … escort3.dev, customer1.dev
+--   admin.dev, manager.dev, coordinator.dev, specialist.dev, driver1.dev … driver6.dev, escort1.dev … escort4.dev, customer1.dev
 
 -- ---------------------------------------------------------------------------
 -- 1. Điểm mạng lưới và vùng phục vụ
@@ -25,6 +25,10 @@ INSERT INTO location (code, name, location_type, country_code, province_code, ad
     ('REST-QUANGNGAI', 'Trạm nghỉ Quảng Ngãi', 'REST_STOP', 'VN', 'VN-51', 'Phường Nghĩa Lộ, Quảng Ngãi', 15.120000, 108.800000, NULL, NULL, NULL, 'ACTIVE'),
     ('REST-HUE', 'Trạm nghỉ Huế', 'REST_STOP', 'VN', 'VN-46', 'Phường Thuận Hóa, TP. Huế', 16.460000, 107.600000, NULL, NULL, NULL, 'ACTIVE'),
     ('REST-DONGHA', 'Trạm nghỉ Đông Hà', 'REST_STOP', 'VN', 'VN-44', 'Phường Đông Hà, Quảng Trị', 16.820000, 107.100000, NULL, NULL, NULL, 'ACTIVE'),
+    ('HUB-HN', 'Hub vệ tinh Hà Nội', 'HUB', 'VN', 'VN-1', 'Xã Gia Lâm, TP. Hà Nội', 21.020000, 105.950000, NULL, NULL, '0900000300', 'ACTIVE'),
+    ('REST-DONGHOI', 'Trạm nghỉ Đồng Hới', 'REST_STOP', 'VN', 'VN-44', 'Phường Đồng Hới, Quảng Trị', 17.465000, 106.600000, NULL, NULL, NULL, 'ACTIVE'),
+    ('REST-VINH', 'Trạm nghỉ Vinh', 'REST_STOP', 'VN', 'VN-40', 'Phường Thành Vinh, Nghệ An', 18.680000, 105.680000, NULL, NULL, NULL, 'ACTIVE'),
+    ('REST-THANHHOA', 'Trạm nghỉ Thanh Hóa', 'REST_STOP', 'VN', 'VN-38', 'Phường Hạc Thành, Thanh Hóa', 19.800000, 105.770000, NULL, NULL, NULL, 'ACTIVE'),
     ('GATE-LAOBAO', 'Cửa khẩu quốc tế Lao Bảo - Densavanh', 'BORDER_GATE', 'VN', 'VN-44', 'Xã Lao Bảo, Quảng Trị', 16.620000, 106.600000, TIME '07:00', TIME '22:00', NULL, 'ACTIVE')
 ON CONFLICT (code) DO NOTHING;
 
@@ -45,7 +49,8 @@ SELECT l.id, p.code
 FROM (VALUES
           ('HUB-HCM', 'VN-79'), ('HUB-HCM', 'VN-75'), ('HUB-HCM', 'VN-80'), ('HUB-HCM', 'VN-82'), ('HUB-HCM', 'VN-86'),
           ('HUB-HCM', 'VN-91'), ('HUB-HCM', 'VN-92'), ('HUB-HCM', 'VN-96'), ('HUB-HCM', 'VN-68'), ('HUB-HCM', 'VN-56'), ('HUB-HCM', 'VN-66'),
-          ('HUB-DN', 'VN-48'), ('HUB-DN', 'VN-46'), ('HUB-DN', 'VN-51'), ('HUB-DN', 'VN-44'), ('HUB-DN', 'VN-52')
+          ('HUB-DN', 'VN-48'), ('HUB-DN', 'VN-46'), ('HUB-DN', 'VN-51'), ('HUB-DN', 'VN-44'), ('HUB-DN', 'VN-52'),
+          ('HUB-HN', 'VN-1'), ('HUB-HN', 'VN-31'), ('HUB-HN', 'VN-24'), ('HUB-HN', 'VN-4'), ('HUB-HN', 'VN-33'), ('HUB-HN', 'VN-12'), ('HUB-HN', 'VN-20'), ('HUB-HN', 'VN-15'), ('HUB-HN', 'VN-40'), ('HUB-HN', 'VN-37'), ('HUB-HN', 'VN-25'), ('HUB-HN', 'VN-22'), ('HUB-HN', 'VN-14'), ('HUB-HN', 'VN-19'), ('HUB-HN', 'VN-38'), ('HUB-HN', 'VN-8'), ('HUB-HN', 'VN-42')
      ) AS v(hub_code, province_code)
 JOIN location l ON l.code = v.hub_code
 JOIN province p ON p.code = v.province_code
@@ -69,6 +74,9 @@ INSERT INTO app_user (username, email, password_hash, is_email_verified, preferr
     ('escort1.dev', 'escort1.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE', 'ESCORT'),
     ('escort2.dev', 'escort2.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE', 'ESCORT'),
     ('escort3.dev', 'escort3.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE', 'ESCORT'),
+    ('driver5.dev', 'driver5.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE', 'DRIVER'),
+    ('driver6.dev', 'driver6.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE', 'DRIVER'),
+    ('escort4.dev', 'escort4.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE', 'ESCORT'),
     ('customer1.dev', 'customer1.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE', 'CUSTOMER')
 ON CONFLICT (username) DO NOTHING;
 
@@ -85,7 +93,10 @@ FROM (VALUES
           ('driver3.dev', 'DRV-003', 'Bùi Tài Xế Ba (mẫu)', '0900000008', 'C', DATE '2030-12-31'),
           ('driver4.dev', 'DRV-004', 'Ngô Tài Xế Bốn (mẫu)', '0900000009', 'C', DATE '2030-12-31'),
           ('escort2.dev', 'ESC-002', 'Đinh Chăm Ngựa (mẫu)', '0900000010', NULL, NULL::date),
-          ('escort3.dev', 'ESC-003', 'Mai Chăm Ngựa (mẫu)', '0900000011', NULL, NULL::date)
+          ('escort3.dev', 'ESC-003', 'Mai Chăm Ngựa (mẫu)', '0900000011', NULL, NULL::date),
+          ('driver5.dev', 'DRV-005', 'Hồ Tài Xế Năm (mẫu)', '0900000012', 'C', DATE '2030-12-31'),
+          ('driver6.dev', 'DRV-006', 'Lý Tài Xế Sáu (mẫu)', '0900000013', 'C', DATE '2030-12-31'),
+          ('escort4.dev', 'ESC-004', 'Tạ Chăm Ngựa (mẫu)', '0900000014', NULL, NULL::date)
      ) AS v(username, staff_code, full_name, phone, license_class, license_expiry)
 JOIN app_user u ON u.username = v.username
 JOIN location hub ON hub.is_headquarters
@@ -107,7 +118,13 @@ FROM (VALUES
           ('Đội cứu hộ xe tải (mẫu)', '0900000500', 'TP.HCM', 'VN'),
           ('Công ty bảo hiểm (mẫu)', '0900000600', 'TP.HCM', 'VN'),
           ('Chuồng gửi ngựa Đà Nẵng (mẫu)', '0900000700', 'TP. Đà Nẵng', 'VN'),
-          ('Chuồng gửi ngựa Tuy Hòa (mẫu)', '0900000701', 'Phường Tuy Hòa, Đắk Lắk', 'VN')
+          ('Chuồng gửi ngựa Tuy Hòa (mẫu)', '0900000701', 'Phường Tuy Hòa, Đắk Lắk', 'VN'),
+          ('Chuồng gửi ngựa Huế (mẫu)', '0900000702', 'TP. Huế', 'VN'),
+          ('Chuồng gửi ngựa Vinh (mẫu)', '0900000703', 'Nghệ An', 'VN'),
+          ('Chuồng gửi ngựa Đồng Hới (mẫu)', '0900000704', 'Quảng Trị', 'VN'),
+          ('Chuồng gửi ngựa Thanh Hóa (mẫu)', '0900000705', 'Thanh Hóa', 'VN'),
+          ('Chuồng gửi ngựa Quảng Ngãi (mẫu)', '0900000706', 'Quảng Ngãi', 'VN'),
+          ('Chuồng gửi ngựa Phan Rang (mẫu)', '0900000707', 'Khánh Hòa', 'VN')
      ) AS v(display_name, phone, address, country_code)
 WHERE NOT EXISTS (SELECT 1 FROM party p WHERE p.display_name = v.display_name);
 
@@ -120,7 +137,13 @@ FROM (VALUES
           ('Đội cứu hộ xe tải (mẫu)', 'RESCUE'),
           ('Công ty bảo hiểm (mẫu)', 'INSURER'),
           ('Chuồng gửi ngựa Đà Nẵng (mẫu)', 'STABLE'),
-          ('Chuồng gửi ngựa Tuy Hòa (mẫu)', 'STABLE')
+          ('Chuồng gửi ngựa Tuy Hòa (mẫu)', 'STABLE'),
+          ('Chuồng gửi ngựa Huế (mẫu)', 'STABLE'),
+          ('Chuồng gửi ngựa Vinh (mẫu)', 'STABLE'),
+          ('Chuồng gửi ngựa Đồng Hới (mẫu)', 'STABLE'),
+          ('Chuồng gửi ngựa Thanh Hóa (mẫu)', 'STABLE'),
+          ('Chuồng gửi ngựa Quảng Ngãi (mẫu)', 'STABLE'),
+          ('Chuồng gửi ngựa Phan Rang (mẫu)', 'STABLE')
      ) AS v(display_name, role_type)
 JOIN party p ON p.display_name = v.display_name
 ON CONFLICT DO NOTHING;
@@ -136,7 +159,9 @@ FROM (VALUES
           ('51C-100.01', 'LIGHT', 2, 0),
           ('51C-100.02', 'MEDIUM', 2, 2),
           ('51C-100.03', 'HEAVY', 5, 2),
-          ('51C-100.04', 'HEAVY', 9, 0)
+          ('51C-100.04', 'HEAVY', 9, 0),
+          ('51C-100.05', 'HEAVY', 9, 0),
+          ('51C-100.06', 'HEAVY', 9, 0)
      ) AS v(plate, class_code, std, wide)
 JOIN vehicle_class vc ON vc.code = v.class_code
 JOIN location hub ON hub.is_headquarters
@@ -163,7 +188,11 @@ FROM (VALUES
           ('HCM-DN', 'TP.HCM – Đà Nẵng', 'HUB-HCM', 'HUB-DN', 975.00, 1781),
           ('DN-HCM', 'Đà Nẵng – TP.HCM', 'HUB-DN', 'HUB-HCM', 982.00, 1782),
           ('DN-LAOBAO', 'Đà Nẵng – Cửa khẩu Lao Bảo (đi Lào)', 'HUB-DN', 'GATE-LAOBAO', 294.00, 383),
-          ('LAOBAO-DN', 'Cửa khẩu Lao Bảo – Đà Nẵng (từ Lào về)', 'GATE-LAOBAO', 'HUB-DN', 291.00, 411)
+          ('LAOBAO-DN', 'Cửa khẩu Lao Bảo – Đà Nẵng (từ Lào về)', 'GATE-LAOBAO', 'HUB-DN', 291.00, 411),
+          ('DN-HN', 'Đà Nẵng – Hà Nội', 'HUB-DN', 'HUB-HN', 797.00, 1602),
+          ('HN-DN', 'Hà Nội – Đà Nẵng', 'HUB-HN', 'HUB-DN', 798.00, 1603),
+          ('HCM-HN', 'TP.HCM – Hà Nội', 'HUB-HCM', 'HUB-HN', 1772.00, 3953),
+          ('HN-HCM', 'Hà Nội – TP.HCM', 'HUB-HN', 'HUB-HCM', 1780.00, 3955)
      ) AS v(code, name, origin_code, destination_code, distance_km, minutes)
 JOIN location o ON o.code = v.origin_code
 JOIN location d ON d.code = v.destination_code
@@ -204,7 +233,49 @@ FROM (VALUES
           ('LAOBAO-DN', 1, 'GATE-LAOBAO', 'BORDER', 0, 60),
           ('LAOBAO-DN', 2, 'REST-DONGHA', 'REST', 152, 30),
           ('LAOBAO-DN', 3, 'REST-HUE', 'REST', 281, 30),
-          ('LAOBAO-DN', 4, 'HUB-DN', 'HUB', 411, 0)
+          ('LAOBAO-DN', 4, 'HUB-DN', 'HUB', 411, 0),
+          ('DN-HN', 1, 'HUB-DN', 'HUB', 0, 30),
+          ('DN-HN', 2, 'REST-HUE', 'REST', 134, 30),
+          ('DN-HN', 3, 'REST-DONGHA', 'REST', 259, 30),
+          ('DN-HN', 4, 'REST-DONGHOI', 'REST', 398, 30),
+          ('DN-HN', 5, 'REST-VINH', 'REST', 624, 600),
+          ('DN-HN', 6, 'REST-THANHHOA', 'REST', 1384, 30),
+          ('DN-HN', 7, 'HUB-HN', 'HUB', 1602, 0),
+          ('HN-DN', 1, 'HUB-HN', 'HUB', 0, 30),
+          ('HN-DN', 2, 'REST-THANHHOA', 'REST', 217, 30),
+          ('HN-DN', 3, 'REST-VINH', 'REST', 408, 30),
+          ('HN-DN', 4, 'REST-DONGHOI', 'REST', 633, 600),
+          ('HN-DN', 5, 'REST-DONGHA', 'REST', 1342, 30),
+          ('HN-DN', 6, 'REST-HUE', 'REST', 1467, 30),
+          ('HN-DN', 7, 'HUB-DN', 'HUB', 1603, 0),
+          ('HCM-HN', 1, 'HUB-HCM', 'HUB', 0, 30),
+          ('HCM-HN', 2, 'REST-PHANTHIET', 'REST', 177, 30),
+          ('HCM-HN', 3, 'REST-PHANRANG', 'REST', 343, 30),
+          ('HCM-HN', 4, 'REST-NHATRANG', 'VITAL_CHECK', 492, 45),
+          ('HCM-HN', 5, 'REST-TUYHOA', 'REST', 683, 600),
+          ('HCM-HN', 6, 'REST-QUYNHON', 'REST', 1392, 30),
+          ('HCM-HN', 7, 'REST-QUANGNGAI', 'REST', 1617, 30),
+          ('HCM-HN', 8, 'HUB-DN', 'REST', 1781, 30),
+          ('HCM-HN', 9, 'REST-HUE', 'REST', 1915, 600),
+          ('HCM-HN', 10, 'REST-DONGHA', 'REST', 2610, 30),
+          ('HCM-HN', 11, 'REST-DONGHOI', 'REST', 2749, 30),
+          ('HCM-HN', 12, 'REST-VINH', 'REST', 2975, 30),
+          ('HCM-HN', 13, 'REST-THANHHOA', 'REST', 3165, 600),
+          ('HCM-HN', 14, 'HUB-HN', 'HUB', 3953, 0),
+          ('HN-HCM', 1, 'HUB-HN', 'HUB', 0, 30),
+          ('HN-HCM', 2, 'REST-THANHHOA', 'REST', 217, 30),
+          ('HN-HCM', 3, 'REST-VINH', 'REST', 408, 30),
+          ('HN-HCM', 4, 'REST-DONGHOI', 'REST', 633, 600),
+          ('HN-HCM', 5, 'REST-DONGHA', 'REST', 1342, 30),
+          ('HN-HCM', 6, 'REST-HUE', 'REST', 1467, 30),
+          ('HN-HCM', 7, 'HUB-DN', 'REST', 1603, 30),
+          ('HN-HCM', 8, 'REST-QUANGNGAI', 'REST', 1769, 600),
+          ('HN-HCM', 9, 'REST-QUYNHON', 'REST', 2558, 30),
+          ('HN-HCM', 10, 'REST-TUYHOA', 'REST', 2698, 30),
+          ('HN-HCM', 11, 'REST-NHATRANG', 'VITAL_CHECK', 2871, 30),
+          ('HN-HCM', 12, 'REST-PHANRANG', 'REST', 3023, 600),
+          ('HN-HCM', 13, 'REST-PHANTHIET', 'REST', 3762, 30),
+          ('HN-HCM', 14, 'HUB-HCM', 'HUB', 3955, 0)
      ) AS v(route_code, sequence_number, location_code, stop_type, arrival_offset_minutes, dwell_minutes)
 JOIN route r ON r.code = v.route_code
 JOIN location l ON l.code = v.location_code
@@ -215,7 +286,8 @@ ON CONFLICT (route_id, sequence_number) DO UPDATE SET location_id = EXCLUDED.loc
 DELETE FROM route_stop rs USING route r
 WHERE rs.route_id = r.id
   AND rs.sequence_number > CASE r.code WHEN 'HCM-PNH' THEN 3 WHEN 'MOCBAI-HCM' THEN 3 WHEN 'HCM-DN' THEN 8
-                                       WHEN 'DN-HCM' THEN 8 WHEN 'DN-LAOBAO' THEN 4 WHEN 'LAOBAO-DN' THEN 4 ELSE 32767 END
+                                       WHEN 'DN-HCM' THEN 8 WHEN 'DN-LAOBAO' THEN 4 WHEN 'LAOBAO-DN' THEN 4
+                                       WHEN 'DN-HN' THEN 7 WHEN 'HN-DN' THEN 7 WHEN 'HCM-HN' THEN 14 WHEN 'HN-HCM' THEN 14 ELSE 32767 END
   AND NOT EXISTS (SELECT 1 FROM trip_stop ts WHERE ts.route_id = rs.route_id AND ts.route_stop_sequence_number = rs.sequence_number);
 
 -- Mỗi tuyến một chuyến mỗi tuần: thứ Hai HCM và Mộc Bài, thứ Ba đi Đà Nẵng, thứ Sáu đi Lao Bảo, thứ Bảy về Đà Nẵng,
@@ -228,7 +300,11 @@ FROM (VALUES
           ('HCM-DN', TIME '05:00'),
           ('DN-LAOBAO', TIME '05:00'),
           ('LAOBAO-DN', TIME '07:00'),
-          ('DN-HCM', TIME '05:00')
+          ('DN-HCM', TIME '05:00'),
+          ('DN-HN', TIME '05:00'),
+          ('HN-DN', TIME '05:00'),
+          ('HCM-HN', TIME '05:00'),
+          ('HN-HCM', TIME '05:00')
      ) AS v(route_code, departure_time)
 JOIN route r ON r.code = v.route_code
 WHERE NOT EXISTS (SELECT 1 FROM departure_schedule s WHERE s.route_id = r.id AND s.departure_time = v.departure_time);
@@ -244,7 +320,7 @@ WHERE dd.departure_schedule_id = s.id AND s.route_id = r.id
 
 INSERT INTO departure_schedule_day (departure_schedule_id, day_of_week)
 SELECT s.id, v.day_of_week
-FROM (VALUES ('HCM-PNH', TIME '06:00', 1), ('MOCBAI-HCM', TIME '14:00', 1), ('HCM-DN', TIME '05:00', 2), ('DN-LAOBAO', TIME '05:00', 5), ('LAOBAO-DN', TIME '07:00', 6), ('DN-HCM', TIME '05:00', 7)) AS v(route_code, departure_time, day_of_week)
+FROM (VALUES ('HCM-PNH', TIME '06:00', 1), ('MOCBAI-HCM', TIME '14:00', 1), ('HCM-DN', TIME '05:00', 2), ('DN-LAOBAO', TIME '05:00', 5), ('LAOBAO-DN', TIME '07:00', 6), ('DN-HCM', TIME '05:00', 7), ('DN-HN', TIME '05:00', 4), ('HN-DN', TIME '05:00', 6), ('HCM-HN', TIME '05:00', 3), ('HN-HCM', TIME '05:00', 1)) AS v(route_code, departure_time, day_of_week)
 JOIN route r ON r.code = v.route_code
 JOIN departure_schedule s ON s.route_id = r.id AND s.departure_time = v.departure_time
 ON CONFLICT DO NOTHING;
@@ -265,7 +341,11 @@ FROM (VALUES
           ('LAOBAO-DN', 'STANDARD', 6000000), ('LAOBAO-DN', 'WIDE', 8000000),
           ('HCM-DN', 'STANDARD', 12000000), ('HCM-DN', 'WIDE', 15000000),
           ('DN-HCM', 'STANDARD', 12000000), ('DN-HCM', 'WIDE', 15000000),
-          ('MOCBAI-HCM', 'STANDARD', 6000000), ('MOCBAI-HCM', 'WIDE', 8000000)
+          ('MOCBAI-HCM', 'STANDARD', 6000000), ('MOCBAI-HCM', 'WIDE', 8000000),
+          ('DN-HN', 'STANDARD', 10000000), ('DN-HN', 'WIDE', 13000000),
+          ('HN-DN', 'STANDARD', 10000000), ('HN-DN', 'WIDE', 13000000),
+          ('HCM-HN', 'STANDARD', 20000000), ('HCM-HN', 'WIDE', 26000000),
+          ('HN-HCM', 'STANDARD', 20000000), ('HN-HCM', 'WIDE', 26000000)
      ) AS v(route_code, stall_type, unit_price)
 JOIN price_list pl ON pl.name = 'Bảng giá mẫu (dev)'
 JOIN billable_service s ON s.code = 'LINEHAUL_STALL'
