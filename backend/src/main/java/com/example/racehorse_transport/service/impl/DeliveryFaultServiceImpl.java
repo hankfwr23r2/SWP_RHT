@@ -63,7 +63,7 @@ public class DeliveryFaultServiceImpl implements DeliveryFaultService {
 
         var booking = incident.getBooking();
         bookings.findForUpdate(booking.getId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn."));
-        if (leg != null) updateStay(leg, cause);
+        if (leg != null) updateStay(booking.getId(), leg, cause);
         incident.setConfirmedCauseType(cause);
         incident.setCauseConfirmedAt(now);
         incident.setCauseConfirmedBy(actor);
@@ -74,15 +74,14 @@ public class DeliveryFaultServiceImpl implements DeliveryFaultService {
         return incidentReads.incident(id);
     }
 
-    private void updateStay(HorseLeg leg, IncidentCauseType cause) {
+    private void updateStay(Long bookingId, HorseLeg leg, IncidentCauseType cause) {
         var returnStays = stays.findReturnStaysForUpdate(leg.getBookingHorse().getId(), leg.getId()).stream()
                 .filter(stay -> stay.getLocation().getLocationType() == LocationType.HUB)
                 .toList();
         if (returnStays.stream().anyMatch(stay -> costs.existsByHorseStay_IdAndCategory(stay.getId(), CostCategory.STABLING))) {
             throw new DispatchRuleException("cause", "Lưu trú này đã phát sinh phí giữ ngựa.", true);
         }
-        var booking = leg.getBookingHorse().getBooking();
-        if (costs.findByBooking_IdOrderByIncurredAt(booking.getId()).stream().anyMatch(cost ->
+        if (costs.findByBooking_IdOrderByIncurredAt(bookingId).stream().anyMatch(cost ->
                 cost.getCategory() == CostCategory.REDELIVERY && !cost.getIncurredAt().isBefore(leg.getActualEndAt()))) {
             throw new DispatchRuleException("cause", "Đã lập cước giao lại cho lần giao hụt này.", true);
         }
