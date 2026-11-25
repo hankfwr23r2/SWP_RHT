@@ -1,22 +1,30 @@
 package com.example.racehorse_transport.policy;
 
+import com.example.racehorse_transport.entity.VehicleTrip;
 import com.example.racehorse_transport.entity.enums.CrewRole;
+import com.example.racehorse_transport.entity.enums.DepartureStatus;
 import com.example.racehorse_transport.entity.enums.EmploymentStatus;
 import com.example.racehorse_transport.entity.enums.LocationType;
 import com.example.racehorse_transport.entity.enums.TripStopType;
 import com.example.racehorse_transport.entity.enums.VehicleStatus;
+import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import com.example.racehorse_transport.entity.enums.VehicleTripType;
 import com.example.racehorse_transport.exception.DispatchRuleException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 // Quy tắc điều độ, hàm thuần (docs/DB_SCHEMA_59_BANG.md mục "Ràng buộc phải kiểm ở service").
 // Service đọc dữ liệu rồi truyền vào; policy không đọc DB.
 public final class DispatchPolicy {
+
+    private static final Set<DepartureStatus> RUNNABLE_DEPARTURES = Set.of(DepartureStatus.OPEN, DepartureStatus.CLOSED, DepartureStatus.IN_PROGRESS);
 
     // Khoảng thời gian [start, end) của một lượt xe hoặc một điểm dừng
     public record Interval(Instant start, Instant end) {
@@ -27,6 +35,8 @@ public final class DispatchPolicy {
 
     // Một con ngựa trên xe: lên ở điểm dừng boardSequence, xuống ở alightSequence, chiếm seats chỗ
     public record Occupancy(int boardSequence, int alightSequence, int seats) {}
+
+    public record Neighbors(VehicleTrip previous, VehicleTrip next) {}
 
     private DispatchPolicy() {}
 
@@ -39,6 +49,47 @@ public final class DispatchPolicy {
     public static Interval routeStopWindow(Instant tripStart, int arrivalOffsetMinutes, int dwellMinutes) {
         Instant arrival = tripStart.plusSeconds(60L * arrivalOffsetMinutes);
         return new Interval(arrival, arrival.plusSeconds(60L * dwellMinutes));
+    }
+
+    public static void requireRunnableDeparture(DepartureStatus status, boolean runConfirmed) {
+        if (!RUNNABLE_DEPARTURES.contains(status)) {
+            throw new DispatchRuleException("departureId", "Chuyến đang " + status + ", không lập lượt xe được.", true);
+        }
+        if (!runConfirmed) {
+            throw new DispatchRuleException("departureId", "Chuyến chưa được quản lý xác nhận chạy, chưa lập lượt trục được.", true);
+        }
+    }
+
+    public static void requireTripPlanEditable(VehicleTripStatus status, boolean started, VehicleTripType type, boolean changeTimes) {
+        if (status != VehicleTripStatus.PLANNED || started) {
+            throw new DispatchRuleException("status", "Chỉ sửa được lượt xe còn ở trạng thái đã lập và chưa xuất phát.", true);
+        }
+        if (changeTimes && type == VehicleTripType.LINEHAUL) {
+            throw new DispatchRuleException("plannedStartAt", "Lượt xe trục lấy giờ theo chuyến, chỉ được đổi xe.", true);
+        }
+    }
+
+    public static List<Interval> shiftStops(List<Interval> stops, Instant oldStart, Instant newStart) {
+        Duration offset = Duration.between(oldStart, newStart);
+        return stops.stream().map(stop -> new Interval(stop.start().plus(offset), stop.end().plus(offset))).toList();
+    }
+
+    public static Interval requireStopSchedule(List<Interval> stops) {
+        if (stops.size() < 2) {
+            throw new DispatchRuleException("stops", "Lượt xe cần ít nhất hai điểm dừng.");
+        }
+        var window = new Interval(stops.getFirst().start(), stops.getLast().end());
+        requirePlannedWindow(window.start(), window.end());
+        requireStopsInOrder(window, stops);
+        return window;
+    }
+
+    public static Neighbors neighbors(Collection<VehicleTrip> otherTrips, Interval window) {
+        VehicleTrip previous = otherTrips.stream().filter(other -> !other.getPlannedEndAt().isAfter(window.start()))
+                .max(Comparator.comparing(VehicleTrip::getPlannedEndAt)).orElse(null);
+        VehicleTrip next = otherTrips.stream().filter(other -> !other.getPlannedStartAt().isBefore(window.end()))
+                .min(Comparator.comparing(VehicleTrip::getPlannedStartAt)).orElse(null);
+        return new Neighbors(previous, next);
     }
 
     // Điểm dừng nằm trong lượt xe, theo đúng thứ tự, rời đi không sớm hơn lúc tới

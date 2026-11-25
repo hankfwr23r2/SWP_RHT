@@ -50,6 +50,10 @@ public interface HorseLegRepository extends JpaRepository<HorseLeg, Long> {
     @Query("SELECT l FROM HorseLeg l WHERE l.vehicleTrip.id = :tripId AND l.status NOT IN :inactive ORDER BY l.boardTripStop.sequenceNumber, l.id")
     List<HorseLeg> findActiveOnTrip(@Param("tripId") Long tripId, @Param("inactive") Collection<HorseLegStatus> inactive);
 
+    @Query("SELECT DISTINCT l.bookingHorse.booking.id FROM HorseLeg l WHERE l.vehicleTrip.id = :tripId "
+            + "AND l.status NOT IN :inactive ORDER BY l.bookingHorse.booking.id")
+    List<Long> findActiveBookingIdsOnTrip(Long tripId, Collection<HorseLegStatus> inactive);
+
     @EntityGraph(attributePaths = {"bookingHorse", "bookingHorse.horse", "bookingHorse.booking", "boardTripStop", "alightTripStop"})
     @Query("""
             SELECT l FROM HorseLeg l WHERE l.vehicleTrip.id = :tripId AND l.status IN :statuses

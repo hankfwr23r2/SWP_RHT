@@ -20,6 +20,7 @@ import { TripMap } from './TripMap'
 import { TripTimeline } from './TripTimeline'
 import { TripTakeOverButton } from './TripTakeOverButton'
 import { TripCrewSection } from './TripCrewSection'
+import { TripEditButton } from './TripEditButton'
 import b from './Board.module.css'
 import s from './Dispatch.module.css'
 
@@ -92,6 +93,9 @@ export function TripDetailModal({ tripId, bookings, onClose, onChanged }: Props)
           {!editable && <span className={s.muted}>{t('dispatch.detail.locked')}</span>}
           <span>{trip.coordinatorName ? t('coordAssignment.ownedBy', { name: trip.coordinatorName }) : t('coordAssignment.unassigned')}</span>
           {canTakeOver && <TripTakeOverButton tripId={tripId} onSaved={async () => { onChanged(); await reload() }} />}
+          {owner && trip.status === 'PLANNED' && trip.actualStartAt == null && (
+            <TripEditButton tripId={tripId} trip={trip} onSaved={async () => { onChanged(); await reload() }} />
+          )}
         </div>
       </div>
 

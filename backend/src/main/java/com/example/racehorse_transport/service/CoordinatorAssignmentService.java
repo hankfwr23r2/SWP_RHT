@@ -9,6 +9,8 @@ public interface CoordinatorAssignmentService {
     void assignTrip(Long id, CoordinatorAssignmentRequestDto request, String username);
     void takeOver(Long id, CoordinatorTakeOverRequestDto request, String username);
     VehicleTrip requireTripWrite(Long tripId, String username);
+
+    VehicleTrip requireAssignedTripWrite(Long tripId, String username);
     void requireIncidentWrite(Long incidentId, String username);
     void requireCostWrite(Long costId, String username);
     boolean tripExists(Long tripId);

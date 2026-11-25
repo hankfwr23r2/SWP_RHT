@@ -9100,6 +9100,24 @@
         },
         "type" : "object"
       },
+      "StopTimeRequestDto" : {
+        "properties" : {
+          "plannedArrivalAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "plannedDepartureAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "stopId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "plannedArrivalAt", "plannedDepartureAt", "stopId" ],
+        "type" : "object"
+      },
       "SuggestedStopDto" : {
         "properties" : {
           "bookingAddressId" : {
@@ -9850,6 +9868,9 @@
           "licensePlate" : {
             "type" : "string"
           },
+          "manualStopTimesEditable" : {
+            "type" : "boolean"
+          },
           "openIncidentCount" : {
             "format" : "int64",
             "type" : "integer"
@@ -9895,6 +9916,27 @@
           },
           "vehicleSeats" : {
             "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "VehicleTripUpdateRequestDto" : {
+        "properties" : {
+          "plannedStartAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "stops" : {
+            "items" : {
+              "$ref" : "#/components/schemas/StopTimeRequestDto"
+            },
+            "maxItems" : 50,
+            "minItems" : 1,
+            "type" : "array"
+          },
+          "vehicleId" : {
+            "format" : "int64",
             "type" : "integer"
           }
         },
@@ -19168,6 +19210,41 @@
             "type" : "integer"
           }
         } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVehicleTripResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "dispatch-controller" ]
+      },
+      "patch" : {
+        "operationId" : "updateTrip",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VehicleTripUpdateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
         "responses" : {
           "200" : {
             "content" : {

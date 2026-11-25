@@ -312,6 +312,23 @@ export const staffDispatch = {
       "placePickup": "Đón {{code}}: {{line}}",
       "placeDelivery": "Giao {{code}}: {{line}}"
     },
+    "edit": {
+      "title": "Sửa lượt",
+      "save": "Lưu thay đổi",
+      "saved": "Đã cập nhật lượt xe",
+      "failed": "Không cập nhật được lượt xe",
+      "notice": "Khi lưu thay đổi, hệ thống sẽ báo cho tổ lái và khách có ngựa trên lượt.",
+      "linehaul": "Giờ lượt trục theo lịch chuyến. Có thể đổi xe.",
+      "schedule": "Lịch lượt xe",
+      "keep": "Giữ giờ hiện tại",
+      "shift": "Dời đều cả lượt",
+      "stops": "Sửa giờ từng điểm dừng",
+      "start": "Giờ bắt đầu mới",
+      "shiftHint": "Các điểm dừng cùng dời theo giờ bắt đầu mới.",
+      "stop": "Điểm {{n}} · {{name}}",
+      "noVehicles": "Chưa có xe để chọn",
+      "noVehiclesHint": "Đóng hộp thoại và thử lại khi có xe trong danh sách điều độ."
+    },
     "done": {
       "created": "Đã lập lượt xe {{code}}",
       "assigned": "Đã phân công",

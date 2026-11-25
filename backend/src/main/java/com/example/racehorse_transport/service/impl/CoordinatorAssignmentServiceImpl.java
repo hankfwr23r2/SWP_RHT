@@ -98,6 +98,17 @@ public class CoordinatorAssignmentServiceImpl implements CoordinatorAssignmentSe
     }
 
     @Override
+    public VehicleTrip requireAssignedTripWrite(Long tripId, String username) {
+        AppUser actor = requireRole(username, "COORDINATOR");
+        VehicleTrip trip = lockedTrip(tripId);
+        if (trip.getCoordinator() == null) {
+            throw BookingRuleException.forbidden("Lượt xe chưa được giao điều phối phụ trách.");
+        }
+        CoordinatorAssignmentPolicy.requireOwner(trip.getCoordinator(), actor.getId());
+        return trip;
+    }
+
+    @Override
     public void requireIncidentWrite(Long incidentId, String username) {
         if ("COORDINATOR".equals(actor(username).getRole().getCode())) {
             incidents.findVehicleTripId(incidentId).ifPresent(tripId -> requireTripWrite(tripId, username));

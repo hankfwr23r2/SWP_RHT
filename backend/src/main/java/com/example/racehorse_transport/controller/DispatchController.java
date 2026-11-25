@@ -12,6 +12,7 @@ import com.example.racehorse_transport.dto.dispatch.TripHorseResponseDto;
 import com.example.racehorse_transport.dto.dispatch.VehicleTripCancelRequestDto;
 import com.example.racehorse_transport.dto.dispatch.VehicleTripCreateRequestDto;
 import com.example.racehorse_transport.dto.dispatch.VehicleTripResponseDto;
+import com.example.racehorse_transport.dto.dispatch.VehicleTripUpdateRequestDto;
 import com.example.racehorse_transport.dto.dispatch.DispatchVehicleResponseDto;
 import com.example.racehorse_transport.entity.enums.CrewRole;
 import com.example.racehorse_transport.entity.enums.VehicleTripType;
@@ -33,6 +34,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -70,6 +72,12 @@ public class DispatchController {
     @PostMapping("/vehicle-trips")
     public ResponseEntity<ApiResponseDto<VehicleTripResponseDto>> createTrip(@Valid @RequestBody VehicleTripCreateRequestDto request, Authentication actor) {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponseDto.success(dispatch.createTrip(request, actor.getName()), "Đã lập lượt xe"));
+    }
+
+    @PatchMapping("/vehicle-trips/{id}")
+    public ApiResponseDto<VehicleTripResponseDto> updateTrip(@PathVariable Long id,
+            @Valid @RequestBody VehicleTripUpdateRequestDto request, Authentication actor) {
+        return ApiResponseDto.success(dispatch.updateTrip(id, request, actor.getName()), "Đã cập nhật lượt xe");
     }
 
     @PostMapping("/vehicle-trips/{id}/cancel")

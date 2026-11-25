@@ -1,9 +1,10 @@
 // Điều độ (B1): lượt xe, điểm dừng, tổ lái, chặng của ngựa. Kiểu lấy từ OpenAPI sinh tự động.
 import apiClient, { type ApiResponse } from './client'
+import { formResponseOptions, readFormResponse } from './customerAddresses'
 import type { components } from './generated/schema'
 
 type Schemas = components['schemas']
-export type VehicleTrip = Schemas['VehicleTripResponseDto']
+export type VehicleTrip = Schemas['VehicleTripResponseDto'] & { manualStopTimesEditable?: boolean }
 export type TripStop = Schemas['TripStopResponseDto']
 export type CrewAssignment = Schemas['CrewAssignmentResponseDto']
 export type DispatchBooking = Schemas['DispatchBookingResponseDto']
@@ -18,6 +19,9 @@ export type NetworkLocation = Schemas['LocationResponse']
 export type HorseStay = Schemas['HorseStayResponseDto']
 export type VehicleTripCreate = Schemas['VehicleTripCreateRequestDto']
 export type TripStopCreate = Schemas['TripStopRequestDto']
+export type VehicleTripUpdate = Pick<VehicleTrip, 'vehicleId' | 'plannedStartAt'> & {
+  stops?: (Required<Pick<TripStop, 'plannedArrivalAt' | 'plannedDepartureAt'>> & { stopId: NonNullable<TripStop['id']> })[]
+}
 export type CrewRole = NonNullable<Schemas['CrewAssignmentRequestDto']['crewRole']>
 export type PlannedTrip = Schemas['PlannedTripResponseDto']
 export type PlannedTripCreate = Schemas['PlannedTripRequestDto']
@@ -47,6 +51,8 @@ export const dispatchApi = {
   trips: (from: string, to: string) => get<VehicleTrip[]>('/vehicle-trips', { from, to }),
   trip: (id: number) => get<VehicleTrip>(`/vehicle-trips/${id}`),
   createTrip: (body: VehicleTripCreate) => post<VehicleTrip>('/vehicle-trips', body),
+  updateTrip: async (id: number, body: VehicleTripUpdate) =>
+    readFormResponse<VehicleTrip>(await apiClient.patch(`/vehicle-trips/${id}`, body, formResponseOptions)),
   planTrip: (body: PlannedTripCreate) => post<PlannedTrip>('/dispatch/trip-plans', body),
   createPlannedTrip: (body: PlannedTripCreate) => post<VehicleTrip>('/vehicle-trips/planned', body),
   cancelTrip: (id: number, reason: string) => post<VehicleTrip>(`/vehicle-trips/${id}/cancel`, { reason }),

@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.entity.CrewAssignment;
 import com.example.racehorse_transport.entity.HorseLeg;
 import com.example.racehorse_transport.entity.TripStop;
 import com.example.racehorse_transport.entity.VehicleTrip;
@@ -22,11 +23,13 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -40,6 +43,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 public class TripProgressNoticeServiceImpl implements TripProgressNoticeService {
     private static final Set<VehicleTripType> SUPPORTED = Set.of(VehicleTripType.DELIVERY, VehicleTripType.DIRECT);
     private static final ZoneId ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+    private static final DateTimeFormatter PLANNED_TIME = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy").withZone(ZONE);
     private final VehicleTripRepository trips;
     private final TripStopRepository stops;
     private final HorseLegRepository legs;
@@ -48,6 +52,27 @@ public class TripProgressNoticeServiceImpl implements TripProgressNoticeService 
     private final SystemConfigService configs;
     private final Clock clock;
     private final TransactionTemplate transactions;
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void planChanged(VehicleTrip trip, List<CrewAssignment> crew, List<HorseLeg> tripLegs) {
+        String summary = "Lượt xe " + trip.getCode() + " dùng xe " + trip.getVehicle().getLicensePlate() + ".";
+        String start = " Dự kiến bắt đầu lúc " + PLANNED_TIME.format(trip.getPlannedStartAt()) + ".";
+        var crewIds = crew.stream().map(member -> member.getStaff().getUserId()).distinct().toList();
+        if (!crewIds.isEmpty()) {
+            notifications.notify(crewIds, null, "Kế hoạch lượt xe đã thay đổi",
+                    summary + start + " Mở Lượt xe của tôi để xem giờ từng điểm.", "/my-trips");
+        }
+        var byBooking = tripLegs.stream().collect(Collectors.groupingBy(leg -> leg.getBookingHorse().getBooking().getId()));
+        byBooking.forEach((bookingId, own) -> {
+            var booking = own.getFirst().getBookingHorse().getBooking();
+            var windows = own.stream().map(CustomerNoticePolicy::expectedTimes).filter(times -> !times.isEmpty())
+                    .map(CustomerNoticePolicy::describeTimes).distinct().toList();
+            String details = windows.isEmpty() ? start : " Xe dự kiến " + String.join(". Xe dự kiến ", windows) + ".";
+            notifications.notify(List.of(booking.getCustomer().getUserId()), bookingId, "Kế hoạch vận chuyển đã thay đổi",
+                    "Đơn " + booking.getCode() + ". " + summary + details, "/orders/" + bookingId);
+        });
+    }
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)

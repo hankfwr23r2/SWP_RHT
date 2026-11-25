@@ -81,7 +81,7 @@ public class TripScheduleDataServiceImpl implements TripScheduleDataService {
     @Override
     @Transactional
     public VehicleTripResponseDto save(PlannedTripRequestDto request, List<HorseInput> horses, PlannedTripResponseDto plan, String username) {
-        VehicleTripResponseDto trip = dispatch.createTrip(new VehicleTripCreateRequestDto(request.tripType(), null, request.vehicleId(),
+        VehicleTripResponseDto trip = dispatch.createCalculatedTrip(new VehicleTripCreateRequestDto(request.tripType(), null, request.vehicleId(),
                 plan.stops().stream().map(stop -> new TripStopRequestDto(stop.locationId(), stop.bookingAddressId(), stop.stopType(),
                         stop.arrivalAt(), stop.departureAt())).toList()), username);
         List<TripStopResponseDto> stops = trip.stops();

@@ -86,7 +86,7 @@ public final class CustomerNoticePolicy {
         if (now.isEmpty() || (told != null && !changed(told, now, noticeMinutes))) {
             return Optional.empty();
         }
-        String plan = plan(now);
+        String plan = describeTimes(now);
         return Optional.of(told == null
                 ? new Notice("Giờ xe dự kiến", "Đơn " + bookingCode + ": xe dự kiến " + plan + ".")
                 : new Notice("Giờ dự kiến thay đổi", "Đơn " + bookingCode + " đổi giờ: xe dự kiến " + plan + "."));
@@ -103,7 +103,7 @@ public final class CustomerNoticePolicy {
         return text(window);
     }
 
-    private static String plan(ExpectedTimes times) {
+    public static String describeTimes(ExpectedTimes times) {
         String pickup = times.pickup() == null ? null : "đến đón ngựa " + text(window(times.pickup()));
         String delivery = times.delivery() == null ? null : "giao ngựa " + text(window(times.delivery()));
         return pickup == null ? delivery : delivery == null ? pickup : pickup + ", " + delivery;
