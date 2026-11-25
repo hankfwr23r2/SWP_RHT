@@ -17,7 +17,7 @@ import { Textarea } from '@shared/ui/Textarea'
 
 interface Props {
   bookingId: number
-  horses: { id?: number; horseName?: string }[]
+  horses: { id?: number; horseName?: string; status?: string }[]
   onChange: () => void
 }
 
@@ -29,6 +29,7 @@ export function DeliveryComplaintPanel({ bookingId, horses, onChange }: Props) {
   const [horseId, setHorseId] = useState('')
   const [decision, setDecision] = useState<ComplaintDecision>('ACCEPTED')
   const [pending, setPending] = useState<Pending>()
+  const selectableHorses = horses.filter(horse => horse.id != null && horse.status !== 'EXCLUDED' && horse.status !== 'CANCELLED')
 
   function prepareSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -51,7 +52,10 @@ export function DeliveryComplaintPanel({ bookingId, horses, onChange }: Props) {
     const saved = pending.type === 'submit'
       ? await delivery.submitOnBehalf(pending.body)
       : await delivery.resolve(pending.decision, pending.reason)
-    if (saved) setPending(undefined)
+    setPending(undefined)
+    if (saved && pending.type === 'submit') {
+      setHorseId('')
+    }
   }
 
   const data = delivery.data
@@ -69,13 +73,13 @@ export function DeliveryComplaintPanel({ bookingId, horses, onChange }: Props) {
             <Field label={t('deliveryComplaint.horse')} error={delivery.fieldErrors.bookingHorseId}>{field => (
               <FormSelect id={field.id} value={horseId} onChange={event => setHorseId(event.target.value)}>
                 <option value="">{t('deliveryComplaint.wholeBooking')}</option>
-                {horses.filter(horse => horse.id != null).map(horse => <option key={horse.id} value={horse.id}>{horse.horseName}</option>)}
+                {selectableHorses.map(horse => <option key={horse.id} value={horse.id}>{horse.horseName}</option>)}
               </FormSelect>
             )}</Field>
             <Field label={t('deliveryComplaint.description')} required error={delivery.fieldErrors.description}>{field => (
               <Textarea {...field} name="description" maxLength={4000} rows={3} />
             )}</Field>
-            <Field label={t('deliveryComplaint.photos')} error={delivery.fieldErrors.photos}>{field => (
+            <Field label={t('deliveryComplaint.photos')} required error={delivery.fieldErrors.photos}>{field => (
               <Input {...field} name="photos" type="file" accept="image/*" multiple />
             )}</Field>
             <Button type="submit" variant="primary" loading={delivery.busy}>{t('managerDeliveryComplaint.submitOnBehalf')}</Button>
@@ -88,7 +92,7 @@ export function DeliveryComplaintPanel({ bookingId, horses, onChange }: Props) {
               void delivery.reply(String(new FormData(event.currentTarget).get('reply')))
             }}>
               <Field label={t('deliveryComplaint.reply')} required error={delivery.fieldErrors.reply}>{field => (
-                <Textarea {...field} name="reply" maxLength={4000} defaultValue={complaint.reply} />
+                <Textarea {...field} name="reply" maxLength={4000} defaultValue={complaint.reply ?? ''} />
               )}</Field>
               <Button type="submit" loading={delivery.busy}>{t('managerDeliveryComplaint.saveReply')}</Button>
             </form>

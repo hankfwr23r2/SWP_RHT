@@ -5,15 +5,26 @@ import org.springframework.web.server.ResponseStatusException;
 
 public class BookingRuleException extends ResponseStatusException {
 
+    private final String field;
+
     public BookingRuleException(String message) {
-        super(HttpStatus.BAD_REQUEST, message);
+        this(HttpStatus.BAD_REQUEST, null, message);
+    }
+
+    public BookingRuleException(String field, String message) {
+        this(HttpStatus.BAD_REQUEST, field, message);
     }
 
     public static BookingRuleException conflict(String message) {
-        return new BookingRuleException(HttpStatus.CONFLICT, message);
+        return new BookingRuleException(HttpStatus.CONFLICT, null, message);
     }
 
-    private BookingRuleException(HttpStatus status, String message) {
+    private BookingRuleException(HttpStatus status, String field, String message) {
         super(status, message);
+        this.field = field;
+    }
+
+    public String getField() {
+        return field;
     }
 }

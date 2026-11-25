@@ -2422,10 +2422,11 @@
               "format" : "binary",
               "type" : "string"
             },
+            "minItems" : 1,
             "type" : "array"
           }
         },
-        "required" : [ "description" ],
+        "required" : [ "description", "photos" ],
         "type" : "object"
       },
       "ComplaintReplyRequestDto" : {
