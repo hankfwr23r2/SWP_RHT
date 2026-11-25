@@ -421,7 +421,7 @@ Hai con từ Củ Chi, cùng chuyến, A giao Điện Bàn (27 km từ hub), B g
 | Chờ ở nơi **chưa phải cuối** | Tối đa **60 phút** (đề xuất) thay vì 120, để con còn trên xe không quá giờ. Nơi cuối vẫn 120 phút |
 | Giao lại con thất bại | Lượt giao riêng, **phí giữ và cước giao lại** của con đó |
 | Bỏ một con lúc đón (mục 8) | Bỏ nơi giao của nó nếu không còn con nào tới đó, tính lại cước giao |
-| Đổi nơi giao sau khi cọc | Chỉ khi chưa lập lượt giao, cùng hub, vẫn đủ điều kiện; lập báo giá thay thế, khách đồng ý, chênh lệch vào số dư |
+| Đổi nơi giao sau khi cọc | Chỉ khi chưa lập lượt giao, cùng hub, vẫn đủ điều kiện; lập báo giá thay thế, khách đồng ý, chênh lệch vào số dư. **Đã làm** 25/11/2026: cùng tỉnh, tối đa 2 lần (`DELIVERY_CHANGE_MAX`), không áp dụng đơn chạy thẳng và đơn xuất |
 | Đổi nơi giao khi đã trả số dư | Không nhận trên hệ thống; nơi mới khác tỉnh có thể phải đổi giấy (**chưa kiểm chứng**) |
 | Một nơi đường cấm xe tải | Không cho gộp, mời khách tự tới hub nhận con đó hoặc đặt đơn riêng |
 

@@ -3,6 +3,7 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { custodyApi, type CustodyRow } from '@shared/api/custody'
 import { dispatchApi } from '@shared/api/dispatch'
+import { HealthCheckTaskAction } from '@backoffice/shared/HealthCheckTaskAction'
 import { StayHealthAction } from '@backoffice/shared/StayHealthAction'
 import { HorseHealthHistory } from '@backoffice/shared/HorseHealthHistory'
 import { BookingJourney } from '@shared/components/HorseJourney'
@@ -77,6 +78,10 @@ export default function TrackingPage() {
                 {row.healthLogStayId != null && row.bookingHorseId != null && (
                   <StayHealthAction horseStayId={row.healthLogStayId} bookingHorseId={row.bookingHorseId}
                     horseName={row.horseName} reported onSaved={reload} />
+                )}
+                {row.bookingHorseId != null && row.holder === 'COMPANY' && (row.healthLogStayId != null || row.vehicleTripId != null) && (
+                  <HealthCheckTaskAction bookingHorseId={row.bookingHorseId} horseName={row.horseName}
+                    horseStayId={row.healthLogStayId} vehicleTripId={row.healthLogStayId == null ? row.vehicleTripId : undefined} />
                 )}
                 {row.bookingHorseId != null && <Button size="sm" onClick={() => setHistory(row)}>{t('stayHealth.history')}</Button>}
                 <Button size="sm" onClick={() => setJourney(row)}>{t('dispatch.board.journey')}</Button>

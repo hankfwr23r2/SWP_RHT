@@ -5,7 +5,6 @@ import com.example.racehorse_transport.dto.health.HealthLogResponseDto;
 import com.example.racehorse_transport.dto.health.HorseStayResponseDto;
 import com.example.racehorse_transport.entity.BookingHorse;
 import com.example.racehorse_transport.entity.Handover;
-import com.example.racehorse_transport.entity.HandoverHorse;
 import com.example.racehorse_transport.entity.HorseHealthLog;
 import com.example.racehorse_transport.entity.HorseLeg;
 import com.example.racehorse_transport.entity.HorseStay;
@@ -16,23 +15,21 @@ import com.example.racehorse_transport.entity.enums.AppUserStatus;
 import com.example.racehorse_transport.entity.enums.CrewAssignmentStatus;
 import com.example.racehorse_transport.entity.enums.CrewRole;
 import com.example.racehorse_transport.entity.enums.EmploymentStatus;
-import com.example.racehorse_transport.entity.enums.HandoverStatus;
 import com.example.racehorse_transport.entity.enums.HealthStatus;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.HealthLogPolicy;
-import com.example.racehorse_transport.policy.TrackingPolicy;
 import com.example.racehorse_transport.repository.BookingHorseRepository;
 import com.example.racehorse_transport.repository.CrewAssignmentRepository;
-import com.example.racehorse_transport.repository.HandoverHorseRepository;
 import com.example.racehorse_transport.repository.HorseHealthLogRepository;
 import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.repository.HorseStayRepository;
 import com.example.racehorse_transport.service.CoordinatorRecipientService;
 import com.example.racehorse_transport.repository.TripStopRepository;
 import com.example.racehorse_transport.service.HealthLogService;
+import com.example.racehorse_transport.service.HealthCheckTaskService;
 import com.example.racehorse_transport.service.NotificationService;
 import java.time.Clock;
 import java.time.Instant;
@@ -61,7 +58,7 @@ public class HealthLogServiceImpl implements HealthLogService {
     private final CoordinatorRecipientService coordinators;
     private final NotificationService notifications;
     private final Clock clock;
-    private final HandoverHorseRepository scans;
+    private final HealthCheckTaskService healthTasks;
 
     @Override
     @Transactional(readOnly = true)
@@ -71,7 +68,7 @@ public class HealthLogServiceImpl implements HealthLogService {
         var active = stays.findByActualStartAtIsNotNullAndActualEndAtIsNullOrderByActualStartAt().stream()
                 .filter(stay -> HealthLogPolicy.canRecordStay(stay.getLocation().getLocationType(), stay.getStayType(), stay.getOperatorParty() != null))
                 .toList();
-        var handlers = latestCompanyHandovers(active.stream().map(stay -> stay.getBookingHorse().getId()).distinct().toList());
+        var handlers = healthTasks.latestCompanyHandovers(active.stream().map(stay -> stay.getBookingHorse().getId()).distinct().toList());
         return active.stream()
                 .filter(stay -> signedBy(handlers.get(stay.getBookingHorse().getId()), recorder))
                 .map(HorseStayResponseDto::from)
@@ -99,7 +96,10 @@ public class HealthLogServiceImpl implements HealthLogService {
         TripStop stop = request.tripStopId() == null ? null : stopWhereHorseIsOnBoard(request.tripStopId(), line, username);
         HorseStay stay = request.horseStayId() == null ? null : activeStayOf(request.horseStayId(), line);
 
-        if (stay != null && !coordinator && !signedBy(latestCompanyHandovers(List.of(line.getId())).get(line.getId()), recorder)) {
+        Instant recordedAt = clock.instant();
+        if (stay != null && !coordinator
+                && !("ESCORT".equals(role) && healthTasks.mayRecordStay(recorder.getUserId(), line.getId(), stay.getId(), recordedAt))
+                && !signedBy(healthTasks.latestCompanyHandovers(List.of(line.getId())).get(line.getId()), recorder)) {
             throw new AccessDeniedException("Bạn không phụ trách con ngựa này.");
         }
 
@@ -113,7 +113,7 @@ public class HealthLogServiceImpl implements HealthLogService {
                     log.setHealthStatus(HealthLogPolicy.atLeastWatch(request.healthStatus()));
                     notifyCoordinators(line, stop == null ? null : stop.getVehicleTrip());
                 });
-        HorseHealthLog saved = save(log, recorder, clock.instant());
+        HorseHealthLog saved = save(log, recorder, recordedAt);
         if (saved.getHealthStatus() == HealthStatus.SICK || saved.getHealthStatus() == HealthStatus.CRITICAL) {
             notifyCoordinatorsForHealth(line, saved.getHealthStatus(), stop == null ? null : stop.getVehicleTrip());
         }
@@ -153,7 +153,9 @@ public class HealthLogServiceImpl implements HealthLogService {
     private HorseHealthLog save(HorseHealthLog log, Staff recorder, Instant now) {
         log.setRecordedBy(recorder);
         log.setRecordedAt(now);
-        return healthLogs.saveAndFlush(log);
+        HorseHealthLog saved = healthLogs.saveAndFlush(log);
+        healthTasks.completeFrom(saved);
+        return saved;
     }
 
     private Staff recorder(String username) {
@@ -170,20 +172,6 @@ public class HealthLogServiceImpl implements HealthLogService {
 
     private static boolean signedBy(Handover handover, Staff recorder) {
         return handover != null && Objects.equals(handover.getHandledBy().getUserId(), recorder.getUserId());
-    }
-
-    private Map<Long, Handover> latestCompanyHandovers(List<Long> horseIds) {
-        if (horseIds.isEmpty()) return Map.of();
-        return scans.findByBookingHorseIds(horseIds).stream()
-                .filter(scan -> Boolean.TRUE.equals(scan.getMicrochipMatched()))
-                .filter(scan -> {
-                    Handover handover = scan.getHandover();
-                    return handover.getStatus() == HandoverStatus.DONE
-                            && TrackingPolicy.holderAfter(handover.getHandoverType(), handover.getToParty() != null)
-                                    == TrackingPolicy.CustodyHolder.COMPANY;
-                })
-                .collect(Collectors.toMap(scan -> scan.getHorseLeg().getBookingHorse().getId(), HandoverHorse::getHandover,
-                        BinaryOperator.maxBy(Comparator.comparing(Handover::getHandedAt).thenComparing(Handover::getId))));
     }
 
     // Người ghi trong tổ lái; xe đang ở điểm này; con ngựa đang trên xe ở điểm này

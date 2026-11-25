@@ -1,5 +1,38 @@
 // Ứng dụng hiện trường của tài xế và hộ tống
 export const fieldCrew = {
+  healthCheckTasks: {
+    title: "Health checks",
+    assign: "Assign check",
+    assigned: "Check assigned",
+    assignPrompt: "Confirm assigning a health check for {{horse}}.",
+    cancel: "Cancel check",
+    cancelled: "Check cancelled",
+    cancelPrompt: "The escort will lose access granted by this task.",
+    reason: "Cancellation reason",
+    escort: "Escort",
+    type: "Check type",
+    due: "Due at",
+    noEscorts: "No eligible escorts",
+    noEscortsHint: "Check the crew assignment or hub location and try again.",
+    empty: "No health checks",
+    mineHint: "Assigned checks will appear here.",
+    loadError: "Unable to load health checks",
+    saveError: "Unable to save the check. Please try again.",
+    accept: "Accept check",
+    accepted: "Check accepted",
+    overdue: "Overdue",
+    types: {
+      ROUTINE: "Routine",
+      FOLLOW_UP: "Follow-up",
+      BEFORE_DEPARTURE: "Before departure",
+    },
+    status: {
+      ASSIGNED: "Awaiting acceptance",
+      ACCEPTED: "Accepted",
+      DONE: "Done",
+      CANCELLED: "Cancelled",
+    },
+  },
   stayHealth: {
     record: "Record health",
     reportedBy: "Reported by",

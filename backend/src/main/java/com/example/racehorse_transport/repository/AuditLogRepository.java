@@ -15,6 +15,8 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface AuditLogRepository extends JpaRepository<AuditLog, Long>, JpaSpecificationExecutor<AuditLog> {
 
+    long countByTargetTableAndTargetIdAndAction(String targetTable, Long targetId, String action);
+
     boolean existsByTargetTableAndTargetIdAndActionAndCreatedAtGreaterThanEqual(
             String targetTable, Long targetId, String action, Instant from);
     long countByTargetTableAndTargetIdAndActionStartingWithAndCreatedAtGreaterThanEqual(
