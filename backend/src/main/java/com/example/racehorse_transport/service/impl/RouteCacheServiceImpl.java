@@ -14,6 +14,8 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 // Lưu đệm kết quả dịch vụ chỉ đường 30 ngày: không gọi lại, và lộ trình với báo giá dùng cùng số liệu
 @Slf4j
@@ -33,6 +35,8 @@ public class RouteCacheServiceImpl implements RouteCacheService {
                 .flatMap(entry -> read(entry.getPayload(), type));
     }
 
+    // Giao dịch riêng: nơi gọi có thể đang ở giao dịch chỉ đọc
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void put(String key, Object value) {
         String payload;
         try {

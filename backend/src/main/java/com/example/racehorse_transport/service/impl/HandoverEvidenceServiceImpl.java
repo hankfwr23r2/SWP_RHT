@@ -47,6 +47,12 @@ public class HandoverEvidenceServiceImpl implements HandoverEvidenceService {
     private final HorseLegRepository legs;
 
     @Override
+    @Transactional(readOnly = true)
+    public Set<Long> photographedLegs(Long handoverId) {
+        return documents.findEvidenceHorseLegIds(handoverId, PHOTO);
+    }
+
+    @Override
     @Transactional
     public void attachPhoto(HandoverHorse horse, MultipartFile photo, Long actor) {
         if (photo == null || photo.isEmpty() || photo.getContentType() == null || !photo.getContentType().startsWith("image/")) {

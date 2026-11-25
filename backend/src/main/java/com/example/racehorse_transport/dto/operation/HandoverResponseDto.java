@@ -8,6 +8,7 @@ import com.example.racehorse_transport.entity.enums.HandoverType;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 // Một lần giao nhận ở điểm dừng: các con cần giao nhận và kết quả quét chip từng con; partyName: đối tác giao hoặc nhận (đại lý ở cửa khẩu); recordAttached: đã tải biên bản giao nhận
 public record HandoverResponseDto(
@@ -15,18 +16,19 @@ public record HandoverResponseDto(
         List<HandoverHorseDto> horses, String partyName, Boolean recordAttached) {
 
     // scanned == null: chưa quét
-    public record HandoverHorseDto(Long horseLegId, String bookingCode, String horseName, String scannedMicrochip, Boolean microchipMatched, String conditionNote) {
-        static HandoverHorseDto from(HorseLeg leg, HandoverHorse scan) {
+    public record HandoverHorseDto(Long horseLegId, String bookingCode, String horseName, String scannedMicrochip, Boolean microchipMatched, String conditionNote, Boolean photoAttached) {
+        static HandoverHorseDto from(HorseLeg leg, HandoverHorse scan, boolean photoAttached) {
             return new HandoverHorseDto(leg.getId(), leg.getBookingHorse().getBooking().getCode(), leg.getBookingHorse().getHorse().getName(),
                     scan == null ? null : scan.getScannedMicrochip(), scan == null ? null : scan.getMicrochipMatched(),
-                    scan == null ? null : scan.getConditionNote());
+                    scan == null ? null : scan.getConditionNote(), photoAttached);
         }
     }
 
-    public static HandoverResponseDto from(Handover handover, List<HorseLeg> legs, Map<Long, HandoverHorse> scansByLeg, boolean recordAttached) {
+    public static HandoverResponseDto from(Handover handover, List<HorseLeg> legs, Map<Long, HandoverHorse> scansByLeg, boolean recordAttached,
+                                           Set<Long> photographedLegs) {
         return new HandoverResponseDto(handover.getId(), handover.getHandoverType(), handover.getStatus(), handover.getTripStop().getId(),
                 handover.getHandledBy().getFullName(), handover.getWaitStartedAt(), handover.getHandedAt(), handover.getNote(),
-                legs.stream().map(leg -> HandoverHorseDto.from(leg, scansByLeg.get(leg.getId()))).toList(),
+                legs.stream().map(leg -> HandoverHorseDto.from(leg, scansByLeg.get(leg.getId()), photographedLegs.contains(leg.getId()))).toList(),
                 handover.getToParty() != null ? handover.getToParty().getDisplayName()
                         : handover.getFromParty() != null ? handover.getFromParty().getDisplayName() : null,
                 recordAttached);

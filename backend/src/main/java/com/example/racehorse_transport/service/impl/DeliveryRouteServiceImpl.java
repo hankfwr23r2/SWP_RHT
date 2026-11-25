@@ -14,6 +14,7 @@ import com.example.racehorse_transport.policy.TripSchedulePolicy.Rules;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.repository.VehicleRepository;
 import com.example.racehorse_transport.service.DeliveryRouteService;
+import com.example.racehorse_transport.service.RouteCacheService;
 import com.example.racehorse_transport.service.SystemConfigService;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +40,7 @@ public class DeliveryRouteServiceImpl implements DeliveryRouteService {
     private final SystemConfigService configs;
     private final ValhallaClient valhalla;
     private final VehicleClassRepository classes;
+    private final RouteCacheService cache;
 
     @Override
     @Transactional(readOnly = true)
@@ -104,7 +106,7 @@ public class DeliveryRouteServiceImpl implements DeliveryRouteService {
             for (int to = 0; to < points.size(); to++) {
                 if (from == to) continue;
                 try {
-                    roads[from][to] = valhalla.truckRoute(List.of(points.get(from), points.get(to)), weight, speed, null);
+                    roads[from][to] = road(points.get(from), points.get(to), weight, speed);
                 } catch (NoTruckRouteException ignored) {
                     // Another ordering may still connect both destinations.
                 }
@@ -112,6 +114,15 @@ public class DeliveryRouteServiceImpl implements DeliveryRouteService {
         }
         return DeliveryRoutePolicy.shortest(roads, rules(), horseCounts)
                 .orElseThrow(() -> new BookingRuleException("Không có vòng giao phù hợp đường xe tải và giới hạn giờ vận chuyển. Vui lòng đặt đơn riêng."));
+    }
+
+    private RoadRouteDto road(GeoPointDto from, GeoPointDto to, int weight, int speed) {
+        String key = "truck|" + weight + '|' + speed + '|' + from.lat() + ',' + from.lng() + '|' + to.lat() + ',' + to.lng();
+        return cache.find(key, RoadRouteDto.class).orElseGet(() -> {
+            RoadRouteDto route = valhalla.truckRoute(List.of(from, to), weight, speed, null);
+            cache.put(key, route);
+            return route;
+        });
     }
 
     private Rules rules() {

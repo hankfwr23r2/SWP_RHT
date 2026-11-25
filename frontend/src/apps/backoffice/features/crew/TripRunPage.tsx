@@ -124,6 +124,7 @@ export default function TripRunPage() {
                 onClick={() => run(() => tripExecutionApi.scan(handover.id ?? 0, legId, chips[legId].trim(), conditions[conditionKey] ?? horse.conditionNote), t('myTrips.run.done.scanned'))}>
                 {t('myTrips.run.scan')}
               </Button>
+              {horse.photoAttached && <StatusBadge tone="success" label={t('handoverEvidence.photoAttached')} />}
               {needsPhoto && horse.microchipMatched && <Field label={t('handoverEvidence.photo')} required>
                 {c => <Input {...c} type="file" accept="image/*" disabled={busy} onChange={e => {
                   const photo = e.target.files?.[0]
