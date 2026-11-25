@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { useRevalidator } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { bookingDocumentsApi, type ChecklistItem } from '@shared/api/bookingDocuments'
-import { bookingReviewsApi, type InsuranceEvidence } from '@shared/api/bookingReviews'
+import { bookingReviewsApi, type InsuranceEvidence, type InsurancePremiumRefund } from '@shared/api/bookingReviews'
 import { useToast } from '@shared/ui/toast'
 
 export type ReviewAction = {
@@ -82,6 +82,8 @@ export function useReviewActions(id: number) {
     }),
     recordEvidence: (insuranceId: number, body: InsuranceEvidence) =>
       run(() => bookingReviewsApi.recordEvidence(id, insuranceId, body)),
+    recordPremiumRefund: (insuranceId: number, body: InsurancePremiumRefund) =>
+      run(() => bookingReviewsApi.recordPremiumRefund(id, insuranceId, body)),
   }
 }
 

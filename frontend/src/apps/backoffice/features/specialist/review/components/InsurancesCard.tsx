@@ -10,6 +10,7 @@ import { showDate } from '../reviewDisplay'
 import type { ReviewAction, ReviewActions } from '../useReviewActions'
 import { ActionButtons } from './ActionButtons'
 import { InsuranceEvidenceDialog } from './InsuranceEvidenceDialog'
+import { InsurancePremiumRefundDialog } from './InsurancePremiumRefundDialog'
 import s from '../Review.module.css'
 
 type Horse = NonNullable<BookingDetail['horses']>[number]
@@ -20,6 +21,7 @@ function HorseInsurance({ horse, editable, insurers, actions }: {
 }) {
   const { t, i18n } = useTranslation()
   const [recording, setRecording] = useState(false)
+  const [refunding, setRefunding] = useState(false)
   const insurance = horse.insurance
   const { id, status, coverageOption, insurerPartyId, policyNumber, validFrom, validTo, revisionReason,
     coverageAmount, premiumAmount, currencyCode, quoteExpiresAt, waiverTermsAcceptanceId } = insurance ?? {}
@@ -48,6 +50,7 @@ function HorseInsurance({ horse, editable, insurers, actions }: {
         {validTo && <div><dt>{t('staffReview.validTo')}</dt><dd>{date(validTo)}</dd></div>}
         {coverageAmount != null && <div><dt>{t('staffReview.coverageAmount')}</dt><dd>{money(coverageAmount)}</dd></div>}
         {premiumAmount != null && <div><dt>{t('staffReview.premiumAmount')}</dt><dd>{money(premiumAmount)}</dd></div>}
+        {insurance.refundedPremiumAmount != null && <div><dt>{t('staffReview.refundedPremiumAmount')}</dt><dd>{money(insurance.refundedPremiumAmount)}</dd></div>}
         {quoteExpiresAt && <div><dt>{t('staffReview.quoteExpiry')}</dt><dd>{date(quoteExpiresAt)}</dd></div>}
         {waiverTermsAcceptanceId != null && <div><dt>{t('staffReview.waiver')}</dt><dd>{t('staffReview.waiverAccepted')}</dd></div>}
         {revisionReason && <div><dt>{t('staffReview.reason')}</dt><dd>{revisionReason}</dd></div>}
@@ -58,9 +61,13 @@ function HorseInsurance({ horse, editable, insurers, actions }: {
           setRecording(true)
         }}>{t(coverageOption === 'PERSONAL' ? 'staffReview.recordPolicy' : 'staffReview.recordEvidence')}</Button> : null}
         <ActionButtons options={options} actions={actions} />
+        {horse.status === 'EXCLUDED' && status === 'CONFIRMED' && coverageOption === 'ARRANGED' && id != null &&
+          <Button size="sm" disabled={actions.busy} onClick={() => setRefunding(true)}>{t('staffReview.recordPremiumRefund')}</Button>}
       </div>
       {recording && id != null && insurance && insurers &&
         <InsuranceEvidenceDialog insurance={insurance} id={id} insurers={insurers} actions={actions} onClose={() => setRecording(false)} />}
+      {refunding && id != null &&
+        <InsurancePremiumRefundDialog id={id} actions={actions} onClose={() => setRefunding(false)} />}
     </div>
   </li>
 }

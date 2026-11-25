@@ -189,7 +189,7 @@ test('hộ tống không nhận một con ở điểm đón, phải ghi lý do, 
     const path = new URL(request.url()).pathname.replace('/api/v1', '')
     if (path === '/crew/vehicle-trips/9') return ok(route, run)
     if (path === '/handovers/50/refusals') {
-      refusal = request.postDataJSON()
+      refusal = request.postData()
       run.horses[1].leg.status = 'CANCELLED'
       run.handovers[0].horses = (run.handovers[0].horses as Record<string, unknown>[]).filter(h => h.horseLegId !== 71)
       return ok(route, run)
@@ -200,14 +200,20 @@ test('hộ tống không nhận một con ở điểm đón, phải ghi lý do, 
 
   const pickup = page.getByRole('list', { name: 'Điểm dừng' }).getByRole('listitem').filter({ has: page.locator('h2') }).nth(1)
   await expect(pickup).toContainText('Gió Bấc', { timeout: 15_000 })
-  await pickup.getByRole('listitem').filter({ hasText: 'Gió Bấc' }).getByRole('button', { name: 'Không nhận' }).click()
-  const dialog = page.getByRole('dialog', { name: 'Không nhận Gió Bấc?' })
-  await expect(dialog.getByRole('button', { name: 'Không nhận' })).toBeDisabled()
+  await pickup.getByRole('listitem').filter({ hasText: 'Gió Bấc' }).getByRole('button', { name: 'Ghi đón hụt' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Ghi đón hụt cho Gió Bấc?' })
+  await expect(dialog.getByRole('button', { name: 'Ghi đón hụt' })).toBeDisabled()
+  await dialog.getByRole('combobox', { name: 'Nguyên nhân' }).click()
+  await page.getByRole('option', { name: 'Ngựa ốm' }).click()
   await dialog.getByLabel('Lý do không nhận').fill('Ngựa què chân trước')
-  await dialog.getByRole('button', { name: 'Không nhận' }).click()
+  await dialog.getByLabel('Ảnh tại điểm đón').setInputFiles({
+    name: 'pickup.jpg', mimeType: 'image/jpeg', buffer: Buffer.from([1, 2, 3]),
+  })
+  await dialog.getByRole('button', { name: 'Ghi đón hụt' }).click()
 
   await expect(dialog).toHaveCount(0)
-  expect(refusal).toEqual({ horseLegId: 71, reason: 'Ngựa què chân trước' })
+  expect(refusal).toContain('name="photo"; filename="pickup.jpg"')
+  expect(refusal).toContain(JSON.stringify({ horseLegId: 71, reasonCode: 'HORSE_UNWELL', reason: 'Ngựa què chân trước' }))
   await expect(pickup).not.toContainText('Gió Bấc')
   await expect(pickup).toContainText('Sao Mai')
 })
@@ -249,7 +255,7 @@ test('quá hạn số dư thì hộ tống trả ngựa cho người gửi, còn
   overdue = true
   await pickup.getByRole('button', { name: 'Trả ngựa do quá hạn thanh toán' }).click()
   await page.getByRole('alertdialog').getByRole('button', { name: 'Trả ngựa do quá hạn thanh toán' }).click()
-  await expect(page.getByText('Đã trả ngựa và hủy đơn')).toBeVisible()
+  await expect(page.getByText('Đã trả ngựa và mở lại lựa chọn lịch')).toBeVisible()
   await expect(pickup.getByRole('button', { name: 'Trả ngựa do quá hạn thanh toán' })).toHaveCount(0)
   expect(sent).toEqual([{ handoverType: 'RETURN' }, { handoverType: 'RETURN' }])
 })

@@ -88,6 +88,10 @@ public class CostItem {
     @Column(name = "is_customer_consulted", nullable = false)
     private Boolean customerConsulted = false;
 
+    // snapshot: phần phí giữ đã cấn vào tiền cọc của đơn hủy
+    @Column(name = "stabling_deposit_credit", nullable = false, precision = 15, scale = 2)
+    private BigDecimal stablingDepositCredit = BigDecimal.ZERO;
+
     @Column(name = "incurred_at", nullable = false)
     private Instant incurredAt;
 

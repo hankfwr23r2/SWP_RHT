@@ -8,11 +8,39 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 public interface BookingHorseRepository extends JpaRepository<BookingHorse, Long> {
+
+    @Query("""
+            SELECT h.id FROM BookingHorse h WHERE h.pickupChoiceDueAt <= :now
+                AND h.pickupMissChoice IS NULL AND h.booking.status IN :statuses ORDER BY h.id
+            """)
+    List<Long> findExpiredPickupChoices(Instant now, Collection<BookingStatus> statuses);
+
+    @Query("""
+            SELECT h.id FROM BookingHorse h WHERE h.booking.status IN :statuses
+                AND h.booking.departure.plannedDepartureAt <= :departureCutoff
+                AND h.pickupMissChoice IN (com.example.racehorse_transport.entity.enums.PickupMissChoice.RETRY_PICKUP,
+                                           com.example.racehorse_transport.entity.enums.PickupMissChoice.SELF_DELIVERY)
+                AND NOT EXISTS (SELECT hh.id FROM HandoverHorse hh WHERE hh.horseLeg.bookingHorse = h
+                    AND hh.microchipMatched = true AND hh.handover.handedAt >= h.pickupMissedAt
+                    AND hh.handover.status = com.example.racehorse_transport.entity.enums.HandoverStatus.DONE
+                    AND hh.handover.handoverType = com.example.racehorse_transport.entity.enums.HandoverType.PICKUP)
+            ORDER BY h.id
+            """)
+    List<Long> findPickupChoicesPastCheckIn(Instant departureCutoff, Collection<BookingStatus> statuses);
+
+    @Query("""
+            SELECT count(hh) > 0 FROM HandoverHorse hh WHERE hh.horseLeg.bookingHorse.id = :horseId
+                AND hh.microchipMatched = true AND hh.handover.handedAt >= :since
+                AND hh.handover.status = com.example.racehorse_transport.entity.enums.HandoverStatus.DONE
+                AND hh.handover.handoverType = com.example.racehorse_transport.entity.enums.HandoverType.PICKUP
+            """)
+    boolean receivedAfterPickupMiss(Long horseId, Instant since);
 
     List<BookingHorse> findByBooking_Id(Long bookingId);
 

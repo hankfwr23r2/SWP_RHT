@@ -484,6 +484,12 @@ export const customer = {
       save: 'Lưu bổ sung',
       saved: 'Đã lưu bảo hiểm.',
     },
+    balanceHold: {
+      title: 'Ngựa đang được chăm sóc tại hub',
+      since: 'Bắt đầu tính phí giữ từ {{at}}.',
+      options: 'Bạn có thể trả số dư và chọn lịch tiếp theo, đến nhận ngựa và giữ đơn, hoặc hủy đơn rồi đến nhận ngựa. Liên hệ điều phối để hẹn bàn giao.',
+      cancelled: 'Bạn vẫn có thể đến hub nhận ngựa. Phí giữ được cấn vào cọc và phần vượt cọc được thu riêng.',
+    },
     reschedule: {
       title: 'Chọn lại chuyến',
       none: 'Hiện không có chuyến khác. Gọi tổng đài hoặc hủy đơn.',

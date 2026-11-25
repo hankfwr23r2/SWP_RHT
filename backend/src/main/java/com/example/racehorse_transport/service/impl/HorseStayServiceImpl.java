@@ -68,6 +68,20 @@ public class HorseStayServiceImpl implements HorseStayService {
     private final NotificationService notifications;
 
     @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void openBalanceHold(Long bookingId, Instant chargedFrom) {
+        Instant until = chargedFrom.plus(Duration.ofDays(configs.getInt(MAX_DAYS)));
+        stays.findByBookingHorse_Booking_Id(bookingId).stream()
+                .filter(stay -> stay.getStayType() == HorseStayType.ASSEMBLY && stay.getLocation().getLocationType() == LocationType.HUB)
+                .filter(stay -> stay.getActualStartAt() != null && stay.getActualEndAt() == null)
+                .forEach(stay -> {
+                    stay.setStayType(HorseStayType.STABLING);
+                    stay.setBalanceHoldAt(chargedFrom);
+                    if (until.isAfter(stay.getPlannedStartAt())) stay.setPlannedEndAt(until);
+                });
+    }
+
+    @Override
     @Transactional
     public void openAssembly(HorseLeg alightedLeg, Instant at) {
         Instant plannedEnd = legs.findByBookingHorse_IdOrderBySequenceNumber(alightedLeg.getBookingHorse().getId()).stream()
@@ -194,10 +208,13 @@ public class HorseStayServiceImpl implements HorseStayService {
         BookingHorse line = bookingHorses.findById(bookingHorseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngựa trong đơn " + bookingHorseId));
         Booking booking = line.getBooking();
-        if (booking.getPickupMethod() != TransferMethod.SELF || booking.getDeparture() == null) {
+        if ((booking.getPickupMethod() != TransferMethod.SELF
+                && line.getPickupMissChoice() != com.example.racehorse_transport.entity.enums.PickupMissChoice.SELF_DELIVERY)
+                || booking.getDeparture() == null) {
             throw new DispatchRuleException("bookingHorseId", "Chỉ hẹn nhận tại hub cho đơn đi trục mà khách tự chở ngựa tới hub.");
         }
-        if (line.getStatus() != BookingHorseStatus.ACTIVE || booking.getStatus() != BookingStatus.CONFIRMED) {
+        if (line.getStatus() != BookingHorseStatus.ACTIVE || (booking.getStatus() != BookingStatus.CONFIRMED
+                && booking.getStatus() != BookingStatus.IN_OPERATION)) {
             throw new DispatchRuleException("bookingHorseId", "Đơn " + booking.getCode() + " không ở trạng thái hẹn nhận ngựa được.", true);
         }
         Location hub = booking.getDeparture().getRoute().getOrigin();
@@ -281,15 +298,22 @@ public class HorseStayServiceImpl implements HorseStayService {
     public List<HorseStayResponseDto> appointmentsAt(Long locationId) {
         // Đơn đã rời chuyến hoặc bị hủy thì lịch hẹn không còn hiệu lực
         return stays.findByLocation_IdAndActualStartAtIsNullOrderByPlannedStartAt(locationId).stream()
-                .filter(stay -> stay.getBookingHorse().getBooking().getStatus() == BookingStatus.CONFIRMED
-                        && stay.getBookingHorse().getStatus() == BookingHorseStatus.ACTIVE)
+                .filter(stay -> {
+                    var line = stay.getBookingHorse();
+                    var status = line.getBooking().getStatus();
+                    return line.getStatus() == BookingHorseStatus.ACTIVE && (status == BookingStatus.CONFIRMED
+                            || (status == BookingStatus.IN_OPERATION && line.getPickupMissChoice()
+                                == com.example.racehorse_transport.entity.enums.PickupMissChoice.SELF_DELIVERY));
+                })
                 .map(HorseStayResponseDto::from).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<HorseStayResponseDto> activeAt(Long locationId) {
+        var unpaid = java.util.Set.copyOf(stays.findUnpaidAssemblyStayIds(locationId));
         return stays.findByLocation_IdAndActualStartAtIsNotNullAndActualEndAtIsNullOrderByActualStartAt(locationId).stream()
-                .map(HorseStayResponseDto::from).toList();
+                .map(stay -> HorseStayResponseDto.from(stay, stay.getBalanceHoldAt() != null || unpaid.contains(stay.getId())))
+                .toList();
     }
 }

@@ -8,7 +8,7 @@ Mã điểm (ví dụ 4.F1) trỏ tới mục "Điểm còn hở" trong [NGHIEP_
 
 - **Chưa điểm nào có phương án được duyệt.** Cột "Gợi ý" là ý của luồng A, **không phải quyết định**. Làm theo mục 1.1 của [AGENTS.md](../AGENTS.md): trình phương án, chờ duyệt. Thứ tự tham khảo: IRT, nguồn ngoài, nghiệp vụ cũ.
 - **Bắt đầu từ** `redesign/system-v2` mới nhất. Đã gộp: 1a ([PR 448](https://github.com/hankfwr23r2/SWP_RHT/pull/448)), 4a ([PR 449](https://github.com/hankfwr23r2/SWP_RHT/pull/449)), 3a ([PR 450](https://github.com/hankfwr23r2/SWP_RHT/pull/450)).
-- **Số migration:** luồng A dùng `V2026112511xx` đến `V2026112519xx`. Bạn B dùng từ **`V202611260900`** trở đi.
+- **Số migration:** luồng A dùng `V2026112815xx` đến `V2026112819xx`. Bạn B dùng từ **`V202611290900`** trở đi (đổi số vì G1 đã gộp `V2026112709xx`; Flyway đòi số tăng dần, chưa gộp thì đổi tên file).
 - Sửa xong thì ghi **Đã sửa** vào điểm tương ứng và đánh dấu ở mục 5.
 
 ## 2. Vùng luồng A đang sửa, đừng sửa cùng lúc

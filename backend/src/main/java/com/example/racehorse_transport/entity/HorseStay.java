@@ -63,6 +63,9 @@ public class HorseStay {
     @Column(name = "actual_end_at")
     private Instant actualEndAt;
 
+    @Column(name = "balance_hold_at")
+    private Instant balanceHoldAt;
+
     // Chỉ dùng cho QUARANTINE (CHECK ở DB)
     @Enumerated(EnumType.STRING)
     @Column(name = "quarantine_result", length = 30)

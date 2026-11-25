@@ -11,4 +11,10 @@ public interface BookingRescheduleService {
 
     // Đơn chưa báo giá tới mốc quyết định: nhả chỗ, sang SCHEDULE_CHANGE_REQUIRED. Trả về false nếu không còn phải nhả.
     boolean releaseAtDecision(Long bookingId);
+
+    /** Đơn chạy thẳng theo định tuyến hub, không phải vì đang rời chuyến. */
+    boolean isDirect(com.example.racehorse_transport.entity.Booking booking);
+
+    /** Kiểm giấy phải làm lại và bảo hiểm cho ngày đón mới của đơn chạy thẳng. */
+    void requireDirectSchedule(com.example.racehorse_transport.entity.Booking booking, java.time.LocalDate pickupDate);
 }

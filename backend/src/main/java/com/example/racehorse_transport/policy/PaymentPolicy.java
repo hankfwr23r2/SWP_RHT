@@ -77,9 +77,10 @@ public final class PaymentPolicy {
                     && payment.getQuotation().getStatus() == QuotationStatus.ACCEPTED
                     && payment.getDueAt() != null
                     && now.isBefore(DepositPaymentWindowPolicy.expiresAt(payment.getDueAt()));
-            case BALANCE -> booking.getStatus() == BookingStatus.CONFIRMED
+            case BALANCE -> (booking.getStatus() == BookingStatus.CONFIRMED
+                    || booking.getStatus() == BookingStatus.SCHEDULE_CHANGE_REQUIRED || booking.getStatus() == BookingStatus.IN_OPERATION)
                     && payment.getQuotation().getStatus() == QuotationStatus.ACCEPTED;
-            case EXTRA_CHARGE -> acceptsExtraChargePayment(booking.getStatus())
+            case EXTRA_CHARGE -> acceptsExistingExtraChargePayment(booking.getStatus(), payment)
                     && payment.getQuotation() != null && payment.getQuotation().getStatus() == QuotationStatus.ACCEPTED;
             case REFUND -> false;
         };
@@ -99,7 +100,7 @@ public final class PaymentPolicy {
                     && DepositPaymentWindowPolicy.canConfirm(payment.getDueAt(), session.createdAt(),
                             paidAt, receivedAt, graceMinutes);
             case BALANCE -> amount.compareTo(payment.getAmount()) >= 0 && booking.getStatus() != BookingStatus.CANCELLED;
-            case EXTRA_CHARGE -> acceptsExtraChargePayment(booking.getStatus())
+            case EXTRA_CHARGE -> acceptsExistingExtraChargePayment(booking.getStatus(), payment)
                     && amount.compareTo(payment.getAmount()) == 0;
             case REFUND -> false;
         };
@@ -109,12 +110,28 @@ public final class PaymentPolicy {
         return status == BookingStatus.IN_OPERATION || status == BookingStatus.DELIVERED || status == BookingStatus.COMPLETED;
     }
 
+    private static boolean acceptsExistingExtraChargePayment(BookingStatus status, Payment payment) {
+        return acceptsExtraChargePayment(status) || isBalanceHoldChargeStatus(status)
+                && !payment.getExtraChargeCosts().isEmpty()
+                && payment.getExtraChargeCosts().stream().allMatch(PaymentPolicy::isBalanceHoldCharge);
+    }
+
+    private static boolean isBalanceHoldChargeStatus(BookingStatus status) {
+        return status == BookingStatus.CONFIRMED || status == BookingStatus.SCHEDULE_CHANGE_REQUIRED || status == BookingStatus.CANCELLED;
+    }
+
+    private static boolean isBalanceHoldCharge(CostItem cost) {
+        return CostPayerPolicy.isScheduledStablingFee(cost) && cost.getHorseStay().getBalanceHoldAt() != null;
+    }
+
     public static boolean canSelectExtraChargeCost(BookingStatus status, CostItem cost) {
         return acceptsExtraChargePayment(status) && (status != BookingStatus.IN_OPERATION || CostPayerPolicy.isScheduledStablingFee(cost))
                 && CostPayerPolicy.customerSide(cost.getPayerType()) && cost.getApprovedAt() != null && cost.getExtraChargePayment() == null;
     }
 
     public static void requireExtraChargeAllowed(BookingStatus status, List<CostItem> costs) {
+        if (isBalanceHoldChargeStatus(status) && !costs.isEmpty()
+                && costs.stream().allMatch(PaymentPolicy::isBalanceHoldCharge)) return;
         if (!acceptsExtraChargePayment(status)
                 || (status == BookingStatus.IN_OPERATION && !costs.stream().allMatch(CostPayerPolicy::isScheduledStablingFee))) {
             throw BookingRuleException.conflict("Chỉ lập khoản thu thêm khi đã giao, đã hoàn thành hoặc thu phí giữ ngựa khi đang vận chuyển.");
@@ -128,7 +145,8 @@ public final class PaymentPolicy {
                 || !currency.equals(cost.getCurrencyCode()) || cost.getAmount().signum() <= 0)) {
             throw BookingRuleException.conflict("Chỉ thu chi phí của đơn, đã duyệt, do khách hoặc người nhận chịu và chưa gắn khoản thu.");
         }
-        return costs.stream().map(CostItem::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+        return costs.stream().map(cost -> cost.getAmount().subtract(cost.getStablingDepositCredit()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     public record RefundAllocation(Payment original, BigDecimal amount) {}
@@ -141,6 +159,12 @@ public final class PaymentPolicy {
     public static BigDecimal committedRefunds(List<Payment> payments) {
         return payments.stream().filter(PaymentPolicy::isCommittedRefund).map(Payment::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    public static BigDecimal paidDeposit(List<Payment> payments) {
+        return payments.stream().filter(payment -> payment.getPaymentType() == PaymentType.DEPOSIT
+                        && payment.getStatus() == PaymentStatus.PAID)
+                .map(Payment::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     public static BigDecimal unallocatedOverpayment(Quotation quotation, List<Payment> payments) {

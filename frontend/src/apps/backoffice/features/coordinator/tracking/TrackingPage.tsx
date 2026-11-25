@@ -17,6 +17,7 @@ import { PageHeader } from '@shared/ui/PageHeader'
 import { Skeleton } from '@shared/ui/Skeleton'
 import { useToast } from '@shared/ui/toast'
 import { matchesCustody } from './custody'
+import { PickupBalanceDialog } from './PickupBalanceDialog'
 import s from './Tracking.module.css'
 
 const RouteMap = lazy(() => import('@shared/components/RouteEditorMap'))
@@ -31,6 +32,7 @@ export default function TrackingPage() {
   const [savingProof, setSavingProof] = useState(false)
   const [delivered, setDelivered] = useState<CustodyRow>()
   const [journey, setJourney] = useState<CustodyRow>()
+  const [balance, setBalance] = useState<CustodyRow>()
   const { data, loaded, error, reload } = useLoad(custodyApi.board, [], { toastOnError: false })
   // Giữ hàm tải lại mới nhất để đồng hồ chỉ đặt một lần
   const latest = useRef(reload)
@@ -69,6 +71,9 @@ export default function TrackingPage() {
               <div className={s.chips}>
                 {row.agentLegId && <Button size="sm" variant="primary" onClick={() => { setProof(undefined); setDelivered(row) }}>{t('dispatch.agent.complete')}</Button>}
                 <Button size="sm" onClick={() => setJourney(row)}>{t('dispatch.board.journey')}</Button>
+                {row.balanceContactAllowed && (
+                  <Button size="sm" onClick={() => setBalance(row)}>{t('tracking.balance.open')}</Button>
+                )}
               </div>
             </li>
           ))}
@@ -109,6 +114,10 @@ export default function TrackingPage() {
         <Modal title={t('dispatch.bookings.journeyTitle', { code: journey.bookingCode })} onClose={() => setJourney(undefined)}>
           <BookingJourney bookingId={journey.bookingId!} />
         </Modal>
+      )}
+      {balance?.bookingId && (
+        <PickupBalanceDialog bookingId={balance.bookingId} row={balance} onClose={() => setBalance(undefined)}
+          onDone={() => { setBalance(undefined); void reload() }} />
       )}
     </div>
   )

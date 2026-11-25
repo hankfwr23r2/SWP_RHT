@@ -12,6 +12,8 @@ public interface BookingRoutingService {
 
     Departure lockReplacement(com.example.racehorse_transport.entity.Booking booking, Long replacementId);
 
+    void requireDirectLeadTime(com.example.racehorse_transport.entity.Booking booking, java.time.LocalDate pickupDate);
+
     boolean requiresDeparture(com.example.racehorse_transport.entity.Booking booking);
 
     record SubmissionRouting(AddressInput pickup, AddressInput delivery, Province pickupProvince,

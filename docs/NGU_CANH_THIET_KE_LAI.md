@@ -136,3 +136,21 @@ Khi có mâu thuẫn, **`DB_SCHEMA_59_BANG.md` là nguồn đúng**.
 
 - Mọi quy tắc làm việc nằm ở `AGENTS.md`: **không được sửa file khi người dùng chưa đồng ý**, chỉ sửa trong phạm vi đã duyệt, sau khi sửa code phải chạy Quality Gate (`mvnw verify`, `npm run lint`, `npx tsc -b`, `npm test`, `npm run build`).
 - Commit và PR **không** thêm dòng attribution `Co-Authored-By` hay "Generated with Claude Code".
+
+### Quyết định 25/11/2026 về số dư tại nơi nhận
+
+Tại hub, kiểm số dư khi đưa ngựa lên xe. T − 1 giờ thì nhả chỗ của đơn còn thiếu số dư và đóng HUB_OUT nếu điểm dừng hết ngựa cần lên xe. Đơn nhập chưa thanh toán đi từ cửa khẩu về hub và giữ trạng thái Đã xác nhận. Đơn Cần chọn lại chuyến được thanh toán số dư còn mở.
+
+Tại nhà khách, trả tại chỗ khi hết giờ nếu có người nhận lại, rồi giữ cơ hội chọn lại lịch 30 ngày. Mốc 30 ngày theo mục 9.1 thay mốc ba ngày ghi trong bảng tóm tắt mục 10. Ba ngày áp dụng khi ngựa còn do công ty chăm sóc ở hub. Phí giữ phát sinh theo biểu phí STABLING và cấn cọc khi đơn đã hủy. Khách được nhận lại ngựa khi tới hub, kể cả còn thiếu tiền.
+
+## Điều chỉnh đợt 1b bước 3 ngày 25/11/2026
+
+Khi không đón được con nào, đơn đã xác nhận tiếp tục chờ quyết định của khách. Khi mọi con còn trong đơn đều hết hạn xử lý đón hụt, đơn sang Cần chọn lại chuyến, giải phóng chỗ cũ và gỡ chặng kế hoạch. Xe khác vẫn có thể đang trên đường tới điểm đón, nên hết hạn của một con không làm mất lịch của các con còn lại. Ghi đón hụt là một mốc vận hành của từng con, giữ tư cách ACTIVE cho đến khi áp dụng quyết định bỏ con. Quản lý chốt bên chịu. Khi chỉ hụt một phần, các con đã nhận tiếp tục đi theo lịch.
+
+## Đợt 1b bước 4 · Quyết định về số dư
+
+Thay quy tắc một khoản số dư mỗi đơn bằng một khoản số dư ban đầu và khoản bổ sung phát sinh khi nhận ngựa của lượt đón lại. Số đã trả luôn đối chiếu với lịch sử thanh toán. Việc đổi lịch lần đầu không có phí đổi lịch riêng. Nếu do khách và đã có lượt xe đến đón, chi phí của lượt đón lại được báo riêng theo ví dụ 8.5 của phương án.
+
+## Đợt 1b bước 5 · Dời chuyến
+
+Đổi quyết định cũ: sau khi cọc, đổi chuyến không đòi đủ lại thời gian làm giấy, chỉ tính giấy phải làm lại (mục 10 của PHUONG_AN_6_LUONG).

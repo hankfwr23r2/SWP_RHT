@@ -47,6 +47,8 @@ class BookingRoutingServiceTest {
     @Mock private DepartureRepository departures;
     @Mock private BookingAddressRepository bookingAddresses;
     @Mock private RegulationService regulations;
+    @Mock private com.example.racehorse_transport.repository.BookingHorseRepository horses;
+    @Mock private com.example.racehorse_transport.repository.DocumentRepository documents;
     @Mock private Clock clock;
     @InjectMocks private BookingRoutingServiceImpl routing;
 
@@ -116,6 +118,10 @@ class BookingRoutingServiceTest {
         var order = inOrder(departures);
         order.verify(departures).findForUpdate(10L);
         order.verify(departures).findForUpdate(20L);
+
+        // Đã cọc và không còn giấy phải làm lại thì không tính thời gian làm giấy
+        booking.setWaybillNumber("RHT-1");
+        assertThat(routing.lockReplacement(booking, 10L)).isSameAs(replacement);
     }
 
     private static BookingAddress storedAddress(AddressRole role, String code) {

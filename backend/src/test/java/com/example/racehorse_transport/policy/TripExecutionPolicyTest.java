@@ -38,7 +38,7 @@ class TripExecutionPolicyTest {
     void handoverTypeMustFitTheStop() {
         assertThatCode(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.PICKUP, TripStopType.PICKUP)).doesNotThrowAnyException();
         assertThatCode(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.RETURN, TripStopType.PICKUP)).doesNotThrowAnyException();
-        assertThatCode(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.RETURN, TripStopType.BORDER)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.RETURN, TripStopType.BORDER)).hasMessageContaining("RETURN");
         // Bàn giao ca ở bất kỳ điểm dừng nào
         assertThatCode(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.SHIFT, TripStopType.REST)).doesNotThrowAnyException();
         assertThatCode(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.STAY_IN, TripStopType.REST)).doesNotThrowAnyException();

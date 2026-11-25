@@ -14,6 +14,9 @@ public interface CostItemRepository extends JpaRepository<CostItem, Long> {
 
     List<CostItem> findByHorseStay_Id(Long horseStayId);
 
+    @Query("SELECT COALESCE(SUM(c.stablingDepositCredit), 0) FROM CostItem c WHERE c.booking.id = :bookingId")
+    BigDecimal sumStablingDepositCredit(Long bookingId);
+
     boolean existsByHorseStay_Id(Long horseStayId);
 
     @EntityGraph(attributePaths = {"booking", "incident", "recordedBy", "approvedBy"})

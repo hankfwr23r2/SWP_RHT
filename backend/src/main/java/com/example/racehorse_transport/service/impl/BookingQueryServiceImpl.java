@@ -114,7 +114,8 @@ public class BookingQueryServiceImpl implements BookingQueryService {
                         || row.getToStatus() == BookingStatus.REJECTED)
                 .map(BookingStatusHistory::getReason).orElse(null);
         return BookingDetailResponseDto.from(booking, parties.findById_BookingId(id),
-                addresses.findAddressesForDetail(id), horseDetails(rows), reason, intakeByName, ratings.existsById(id));
+                addresses.findAddressesForDetail(id), horseDetails(rows), reason, intakeByName, ratings.existsById(id),
+                bookings.findActiveBalanceHoldAt(id).orElse(null));
     }
 
     private List<HorseDetail> horseDetails(List<BookingHorse> rows) {
