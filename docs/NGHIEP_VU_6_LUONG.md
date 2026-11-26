@@ -129,24 +129,31 @@ Từ lúc đơn đã cọc tới lúc mỗi con có đủ xe, tổ lái, vị tr
 
 ## Nghiệp vụ chính
 
-1. **Lịch và đội xe trục** [Mới]:
-   - mỗi tuyến hub ↔ hub chạy theo lịch; lịch mẫu được **sắp lại cho khớp vòng xe**;
-   - mỗi hub có **hạn mức xe trục** = số xe tối thiểu để chạy hết lịch (xe nghỉ ít nhất **12 giờ** sau mỗi chuyến, cấu hình) cộng **dự phòng** (khởi đầu 20%, cấu hình);
-   - sức chứa bán của chuyến = chỗ của **xe nền**, tăng thêm khi **tăng cường** xe từ phần dự phòng;
-   - xe còn lại của hub dùng cho nhánh đón, giao.
-2. **Quản lý quyết định chuyến** trong 48 giờ cuối: **Chạy**, **Hủy** hoặc **Dồn** sang chuyến khác cùng tuyến. Dưới 30% chỗ đã cọc thì cảnh báo.
-3. **Nhánh đón:** xe của **hub phụ trách địa chỉ đón** đi đón. Hệ thống gợi ý gom đơn cùng hướng; điều phối chọn xe, xem giờ theo đường xe tải thật, lập lượt. Ngựa phải về hub trước hạn có mặt.
-4. **Xếp xe trục ngày đi** [Mới]:
-   - một chuyến dùng **nhiều xe**, chọn **loại xe theo số ngựa** (2, 4, 6, 9 chỗ…);
-   - xe ghép: gom ngựa theo **cụm điểm giao gần nhau ở hub đích** trước, rồi mới **vừa số chỗ**;
-   - xe riêng: ngựa của đơn đi xe riêng, chọn xe vừa số con;
-   - ngựa cùng đơn luôn chung xe (giấy gốc chỉ một bản);
-   - hệ thống gợi ý, điều phối chỉnh.
-5. **Phân tổ lái** từng xe: tài xế, hộ tống. Người được phân xác nhận nhận việc; chưa có tài xế và hộ tống nhận việc thì xe không xuất phát.
-6. **Sơ đồ khoang:** khách chỉ chọn loại khoang; hệ thống tự xếp vị trí, điều phối đổi được; xe chạy thì khóa.
-7. **Nhánh giao:** ở hub đích, ngựa có điểm giao gần nhau xếp chung xe; xe riêng không ghép. Ngoài khung 06:00–18:00 thì cả lượt dời sang 06:00 hôm sau.
-8. Khách được báo khung một giờ xe tới; giờ dời quá 30 phút thì báo lại.
-9. **Xe về** [Mới, theo thiết kế cũ nhánh `main`]: xong việc, xe và tổ lái ở trạng thái **Đang về** có giờ dự kiến; trễ thì có cờ cho điều phối và quản lý. Tài xế bấm **Đã về** tại hub gốc kèm **ảnh chụp tại chỗ** và **tình trạng xe**. Trước đó xe chưa nhận lượt mới. Xe chạy trục có thể về bằng **chuyến chiều ngược**.
+1. **Lịch chạy và số xe hub giữ cho trục** [Mới]
+   - Mỗi tuyến có lịch cố định. Ví dụ TP.HCM → Hà Nội chạy thứ Tư, Hà Nội → TP.HCM chạy thứ Hai.
+   - Từ lịch, hệ thống tính **mỗi hub phải giữ bao nhiêu xe để chạy hết các chuyến trục xuất phát từ hub đó**. Một xe chạy xong chuyến phải **nghỉ ít nhất 12 giờ** (cấu hình) mới chạy chuyến tiếp. Ví dụ: TP.HCM → Hà Nội mất gần 3 ngày, xe đi thứ Tư chưa kịp về cho chuyến thứ Tư tuần sau, nên tuyến này cần 2 xe.
+   - Cộng thêm **xe dự phòng**: 20% (cấu hình), làm tròn lên, để thay xe hỏng hoặc chở thêm khi đông khách.
+   - Tổng hai phần là **số xe giữ cho trục** của hub. Quản trị lưu lịch mà hub không đủ xe thì hệ thống cảnh báo. Các xe còn lại của hub chạy nhánh đón và giao, không lấy xe giữ cho trục.
+2. **Mỗi chuyến bán bao nhiêu chỗ** [Mới]
+   - Lịch ghi sẵn **xe nền** của mỗi chuyến, ví dụ "1 xe 9 chỗ". Chuyến mở bán đúng số chỗ của xe nền.
+   - Chuyến sắp đầy thì **thêm xe** lấy từ xe dự phòng của hub, nếu ngày đó còn xe dự phòng rảnh. Số chỗ bán tăng ngay. Ví dụ thêm một xe 4 chỗ thì chuyến từ 9 thành 13 chỗ.
+   - Hết xe dự phòng thì chuyến **Hết chỗ**, khách chọn chuyến khác.
+   - Khách không thấy con số chỗ, chỉ thấy **Còn chỗ**, **Sắp đầy** (đã đặt từ 80%, cấu hình) hoặc **Hết chỗ**.
+3. **Quản lý quyết định chuyến** trong 48 giờ cuối: **Chạy**, **Hủy** hoặc **Dồn** sang chuyến khác cùng tuyến.
+   - Số chỗ đã cọc dưới 30% số chỗ đang bán thì cảnh báo, quyết định vẫn là của quản lý.
+   - Khi bấm Chạy, quản lý **bỏ bớt xe thừa** được nếu số chỗ đã bán vẫn đủ. Ví dụ đã bán 8 chỗ trên hai xe 9 và 4 chỗ thì bỏ xe 4 chỗ.
+4. **Nhánh đón:** xe của **hub phụ trách địa chỉ đón** đi đón. Hệ thống gợi ý gom các đơn cùng hướng vào một xe. Điều phối chọn xe, xem giờ theo đường xe tải thật và lập lượt. Ngựa phải về hub trước hạn có mặt.
+5. **Chia ngựa vào các xe trục ngày đi** [Mới]
+   - Dùng các xe đã giữ cho chuyến (xe nền và xe thêm). Điều phối đổi được loại xe, miễn tổng chỗ không ít hơn số chỗ đã bán.
+   - Hệ thống gợi ý chia theo thứ tự: (1) ngựa **cùng đơn** luôn chung xe, vì giấy gốc chỉ có một bản; (2) ngựa **xe riêng** đi xe riêng của đơn đó, chọn xe vừa số con (2, 4 chỗ…); (3) ngựa xe ghép xếp theo **cụm điểm giao gần nhau ở hub đích**; (4) chọn xe **vừa số chỗ** nhất.
+   - Ví dụ chuyến TP.HCM → Hà Nội có 11 con xe ghép: 8 con giao trong nội thành Hà Nội, 3 con giao ở Hải Phòng. Gợi ý xe 9 chỗ chở 8 con nội thành, xe 4 chỗ chở 3 con Hải Phòng.
+   - Tới hub đích ngựa vẫn dỡ xuống và khám trước khi giao (luồng 4). Chia theo cụm từ đầu để mỗi xe trục có thể dùng lại làm xe giao cho đúng cụm của nó.
+   - Hệ thống gợi ý, điều phối chỉnh.
+6. **Phân tổ lái** từng xe: tài xế, hộ tống. Người được phân xác nhận nhận việc; chưa có tài xế và hộ tống nhận việc thì xe không xuất phát.
+7. **Sơ đồ khoang:** khách chỉ chọn loại khoang; hệ thống tự xếp vị trí, điều phối đổi được; xe chạy thì khóa.
+8. **Nhánh giao:** ở hub đích, ngựa có điểm giao gần nhau xếp chung xe; xe riêng không ghép. Ngoài khung 06:00–18:00 thì cả lượt dời sang 06:00 hôm sau.
+9. Khách được báo khung một giờ xe tới; giờ dời quá 30 phút thì báo lại.
+10. **Xe về** [Mới, theo thiết kế cũ nhánh `main`]: xong việc, xe và tổ lái ở trạng thái **Đang về** có giờ dự kiến; trễ thì có cờ cho điều phối và quản lý. Tài xế bấm **Đã về** tại hub gốc kèm **ảnh chụp tại chỗ** và **tình trạng xe**. Trước đó xe chưa nhận lượt mới. Xe chạy trục có thể về bằng **chuyến chiều ngược**.
 
 **Quy tắc giờ:** mỗi điểm dừng 20 phút + 10 phút mỗi con; lái 4 giờ nghỉ 30 phút; tài xế lái ≤ 10 giờ một ngày; ngựa ngồi xe đón, giao ≤ 5 giờ, chạy thẳng ≤ 10 giờ; trục chạy đủ 10 giờ thì nghỉ đêm 10 giờ. Lượt mới của xe và của người bắt đầu ở nơi lượt trước kết thúc.
 
