@@ -38,7 +38,7 @@ Nếu tới lúc A xong M4 mà B chưa bắt đầu M5, M6, M8 thì A báo ngư�
 ## Giá xe riêng (M3, đã duyệt)
 
 Không thêm công thức mới, dùng bảng giá đang có:
-- **Cước trục** tính **đủ số chỗ của xe dành riêng**, dù chở ít ngựa hơn. Ví dụ 3 con đi riêng một xe 4 chỗ thì trả cước trục 4 chỗ.
+- **Cước trục** tính **đủ sức chứa của xe dành riêng × đơn giá khoang tiêu chuẩn**, dù chở ít ngựa hơn. Khoang rộng không có đơn giá riêng cho xe riêng; nếu khoang rộng khiến phải chọn hạng xe lớn hơn, tổng cước đổi theo sức chứa xe đó.
 - **Cước đón, giao** tính theo km với hạng xe của xe riêng, như hiện nay.
 - Dịch vụ, bảo hiểm, thủ tục giữ nguyên.
 

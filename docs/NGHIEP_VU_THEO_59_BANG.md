@@ -189,7 +189,7 @@ service (đơn vị tính)  ──<  price_item (đơn giá + điều kiện)  >
 
 | Thành phần báo giá | `billable_service.layer` | `billing_unit` | Điều kiện tra `price_item` |
 |---|---|---|---|
-| Cước trục chính | LINEHAUL | PER_STALL | `route_id` + `stall_type_code` |
+| Cước trục chính | LINEHAUL | PER_STALL | Xe ghép: `route_id` + loại khoang đã chọn. Xe riêng: tính đủ sức chứa xe, luôn dùng đơn giá khoang STANDARD trên tuyến |
 | Cước đón do công ty chở | PICKUP | PER_KM | `vehicle_class_id` + bậc `km_from..km_to` |
 | Cước giao do công ty chở | DELIVERY | PER_KM | `vehicle_class_id` + bậc km |
 | Cước chạy thẳng (không qua trục) | DIRECT | PER_KM | `vehicle_class_id` + bậc km, tính từ địa chỉ đón tới địa chỉ giao |

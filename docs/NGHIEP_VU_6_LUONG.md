@@ -303,6 +303,6 @@ Từ lúc tổ lái đứng trước con ngựa ở nơi nhận tới lúc đơn
 1. **Giấy phép liên vận của xe** qua Campuchia, Lào: có thêm ô "được chạy sang nước nào, hạn tới ngày" để chỉ gán xe có phép cho chuyến quốc tế không. Điều kiện cấp phép **chưa kiểm chứng**.
 2. ~~Ai tăng cường xe~~: **đã chốt 26/11** hệ thống tự gắn xe để sẵn khi xe nền đầy, quản lý chỉ bỏ bớt xe thừa.
 3. **Chuyến đột xuất** do quản lý tạo: đề xuất bỏ, vì tăng cường và xe riêng đã thay được.
-4. **Giá xe riêng** theo nguyên xe đã giữ. Cước trục tính đủ sức chứa, dùng giá khoang rộng cho khoang rộng đã chọn và giá khoang thường cho các chỗ còn lại. Cước đón và giao tính theo km với hạng xe riêng.
+4. **Giá xe riêng** theo nguyên xe đã giữ. Cước trục = sức chứa xe × đơn giá khoang STANDARD trên tuyến, không dùng đơn giá WIDE. Hạng xe vẫn phải đủ chỗ theo khoang thực tế đã chọn nên đổi khoang có thể làm đổi hạng xe và tổng cước. Cước đón và giao tính theo km với hạng xe riêng.
 5. **Tỷ lệ dự phòng 20%** là mức tham khảo của ngành xe buýt (FTA), cần chỉnh khi có số liệu vận hành.
 6. Nguyên nhân sự cố **"Lỗi đại lý"** không còn ý nghĩa khi hub nước ngoài là của công ty: đề xuất gộp vào Lỗi công ty.

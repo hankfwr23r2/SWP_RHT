@@ -14,14 +14,16 @@ type Group = 'transport' | 'required' | 'bookingAddOns' | 'horseAddOns'
 const TRANSPORT_LAYERS = ['LINEHAUL', 'PICKUP', 'DELIVERY', 'DIRECT', 'FUEL', 'STALL']
 
 // Chia dòng giá thành ba nhóm; dịch vụ tuyến bắt buộc mà khách không tự chọn thì nằm ở nhóm bắt buộc
-function groupLines(lines: Line[], data: BookingData, chosenIds: Set<number>) {
+function groupLines(lines: Line[], data: BookingData, chosenIds: Set<number>, privateLinehaulName?: string) {
   const groups: Record<Group, { name: string; line: Line }[]> = { transport: [], required: [], bookingAddOns: [], horseAddOns: [] }
   for (const line of lines) {
     const service = data.services.find(item => item.code === line.serviceCode)
     const stall = data.stallTypes.find(item => item.code === line.stallTypeCode)
     const group: Group = service?.id != null && chosenIds.has(service.id) ? (service.billingUnit === 'PER_BOOKING' ? 'bookingAddOns' : 'horseAddOns')
       : TRANSPORT_LAYERS.includes(service?.layer ?? '') ? 'transport' : 'required'
-    groups[group].push({ name: [service?.name ?? line.serviceCode, stall?.name].filter(Boolean).join(' · '), line })
+    const name = privateLinehaulName && service?.layer === 'LINEHAUL'
+      ? privateLinehaulName : [service?.name ?? line.serviceCode, stall?.name].filter(Boolean).join(' · ')
+    groups[group].push({ name, line })
   }
   return groups
 }
@@ -34,7 +36,10 @@ function PriceLines({ preview }: { preview: Preview }) {
   if (preview.error != null) return <p className={s.error} role="alert">{preview.error || t('bookingForm.price.error')}</p>
   if (!preview.price) return <Skeleton lines={4} />
   const groups = groupLines(preview.price.lines ?? [], data,
-    new Set([...draft.bookingAddOnServiceIds, ...draft.horseIds.flatMap(id => draft.horses[id]?.addOnServiceIds ?? [])]))
+    new Set([...draft.bookingAddOnServiceIds, ...draft.horseIds.flatMap(id => draft.horses[id]?.addOnServiceIds ?? [])]),
+    draft.transportMode === 'PRIVATE' && preview.price.privateVehicleBillableStalls != null
+      ? t('bookingForm.price.privateLinehaul', { count: preview.price.privateVehicleBillableStalls })
+      : undefined)
   const depositPercent = preview.price.depositRate == null ? null : Math.round(preview.price.depositRate * 100)
   return (
     <div className={s.lines} aria-busy={preview.loading}>

@@ -681,6 +681,7 @@ export const customer = {
     },
     price: {
       deliveryEstimates: 'Estimated delivery dates',
+      privateLinehaul: 'Private linehaul ({{count}} stalls × standard-stall rate)',
       total: 'Estimated price',
       transport: 'Transport',
       required: 'Required on this route',
