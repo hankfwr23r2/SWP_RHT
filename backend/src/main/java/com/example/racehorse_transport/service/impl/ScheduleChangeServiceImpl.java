@@ -183,14 +183,17 @@ public class ScheduleChangeServiceImpl implements ScheduleChangeService {
         var specialist = booking.getSpecialist();
         if (!BookingAssignmentPolicy.isAvailable(specialist)) return false;
         var requiredOn = DocumentCompletenessPolicy.requiredOn(booking, today);
+        // Lọc giấy đã duyệt nhưng hết hạn trước ngày cần trước; chỉ khi có mới tính danh sách yêu cầu của đơn
+        var expiring = documents.findCandidateDocuments(booking.getId()).stream()
+                .filter(document -> document.getExpiryDate() != null && document.getExpiryDate().isBefore(requiredOn)
+                        && DocumentCompletenessPolicy.isApprovedOn(document, today))
+                .toList();
+        if (expiring.isEmpty()) return false;
         var requirements = documents.resolve(booking).requirements();
-        var candidates = documents.findCandidateDocuments(booking.getId());
         var active = horses.findForDetail(booking.getId()).stream()
                 .filter(horse -> horse.getStatus() == BookingHorseStatus.ACTIVE).toList();
         boolean sent = false;
-        for (var document : candidates) {
-            if (document.getExpiryDate() == null || !document.getExpiryDate().isBefore(requiredOn)
-                    || !DocumentCompletenessPolicy.isApprovedOn(document, today)) continue;
+        for (var document : expiring) {
             boolean applies = requirements.stream().anyMatch(requirement ->
                     DocumentCompletenessPolicy.matchesChecklist(document, requirement, booking.getId(), null)
                     || active.stream().anyMatch(horse ->

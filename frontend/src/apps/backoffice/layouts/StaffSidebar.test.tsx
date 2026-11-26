@@ -4,12 +4,14 @@ import { MemoryRouter } from 'react-router'
 import { afterEach, expect, it, vi } from 'vitest'
 import type { StaffRole } from '@shared/auth/role'
 import { fetchStaffWork } from '@shared/api/staffWork'
+import { specialistWorkApi } from '@shared/api/specialistWork'
 import { invalidateStaffWork, useStaffWork } from '@backoffice/shared/useStaffWork'
 import { StaffSidebar } from './StaffSidebar'
 
 let role: StaffRole
 vi.mock('@shared/auth/AuthContext', () => ({ useAuth: () => ({ session: { role, username: role }, logout: vi.fn() }) }))
 vi.mock('@shared/api/staffWork', () => ({ fetchStaffWork: vi.fn() }))
+vi.mock('@shared/api/specialistWork', () => ({ specialistWorkApi: { summary: vi.fn() } }))
 afterEach(() => { cleanup(); vi.clearAllMocks() })
 
 it.each([
@@ -24,10 +26,13 @@ it.each([
   expect(fetchStaffWork).toHaveBeenCalledTimes(1)
 })
 
-it('leaves the specialist menu independent of the work summary', () => {
+it('shows the specialist counts from its own summary, not the staff summary', async () => {
   role = 'specialist'
+  vi.mocked(specialistWorkApi.summary).mockResolvedValue({ verificationPending: 3, waitingCustomer: 1, legalPending: 2, insurancePending: 0 })
   render(<MemoryRouter><StaffSidebar mobileOpen onNavigate={vi.fn()} /></MemoryRouter>)
-  expect(screen.getByRole('link', { name: 'Thẩm định đơn' })).toBeTruthy()
+  expect(await within(screen.getByRole('link', { name: /Duyệt hồ sơ ngựa/ })).findByText('3')).toBeTruthy()
+  expect(within(screen.getByRole('link', { name: /Giấy tờ chuyến đi/ })).getByText('2')).toBeTruthy()
+  expect(screen.getByRole('link', { name: /Bảo hiểm/ })).toBeTruthy()
   expect(fetchStaffWork).not.toHaveBeenCalled()
 })
 
