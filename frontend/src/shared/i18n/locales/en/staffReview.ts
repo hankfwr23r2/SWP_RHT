@@ -34,7 +34,7 @@ export const staffReview = {
     "title": "Order review",
     "detailTitle": "Review details",
     "missingTitle": "Orders missing documents",
-    "order": "Order {{code}}",
+    "order": "Order <orderCode>{{code}}</orderCode>",
     "back": "Back to order review",
     "checkOrderLink": "Open the review queue to find the order.",
     "checkReviewQueue": "Open the review queue to see other orders.",

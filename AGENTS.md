@@ -325,6 +325,15 @@ apps/<app>/features  →  shared/components  →  shared/ui
   - `style={{…}}`, trừ giá trị động không biểu diễn được bằng class (tọa độ, phần trăm tiến độ, kích thước tính lúc chạy).
 - Nút, ô nhập, nhãn trạng thái… dùng component trong `shared/ui` có biến thể (`<Button variant="primary" size="sm">`). Không tự viết lại.
 - Màu của trạng thái nghiệp vụ được ánh xạ tại **một nơi** (component `StatusBadge`), không rải ở từng trang.
+- **Quy tắc thị giác** (người dùng duyệt 26/11/2026):
+  - **Ba lớp chữ:** tiêu đề đậm; giá trị chính đậm vừa, màu chữ thường; nhãn nhỏ màu `--color-muted`. Không tô xám giá trị chính.
+  - **Nhịp khoảng cách:** 8px trong một nhóm, 16px giữa các ô, 24px giữa các khối, 32px giữa các phần của trang.
+  - **Mẫu danh sách:** một khung gồm thẻ lọc có số đếm, ô tìm và bộ lọc, bảng (điện thoại là thẻ), dòng cuối "Hiển thị N".
+  - **Ô số liệu** đầu trang có biểu tượng, số lớn, nhãn ngắn và đường dẫn tới danh sách tương ứng.
+  - **Mỗi khu vực một nút chính.** Thao tác phụ dùng nút viền; thao tác ít dùng gom vào menu "…".
+  - **Nhãn và giá trị** xếp lưới 2–4 cột, nhãn trên giá trị dưới.
+  - **Không có gì nổi đè nội dung:** thông báo việc tiếp theo nằm trong dòng chảy trang; nút đổi ngôn ngữ ở thanh trên hoặc menu tài khoản.
+  - **Điện thoại:** menu gập vào nút ba gạch, nút trong thẻ trải hết chiều ngang, mã đơn không bị bẻ giữa.
 
 ### 8.6 Trải nghiệm (UX)
 

@@ -1,6 +1,6 @@
 /* Đơn của tôi: danh sách, chi tiết và các khối thao tác */
 .heading { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-5); }
-.heading h1 { margin: 0; font-size: var(--text-2xl); color: var(--color-heading); }
+.heading h1 { margin: 0; }
 .heading p { margin: var(--space-1) 0 0; color: var(--color-muted); }
 .stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); min-width: 0; }
 .between { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }

@@ -161,6 +161,8 @@ test('phân trang và tìm không dấu, đổi tab, xem đơn thiếu giấy �
   await page.getByRole('tab', { name: 'Đang thẩm định' }).click()
   await expect(page.getByText('Chưa tìm thấy đơn phù hợp')).toBeVisible()
   expect(summaries).toContainEqual({ status: 'UNDER_REVIEW', page: '0' })
+  // Ở 360px menu nằm trong nút ba gạch
+  await page.getByRole('button', { name: 'Mở menu' }).click()
   await page.getByRole('link', { name: 'Đơn thiếu giấy', exact: true }).click()
   await expect(page.getByText('Giấy cách ly · Sao Mai')).toBeVisible()
   await expect(page.getByText(/Đại lý nộp.*Cần trước khi đón ngựa/)).toBeVisible()

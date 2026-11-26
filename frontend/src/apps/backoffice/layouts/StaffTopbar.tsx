@@ -9,6 +9,7 @@ import { HOME_OF } from './staffMenus'
 import { Button } from '@shared/ui/Button'
 import { Input } from '@shared/ui/Input'
 import { NoticeBell } from '@shared/components/NoticeBell'
+import { initialsOf } from '@shared/lib/initialsOf'
 import { TranslateToggle } from '@shared/ui/TranslateToggle'
 import { StaffProfileModal } from './StaffProfileModal'
 import s from './StaffShell.module.css'
@@ -20,14 +21,14 @@ function reviewNoticeLink(path: string) {
   return path.replace(/^(?:\/backoffice)?\/specialist\/verification(?=\/|\?|#|$)/, '/specialist/review')
 }
 
-export function StaffTopbar() {
+export function StaffTopbar({ menuOpen, onToggleMenu }: { menuOpen: boolean; onToggleMenu: () => void }) {
   const { t } = useTranslation()
   const { session, logout } = useAuth()
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const [q, setQ] = useState('')
   const [showProfile, setShowProfile] = useState(false)
-  const initials = (session?.name ?? '').split(' ').filter(Boolean).slice(-2).map(w => w[0]).join('').toUpperCase()
+  const initials = initialsOf(session?.name)
   const role = session!.role as StaffRole
   // Mục menu khớp dài nhất với đường dẫn (trang chi tiết thuộc mục cha của nó)
   const here = STAFF_MENUS[role].filter(([to]) => pathname === to || pathname.startsWith(to + '/')).sort((a, z) => z[0].length - a[0].length)[0]
@@ -36,10 +37,12 @@ export function StaffTopbar() {
     <>
     <header className={s.topbar}>
       <Link to={HOME_OF[role]} className={s.brand}><img src="/logo.png" alt="" className={s.brandMark} /><span className={s.brandText}>{t('staffTopbar.brand', 'Vận chuyển Ngựa')}</span></Link>
-      <button type="button" className={`${s.account} ${s.profileButton}`} onClick={() => setShowProfile(true)} title={t('staffProfile.modalTitle', 'Hồ sơ')} aria-haspopup="dialog">
+      <Button variant="ghost" size="sm" className={s.menuToggle} aria-label={t(menuOpen ? 'header.closeMenu' : 'header.openMenu')}
+        aria-expanded={menuOpen} aria-controls="staff-navigation" onClick={onToggleMenu} icon={<i className={`fa-solid ${menuOpen ? 'fa-xmark' : 'fa-bars'}`} />} />
+      <Button variant="ghost" className={`${s.account} ${s.profileButton}`} onClick={() => setShowProfile(true)} title={t('staffProfile.modalTitle', 'Hồ sơ')} aria-haspopup="dialog">
         <span className={s.avatar}>{initials}</span>
         <span className={s.who}><b>{session?.name}</b><small>{session?.username.includes('@') ? session.username : t(`roles.${role}`, ROLE_LABEL[role])}</small></span>
-      </button>
+      </Button>
       {role !== 'specialist' && (
         <span className={s.crumb} aria-label={t('staffTopbar.breadcrumb', 'Đường dẫn')}>
           <i className="fa-solid fa-chevron-right" aria-hidden="true" />

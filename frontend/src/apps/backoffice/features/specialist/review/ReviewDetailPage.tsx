@@ -1,10 +1,11 @@
 import { useRevalidator } from 'react-router'
-import { useTranslation } from 'react-i18next'
+import { Trans, useTranslation } from 'react-i18next'
 import type { BookingDetail } from '@shared/api/bookingOrders'
 import { ActionBar } from '@backoffice/shared/ActionBar'
 import { BackButton } from '@backoffice/shared/BackButton'
 import { OrderStatusBadge } from '@shared/components/OrderStatusBadge'
 import { usePageData } from '@shared/routing/pageData'
+import { PageTitle, PageTitleCode } from '@shared/ui/PageHeader'
 import { Card } from '@shared/ui/Card'
 import { EmptyState } from '@shared/ui/EmptyState'
 import { ErrorState } from '@shared/ui/ErrorState'
@@ -37,9 +38,10 @@ function ReviewDetail({ id, detail, data }: {
   const next = status === 'UNDER_REVIEW' ? work || t('staffReview.ready') : status && t(`staffReview.nextStep.${status}`)
   return <>
     <div className={s.row}>
-      <h1>{t('staffReview.order', { code: booking?.code })}</h1>
+      <PageTitle><Trans i18nKey="staffReview.order" values={{ code: booking?.code }} components={{ orderCode: <PageTitleCode /> }} /></PageTitle>
       <OrderStatusBadge status={status} />
     </div>
+    {detail.assignedToMe && <ActionBar next={next}>{options.length > 0 && <ActionButtons options={options} actions={actions} />}</ActionBar>}
     <p>{booking?.specialistName ? t('staffReview.assigned', { name: booking.specialistName }) : t('staffReview.unassigned')}</p>
     {reviewReason && <p>{t('staffReview.reviewReason', { reason: reviewReason })}</p>}
     {(!data.insurers || !data.stallTypes || !data.documents) && <ErrorState onRetry={data.reload} retrying={state !== 'idle'} />}
@@ -49,7 +51,6 @@ function ReviewDetail({ id, detail, data }: {
       : <Card title={t('staffReview.documents')}><ErrorState onRetry={data.reload} retrying={state !== 'idle'} /></Card>}
     <InsurancesCard horses={detail.horses} status={status} canEdit={detail.assignedToMe === true} insurers={data.insurers}
       documents={data.documents} actions={actions} />
-    {detail.assignedToMe && <ActionBar next={next}>{options.length > 0 && <ActionButtons options={options} actions={actions} />}</ActionBar>}
   </>
 }
 
