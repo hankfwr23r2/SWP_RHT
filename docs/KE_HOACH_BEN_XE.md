@@ -72,4 +72,4 @@ Hiện trạng cần sửa:
 | M5 | Xong (bạn B) | #520 |
 | M6 | Xong (bạn B) | #522 |
 | M8 | Xong (bạn B) | #523 |
-| M9 | Chưa làm | |
+| M9 | Xong phần test cả luồng và CHAY_THU (#529); bước chạy thử có ảnh người dùng bỏ ngày 26/11 | #529 |
