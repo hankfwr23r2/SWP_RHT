@@ -62,7 +62,9 @@ Một **đơn** có nhiều ngựa. Một **lượt xe** chở ngựa của nhi�
 
 **Trụ sở và hub vệ tinh.** Mọi xe và nhân viên thuộc trụ sở (`HUB-HCM`). Hub vệ tinh (ví dụ `HUB-DN`) có vùng phục vụ và chỗ tập kết ngựa, nhưng không có xe hay nhân viên trực thuộc. Xe trục tới hub vệ tinh thì chạy luôn lượt giao ở vùng đó, rồi về trụ sở bằng chuyến trục chiều ngược.
 
-**Các tuyến và nhịp chạy.** Mỗi tuyến chạy **một chuyến mỗi tuần**, 6 tuyến một chiều: HCM ⇄ Mộc Bài (Campuchia), HCM ⇄ Đà Nẵng, Đà Nẵng ⇄ Lao Bảo (Lào). Một xe chạy nối nhiều tuyến trong tuần:
+**Các tuyến và nhịp chạy.** Mỗi tuyến chạy **một chuyến mỗi tuần**. Dữ liệu mẫu có 22 tuyến một chiều, gồm tuyến giữa các hub và tuyến giữa hub với cửa khẩu. [Tuyến trục của dữ liệu mẫu](CHAY_THU.md#tuyến-trục-của-dữ-liệu-mẫu)
+
+Ví dụ một xe chạy nối nhiều tuyến trong tuần.
 
 | Ngày (mẫu) | Xe A | Xe B |
 |---|---|---|
@@ -142,12 +144,12 @@ Phải có dữ liệu nền trước khi nhận đơn đầu tiên. Nhóm nên 
 | Thứ tự | Dữ liệu | Bảng | Ví dụ |
 |---|---|---|---|
 | 1 | Quốc gia, tỉnh | `country`, `province` | VN, KH, LA; 34 tỉnh/thành VN (sắp xếp từ 01/07/2025), 25 tỉnh KH, 18 tỉnh LA |
-| 2 | Điểm mạng lưới | `location` | `HUB-HCM` (trụ sở), `HUB-DN` (hub vệ tinh), `REST-TRANGBANG`, `GATE-MOCBAI` (nước đối diện KH), `GATE-LAOBAO` (LA) |
-| 3 | Vùng phục vụ của hub (mỗi tỉnh thuộc đúng một hub) | `hub_service_area` | HUB-HCM phục vụ TP.HCM, Bình Dương, Đồng Nai…; HUB-DN phục vụ Đà Nẵng, Quảng Nam, Huế… |
+| 2 | Điểm mạng lưới | `location` | `HUB-HCM` (trụ sở), `HUB-DN`, `HUB-HN`, `HUB-CT`, `HUB-BMT`, trạm nghỉ và 6 cửa khẩu. [Tuyến trục của dữ liệu mẫu](CHAY_THU.md#tuyến-trục-của-dữ-liệu-mẫu) |
+| 3 | Vùng phục vụ của hub (mỗi tỉnh thuộc đúng một hub) | `hub_service_area` | `HUB-CT` phục vụ Cần Thơ, An Giang, Cà Mau. `HUB-BMT` phục vụ Đắk Lắk. [Vùng phục vụ của dữ liệu mẫu](CHAY_THU.md#vùng-phục-vụ-của-dữ-liệu-mẫu) |
 | 4 | Vai trò, tài khoản nhân viên | `role`, `app_user`, `staff` | |
 | 5 | Đối tác | `party`, `party_role` | Đại lý Campuchia, đại lý Lào, thú y, chuồng gửi |
 | 6 | Loại ngựa, hạng xe, loại khoang, xe | `horse_type`, `vehicle_class`, `stall_type`, `vehicle` | |
-| 7 | Tuyến và điểm dừng (mỗi chiều là một tuyến) | `route`, `route_stop` | HCM-PNH, MOCBAI-HCM, HCM-DN, DN-HCM, DN-LAOBAO, LAOBAO-DN. Điểm dừng cách nhau tối đa 4 giờ chạy |
+| 7 | Tuyến và điểm dừng (mỗi chiều là một tuyến) | `route`, `route_stop` | Điểm dừng cách nhau tối đa 4 giờ chạy. [22 tuyến mẫu](CHAY_THU.md#tuyến-trục-của-dữ-liệu-mẫu) |
 | 8 | Lịch chạy | `departure_schedule`, `departure_schedule_day` | Mỗi tuyến một ngày trong tuần, 9 chỗ, chốt đơn trước 72 giờ |
 | 9 | Dịch vụ, bảng giá | `billable_service`, `price_list`, `price_item` | Bảng giá 2027, cọc 30% |
 | 10 | Quy định, giấy tờ | `country_rule`, `document_type`, `document_requirement` | KH/EXPORT: cần giấy chứng nhận kiểm dịch xuất khẩu và `QUARANTINE_CLEARANCE` |

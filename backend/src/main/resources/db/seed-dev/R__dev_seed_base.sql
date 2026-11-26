@@ -1,7 +1,7 @@
 -- Dữ liệu MẪU cho máy dev và test. KHÔNG chạy trên môi trường thật.
 -- Chỉ nạp khi FLYWAY_LOCATIONS có classpath:db/seed-dev (docker-compose và test đã bật sẵn).
 -- Repeatable migration: Flyway chạy file này sau mọi migration có số, và chạy lại khi nội dung đổi,
--- nên mọi câu lệnh phải idempotent (ON CONFLICT DO NOTHING hoặc WHERE NOT EXISTS).
+-- nên mọi câu lệnh phải idempotent (ON CONFLICT hoặc WHERE NOT EXISTS).
 --
 -- Tọa độ, khoảng cách, đơn giá, quy định ở đây là SỐ MẪU để phát triển và demo, chưa phải dữ liệu thật.
 -- Dữ liệu nền đầy đủ sẽ bổ sung riêng (xem docs/NGU_CANH_THIET_KE_LAI.md, câu hỏi còn mở).
@@ -30,6 +30,24 @@ INSERT INTO location (code, name, location_type, country_code, province_code, ad
     ('REST-VINH', 'Trạm nghỉ Vinh', 'REST_STOP', 'VN', 'VN-40', 'Phường Thành Vinh, Nghệ An', 18.680000, 105.680000, NULL, NULL, NULL, 'ACTIVE'),
     ('REST-THANHHOA', 'Trạm nghỉ Thanh Hóa', 'REST_STOP', 'VN', 'VN-38', 'Phường Hạc Thành, Thanh Hóa', 19.800000, 105.770000, NULL, NULL, NULL, 'ACTIVE'),
     ('GATE-LAOBAO', 'Cửa khẩu quốc tế Lao Bảo - Densavanh', 'BORDER_GATE', 'VN', 'VN-44', 'Xã Lao Bảo, Quảng Trị', 16.620000, 106.600000, TIME '07:00', TIME '22:00', NULL, 'ACTIVE')
+ON CONFLICT (code) DO NOTHING;
+
+-- Hub mẫu lấy tọa độ trung tâm tỉnh. Cửa khẩu và trạm nghỉ dùng tọa độ mẫu trên đường xe tải.
+INSERT INTO location (code, name, location_type, country_code, province_code, address, latitude, longitude, opening_time, closing_time, contact_phone, counterpart_country_code, status)
+SELECT v.code, v.name, v.location_type, p.country_code, p.code, v.address, COALESCE(v.latitude, p.latitude),
+       COALESCE(v.longitude, p.longitude), v.opening_time, v.closing_time, v.contact_phone, v.counterpart_country_code, 'ACTIVE'
+FROM (VALUES
+          ('HUB-CT', 'Hub vệ tinh Cần Thơ', 'HUB', 'VN-92', 'TP. Cần Thơ', NULL, NULL, NULL, NULL, '0900000800', NULL),
+          ('HUB-BMT', 'Hub vệ tinh Buôn Ma Thuột', 'HUB', 'VN-66', 'Buôn Ma Thuột, Đắk Lắk', NULL, NULL, NULL, NULL, '0900000900', NULL),
+          ('GATE-CAUTREO', 'Cửa khẩu quốc tế Cầu Treo - Nam Phao', 'BORDER_GATE', 'VN-42', 'Cửa khẩu Cầu Treo, Hà Tĩnh', 18.390623, 105.160738, TIME '07:00', TIME '22:00', NULL, 'LA'),
+          ('GATE-TINHBIEN', 'Cửa khẩu quốc tế Tịnh Biên - Phnom Den', 'BORDER_GATE', 'VN-91', 'Cửa khẩu Tịnh Biên, An Giang', 10.600454, 104.942714, TIME '07:00', TIME '22:00', NULL, 'KH'),
+          ('GATE-BOY', 'Cửa khẩu quốc tế Bờ Y - Phou Keua', 'BORDER_GATE', 'VN-51', 'Cửa khẩu Bờ Y, Quảng Ngãi', 14.708657, 107.553652, TIME '07:00', TIME '22:00', NULL, 'LA'),
+          ('GATE-LETHANH', 'Cửa khẩu quốc tế Lệ Thanh - O Yadav', 'BORDER_GATE', 'VN-52', 'Cửa khẩu Lệ Thanh, Gia Lai', 13.765800, 107.495500, TIME '07:00', TIME '22:00', NULL, 'KH'),
+          ('REST-DONGXOAI', 'Trạm nghỉ Đồng Xoài', 'REST_STOP', 'VN-75', 'Đồng Xoài, Đồng Nai', 11.536000, 106.890000, NULL, NULL, NULL, NULL),
+          ('REST-GIANGHIA', 'Trạm nghỉ Gia Nghĩa', 'REST_STOP', 'VN-68', 'Gia Nghĩa, Lâm Đồng', 11.993000, 107.693000, NULL, NULL, NULL, NULL),
+          ('REST-CHUSE', 'Trạm nghỉ Chư Sê', 'REST_STOP', 'VN-52', 'Chư Sê, Gia Lai', 13.697000, 108.073000, NULL, NULL, NULL, NULL)
+     ) AS v(code, name, location_type, province_code, address, latitude, longitude, opening_time, closing_time, contact_phone, counterpart_country_code)
+JOIN province p ON p.code = v.province_code
 ON CONFLICT (code) DO NOTHING;
 
 -- Trường đua và câu lạc bộ ngựa làm nơi đón, giao quen thuộc. Tên và tọa độ là SỐ MẪU, chưa kiểm chứng
@@ -64,21 +82,25 @@ WHERE code = 'GATE-LAOBAO' AND location_type = 'BORDER_GATE' AND counterpart_cou
 UPDATE location SET is_headquarters = true
 WHERE code = 'HUB-HCM' AND NOT EXISTS (SELECT 1 FROM location WHERE is_headquarters);
 
--- Mỗi tỉnh thuộc đúng một hub, chọn hub gần hơn theo giờ chạy: Khánh Hòa, Đắk Lắk về trụ sở
+-- Mỗi tỉnh thuộc đúng một hub. Chuyển bốn tỉnh sang hub mới cả trên máy đã nạp dữ liệu mẫu.
 INSERT INTO hub_service_area (hub_location_id, province_code)
 SELECT l.id, p.code
 FROM (VALUES
           ('HUB-HCM', 'VN-79'), ('HUB-HCM', 'VN-75'), ('HUB-HCM', 'VN-80'), ('HUB-HCM', 'VN-82'), ('HUB-HCM', 'VN-86'),
-          ('HUB-HCM', 'VN-91'), ('HUB-HCM', 'VN-92'), ('HUB-HCM', 'VN-96'), ('HUB-HCM', 'VN-68'), ('HUB-HCM', 'VN-56'), ('HUB-HCM', 'VN-66'),
+          ('HUB-HCM', 'VN-68'), ('HUB-HCM', 'VN-56'),
+          ('HUB-CT', 'VN-92'), ('HUB-CT', 'VN-91'), ('HUB-CT', 'VN-96'),
+          ('HUB-BMT', 'VN-66'),
           ('HUB-DN', 'VN-48'), ('HUB-DN', 'VN-46'), ('HUB-DN', 'VN-51'), ('HUB-DN', 'VN-44'), ('HUB-DN', 'VN-52'),
           ('HUB-HN', 'VN-1'), ('HUB-HN', 'VN-31'), ('HUB-HN', 'VN-24'), ('HUB-HN', 'VN-4'), ('HUB-HN', 'VN-33'), ('HUB-HN', 'VN-12'), ('HUB-HN', 'VN-20'), ('HUB-HN', 'VN-15'), ('HUB-HN', 'VN-40'), ('HUB-HN', 'VN-37'), ('HUB-HN', 'VN-25'), ('HUB-HN', 'VN-22'), ('HUB-HN', 'VN-14'), ('HUB-HN', 'VN-19'), ('HUB-HN', 'VN-38'), ('HUB-HN', 'VN-8'), ('HUB-HN', 'VN-42'), ('HUB-HN', 'VN-11')
      ) AS v(hub_code, province_code)
 JOIN location l ON l.code = v.hub_code
 JOIN province p ON p.code = v.province_code
-ON CONFLICT DO NOTHING;
+ON CONFLICT (province_code) DO UPDATE SET hub_location_id = EXCLUDED.hub_location_id
+WHERE hub_service_area.province_code IN ('VN-92', 'VN-91', 'VN-96', 'VN-66')
+  AND hub_service_area.hub_location_id <> EXCLUDED.hub_location_id;
 
 UPDATE hub_service_area SET hub_location_id = (SELECT id FROM location WHERE code = 'HUB-HCM')
-WHERE province_code IN ('VN-56', 'VN-66') AND hub_location_id = (SELECT id FROM location WHERE code = 'HUB-DN');
+WHERE province_code = 'VN-56' AND hub_location_id = (SELECT id FROM location WHERE code = 'HUB-DN');
 
 -- ---------------------------------------------------------------------------
 -- 2. Tài khoản, nhân viên, khách hàng
@@ -199,8 +221,9 @@ WHERE vehicle.license_plate = adjustment.plate AND vehicle.vehicle_class_id = vc
 -- ---------------------------------------------------------------------------
 -- 4. Tuyến trục chính, điểm dừng, lịch chạy
 -- ---------------------------------------------------------------------------
--- Giờ chạy và km tính bằng Valhalla (xe tải 10 tấn, 80 km/h, 23/11/2026), vẫn là số mẫu. Mỗi đoạn chạy tối đa 4 giờ,
+-- Giờ chạy và km tính bằng Valhalla (xe tải 10 tấn, tốc độ tối đa 80 km/h), vẫn là số mẫu. Mỗi đoạn chạy tối đa 4 giờ,
 -- nghỉ ít nhất 30 phút, tối đa 10 giờ lái giữa hai lần nghỉ đêm (DB_SCHEMA quy tắc #31).
+-- Với tuyến mới, làm tròn lên số phút lái mỗi đoạn rồi cộng phút dừng ở điểm đầu và trên đường để tính giờ đến.
 INSERT INTO route (code, name, origin_location_id, destination_location_id, distance_km, estimated_duration_minutes, status)
 SELECT v.code, v.name, o.id, d.id, v.distance_km, v.minutes, 'ACTIVE'
 FROM (VALUES
@@ -213,7 +236,19 @@ FROM (VALUES
           ('DN-HN', 'Đà Nẵng – Hà Nội', 'HUB-DN', 'HUB-HN', 797.00, 1602),
           ('HN-DN', 'Hà Nội – Đà Nẵng', 'HUB-HN', 'HUB-DN', 798.00, 1603),
           ('HCM-HN', 'TP.HCM – Hà Nội', 'HUB-HCM', 'HUB-HN', 1772.00, 3953),
-          ('HN-HCM', 'Hà Nội – TP.HCM', 'HUB-HN', 'HUB-HCM', 1780.00, 3955)
+          ('HN-HCM', 'Hà Nội – TP.HCM', 'HUB-HN', 'HUB-HCM', 1780.00, 3955),
+          ('HN-CAUTREO', 'Hà Nội – Cửa khẩu Cầu Treo (sang Lào)', 'HUB-HN', 'GATE-CAUTREO', 413.51, 550),
+          ('CAUTREO-HN', 'Cửa khẩu Cầu Treo – Hà Nội (từ Lào về)', 'GATE-CAUTREO', 'HUB-HN', 411.30, 580),
+          ('HCM-CT', 'TP.HCM – Cần Thơ', 'HUB-HCM', 'HUB-CT', 169.48, 230),
+          ('CT-HCM', 'Cần Thơ – TP.HCM', 'HUB-CT', 'HUB-HCM', 169.51, 238),
+          ('CT-TINHBIEN', 'Cần Thơ – Cửa khẩu Tịnh Biên (sang Campuchia)', 'HUB-CT', 'GATE-TINHBIEN', 139.05, 266),
+          ('TINHBIEN-CT', 'Cửa khẩu Tịnh Biên – Cần Thơ (từ Campuchia về)', 'GATE-TINHBIEN', 'HUB-CT', 139.01, 296),
+          ('HCM-BMT', 'TP.HCM – Buôn Ma Thuột', 'HUB-HCM', 'HUB-BMT', 351.72, 617),
+          ('BMT-HCM', 'Buôn Ma Thuột – TP.HCM', 'HUB-BMT', 'HUB-HCM', 347.21, 615),
+          ('BMT-BOY', 'Buôn Ma Thuột – Cửa khẩu Bờ Y (sang Lào)', 'HUB-BMT', 'GATE-BOY', 320.16, 461),
+          ('BOY-BMT', 'Cửa khẩu Bờ Y – Buôn Ma Thuột (từ Lào về)', 'GATE-BOY', 'HUB-BMT', 319.99, 490),
+          ('BMT-LETHANH', 'Buôn Ma Thuột – Cửa khẩu Lệ Thanh (sang Campuchia)', 'HUB-BMT', 'GATE-LETHANH', 251.08, 396),
+          ('LETHANH-BMT', 'Cửa khẩu Lệ Thanh – Buôn Ma Thuột (từ Campuchia về)', 'GATE-LETHANH', 'HUB-BMT', 232.01, 389)
      ) AS v(code, name, origin_code, destination_code, distance_km, minutes)
 JOIN location o ON o.code = v.origin_code
 JOIN location d ON d.code = v.destination_code
@@ -296,7 +331,43 @@ FROM (VALUES
           ('HN-HCM', 11, 'REST-NHATRANG', 'VITAL_CHECK', 2871, 30),
           ('HN-HCM', 12, 'REST-PHANRANG', 'REST', 3023, 600),
           ('HN-HCM', 13, 'REST-PHANTHIET', 'REST', 3762, 30),
-          ('HN-HCM', 14, 'HUB-HCM', 'HUB', 3955, 0)
+          ('HN-HCM', 14, 'HUB-HCM', 'HUB', 3955, 0),
+          ('HN-CAUTREO', 1, 'HUB-HN', 'HUB', 0, 30),
+          ('HN-CAUTREO', 2, 'REST-THANHHOA', 'REST', 218, 30),
+          ('HN-CAUTREO', 3, 'REST-VINH', 'REST', 409, 30),
+          ('HN-CAUTREO', 4, 'GATE-CAUTREO', 'BORDER', 550, 120),
+          ('CAUTREO-HN', 1, 'GATE-CAUTREO', 'BORDER', 0, 60),
+          ('CAUTREO-HN', 2, 'REST-VINH', 'REST', 171, 30),
+          ('CAUTREO-HN', 3, 'REST-THANHHOA', 'REST', 362, 30),
+          ('CAUTREO-HN', 4, 'HUB-HN', 'HUB', 580, 0),
+          ('HCM-CT', 1, 'HUB-HCM', 'HUB', 0, 30),
+          ('HCM-CT', 2, 'HUB-CT', 'HUB', 230, 0),
+          ('CT-HCM', 1, 'HUB-CT', 'HUB', 0, 30),
+          ('CT-HCM', 2, 'HUB-HCM', 'HUB', 238, 0),
+          ('CT-TINHBIEN', 1, 'HUB-CT', 'HUB', 0, 30),
+          ('CT-TINHBIEN', 2, 'GATE-TINHBIEN', 'BORDER', 266, 120),
+          ('TINHBIEN-CT', 1, 'GATE-TINHBIEN', 'BORDER', 0, 60),
+          ('TINHBIEN-CT', 2, 'HUB-CT', 'HUB', 296, 0),
+          ('HCM-BMT', 1, 'HUB-HCM', 'HUB', 0, 30),
+          ('HCM-BMT', 2, 'REST-DONGXOAI', 'REST', 219, 30),
+          ('HCM-BMT', 3, 'REST-GIANGHIA', 'REST', 409, 30),
+          ('HCM-BMT', 4, 'HUB-BMT', 'HUB', 617, 0),
+          ('BMT-HCM', 1, 'HUB-BMT', 'HUB', 0, 30),
+          ('BMT-HCM', 2, 'REST-GIANGHIA', 'REST', 204, 30),
+          ('BMT-HCM', 3, 'REST-DONGXOAI', 'REST', 394, 30),
+          ('BMT-HCM', 4, 'HUB-HCM', 'HUB', 615, 0),
+          ('BMT-BOY', 1, 'HUB-BMT', 'HUB', 0, 30),
+          ('BMT-BOY', 2, 'REST-CHUSE', 'REST', 216, 30),
+          ('BMT-BOY', 3, 'GATE-BOY', 'BORDER', 461, 120),
+          ('BOY-BMT', 1, 'GATE-BOY', 'BORDER', 0, 60),
+          ('BOY-BMT', 2, 'REST-CHUSE', 'REST', 274, 30),
+          ('BOY-BMT', 3, 'HUB-BMT', 'HUB', 490, 0),
+          ('BMT-LETHANH', 1, 'HUB-BMT', 'HUB', 0, 30),
+          ('BMT-LETHANH', 2, 'REST-CHUSE', 'REST', 216, 30),
+          ('BMT-LETHANH', 3, 'GATE-LETHANH', 'BORDER', 396, 120),
+          ('LETHANH-BMT', 1, 'GATE-LETHANH', 'BORDER', 0, 60),
+          ('LETHANH-BMT', 2, 'REST-CHUSE', 'REST', 173, 30),
+          ('LETHANH-BMT', 3, 'HUB-BMT', 'HUB', 389, 0)
      ) AS v(route_code, sequence_number, location_code, stop_type, arrival_offset_minutes, dwell_minutes)
 JOIN route r ON r.code = v.route_code
 JOIN location l ON l.code = v.location_code
@@ -311,8 +382,7 @@ WHERE rs.route_id = r.id
                                        WHEN 'DN-HN' THEN 7 WHEN 'HN-DN' THEN 7 WHEN 'HCM-HN' THEN 14 WHEN 'HN-HCM' THEN 14 ELSE 32767 END
   AND NOT EXISTS (SELECT 1 FROM trip_stop ts WHERE ts.route_id = rs.route_id AND ts.route_stop_sequence_number = rs.sequence_number);
 
--- Mỗi tuyến một chuyến mỗi tuần: thứ Hai HCM và Mộc Bài, thứ Ba đi Đà Nẵng, thứ Sáu đi Lao Bảo, thứ Bảy về Đà Nẵng,
--- Chủ nhật về TP.HCM
+-- Mỗi tuyến một chuyến mỗi tuần. Xếp lịch về sau chiều đi và trong khung mở cửa của cửa khẩu.
 INSERT INTO departure_schedule (route_id, departure_time, booking_cutoff_hours, stall_capacity, valid_from, status)
 SELECT r.id, v.departure_time, 72, 9, DATE '2026-11-01', 'ACTIVE'
 FROM (VALUES
@@ -325,7 +395,19 @@ FROM (VALUES
           ('DN-HN', TIME '05:00'),
           ('HN-DN', TIME '05:00'),
           ('HCM-HN', TIME '05:00'),
-          ('HN-HCM', TIME '05:00')
+          ('HN-HCM', TIME '05:00'),
+          ('HN-CAUTREO', TIME '09:00'),
+          ('CAUTREO-HN', TIME '07:00'),
+          ('HCM-CT', TIME '07:00'),
+          ('CT-HCM', TIME '07:00'),
+          ('CT-TINHBIEN', TIME '07:00'),
+          ('TINHBIEN-CT', TIME '08:00'),
+          ('HCM-BMT', TIME '05:30'),
+          ('BMT-HCM', TIME '06:00'),
+          ('BMT-BOY', TIME '06:00'),
+          ('BOY-BMT', TIME '07:00'),
+          ('BMT-LETHANH', TIME '07:00'),
+          ('LETHANH-BMT', TIME '07:00')
      ) AS v(route_code, departure_time)
 JOIN route r ON r.code = v.route_code
 WHERE NOT EXISTS (SELECT 1 FROM departure_schedule s WHERE s.route_id = r.id AND s.departure_time = v.departure_time);
@@ -341,7 +423,19 @@ WHERE dd.departure_schedule_id = s.id AND s.route_id = r.id
 
 INSERT INTO departure_schedule_day (departure_schedule_id, day_of_week)
 SELECT s.id, v.day_of_week
-FROM (VALUES ('HCM-PNH', TIME '06:00', 1), ('MOCBAI-HCM', TIME '14:00', 1), ('HCM-DN', TIME '05:00', 2), ('DN-LAOBAO', TIME '05:00', 5), ('LAOBAO-DN', TIME '07:00', 6), ('DN-HCM', TIME '05:00', 7), ('DN-HN', TIME '05:00', 4), ('HN-DN', TIME '05:00', 6), ('HCM-HN', TIME '05:00', 3), ('HN-HCM', TIME '05:00', 1)) AS v(route_code, departure_time, day_of_week)
+FROM (VALUES
+          ('HCM-PNH', TIME '06:00', 1), ('MOCBAI-HCM', TIME '14:00', 1),
+          ('HCM-DN', TIME '05:00', 2), ('DN-HCM', TIME '05:00', 7),
+          ('DN-LAOBAO', TIME '05:00', 5), ('LAOBAO-DN', TIME '07:00', 6),
+          ('DN-HN', TIME '05:00', 4), ('HN-DN', TIME '05:00', 6),
+          ('HCM-HN', TIME '05:00', 3), ('HN-HCM', TIME '05:00', 1),
+          ('HN-CAUTREO', TIME '09:00', 6), ('CAUTREO-HN', TIME '07:00', 7),
+          ('HCM-CT', TIME '07:00', 2), ('CT-HCM', TIME '07:00', 5),
+          ('CT-TINHBIEN', TIME '07:00', 3), ('TINHBIEN-CT', TIME '08:00', 4),
+          ('HCM-BMT', TIME '05:30', 2), ('BMT-HCM', TIME '06:00', 7),
+          ('BMT-BOY', TIME '06:00', 3), ('BOY-BMT', TIME '07:00', 4),
+          ('BMT-LETHANH', TIME '07:00', 5), ('LETHANH-BMT', TIME '07:00', 6)
+     ) AS v(route_code, departure_time, day_of_week)
 JOIN route r ON r.code = v.route_code
 JOIN departure_schedule s ON s.route_id = r.id AND s.departure_time = v.departure_time
 ON CONFLICT DO NOTHING;
@@ -366,7 +460,19 @@ FROM (VALUES
           ('DN-HN', 'STANDARD', 10000000), ('DN-HN', 'WIDE', 13000000),
           ('HN-DN', 'STANDARD', 10000000), ('HN-DN', 'WIDE', 13000000),
           ('HCM-HN', 'STANDARD', 20000000), ('HCM-HN', 'WIDE', 26000000),
-          ('HN-HCM', 'STANDARD', 20000000), ('HN-HCM', 'WIDE', 26000000)
+          ('HN-HCM', 'STANDARD', 20000000), ('HN-HCM', 'WIDE', 26000000),
+          ('HN-CAUTREO', 'STANDARD', 8000000), ('HN-CAUTREO', 'WIDE', 10000000),
+          ('CAUTREO-HN', 'STANDARD', 8000000), ('CAUTREO-HN', 'WIDE', 10000000),
+          ('HCM-CT', 'STANDARD', 6000000), ('HCM-CT', 'WIDE', 8000000),
+          ('CT-HCM', 'STANDARD', 6000000), ('CT-HCM', 'WIDE', 8000000),
+          ('CT-TINHBIEN', 'STANDARD', 6000000), ('CT-TINHBIEN', 'WIDE', 8000000),
+          ('TINHBIEN-CT', 'STANDARD', 6000000), ('TINHBIEN-CT', 'WIDE', 8000000),
+          ('HCM-BMT', 'STANDARD', 7000000), ('HCM-BMT', 'WIDE', 9000000),
+          ('BMT-HCM', 'STANDARD', 7000000), ('BMT-HCM', 'WIDE', 9000000),
+          ('BMT-BOY', 'STANDARD', 6000000), ('BMT-BOY', 'WIDE', 8000000),
+          ('BOY-BMT', 'STANDARD', 6000000), ('BOY-BMT', 'WIDE', 8000000),
+          ('BMT-LETHANH', 'STANDARD', 6000000), ('BMT-LETHANH', 'WIDE', 8000000),
+          ('LETHANH-BMT', 'STANDARD', 6000000), ('LETHANH-BMT', 'WIDE', 8000000)
      ) AS v(route_code, stall_type, unit_price)
 JOIN price_list pl ON pl.name = 'Bảng giá mẫu (dev)'
 JOIN billable_service s ON s.code = 'LINEHAUL_STALL'

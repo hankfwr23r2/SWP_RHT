@@ -20,7 +20,7 @@ Mô tả bằng lời, đi từng bước theo một đơn. Nội dung đối ch
 
 | Từ | Nghĩa |
 |---|---|
-| **Hub** | Trung tâm tập kết ngựa của công ty. Hiện có Trụ sở TP.HCM và hub vệ tinh Đà Nẵng. Mỗi hub phục vụ một nhóm tỉnh |
+| **Hub** | Trung tâm tập kết ngựa của công ty. Dữ liệu mẫu có trụ sở TP.HCM và các hub vệ tinh Đà Nẵng, Hà Nội, Cần Thơ, Buôn Ma Thuột. Mỗi hub phục vụ một nhóm tỉnh |
 | **Chạy thẳng** | Xe đón ở nhà khách rồi giao thẳng, không qua hub. Dùng khi hai đầu chung một hub |
 | **Đi trục** | Ngựa được gom về hub, đi **chuyến trục** tới hub hoặc cửa khẩu kia, rồi giao |
 | **Chuyến** | Một lần chạy của tuyến trục vào một ngày, ví dụ TP.HCM – Đà Nẵng ngày 08/12 |
@@ -158,7 +158,19 @@ Vì báo giá phải gửi trước mốc quyết định và sống tối đa 2
 | Cả hai ở nước ngoài | Không nhận |
 
 - **1.7** Cách chạy do **hub** quyết định, không do loại đơn. Ví dụ Đồng Nai → TP.HCM là liên tỉnh nhưng chung hub nên chạy thẳng. Mỗi tỉnh thuộc đúng một hub.
-- **1.8** Mỗi đơn có **tối đa một chặng trục**. Vì vậy Campuchia chỉ đi và về qua hub TP.HCM (cửa khẩu Mộc Bài), Lào chỉ qua hub Đà Nẵng (cửa khẩu Lao Bảo). Đà Nẵng → Campuchia thì hệ thống báo chưa có tuyến.
+- **1.8** Mỗi đơn có **tối đa một chặng trục**. Với đơn xuất hoặc nhập, tuyến phải nối trực tiếp hub phục vụ địa chỉ trong nước với cửa khẩu của nước đối tác. Dữ liệu mẫu có các tuyến hai chiều dưới đây.
+
+| Nước đối tác | Hub | Cửa khẩu |
+|---|---|---|
+| Campuchia | TP.HCM | Mộc Bài – Bavet |
+| Campuchia | Cần Thơ | Tịnh Biên – Phnom Den |
+| Campuchia | Buôn Ma Thuột | Lệ Thanh – O Yadav |
+| Lào | Đà Nẵng | Lao Bảo – Densavanh |
+| Lào | Hà Nội | Cầu Treo – Nam Phao |
+| Lào | Buôn Ma Thuột | Bờ Y – Phou Keua |
+
+Ví dụ đơn Đà Nẵng → Campuchia vẫn báo chưa có tuyến vì hệ thống không ghép hai chặng trục qua hub khác.
+
 - **1.9** Địa chỉ ở tỉnh chưa có hub: hệ thống nói đầu nào nằm ngoài vùng phục vụ và liệt kê các tỉnh đang phục vụ.
 - **1.10** Khách chỉ được tự chở ở **đầu trong nước của đơn đi trục**. Đơn chạy thẳng, đầu đón của đơn nhập và đầu giao của đơn xuất luôn do công ty hoặc đại lý lo.
 - **1.11** Xe công ty chỉ nhận đón hoặc giao khi **đường một chiều giữa địa chỉ và hub** không quá **5 giờ lái**, để xe đi và về trong giới hạn 10 giờ lái mỗi ngày của tài xế (cấu hình). Đơn chạy thẳng thì cả chặng không quá 10 giờ. Nếu bản đồ không trả lời được lúc đặt, hệ thống không chặn khách; quản lý sẽ bị chặn khi lập báo giá nếu thật sự quá xa.
@@ -508,7 +520,7 @@ Trạng thái đơn **không đổi** trong cả luồng này, vẫn là Đã x�
 | **Lượt xe** | Một lần **một chiếc xe** ra đi, ghé nhiều điểm, chở nhiều con của nhiều đơn |
 | **Tổ lái** | Tài xế và hộ tống của một lượt xe |
 | **Trụ sở** | Hub TP.HCM. Mọi xe và nhân viên thuộc trụ sở, xe phải về đây |
-| **Hub vệ tinh** | Hub Đà Nẵng: có chỗ tập kết ngựa, không có xe hay nhân viên trực thuộc |
+| **Hub vệ tinh** | Đà Nẵng, Hà Nội, Cần Thơ và Buôn Ma Thuột có chỗ tập kết ngựa. Xe và nhân viên thuộc trụ sở |
 | **Khung giờ đón, giao** | 06:00–18:00 (cấu hình) |
 | **Hạn có mặt ở hub** | 3 giờ trước giờ xe trục chạy (cấu hình) |
 
@@ -583,7 +595,7 @@ Năm loại lượt xe:
 
 ### Bước 10. Đưa xe về trụ sở
 
-- Xe trục giao xong ở hub vệ tinh thì lịch tuần ghi "Đang ở Hub Đà Nẵng". Điều phối bấm **Lập lượt về** để lập lượt **Chuyển xe** rỗng từ đó về hub gốc. Lượt này không gắn chuyến bán và không cần quản lý xác nhận chạy.
+- Xe trục giao xong ở hub vệ tinh thì lịch tuần hiện hub nơi xe đang ở, ví dụ "Đang ở Hub Đà Nẵng". Điều phối bấm **Lập lượt về** để lập lượt **Chuyển xe** rỗng từ đó về hub gốc. Lượt này không gắn chuyến bán và không cần quản lý xác nhận chạy.
 - Hệ thống gợi ý giờ bắt đầu theo lịch xe và lấy mốc giờ từng điểm từ tuyến chiều về đang hoạt động. Khi chưa có tuyến, giờ dự kiến được tính theo bản đồ. Điều phối có thể đổi giờ bắt đầu rồi tính lại. Lượt về lập rỗng và vẫn cần tài xế nhận việc để xuất phát.
 
 ## 3.B. Ví dụ lịch của một đơn, từ đơn đã chạy thật

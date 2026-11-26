@@ -218,7 +218,7 @@ Mục tiêu: dựng sẵn **mọi thứ cả hai luồng cùng cần**, để t�
 - Thêm `spring-boot-starter-flyway` và `flyway-database-postgresql` (Spring Boot 4 quản lý phiên bản). Đặt `spring.jpa.hibernate.ddl-auto=validate`.
 - Viết `V1__tier1.sql` … `V14__tier14.sql` đúng **từng cột, CHECK, UK, FK, index, EXCLUDE** trong `DB_SCHEMA_59_BANG.md`, kể cả `btree_gist`, `booked_stall_count`, các cột tiền của `quotation`.
 - `V15__reference_data.sql`: vai trò, `stall_type`, `vehicle_class`, `billable_service`, `document_type`, 3 quốc gia, tỉnh.
-- `db/seed-dev/R__dev_seed_base.sql`: tài khoản mỗi vai trò, `HUB-HCM`, `HUB-DN`, trại cách ly, cửa khẩu, tuyến HCM-PNH / HCM-DN / DN-HCM, lịch, xe, bảng giá mẫu.
+- `db/seed-dev/R__dev_seed_base.sql` nạp tài khoản mỗi vai trò, điểm mạng lưới, tuyến, lịch, xe và bảng giá mẫu. [Tuyến trục của dữ liệu mẫu](CHAY_THU.md#tuyến-trục-của-dữ-liệu-mẫu)
 - Test `MigrationTest` (Testcontainers PostgreSQL 16): migrate từ đầu, kiểm vài CHECK quan trọng bằng câu INSERT sai (ví dụ `booked_stall_count > stall_capacity` phải lỗi).
 - Annotation `@PostgresIntegrationTest` (SpringBootTest + `TestcontainersConfiguration` có `@ServiceConnection` + profile `test` nạp `db/seed-dev`). **Mọi test cần DB dùng annotation này**, không tự dựng container.
 
@@ -398,7 +398,7 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
 | Phần | Việc |
 |---|---|
 | Migration | Bỏ `country_rule.quarantine_days`, `vehicle.registration_expiry_date`; thêm `location.counterpart_country_code`, `booking.pickup_method`, `booking.delivery_method`, `horse_health_log.water_intake`, `feed_intake`; loại giấy và tham số mới; đổi tên `VET_CHECK`, `QUARANTINE_STAY`. Entity của B (`horse_health_log`) cần B đồng ý |
-| Seed dev | 6 tuyến mỗi tuần một chuyến, cửa khẩu Lao Bảo, đại lý Lào, điểm nghỉ đạt quy tắc #31, xe và tổ xe đủ chạy, quy định và giấy mới, bỏ trại cách ly |
+| Seed dev | Mạng 6 tuyến lúc làm A6b có một chuyến mỗi tuần trên mỗi tuyến. Đợt này bổ sung cửa khẩu Lao Bảo, đại lý Lào, điểm nghỉ đạt quy tắc #31, xe và tổ xe đủ chạy, quy định và giấy mới, bỏ trại cách ly. [Tuyến trục của dữ liệu mẫu](CHAY_THU.md#tuyến-trục-của-dữ-liệu-mẫu) |
 | A1 | Chỗ theo loại khoang, cửa khẩu khớp nước đối tác, quy tắc #31 khi lưu tuyến, mốc 48 giờ, màn hình chuyến cần quyết định, chuyến đột xuất |
 | A2 | Đổi trạng thái xe, quy tắc chỗ, bỏ hạn đăng ký, tham số mới |
 | A3 | Bỏ tính tiền cách ly, lưu chuồng theo ngày đón sớm, tự thêm `VET_CHECK` |

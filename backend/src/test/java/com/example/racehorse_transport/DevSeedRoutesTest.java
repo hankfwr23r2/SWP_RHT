@@ -8,7 +8,7 @@ import com.example.racehorse_transport.policy.RouteStopsPolicy;
 import com.example.racehorse_transport.service.SystemConfigService;
 import java.util.List;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -22,8 +22,16 @@ class DevSeedRoutesTest {
     private record Ends(long originId, LocationType originType, long destinationId, LocationType destinationType) {
     }
 
+    static List<String> seedRouteCodes() {
+        return List.of(
+                "HCM-PNH", "MOCBAI-HCM", "HCM-DN", "DN-HCM", "DN-LAOBAO", "LAOBAO-DN",
+                "DN-HN", "HN-DN", "HCM-HN", "HN-HCM",
+                "HN-CAUTREO", "CAUTREO-HN", "HCM-CT", "CT-HCM", "CT-TINHBIEN", "TINHBIEN-CT",
+                "HCM-BMT", "BMT-HCM", "BMT-BOY", "BOY-BMT", "BMT-LETHANH", "LETHANH-BMT");
+    }
+
     @ParameterizedTest
-    @ValueSource(strings = {"HCM-PNH", "MOCBAI-HCM", "HCM-DN", "DN-HCM", "DN-LAOBAO", "LAOBAO-DN"})
+    @MethodSource("seedRouteCodes")
     void seedRouteSatisfiesStopRules(String code) {
         Ends ends = jdbc.queryForObject("""
                 SELECT o.id, o.location_type, d.id, d.location_type FROM route r
@@ -44,7 +52,7 @@ class DevSeedRoutesTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"HCM-PNH", "MOCBAI-HCM", "HCM-DN", "DN-HCM", "DN-LAOBAO", "LAOBAO-DN"})
+    @MethodSource("seedRouteCodes")
     void seedRouteRunsOnceAWeek(String code) {
         assertThat(jdbc.queryForObject("""
                 SELECT count(*) FROM departure_schedule_day dd JOIN departure_schedule s ON s.id = dd.departure_schedule_id

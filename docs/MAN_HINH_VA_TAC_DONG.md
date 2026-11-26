@@ -133,7 +133,7 @@ Công ty không vận hành nơi cách ly. Điều kiện cách ly thể hiện 
 | 8 | Nghỉ và cho ăn | Tối đa 4 giờ, nghỉ ≥ 30 phút có nước và cỏ; bữa theo chỉ dẫn ở nơi nghỉ đêm và hub; tối đa 10 giờ lái mỗi ngày |
 | 9 | Thanh toán | Cọc theo tỷ lệ trên cước dịch vụ cộng đủ bảo hiểm và lệ phí thu hộ, trả trong hạn báo giá. Thu tổng trừ cọc sau khi nhận ngựa và trước khi xe rời, chờ tối đa 30 phút |
 | 10 | Ghép đơn | Khoang rộng 2 chỗ; ngựa cùng đơn cùng xe trục; quyết định chạy 48 giờ trước; ngưỡng cảnh báo 30% |
-| 11 | Lịch | Mỗi tuyến một chuyến mỗi tuần, 6 tuyến |
+| 11 | Lịch | Mỗi tuyến một chuyến mỗi tuần. Mạng mẫu lúc chốt có 6 tuyến. [Tuyến trục của dữ liệu mẫu](CHAY_THU.md#tuyến-trục-của-dữ-liệu-mẫu) |
 | 12 | Sự cố | Quy trình của nhóm; bất khả kháng công ty chịu; không chia theo đầu ngựa |
 | 13 | Giấy không kịp sau khi cọc | Theo nguyên nhân khách, công ty, cơ quan (3.5b) |
 | 14 | Đơn nhập | Ngược đơn xuất; thiếu mẫu 14a thì không nhận ở cửa khẩu |

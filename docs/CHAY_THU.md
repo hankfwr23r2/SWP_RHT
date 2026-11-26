@@ -76,11 +76,33 @@ Các loại khác: **chạy thẳng** (cùng hub, ví dụ Củ Chi → Bến C�
 
 | Hub | Tỉnh |
 |---|---|
-| Trụ sở TP.HCM | TP.HCM, Đồng Nai, Tây Ninh, Vĩnh Long, Cần Thơ, An Giang, Cà Mau, Đồng Tháp, Đắk Lắk, Khánh Hòa, Lâm Đồng |
-| Hub Đà Nẵng | Đà Nẵng, Huế, Quảng Ngãi, Quảng Trị, Gia Lai |
-| Hub Hà Nội | Hà Nội và 16 tỉnh, thành phía Bắc, xa nhất về phía nam là Hà Tĩnh |
+| Trụ sở TP.HCM (`HUB-HCM`) | TP.HCM, Đồng Nai, Tây Ninh, Vĩnh Long, Đồng Tháp, Khánh Hòa, Lâm Đồng |
+| Hub Đà Nẵng (`HUB-DN`) | Đà Nẵng, Huế, Quảng Ngãi, Quảng Trị, Gia Lai |
+| Hub Hà Nội (`HUB-HN`) | Hà Nội và 17 tỉnh, thành khác, gồm Điện Biên và Hà Tĩnh |
+| Hub Cần Thơ (`HUB-CT`) | Cần Thơ, An Giang, Cà Mau |
+| Hub Buôn Ma Thuột (`HUB-BMT`) | Đắk Lắk |
 
-Các tỉnh không có trong bảng chưa có hub: trang đặt đơn nói rõ và liệt kê các tỉnh đang phục vụ. Campuchia chỉ đi và về qua hub TP.HCM (Mộc Bài), Lào chỉ qua hub Đà Nẵng (Lao Bảo); mỗi đơn có tối đa một chặng trục.
+Nếu địa chỉ trong nước ở tỉnh chưa có hub, trang đặt đơn báo đầu nằm ngoài vùng phục vụ và liệt kê các tỉnh đang phục vụ.
+
+## Tuyến trục của dữ liệu mẫu
+
+Mỗi chiều là một tuyến, tổng cộng 22 tuyến. Mỗi tuyến có một chuyến mỗi tuần, 9 chỗ và chốt nhận đặt trước 72 giờ. Lịch có hiệu lực từ 01/11/2026 và dùng giờ Việt Nam. Đơn có tối đa một chặng trục nên các đơn quốc tế dùng tuyến nối trực tiếp hub phục vụ địa chỉ trong nước với cửa khẩu của nước đối tác.
+
+| Hai đầu tuyến | Chiều đi | Chiều về |
+|---|---|---|
+| TP.HCM ⇄ Mộc Bài (Campuchia) | `HCM-PNH` · Thứ Hai 06:00 | `MOCBAI-HCM` · Thứ Hai 14:00 |
+| TP.HCM ⇄ Đà Nẵng | `HCM-DN` · Thứ Ba 05:00 | `DN-HCM` · Chủ nhật 05:00 |
+| Đà Nẵng ⇄ Lao Bảo (Lào) | `DN-LAOBAO` · Thứ Sáu 05:00 | `LAOBAO-DN` · Thứ Bảy 07:00 |
+| Đà Nẵng ⇄ Hà Nội | `DN-HN` · Thứ Năm 05:00 | `HN-DN` · Thứ Bảy 05:00 |
+| TP.HCM ⇄ Hà Nội | `HCM-HN` · Thứ Tư 05:00 | `HN-HCM` · Thứ Hai 05:00 |
+| Hà Nội ⇄ Cầu Treo (Lào) | `HN-CAUTREO` · Thứ Bảy 09:00 | `CAUTREO-HN` · Chủ nhật 07:00 |
+| TP.HCM ⇄ Cần Thơ | `HCM-CT` · Thứ Ba 07:00 | `CT-HCM` · Thứ Sáu 07:00 |
+| Cần Thơ ⇄ Tịnh Biên (Campuchia) | `CT-TINHBIEN` · Thứ Tư 07:00 | `TINHBIEN-CT` · Thứ Năm 08:00 |
+| TP.HCM ⇄ Buôn Ma Thuột | `HCM-BMT` · Thứ Ba 05:30 | `BMT-HCM` · Chủ nhật 06:00 |
+| Buôn Ma Thuột ⇄ Bờ Y (Lào) | `BMT-BOY` · Thứ Tư 06:00 | `BOY-BMT` · Thứ Năm 07:00 |
+| Buôn Ma Thuột ⇄ Lệ Thanh (Campuchia) | `BMT-LETHANH` · Thứ Sáu 07:00 | `LETHANH-BMT` · Thứ Bảy 07:00 |
+
+Trên cơ sở dữ liệu đã nạp seed, Flyway cập nhật lịch và tác vụ sinh chuyến dùng lịch mới ở lượt chạy kế tiếp, mặc định lúc 00:15 giờ Việt Nam.
 
 ## Máy cũ không khởi động được backend
 
