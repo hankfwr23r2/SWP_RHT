@@ -114,6 +114,7 @@ public class DeliveryFailureServiceImpl implements DeliveryFailureService {
                 DeliveryEtaPolicy.reference(stop.getToldArrivalAt(), stop.getPlannedArrivalAt()), stop.getActualArrivalAt(),
                 configs.getInt(DeliveryEtaPolicy.TOLERANCE)) ? IncidentCauseType.COMPANY_FAULT : IncidentCauseType.RECIPIENT_ABSENT;
         List<HorseLeg> undelivered = legs.findByAlightTripStop_IdAndStatusIn(handover.getTripStop().getId(), Set.of(HorseLegStatus.IN_PROGRESS));
+        var perBooking = new java.util.LinkedHashMap<Long, Incident>();
         for (HorseLeg leg : undelivered) {
             leg.setStatus(HorseLegStatus.FAILED);
             leg.setActualEndAt(now);
@@ -132,21 +133,26 @@ public class DeliveryFailureServiceImpl implements DeliveryFailureService {
                     : "Đã chờ hết thời gian chờ miễn phí tại điểm giao, không gặp người nhận.");
             incident.setReportedBy(handover.getHandledBy());
             incident.setStatus(IncidentStatus.REPORTED);
-            incidents.save(incident);
+            Incident saved = incidents.save(incident);
+            perBooking.putIfAbsent(leg.getBookingHorse().getBooking().getId(), saved);
         }
         handover.setStatus(HandoverStatus.TIMEOUT);
         handover.setNote("Quá giờ chờ người nhận");
-        notifyCoordinators(handover, undelivered);
+        perBooking.values().forEach(this::notifyTimeout);
     }
 
-    private void notifyCoordinators(Handover handover, List<HorseLeg> undelivered) {
-        if (undelivered.isEmpty()) return;
-        List<Long> coordinators = coordinatorRecipients.forTrip(handover.getTripStop().getVehicleTrip());
-        if (coordinators.isEmpty()) return;
-        var booking = undelivered.getFirst().getBookingHorse().getBooking();
-        notifications.notify(coordinators, booking.getId(), "Giao ngựa không thành",
-                "Lượt xe " + handover.getTripStop().getVehicleTrip().getCode() + " không gặp người nhận của đơn " + booking.getCode()
-                        + ". Tổ xe giao ngựa vào hub. Điều phối lập phương án xử lý tiếp theo.", null);
+    private void notifyTimeout(Incident incident) {
+        var booking = incident.getBooking();
+        var trip = incident.getVehicleTrip();
+        String message = "Lượt xe " + trip.getCode() + " không gặp người nhận của đơn " + booking.getCode() + ".";
+        notifications.notifyManagers(booking.getId(), "Quá hạn bàn giao", message,
+                "/manager/incidents?incidentId=" + incident.getId());
+        var coordinators = coordinatorRecipients.forTrip(trip);
+        if (!coordinators.isEmpty()) {
+            notifications.notify(coordinators, booking.getId(), "Giao ngựa không thành",
+                    message + " Tổ xe giao ngựa vào hub. Điều phối lập phương án xử lý tiếp theo.",
+                    "/coordinator/incidents?incidentId=" + incident.getId());
+        }
     }
 
     private Handover lockOnCrew(Long handoverId, String username) {

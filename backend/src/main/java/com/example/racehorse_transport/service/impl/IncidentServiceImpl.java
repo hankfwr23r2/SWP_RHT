@@ -53,6 +53,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class IncidentServiceImpl implements IncidentService {
 
     private static final Set<IncidentStatus> OPEN = Set.of(IncidentStatus.REPORTED, IncidentStatus.PLAN_PENDING, IncidentStatus.PLAN_ACTIVE);
+    private static final Set<IncidentStatus> BOARD = Set.of(IncidentStatus.REPORTED, IncidentStatus.PLAN_PENDING,
+            IncidentStatus.PLAN_ACTIVE, IncidentStatus.RESOLVED);
     private static final String MIN_REST_MINUTES = "MIN_REST_MINUTES";
 
     private final IncidentRepository incidents;
@@ -69,7 +71,7 @@ public class IncidentServiceImpl implements IncidentService {
     @Override
     @Transactional(readOnly = true)
     public List<IncidentResponseDto> open() {
-        return describe(incidents.findForBoard(OPEN, IncidentType.HANDOVER_TIMEOUT,
+        return describe(incidents.findForBoard(BOARD, IncidentType.HANDOVER_TIMEOUT,
                 clock.instant().minus(DeliveryFaultPolicy.AMENDMENT_PERIOD)));
     }
 
@@ -119,7 +121,7 @@ public class IncidentServiceImpl implements IncidentService {
             notifications.notify(managers, incident.getBooking() == null ? null : incident.getBooking().getId(),
                     "Phương án sự cố chờ duyệt",
                     "Sự cố " + incident.getTitle() + " có phương án mới chờ duyệt.",
-                    "/manager/incidents");
+                    "/manager/incidents?incidentId=" + incidentId);
         }
         return incident(incidentId);
     }
@@ -318,7 +320,7 @@ public class IncidentServiceImpl implements IncidentService {
             notifications.notify(coordinators, incident.getBooking() == null ? null : incident.getBooking().getId(),
                     approved ? "Phương án sự cố được duyệt" : "Phương án sự cố bị từ chối",
                     (approved ? "Đã duyệt" : "Đã từ chối") + " phương án cho sự cố " + incident.getTitle() + "." + coordinatorNextStep,
-                    "/coordinator/incidents");
+                    "/coordinator/incidents?incidentId=" + incident.getId());
         }
         if (approved && incident.getHorseLeg() != null) {
             Booking booking = incident.getHorseLeg().getBookingHorse().getBooking();

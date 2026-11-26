@@ -205,7 +205,10 @@ public class BalanceHoldNoticeServiceImpl implements BalanceHoldNoticeService {
         notifications.notify(List.of(customer.getId()), booking.getId(), title, message, "/orders/" + booking.getId());
         var coordinators = coordinatorRecipients.forHubBooking(booking.getId());
         if (!coordinators.isEmpty()) {
-            notifications.notify(coordinators, booking.getId(), title + " · điều phối", message, null);
+            notifications.notify(coordinators, booking.getId(), title + " · điều phối", message, "/coordinator/dispatch?bookingId=" + booking.getId());
+        }
+        if (title.equals("Hết giờ chờ thanh toán tại nơi đón") || title.equals("Ngựa đang ở hub chờ chọn lại lịch")) {
+            notifications.notifyManagers(booking.getId(), title, message, "/manager/orders/" + booking.getId());
         }
         if (email) {
             try {

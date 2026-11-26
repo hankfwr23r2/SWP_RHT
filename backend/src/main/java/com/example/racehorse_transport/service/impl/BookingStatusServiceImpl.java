@@ -20,7 +20,6 @@ import com.example.racehorse_transport.service.NotificationService;
 import com.example.racehorse_transport.service.CollectionCodeService;
 import com.example.racehorse_transport.service.HorseLegService;
 import org.springframework.beans.factory.ObjectProvider;
-import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -114,15 +113,30 @@ public class BookingStatusServiceImpl implements BookingStatusService {
 
         recordHistory(booking, from, reason, actorUserId == null ? null : users.getReferenceById(actorUserId),
                 previousDeparture, cause);
-        if (toStatus == BookingStatus.QUOTING) {
+        if (toStatus == BookingStatus.CONFIRMED && from == BookingStatus.AWAITING_DEPOSIT) {
+            notifications.notifyManagers(bookingId, "Khách đã đặt cọc", "Đơn " + booking.getCode() + " đã xác nhận.",
+                    "/manager/orders/" + bookingId);
+            var coordinator = booking.getDeparture() == null ? null : booking.getDeparture().getCoordinator();
+            var recipients = coordinator == null ? staff.findUserIdsByRoleAndStatus("COORDINATOR", AppUserStatus.ACTIVE)
+                    : List.of(coordinator.getUserId());
+            if (!recipients.isEmpty()) {
+                notifications.notify(recipients, bookingId, "Đơn đã xác nhận chờ xếp xe", booking.getCode(),
+                        "/coordinator/dispatch?bookingId=" + bookingId);
+            }
+        } else if (from == BookingStatus.SCHEDULE_CHANGE_REQUIRED
+                && (toStatus == BookingStatus.CONFIRMED || toStatus == BookingStatus.UNDER_REVIEW)) {
+            notifications.notifyManagers(bookingId, "Khách đã chọn lịch mới", booking.getCode(), "/manager/orders/" + bookingId);
+        } else if (toStatus == BookingStatus.QUOTING) {
             var managers = staff.findUserIdsByRoleAndStatus("MANAGER", AppUserStatus.ACTIVE);
             if (!managers.isEmpty()) {
                 boolean rejected = from == BookingStatus.AWAITING_DEPOSIT;
-                notifications.notify(managers, bookingId, rejected ? "Khách từ chối báo giá" : "Đơn đang báo giá",
+                notifications.notify(managers, bookingId, rejected ? "Khách từ chối báo giá" : "Đơn chờ lập báo giá",
                         "Đơn " + booking.getCode() + (rejected ? " cần báo giá lại. Lý do: " + reason
-                                : " đã chuyển sang Đang báo giá."), null);
+                                : " đã chuyển sang Đang báo giá."), "/manager/orders/" + bookingId);
             }
         } else if (toStatus == BookingStatus.QUOTE_EXPIRED) {
+            notifications.notifyManagers(bookingId, "Báo giá hết hạn, xem xét mở lại", "Báo giá của đơn " + booking.getCode() + " đã hết hạn và đã nhả chỗ.",
+                    "/manager/orders/" + bookingId);
             notifications.notify(List.of(booking.getCustomer().getUser().getId()), bookingId, "Báo giá hết hạn",
                     "Báo giá của đơn " + booking.getCode() + " đã hết hạn.", "/orders/" + bookingId);
         } else if (toStatus == BookingStatus.SCHEDULE_CHANGE_REQUIRED && cause == ScheduleChangeCause.COMPANY
@@ -133,17 +147,28 @@ public class BookingStatusServiceImpl implements BookingStatusService {
             var managers = staff.findUserIdsByRoleAndStatus("MANAGER", AppUserStatus.ACTIVE);
             if (!managers.isEmpty()) {
                 notifications.notify(managers, bookingId, "Đơn đã giao",
-                        "Đơn " + booking.getCode() + " đã chuyển sang Đã giao.", "/manager/orders/" + bookingId);
+                        "Đơn " + booking.getCode() + " đã giao và đang chờ quyết toán.", "/manager/orders/" + bookingId);
             }
         } else if (toStatus == BookingStatus.COMPLETED) {
             notifications.notify(List.of(booking.getCustomer().getUser().getId()), bookingId, "Đã đóng đơn",
                     "Đơn đã hoàn tất quyết toán.", null);
         } else if (toStatus == BookingStatus.CANCELLED) {
-            var recipients = new ArrayList<>(staff.findUserIdsByRoleAndStatus("COORDINATOR", AppUserStatus.ACTIVE));
-            recipients.add(booking.getCustomer().getUser().getId());
-            notifications.notify(recipients, bookingId, "Đã hủy đơn",
-                    reason == null || reason.isBlank() ? "Đơn " + booking.getCode() + " đã hủy."
-                            : "Đơn " + booking.getCode() + " đã hủy. Lý do: " + reason.strip(), null);
+            if (booking.getCustomer().getUser().getId().equals(actorUserId)) {
+                String title = booking.getWaybillNumber() == null ? "Khách hủy đơn trước cọc" : "Khách hủy đơn đã cọc";
+                notifications.notifyManagers(bookingId, title, booking.getCode(), "/manager/orders/" + bookingId);
+            }
+            String message = reason == null || reason.isBlank() ? "Đơn " + booking.getCode() + " đã hủy."
+                    : "Đơn " + booking.getCode() + " đã hủy. Lý do: " + reason.strip();
+            var departure = previousDeparture == null ? booking.getDeparture() : previousDeparture;
+            var coordinator = departure == null ? null : departure.getCoordinator();
+            var recipients = coordinator == null ? staff.findUserIdsByRoleAndStatus("COORDINATOR", AppUserStatus.ACTIVE)
+                    : List.of(coordinator.getUserId());
+            if (!recipients.isEmpty()) {
+                notifications.notify(recipients, bookingId, "Đã hủy đơn", message,
+                        "/coordinator/dispatch?bookingId=" + bookingId);
+            }
+            notifications.notify(List.of(booking.getCustomer().getUser().getId()), bookingId, "Đã hủy đơn", message,
+                    "/orders/" + bookingId);
         }
     }
 

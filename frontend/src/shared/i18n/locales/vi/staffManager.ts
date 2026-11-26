@@ -107,6 +107,11 @@ export const staffManager = {
     reason: 'Lý do',
     required: 'Vui lòng điền mục này.',
     info: {
+      microchip: 'Chip {{code}}',
+      direct: 'Chạy thẳng',
+      phone: 'Điện thoại', noRoute: 'Chưa có tuyến', documents: 'Giấy tờ đã nộp', noDocuments: 'Chưa có giấy tờ đã nộp',
+      noDocumentsHint: 'Giấy tờ sẽ xuất hiện khi được nộp cho đơn này.',
+      documentStatus: { UPLOADED: 'Chờ duyệt', APPROVED: 'Đã duyệt', REJECTED: 'Bị từ chối', EXPIRED: 'Hết hạn' },
       trip: 'Hành trình',
       type: 'Loại đơn',
       pickup: 'Ngày đón',

@@ -141,7 +141,9 @@ class IncidentFlowTest {
                 .andExpect(jsonPath("$.data[?(@.title == 'Sự cố vận chuyển')]").isNotEmpty());
         mvc.perform(get("/notifications/mine").header(HttpHeaders.AUTHORIZATION, coordinator))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[?(@.title == 'Sự cố mới')]").isNotEmpty());
+                .andExpect(jsonPath("$.data[?(@.title == 'Sự cố mới' && @.linkUrl == '/coordinator/incidents?incidentId="
+                        + incident + "')]").isNotEmpty());
+        managerNotice(incident, "Sự cố mới");
         String restPath = "/incidents/" + incident + "/rest-start";
         String fitPath = "/incidents/" + incident + "/fit-confirmation";
         act(escort, restPath).andExpect(status().isConflict())
@@ -150,6 +152,7 @@ class IncidentFlowTest {
                 .andExpect(jsonPath("$.message").value("Phương án xử lý chưa được duyệt."));
         long plan = ((Number) JsonPath.read(propose(incident, "VET_TREATMENT", party("Phòng khám thú y ngựa (mẫu)")).andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString(), "$.data.plans[0].id")).longValue();
+        managerNotice(incident, "Phương án sự cố chờ duyệt");
         mvc.perform(post("/incident-plans/{id}/approve", plan).header(HttpHeaders.AUTHORIZATION, manager)).andExpect(status().isOk());
 
         Staff driverStaff = testData.staff(testData.unique("incident.driver"), "DRIVER");
@@ -256,6 +259,7 @@ class IncidentFlowTest {
 
         long repair = id(cost(vehicleIncident, "REPAIR", "3000000", false).andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.payerType").value("COMPANY")));
+        managerNotice(vehicleIncident, "Chi phí sự cố chờ duyệt");
         mvc.perform(post("/cost-items/{id}/approve", repair).header(HttpHeaders.AUTHORIZATION, manager)).andExpect(status().isOk());
 
         long vet = id(cost(horseIncident, "VET", "2000000", false).andExpect(status().isCreated())
@@ -471,5 +475,11 @@ class IncidentFlowTest {
 
     private String token(Staff staff, String role) {
         return "Bearer " + jwtUtils.generateToken(staff.getUser().getUsername(), List.of(role));
+    }
+    private void managerNotice(long incidentId, String title) throws Exception {
+        mvc.perform(get("/notifications/mine").header(HttpHeaders.AUTHORIZATION, manager))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[?(@.title == '" + title + "' && @.linkUrl == '/manager/incidents?incidentId="
+                        + incidentId + "')]", org.hamcrest.Matchers.hasSize(1)));
     }
 }

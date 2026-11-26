@@ -133,8 +133,8 @@ class TripReturnFlowTest {
         entityManager.flush();
         assertThat(jdbc.queryForList("""
                 SELECT r.user_id FROM notification n JOIN notification_recipient r ON r.notification_id = n.id
-                WHERE n.title = 'Xe về trễ' AND n.message LIKE ?
-                """, Long.class, "%" + code(trip) + "%")).containsExactly(coordinator.getUserId());
+                WHERE n.title = 'Xe về trễ' AND n.message LIKE ? AND n.link_url = ?
+                """, Long.class, "%" + code(trip) + "%", "/coordinator/dispatch?tripId=" + trip)).containsExactly(coordinator.getUserId());
         assertThat(jdbc.queryForObject("SELECT return_late_notified_at IS NOT NULL FROM vehicle_trip WHERE id = ?", Boolean.class, trip)).isTrue();
     }
 

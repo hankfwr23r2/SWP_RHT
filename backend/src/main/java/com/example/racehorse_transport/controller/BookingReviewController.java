@@ -26,6 +26,12 @@ public class BookingReviewController {
         return ApiResponseDto.success(schedules.missingDocuments(), "Thành công.");
     }
 
+    @GetMapping("/overdue-documents")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ApiResponseDto<List<BookingResponseDto>> overdueDocuments() {
+        return ApiResponseDto.success(schedules.overdueDocuments(), "OK");
+    }
+
     @PostMapping("/{id}/report-document-delay")
     @PreAuthorize("hasRole('MANAGER')")
     public ApiResponseDto<BookingResponseDto> reportDocumentDelay(@PathVariable Long id, Authentication actor,

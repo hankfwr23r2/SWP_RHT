@@ -13,7 +13,7 @@ afterEach(() => { cleanup(); vi.resetAllMocks() })
 function renderIntake() {
   const router = createMemoryRouter([{ path: '/', element: <IntakePanel data={{
     id: 8, detail: { booking: { status: 'PENDING_INTAKE' } }, errors: [],
-    quotations: undefined, payments: undefined, settlement: undefined,
+    documents: undefined, quotations: undefined, payments: undefined, settlement: undefined,
   }} /> }])
   render(<RouterProvider router={router} />)
 }

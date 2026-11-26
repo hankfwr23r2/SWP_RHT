@@ -7,6 +7,7 @@ export interface TabItem {
   label: ReactNode
   // Số mục trong tab, ví dụ số đơn theo trạng thái
   count?: number
+  highlightCount?: boolean
 }
 
 interface TabsProps {
@@ -63,7 +64,7 @@ export function Tabs({ label, items, value, onChange, children, flush }: TabsPro
               onClick={() => onChange(t.value)}
             >
               {t.label}
-              {t.count !== undefined && <Badge tone={selected ? 'primary' : 'neutral'}>{t.count}</Badge>}
+              {t.count !== undefined && <Badge tone={t.highlightCount && t.count > 0 ? 'warning' : selected ? 'primary' : 'neutral'}>{t.count}</Badge>}
             </button>
           )
         })}

@@ -2026,6 +2026,20 @@
         },
         "type" : "object"
       },
+      "ApiResponseStaffWorkSummaryResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/StaffWorkSummaryResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseStallPlanResponseDto" : {
         "properties" : {
           "data" : {
@@ -2409,11 +2423,21 @@
           "canChangeDelivery" : {
             "type" : "boolean"
           },
+          "customerName" : {
+            "type" : "string"
+          },
+          "customerPhone" : {
+            "type" : "string"
+          },
           "deliveryChangeDisabledReason" : {
             "type" : "string"
           },
           "deliveryMethod" : {
             "enum" : [ "COMPANY", "SELF" ],
+            "type" : "string"
+          },
+          "departureDate" : {
+            "format" : "date",
             "type" : "string"
           },
           "horses" : {
@@ -2439,6 +2463,9 @@
             "type" : "boolean"
           },
           "reviewReason" : {
+            "type" : "string"
+          },
+          "routeName" : {
             "type" : "string"
           }
         },
@@ -5353,12 +5380,18 @@
           "horseName" : {
             "type" : "string"
           },
+          "horseTypeName" : {
+            "type" : "string"
+          },
           "id" : {
             "format" : "int64",
             "type" : "integer"
           },
           "insurance" : {
             "$ref" : "#/components/schemas/InsuranceDetail"
+          },
+          "microchip" : {
+            "type" : "string"
           },
           "stallTypeCode" : {
             "type" : "string"
@@ -9523,6 +9556,25 @@
         "required" : [ "fullName", "hireDate", "homeHubLocationId", "phone", "staffCode" ],
         "type" : "object"
       },
+      "StaffWorkSummaryResponseDto" : {
+        "properties" : {
+          "filterCounts" : {
+            "additionalProperties" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "object"
+          },
+          "menuCounts" : {
+            "additionalProperties" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "object"
+          }
+        },
+        "type" : "object"
+      },
       "StaffWorkloadResponseDto" : {
         "properties" : {
           "assignedCount" : {
@@ -11442,6 +11494,24 @@
     "/bookings/missing-documents" : {
       "get" : {
         "operationId" : "missingDocuments",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListBookingResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-review-controller" ]
+      }
+    },
+    "/bookings/overdue-documents" : {
+      "get" : {
+        "operationId" : "overdueDocuments",
         "responses" : {
           "200" : {
             "content" : {
@@ -19772,6 +19842,24 @@
           }
         },
         "tags" : [ "booking-assignment-controller" ]
+      }
+    },
+    "/staff/work-summary" : {
+      "get" : {
+        "operationId" : "workSummary",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseStaffWorkSummaryResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "staff-work-controller" ]
       }
     },
     "/stall-types" : {

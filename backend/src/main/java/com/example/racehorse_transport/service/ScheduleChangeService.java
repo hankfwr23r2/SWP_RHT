@@ -7,6 +7,8 @@ import java.util.List;
 
 public interface ScheduleChangeService {
     List<BookingResponseDto> missingDocuments();
+    List<BookingResponseDto> overdueDocuments();
+    long countOverdueDocuments();
 
     BookingResponseDto reportDocumentDelay(Long bookingId, String username, ReportDocumentDelayRequestDto request);
 

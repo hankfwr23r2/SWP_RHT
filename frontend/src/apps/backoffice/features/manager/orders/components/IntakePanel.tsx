@@ -42,7 +42,7 @@ function PendingIntakePanel({ data }: { data: OrderData }) {
         <div className={s.row}>
           <Button variant="primary" disabled={specialistId == null || busy}
             onClick={() => { clearError(); setConfirming(true) }}>{t('mgr.intake.accept')}</Button>
-          <Button variant="ghost" disabled={busy} onClick={() => { clearError(); setRejecting(true) }}>{t('mgr.intake.reject')}</Button>
+          <Button variant="secondary" disabled={busy} onClick={() => { clearError(); setRejecting(true) }}>{t('mgr.intake.reject')}</Button>
         </div>
       </div>
       {confirming && <ConfirmDialog title={t('mgr.intake.accept')} confirmLabel={t('mgr.intake.accept')}

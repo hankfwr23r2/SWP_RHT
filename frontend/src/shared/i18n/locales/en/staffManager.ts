@@ -107,6 +107,11 @@ export const staffManager = {
     reason: 'Reason',
     required: 'Please fill this in.',
     info: {
+      microchip: 'Microchip {{code}}',
+      direct: 'Direct transport',
+      phone: 'Phone', noRoute: 'Route pending', documents: 'Submitted documents', noDocuments: 'No submitted documents',
+      noDocumentsHint: 'Documents will appear here when they are submitted for this order.',
+      documentStatus: { UPLOADED: 'Pending review', APPROVED: 'Approved', REJECTED: 'Rejected', EXPIRED: 'Expired' },
       trip: 'Journey',
       type: 'Order type',
       pickup: 'Pickup date',
