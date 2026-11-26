@@ -66,7 +66,7 @@ Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A
 | **4.F3** | **Đã sửa.** Chủ đơn xem nhật ký sức khỏe từng con; nhân viên và tra cứu công khai không nhận mục này | | `TrackingEvidenceServiceImpl` | |
 | **4.F6** | **Đã sửa.** Điểm có giờ dừng kế hoạch từ OVERNIGHT_REST_HOURS trở lên phải nghỉ đủ số giờ đó; rời sớm phải ghi lý do và hệ thống báo điều phối | | `StopReadinessServiceImpl`, `HealthLogPolicy` | |
 | **4.F10** | **Đã sửa.** Tài xế báo tình trạng xe khi kết thúc lượt; cần bảo dưỡng thì xe sang bảo dưỡng | | `TripExecutionServiceImpl`, `VehicleServiceImpl` | Làm cùng 5.G16 (#482) |
-| **4.F11** | Không có vị trí xe thời gian thực | Cân nhắc bỏ khỏi phạm vi; hiện dùng điểm dừng gần nhất | màn Theo dõi | Hỏi người dùng trước |
+| **4.F11** | **Ngoài phạm vi.** Không làm vị trí xe theo thời gian thực; vị trí là điểm dừng gần nhất tổ xe đã bấm Tới nơi | | màn Theo dõi | Người dùng chốt 26/11 |
 | **4.F12** | **Đã sửa.** Tổ xe chỉ hoàn tất bàn giao cho đại lý ở cửa khẩu khi đơn xuất đủ giấy bắt buộc. | | `HandoverOutcomeServiceImpl` | Trùng 2.F7 |
 
 ### Luồng 5 (7 điểm)
@@ -105,7 +105,7 @@ Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A
 | 3.G6, 3.G7 | Bắt buộc hộ tống đã nhận việc; kiểm giờ ngồi xe khi nhập giờ tay | Đã duyệt | #480 |
 | 3.G8 | Hiện hạn có mặt ở hub bằng giờ xuất phát hiệu lực trừ `HUB_CHECKIN_HOURS` và từ chối giờ hẹn muộn hơn hạn | Đã duyệt | #500 |
 | 4.F1, 4.F2, 4.F3 | Luồng A làm thay theo yêu cầu người dùng | Đã duyệt | |
-| 4.F11 | | | |
+| 4.F11 | Bỏ khỏi phạm vi, giữ vị trí theo điểm dừng gần nhất | Đã duyệt | |
 | 4.F12 | Kiểm đủ giấy bắt buộc khi bàn giao đơn xuất cho đại lý ở cửa khẩu | Đã duyệt | #496 |
 | 4.F6 | Điểm nghỉ đêm phải nghỉ đủ OVERNIGHT_REST_HOURS, rời sớm ghi lý do và báo điều phối | Đã duyệt | #480 |
 | 4.F10 | Báo tình trạng xe cuối lượt, đưa vào bảo dưỡng khi cần | Đã duyệt | #482 |
