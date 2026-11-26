@@ -177,7 +177,7 @@ public class PaymentResultServiceImpl implements PaymentResultService {
             log.warn("Không có quản lý đang hoạt động để nhận thông báo đối soát VNPAY của đơn {}", booking.getId());
             return;
         }
-        notifications.notify(recipients, booking.getId(), "Đối soát VNPAY", message, null);
+        notifications.notify(recipients, booking.getId(), "Đối soát VNPAY", message, "/manager/orders/" + booking.getId());
     }
 
     private static String transactionNumber(GatewayResult result) {

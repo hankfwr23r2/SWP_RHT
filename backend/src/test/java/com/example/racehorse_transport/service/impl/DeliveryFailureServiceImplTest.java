@@ -73,6 +73,8 @@ class DeliveryFailureServiceImplTest {
         when(stops.findByVehicleTrip_IdOrderBySequenceNumber(1L)).thenReturn(List.of(stop));
         when(handovers.findWaitingSince(HandoverStatus.PENDING, now.minusSeconds(3600))).thenReturn(List.of(waiting));
         when(legs.findByAlightTripStop_IdAndStatusIn(12L, Set.of(HorseLegStatus.IN_PROGRESS))).thenReturn(List.of(leg));
+        // Kho lưu trả lại sự cố vừa lưu, như JPA; thông báo cần sự cố đã lưu
+        when(incidents.save(org.mockito.ArgumentMatchers.any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         assertThat(service.timeoutExpired()).isEqualTo(1);
         verify(incidents).save(org.mockito.ArgumentMatchers.argThat(row -> row.getConfirmedCauseType()

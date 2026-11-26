@@ -31,7 +31,8 @@ async function open(page: Page, path: string, options: { status?: string; quotat
     }
     if (api === '/bookings/summaries') return reply(url.searchParams.get('statuses') === 'QUOTING'
       ? [{ id: 8, code: 'BK-TEST', status: 'QUOTING', customerName: 'Khách A', customerPhone: '0900', routeName: 'TP.HCM – Đà Nẵng', departureDate: '2099-01-12', horseCount: 2 }] : [])
-    if (api === '/bookings/missing-documents') return reply([{ id: 8, code: 'BK-THIEU', status: 'CONFIRMED', bookingType: 'EXPORT' }])
+    if (api === '/staff/work-summary') return reply({ menuCounts: { orders: 2 }, filterCounts: { quoting: 1, documents: 1 } })
+    if (api === '/bookings/overdue-documents') return reply([{ id: 8, code: 'BK-THIEU', status: 'CONFIRMED', bookingType: 'EXPORT' }])
     if (api === '/bookings/8/review-detail') return reply({
       booking: { id: 8, code: 'BK-TEST', bookingType: 'INTERPROVINCE', status: state.status, requestedPickupDate: '2099-01-11' },
       addresses: [{ addressType: 'PICKUP', addressLine: 'Trại A', countryCode: 'VN', contactName: 'A', contactPhone: '1' }], parties: [], horses: [{ id: 21, horseName: 'Gió Nam', stallTypeCode: 'STANDARD' }],
@@ -61,8 +62,15 @@ test('danh sách theo nhóm, menu hiện số việc đang chờ, điện thoạ
   await expect(page.getByRole('button', { name: 'Xử lý giấy' })).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0)
   await page.setViewportSize({ width: 1280, height: 800 })
-  await expect(page.getByRole('link', { name: /Đơn hàng/ }).getByText('1')).toBeVisible()
+  await expect(page.getByRole('link', { name: /Đơn hàng/ }).getByText('2')).toBeVisible()
   await expect(page.getByText('1 đơn thiếu giấy')).toBeVisible()
+})
+
+test('đơn chờ tiếp nhận hiển thị thông tin và chỉ có một nút tiếp nhận', async ({ page }) => {
+  await open(page, '/manager/orders/8', { status: 'PENDING_INTAKE' })
+  await expect(page.getByText('Gió Nam')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Tiếp nhận đơn' })).toHaveCount(1)
+  await expect(page.getByRole('button', { name: 'Xem và tiếp nhận' })).toHaveCount(0)
 })
 
 test('lập bản nháp, điều chỉnh có lý do rồi gửi báo giá', async ({ page }) => {
@@ -103,6 +111,7 @@ test('giấy không kịp phải chọn nguyên nhân và ghi lý do', async ({ 
 
 test('hủy theo yêu cầu khách: thấy tiền mất và tiền hoàn, khoản thu hộ không chọn để hoàn', async ({ page }) => {
   const state = await open(page, '/manager/orders/8', { status: 'CONFIRMED', preview: { allowed: true, forfeited: 3_000_000, refundable: 0, currencyCode: 'VND' } })
+  await page.getByLabel('Hủy đơn', { exact: true }).click()
   await page.getByRole('button', { name: 'Hủy theo yêu cầu khách' }).click()
   const dialog = page.getByRole('dialog')
   await expect(dialog).toContainText('3,000,000 ₫')

@@ -20,6 +20,11 @@
 .layout:has(.actions:empty) { grid-template-areas: 'content info'; grid-template-rows: auto; }
 .actions:empty { display: none; }
 
+.layout.wideInfo {
+  grid-template-areas: 'content actions';
+  grid-template-rows: auto;
+}
+
 @media (max-width: 900px) {
   .layout, .layout:has(.actions:empty) { display: flex; flex-direction: column; align-items: stretch; }
   .actions > button { width: 100%; }

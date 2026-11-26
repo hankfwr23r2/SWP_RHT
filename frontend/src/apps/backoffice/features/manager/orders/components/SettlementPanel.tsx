@@ -8,7 +8,8 @@ import { Button } from '@shared/ui/Button'
 import { Card } from '@shared/ui/Card'
 import { ConfirmDialog } from '@shared/ui/ConfirmDialog'
 import { ErrorState } from '@shared/ui/ErrorState'
-import { money, moment } from '@backoffice/shared/staffFormat'
+import { formatDateTime } from '@shared/lib/format'
+import { money } from '@backoffice/shared/staffFormat'
 import { useStaffAction } from '@backoffice/shared/useStaffAction'
 import type { OrderData } from '../loaders'
 import s from '@backoffice/shared/StaffPanels.module.css'
@@ -20,7 +21,7 @@ export function SettlementPanel({ data }: { data: OrderData }) {
   const { run, busy, error } = useStaffAction()
   const [recovering, setRecovering] = useState<number>()
   const [chosen, setChosen] = useState<number[]>([])
-  const [dialog, setDialog] = useState<'charge' | 'complete' | null>(null)
+  const [charging, setCharging] = useState(false)
   const settlement = data.settlement
 
   if (!settlement) return <Card title={t('mgr.settle.title')}><ErrorState onRetry={revalidate} retrying={state !== 'idle'} /></Card>
@@ -30,10 +31,9 @@ export function SettlementPanel({ data }: { data: OrderData }) {
   const toggle = (id: number) => setChosen(picked.includes(id) ? picked.filter(item => item !== id) : [...picked, id])
   const approve = (id: number) => run(() => settlementApi.approveCost(id), t('mgr.settle.approved'))
   const charge = async () => {
-    setDialog(null)
+    setCharging(false)
     if (await run(() => settlementApi.extraCharge(data.id, picked), t('mgr.settle.charged'))) setChosen([])
   }
-  const complete = async () => { setDialog(null); await run(() => settlementApi.complete(data.id), t('mgr.settle.completed')) }
 
   return (
     <Card title={t('mgr.settle.title')}>
@@ -55,7 +55,7 @@ export function SettlementPanel({ data }: { data: OrderData }) {
                     <strong>{cost.category && t(`mgr.settle.category.${cost.category}`)}</strong>
                   </label>
                 ) : <strong>{cost.category && t(`mgr.settle.category.${cost.category}`)}</strong>}
-                <p className={s.hint}>{[cost.description, cost.payerType && t(`mgr.settle.payer.${cost.payerType}`), cost.recordedByName, cost.incurredAt && moment(cost.incurredAt)].filter(Boolean).join(' · ')}</p>
+                <p className={s.hint}>{[cost.description, cost.payerType && t(`mgr.settle.payer.${cost.payerType}`), cost.recordedByName, cost.incurredAt && formatDateTime(cost.incurredAt)].filter(Boolean).join(' · ')}</p>
                 {cost.agentRecoveryRequired && <Badge>{t(cost.agentRecoveredAt ? 'incidentDecisions.recovered' : 'incidentDecisions.recovery')}</Badge>}
                 {cost.agentRecoveryRequired && !cost.agentRecoveredAt && cost.approvedAt && cost.id != null &&
                   <Button size="sm" disabled={busy} onClick={() => setRecovering(cost.id)}>{t('incidentDecisions.markRecovered')}</Button>}
@@ -71,8 +71,7 @@ export function SettlementPanel({ data }: { data: OrderData }) {
         {error && <p className={s.error} role="alert">{error}</p>}
         {(picked.length > 0 || settlement.status === 'DELIVERED') && (
           <div className={s.row}>
-            <Button variant="primary" disabled={!picked.length || busy} onClick={() => setDialog('charge')}>{t('mgr.settle.charge')}</Button>
-            {settlement.status === 'DELIVERED' && <Button disabled={busy || !settlement.canClose} onClick={() => setDialog('complete')}>{t('mgr.settle.complete')}</Button>}
+            <Button variant="primary" disabled={!picked.length || busy} onClick={() => setCharging(true)}>{t('mgr.settle.charge')}</Button>
           </div>
         )}
       </div>
@@ -81,10 +80,27 @@ export function SettlementPanel({ data }: { data: OrderData }) {
         onConfirm={async () => {
           if (await run(() => incidentsApi.markRecovered(recovering), t('incidentDecisions.recovered'))) setRecovering(undefined)
         }} onCancel={() => setRecovering(undefined)} />}
-      {dialog === 'charge' && <ConfirmDialog title={t('mgr.settle.chargeTitle')} message={t('mgr.settle.chargeHint', { count: picked.length })}
-        confirmLabel={t('mgr.settle.charge')} onConfirm={charge} onCancel={() => setDialog(null)} />}
-      {dialog === 'complete' && <ConfirmDialog title={t('mgr.settle.completeTitle')} message={t('mgr.settle.completeHint')}
-        confirmLabel={t('mgr.settle.complete')} onConfirm={complete} onCancel={() => setDialog(null)} />}
+      {charging && <ConfirmDialog title={t('mgr.settle.chargeTitle')} message={t('mgr.settle.chargeHint', { count: picked.length })}
+        confirmLabel={t('mgr.settle.charge')} onConfirm={charge} onCancel={() => setCharging(false)} />}
     </Card>
   )
+}
+
+export function CompleteOrderPanel({ data }: { data: OrderData }) {
+  const { t } = useTranslation()
+  const { run, busy, error, clearError } = useStaffAction()
+  const [confirming, setConfirming] = useState(false)
+  const complete = async () => {
+    if (await run(() => settlementApi.complete(data.id), t('mgr.settle.completed'))) setConfirming(false)
+  }
+
+  return <Card title={t('mgr.settle.title')}>
+    <Button variant="primary" disabled={!data.settlement?.canClose} loading={busy}
+      onClick={() => { clearError(); setConfirming(true) }}>
+      {t('mgr.settle.complete')}
+    </Button>
+    {confirming && <ConfirmDialog title={t('mgr.settle.completeTitle')}
+      message={<>{t('mgr.settle.completeHint')}{error && <p role="alert">{error}</p>}</>}
+      confirmLabel={t('mgr.settle.complete')} onConfirm={complete} onCancel={() => setConfirming(false)} />}
+  </Card>
 }

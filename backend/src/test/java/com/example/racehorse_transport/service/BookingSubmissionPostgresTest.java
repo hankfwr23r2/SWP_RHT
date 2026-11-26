@@ -531,7 +531,7 @@ class BookingSubmissionPostgresTest {
         assertThat(review.startQuoting(id, specialist).status()).isEqualTo(BookingStatus.QUOTING);
         assertThat(jdbc.queryForList("""
                 select nr.user_id from notification_recipient nr join notification n on n.id = nr.notification_id
-                where n.booking_id = ? and n.title = 'Đơn đang báo giá'
+                where n.booking_id = ? and n.title = 'Đơn chờ lập báo giá'
                 """, Long.class, id)).contains(manager);
     }
 

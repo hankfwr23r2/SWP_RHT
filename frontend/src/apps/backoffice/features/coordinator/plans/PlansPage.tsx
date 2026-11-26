@@ -5,14 +5,15 @@ import { useTranslation } from 'react-i18next'
 import { bookingReviewsApi, type BookingSummary } from '@shared/api/bookingReviews'
 import { OrderStatusBadge } from '@shared/components/OrderStatusBadge'
 import { useLoad } from '@shared/hooks/useLoad'
-import { showDate } from '@backoffice/shared/staffFormat'
+import { formatDate } from '@shared/lib/format'
 import { Button } from '@shared/ui/Button'
 import { EmptyState } from '@shared/ui/EmptyState'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { PageHeader } from '@shared/ui/PageHeader'
 import { Skeleton } from '@shared/ui/Skeleton'
 import { Table, type TableColumn } from '@shared/ui/Table'
-import { Tabs } from '@shared/ui/Tabs'
+import { ListPanel } from '@shared/ui/ListPanel'
+import { useStaffWork } from '@backoffice/shared/useStaffWork'
 import { ChangeDepartureModal } from './ChangeDepartureModal'
 import s from '@backoffice/shared/StaffPanels.module.css'
 
@@ -22,6 +23,7 @@ const CHANGEABLE: readonly string[] = ['UNDER_REVIEW', 'NEEDS_RESUBMISSION']
 
 export default function PlansPage() {
   const { t } = useTranslation()
+  const counts = useStaffWork()?.filterCounts
   const [params, setParams] = useSearchParams()
   const status = STATUSES.find(value => value === params.get('status')) ?? STATUSES[0]
   const [changing, setChanging] = useState<BookingSummary>()
@@ -32,8 +34,8 @@ export default function PlansPage() {
     { key: 'code', header: t('plans.code'), render: row => <strong>{row.code}</strong> },
     { key: 'customer', header: t('plans.customer'), render: row => <>{row.customerName}<br />{row.customerPhone}</> },
     { key: 'route', header: t('plans.route'), render: row => row.routeName ?? t('dispatch.bookings.direct') },
-    { key: 'departure', header: t('plans.departure'), render: row => row.departureDate ? showDate(row.departureDate) : '—' },
-    { key: 'pickup', header: t('plans.pickup'), render: row => row.requestedPickupDate ? showDate(row.requestedPickupDate) : '—' },
+    { key: 'departure', header: t('plans.departure'), render: row => row.departureDate ? formatDate(row.departureDate) : '—' },
+    { key: 'pickup', header: t('plans.pickup'), render: row => row.requestedPickupDate ? formatDate(row.requestedPickupDate) : '—' },
     { key: 'horses', header: t('plans.horses'), align: 'center', render: row => row.horseCount ?? '—' },
     { key: 'status', header: t('plans.status'), render: row => <OrderStatusBadge status={row.status} /> },
     { key: 'action', header: t('plans.action'), align: 'end', render: row => row.departureId != null && CHANGEABLE.includes(row.status ?? '')
@@ -48,10 +50,11 @@ export default function PlansPage() {
   return (
     <div className={s.page}>
       <PageHeader title={t('plans.title')} description={t('plans.subtitle')} />
-      <Tabs label={t('plans.filter')} value={status} onChange={value => setParams({ status: value }, { replace: true })}
-        items={STATUSES.map(value => ({ value, label: t(`orderStatus.${value}`) }))}>
+      <ListPanel count={rows?.length} tabs={{ label: t('plans.filter'), value: status,
+        onChange: value => setParams({ status: value }, { replace: true }),
+        items: STATUSES.map(value => ({ value, label: t(`orderStatus.${value}`), count: counts?.[value] })) }}>
         {content()}
-      </Tabs>
+      </ListPanel>
       {changing && <ChangeDepartureModal booking={changing} onClose={() => setChanging(undefined)} onDone={() => { setChanging(undefined); void reload() }} />}
     </div>
   )

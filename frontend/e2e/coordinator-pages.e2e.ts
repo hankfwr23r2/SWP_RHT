@@ -19,6 +19,7 @@ async function open(page: Page, path: string, handle: (path: string, route: Rout
 test('menu điều phối có 5 mục; đổi chuyến cho đơn đang thẩm định, backend từ chối thì hiện lý do', async ({ page }) => {
   const sent: unknown[] = []
   await open(page, '/coordinator/plans', async (path, route) => {
+    if (path === '/staff/work-summary') return { menuCounts: { waiting: 3 }, filterCounts: { UNDER_REVIEW: 7, QUOTING: 0 } }
     if (path === '/bookings/summaries') return new URL(route.request().url()).searchParams.get('statuses') === 'UNDER_REVIEW'
       ? [{ id: 8, code: 'BK-8', status: 'UNDER_REVIEW', customerName: 'Khách A', routeName: 'TP.HCM – Đà Nẵng', departureId: 1, departureDate: '2031-03-04', requestedPickupDate: '2031-03-03', horseCount: 2 }] : []
     if (path === '/departures') return [
@@ -33,7 +34,9 @@ test('menu điều phối có 5 mục; đổi chuyến cho đơn đang thẩm đ
     }
     return []
   })
-  for (const name of ['Kế hoạch đơn', 'Điều độ', 'Theo dõi', 'Hub', 'Sự cố']) await expect(page.getByRole('link', { name, exact: true }).first()).toBeVisible({ timeout: 15_000 })
+  for (const name of ['Kế hoạch đơn', 'Theo dõi', 'Hub', 'Sự cố']) await expect(page.getByRole('link', { name, exact: true }).first()).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('link', { name: /Điều độ/ }).getByText('3')).toBeVisible()
+  await expect(page.getByRole('tab', { name: /Đang thẩm định/ }).getByText('7')).toBeVisible()
   await page.getByRole('row', { name: /BK-8/ }).getByRole('button', { name: 'Đổi chuyến' }).click()
   const dialog = page.getByRole('dialog', { name: /Đổi chuyến · BK-8/ })
   await expect(dialog.getByRole('radio')).toHaveCount(1)

@@ -6,6 +6,7 @@ import { Link, useSearchParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { refundsApi, type Refund, type RefundStatus } from '@shared/api/refunds'
 import { useLoad } from '@shared/hooks/useLoad'
+import { invalidateStaffWork } from '@backoffice/shared/useStaffWork'
 import { Button } from '@shared/ui/Button'
 import { EmptyState } from '@shared/ui/EmptyState'
 import { ErrorState } from '@shared/ui/ErrorState'
@@ -27,7 +28,9 @@ export default function RefundsPage() {
 
   const [query, setQuery] = useState('')
   const term = query.trim().toLowerCase()
-  const shown = data?.filter(row => !term || [row.bookingCode, row.customerName, row.customerPhone].some(value => value?.toLowerCase().includes(term)))
+  const linkedBooking = Number(params.get('bookingId'))
+  const shown = data?.filter(row => (!linkedBooking || row.bookingId === linkedBooking)
+    && (!term || [row.bookingCode, row.customerName, row.customerPhone].some(value => value?.toLowerCase().includes(term))))
   const columns: TableColumn<Refund>[] = [
     { key: 'order', header: t('mgr.refunds.order'), render: row => <Link to={`/manager/orders/${row.bookingId}`} className={s.link}>{row.bookingCode}</Link> },
     { key: 'customer', header: t('mgr.refunds.customer'), render: row => <>{row.customerName}<br />{row.customerPhone}</> },
@@ -52,7 +55,7 @@ export default function RefundsPage() {
         items: STATUSES.map(value => ({ value, label: t(`mgr.refunds.statuses.${value}`) })) }}>
         {content()}
       </ListPanel>
-      {marking && <MarkRefundedDialog refund={marking} onClose={() => setMarking(null)} onDone={() => { setMarking(null); void reload() }} />}
+      {marking && <MarkRefundedDialog refund={marking} onClose={() => setMarking(null)} onDone={() => { setMarking(null); invalidateStaffWork(); void reload() }} />}
     </div>
   )
 }

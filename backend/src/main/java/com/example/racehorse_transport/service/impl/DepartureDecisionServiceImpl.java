@@ -5,11 +5,9 @@ import com.example.racehorse_transport.dto.departure.DepartureDecisionResponseDt
 import com.example.racehorse_transport.dto.departure.DepartureDecisionResponseDto.ReceivedBookingResponseDto;
 import com.example.racehorse_transport.entity.AppUser;
 import com.example.racehorse_transport.entity.Departure;
-import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.enums.AppUserStatus;
 import com.example.racehorse_transport.entity.enums.BookingHorseStatus;
 import com.example.racehorse_transport.entity.enums.DepartureStatus;
-import com.example.racehorse_transport.entity.enums.EmploymentStatus;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.DepartureDecisionPolicy;
 import com.example.racehorse_transport.policy.DepartureDelayPolicy;
@@ -159,15 +157,14 @@ public class DepartureDecisionServiceImpl implements DepartureDecisionService {
     }
 
     private void notifyCoordinators(Departure departure) {
-        List<Long> coordinators = staff.findAllByOrderByStaffCodeAsc().stream()
-                .filter(member -> "COORDINATOR".equals(member.getUser().getRole().getCode())
-                        && member.getEmploymentStatus() == EmploymentStatus.ACTIVE
-                        && member.getUser().getStatus() == AppUserStatus.ACTIVE)
-                .map(Staff::getUserId).toList();
+        List<Long> coordinators = departure.getCoordinator() == null
+                ? staff.findUserIdsByRoleAndStatus("COORDINATOR", AppUserStatus.ACTIVE)
+                : List.of(departure.getCoordinator().getUserId());
         if (!coordinators.isEmpty()) {
             notifications.notify(coordinators, null, "Chuyến đã được xác nhận chạy",
                     "Lập lượt xe trục cho chuyến " + departure.getRoute().getName() + " ngày " + departure.getDepartureDate()
-                            + " với " + departure.getStallCapacity() + " chỗ.", null);
+                            + " với " + departure.getStallCapacity() + " chỗ.",
+                    "/coordinator/dispatch?departureId=" + departure.getId() + "&date=" + departure.getDepartureDate());
         }
     }
 }

@@ -75,13 +75,16 @@ public class IncidentReportingServiceImpl implements IncidentReportingService {
     }
 
     private void notifyIncidentReported(Incident incident) {
+        Long bookingId = incident.getBooking() == null ? null : incident.getBooking().getId();
+        notifications.notifyManagers(bookingId, "Sự cố mới", incident.getTitle(),
+                "/manager/incidents?incidentId=" + incident.getId());
         List<Long> coordinators = coordinatorRecipients(incident);
         if (!coordinators.isEmpty()) {
             notifications.notify(coordinators,
                     incident.getBooking() == null ? null : incident.getBooking().getId(),
                     "Sự cố mới",
                     "Có sự cố mới: " + incident.getTitle() + ".",
-                    "/coordinator/incidents");
+                    "/coordinator/incidents?incidentId=" + incident.getId());
         }
         if (incident.getHorseLeg() != null) {
             Booking booking = incident.getHorseLeg().getBookingHorse().getBooking();

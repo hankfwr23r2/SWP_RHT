@@ -125,6 +125,10 @@ public class RefundServiceImpl implements RefundService {
             refund.setAmount(allocation.amount());
             created.add(payments.save(refund));
         }
+        if (!created.isEmpty()) {
+            notifications.notifyManagers(booking.getId(), "Có khoản hoàn tiền chờ xử lý", booking.getCode(),
+                    "/manager/refunds?bookingId=" + booking.getId());
+        }
         return created;
     }
 

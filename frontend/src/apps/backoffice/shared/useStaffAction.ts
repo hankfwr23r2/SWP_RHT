@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useRevalidator } from 'react-router'
 import { useToast } from '@shared/ui/toast'
+import { invalidateStaffWork } from './useStaffWork'
 
 // Chạy một thao tác của nhân viên: chống bấm hai lần, báo kết quả, tải lại dữ liệu trang; lỗi backend giữ nguyên để hiện gần nút
 export function useStaffAction() {
@@ -17,6 +18,7 @@ export function useStaffAction() {
     setError('')
     try {
       await action()
+      invalidateStaffWork()
       toast(done)
       await revalidate()
       return true
