@@ -1,5 +1,7 @@
 package com.example.racehorse_transport.service;
 
+import com.example.racehorse_transport.entity.enums.DepartureAvailability;
+import com.example.racehorse_transport.dto.departure.DepartureDetailResponseDto;
 import com.example.racehorse_transport.entity.Departure;
 import com.example.racehorse_transport.dto.departure.DepartureCreateRequestDto;
 import com.example.racehorse_transport.dto.departure.DepartureMergeRequestDto;
@@ -11,6 +13,11 @@ import java.util.List;
 // Chuyến cụ thể theo ngày. Chủ sở hữu bảng departure (kể cả cột dẫn xuất booked_stall_count): luồng A (A1).
 // reserve/release là hợp đồng gọi chéo (docs/KE_HOACH_TRIEN_KHAI.md mục 3.3).
 public interface DepartureService {
+    long sellableCapacity(Departure departure);
+    DepartureAvailability availability(Departure departure, long spareCapacity);
+    DepartureDetailResponseDto detail(Long departureId);
+    DepartureDetailResponseDto removeVehicle(Long departureId, Long allotmentId, String reason, String username);
+
     Departure lockForLinehaulPlanning(Long departureId);
 
     void linehaulDeparted(Long departureId);
@@ -33,7 +40,7 @@ public interface DepartureService {
     // routeId, status null nghĩa là không lọc
     List<DepartureResponseDto> departures(Long routeId, DepartureStatus status, LocalDate fromDate, LocalDate toDate);
 
-    DepartureResponseDto createAdHoc(DepartureCreateRequestDto request);
+    DepartureResponseDto createAdHoc(DepartureCreateRequestDto request, String username);
 
     // Hủy chuyến chưa chạy; các đơn trên chuyến chuyển sang SCHEDULE_CHANGE_REQUIRED kèm lý do
     DepartureResponseDto cancel(Long departureId, String reason, String actorUsername);

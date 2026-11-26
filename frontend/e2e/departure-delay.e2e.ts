@@ -31,6 +31,7 @@ test('quản lý thấy nhắc chưa xác nhận và dời chuyến ở bề r�
 
   await page.goto('/backoffice/manager/departures')
   await expect(page.getByText('Sắp đến giờ chạy, chưa xác nhận')).toBeVisible()
+  await page.getByLabel('Thao tác khác').first().click()
   await page.getByRole('button', { name: 'Dời giờ', exact: true }).click()
   const dialog = page.getByRole('dialog')
   await dialog.getByLabel(/Giờ mới/).fill('2099-01-10T13:00')

@@ -29,13 +29,16 @@ it.each([
   saveDraft({ pickupAddressId, deliveryAddressId })
   apiClient.defaults.adapter = async config => {
     const data = config.url === '/departures/suggestions'
-      ? { routing: 'LINEHAUL', departures: [{ id: 7, departureDate: '2099-01-20', routeName: 'Tuyến quốc tế', availableStalls: 2 }] }
+      ? { routing: 'LINEHAUL', departures: [{ id: 7, departureDate: '2099-01-20', routeName: 'Tuyến quốc tế', availability: 'NEARLY_FULL' },
+        { id: 8, departureDate: '2099-01-21', routeName: 'Chuyến hết chỗ', availability: 'FULL' }] }
       : {}
     return { data: { status: 'success', data }, status: 200, statusText: 'OK', headers: {}, config }
   }
   const router = createMemoryRouter([{ path: '/', loader: () => data, Component: Step1RoutePage }])
   render(<RouterProvider router={router} />)
 
+  expect((await screen.findByRole<HTMLInputElement>('radio', { name: /Chuyến hết chỗ/ })).disabled).toBe(true)
+  expect(screen.getByText('Sắp đầy')).toBeTruthy()
   fireEvent.click(await screen.findByRole('radio', { name: /Tuyến quốc tế/ }))
   for (const name of ['Cách đưa ngựa đi', 'Cách nhận ngựa']) {
     const choices = within(await screen.findByRole('group', { name })).getAllByRole('radio') as HTMLInputElement[]

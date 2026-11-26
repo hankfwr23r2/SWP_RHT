@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.dto.vehicle;
 
+import com.example.racehorse_transport.entity.enums.VehicleServiceRole;
 import com.example.racehorse_transport.entity.Location;
 import com.example.racehorse_transport.entity.Vehicle;
 import com.example.racehorse_transport.entity.VehicleClass;
@@ -15,7 +16,12 @@ public record VehicleCreateRequestDto(
         @NotNull @Positive Long vehicleClassId,
         @NotNull @PositiveOrZero Integer standardStallCount,
         @NotNull @PositiveOrZero Integer wideStallCount,
-        @NotNull @Positive Long homeHubLocationId) {
+        @NotNull @Positive Long homeHubLocationId, VehicleServiceRole serviceRole) {
+
+    public VehicleCreateRequestDto(String licensePlate, Long vehicleClassId, Integer standardStallCount,
+                                   Integer wideStallCount, Long homeHubLocationId) {
+        this(licensePlate, vehicleClassId, standardStallCount, wideStallCount, homeHubLocationId, null);
+    }
 
     public String normalizedLicensePlate() {
         return licensePlate.strip().toUpperCase(Locale.ROOT);
@@ -28,6 +34,9 @@ public record VehicleCreateRequestDto(
         vehicle.setStandardStallCount(standardStallCount);
         vehicle.setWideStallCount(wideStallCount);
         vehicle.setHomeHubLocation(homeHubLocation);
+        if (serviceRole != null) {
+            vehicle.setServiceRole(serviceRole);
+        }
         return vehicle;
     }
 }

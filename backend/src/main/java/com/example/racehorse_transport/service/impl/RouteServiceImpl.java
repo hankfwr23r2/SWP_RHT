@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.repository.VehicleClassRepository;
 import com.example.racehorse_transport.dto.network.DepartureScheduleRequestDto;
 import com.example.racehorse_transport.dto.network.DepartureScheduleResponseDto;
 import com.example.racehorse_transport.dto.network.RouteRequestDto;
@@ -36,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class RouteServiceImpl implements RouteService {
 
     private final RouteRepository routes;
+    private final VehicleClassRepository vehicleClasses;
     private final SystemConfigService config;
     private final RouteStopRepository routeStops;
     private final LocationRepository locations;
@@ -119,7 +121,8 @@ public class RouteServiceImpl implements RouteService {
     public DepartureScheduleResponseDto createSchedule(DepartureScheduleRequestDto request) {
         Route route = activeRoute(request.getRouteId());
         requireValidPeriod(request);
-        DepartureSchedule schedule = request.toEntity(route);
+        DepartureSchedule schedule = request.toEntity(route, vehicleClasses.findById(request.getBaseVehicleClassId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hạng xe.")));
         schedule.setStatus(ScheduleStatus.ACTIVE);
         schedule = schedules.save(schedule);
         return DepartureScheduleResponseDto.from(schedule, saveDays(schedule, request.getDaysOfWeek()));
@@ -134,7 +137,8 @@ public class RouteServiceImpl implements RouteService {
         }
         Route route = activeRoute(request.getRouteId());
         requireValidPeriod(request);
-        request.applyTo(schedule, route);
+        request.applyTo(schedule, route, vehicleClasses.findById(request.getBaseVehicleClassId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hạng xe.")));
         // Đổi lịch không đổi các chuyến đã sinh: sức chứa và giờ chạy đã chép vào từng chuyến
         scheduleDays.deleteByScheduleId(id);
         return DepartureScheduleResponseDto.from(schedule, saveDays(schedule, request.getDaysOfWeek()));

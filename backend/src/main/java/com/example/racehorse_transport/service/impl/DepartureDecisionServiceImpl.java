@@ -82,10 +82,6 @@ public class DepartureDecisionServiceImpl implements DepartureDecisionService {
                     throw new IllegalStateException(reason);
                 });
         int previousCapacity = departure.getStallCapacity();
-        if (request != null && request.stallCapacity() != null) {
-            DepartureDecisionPolicy.validateRunCapacity(request.stallCapacity(), departure.getBookedStallCount(), previousCapacity);
-            request.applyTo(departure);
-        }
         departure.setRunConfirmedAt(now);
         departure.setRunConfirmedBy(actor);
         audit.record(actor.getId(), "CONFIRM_DEPARTURE_RUN", "departure", departureId,

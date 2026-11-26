@@ -23,7 +23,7 @@ export type DeliveryChangeSelection = Schemas['DeliveryChangeRequestDto']
 export type DeliveryChangePreview = Schemas['DeliveryChangeResponseDto']
 export type BookingDelay = Schemas['BookingDelayResponseDto']
 export type BookingReschedule = Schemas['BookingRescheduleRequestDto']
-export type BookingMergeSuggestion = BookingReschedule & Required<Pick<Schemas['DepartureResponse'], 'departureDate'>>
+export type BookingMergeSuggestion = BookingReschedule & Required<Pick<Schemas['DepartureResponse'], 'departureDate'>> & Pick<Schemas['BookingMergeSuggestionResponseDto'], 'availability'>
 export type InsuranceRevision = Schemas['PersonalInsuranceRevisionRequestDto']
 
 const multipartOptions = { ...formResponseOptions, headers: { 'Content-Type': 'multipart/form-data' } }

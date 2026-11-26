@@ -11,7 +11,7 @@ import type { NetworkResult, schedulesLoader } from './loaders'
 import { useNetworkActions } from './useNetworkActions'
 import s from './Network.module.css'
 
-function Schedules({ schedules = [], routes = [] }: NetworkResult<typeof schedulesLoader>) {
+function Schedules({ schedules = [], routes = [], classes = [] }: NetworkResult<typeof schedulesLoader>) {
   const { t } = useTranslation()
   const [routeFilter, setRouteFilter] = useState('')
   const [editing, setEditing] = useState<Schedule | null | undefined>()
@@ -43,7 +43,7 @@ function Schedules({ schedules = [], routes = [] }: NetworkResult<typeof schedul
       return <Card key={id} title={routes.find(route => route.id === schedule.routeId)?.name ?? schedule.routeCode} actions={<NetworkStatus status={schedule.status} />}>
         <div className={s.details}>
           <div>{(schedule.daysOfWeek ?? []).map(day => t(`staffNetwork.weekday.${day}`)).join(', ')} · {schedule.departureTime}</div>
-          <div>{t('staffNetwork.scheduleSummary', { cutoff: schedule.bookingCutoffHours, capacity: schedule.stallCapacity })}</div>
+          <div>{t('staffNetwork.scheduleSummary', { cutoff: schedule.bookingCutoffHours, count: schedule.baseVehicleCount, vehicleClass: classes.find(item => item.id === schedule.baseVehicleClassId)?.name })}</div>
           <div>{t('staffNetwork.effectiveRange', { from: schedule.validFrom, to: schedule.validTo ?? t('staffNetwork.noEnd') })}</div>
           {id != null && (active || paused) && <div className={s.actions}>
             <EditButton disabled={actions.busy} onClick={() => edit(schedule)} />
@@ -56,7 +56,7 @@ function Schedules({ schedules = [], routes = [] }: NetworkResult<typeof schedul
         </div>
       </Card>
     })}</div> : <NetworkEmpty hint={t(routeFilter ? 'staffNetwork.emptyFilter' : 'staffNetwork.emptySchedules')} />}
-    {editing !== undefined && <ScheduleForm schedule={editing} routes={selectableRoutes} busy={actions.busy} fields={actions.fields}
+    {editing !== undefined && <ScheduleForm schedule={editing} routes={selectableRoutes} classes={classes} busy={actions.busy} fields={actions.fields}
       onSave={body => actions.saveSchedule(body, editing?.id)} close={() => setEditing(undefined)} />}
     <NetworkConfirm action={confirmation} close={() => confirm(null)} />
   </>

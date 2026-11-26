@@ -63,7 +63,11 @@ class PricingServiceTest {
     private final Connection connection = mock(Connection.class);
     private final DataSourceTransactionManager transactions = new DataSourceTransactionManager(source);
     private final PricingDataService data = transactional(PricingDataService.class,
-            new PricingDataServiceImpl(lists, items, addresses, horses, departures, hubs, classes, clock,
+            new PricingDataServiceImpl(lists, items, addresses, horses, departures, mock(DepartureFleetService.class, invocation -> switch (invocation.getMethod().getName()) {
+                        case "vehicleClasses" -> classes.findAll();
+                        case "sellableCapacity" -> ((com.example.racehorse_transport.entity.Departure) invocation.getArgument(0)).getStallCapacity().longValue();
+                        default -> throw new AssertionError(invocation);
+                    }), hubs, clock,
                     regulations, config));
     private final PricingService service = transactional(PricingService.class,
             new PricingServiceImpl(data, transactional(PricingRouteService.class, new PricingRouteServiceImpl(routing, mock(EntityManagerFactory.class))), mock(DeliveryRouteService.class)));

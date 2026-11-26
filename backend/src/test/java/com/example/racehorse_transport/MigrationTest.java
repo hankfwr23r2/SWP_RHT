@@ -10,7 +10,7 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
-// Flyway dựng đủ 59 bảng theo docs/DB_SCHEMA_59_BANG.md, và các ràng buộc quan trọng thật sự chặn dữ liệu sai.
+// Flyway dựng đủ 64 bảng theo docs/DB_SCHEMA_59_BANG.md, và các ràng buộc quan trọng thật sự chặn dữ liệu sai.
 // Mỗi test chạy trong một transaction và được rollback. Câu lệnh vi phạm ràng buộc luôn là câu cuối của test.
 @PostgresIntegrationTest
 @Transactional
@@ -67,7 +67,25 @@ class MigrationTest {
                 SELECT count(*) FROM information_schema.tables
                 WHERE table_schema = 'public' AND table_type = 'BASE TABLE' AND table_name <> 'flyway_schema_history'""",
                 Integer.class);
-        assertThat(tables).isEqualTo(63);
+        assertThat(tables).isEqualTo(64);
+    }
+
+    @Test
+    void seedBuildsDepartureCapacityFromAllotments() {
+        Integer invalid = jdbc.queryForObject("""
+                SELECT count(*) FROM departure d
+                WHERE d.stall_capacity <> COALESCE((
+                    SELECT sum(a.vehicle_count * vc.max_stall_count)
+                    FROM departure_vehicle a JOIN vehicle_class vc ON vc.id = a.vehicle_class_id
+                    WHERE a.departure_id = d.id
+                ), 0)
+                AND d.departure_schedule_id IS NOT NULL
+                """, Integer.class);
+        assertThat(invalid).isZero();
+        assertThat(jdbc.queryForList("""
+                SELECT l.code FROM vehicle v JOIN location l ON l.id = v.home_hub_location_id
+                WHERE v.service_role = 'SPARE' AND v.license_plate LIKE 'M1-%'
+                """, String.class)).containsExactlyInAnyOrder("HUB-HCM", "HUB-DN", "HUB-VINH");
     }
 
     @Test

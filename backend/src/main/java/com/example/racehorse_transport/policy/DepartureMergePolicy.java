@@ -15,6 +15,11 @@ public final class DepartureMergePolicy {
     }
 
     public static Optional<String> reasonNotMergeable(Departure source, Departure target, LocalDate holdThrough, Instant now) {
+        return reasonNotMergeable(source, target, holdThrough, now, target.getStallCapacity());
+    }
+
+    public static Optional<String> reasonNotMergeable(Departure source, Departure target, LocalDate holdThrough,
+                                                      Instant now, long targetCapacity) {
         if (source.getId().equals(target.getId())) {
             return Optional.of("Chọn chuyến đích khác chuyến nguồn.");
         }
@@ -30,7 +35,7 @@ public final class DepartureMergePolicy {
         if (!withinPriceHold(source, target, holdThrough)) {
             return Optional.of("Chuyến đích nằm ngoài hạn giữ giá.");
         }
-        if (DepartureCapacityPolicy.available(target.getStallCapacity(), target.getBookedStallCount()) < source.getBookedStallCount()) {
+        if (targetCapacity - target.getBookedStallCount() < source.getBookedStallCount()) {
             return Optional.of("Chuyến đích không đủ chỗ cho các đơn đang giữ chỗ trên chuyến nguồn.");
         }
         return Optional.empty();

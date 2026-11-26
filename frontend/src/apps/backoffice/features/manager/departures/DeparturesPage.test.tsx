@@ -23,13 +23,18 @@ const departure: DepartureDecision = { id: 7, routeName: 'TP.HCM – Đà Nẵng
 
 function openPage() {
   let decisions = [departure]
+  const vehicles = [
+    { id: 1, vehicleClassCode: 'HEAVY', vehicleCount: 1, allotmentType: 'BASE' },
+    { id: 2, vehicleClassCode: 'MEDIUM', vehicleCount: 1, allotmentType: 'SPARE' },
+  ]
   vi.mocked(apiClient.get).mockImplementation(async url => ({ status: 200, data: { data:
-    url === '/departures/decisions' ? decisions : url === '/departures/7/merge-targets' ? [
+    url === '/departures/7' ? { departure, vehicles } : url === '/departures/decisions' ? decisions : url === '/departures/7/merge-targets' ? [
       { id: 8, departureDate: '2099-01-13', status: 'CLOSED' }, { id: 9, departureDate: '2099-01-20', status: 'OPEN' },
     ] : [],
   } }))
   vi.mocked(apiClient.post).mockImplementation(async url => {
-    decisions = url.endsWith('/merge') ? [] : [{ ...departure, confirmable: false, stallCapacity: 2 }]
+    if (url.endsWith('/remove')) return { status: 200, data: { data: { departure, vehicles: vehicles.slice(0, 1) } } }
+    decisions = url.endsWith('/merge') ? [] : [{ ...departure, confirmable: false }]
     return { status: 200, data: { data: decisions[0] ?? { status: 'CANCELLED' } } }
   })
   const router = createMemoryRouter([{
@@ -39,25 +44,15 @@ function openPage() {
   render(<RouterProvider router={router} />)
 }
 
-it('uses reserved stalls as the floor and sends a smaller capacity when confirming', async () => {
+it('confirms the run with the assigned vehicles', async () => {
   openPage()
-  fireEvent.click(await screen.findByRole('button', { name: 'Chạy' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Chạy' }, { timeout: 5000 }))
   const dialog = within(screen.getByRole('alertdialog'))
-  const input = dialog.getByRole<HTMLInputElement>('spinbutton', { name: 'Số chỗ chạy' })
-  const submit = dialog.getByRole<HTMLButtonElement>('button', { name: 'Chạy' })
-  expect(input.value).toBe('9')
-  expect(input.min).toBe('2')
-  expect(input.max).toBe('9')
-
-  fireEvent.change(input, { target: { value: '1' } })
-  expect(submit.disabled).toBe(true)
-  fireEvent.change(input, { target: { value: '10' } })
-  expect(submit.disabled).toBe(true)
-  fireEvent.change(input, { target: { value: '2' } })
-  fireEvent.click(submit)
+  expect(dialog.queryByRole('spinbutton')).toBeNull()
+  fireEvent.click(dialog.getByRole('button', { name: 'Chạy' }))
 
   await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
-  expect(apiClient.post).toHaveBeenCalledExactlyOnceWith('/departures/7/confirm-run', { stallCapacity: 2 }, expect.anything())
+  expect(apiClient.post).toHaveBeenCalledExactlyOnceWith('/departures/7/confirm-run', {}, expect.anything())
   expect(screen.getByText('Đã xác nhận chạy.')).toBeTruthy()
 })
 
@@ -83,4 +78,20 @@ it('loads eligible targets and requires a choice and reason before merging', asy
   await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
   expect(apiClient.get).toHaveBeenCalledWith('/departures/7/merge-targets')
   expect(apiClient.post).toHaveBeenCalledExactlyOnceWith('/departures/7/merge', { targetDepartureId: 9, reason: 'Ít khách' }, expect.anything())
+})
+
+it('requires a reason to remove an assigned vehicle', async () => {
+  openPage()
+  const disclosure = (await screen.findByLabelText('Thao tác khác')).closest('details')!
+  disclosure.open = true
+  fireEvent.click(within(disclosure).getByRole('button', { name: 'Xe đã gắn' }))
+  fireEvent.click((await screen.findAllByRole('button', { name: 'Bỏ xe' }))[1]!)
+  const confirm = screen.getByRole('button', { name: 'Bỏ xe' })
+  fireEvent.click(confirm)
+  expect(apiClient.post).not.toHaveBeenCalled()
+  fireEvent.change(screen.getByRole('textbox', { name: /Lý do/ }), { target: { value: 'Xe nền vẫn đủ chỗ' } })
+  fireEvent.click(confirm)
+  await waitFor(() => expect(apiClient.post).toHaveBeenCalledExactlyOnceWith(
+    '/departures/7/vehicles/2/remove', { reason: 'Xe nền vẫn đủ chỗ' }, expect.anything(),
+  ))
 })

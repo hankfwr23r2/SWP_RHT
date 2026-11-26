@@ -45,10 +45,10 @@ export function DeparturePicker({ suggestion, loaded, error, onRetry, fromDate, 
         <div className={s.options}>
           {departures.map(departure => (
             <label key={departure.id} className={s.option}>
-              <input type="radio" name="departure" checked={departure.id === selectedId} disabled={late.has(departure.id!)} onChange={() => onSelect(departure)} />
+              <input type="radio" name="departure" checked={departure.id === selectedId} disabled={departure.availability === 'FULL' || late.has(departure.id!)} onChange={() => onSelect(departure)} />
               <strong>{departure.plannedDepartureAt ? showDateTime(departure.plannedDepartureAt) : showDate(departure.departureDate ?? '')}</strong>
               <span>{departure.routeName}</span>
-              <span>{t('bookingForm.route.seats', { count: departure.availableStalls ?? 0 })}</span>
+              <span>{departure.availability && t(`bookingForm.route.availability.${departure.availability}`)}</span>
               {departure.bookingCutoffAt && <span>{t('bookingForm.route.cutoff', { at: showDateTime(departure.bookingCutoffAt) })}</span>}
               {late.has(departure.id!) && <span className={s.rule}>{t('bookingForm.route.tooLate', { days: suggestion?.leadDays })}</span>}
             </label>

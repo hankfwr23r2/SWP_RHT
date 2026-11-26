@@ -187,6 +187,7 @@ export const staffCatalog = {
       "validFrom": "Effective from",
       "validTo": "Effective until",
       "licensePlate": "Licence plate",
+      "serviceRole": "Vehicle role",
       "vehicleClassId": "Vehicle class",
       "standardStallCount": "Standard stalls",
       "wideStallCount": "Wide stalls",
@@ -244,6 +245,7 @@ export const staffCatalog = {
       "INSURER": "Insurer"
     },
     "vehicles": {
+      "serviceRoles": {"LINEHAUL": "Scheduled linehaul", "SPARE": "Spare", "BRANCH": "Pickup and delivery"},
       "title": "Vehicles",
       "add": "Add vehicle",
       "edit": "Edit vehicle",

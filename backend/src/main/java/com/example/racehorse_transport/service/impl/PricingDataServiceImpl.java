@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.service.DepartureFleetService;
 import com.example.racehorse_transport.dto.pricing.PricingPreviewRequestDto;
 import com.example.racehorse_transport.dto.pricing.TransferOptionsRequestDto;
 import com.example.racehorse_transport.dto.route.GeoPointDto;
@@ -41,8 +42,8 @@ public class PricingDataServiceImpl implements PricingDataService {
     private final CustomerAddressRepository addresses;
     private final HorseRepository horses;
     private final DepartureRepository departures;
+    private final DepartureFleetService fleet;
     private final HubServiceAreaRepository serviceAreas;
-    private final VehicleClassRepository vehicleClasses;
     private final Clock clock;
 
     private final RegulationService regulations;
@@ -72,7 +73,7 @@ public class PricingDataServiceImpl implements PricingDataService {
         int weightTons = 0;
         int topSpeedKmh = 0;
         if (!plan.roadLegs().isEmpty()) {
-            vehicleClassId = PricingPolicy.smallestVehicleClass(vehicleClasses.findAll(), seats).getId();
+            vehicleClassId = PricingPolicy.smallestVehicleClass(fleet.vehicleClasses(), seats).getId();
             weightTons = config.getInt("TRUCK_WEIGHT_TONS");
             topSpeedKmh = config.getInt("TRUCK_TOP_SPEED_KMH");
         }
@@ -192,7 +193,7 @@ public class PricingDataServiceImpl implements PricingDataService {
         if (departure.getStatus() != DepartureStatus.OPEN || route.getStatus() != ActiveStatus.ACTIVE
                 || !now.isBefore(departure.getBookingCutoffAt())
                 || !request.pickupAt().isBefore(departure.getPlannedDepartureAt())
-                || departure.getStallCapacity() - departure.getBookedStallCount() < stalls) {
+                || fleet.sellableCapacity(departure) - departure.getBookedStallCount() < stalls) {
             throw new PricingRuleException("Chuyến trục không đủ điều kiện để đặt.", true);
         }
         BookingSubmissionPolicy.validatePickupDate(type, LocalDate.ofInstant(request.pickupAt(), BUSINESS_ZONE),

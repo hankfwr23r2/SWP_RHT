@@ -74,13 +74,15 @@ public class BookingRescheduleServiceImpl implements BookingRescheduleService {
         Instant now = clock.instant();
         LocalDate holdThrough = BookingSubmissionPolicy.priceHoldThrough(source.getDepartureDate(), config.getInt("PRICE_HOLD_DAYS"));
         LocalDate pickupDate = BookingSubmissionPolicy.latestPickupDate(booking.getBookingType(), target.getDepartureDate());
+        long sellableCapacity = departures.sellableCapacity(target);
         if (!DepartureMergePolicy.withinPriceHold(source, target, holdThrough)
                 || pickupDate.isBefore(BookingSubmissionPolicy.businessDate(now))
                 || DepartureCapacityPolicy.reasonNotReservable(target.getStatus(), target.getBookingCutoffAt(), now,
-                        target.getStallCapacity(), target.getBookedStallCount(), seatsFor(activeHorses(bookingId))).isPresent()) {
+                        sellableCapacity, target.getBookedStallCount(), seatsFor(activeHorses(bookingId))).isPresent()) {
             return Optional.empty();
         }
-        return Optional.of(BookingMergeSuggestionResponseDto.from(target, pickupDate));
+        return Optional.of(BookingMergeSuggestionResponseDto.from(target, pickupDate,
+                departures.availability(target, sellableCapacity - target.getStallCapacity())));
     }
 
     @Override

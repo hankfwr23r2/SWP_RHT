@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.dto.departure;
 
+import com.example.racehorse_transport.entity.enums.DepartureAvailability;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.racehorse_transport.dto.booking.BookingMergeSuggestionResponseDto;
@@ -10,22 +11,6 @@ import org.junit.jupiter.api.Test;
 
 class DepartureDecisionOptionsDtoTest {
 
-    @Test
-    void confirmRequestUpdatesOnlyTheCapacityWhenSupplied() {
-        Departure departure = new Departure();
-        departure.setId(10L);
-        departure.setStatus(DepartureStatus.CLOSED);
-        departure.setStallCapacity(9);
-        new DepartureConfirmRunRequestDto(null).applyTo(departure);
-        assertThat(departure.getStallCapacity()).isEqualTo(9);
-
-        new DepartureConfirmRunRequestDto(2).applyTo(departure);
-        assertThat(departure.getStallCapacity()).isEqualTo(2);
-        assertThat(departure.getId()).isEqualTo(10L);
-        assertThat(departure.getStatus()).isEqualTo(DepartureStatus.CLOSED);
-        assertThat(departure.getRunConfirmedAt()).isNull();
-        assertThat(departure.getRunConfirmedBy()).isNull();
-    }
 
     @Test
     void mergeRequestLinksTheLoadedTargetAndLeavesStatusToTheService() {
@@ -49,7 +34,7 @@ class DepartureDecisionOptionsDtoTest {
         target.setDepartureDate(LocalDate.parse("2026-12-15"));
         LocalDate pickup = target.getDepartureDate().minusDays(1);
 
-        assertThat(BookingMergeSuggestionResponseDto.from(target, pickup))
-                .isEqualTo(new BookingMergeSuggestionResponseDto(10L, target.getDepartureDate(), pickup));
+        assertThat(BookingMergeSuggestionResponseDto.from(target, pickup, DepartureAvailability.AVAILABLE))
+                .isEqualTo(new BookingMergeSuggestionResponseDto(10L, target.getDepartureDate(), pickup, DepartureAvailability.AVAILABLE));
     }
 }

@@ -52,13 +52,19 @@ public interface DepartureRepository extends JpaRepository<Departure, Long> {
     // Sinh chuyến từ lịch; chạy lại nhiều lần (hoặc nhiều máy chủ cùng chạy) cũng không tạo trùng
     @Modifying
     @Query(value = """
+            WITH inserted AS (
             INSERT INTO departure (departure_schedule_id, route_id, departure_date, planned_departure_at, booking_cutoff_at,
                                    stall_capacity, booked_stall_count, status)
             VALUES (:departureScheduleId, :routeId, :departureDate, :plannedDepartureAt, :bookingCutoffAt, :stallCapacity, 0, 'OPEN')
-            ON CONFLICT ON CONSTRAINT uk_departure_departure_schedule_id_departure_date DO NOTHING""", nativeQuery = true)
+            ON CONFLICT ON CONSTRAINT uk_departure_departure_schedule_id_departure_date DO NOTHING
+            RETURNING id)
+            INSERT INTO departure_vehicle (departure_id, vehicle_class_id, vehicle_count, allotment_type, created_at)
+            SELECT id, :vehicleClassId, :vehicleCount, 'BASE', :createdAt FROM inserted
+            """, nativeQuery = true)
     int insertIfAbsent(@Param("departureScheduleId") Long departureScheduleId, @Param("routeId") Long routeId,
                        @Param("departureDate") LocalDate departureDate, @Param("plannedDepartureAt") Instant plannedDepartureAt,
-                       @Param("bookingCutoffAt") Instant bookingCutoffAt, @Param("stallCapacity") int stallCapacity);
+                       @Param("bookingCutoffAt") Instant bookingCutoffAt, @Param("stallCapacity") int stallCapacity,
+                       Long vehicleClassId, int vehicleCount, Instant createdAt);
 
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE Departure d SET d.status = :to WHERE d.status = :from AND d.bookingCutoffAt <= :now")
@@ -77,8 +83,7 @@ public interface DepartureRepository extends JpaRepository<Departure, Long> {
     @Query("""
             SELECT d FROM Departure d JOIN FETCH d.route r JOIN FETCH r.origin JOIN FETCH r.destination
             WHERE r.id IN :routeIds AND d.status = :status AND d.bookingCutoffAt > :now AND d.departureDate >= :fromDate
-              AND d.stallCapacity - d.bookedStallCount >= :stalls
-            ORDER BY d.plannedDepartureAt""")
-    List<Departure> findBookable(@Param("routeIds") Collection<Long> routeIds, @Param("status") DepartureStatus status,
-                                 @Param("now") Instant now, @Param("fromDate") LocalDate fromDate, @Param("stalls") int stalls);
+              ORDER BY d.plannedDepartureAt""")
+    List<Departure> findOpenForBooking(@Param("routeIds") Collection<Long> routeIds, @Param("status") DepartureStatus status,
+                                 @Param("now") Instant now, @Param("fromDate") LocalDate fromDate);
 }

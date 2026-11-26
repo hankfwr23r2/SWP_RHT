@@ -60,45 +60,31 @@ class DepartureMergeFlowTest {
     }
 
     @Test
-    void confirmsSmallerCapacityAndRecordsItInAuditAndDispatcherNotice() throws Exception {
+    void confirmsRunAndRecordsCapacityInAuditAndDispatcherNotice() throws Exception {
         long source = departure("HCM-DN", sourceDate, 9, "CLOSED", true);
         attachBooking(source);
         var coordinator = data.staff(data.unique("g9-coord"), "COORDINATOR");
 
         mvc.perform(post("/departures/{id}/confirm-run", source).header(HttpHeaders.AUTHORIZATION, manager)
-                        .contentType(MediaType.APPLICATION_JSON).content("{\"stallCapacity\":2}"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.stallCapacity").value(2))
+                .andExpect(jsonPath("$.data.stallCapacity").value(9))
                 .andExpect(jsonPath("$.data.bookedStallCount").value(2))
                 .andExpect(jsonPath("$.data.runConfirmedAt").isNotEmpty());
 
         entityManager.flush();
-        assertThat(capacity(source)).isEqualTo(2);
+        assertThat(capacity(source)).isEqualTo(9);
         assertThat(jdbc.queryForMap("""
                 SELECT (old_data ->> 'stallCapacity')::int AS old_capacity,
                        (new_data ->> 'stallCapacity')::int AS new_capacity
                 FROM audit_log WHERE target_id = ? AND action = 'CONFIRM_DEPARTURE_RUN'
-                """, source)).containsEntry("old_capacity", 9).containsEntry("new_capacity", 2);
+                """, source)).containsEntry("old_capacity", 9).containsEntry("new_capacity", 9);
         assertThat(jdbc.queryForObject("""
                 SELECT n.message FROM notification n JOIN notification_recipient r ON r.notification_id = n.id
                 WHERE r.user_id = ? AND n.title = 'Chuyến đã được xác nhận chạy'
-                """, String.class, coordinator.getUserId())).contains("với 2 chỗ");
+                """, String.class, coordinator.getUserId())).contains("với 9 chỗ");
     }
 
-    @ParameterizedTest
-    @ValueSource(ints = {1, 10})
-    void rejectsCapacityBelowExistingReservationsOrAboveCurrentCapacity(int capacity) throws Exception {
-        long source = departure("HCM-DN", sourceDate, 9, "CLOSED", true);
-        attachBooking(source);
-
-        mvc.perform(post("/departures/{id}/confirm-run", source).header(HttpHeaders.AUTHORIZATION, manager)
-                        .contentType(MediaType.APPLICATION_JSON).content("{\"stallCapacity\":%d}".formatted(capacity)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.data.stallCapacity").value(containsString("từ 2 đến 9")));
-
-        assertThat(capacity(source)).isEqualTo(9);
-        assertThat(jdbc.queryForObject("SELECT run_confirmed_at IS NULL FROM departure WHERE id = ?", Boolean.class, source)).isTrue();
-    }
 
     @Test
     void keepsCapacityWhenConfirmingWithoutABody() throws Exception {
@@ -198,6 +184,13 @@ class DepartureMergeFlowTest {
                              String message) throws Exception {
         long source = departure("HCM-DN", sourceDate, 9, "CLOSED", scheduledSource);
         long target = departure(targetRoute, sourceDate.plusDays(days), capacity, "OPEN", scheduledTarget);
+        if (capacity == 1) {
+            long other = departure("HCM-PNH", sourceDate.plusDays(days), 18, "OPEN", false);
+            jdbc.update("""
+                    INSERT INTO departure_vehicle (departure_id, vehicle_class_id, vehicle_count, allotment_type, created_at)
+                    SELECT ?, id, 1, 'SPARE', now() FROM vehicle_class WHERE code = 'HEAVY'
+                    """, other);
+        }
         var booking = attachBooking(source);
         merge(source, target, "Ít khách", manager).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value(containsString(message)));
@@ -255,9 +248,9 @@ class DepartureMergeFlowTest {
         Long schedule = null;
         if (scheduled) {
             schedule = jdbc.queryForObject("""
-                    INSERT INTO departure_schedule (route_id, departure_time, booking_cutoff_hours, stall_capacity, valid_from, status)
-                    VALUES (?, TIME '06:00', 72, ?, ?, 'ACTIVE') RETURNING id
-                    """, Long.class, route, capacity, date);
+                    INSERT INTO departure_schedule (route_id, departure_time, booking_cutoff_hours, base_vehicle_class_id, base_vehicle_count, valid_from, status)
+                    VALUES (?, TIME '06:00', 72, (SELECT id FROM vehicle_class WHERE code = 'HEAVY'), 1, ?, 'ACTIVE') RETURNING id
+                    """, Long.class, route, date);
             jdbc.update("INSERT INTO departure_schedule_day (departure_schedule_id, day_of_week) VALUES (?, ?)",
                     schedule, date.getDayOfWeek().getValue());
         }

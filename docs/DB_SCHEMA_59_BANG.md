@@ -125,14 +125,14 @@ Các dòng ghi **chờ migration** là lược đồ đích đã chốt ngày 23
 
 ## Danh sách bảng
 
-Mô hình gốc 59 bảng, ngày 25/11/2026 thêm `booking_specialist_history`, `hub_stall`, `health_check_task`, `coordinator_assignment_history` (mục 15 của PHUONG_AN_6_LUONG). Sơ đồ: [ERD](database/ERD.md).
+Mô hình gốc 59 bảng, ngày 25/11/2026 thêm `booking_specialist_history`, `hub_stall`, `health_check_task`, `coordinator_assignment_history` (mục 15 của PHUONG_AN_6_LUONG). M2 bổ sung `departure_vehicle`, nâng tổng số lên 64 bảng. Sơ đồ: [ERD](database/ERD.md).
 
 | Nhóm | Bảng | Số bảng |
 |---|---|---|
 | 1. Địa lý | `country`, `province`, `location`, `hub_service_area` | 4 |
 | 2. Tài khoản, các bên | `app_user`, `role`, `customer`, `customer_address`, `staff`, `party`, `party_role`, `otp` | 8 |
 | 3. Ngựa | `horse_type`, `horse` | 2 |
-| 4. Mạng lưới, lịch chạy | `route`, `route_stop`, `departure_schedule`, `departure_schedule_day`, `departure` | 5 |
+| 4. Mạng lưới, lịch chạy | `route`, `route_stop`, `departure_schedule`, `departure_schedule_day`, `departure`, `departure_vehicle` | 6 |
 | 5. Xe | `vehicle_class`, `stall_type`, `vehicle` | 3 |
 | 6. Dịch vụ, bảng giá | `billable_service`, `price_list`, `price_item` | 3 |
 | 7. Quy định, giấy tờ yêu cầu | `country_rule`, `document_type`, `document_requirement` | 3 |
@@ -144,7 +144,7 @@ Mô hình gốc 59 bảng, ngày 25/11/2026 thêm `booking_specialist_history`, 
 | 13. Sự cố, chi phí | `incident`, `incident_plan`, `cost_item` | 3 |
 | 14. Chứng từ | `document` | 1 |
 | 15. Hỗ trợ | `notification`, `notification_recipient`, `audit_log`, `system_config`, `route_cache` | 5 |
-| | **Tổng** | **63** |
+| | **Tổng** | **64** |
 
 ---
 
@@ -160,6 +160,7 @@ Thứ tự này bảo đảm bảng cha luôn được tạo trước bảng con
 | 4 | `hub_stall`, `hub_service_area`, `staff`, `party_role`, `customer_address`, `horse`, `route`, `vehicle`, `document_requirement` |
 | 5 | `route_stop`, `departure_schedule`, `price_item`, `system_config` |
 | 6 | `departure_schedule_day`, `departure` |
+| M2 | `departure_vehicle` |
 | 7 | `booking` |
 | 8 | `booking_party`, `booking_address`, `booking_horse`, `booking_status_history`, `terms_acceptance`, `booking_rating`, `booking_specialist_history`, `vehicle_trip`, `quotation`, `notification`, `audit_log` |
 | 9 | `booking_horse_service`, `trip_stop`, `crew_assignment`, `horse_stay`, `horse_insurance`, `payment`, `notification_recipient` |
@@ -452,7 +453,8 @@ Index: `location_id`.
 | `route_id` | `bigint` | | FK → route | |
 | `departure_time` | `time` | | | Giờ xuất phát |
 | `booking_cutoff_hours` | `int` | | CK `> 0` | Chốt nhận đơn trước giờ xuất phát bao lâu |
-| `stall_capacity` | `int` | | CK `> 0` | Số chỗ tối đa mỗi chuyến (khoang thường 1 chỗ, khoang rộng 2 chỗ) |
+| `base_vehicle_class_id` | `bigint` | | FK → vehicle_class | Hạng xe nền |
+| `base_vehicle_count` | `int` | | CK `> 0` | Số xe nền |
 | `valid_from` | `date` | | | |
 | `valid_to` | `date` | có | CK `>= valid_from` | |
 | `status` | `varchar(30)` | | CK `ACTIVE, PAUSED, ENDED` | |
@@ -476,7 +478,7 @@ Index: `route_id`.
 | `departure_date` | `date` | | | |
 | `planned_departure_at` | `timestamptz` | | | Giờ gốc của chuyến, giữ nguyên khi dời lịch |
 | `booking_cutoff_at` | `timestamptz` | | | |
-| `stall_capacity` | `int` | | CK `> 0` | Snapshot từ lịch, sửa được cho từng chuyến |
+| `stall_capacity` | `int` | | CK `> 0` | Tổng sức chứa các xe đã gắn cho chuyến |
 | `booked_stall_count` | `int` | | default `0` | Dẫn xuất: số **chỗ** đã đặt (khoang thường 1, khoang rộng 2). Chỉ `DepartureService` ghi, khi đang giữ `FOR UPDATE` |
 | `status` | `varchar(30)` | | CK `OPEN, CLOSED, IN_PROGRESS, COMPLETED, CANCELLED` | |
 | `run_confirmed_at` | `timestamptz` | có | | Lúc quản lý xác nhận chạy. NULL = chưa xác nhận, điều phối chưa được lập lượt trục |
@@ -499,6 +501,22 @@ Ràng buộc bảng:
 - `CHECK (booked_stall_count BETWEEN 0 AND stall_capacity)`: DB chặn bán quá chỗ.
 
 Index: `route_id`, `(status, planned_departure_at)`, `run_confirmed_by`.
+
+
+### 4.6 `departure_vehicle`: xe đã gắn cho chuyến
+
+| Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
+|---|---|---|---|---|
+| `id` | `bigint` | | PK, identity | |
+| `departure_id` | `bigint` | | FK → departure, CASCADE | |
+| `vehicle_class_id` | `bigint` | | FK → vehicle_class | |
+| `vehicle_count` | `int` | | CK `> 0` | |
+| `allotment_type` | `varchar(30)` | | CK `BASE, SPARE` | |
+| `reason` | `varchar(500)` | có | | |
+| `created_by` | `bigint` | có | FK → app_user | NULL = hệ thống |
+| `created_at` | `timestamptz` | | | |
+
+Index: `departure_id`.
 
 ---
 
@@ -532,6 +550,7 @@ Khi tính sức chứa, `STANDARD` chiếm 1 chỗ, `WIDE` chiếm 2 chỗ.
 | `standard_stall_count` | `int` | | CK `>= 0` | Số khoang thường ở bố trí mặc định. Chỉ dùng để tính tổng chỗ |
 | `wide_stall_count` | `int` | | CK `>= 0` | Số khoang rộng ở bố trí mặc định. Chỉ dùng để tính tổng chỗ, không giới hạn số con khoang rộng và không cố định vị trí |
 | `home_hub_location_id` | `bigint` | | FK → location | Hub gốc, hub bất kỳ (26/11/2026) |
+| `service_role` | `varchar(30)` | | CK `LINEHAUL, SPARE, BRANCH`, default `BRANCH` | Vai trò xe |
 | `status` | `varchar(30)` | | CK `ACTIVE, MAINTENANCE, RETIRED` | Quản trị viên đổi thủ công. Hệ thống chuyển sang bảo dưỡng khi tổ xe báo cần bảo dưỡng lúc kết thúc lượt hoặc khi xe được thay do sự cố. Mỗi lần đổi trạng thái ghi `audit_log` (quy tắc #36). Xe đang chạy hay rảnh suy ra từ `vehicle_trip` |
 
 Vách ngăn **di động**: hai vị trí liền nhau bất kỳ ghép thành một khoang rộng. Cả xe là một dãy liền, đánh số từ 1 tới tổng chỗ.
@@ -1639,6 +1658,9 @@ Có hai cách xử lý giá trị dẫn xuất:
 
 ### Cột dẫn xuất được lưu
 
+`departure.stall_capacity` = tổng `departure_vehicle.vehicle_count × vehicle_class.max_stall_count`. Chỉ `DepartureServiceImpl` ghi trong transaction gắn hoặc bỏ xe, giữ khóa dòng chuyến.
+
+
 | Cột | Ý nghĩa | Ai ghi, khi nào | Ràng buộc ở DB |
 |---|---|---|---|
 | `quotation.total_amount` | Tổng các dòng báo giá | `QuotationService`, lúc tạo hoặc sửa bản DRAFT. Bất biến sau khi SENT | `CHECK (total_amount >= 0)` |
@@ -1689,6 +1711,9 @@ Mọi số tiền cộng với nhau phải cùng `currency_code` với báo giá
 ---
 
 ## Ràng buộc phải kiểm ở service
+
+M2: khóa chuyến rồi khóa hub xuất phát khi thiếu chỗ. Trừ xe SPARE đã gắn cùng hạng ở chuyến có khung bận giao nhau, tính từ giờ gốc tới hết hai lượt tuyến cộng `LINEHAUL_REST_HOURS` (12, 1–48). Gắn đủ xe hoặc không gắn xe nào. Chỉ bỏ xe trước khi chạy nếu còn dòng xe và đủ chỗ đã đặt. Ngưỡng `DEPARTURE_NEARLY_FULL_PERCENT` là 80 (50–100). `SPARE_VEHICLE_PERCENT` là 20 (0–100), dùng cho mẫu và báo cáo.
+
 
 Các quy tắc dưới đây cần so dữ liệu ở nhiều bảng nên CHECK không làm được. Đặt chúng trong lớp policy hoặc service, theo `AGENTS.md`.
 
@@ -1752,7 +1777,7 @@ Người dùng chốt **mô hình bến xe** ([NGU_CANH_THIET_KE_LAI.md](NGU_CAN
 | `location` loại HUB, `hub_service_area` | **Đã làm ở M1 (dữ liệu mẫu)** | Hub Nha Trang, Vinh, Phnom Penh, Viêng Chăn, Savannakhet; tỉnh chỉ gán khi tâm tỉnh trong 8 giờ lái |
 | Quy tắc #1: hub gốc của xe, người | **Đã làm ở M1** | Hub gốc là bất kỳ hub nào |
 | `route.origin_location_id`, `destination_location_id`; quy tắc #19 | **Đã làm ở M1** | Tuyến luôn nối hai hub; cửa khẩu là `route_stop` loại `BORDER` |
-| `departure.stall_capacity`, `booked_stall_count`, `CHECK (booked_stall_count BETWEEN 0 AND stall_capacity)` | Số chỗ cố định theo lịch | Sức chứa theo xe nền và xe tăng cường của chuyến; hạn mức xe trục của hub; khóa khi đặt chỗ theo đội xe |
+| `departure.stall_capacity`, `booked_stall_count`, `CHECK (booked_stall_count BETWEEN 0 AND stall_capacity)` | **Đã làm ở M2** | Sức chứa theo xe nền và xe tăng cường của chuyến; hạn mức xe trục của hub; khóa khi đặt chỗ theo đội xe |
 | `departure_schedule` | Số chỗ theo lịch | Xe nền theo loại xe; lịch được kiểm với hạn mức xe của hub |
 | `system_config` | | Thêm thời gian nghỉ tối thiểu sau chuyến trục (12 giờ), tỷ lệ dự phòng (20%) |
 | `booking` | Chỉ có xe ghép | Thêm lựa chọn xe riêng; báo giá xe riêng theo nguyên xe (`price_item`) |

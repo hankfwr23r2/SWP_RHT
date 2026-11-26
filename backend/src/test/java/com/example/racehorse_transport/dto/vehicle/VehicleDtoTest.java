@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.dto.vehicle;
 
+import com.example.racehorse_transport.entity.enums.VehicleServiceRole;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.racehorse_transport.entity.Location;
@@ -65,6 +66,6 @@ class VehicleDtoTest {
         assertThat(VehicleClassResponseDto.from(vehicleClass))
                 .isEqualTo(new VehicleClassResponseDto(2L, "LIGHT", "Xe nhẹ", 3));
         assertThat(VehicleResponseDto.from(vehicle))
-                .isEqualTo(new VehicleResponseDto(7L, "51A-12345", 2L, "LIGHT", 2, 1, 3L, "HQ", VehicleStatus.ACTIVE));
+                .isEqualTo(new VehicleResponseDto(7L, "51A-12345", 2L, "LIGHT", 2, 1, 3L, "HQ", VehicleStatus.ACTIVE, VehicleServiceRole.BRANCH));
     }
 }
