@@ -1,6 +1,6 @@
 # Sơ đồ cơ sở dữ liệu
 
-Sinh từ cơ sở dữ liệu thật bằng `sinh_erd.py`, **không sửa tay**. 64 bảng, 194 khóa ngoại.
+Sinh từ cơ sở dữ liệu thật bằng `sinh_erd.py`, **không sửa tay**. 64 bảng, 193 khóa ngoại.
 Mỗi nhóm vẽ đủ cột của bảng trong nhóm; bảng thuộc nhóm khác chỉ hiện tên. `PK` là khóa chính, `FK` là khóa ngoại.
 
 ## 1. Địa lý
@@ -568,7 +568,6 @@ erDiagram
         int8 to_location_id FK
         int8 to_booking_address_id FK
         int8 vehicle_trip_id FK
-        int8 agent_party_id FK
         int8 board_trip_stop_id FK
         int8 alight_trip_stop_id FK
         int8 replaced_horse_leg_id FK
@@ -673,7 +672,6 @@ erDiagram
     staff ||--o{ horse_health_log : "recorded_by"
     trip_stop |o--o{ horse_health_log : "trip_stop_id"
     vehicle_trip |o--o{ horse_health_log : "vehicle_trip_id"
-    party |o--o{ horse_leg : "agent_party_id"
     trip_stop |o--o{ horse_leg : "alight_trip_stop_id"
     trip_stop |o--o{ horse_leg : "board_trip_stop_id"
     booking_horse ||--o{ horse_leg : "booking_horse_id"
@@ -682,7 +680,7 @@ erDiagram
     horse_leg |o--o{ horse_leg : "replaced_horse_leg_id"
     booking_address |o--o{ horse_leg : "to_booking_address_id"
     location |o--o{ horse_leg : "to_location_id"
-    vehicle_trip |o--o{ horse_leg : "vehicle_trip_id"
+    vehicle_trip ||--o{ horse_leg : "vehicle_trip_id"
     booking_horse ||--o{ horse_stay : "booking_horse_id"
     horse_leg |o--o{ horse_stay : "failed_delivery_leg_id"
     hub_stall |o--o{ horse_stay : "hub_stall_id"

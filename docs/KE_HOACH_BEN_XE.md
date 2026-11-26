@@ -67,8 +67,8 @@ Hiện trạng cần sửa:
 | M2 | PR mở | |
 | M3 | Chưa làm | |
 | M4 | Chưa làm | |
-| M7 | Chưa làm | |
-| M10 | Chưa làm | |
+| M7 | PR mở | |
+| M10 | PR mở | |
 | M5 | Xong (bạn B) | #520 |
 | M6 | Xong (bạn B) | #522 |
 | M8 | Xong (bạn B) | #523 |

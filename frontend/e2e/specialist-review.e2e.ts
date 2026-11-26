@@ -25,7 +25,7 @@ const initialItems: Schemas['Item'][] = [
   { requirement: { id: 4, documentTypeName: 'Hộ chiếu', mandatory: true }, bookingHorseId: 21,
     submitterType: 'CUSTOMER', requiredForQuoting: true, requiredBeforePickup: true, satisfied: false },
   { requirement: { id: 5, documentTypeName: 'Giấy cách ly', mandatory: true }, bookingHorseId: 22,
-    submitterType: 'AGENT', requiredBeforePickup: true, satisfied: false },
+    submitterType: 'CONSIGNEE', requiredBeforePickup: true, satisfied: false },
   { requirement: { id: 6, documentTypeName: 'Sổ tiêm', mandatory: true },
     submitterType: 'CUSTOMER', requiredForQuoting: true, requiredBeforePickup: true, satisfied: false },
 ]
@@ -165,7 +165,7 @@ test('phân trang và tìm không dấu, đổi tab, xem đơn thiếu giấy �
   await page.getByRole('button', { name: 'Mở menu' }).click()
   await page.getByRole('link', { name: 'Đơn thiếu giấy', exact: true }).click()
   await expect(page.getByText('Giấy cách ly · Sao Mai')).toBeVisible()
-  await expect(page.getByText(/Đại lý nộp.*Cần trước khi đón ngựa/)).toBeVisible()
+  await expect(page.getByText(/Người nhận nộp.*Cần trước khi đón ngựa/)).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0)
   await page.getByRole('button', { name: 'Nộp giấy thay', exact: true }).click()
   await expect(page.getByRole('dialog')).toBeVisible()
@@ -174,7 +174,7 @@ test('phân trang và tìm không dấu, đổi tab, xem đơn thiếu giấy �
   await expect(page).toHaveURL(new RegExp(detailPath + '$'))
 })
 
-test('duyệt giấy từng ngựa, từ chối kèm lý do và nộp giấy thay đại lý', async ({ page }) => {
+test('duyệt giấy từng ngựa, từ chối kèm lý do và nộp giấy thay người nhận', async ({ page }) => {
   const { calls } = await open(page, detailPath)
   const bar = page.getByRole('region', { name: 'Bước tiếp theo' })
   await expect(bar).toBeInViewport()
