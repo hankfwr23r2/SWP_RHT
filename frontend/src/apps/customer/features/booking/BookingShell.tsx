@@ -6,6 +6,8 @@ import { ErrorState } from '@shared/ui/ErrorState'
 import { Stepper } from '@shared/ui/Stepper'
 import { BookingSummary } from './components/BookingSummary'
 import { useBookingData } from './loaders'
+import { useBookingDraft } from './draft'
+import { BookingPriceContext, usePricePreview } from './usePricePreview'
 import s from './Booking.module.css'
 
 interface Props {
@@ -18,6 +20,8 @@ interface Props {
 export function BookingShell({ step, title, subtitle, children }: Props) {
   const { t } = useTranslation()
   const data = useBookingData()
+  const { draft } = useBookingDraft()
+  const preview = usePricePreview(draft)
   const { revalidate, state } = useRevalidator()
   const steps = [t('bookingForm.steps.route'), t('bookingForm.steps.horses'), t('bookingForm.steps.services'), t('bookingForm.steps.review')]
 
@@ -35,10 +39,12 @@ export function BookingShell({ step, title, subtitle, children }: Props) {
         {data.failed
           ? <ErrorState onRetry={revalidate} retrying={state !== 'idle'} />
           : (
-            <div className={s.layout}>
-              <div className={s.main}>{children}</div>
-              <BookingSummary />
-            </div>
+            <BookingPriceContext.Provider value={preview}>
+              <div className={s.layout}>
+                <div className={s.main}>{children}</div>
+                <BookingSummary preview={preview} />
+              </div>
+            </BookingPriceContext.Provider>
           )}
       </div>
     </div>

@@ -133,6 +133,22 @@ public class DepartureServiceImpl implements DepartureService {
 
     @Override
     @Transactional
+    public void reservePrivate(Long departureId, Booking booking, int stalls) {
+        Departure departure = lockDeparture(departureId);
+        DepartureCapacityPolicy.reasonNotReservable(departure.getStatus(), departure.getBookingCutoffAt(),
+                        clock.instant(), stalls, 0, stalls)
+                .ifPresent(reason -> { throw BookingRuleException.conflict(reason); });
+        fleet.reservePrivate(departure, booking, stalls);
+    }
+
+    @Override
+    @Transactional
+    public void releasePrivate(Long departureId, Long bookingId) {
+        fleet.releasePrivate(lockDeparture(departureId), bookingId);
+    }
+
+    @Override
+    @Transactional
     public int generateFromSchedules() {
         LocalDate today = LocalDate.ofInstant(clock.instant(), BUSINESS_ZONE);
         int weeks = config.getInt("DEPARTURE_GENERATION_WEEKS");
@@ -281,6 +297,12 @@ public class DepartureServiceImpl implements DepartureService {
 
     @Override
     @Transactional(readOnly = true)
+    public boolean hasPrivateVehicle(Departure departure, int stalls) {
+        return fleet.privateStock(departure, stalls, false).isPresent();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public long sellableCapacity(Departure departure) {
         return fleet.sellableCapacity(departure);
     }
@@ -308,8 +330,13 @@ public class DepartureServiceImpl implements DepartureService {
         var allotments = fleet.allotments(departureId);
         var removed = allotments.stream().filter(allotment -> allotment.getId().equals(allotmentId))
                 .findFirst().orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy xe đã gắn " + allotmentId));
+        if (removed.getAllotmentType() == DepartureAllotmentType.PRIVATE) {
+            throw BookingRuleException.conflict("Xe riêng chỉ được nhả khi đơn bỏ chỗ.");
+        }
+        int sharedAllotments = (int) allotments.stream()
+                .filter(allotment -> allotment.getAllotmentType() != DepartureAllotmentType.PRIVATE).count();
         int removedCapacity = DepartureFleetPolicy.capacity(removed.getVehicleCount(), removed.getVehicleClass().getMaxStallCount());
-        departure.setStallCapacity(DepartureFleetPolicy.capacityAfterRemoval(departure.getStatus(), allotments.size(),
+        departure.setStallCapacity(DepartureFleetPolicy.capacityAfterRemoval(departure.getStatus(), sharedAllotments,
                 departure.getStallCapacity(), removedCapacity, departure.getBookedStallCount()));
         fleet.remove(removed, actor.getId(), reason);
         return new DepartureDetailResponseDto(toDto(departure), fleet.vehicles(departureId));

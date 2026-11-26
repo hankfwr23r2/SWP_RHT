@@ -1,3 +1,4 @@
+import { PrivateVehicleBadge } from '@shared/components/PrivateVehicleBadge'
 import { ListPanel } from '@shared/ui/ListPanel'
 import { OrderRoute } from '@shared/components/OrderRoute'
 import { Link, useRevalidator, useSearchParams } from 'react-router'
@@ -30,7 +31,7 @@ function ReviewQueue({ status, query, mine, initial, tabs, toolbar }: { status: 
       {rows.map(row => <li key={row.id}><Card><div className={s.stack}>
         <div className={s.row}>
           <h2 className={s.orderCode}>{row.id != null ? <Link to={`/specialist/review/${row.id}`}>{row.code}</Link> : row.code}</h2>
-          <OrderStatusBadge status={row.status} />
+          <OrderStatusBadge status={row.status} /> <PrivateVehicleBadge mode={row.transportMode} />
         </div>
         <dl className={s.reviewFacts}>
           {row.customerName && <div><dt>{t('staffReview.queueFields.customer')}</dt><dd>{row.customerName}{row.customerPhone && ` · ${row.customerPhone}`}</dd></div>}

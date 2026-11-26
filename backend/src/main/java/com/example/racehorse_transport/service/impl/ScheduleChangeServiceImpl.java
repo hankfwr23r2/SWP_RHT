@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.entity.enums.TransportMode;
 import com.example.racehorse_transport.dto.booking.BookingResponseDto;
 import com.example.racehorse_transport.dto.booking.ReportDocumentDelayRequestDto;
 import com.example.racehorse_transport.entity.Booking;
@@ -86,7 +87,11 @@ public class ScheduleChangeServiceImpl implements ScheduleChangeService {
                 .filter(horse -> horse.getStatus() == BookingHorseStatus.ACTIVE)
                 .map(horse -> horse.getStallType().getCode()).toList());
         if (seats > 0) {
-            departures.release(departure.getId(), seats);
+            if (booking.getTransportMode() == TransportMode.PRIVATE) {
+                departures.releasePrivate(departure.getId(), booking.getId());
+            } else {
+                departures.release(departure.getId(), seats);
+            }
         }
         booking.setDeparture(null);
         statuses.requireScheduleChangeForUser(bookingId, departure, request.cause(), request.reason(), username);

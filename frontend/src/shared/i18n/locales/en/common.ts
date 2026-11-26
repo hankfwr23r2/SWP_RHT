@@ -117,6 +117,7 @@ export const common = {
     stepDone: 'Done',
   },
   common: {
+    transportMode: { SHARED: 'Shared vehicle', PRIVATE: 'Private vehicle' },
     pageNotFound: 'Page not found',
     backHome: 'Back to home',
     hotline: 'Hotline',

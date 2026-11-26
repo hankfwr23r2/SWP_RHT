@@ -14,6 +14,7 @@ import com.example.racehorse_transport.policy.QuotationPolicy;
 import com.example.racehorse_transport.policy.StallSeatPolicy;
 import com.example.racehorse_transport.repository.*;
 import com.example.racehorse_transport.service.BookingRoutingService;
+import com.example.racehorse_transport.service.DepartureFleetService;
 import com.example.racehorse_transport.service.DeliveryRouteService.Destination;
 import com.example.racehorse_transport.service.PricingRouteService.RoadSegment;
 import com.example.racehorse_transport.service.RegulationService;
@@ -39,7 +40,7 @@ public class QuotationDraftDataServiceImpl {
     private final BookingHorseAddOnRepository addOns;
     private final HorseInsuranceRepository insurances;
     private final BillableServiceRepository catalog;
-    private final VehicleClassRepository vehicleClasses;
+    private final DepartureFleetService fleet;
     private final BookingRoutingService bookingRouting;
     private final RegulationService regulations;
     private final SystemConfigService configs;
@@ -50,7 +51,7 @@ public class QuotationDraftDataServiceImpl {
     }
 
     Long smallestClass(List<BookingHorse> lines) {
-        return PricingPolicy.smallestVehicleClass(vehicleClasses.findAll(),
+        return PricingPolicy.smallestVehicleClass(fleet.vehicleClasses(),
                 StallSeatPolicy.total(lines.stream().map(line -> line.getStallType().getCode()).toList())).getId();
     }
 
@@ -90,7 +91,8 @@ public class QuotationDraftDataServiceImpl {
 
     @Transactional(propagation = Propagation.MANDATORY, readOnly = true)
     public DraftData load(Booking booking, Instant now) {
-        var active = activeHorses(booking);
+        var allHorses = horses.findForDetail(booking.getId());
+        var active = allHorses.stream().filter(horse -> horse.getStatus() == BookingHorseStatus.ACTIVE).toList();
         if (active.isEmpty()) {
             throw BookingRuleException.conflict("Đơn không còn ngựa để lập báo giá.");
         }
@@ -126,9 +128,15 @@ public class QuotationDraftDataServiceImpl {
                 pickupDate, regulations.gateOf(route, type));
 
         Map<Long, Set<Long>> selections = new HashMap<>();
-        addOns.findAddOnsForDetail(active.stream().map(BookingHorse::getId).toList()).forEach(row ->
-                selections.computeIfAbsent(row.getId().getBookingHorseId(), key -> new TreeSet<>())
-                        .add(row.getId().getBillableServiceId()));
+        Set<Long> bookingServices = new TreeSet<>();
+        for (var row : addOns.findAddOnsForDetail(allHorses.stream().map(BookingHorse::getId).toList())) {
+            Long serviceId = row.getId().getBillableServiceId();
+            if (row.getBillableService().getBillingUnit() == BillingUnit.PER_BOOKING) {
+                bookingServices.add(serviceId);
+            } else {
+                selections.computeIfAbsent(row.getId().getBookingHorseId(), key -> new TreeSet<>()).add(serviceId);
+            }
+        }
         var required = PricingPolicy.requiredAddOns(regulation.requirements(),
                 catalog.findByStatusOrderByCodeAsc(ActiveStatus.ACTIVE), active.size());
         Map<Long, Integer> counts = new TreeMap<>();
@@ -143,10 +151,14 @@ public class QuotationDraftDataServiceImpl {
             horseRows.add(new HorseRow(horse.getId(), stall, Set.copyOf(services)));
         }
 
+        bookingServices.forEach(serviceId -> counts.put(serviceId, 1));
+        var privateVehicle = booking.getTransportMode() == TransportMode.PRIVATE
+                ? PricingPolicy.PrivateVehicle.from(linehaul ? fleet.privateVehicleClass(booking.getId())
+                        : PricingPolicy.smallestVehicleClass(fleet.vehicleClasses(), StallSeatPolicy.total(stalls))) : null;
         var input = new PricingInput("VND", today, type, route == null ? null : route.getId(),
                 route == null ? null : route.getDistanceKm(), List.of(), stalls, active.size(),
                 counts.entrySet().stream().map(e -> new AddOn(e.getKey(), e.getValue(), e.getValue(), 0)).toList(),
-                PricingPolicy.earlyPickupDays(type, pickupDate, linehaul ? departureDate : null));
+                PricingPolicy.earlyPickupDays(type, pickupDate, linehaul ? departureDate : null), List.of(), privateVehicle);
         var roadSegments = roads(booking, pickup, delivery, route);
         List<Destination> destinations = byDelivery.size() < 2 ? List.of() : byDelivery.entrySet().stream()
                 .map(row -> new Destination(point(row.getKey()), row.getValue().size(), StallSeatPolicy.total(
@@ -154,8 +166,8 @@ public class QuotationDraftDataServiceImpl {
         if (!destinations.isEmpty()) {
             roadSegments = roadSegments.stream().filter(segment -> segment.layer() != ServiceLayer.DELIVERY).toList();
         }
-        Long vehicleClass = roadSegments.isEmpty() ? null
-                : PricingPolicy.smallestVehicleClass(vehicleClasses.findAll(), StallSeatPolicy.total(stalls)).getId();
+        Long vehicleClass = privateVehicle != null ? privateVehicle.classId() : roadSegments.isEmpty() ? null
+                : PricingPolicy.smallestVehicleClass(fleet.vehicleClasses(), StallSeatPolicy.total(stalls)).getId();
         return new DraftData(input, List.copyOf(horseRows), insurance(active, pickupDate, departureDate, now),
                 roadSegments, destinations.isEmpty() ? null : route.getDestination().getId(), destinations,
                 pickupDate.atStartOfDay(), departureDate,
@@ -181,7 +193,7 @@ public class QuotationDraftDataServiceImpl {
                         row.getValue().stream().map(horse -> horse.getStallType().getCode()).toList()))).toList();
         int originalSeats = destinations.stream().mapToInt(Destination::seats).sum()
                 + StallSeatPolicy.seats(excluded.getStallType().getCode());
-        Long pickupClass = companyPickup ? PricingPolicy.smallestVehicleClass(vehicleClasses.findAll(), originalSeats).getId() : null;
+        Long pickupClass = companyPickup ? PricingPolicy.smallestVehicleClass(fleet.vehicleClasses(), originalSeats).getId() : null;
         return Optional.of(new ExclusionDelivery(destinations, pickupClass));
     }
 

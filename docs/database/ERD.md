@@ -1,6 +1,6 @@
 # Sơ đồ cơ sở dữ liệu
 
-Sinh từ cơ sở dữ liệu thật bằng `sinh_erd.py`, **không sửa tay**. 64 bảng, 193 khóa ngoại.
+Sinh từ cơ sở dữ liệu thật bằng `sinh_erd.py`, **không sửa tay**. 64 bảng, 194 khóa ngoại.
 Mỗi nhóm vẽ đủ cột của bảng trong nhóm; bảng thuộc nhóm khác chỉ hiện tên. `PK` là khóa chính, `FK` là khóa ngoại.
 
 ## 1. Địa lý
@@ -245,6 +245,7 @@ erDiagram
         varchar reason
         int8 created_by FK
         timestamptz created_at
+        int8 booking_id FK
     }
     staff |o--o{ departure : "coordinator_id"
     departure_schedule |o--o{ departure : "departure_schedule_id"
@@ -254,6 +255,7 @@ erDiagram
     vehicle_class ||--o{ departure_schedule : "base_vehicle_class_id"
     route ||--o{ departure_schedule : "route_id"
     departure_schedule ||--o{ departure_schedule_day : "departure_schedule_id"
+    booking |o--o{ departure_vehicle : "booking_id"
     app_user |o--o{ departure_vehicle : "created_by"
     departure ||--o{ departure_vehicle : "departure_id"
     vehicle_class ||--o{ departure_vehicle : "vehicle_class_id"
@@ -391,6 +393,7 @@ erDiagram
         bool collection_confirmed
         timestamptz delivery_confirmed_at
         int8 specialist_id FK
+        varchar transport_mode
     }
     booking_party {
         int8 booking_id PK, FK

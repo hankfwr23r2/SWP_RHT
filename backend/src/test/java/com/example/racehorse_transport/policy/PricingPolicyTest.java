@@ -15,6 +15,28 @@ import org.junit.jupiter.api.Test;
 
 class PricingPolicyTest {
     @Test
+    void billsEverySeatOfPrivateVehicleWithWidePricedAsOneWideStall() {
+        var linehaul = service(1, ServiceLayer.LINEHAUL, BillingUnit.PER_STALL, false);
+        var standard = item(1, linehaul, "100", null, null);
+        var wide = item(2, linehaul, "170", null, null);
+        var standardStall = new StallType();
+        standardStall.setCode("STANDARD");
+        standard.setStallType(standardStall);
+        var wideStall = new StallType();
+        wideStall.setCode("WIDE");
+        wide.setStallType(wideStall);
+        var priceList = list();
+        priceList.setMarginRate(BigDecimal.ZERO);
+        var input = new PricingInput("VND", LocalDate.of(2026, 11, 25), BookingType.INTERPROVINCE,
+                4L, BigDecimal.ONE, List.of(), Map.of("STANDARD", 1, "WIDE", 1), 2, List.of(),
+                0, List.of(), new PrivateVehicle(2L, "MEDIUM", 6));
+
+        var result = PricingPolicy.calculate(priceList, List.of(standard, wide), List.of(linehaul), input);
+        assertThat(result.lines()).extracting(Line::quantity).containsExactly(BigDecimal.valueOf(4), BigDecimal.ONE);
+        assertThat(result.total()).isEqualByComparingTo("570");
+    }
+
+    @Test
     void choosesTheCheaperDeliveryIncludingFuelForBothExamplesInSectionTwelve() {
         var pickup = service(1, ServiceLayer.PICKUP, BillingUnit.PER_KM, false);
         var delivery = service(2, ServiceLayer.DELIVERY, BillingUnit.PER_KM, false);

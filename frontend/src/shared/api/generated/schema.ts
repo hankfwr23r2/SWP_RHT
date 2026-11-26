@@ -5134,6 +5134,8 @@ export interface components {
             pickupMethod?: "COMPANY" | "SELF";
             /** Format: date */
             requestedPickupDate: string;
+            /** @enum {string} */
+            transportMode?: "SHARED" | "PRIVATE";
         };
         BookingDelayResponseDto: {
             autoCancelled?: boolean;
@@ -5250,6 +5252,8 @@ export interface components {
             specialistName?: string;
             /** @enum {string} */
             status?: "PENDING_INTAKE" | "UNDER_REVIEW" | "NEEDS_RESUBMISSION" | "QUOTING" | "AWAITING_DEPOSIT" | "QUOTE_EXPIRED" | "CONFIRMED" | "SCHEDULE_CHANGE_REQUIRED" | "IN_OPERATION" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED";
+            /** @enum {string} */
+            transportMode?: "SHARED" | "PRIVATE";
             waybillNumber?: string;
         };
         BookingResubmissionRequestDto: unknown;
@@ -5282,6 +5286,8 @@ export interface components {
             specialistName?: string;
             /** @enum {string} */
             status?: "PENDING_INTAKE" | "UNDER_REVIEW" | "NEEDS_RESUBMISSION" | "QUOTING" | "AWAITING_DEPOSIT" | "QUOTE_EXPIRED" | "CONFIRMED" | "SCHEDULE_CHANGE_REQUIRED" | "IN_OPERATION" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED";
+            /** @enum {string} */
+            transportMode?: "SHARED" | "PRIVATE";
             waybillNumber?: string;
         };
         CancelBookingRequestDto: {
@@ -5841,6 +5847,8 @@ export interface components {
              * @description Số chỗ cần: khoang thường 1 chỗ, khoang rộng 2 chỗ
              */
             stalls: number;
+            /** @enum {string} */
+            transportMode?: "SHARED" | "PRIVATE";
         };
         DepartureSuggestionResponse: {
             deliveryHubCode?: string;
@@ -5862,7 +5870,7 @@ export interface components {
         };
         DepartureVehicleResponseDto: {
             /** @enum {string} */
-            allotmentType?: "BASE" | "SPARE";
+            allotmentType?: "BASE" | "SPARE" | "PRIVATE";
             /** Format: int64 */
             id?: number;
             reason?: string;
@@ -5896,6 +5904,8 @@ export interface components {
             routeCode?: string;
             /** @enum {string} */
             status?: "PENDING_INTAKE" | "UNDER_REVIEW" | "NEEDS_RESUBMISSION" | "QUOTING" | "AWAITING_DEPOSIT" | "QUOTE_EXPIRED" | "CONFIRMED" | "SCHEDULE_CHANGE_REQUIRED" | "IN_OPERATION" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED";
+            /** @enum {string} */
+            transportMode?: "SHARED" | "PRIVATE";
         };
         DispatchVehicleResponseDto: {
             currentLocationCode?: string;
@@ -7342,6 +7352,8 @@ export interface components {
             pickupAt: string;
             /** @enum {string} */
             pickupMethod?: "COMPANY" | "SELF";
+            /** @enum {string} */
+            transportMode?: "SHARED" | "PRIVATE";
         };
         PricingPreviewResponseDto: {
             /** @enum {string} */
@@ -7353,6 +7365,9 @@ export interface components {
             lines?: components["schemas"]["PriceLineResponseDto"][];
             /** Format: int64 */
             priceListId?: number;
+            /** Format: int32 */
+            privateVehicleBillableStalls?: number;
+            privateVehicleClassCode?: string;
             total?: number;
         };
         ProvinceResponse: {

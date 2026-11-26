@@ -12,6 +12,18 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class DepartureFleetPolicyTest {
+    @Test
+    void privateVehicleUsesSmallestAvailableClassThatFitsTheWholeBooking() {
+        var light = new DepartureFleetPolicy.Stock(1L, 2, 1);
+        var unavailableMedium = new DepartureFleetPolicy.Stock(2L, 6, 0);
+        var heavy = new DepartureFleetPolicy.Stock(3L, 9, 1);
+        var stock = java.util.List.of(heavy, unavailableMedium, light);
+
+        org.assertj.core.api.Assertions.assertThat(DepartureFleetPolicy.selectPrivateVehicle(2, stock)).contains(light);
+        org.assertj.core.api.Assertions.assertThat(DepartureFleetPolicy.selectPrivateVehicle(4, stock)).contains(heavy);
+        org.assertj.core.api.Assertions.assertThat(DepartureFleetPolicy.selectPrivateVehicle(10, stock)).isEmpty();
+    }
+
     private final Stock light = new Stock(1L, 2, 2);
     private final Stock medium = new Stock(2L, 6, 1);
     private final Stock heavy = new Stock(3L, 9, 1);

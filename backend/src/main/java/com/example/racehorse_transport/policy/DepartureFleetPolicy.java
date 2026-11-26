@@ -16,6 +16,11 @@ public final class DepartureFleetPolicy {
     public record Stock(Long vehicleClassId, int stalls, int count) {
     }
 
+    public static java.util.Optional<Stock> selectPrivateVehicle(int stalls, List<Stock> stock) {
+        return stock.stream().filter(item -> item.count() > 0 && item.stalls() >= stalls)
+                .min(Comparator.comparingInt(Stock::stalls).thenComparing(Stock::vehicleClassId));
+    }
+
     public static Instant busyUntil(Instant startsAt, int durationMinutes, int restHours) {
         return startsAt.plusSeconds(120L * durationMinutes + 3600L * restHours);
     }

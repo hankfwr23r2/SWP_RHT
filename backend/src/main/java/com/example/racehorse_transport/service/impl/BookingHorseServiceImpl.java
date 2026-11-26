@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.entity.enums.TransportMode;
 import com.example.racehorse_transport.dto.operation.PickupMissPriceResponseDto;
 import com.example.racehorse_transport.dto.operation.PickupAddOnResponseDto;
 import com.example.racehorse_transport.entity.BookingHorse;
@@ -9,6 +10,7 @@ import java.util.List;
 import java.util.Optional;
 import java.time.Instant;
 
+import com.example.racehorse_transport.entity.enums.TransportMode;
 import com.example.racehorse_transport.entity.enums.BookingHorseStatus;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.AppUserStatus;
@@ -58,7 +60,11 @@ public class BookingHorseServiceImpl implements BookingHorseService {
         }
         horse.setStatus(BookingHorseStatus.EXCLUDED);
         if (booking.getDeparture() != null) {
-            departures.release(booking.getDeparture().getId(), StallSeatPolicy.seats(horse.getStallType().getCode()));
+            if (booking.getTransportMode() == TransportMode.SHARED) {
+                departures.release(booking.getDeparture().getId(), StallSeatPolicy.seats(horse.getStallType().getCode()));
+            } else if (horses.findForDetail(bookingId).stream().noneMatch(row -> row.getStatus() == BookingHorseStatus.ACTIVE)) {
+                departures.releasePrivate(booking.getDeparture().getId(), bookingId);
+            }
         }
         var replacement = quotations.replaceAfterExclusion(horse);
         boolean overpaid = replacement.map(this::settle).orElse(false);

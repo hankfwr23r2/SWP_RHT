@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.dto.pricing;
 
 import com.example.racehorse_transport.entity.enums.TransferMethod;
+import com.example.racehorse_transport.entity.enums.TransportMode;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import java.time.Instant;
@@ -13,9 +14,16 @@ public record PricingPreviewRequestDto(
         @NotNull Instant pickupAt,
         @NotEmpty List<@NotNull @Valid HorseSelection> horses,
         TransferMethod pickupMethod,
-        TransferMethod deliveryMethod) {
+        TransferMethod deliveryMethod,
+        TransportMode transportMode) {
+
+    public PricingPreviewRequestDto(Long pickupAddressId, Long deliveryAddressId, Long departureId,
+            Instant pickupAt, List<HorseSelection> horses, TransferMethod pickupMethod, TransferMethod deliveryMethod) {
+        this(pickupAddressId, deliveryAddressId, departureId, pickupAt, horses, pickupMethod, deliveryMethod, TransportMode.SHARED);
+    }
 
     public PricingPreviewRequestDto {
+        transportMode = transportMode == null ? TransportMode.SHARED : transportMode;
         pickupMethod = pickupMethod == null ? TransferMethod.COMPANY : pickupMethod;
         deliveryMethod = deliveryMethod == null ? TransferMethod.COMPANY : deliveryMethod;
     }

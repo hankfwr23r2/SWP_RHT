@@ -68,7 +68,8 @@ export function RescheduleCard({ data, excludeDepartureId, reschedule }: Props) 
                   <input type="radio" name="reschedule" checked={departure.id === departureId} disabled={departure.availability === 'FULL'} onChange={() => choose(departure.id!, departure.departureDate)} />
                   <strong>{departure.plannedDepartureAt ? moment(departure.plannedDepartureAt) : showDate(departure.departureDate ?? '')}</strong>
                   <span>{departure.routeName}</span>
-                  <span>{departure.availability && t(`bookingForm.route.availability.${departure.availability}`)}</span>
+                  <span>{departure.availability && t(booking?.transportMode === 'PRIVATE' && departure.availability === 'FULL'
+                    ? 'bookingForm.transportMode.full' : `bookingForm.route.availability.${departure.availability}`)}</span>
                 </label>
               ))}
             </fieldset>

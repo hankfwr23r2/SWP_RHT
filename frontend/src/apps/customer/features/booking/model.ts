@@ -69,12 +69,14 @@ export function pricingRequest(draft: BookingDraft): PricingPreviewRequest | nul
     deliveryAddressId: draft.deliveryAddressId!,
     departureId: draft.routing === 'LINEHAUL' ? draft.departure?.id : undefined,
     pickupAt: pickupAt(draft),
+    transportMode: draft.transportMode,
     pickupMethod: draft.pickupMethod,
     deliveryMethod: draft.deliveryMethod,
-    horses: draft.horseIds.map(horseId => ({
+    horses: draft.horseIds.map((horseId, index) => ({
       horseId,
       stallTypeCode: draft.horses[horseId].stallTypeCode,
-      addOnServiceIds: draft.horses[horseId].addOnServiceIds,
+      addOnServiceIds: [...new Set([...draft.horses[horseId].addOnServiceIds,
+        ...(index === 0 ? draft.bookingAddOnServiceIds : [])])],
       deliveryAddressId: selectedDeliveryAddress(draft, horseId),
     })),
   }
@@ -128,6 +130,7 @@ export function createRequest(draft: BookingDraft, pickup: CustomerAddress, deli
     bookingType: bookingTypeOf(pickup, delivery)!,
     departureId: draft.routing === 'LINEHAUL' ? draft.departure?.id : undefined,
     requestedPickupDate: draft.pickupDate,
+    transportMode: draft.transportMode,
     pickupMethod: draft.pickupMethod,
     deliveryMethod: draft.deliveryMethod,
     emergencySpendingLimit: draft.emergencySpendingLimit ? Number(draft.emergencySpendingLimit) : undefined,
@@ -152,7 +155,7 @@ export function createRequest(draft: BookingDraft, pickup: CustomerAddress, deli
         ? addressInput('DELIVERY', address, draft.parties.CONSIGNEE, draft.deliveryNote)
         : addressInput('DELIVERY', address, draft.deliveryContacts[address.id!], '')),
     ],
-    horses: draft.horseIds.map(horseId => {
+    horses: draft.horseIds.map((horseId, index) => {
       const horse = draft.horses[horseId]
       return {
         horseId,
@@ -160,7 +163,8 @@ export function createRequest(draft: BookingDraft, pickup: CustomerAddress, deli
         dietNote: text(horse.dietNote),
         feedingsPerDay: horse.feedingsPerDay ? Number(horse.feedingsPerDay) : undefined,
         feedSuppliedByOwner: horse.feedSuppliedByOwner,
-        addOns: horse.addOnServiceIds.map(serviceId => ({ serviceId, quantity: 1 })),
+        addOns: [...new Set([...horse.addOnServiceIds, ...(index === 0 ? draft.bookingAddOnServiceIds : [])])]
+          .map(serviceId => ({ serviceId, quantity: 1 })),
         insurance: insuranceInput(horse),
         deliveryPlaceIndex: destinations.length > 1 ? selectedIds.indexOf(selectedDeliveryAddress(draft, horseId) ?? delivery.id) : undefined,
       }

@@ -31,6 +31,12 @@ public interface DepartureService {
     // Nhả khoang: hủy đơn, từ chối, báo giá hết hạn, loại ngựa, đổi chuyến
     void release(Long departureId, int stalls);
 
+    boolean hasPrivateVehicle(Departure departure, int stalls);
+
+    void reservePrivate(Long departureId, com.example.racehorse_transport.entity.Booking booking, int stalls);
+
+    void releasePrivate(Long departureId, Long bookingId);
+
     // Sinh chuyến từ các lịch đang chạy cho DEPARTURE_GENERATION_WEEKS tuần tới. Trả về số chuyến mới.
     int generateFromSchedules();
 

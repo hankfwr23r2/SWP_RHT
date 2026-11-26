@@ -48,6 +48,7 @@ class BookingSubmissionPostgresTest {
     @Autowired private AccountService accounts;
     @Autowired private BookingService bookings;
     @Autowired private BookingQueryService queries;
+    @Autowired private BookingCancellationService cancellations;
     @Autowired private BookingReviewService review;
     @Autowired private InsuranceService insurance;
     @Autowired private DocumentReviewService documentReview;
@@ -119,6 +120,47 @@ class BookingSubmissionPostgresTest {
         assertThatThrownBy(() -> bookings.submit(owner, "192.0.2.5", request))
                 .isInstanceOf(BookingRuleException.class).hasMessageContaining("đặt đơn riêng");
         assertThat(queries.list(owner)).isEmpty();
+    }
+
+    @Test
+    void privateBookingReservesOneVehicleAndCancellationReleasesIt() {
+        String owner = customer();
+        LocalDate date = pickupDate().plusWeeks(5);
+        var departure = data.departure("HCM-DN", date.plusDays(1), 4);
+        var result = bookings.submit(owner, "192.0.2.5", privateRequest(owner, departure.getId(), date, 1));
+
+        assertThat(result.transportMode()).isEqualTo(TransportMode.PRIVATE);
+        assertThat(reserved(departure.getId())).isZero();
+        assertThat(count("""
+                SELECT count(*) FROM departure_vehicle WHERE booking_id = ? AND departure_id = ?
+                    AND allotment_type = 'PRIVATE' AND vehicle_count = 1
+                """, result.id(), departure.getId())).isEqualTo(1);
+        assertThat(queries.get(owner, result.id()).booking().transportMode()).isEqualTo(TransportMode.PRIVATE);
+        cancellations.cancelByCustomer(result.id(), owner,
+                new com.example.racehorse_transport.dto.booking.CancelBookingRequestDto("Đổi kế hoạch"));
+        assertThat(count("SELECT count(*) FROM departure_vehicle WHERE booking_id = ?", result.id())).isZero();
+        assertThat(reserved(departure.getId())).isZero();
+    }
+
+    @Test
+    void rollsBackPrivateBookingWhenNoSingleVehicleCanFit() {
+        String owner = customer();
+        LocalDate date = pickupDate().plusWeeks(6);
+        var departure = data.departure("HCM-DN", date.plusDays(1), 9);
+        var request = privateRequest(owner, departure.getId(), date, 10);
+
+        assertThatThrownBy(() -> bookings.submit(owner, "192.0.2.5", request))
+                .isInstanceOf(BookingRuleException.class).hasMessageContaining("Chuyến này không còn xe riêng");
+        assertThat(queries.list(owner)).isEmpty();
+        assertThat(reserved(departure.getId())).isZero();
+    }
+
+    private BookingCreateRequestDto privateRequest(String owner, Long departure, LocalDate date, int horses) {
+        var shared = request(departure, date, java.util.stream.IntStream.range(0, horses)
+                .mapToObj(index -> horseInput(horse(owner), InsuranceCoverageOption.NONE, true, List.of())).toList());
+        return new BookingCreateRequestDto(shared.bookingType(), shared.departureId(), shared.requestedPickupDate(),
+                shared.emergencySpendingLimit(), shared.parties(), shared.addresses(), shared.horses(),
+                shared.acceptedServiceTerms(), shared.pickupMethod(), shared.deliveryMethod(), TransportMode.PRIVATE);
     }
 
     @Test
@@ -718,8 +760,8 @@ class BookingSubmissionPostgresTest {
                 new InsuranceDeclarationRequestDto(option, "Ignored", null, null, 999999L, waiver));
     }
 
-    private int count(String sql, Long id) {
-        return jdbc.queryForObject(sql, Integer.class, id);
+    private int count(String sql, Long... ids) {
+        return jdbc.queryForObject(sql, Integer.class, (Object[]) ids);
     }
 
     private int reserved(Long id) {

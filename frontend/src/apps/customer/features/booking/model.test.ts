@@ -130,3 +130,19 @@ describe('yêu cầu gửi backend', () => {
     })
   })
 })
+
+it('gửi dịch vụ theo đơn một lần ở con đầu tiên', () => {
+  const draft = ready()
+  draft.transportMode = 'PRIVATE'
+  draft.bookingAddOnServiceIds = [41]
+  draft.horseIds = [11, 12]
+  draft.horses[12] = { ...emptyHorse(), stallTypeCode: 'WIDE', addOnServiceIds: [42] }
+
+  expect(pricingRequest(draft)).toMatchObject({
+    transportMode: 'PRIVATE',
+    horses: [{ addOnServiceIds: [31, 41] }, { addOnServiceIds: [42] }],
+  })
+  const request = createRequest(draft, hcm, dn)
+  expect(request.transportMode).toBe('PRIVATE')
+  expect(request.horses.map(horse => horse.addOns?.map(row => row.serviceId))).toEqual([[31, 41], [42]])
+})

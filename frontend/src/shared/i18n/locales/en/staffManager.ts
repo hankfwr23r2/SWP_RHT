@@ -337,6 +337,7 @@ export const staffManager = {
         emptyHint: 'Reload the departure to check its fleet again.',
         vehicle: '{{count}} × {{vehicleClass}} · {{type}}',
         BASE: 'Base',
+        PRIVATE: 'Private vehicle',
         SPARE: 'Spare',
       },
       uncommitted: 'Unpaid orders: {{count}}. They lose their places or expire.',

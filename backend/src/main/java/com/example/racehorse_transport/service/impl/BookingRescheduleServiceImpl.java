@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.entity.enums.TransportMode;
 import com.example.racehorse_transport.dto.booking.BookingMergeSuggestionResponseDto;
 import com.example.racehorse_transport.dto.booking.BookingRescheduleRequestDto;
 import com.example.racehorse_transport.dto.booking.BookingResponseDto;
@@ -74,15 +75,19 @@ public class BookingRescheduleServiceImpl implements BookingRescheduleService {
         Instant now = clock.instant();
         LocalDate holdThrough = BookingSubmissionPolicy.priceHoldThrough(source.getDepartureDate(), config.getInt("PRICE_HOLD_DAYS"));
         LocalDate pickupDate = BookingSubmissionPolicy.latestPickupDate(booking.getBookingType(), target.getDepartureDate());
-        long sellableCapacity = departures.sellableCapacity(target);
+        boolean privateMode = booking.getTransportMode() == TransportMode.PRIVATE;
+        int stalls = seatsFor(activeHorses(bookingId));
+        long sellableCapacity = privateMode ? stalls : departures.sellableCapacity(target);
         if (!DepartureMergePolicy.withinPriceHold(source, target, holdThrough)
                 || pickupDate.isBefore(BookingSubmissionPolicy.businessDate(now))
                 || DepartureCapacityPolicy.reasonNotReservable(target.getStatus(), target.getBookingCutoffAt(), now,
-                        sellableCapacity, target.getBookedStallCount(), seatsFor(activeHorses(bookingId))).isPresent()) {
+                        sellableCapacity, privateMode ? 0 : target.getBookedStallCount(), stalls).isPresent()
+                || (privateMode && !departures.hasPrivateVehicle(target, stalls))) {
             return Optional.empty();
         }
         return Optional.of(BookingMergeSuggestionResponseDto.from(target, pickupDate,
-                departures.availability(target, sellableCapacity - target.getStallCapacity())));
+                privateMode ? com.example.racehorse_transport.entity.enums.DepartureAvailability.AVAILABLE
+                        : departures.availability(target, sellableCapacity - target.getStallCapacity())));
     }
 
     @Override
@@ -130,9 +135,16 @@ public class BookingRescheduleServiceImpl implements BookingRescheduleService {
         if (deposited) {
             validatePaidReplacement(bookingId, replacement, pickupDate, active);
         }
-        departures.reserve(replacement.getId(), seats);
-        if (oldId != null) {
-            departures.release(oldId, seats);
+        if (booking.getTransportMode() == TransportMode.PRIVATE) {
+            if (oldId != null) {
+                departures.releasePrivate(oldId, booking.getId());
+            }
+            departures.reservePrivate(replacement.getId(), booking, seats);
+        } else {
+            departures.reserve(replacement.getId(), seats);
+            if (oldId != null) {
+                departures.release(oldId, seats);
+            }
         }
         statuses.clearPlannedTransport(booking.getId());
         booking.setDeparture(replacement);
@@ -203,7 +215,11 @@ public class BookingRescheduleServiceImpl implements BookingRescheduleService {
         }
         int seats = seatsFor(activeHorses(bookingId));
         if (seats > 0) {
-            departures.release(departure.getId(), seats);
+            if (booking.getTransportMode() == TransportMode.PRIVATE) {
+                departures.releasePrivate(departure.getId(), booking.getId());
+            } else {
+                departures.release(departure.getId(), seats);
+            }
         }
         booking.setDeparture(null);
         String reason = "Chưa hoàn tất báo giá trước mốc quyết định của chuyến " + departure.getRoute().getName()

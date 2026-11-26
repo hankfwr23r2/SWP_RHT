@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.entity.enums.TransportMode;
 import com.example.racehorse_transport.dto.booking.BookingResponseDto;
 import com.example.racehorse_transport.entity.AppUser;
 import com.example.racehorse_transport.entity.Booking;
@@ -81,7 +82,11 @@ public class BookingReviewServiceImpl implements BookingReviewService {
         BookingResponseDto result = transition(booking, REJECTED, note, actor.getId());
         int stalls = activeSeats(id);
         if (booking.getDeparture() != null && stalls > 0) {
-            departures.release(booking.getDeparture().getId(), stalls);
+            if (booking.getTransportMode() == TransportMode.PRIVATE) {
+                departures.releasePrivate(booking.getDeparture().getId(), booking.getId());
+            } else {
+                departures.release(booking.getDeparture().getId(), stalls);
+            }
         }
         notifyCustomer(booking, "Đơn bị từ chối", note);
         return result;
@@ -99,9 +104,16 @@ public class BookingReviewServiceImpl implements BookingReviewService {
         if (stalls == 0) {
             throw BookingRuleException.conflict("Đơn không có ngựa đang hoạt động.");
         }
-        departures.reserve(departureId, stalls);
-        if (oldId != null) {
-            departures.release(oldId, stalls);
+        if (booking.getTransportMode() == TransportMode.PRIVATE) {
+            if (oldId != null) {
+                departures.releasePrivate(oldId, booking.getId());
+            }
+            departures.reservePrivate(departureId, booking, stalls);
+        } else {
+            departures.reserve(departureId, stalls);
+            if (oldId != null) {
+                departures.release(oldId, stalls);
+            }
         }
         statuses.clearPlannedTransport(booking.getId());
         booking.setDeparture(replacement);
@@ -145,7 +157,11 @@ public class BookingReviewServiceImpl implements BookingReviewService {
         insurance.validateForQuoting(booking, active);
         if (departure != null) {
             int stalls = StallSeatPolicy.total(active.stream().map(horse -> horse.getStallType().getCode()).toList());
-            departures.reserve(departure.getId(), stalls);
+            if (booking.getTransportMode() == TransportMode.PRIVATE) {
+                departures.reservePrivate(departure.getId(), booking, stalls);
+            } else {
+                departures.reserve(departure.getId(), stalls);
+            }
         }
         var result = transition(booking, QUOTING, "Mở lại báo giá hết hạn.", actor(username));
         notifyCustomer(booking, "Đã mở lại báo giá", "Quản lý đang chuẩn bị báo giá mới cho đơn.");

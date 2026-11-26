@@ -3,6 +3,7 @@ import { useCallback, useSyncExternalStore } from 'react'
 import type { BookingCreateRequest, DepartureSuggestion } from '@shared/api/bookingOrders'
 import { readSession } from '@shared/auth/session'
 
+export type TransportMode = NonNullable<BookingCreateRequest["transportMode"]>
 export type TransferMethod = NonNullable<BookingCreateRequest['pickupMethod']>
 export type PartyRole = BookingCreateRequest['parties'][number]['bookingRole']
 export type CoverageOption = BookingCreateRequest['horses'][number]['insurance']['coverageOption']
@@ -37,6 +38,8 @@ export interface BookingDraft {
   deliveryAddressId: number | null
   fromDate: string
   routing: 'DIRECT' | 'LINEHAUL' | ''
+  transportMode: TransportMode
+  bookingAddOnServiceIds: number[]
   pickupMethod: TransferMethod
   deliveryMethod: TransferMethod
   departure: Departure | null
@@ -63,6 +66,7 @@ export const emptyHorse = (): HorseChoice => ({
 export const emptyDraft = (): BookingDraft => ({
   pickupAddressId: null, deliveryAddressId: null, fromDate: '', routing: '',
   pickupMethod: 'COMPANY', deliveryMethod: 'COMPANY', departure: null, pickupDate: '',
+  transportMode: 'SHARED', bookingAddOnServiceIds: [],
   horseIds: [], horses: {},
   parties: { SHIPPER: blankParty(), CONSIGNEE: blankParty(), PAYER: blankParty(), EMERGENCY_CONTACT: blankParty() },
   pickupNote: '', deliveryNote: '', deliveryContacts: {}, emergencySpendingLimit: '', acceptedTerms: false,

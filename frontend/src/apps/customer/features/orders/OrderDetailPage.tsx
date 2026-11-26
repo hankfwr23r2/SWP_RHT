@@ -1,4 +1,5 @@
 // Chi tiết đơn của khách: việc tiếp theo, báo giá và thanh toán, giấy tờ, hành trình, đổi chuyến, hủy, đánh giá.
+import { PrivateVehicleBadge } from '@shared/components/PrivateVehicleBadge'
 import { useEffect, useState } from 'react'
 import { Button } from '@shared/ui/Button'
 import { DeliveryChangeDialog } from './components/DeliveryChangeDialog'
@@ -57,7 +58,7 @@ export default function OrderDetailPage() {
       <div className="breadcrumb"><Link to="/orders">{t('myOrders.title')}</Link> / <span>{booking.code}</span></div>
       <header className={s.heading}>
         <div>
-          <div className={s.row}><PageTitle><PageTitleCode>{booking.code}</PageTitleCode></PageTitle><OrderStatusBadge status={status} /></div>
+          <div className={s.row}><PageTitle><PageTitleCode>{booking.code}</PageTitleCode></PageTitle><OrderStatusBadge status={status} /><PrivateVehicleBadge mode={booking.transportMode} /></div>
           {booking.waybillNumber && <p>{t('myOrders.waybill', { code: booking.waybillNumber })}</p>}
         </div>
       </header>

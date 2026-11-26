@@ -19,10 +19,25 @@ public final class PricingPolicy {
 
     public record AddOn(Long serviceId, int horseCount, int stallCount, int horseDays) {}
 
+    public record PrivateVehicle(Long classId, String classCode, int billableStalls) {
+        public static PrivateVehicle from(VehicleClass vehicleClass) {
+            return new PrivateVehicle(vehicleClass.getId(), vehicleClass.getCode(), vehicleClass.getMaxStallCount());
+        }
+    }
+
     public record PricingInput(String currencyCode, LocalDate quotationDate, BookingType bookingType,
                                Long routeId, BigDecimal linehaulKm, List<RoadLeg> roadLegs,
                                Map<String, Integer> stallsByType, int horseCount,
-                               List<AddOn> addOns, long earlyPickupDays, List<RoadLeg> separateDelivery) {
+                               List<AddOn> addOns, long earlyPickupDays, List<RoadLeg> separateDelivery,
+                               PrivateVehicle privateVehicle) {
+        public PricingInput(String currencyCode, LocalDate quotationDate, BookingType bookingType,
+                            Long routeId, BigDecimal linehaulKm, List<RoadLeg> roadLegs,
+                            Map<String, Integer> stallsByType, int horseCount, List<AddOn> addOns,
+                            long earlyPickupDays, List<RoadLeg> separateDelivery) {
+            this(currencyCode, quotationDate, bookingType, routeId, linehaulKm, roadLegs, stallsByType,
+                    horseCount, addOns, earlyPickupDays, separateDelivery, null);
+        }
+
         public PricingInput(String currencyCode, LocalDate quotationDate, BookingType bookingType,
                             Long routeId, BigDecimal linehaulKm, List<RoadLeg> roadLegs,
                             Map<String, Integer> stallsByType, int horseCount, List<AddOn> addOns, long earlyPickupDays) {
@@ -221,7 +236,14 @@ public final class PricingPolicy {
                                       List<BillableService> catalog, PricingInput input, BigDecimal roadKm) {
         Line fuel = roadKm.signum() > 0 ? lines.removeLast() : null;
         if (input.routeId() != null) {
-            input.stallsByType().forEach((stall, count) -> addLayer(lines, list, items, catalog,
+            Map<String, Integer> billable = new TreeMap<>(input.stallsByType());
+            if (input.privateVehicle() != null) {
+                int freeStalls = input.privateVehicle().billableStalls() - StallSeatPolicy.total(input.stallsByType());
+                if (freeStalls > 0) {
+                    billable.merge("STANDARD", freeStalls, Integer::sum);
+                }
+            }
+            billable.forEach((stall, count) -> addLayer(lines, list, items, catalog,
                     ServiceLayer.LINEHAUL, new Match(input.routeId(), null, stall, input.linehaulKm()),
                     BigDecimal.valueOf(count)));
         } else {

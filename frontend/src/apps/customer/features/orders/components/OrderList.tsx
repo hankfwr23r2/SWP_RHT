@@ -1,3 +1,4 @@
+import { PrivateVehicleBadge } from '@shared/components/PrivateVehicleBadge'
 import { ListPanel } from '@shared/ui/ListPanel'
 import { OrderRoute } from '@shared/components/OrderRoute'
 import { Suspense, useState } from 'react'
@@ -58,7 +59,7 @@ function LoadedOrders({ groups, emptyTitle, emptyHint, orders, failed }: Props &
             description={mine.length ? t('myOrders.noMatchHint') : emptyHint} />
           : <Table caption={t('myOrders.title')} rows={visible} rowKey={order => order.id ?? 0} columns={[
             { key: 'code', header: t('listPanel.orderCode'), render: order => <div className={s.orderCode}>
-              <Link to={`/orders/${order.id}`}>{order.code}</Link>
+              <Link to={`/orders/${order.id}`}>{order.code}</Link> <PrivateVehicleBadge mode={order.transportMode} />
               {order.waybillNumber && <p className={s.hint}>{t('myOrders.waybill', { code: order.waybillNumber })}</p>}
             </div> },
             { key: 'route', header: t('listPanel.route'), render: order => <OrderRoute {...order}

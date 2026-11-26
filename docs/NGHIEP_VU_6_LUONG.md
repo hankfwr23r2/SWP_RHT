@@ -26,7 +26,7 @@ Bản 26/11/2026, theo **mô hình bến xe** người dùng chốt cùng ngày.
 | Lượt xe | Một chiếc xe chạy một lần: đón, trục, giao, chạy thẳng, chuyển xe |
 | Chặng | Một đoạn đường của **một con ngựa** trên một lượt xe |
 | Xe ghép | Ngựa nhiều đơn đi chung xe. Giá theo chỗ |
-| Xe riêng [Mới] | Ngựa của đơn **không đi chung xe với đơn khác ở mọi chặng**. Đi đúng lịch trục như xe ghép. Giá theo nguyên xe |
+| Xe riêng | Ngựa của đơn **không đi chung xe với đơn khác ở mọi chặng**. Đi đúng lịch trục như xe ghép. Giá theo nguyên xe |
 | Giờ chạy | Giờ xe trục rời hub đầu. Mọi hạn "trước giờ chạy" đếm lùi từ đây |
 | Hạn nhận đặt | 72 giờ trước giờ chạy |
 | Mốc quyết định | 48 giờ trước giờ chạy |
@@ -48,7 +48,7 @@ Từ lúc khách mở tài khoản tới lúc khách trả cọc và đơn **Đ�
    - chọn điểm đón và điểm giao cụ thể; **mỗi con có thể giao một nơi**;
    - hệ thống tra hub của từng địa chỉ, ra tuyến (ví dụ TP.HCM – Phnom Penh) và loại đơn (liên tỉnh, xuất, nhập);
    - chọn chuyến: chuyến hiện **Còn chỗ / Sắp đầy / Hết chỗ** [Mới] và hạn nhận đặt; chuyến không kịp làm giấy thì khóa;
-   - chọn **xe ghép** hoặc **xe riêng** [Mới];
+   - chọn **xe ghép** hoặc **xe riêng** trước danh sách chuyến. Nhãn xe riêng dựa trên xe phù hợp còn rảnh tại hub xuất phát;
    - mỗi đầu trong nước chọn **tự đưa tới hub** hoặc **công ty đón, giao**. Công ty chỉ nhận khi đường một chiều tới hub ≤ 5 giờ lái;
    - chọn ngựa, loại khoang, chế độ ăn; bảo hiểm từng con (tự có, mua hộ, không mua); khai người gửi, người nhận, người trả tiền, liên hệ khẩn cấp, hạn mức chi khẩn cấp;
    - giá tạm tính luôn do máy chủ tính.
@@ -145,7 +145,7 @@ Từ lúc đơn đã cọc tới lúc mỗi con có đủ xe, tổ lái, vị tr
 4. **Nhánh đón:** xe của **hub phụ trách địa chỉ đón** đi đón. Hệ thống gợi ý gom các đơn cùng hướng vào một xe. Điều phối chọn xe, xem giờ theo đường xe tải thật và lập lượt. Ngựa phải về hub trước hạn có mặt.
 5. **Chia ngựa vào các xe trục ngày đi** [Mới]
    - Dùng các xe đã giữ cho chuyến (xe nền và xe thêm). Điều phối đổi được loại xe, miễn tổng chỗ không ít hơn số chỗ đã bán.
-   - Hệ thống gợi ý chia theo thứ tự: (1) ngựa **cùng đơn** luôn chung xe, vì giấy gốc chỉ có một bản; (2) ngựa **xe riêng** đi xe riêng của đơn đó, chọn xe vừa số con (2, 4 chỗ…); (3) ngựa xe ghép xếp theo **cụm điểm giao gần nhau ở hub đích**; (4) chọn xe **vừa số chỗ** nhất.
+   - Hệ thống gợi ý chia theo thứ tự: (1) ngựa **cùng đơn** luôn chung xe, vì giấy gốc chỉ có một bản; (2) ngựa **xe riêng** đi xe riêng của đơn đó, chọn hạng xe nhỏ nhất còn rảnh và đủ chỗ (2, 6 hoặc 9 chỗ); (3) ngựa xe ghép xếp theo **cụm điểm giao gần nhau ở hub đích**; (4) chọn xe **vừa số chỗ** nhất.
    - Ví dụ chuyến TP.HCM → Hà Nội có 11 con xe ghép: 8 con giao trong nội thành Hà Nội, 3 con giao ở Hải Phòng. Gợi ý xe 9 chỗ chở 8 con nội thành, xe 4 chỗ chở 3 con Hải Phòng.
    - Tới hub đích ngựa vẫn dỡ xuống và khám trước khi giao (luồng 4). Chia theo cụm từ đầu để mỗi xe trục có thể dùng lại làm xe giao cho đúng cụm của nó.
    - Hệ thống gợi ý, điều phối chỉnh.
@@ -300,6 +300,6 @@ Từ lúc tổ lái đứng trước con ngựa ở nơi nhận tới lúc đơn
 1. **Giấy phép liên vận của xe** qua Campuchia, Lào: có thêm ô "được chạy sang nước nào, hạn tới ngày" để chỉ gán xe có phép cho chuyến quốc tế không. Điều kiện cấp phép **chưa kiểm chứng**.
 2. ~~Ai tăng cường xe~~: **đã chốt 26/11** hệ thống tự gắn xe để sẵn khi xe nền đầy, quản lý chỉ bỏ bớt xe thừa.
 3. **Chuyến đột xuất** do quản lý tạo: đề xuất bỏ, vì tăng cường và xe riêng đã thay được.
-4. **Giá xe riêng** theo nguyên xe: theo loại xe và quãng đường của từng chặng (đón, trục, giao).
+4. **Giá xe riêng** theo nguyên xe đã giữ. Cước trục tính đủ sức chứa, dùng giá khoang rộng cho khoang rộng đã chọn và giá khoang thường cho các chỗ còn lại. Cước đón và giao tính theo km với hạng xe riêng.
 5. **Tỷ lệ dự phòng 20%** là mức tham khảo của ngành xe buýt (FTA), cần chỉnh khi có số liệu vận hành.
 6. Nguyên nhân sự cố **"Lỗi đại lý"** không còn ý nghĩa khi hub nước ngoài là của công ty: đề xuất gộp vào Lỗi công ty.

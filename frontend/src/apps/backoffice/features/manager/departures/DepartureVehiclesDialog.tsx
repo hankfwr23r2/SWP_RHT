@@ -48,7 +48,7 @@ export function DepartureVehiclesDialog({ id, name, onChanged, onClose }: {
             type: t(`mgr.departures.fleet.${vehicle.allotmentType}`),
           })}</div>
           {vehicle.reason && <p>{vehicle.reason}</p>}
-          {canRemove && vehicle.id != null && <Button size="sm" onClick={() => setRemoving(vehicle.id)}>
+          {canRemove && vehicle.allotmentType !== 'PRIVATE' && vehicle.id != null && <Button size="sm" onClick={() => setRemoving(vehicle.id)}>
             {t('mgr.departures.fleet.remove')}
           </Button>}
         </li>)}</ul>}

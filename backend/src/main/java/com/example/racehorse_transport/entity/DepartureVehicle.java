@@ -19,6 +19,10 @@ public class DepartureVehicle {
     @JoinColumn(name = "departure_id", nullable = false)
     private Departure departure;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "booking_id")
+    private Booking booking;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "vehicle_class_id", nullable = false)
     private VehicleClass vehicleClass;

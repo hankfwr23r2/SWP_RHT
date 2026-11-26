@@ -80,6 +80,23 @@ class HorseLegFlowTest {
                 .andExpect(jsonPath("$.message").value("Ngựa đã có trên lượt xe này."));
     }
 
+    @Test
+    void blocksAnotherBookingFromJoiningAPrivatePickupTrip() throws Exception {
+        Seed own = seed("DEV-DOMESTIC-001");
+        Seed other = seed("DEV-EXPORT-001");
+        jdbc.update("UPDATE booking SET transport_mode = 'PRIVATE' WHERE id = ?", own.bookingId());
+        jdbc.update("UPDATE booking SET requested_pickup_date = ? WHERE id = ?", own.pickupDate(), other.bookingId());
+        entityManager.clear();
+        Instant start = own.departureAt().minusSeconds(14 * 3600);
+        long trip = tripId(createTrip(testData.vehicle(6, 0), "PICKUP", stop(hcm, "HUB", start, 0),
+                address(own.pickup(), "PICKUP", start, 60), address(other.pickup(), "PICKUP", start, 90),
+                stop(hcm, "HUB", start, 150)));
+        List<Long> stops = stopIds(trip);
+        assign(trip, own.horses().getFirst(), stops.get(1), stops.getLast()).andExpect(status().isCreated());
+        assign(trip, other.horses().getFirst(), stops.get(2), stops.getLast()).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.data.bookingHorseId").value("Lượt xe riêng không nhận ngựa của đơn khác."));
+    }
+
     @ParameterizedTest
     @CsvSource({"PICKUP, 8, 0", "PICKUP, 8, 1", "DIRECT, 10, 0", "DIRECT, 10, 1"})
     void plannedRideIncludesTimeAtIntermediateStops(String type, int limitHours, int minutesOver) throws Exception {

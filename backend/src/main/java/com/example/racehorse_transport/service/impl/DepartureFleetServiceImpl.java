@@ -1,6 +1,9 @@
 package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.entity.AppUser;
+import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.exception.BookingRuleException;
+import java.util.Optional;
 import com.example.racehorse_transport.service.AuditService;
 import com.example.racehorse_transport.dto.departure.DepartureVehicleResponseDto;
 import com.example.racehorse_transport.entity.Departure;
@@ -54,6 +57,49 @@ public class DepartureFleetServiceImpl implements DepartureFleetService {
     @Override
     @Transactional
     public List<Stock> freeStock(Departure departure, boolean lockHub) {
+        return freeStock(departure, lockHub, false);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Stock> privateStock(Departure departure, int stalls, boolean lockHub) {
+        return DepartureFleetPolicy.selectPrivateVehicle(stalls, freeStock(departure, lockHub, true));
+    }
+
+    @Override
+    @Transactional
+    public void reservePrivate(Departure departure, Booking booking, int stalls) {
+        Stock stock = privateStock(departure, stalls, true)
+                .orElseThrow(() -> BookingRuleException.conflict("Chuyến này không còn xe riêng"));
+        DepartureVehicle allotment = new DepartureVehicle();
+        allotment.setDeparture(departure);
+        allotment.setVehicleClass(vehicleClass(stock.vehicleClassId()));
+        allotment.setVehicleCount(1);
+        allotment.setAllotmentType(DepartureAllotmentType.PRIVATE);
+        allotment.setBooking(booking);
+        allotment.setCreatedAt(clock.instant());
+        allotments.save(allotment);
+    }
+
+    @Override
+    @Transactional
+    public void releasePrivate(Departure departure, Long bookingId) {
+        locations.lockFleetHub(departure.getRoute().getOrigin().getId());
+        allotments.findByBooking_Id(bookingId)
+                .filter(allotment -> allotment.getDeparture().getId().equals(departure.getId())).ifPresent(allotment -> {
+            allotments.delete(allotment);
+            allotments.flush();
+        });
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public VehicleClass privateVehicleClass(Long bookingId) {
+        return allotments.findByBooking_Id(bookingId).map(DepartureVehicle::getVehicleClass)
+                .orElseThrow(() -> BookingRuleException.conflict("Đơn chưa giữ xe riêng."));
+    }
+
+    private List<Stock> freeStock(Departure departure, boolean lockHub, boolean privateMode) {
         Long hubId = departure.getRoute().getOrigin().getId();
         if (lockHub) {
             locations.lockFleetHub(hubId);
@@ -61,7 +107,8 @@ public class DepartureFleetServiceImpl implements DepartureFleetService {
         int rest = config.getInt("LINEHAUL_REST_HOURS");
         Instant start = departure.getPlannedDepartureAt();
         Instant end = DepartureFleetPolicy.busyUntil(start, departure.getRoute().getEstimatedDurationMinutes(), rest);
-        return allotments.findSpareStock(hubId, start, end, rest).stream()
+        return allotments.findSpareStock(hubId, start, end, rest, privateMode).stream()
+                .filter(row -> row.getVehicleCount() > 0)
                 .map(row -> new Stock(row.getVehicleClassId(), row.getStalls(), row.getVehicleCount())).toList();
     }
 

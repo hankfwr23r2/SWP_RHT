@@ -2257,6 +2257,10 @@
           "requestedPickupDate" : {
             "format" : "date",
             "type" : "string"
+          },
+          "transportMode" : {
+            "enum" : [ "SHARED", "PRIVATE" ],
+            "type" : "string"
           }
         },
         "required" : [ "acceptedServiceTerms", "addresses", "bookingType", "horses", "parties", "requestedPickupDate" ],
@@ -2557,6 +2561,10 @@
             "enum" : [ "PENDING_INTAKE", "UNDER_REVIEW", "NEEDS_RESUBMISSION", "QUOTING", "AWAITING_DEPOSIT", "QUOTE_EXPIRED", "CONFIRMED", "SCHEDULE_CHANGE_REQUIRED", "IN_OPERATION", "DELIVERED", "COMPLETED", "CANCELLED", "REJECTED" ],
             "type" : "string"
           },
+          "transportMode" : {
+            "enum" : [ "SHARED", "PRIVATE" ],
+            "type" : "string"
+          },
           "waybillNumber" : {
             "type" : "string"
           }
@@ -2631,6 +2639,10 @@
           },
           "status" : {
             "enum" : [ "PENDING_INTAKE", "UNDER_REVIEW", "NEEDS_RESUBMISSION", "QUOTING", "AWAITING_DEPOSIT", "QUOTE_EXPIRED", "CONFIRMED", "SCHEDULE_CHANGE_REQUIRED", "IN_OPERATION", "DELIVERED", "COMPLETED", "CANCELLED", "REJECTED" ],
+            "type" : "string"
+          },
+          "transportMode" : {
+            "enum" : [ "SHARED", "PRIVATE" ],
             "type" : "string"
           },
           "waybillNumber" : {
@@ -4139,6 +4151,10 @@
             "maximum" : 100,
             "minimum" : 1,
             "type" : "integer"
+          },
+          "transportMode" : {
+            "enum" : [ "SHARED", "PRIVATE" ],
+            "type" : "string"
           }
         },
         "required" : [ "bookingType", "deliveryProvinceCode", "fromDate", "pickupProvinceCode", "stalls" ],
@@ -4206,7 +4222,7 @@
       "DepartureVehicleResponseDto" : {
         "properties" : {
           "allotmentType" : {
-            "enum" : [ "BASE", "SPARE" ],
+            "enum" : [ "BASE", "SPARE", "PRIVATE" ],
             "type" : "string"
           },
           "id" : {
@@ -4284,6 +4300,10 @@
           },
           "status" : {
             "enum" : [ "PENDING_INTAKE", "UNDER_REVIEW", "NEEDS_RESUBMISSION", "QUOTING", "AWAITING_DEPOSIT", "QUOTE_EXPIRED", "CONFIRMED", "SCHEDULE_CHANGE_REQUIRED", "IN_OPERATION", "DELIVERED", "COMPLETED", "CANCELLED", "REJECTED" ],
+            "type" : "string"
+          },
+          "transportMode" : {
+            "enum" : [ "SHARED", "PRIVATE" ],
             "type" : "string"
           }
         },
@@ -8104,6 +8124,10 @@
           "pickupMethod" : {
             "enum" : [ "COMPANY", "SELF" ],
             "type" : "string"
+          },
+          "transportMode" : {
+            "enum" : [ "SHARED", "PRIVATE" ],
+            "type" : "string"
           }
         },
         "required" : [ "deliveryAddressId", "horses", "pickupAddressId", "pickupAt" ],
@@ -8142,6 +8166,13 @@
           "priceListId" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "privateVehicleBillableStalls" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "privateVehicleClassCode" : {
+            "type" : "string"
           },
           "total" : {
             "type" : "number"

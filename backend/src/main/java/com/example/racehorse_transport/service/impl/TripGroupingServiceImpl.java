@@ -1,7 +1,9 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.entity.enums.TransportMode;
 import com.example.racehorse_transport.policy.DepartureDelayPolicy;
 
+import com.example.racehorse_transport.entity.enums.TransportMode;
 import com.example.racehorse_transport.dto.dispatch.TripGroupResponseDto;
 import com.example.racehorse_transport.dto.dispatch.TripGroupResponseDto.GroupBookingDto;
 import com.example.racehorse_transport.dto.dispatch.TripGroupResponseDto.GroupHorseDto;
@@ -130,7 +132,8 @@ public class TripGroupingServiceImpl implements TripGroupingService {
             }
             entries.put(booking.getId(), new Entry(booking, address, horses, DepartureDelayPolicy.effectiveTime(booking.getDeparture()), arrivalOf(booking)));
             candidates.add(new Candidate(booking.getId(), point(address.getLatitude().doubleValue(), address.getLongitude().doubleValue()),
-                    horses.stream().mapToInt(h -> StallSeatPolicy.seats(h.getStallType().getCode())).sum()));
+                    horses.stream().mapToInt(h -> StallSeatPolicy.seats(h.getStallType().getCode())).sum(),
+                    booking.getTransportMode() == TransportMode.PRIVATE));
         }
         if (candidates.isEmpty() && multiPlace.isEmpty()) return List.of();
 

@@ -63,12 +63,12 @@ Hiện trạng cần sửa:
 
 | Mã | Tình trạng | PR |
 |---|---|---|
-| M1 | PR mở | #521 |
-| M2 | PR mở | |
-| M3 | Chưa làm | |
+| M1 | Xong | #521 |
+| M2 | Xong | #525 |
+| M3 | Đã triển khai | Giữ một xe theo hạng cho mỗi đơn đi trục, tính cước cả xe, nhãn chuyến theo chế độ và tách dịch vụ theo đơn / theo ngựa. |
 | M4 | Chưa làm | |
-| M7 | PR mở | |
-| M10 | PR mở | |
+| M7 | Xong | #526 |
+| M10 | Xong | #526 |
 | M5 | Xong (bạn B) | #520 |
 | M6 | Xong (bạn B) | #522 |
 | M8 | Xong (bạn B) | #523 |

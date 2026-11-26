@@ -14,6 +14,8 @@ import com.example.racehorse_transport.entity.Route;
 import com.example.racehorse_transport.entity.enums.ActiveStatus;
 import com.example.racehorse_transport.entity.enums.BookingType;
 import com.example.racehorse_transport.entity.enums.DepartureStatus;
+import com.example.racehorse_transport.entity.enums.DepartureAvailability;
+import com.example.racehorse_transport.entity.enums.TransportMode;
 import com.example.racehorse_transport.entity.enums.RuleDirection;
 import com.example.racehorse_transport.policy.DepartureRoutePolicy;
 import com.example.racehorse_transport.policy.HubResolutionPolicy;
@@ -88,10 +90,11 @@ public class DepartureSuggestionServiceImpl implements DepartureSuggestionServic
             return response.departures(List.of()).unavailable(Unavailable.NO_ROUTE).build();
         }
 
+        boolean privateMode = query.getTransportMode() == TransportMode.PRIVATE;
         List<Candidate> found = departures.findOpenForBooking(routeIds, DepartureStatus.OPEN, clock.instant(),
                         query.getFromDate()).stream()
-                .map(d -> new Candidate(d, fleet.sellableCapacity(d) - d.getStallCapacity()))
-                .filter(candidate -> candidate.sellableStalls() >= query.getStalls())
+                .map(d -> new Candidate(d, privateMode ? 0 : fleet.sellableCapacity(d) - d.getStallCapacity()))
+                .filter(candidate -> privateMode || candidate.sellableStalls() >= query.getStalls())
                 .limit(MAX_SUGGESTIONS)
                 .toList();
         List<CountryRule> rules = countryRules.findByCountry_CodeAndDirection(
@@ -99,12 +102,18 @@ public class DepartureSuggestionServiceImpl implements DepartureSuggestionServic
                 RuleDirection.valueOf(query.getBookingType().name()));
         return response
                 .departures(found.stream().map(candidate -> DepartureResponseDto.forCustomer(candidate.departure(),
-                        fleet.availability(candidate.departure(), candidate.spareCapacity()))).toList())
+                        privateMode ? privateAvailability(candidate.departure(), query.getStalls())
+                                : fleet.availability(candidate.departure(), candidate.spareCapacity()))).toList())
                 .leadDays(found.isEmpty() ? null : RegulationPolicy.leadDays(rules, found.getFirst().departure().getDepartureDate()))
                 .tooLateDepartureIds(found.stream().map(Candidate::departure).filter(d -> !RegulationPolicy.feasible(
                         RegulationPolicy.leadDays(rules, d.getDepartureDate()), clock.instant(), d.getBookingCutoffAt()))
                         .map(Departure::getId).toList())
                 .build();
+    }
+
+    private DepartureAvailability privateAvailability(Departure departure, int stalls) {
+        return fleet.privateStock(departure, stalls, false).isPresent()
+                ? DepartureAvailability.AVAILABLE : DepartureAvailability.FULL;
     }
 
     private record Candidate(Departure departure, long spareCapacity) {
