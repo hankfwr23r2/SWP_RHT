@@ -965,6 +965,23 @@
         },
         "type" : "object"
       },
+      "ApiResponseListGeocodeResultResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/GeocodeResultResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListHandoverPaperResponseDto" : {
         "properties" : {
           "data" : {
@@ -3423,7 +3440,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "addressLine", "countryCode", "label", "provinceCode" ],
+        "required" : [ "countryCode", "label", "provinceCode", "ward" ],
         "type" : "object"
       },
       "CustomerAddressResponseDto" : {
@@ -3500,7 +3517,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "addressLine", "countryCode", "label", "provinceCode" ],
+        "required" : [ "countryCode", "label", "provinceCode", "ward" ],
         "type" : "object"
       },
       "CustomerProfileResponseDto" : {
@@ -4662,6 +4679,22 @@
             "type" : "number"
           },
           "lng" : {
+            "format" : "double",
+            "type" : "number"
+          }
+        },
+        "type" : "object"
+      },
+      "GeocodeResultResponseDto" : {
+        "properties" : {
+          "label" : {
+            "type" : "string"
+          },
+          "latitude" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "longitude" : {
             "format" : "double",
             "type" : "number"
           }
@@ -10637,7 +10670,7 @@
   "paths" : {
     "/admin/system-logs" : {
       "get" : {
-        "operationId" : "search",
+        "operationId" : "search_1",
         "parameters" : [ {
           "in" : "query",
           "name" : "from",
@@ -15598,6 +15631,42 @@
           }
         },
         "tags" : [ "customer-debt-controller" ]
+      }
+    },
+    "/geocode/search" : {
+      "get" : {
+        "operationId" : "search",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "q",
+          "required" : true,
+          "schema" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "countryCode",
+          "required" : true,
+          "schema" : {
+            "pattern" : "[A-Za-z]{2}",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListGeocodeResultResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "geocode-controller" ]
       }
     },
     "/handovers/{id}/complete" : {

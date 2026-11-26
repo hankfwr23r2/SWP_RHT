@@ -1,3 +1,4 @@
+import { DateInput } from '@shared/ui/DateInput'
 // Báo cáo vận hành của quản lý (B6): số liệu tổng và từng lượt xe trong khoảng ngày
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -8,7 +9,6 @@ import { Button } from '@shared/ui/Button'
 import { EmptyState } from '@shared/ui/EmptyState'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { Field } from '@shared/ui/Field'
-import { Input } from '@shared/ui/Input'
 import { PageHeader } from '@shared/ui/PageHeader'
 import { Skeleton } from '@shared/ui/Skeleton'
 import { Table, type TableColumn } from '@shared/ui/Table'
@@ -74,10 +74,10 @@ export default function TripReportsPage() {
         actions={(
           <div className={s.toolbar}>
             <Field label={t('opsReport.from')} className={s.date}>
-              {control => <Input {...control} type="date" value={fromDate} max={toDate} onChange={e => e.target.value && setFromDate(e.target.value)} />}
+              {control => <DateInput {...control} value={fromDate} max={toDate} onValueChange={value => value && setFromDate(value)} />}
             </Field>
             <Field label={t('opsReport.to')} className={s.date}>
-              {control => <Input {...control} type="date" value={toDate} min={fromDate} onChange={e => e.target.value && setToDate(e.target.value)} />}
+              {control => <DateInput {...control} value={toDate} min={fromDate} onValueChange={value => value && setToDate(value)} />}
             </Field>
           </div>
         )}

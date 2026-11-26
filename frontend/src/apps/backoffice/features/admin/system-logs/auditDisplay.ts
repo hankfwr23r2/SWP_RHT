@@ -1,7 +1,6 @@
-export function auditTimestamp(value: string | undefined, locale: string) {
-  const timestamp = value ? new Date(value) : undefined
-  if (!timestamp || Number.isNaN(timestamp.getTime())) return '—'
-  return new Intl.DateTimeFormat(locale === 'vi' ? 'vi-VN' : 'en-GB', {
-    timeZone: 'Asia/Ho_Chi_Minh', dateStyle: 'short', timeStyle: 'medium',
-  }).format(timestamp) + ' (UTC+7)'
+import { formatDateTime } from '@shared/lib/format'
+
+export function auditTimestamp(value: string | undefined) {
+  const formatted = value && formatDateTime(value)
+  return formatted ? formatted + ' (UTC+7)' : '—'
 }

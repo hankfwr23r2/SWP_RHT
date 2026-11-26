@@ -38,7 +38,7 @@ public class PricingServiceImpl implements PricingService {
     @Override
     public DeliveryPricing deliveryPricing(
             Long hubId, List<Destination> destinations) {
-        return deliveryRoutes.pricing(hubId, destinations);
+        return deliveryRoutes.previewPricing(hubId, destinations);
     }
 
     @Override
@@ -47,7 +47,7 @@ public class PricingServiceImpl implements PricingService {
         var preview = data.loadPreview(request, username);
         var roadLegs = new ArrayList<>(preview.segments().stream()
                 .map(segment -> {
-                    var estimate = routing.route(segment, preview.pickupTime(), preview.weightTons(), preview.topSpeedKmh());
+                    var estimate = routing.routeOrEstimate(segment, preview.pickupTime(), preview.weightTons(), preview.topSpeedKmh());
                     PricingPolicy.validateDriveTime(segment.layer(), estimate.driveSeconds(), segment.maxDriveHoursPerDay());
                     return new RoadLeg(segment.layer(), preview.vehicleClassId(), estimate.km());
                 })

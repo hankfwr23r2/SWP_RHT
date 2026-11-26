@@ -1,4 +1,5 @@
-import { useEffect, useId, useRef, type KeyboardEvent, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useId, useRef, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import s from './Modal.module.css'
 
@@ -15,12 +16,17 @@ interface ModalProps {
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
+// Độ sâu lồng: hộp thoại render qua portal ra document.body (để form bên trong không lồng vào form của trang),
+// nên thứ tự trong DOM không còn cho biết hộp nào ở trên. Hộp sâu hơn nằm trên và giữ tiêu điểm.
+const Depth = createContext(0)
+
 // Giữ tiêu điểm bên trong, đóng bằng Escape, đóng xong trả tiêu điểm về chỗ cũ (AGENTS.md mục 8.7).
 // Ô nào trong hộp thoại cần được chọn sẵn thì gắn data-autofocus.
 export function Modal({ title, subtitle, onClose, footer, wide, alert, children }: ModalProps) {
   const { t } = useTranslation()
   const id = useId()
   const dialog = useRef<HTMLDivElement>(null)
+  const depth = useContext(Depth) + 1
 
   useEffect(() => {
     const node = dialog.current
@@ -38,7 +44,8 @@ export function Modal({ title, subtitle, onClose, footer, wide, alert, children 
 
   // Nút đang giữ tiêu điểm bị khóa lúc xử lý thì tiêu điểm rơi ra trang; kéo lại để Escape và Tab vẫn dùng được
   useEffect(() => {
-    const top = [...document.querySelectorAll('[data-dialog]')].at(-1)
+    const top = [...document.querySelectorAll<HTMLElement>('[data-dialog]')]
+      .reduce<HTMLElement | undefined>((best, node) => !best || Number(node.dataset.depth) >= Number(best.dataset.depth) ? node : best, undefined)
     if (document.activeElement === document.body && top === dialog.current) dialog.current?.focus()
   })
 
@@ -59,8 +66,10 @@ export function Modal({ title, subtitle, onClose, footer, wide, alert, children 
     else if (!e.shiftKey && current === last) { e.preventDefault(); first.focus() }
   }
 
-  return (
-    <div className={s.backdrop} onClick={e => e.target === e.currentTarget && onClose()}>
+  return createPortal(
+    // check-style: dynamic độ sâu lồng của hộp thoại, tính lúc chạy
+    <div className={s.backdrop} style={{ '--modal-depth': depth } as CSSProperties}
+      onSubmit={event => event.stopPropagation()} onClick={e => e.target === e.currentTarget && onClose()}>
       <div
         ref={dialog}
         className={[s.dialog, wide && s.wide].filter(Boolean).join(' ')}
@@ -70,6 +79,7 @@ export function Modal({ title, subtitle, onClose, footer, wide, alert, children 
         aria-describedby={alert ? `${id}-body` : undefined}
         tabIndex={-1}
         data-dialog=""
+        data-depth={depth}
         onKeyDown={onKeyDown}
       >
         <div className={s.head}>
@@ -79,9 +89,12 @@ export function Modal({ title, subtitle, onClose, footer, wide, alert, children 
           </div>
           <button type="button" className={s.close} onClick={onClose} aria-label={t('ui.close')}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
         </div>
-        <div id={`${id}-body`} className={s.body}>{children}</div>
-        {footer && <div className={s.foot}>{footer}</div>}
+        <Depth.Provider value={depth}>
+          <div id={`${id}-body`} className={s.body}>{children}</div>
+          {footer && <div className={s.foot}>{footer}</div>}
+        </Depth.Provider>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

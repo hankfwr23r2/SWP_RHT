@@ -1,3 +1,4 @@
+import { formatDateTime } from '@shared/lib/format'
 import { useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@shared/ui/Button'
@@ -7,17 +8,16 @@ import type { departuresLoader, NetworkResult } from './loaders'
 import s from './Network.module.css'
 
 export default function DeparturesPage() {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const navigate = useNavigate()
-  const dateTime = new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Ho_Chi_Minh' })
   return <NetworkLayout title={t('staffNetwork.departures')}
     actions={<Button onClick={() => navigate('/admin/network/schedules')}>{t('staffNetwork.backSchedules')}</Button>}>
     <NetworkData<NetworkResult<typeof departuresLoader>>>{({ departures = [] }) => departures.length
       ? <div className={s.list}>{departures.map(departure => <Card key={departure.id} title={departure.routeName ?? departure.routeCode}
         actions={<NetworkStatus status={departure.status} />}>
         <div className={s.details}>
-          {departure.plannedDepartureAt && <div>{t('staffNetwork.departureAt', { time: dateTime.format(new Date(departure.plannedDepartureAt)) })}</div>}
-          {departure.bookingCutoffAt && <div>{t('staffNetwork.cutoffAt', { time: dateTime.format(new Date(departure.bookingCutoffAt)) })}</div>}
+          {departure.plannedDepartureAt && <div>{t('staffNetwork.departureAt', { time: formatDateTime(departure.plannedDepartureAt) })}</div>}
+          {departure.bookingCutoffAt && <div>{t('staffNetwork.cutoffAt', { time: formatDateTime(departure.bookingCutoffAt) })}</div>}
           <div>{t('staffNetwork.departureCapacity', { available: departure.availableStalls, capacity: departure.stallCapacity })}</div>
         </div>
       </Card>)}</div>

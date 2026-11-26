@@ -21,7 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class CustomerFlowTest {
 
     private static final String ADDRESS = """
-            {"label":"Home","addressLine":"Test address","provinceCode":"VN-79","countryCode":"VN","defaultAddress":true}
+            {"label":"Home","ward":"Phường Bến Nghé","addressLine":"Test address","provinceCode":"VN-79","countryCode":"VN","defaultAddress":true}
             """;
 
     @Autowired private MockMvc mvc;
@@ -49,6 +49,25 @@ class CustomerFlowTest {
                 .andExpect(status().isOk());
         mvc.perform(get("/customers/me/addresses").header(HttpHeaders.AUTHORIZATION, token))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data").isEmpty());
+    }
+
+    @Test
+    void wardIsRequiredButStreetIsOptional() throws Exception {
+        String token = customerToken();
+        mvc.perform(post("/customers/me/addresses").header(HttpHeaders.AUTHORIZATION, token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"label":"Trại","addressLine":"12 Đường Đua","provinceCode":"VN-79","countryCode":"VN"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.data.ward").exists());
+        mvc.perform(post("/customers/me/addresses").header(HttpHeaders.AUTHORIZATION, token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"label":"Trại","ward":"Phường Hiệp An","provinceCode":"VN-79","countryCode":"VN"}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.addressLine").doesNotExist());
     }
 
     @Test

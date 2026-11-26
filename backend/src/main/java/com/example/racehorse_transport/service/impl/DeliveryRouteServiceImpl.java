@@ -45,9 +45,19 @@ public class DeliveryRouteServiceImpl implements DeliveryRouteService {
     @Override
     @Transactional(readOnly = true)
     public DeliveryPricing pricing(Long hubId, List<Destination> destinations) {
+        return pricing(hubId, destinations, false);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DeliveryPricing previewPricing(Long hubId, List<Destination> destinations) {
+        return pricing(hubId, destinations, true);
+    }
+
+    private DeliveryPricing pricing(Long hubId, List<Destination> destinations, boolean estimateMissingRoads) {
         int seats = destinations.stream().mapToInt(Destination::seats).sum();
         Plan plan = plan(hubId, destinations.stream().map(Destination::point).toList(),
-                destinations.stream().map(Destination::horseCount).toList(), seats);
+                destinations.stream().map(Destination::horseCount).toList(), seats, estimateMissingRoads);
         var vehicleClasses = classes.findAll();
         var loop = road(vehicleClasses, seats, plan.deliveryKm());
         List<RoadLeg> separate = new ArrayList<>();
@@ -90,6 +100,11 @@ public class DeliveryRouteServiceImpl implements DeliveryRouteService {
     @Override
     @Transactional(readOnly = true)
     public Plan plan(Long hubId, List<GeoPointDto> destinations, List<Integer> horseCounts, int seats) {
+        return plan(hubId, destinations, horseCounts, seats, false);
+    }
+
+    private Plan plan(Long hubId, List<GeoPointDto> destinations, List<Integer> horseCounts, int seats,
+                      boolean estimateMissingRoads) {
         boolean hasVehicle = vehicles.findAllByOrderByLicensePlateAsc().stream()
                 .anyMatch(vehicle -> vehicle.getStatus() == VehicleStatus.ACTIVE
                         && seats <= vehicle.getStandardStallCount() * StallSeatPolicy.seats("STANDARD")
@@ -108,7 +123,12 @@ public class DeliveryRouteServiceImpl implements DeliveryRouteService {
                 try {
                     roads[from][to] = road(points.get(from), points.get(to), weight, speed);
                 } catch (NoTruckRouteException ignored) {
-                    // Another ordering may still connect both destinations.
+                    if (estimateMissingRoads) {
+                        var km = PricingPolicy.estimatedRoadKm(points.get(from), points.get(to),
+                                configs.getInt("ROAD_DISTANCE_FACTOR"));
+                        long seconds = Math.round(km.doubleValue() * 3600 / speed);
+                        roads[from][to] = new RoadRouteDto(km.doubleValue(), seconds, List.of());
+                    }
                 }
             }
         }

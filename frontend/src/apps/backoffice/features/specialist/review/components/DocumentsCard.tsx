@@ -16,7 +16,7 @@ import s from '../Review.module.css'
 const documentTone = { UPLOADED: 'info', APPROVED: 'success', REJECTED: 'danger', EXPIRED: 'warning' } as const
 
 function DocumentRow({ document, editable, actions }: { document: BookingDocument; editable: boolean; actions: ReviewActions }) {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const { id, status, fileUrl, fileName, expiryDate, reviewNote } = document
   const pending = editable && status === 'UPLOADED'
   const options: ReviewAction[] = []
@@ -31,7 +31,7 @@ function DocumentRow({ document, editable, actions }: { document: BookingDocumen
           <i className="fa-solid fa-eye" aria-hidden="true" /> {t('staffReview.viewFile', { name: fileName ?? '' })}</a>}
         {status && <StatusBadge tone={documentTone[status]} label={t(`staffReview.documentStatus.${status}`)} />}
       </div>
-      {expiryDate && <p>{t('staffReview.expiry', { date: showDate(expiryDate, i18n.language) })}</p>}
+      {expiryDate && <p>{t('staffReview.expiry', { date: showDate(expiryDate) })}</p>}
       {reviewNote && <p>{reviewNote}</p>}
       {options.length > 0 && <ActionButtons options={options} actions={actions} />}
     </div>

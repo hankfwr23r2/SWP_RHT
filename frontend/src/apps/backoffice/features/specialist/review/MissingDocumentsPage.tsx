@@ -22,7 +22,7 @@ import s from './Review.module.css'
 const PAGE_SIZE = 10
 
 function MissingRow({ booking, id }: { booking: BookingOrder; id: number }) {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const { data, loaded, error, reload } = useMissingChecklist(id)
   const navigate = useNavigate()
   const actions = useReviewActions(id)
@@ -41,7 +41,7 @@ function MissingRow({ booking, id }: { booking: BookingOrder; id: number }) {
         <OrderStatusBadge status={booking.status} />
       </div>
       <p>{booking.specialistName ? t('staffReview.assigned', { name: booking.specialistName }) : t('staffReview.unassigned')}</p>
-      {booking.requestedPickupDate && <p>{t('staffReview.pickupDate', { date: showDate(booking.requestedPickupDate, i18n.language) })}</p>}
+      {booking.requestedPickupDate && <p>{t('staffReview.pickupDate', { date: showDate(booking.requestedPickupDate) })}</p>}
       {!loaded && <Skeleton lines={2} />}
       {error && <ErrorState onRetry={reload} />}
       {data && <>

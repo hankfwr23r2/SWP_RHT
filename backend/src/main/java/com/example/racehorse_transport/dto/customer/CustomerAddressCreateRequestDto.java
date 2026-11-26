@@ -9,8 +9,8 @@ import java.math.BigDecimal;
 
 public record CustomerAddressCreateRequestDto(
         @NotBlank @Size(max = 100) String label,
-        @NotBlank @Size(max = 500) String addressLine,
-        @Size(max = 100) String ward,
+        @Size(max = 500) String addressLine,
+        @NotBlank @Size(max = 100) String ward,
         @NotBlank @Size(max = 10) String provinceCode,
         @NotBlank @Pattern(regexp = "[A-Za-z]{2}") String countryCode,
         @DecimalMin("-90") @DecimalMax("90") @Digits(integer = 3, fraction = 6) BigDecimal latitude,
@@ -21,8 +21,8 @@ public record CustomerAddressCreateRequestDto(
         CustomerAddress address = new CustomerAddress();
         address.setCustomer(customer);
         address.setLabel(label.strip());
-        address.setAddressLine(addressLine.strip());
-        address.setWard(ward);
+        address.setAddressLine(addressLine == null || addressLine.isBlank() ? null : addressLine.strip());
+        address.setWard(ward.strip());
         address.setCountry(country);
         address.setProvince(province);
         address.setLatitude(latitude);

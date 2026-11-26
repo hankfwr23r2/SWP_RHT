@@ -1,3 +1,4 @@
+import { DateInput } from '@shared/ui/DateInput'
 // Gom tự động (màn 3.9): chọn ngày, hub và loại lượt; hệ thống đề xuất nhóm, điều phối duyệt từng nhóm
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -6,7 +7,6 @@ import { useLoad } from '@shared/hooks/useLoad'
 import { EmptyState } from '@shared/ui/EmptyState'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { Field } from '@shared/ui/Field'
-import { Input } from '@shared/ui/Input'
 import { Select } from '@shared/ui/Select'
 import { Skeleton } from '@shared/ui/Skeleton'
 import { hubsOf } from './dispatchModel'
@@ -50,7 +50,7 @@ export function GroupingPanel({ defaultDate, onCreated }: { defaultDate: string;
     <div className={s.section}>
       <div className={s.form}>
         <Field label={t('dispatch.grouping.date')}>
-          {c => <Input {...c} type="date" value={date} onChange={e => e.target.value && setDate(e.target.value)} />}
+          {c => <DateInput {...c} value={date} onValueChange={value => value && setDate(value)} />}
         </Field>
         <Field label={t('dispatch.stays.hub')}>
           {c => <Select {...c} value={hubId} onChange={setHubChoice} placeholder={t('tripWords.choose')}

@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.policy;
 
 import com.example.racehorse_transport.dto.regulation.DocumentRequirementResponseDto;
+import com.example.racehorse_transport.dto.route.GeoPointDto;
 import com.example.racehorse_transport.entity.*;
 import com.example.racehorse_transport.entity.enums.*;
 import com.example.racehorse_transport.exception.PricingRuleException;
@@ -105,8 +106,19 @@ public final class PricingPolicy {
         AVAILABLE, TOO_FAR, NO_ROUTE, UNKNOWN;
 
         public boolean companyAllowed() {
-            return this == AVAILABLE || this == UNKNOWN;
+            return this != TOO_FAR;
         }
+    }
+
+    // Quãng đường ước lượng khi bản đồ không tìm được đường xe tải: đường chim bay × hệ số (phần trăm)
+    public static BigDecimal estimatedRoadKm(GeoPointDto from, GeoPointDto to, int factorPercent) {
+        return BigDecimal.valueOf(GeoPointDto.distanceKm(from, to))
+                .multiply(BigDecimal.valueOf(factorPercent, 2)).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    // Giờ lái ước lượng theo tốc độ tối đa của xe
+    public static long estimatedDriveSeconds(BigDecimal km, int topSpeedKmh) {
+        return topSpeedKmh > 0 ? Math.round(km.doubleValue() * 3600 / topSpeedKmh) : 0;
     }
 
     public static void validateDriveTime(ServiceLayer layer, long driveSeconds, int dailyHours) {
@@ -124,7 +136,7 @@ public final class PricingPolicy {
         return switch (status) {
             case AVAILABLE -> null;
             case TOO_FAR -> tooFarMessage(layer);
-            case NO_ROUTE -> "Không tìm được đường cho xe tải tới địa chỉ này.";
+            case NO_ROUTE -> "Chưa tìm được đường xe tải tới vị trí ghim. Kiểm tra lại ghim trên bản đồ; điều phối sẽ xác nhận đường khi lập lượt.";
             case UNKNOWN -> "Chưa kiểm được quãng đường. Công ty sẽ kiểm lại khi tính giá.";
         };
     }

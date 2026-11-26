@@ -1,6 +1,7 @@
 import { lazy, Suspense, useId, useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { CustomerAddress, CustomerAddressCreate } from '@shared/api/customerAddresses'
+import { AddressMapSearch } from './AddressMapSearch'
 import type { MapPoint } from './MapPicker'
 import { Button } from '@shared/ui/Button'
 import { ErrorState } from '@shared/ui/ErrorState'
@@ -38,7 +39,7 @@ export function AddressForm({ address, onClose, onSave }: Props) {
       ? { latitude: address.latitude, longitude: address.longitude }
       : null,
   )
-  const [mapOpen, setMapOpen] = useState(false)
+  const [searchPoint, setSearchPoint] = useState<MapPoint>()
   const [errors, setErrors] = useState<Fields>({})
   const [busy, setBusy] = useState(false)
   const saving = useRef(false)
@@ -53,7 +54,6 @@ export function AddressForm({ address, onClose, onSave }: Props) {
   // Lỗi vị trí: mở bản đồ và cuộn tới, vì phần này nằm cuối form
   const pointError = errors.latitude ?? errors.longitude
   const showPoint = () => {
-    setMapOpen(true)
     mapSection.current?.scrollIntoView?.({ block: 'start' })
   }
 
@@ -71,10 +71,11 @@ export function AddressForm({ address, onClose, onSave }: Props) {
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
+    event.stopPropagation()
     if (saving.current) return
-    const body = { ...form, label: form.label.trim(), addressLine: form.addressLine.trim(), ward: form.ward.trim() }
+    const body = { ...form, label: form.label.trim(), addressLine: form.addressLine.trim() || undefined, ward: form.ward.trim() }
     const nextErrors: Fields = {}
-    for (const name of ['label', 'addressLine', 'countryCode', 'provinceCode'] as const) {
+    for (const name of ['label', 'ward', 'countryCode', 'provinceCode'] as const) {
       if (!body[name]) nextErrors[name] = t('addresses.required')
     }
     if (!point) nextErrors.latitude = t('addresses.pointRequired')
@@ -136,26 +137,26 @@ export function AddressForm({ address, onClose, onSave }: Props) {
         {(!countries.loaded || (form.countryCode && !provinces.loaded)) && <Skeleton />}
         {countries.error && <ErrorState onRetry={countries.reload} />}
         {!countries.error && provinces.error && <ErrorState onRetry={provinces.reload} />}
-        <Field label={t('addresses.ward')} error={errors.ward}>
+        <Field label={t('addresses.ward')} error={errors.ward} required>
           {control => <Input {...control} value={form.ward} maxLength={100} disabled={busy}
             onChange={e => set('ward', e.target.value)} />}
         </Field>
-        <Field label={t('addresses.addressLine')} error={errors.addressLine} required>
+        <Field label={t('addresses.addressLine')} hint={t('addresses.addressLineHint')} error={errors.addressLine}>
           {control => <Input {...control} value={form.addressLine} maxLength={500} disabled={busy}
             onChange={e => set('addressLine', e.target.value)} />}
         </Field>
         <section ref={mapSection} className={s.mapSection}>
           <h3>{t('addresses.point')}</h3>
-          {point && <p>{t('mapPicker.point', { latitude: point.latitude.toFixed(6), longitude: point.longitude.toFixed(6) })}</p>}
-          <div>
-            <Button size="sm" disabled={busy} aria-expanded={mapOpen} onClick={() => setMapOpen(open => !open)}>
-              {t(mapOpen ? 'addresses.hideMap' : point ? 'addresses.changePoint' : 'addresses.openMap')}
-            </Button>
-          </div>
           {pointError && <p className={s.error} role="alert">{pointError}</p>}
-          {mapOpen && <Suspense fallback={<Skeleton variant="block" />}>
-            <MapPicker value={point} center={center} onChange={updatePoint} disabled={busy} />
-          </Suspense>}
+          <AddressMapSearch key={form.countryCode} countryCode={form.countryCode} disabled={busy}
+            onChoose={value => {
+              const selected = { latitude: value.latitude, longitude: value.longitude }
+              updatePoint(selected)
+              setSearchPoint(selected)
+            }} />
+          <Suspense fallback={<Skeleton variant="block" />}>
+            <MapPicker value={point} center={center} searchPoint={searchPoint} onChange={updatePoint} disabled={busy} />
+          </Suspense>
         </section>
         <label className={s.check}>
           <Input type="checkbox" checked={form.defaultAddress} aria-invalid={!!errors.defaultAddress}

@@ -7,7 +7,7 @@ import { showDate } from '../reviewDisplay'
 import s from '../Review.module.css'
 
 export function OrderFacts({ detail, stallTypes }: { detail: BookingDetail; stallTypes?: StallType[] }) {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const { booking, addresses, horses, parties } = detail
   if (!booking) return null
 
@@ -15,7 +15,7 @@ export function OrderFacts({ detail, stallTypes }: { detail: BookingDetail; stal
     <Card title={t('staffReview.trip')}>
       <dl className={s.facts}>
         {booking.bookingType && <div><dt>{t('staffReview.type')}</dt><dd>{t(`bookingForm.types.${booking.bookingType}`)}</dd></div>}
-        {booking.requestedPickupDate && <div><dt>{t('staffReview.requestedPickup')}</dt><dd>{showDate(booking.requestedPickupDate, i18n.language)}</dd></div>}
+        {booking.requestedPickupDate && <div><dt>{t('staffReview.requestedPickup')}</dt><dd>{showDate(booking.requestedPickupDate)}</dd></div>}
         {booking.waybillNumber && <div><dt>{t('staffReview.waybill')}</dt><dd>{booking.waybillNumber}</dd></div>}
         {addresses?.map(address => {
           const method = address.addressType === 'PICKUP' ? detail.pickupMethod : detail.deliveryMethod

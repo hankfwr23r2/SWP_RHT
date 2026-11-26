@@ -1,3 +1,4 @@
+import { DateInput } from '@shared/ui/DateInput'
 // Chọn chuyến trong tuần: ngày xuất phát, chỗ còn và hạn chốt do backend trả về.
 import { useTranslation } from 'react-i18next'
 import type { DepartureSuggestion } from '@shared/api/bookingOrders'
@@ -5,7 +6,6 @@ import { Card } from '@shared/ui/Card'
 import { EmptyState } from '@shared/ui/EmptyState'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { Field } from '@shared/ui/Field'
-import { Input } from '@shared/ui/Input'
 import { Skeleton } from '@shared/ui/Skeleton'
 import type { Departure } from '../draft'
 import { showDate, showDateTime } from '../model'
@@ -65,8 +65,8 @@ export function DeparturePicker({ privateMode, suggestion, loaded, error, onRetr
     <Card title={t('bookingForm.route.departures')}>
       <div className={s.stack}>
         <Field label={t('bookingForm.route.fromDate')}>
-          {control => <Input {...control} type="date" value={fromDate} min={minDate}
-            onChange={event => onFromDate(event.target.value || minDate)} />}
+          {control => <DateInput {...control} value={fromDate} min={minDate}
+            onValueChange={value => onFromDate(value || minDate)} />}
         </Field>
         {list()}
       </div>

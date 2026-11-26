@@ -344,7 +344,7 @@ Index: `role_type`, dùng để tra danh sách bác sĩ thú y, đội cứu h�
 | `id` | `bigint` | | PK, identity | |
 | `customer_id` | `bigint` | | FK → customer(user_id), CASCADE | |
 | `label` | `varchar(100)` | | | Ví dụ "Trang trại Bình Dương" |
-| `address_line` | `varchar(500)` | | | |
+| `address_line` | `varchar(500)` | có | | Số nhà, tên đường. Không bắt buộc; phường (`ward`) bắt buộc khi tạo, sửa (kiểm ở DTO) |
 | `ward` | `varchar(100)` | có | | |
 | `province_code` | `varchar(10)` | | FK → province | |
 | `country_code` | `char(2)` | | FK → country | |
@@ -1608,6 +1608,9 @@ Giá trị khởi đầu của các tham số chốt ngày 23/11/2026, thêm b�
 | `STABLING_REMINDER_HOUR`, `BALANCE_HOLD_MIN_CONTACTS` | 8, 3 | Giờ nhắc hằng ngày và số lần ghi đã liên hệ trước khi tự hủy |
 | `MAX_CONTINUOUS_HOURS` | 4 | Thời gian chạy liên tục tối đa |
 | `MAX_TRANSFER_HORSE_HOURS` | 8 | Giới hạn giờ ngựa ngồi xe một chặng đón hoặc giao (1–8) |
+
+`ROAD_DISTANCE_FACTOR` (nhóm ROUTING): 130 (%), giới hạn 100–300. Khi bản đồ không tìm được đường xe tải tới nơi đón hoặc giao, giá xem trước và báo giá tính quãng đường bằng đường chim bay × hệ số này; điều phối xác nhận đường thật khi lập lượt. Chạy thẳng vẫn bị chặn.
+
 | `MAX_DIRECT_HORSE_HOURS` | 10 | Giới hạn giờ ngựa ngồi xe một chặng chạy thẳng (1–10) |
 | `HORSE_REST_INTERVAL_HOURS` | 4 | Giới hạn giờ liên tục trước khi phải dừng ở trạm nghỉ (1–8) |
 | `MIN_REST_MINUTES` | 30 | Thời gian nghỉ tối thiểu ở trạm |

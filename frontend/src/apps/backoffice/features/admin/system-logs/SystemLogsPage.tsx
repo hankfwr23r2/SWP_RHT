@@ -19,7 +19,7 @@ import { AuditFilters } from './AuditFilters'
 import { useAuditLogs } from './useAuditLogs'
 
 export default function SystemLogsPage() {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const [params, setParams] = useSearchParams()
   const [defaults] = useState(auditDefaults)
   const options = useCatalogData<typeof loader>()
@@ -64,7 +64,7 @@ export default function SystemLogsPage() {
             description={t(total ? 'systemLogs.outOfRange' : 'systemLogs.empty')}>
             <Table caption={title} rows={rows} rowKey={row => row.id ?? `${row.createdAt}-${row.targetKey}`}
               columns={[
-                { key: 'time', header: t('systemLogs.time'), render: row => auditTimestamp(row.createdAt, i18n.language) },
+                { key: 'time', header: t('systemLogs.time'), render: row => auditTimestamp(row.createdAt) },
                 { key: 'actor', header: t('systemLogs.actor'), render: row => <div>
                   <strong>{row.actorName ?? unknown}</strong>
                   {row.actorEmail && <div>{row.actorEmail}</div>}

@@ -70,7 +70,7 @@ class PricingServiceTest {
                     }), hubs, clock,
                     regulations, config));
     private final PricingService service = transactional(PricingService.class,
-            new PricingServiceImpl(data, transactional(PricingRouteService.class, new PricingRouteServiceImpl(routing, mock(EntityManagerFactory.class))), mock(DeliveryRouteService.class)));
+            new PricingServiceImpl(data, transactional(PricingRouteService.class, new PricingRouteServiceImpl(routing, mock(EntityManagerFactory.class), config)), mock(DeliveryRouteService.class)));
 
     private <T> T transactional(Class<T> contract, T target) {
         var proxy = new ProxyFactory(target);
@@ -166,7 +166,7 @@ class PricingServiceTest {
         var logicalConnection = session.getJdbcCoordinator().getLogicalConnection();
         when(logicalConnection.isPhysicallyConnected()).thenReturn(true);
         PricingRouteService routeService = transactional(PricingRouteService.class,
-                new PricingRouteServiceImpl(routing, factory));
+                new PricingRouteServiceImpl(routing, factory, config));
         var segment = new PricingRouteService.RoadSegment(ServiceLayer.DIRECT,
                 new GeoPointDto(10.70, 106.70), new GeoPointDto(10.80, 106.70));
         when(routing.truckRoute(anyList(), eq(10.0), eq(60), any())).thenAnswer(invocation -> {
@@ -185,8 +185,25 @@ class PricingServiceTest {
     }
 
     @Test
+    void estimatesPickupWithoutTruckRouteButKeepsDirectBlocked() {
+        when(config.getInt("ROAD_DISTANCE_FACTOR")).thenReturn(130);
+        PricingRouteService routeService = new PricingRouteServiceImpl(routing, mock(EntityManagerFactory.class), config);
+        when(routing.truckRoute(anyList(), eq(10.0), eq(60), any())).thenThrow(new NoTruckRouteException());
+        var from = new GeoPointDto(10.70, 106.70);
+        var to = new GeoPointDto(10.80, 106.70);
+        LocalDateTime time = LocalDateTime.of(2026, 11, 23, 12, 0);
+
+        var pickup = routeService.routeOrEstimate(new PricingRouteService.RoadSegment(ServiceLayer.PICKUP, from, to), time, 10, 60);
+        // 0,1 độ vĩ ≈ 11,12 km chim bay × 1,3 ≈ 14,5 km, làm tròn 14 km; giờ lái theo 60 km/h
+        assertThat(pickup.km()).isEqualByComparingTo("14");
+        assertThat(pickup.driveSeconds()).isBetween(860L, 880L);
+        assertThatThrownBy(() -> routeService.routeOrEstimate(new PricingRouteService.RoadSegment(ServiceLayer.DIRECT, from, to), time, 10, 60))
+                .isInstanceOf(NoTruckRouteException.class);
+    }
+
+    @Test
     void billsNearestWholeKilometre() {
-        PricingRouteService routeService = new PricingRouteServiceImpl(routing, mock(EntityManagerFactory.class));
+        PricingRouteService routeService = new PricingRouteServiceImpl(routing, mock(EntityManagerFactory.class), config);
         var segment = new PricingRouteService.RoadSegment(ServiceLayer.DIRECT,
                 new GeoPointDto(10.70, 106.70), new GeoPointDto(10.80, 106.70));
         when(routing.truckRoute(anyList(), eq(10.0), eq(60), any())).thenReturn(new RoadRouteDto(35.27, 600, List.of()),
@@ -259,7 +276,7 @@ class PricingServiceTest {
         assertThat(options.pickup().status()).isEqualTo(TransferStatus.UNKNOWN);
         assertThat(options.pickup().companyAllowed()).isTrue();
         assertThat(options.delivery().status()).isEqualTo(TransferStatus.NO_ROUTE);
-        assertThat(options.delivery().companyAllowed()).isFalse();
+        assertThat(options.delivery().companyAllowed()).isTrue();
     }
 
     @Test

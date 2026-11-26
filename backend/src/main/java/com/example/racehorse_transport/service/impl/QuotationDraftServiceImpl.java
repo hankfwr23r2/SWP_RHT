@@ -59,7 +59,7 @@ public class QuotationDraftServiceImpl implements QuotationDraftService {
             return snapshot;
         });
         var estimates = data.roads().stream().map(segment -> {
-            var estimate = maps.route(segment, data.pickupTime(), data.weight(), data.speed());
+            var estimate = maps.routeOrEstimate(segment, data.pickupTime(), data.weight(), data.speed());
             PricingPolicy.validateDriveTime(segment.layer(), estimate.driveSeconds(), segment.maxDriveHoursPerDay());
             return estimate;
         }).toList();

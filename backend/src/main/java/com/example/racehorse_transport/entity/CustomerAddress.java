@@ -36,7 +36,7 @@ public class CustomerAddress {
     @Column(name = "label", length = 100, nullable = false)
     private String label;
 
-    @Column(name = "address_line", length = 500, nullable = false)
+    @Column(name = "address_line", length = 500)
     private String addressLine;
 
     @Column(name = "ward", length = 100)

@@ -1,3 +1,4 @@
+import { DateInput } from '@shared/ui/DateInput'
 import { ListPanel } from '@shared/ui/ListPanel'
 // Chuyến cần quyết định: xác nhận chạy, hủy chuyến, tạo chuyến đột xuất.
 import { useState } from 'react'
@@ -7,7 +8,6 @@ import { Button } from '@shared/ui/Button'
 import { EmptyState } from '@shared/ui/EmptyState'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { Field } from '@shared/ui/Field'
-import { Input } from '@shared/ui/Input'
 import { PageHeader } from '@shared/ui/PageHeader'
 import { Skeleton } from '@shared/ui/Skeleton'
 import { ReasonDialog } from '@backoffice/shared/ReasonDialog'
@@ -66,8 +66,8 @@ export default function DeparturesPage() {
         actions={<Button variant="primary" icon={<i className="fa-solid fa-plus" />} onClick={() => open({ kind: 'create' })}>{t('mgr.departures.create')}</Button>} />
       <ListPanel count={data && Math.min(data.length, limit)}
         more={data && data.length > limit ? { onClick: () => setLimit(limit + 10) } : undefined} toolbar={<div className={s.grid}>
-        <Field label={t('mgr.departures.from')}>{control => <Input {...control} type="date" value={from} max={to} onChange={event => { setLimit(10); setRange({ from: event.target.value }) }} />}</Field>
-        <Field label={t('mgr.departures.to')}>{control => <Input {...control} type="date" value={to} min={from} onChange={event => { setLimit(10); setRange({ to: event.target.value }) }} />}</Field>
+        <Field label={t('mgr.departures.from')}>{control => <DateInput {...control} value={from} max={to} onValueChange={value => { setLimit(10); setRange({ from: value }) }} />}</Field>
+        <Field label={t('mgr.departures.to')}>{control => <DateInput {...control} value={to} min={from} onValueChange={value => { setLimit(10); setRange({ to: value }) }} />}</Field>
       </div>}>
         {error && !dialog && <p className={s.error} role="alert">{error}</p>}
         {content()}

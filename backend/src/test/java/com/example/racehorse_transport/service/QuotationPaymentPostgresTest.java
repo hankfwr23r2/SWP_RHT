@@ -95,6 +95,9 @@ class QuotationPaymentPostgresTest {
         data.bookingAddress(fixture.booking(), AddressRole.DELIVERY);
         long horse = attachHorse(fixture, "WIDE");
         confirmWaiver(fixture, horse);
+        // Báo giá gọi routeOrEstimate: chuyển sang route đã giả lập ở từng test
+        when(maps.routeOrEstimate(any(), any(), anyInt(), anyInt())).thenAnswer(invocation -> maps.route(
+                invocation.getArgument(0), invocation.getArgument(1), invocation.getArgument(2), invocation.getArgument(3)));
         when(maps.route(any(), any(), anyInt(), anyInt())).thenAnswer(invocation -> {
             assertThat(TransactionSynchronizationManager.isActualTransactionActive()).isFalse();
             return new PricingRouteService.RoadEstimate(new BigDecimal("35"), 600);
@@ -120,6 +123,8 @@ class QuotationPaymentPostgresTest {
                 select ?, 'ARRANGED', p.id, 100000, 2500, 'VND', ?, 'CONFIRMED', ?, now()
                 from party p where p.display_name = 'Công ty bảo hiểm (mẫu)'
                 """, horse, java.sql.Timestamp.from(insuranceDeadline), fixture.managerId());
+        when(maps.routeOrEstimate(any(), any(), anyInt(), anyInt())).thenAnswer(invocation -> maps.route(
+                invocation.getArgument(0), invocation.getArgument(1), invocation.getArgument(2), invocation.getArgument(3)));
         when(maps.route(any(), any(), anyInt(), anyInt()))
                 .thenReturn(new PricingRouteService.RoadEstimate(new BigDecimal("35"), 600));
         var draft = quotations.createDraft(fixture.booking().getId());
@@ -155,6 +160,8 @@ class QuotationPaymentPostgresTest {
                 VALUES (?, 'ARRANGED', ?, 100000, 2500, 'VND', ?, 'CONFIRMED', ?, ?) RETURNING id
                 """, Long.class, horse, insurer, java.sql.Timestamp.from(oldDeadline), specialist.getUserId(),
                 java.sql.Timestamp.from(START));
+        when(maps.routeOrEstimate(any(), any(), anyInt(), anyInt())).thenAnswer(invocation -> maps.route(
+                invocation.getArgument(0), invocation.getArgument(1), invocation.getArgument(2), invocation.getArgument(3)));
         when(maps.route(any(), any(), anyInt(), anyInt()))
                 .thenReturn(new PricingRouteService.RoadEstimate(new BigDecimal("35"), 600));
         var draft = quotations.createDraft(booking);

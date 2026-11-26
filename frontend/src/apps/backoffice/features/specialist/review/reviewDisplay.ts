@@ -38,10 +38,4 @@ export function matchesReview(row: BookingSummary, query: string) {
   return searchText(query.trim()).split(/\s+/).every(word => haystack.includes(word))
 }
 
-export function showDate(value: string, language: string) {
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat(language, {
-    dateStyle: 'medium',
-    ...(value.includes('T') ? { timeStyle: 'short', timeZone: 'Asia/Ho_Chi_Minh' } : { timeZone: 'UTC' }),
-  }).format(date)
-}
+export { formatDateTime as showDate } from '@shared/lib/format'

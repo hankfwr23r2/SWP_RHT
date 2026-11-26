@@ -36,7 +36,7 @@ function HorseInsurance({ horse, editable, canEdit, insurers, documents, actions
   }
   if (editable && status === 'CONFIRMED' && id != null) options.push(actions.reopenInsurance(id))
   const money = (amount: number) => [new Intl.NumberFormat(i18n.language, { maximumFractionDigits: 2 }).format(amount), currencyCode].filter(Boolean).join(' ')
-  const date = (value: string) => showDate(value, i18n.language)
+  const date = (value: string) => showDate(value)
 
   return <li className={s.item}>
     <div className={s.stack}>

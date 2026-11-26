@@ -1,3 +1,4 @@
+import { DateInput } from '@shared/ui/DateInput'
 // Bước 1: nơi đón, nơi giao, cách đưa và nhận ngựa, chuyến trong tuần, giấy phải nộp.
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
@@ -161,8 +162,8 @@ export default function Step1RoutePage() {
               )}
               <Field label={t(selfPickup ? 'bookingForm.route.hubDate' : 'bookingForm.route.pickupDate')} required error={dateError}
                 hint={t(linehaul ? 'bookingForm.route.linehaulDateHint' : 'bookingForm.route.directDateHint')}>
-                {control => <Input {...control} type="date" value={draft.pickupDate} min={today} max={lastDay}
-                  onChange={event => save({ pickupDate: event.target.value })} />}
+                {control => <DateInput {...control} value={draft.pickupDate} min={today} max={lastDay}
+                  onValueChange={value => save({ pickupDate: value })} />}
               </Field>
               {linehaul && (
                 <MethodChoice name="deliveryMethod" legend={t('bookingForm.route.deliveryMethod')} side="delivery"
