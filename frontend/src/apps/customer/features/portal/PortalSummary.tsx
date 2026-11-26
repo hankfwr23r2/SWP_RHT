@@ -2,79 +2,87 @@ import { Link, useRevalidator } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { OrderStatusBadge } from '@shared/components/OrderStatusBadge'
 import { formatDate } from '@shared/lib/format'
-import { Card } from '@shared/ui/Card'
 import { EmptyState } from '@shared/ui/EmptyState'
 import { ErrorState } from '@shared/ui/ErrorState'
+import { ListPanel } from '@shared/ui/ListPanel'
 import { Skeleton } from '@shared/ui/Skeleton'
+import { StatRow, StatTile } from '@shared/ui/StatTile'
+import { Table } from '@shared/ui/Table'
 import type { PortalData } from './loaders'
 import { portalSummary } from './summary'
 import s from './PortalPage.module.css'
 
-const MAX_TODO = 5
+const PREVIEW_COUNT = 5
 
-// Số liệu nhanh và các đơn đang chờ khách
-export function PortalSummary({ data: { orders, horses } }: { data: PortalData }) {
-  const { t } = useTranslation()
-  const summary = orders && portalSummary(orders)
-  const stats = [
-    { key: 'action', to: '/orders', value: summary?.action },
-    { key: 'processing', to: '/orders', value: summary?.processing },
-    { key: 'moving', to: '/orders', value: summary?.moving },
-    { key: 'horses', to: '/horses', value: horses?.length },
-  ]
-  return (
-    <>
-      <nav className={s.stats} aria-label={t('portal.statsLabel')}>
-        {stats.map(({ key, to, value }) => (
-          <Link key={key} to={to} className={`${s.stat} ${key === 'action' && value ? s.statWarn : ''}`}>
-            <b>{value ?? '—'}</b><span>{t(`portal.stats.${key}`)}</span>
-          </Link>
-        ))}
-      </nav>
-      <Card title={t('portal.todoTitle')} actions={<Link to="/orders" className={s.more}>{t('portal.allOrders')}</Link>}>
-        <TodoList orders={orders} todo={summary?.todo ?? []} />
-      </Card>
-    </>
-  )
-}
-
-function TodoList({ orders, todo }: { orders: PortalData['orders']; todo: ReturnType<typeof portalSummary>['todo'] }) {
+export function PortalSummary({ data: { orders, actions } }: { data: PortalData }) {
   const { t } = useTranslation()
   const { revalidate, state } = useRevalidator()
   if (!orders) return <ErrorState onRetry={revalidate} retrying={state !== 'idle'} />
-  if (!orders.length) {
-    return <EmptyState icon={<i className="fa-solid fa-box-open" />} title={t('portal.noOrders')} description={t('portal.noOrdersHint')}
-      action={<Link to="/booking/route" className="btn btn-primary">{t('common.bookNewTrip')}</Link>} />
-  }
-  if (!todo.length) return <p className={s.none}><i className="fa-solid fa-circle-check" aria-hidden="true" /> {t('portal.noTodo')}</p>
+
+  const summary = portalSummary(orders, actions)
+  const incomplete = actions?.some(entry => entry.incomplete)
+  const missingHorses = new Set(actions?.flatMap(entry => entry.missingHorseIds)).size
+  const stats = [
+    { key: 'action', to: '/orders', value: summary.action, icon: 'fa-list' },
+    { key: 'processing', to: '/orders', value: summary.processing, icon: 'fa-clock' },
+    { key: 'moving', to: '/orders', value: summary.moving, icon: 'fa-truck' },
+    { key: 'horses', to: '/horses', value: incomplete ? '—' : missingHorses, icon: 'fa-file' },
+  ]
+  const todo = summary.todo.slice(0, PREVIEW_COUNT)
+  const recent = summary.recent.slice(0, PREVIEW_COUNT)
   return (
-    <ul className={s.todoList}>
-      {todo.slice(0, MAX_TODO).map(({ order, next }) => (
-        <li key={order.id}>
-          <Link to={`/orders/${order.id}`} className={s.todo}>
-            <div>
-              <div className={s.todoHead}><b>{order.code}</b> <OrderStatusBadge status={order.status} /></div>
-              <div className={s.todoTitle}>{t(`myOrders.next.${next.key}.title`)}</div>
-              <div className={s.todoSub}>
-                {order.bookingType && <span>{t(`bookingForm.types.${order.bookingType}`)}</span>}
-                {order.requestedPickupDate && <span>{t('myOrders.pickup', { date: formatDate(new Date(`${order.requestedPickupDate}T00:00:00`)) })}</span>}
-              </div>
-            </div>
-            <span className="btn btn-primary btn-sm">{t(`myOrders.next.${next.key}.cta`)}</span>
-          </Link>
-        </li>
-      ))}
-    </ul>
+    <>
+      <nav aria-label={t('portal.statsLabel')}>
+        <StatRow compact>
+          {stats.map(({ key, to, value, icon }) => (
+            <StatTile key={key} icon={<i className={`fa-solid ${icon}`} />}
+              value={value} label={t(`portal.stats.${key}`)}
+              link={{ to, label: t(key === 'horses' ? 'nav.horses' : 'portal.allOrders') }} />
+          ))}
+        </StatRow>
+      </nav>
+      {incomplete && <ErrorState onRetry={revalidate} retrying={state !== 'idle'} />}
+      <section aria-labelledby="portal-todo">
+        <h2 id="portal-todo" className={s.sectionTitle}>{t('portal.todoTitle')}</h2>
+        <ListPanel count={todo.length}>
+          {!orders.length ? (
+            <EmptyState compact title={t('portal.noOrders')} description={t('portal.noOrdersHint')} />
+          ) : todo.length ? (
+            <ul className={s.todoList}>
+              {todo.map(({ order, next }) => (
+                <li key={order.id}>
+                  <Link to={`/orders/${order.id}${next.anchor ? `#${next.anchor}` : ''}`} className={s.todo}>
+                    <div>
+                      <div className={s.todoHead}><b>{order.code}</b><OrderStatusBadge status={order.status} /></div>
+                      <div>{t(`myOrders.next.${next.key}.title`)}</div>
+                    </div>
+                    <span className={s.todoAction}>{t(`myOrders.next.${next.key}.cta`)} <i className="fa-solid fa-arrow-right" aria-hidden="true" /></span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : !incomplete && <p className={s.none}><i className="fa-solid fa-circle-check" aria-hidden="true" /> {t('portal.noTodo')}</p>}
+        </ListPanel>
+      </section>
+      {recent.length > 0 && <section aria-labelledby="portal-recent">
+        <h2 id="portal-recent" className={s.sectionTitle}>{t('portal.recentTitle')}</h2>
+        <ListPanel count={recent.length}>
+          <Table caption={t('portal.recentTitle')} rows={recent} rowKey={order => order.id ?? 0} columns={[
+            { key: 'code', header: t('listPanel.orderCode'), render: order => <Link className={s.code} to={`/orders/${order.id}`}>{order.code}</Link> },
+            { key: 'route', header: t('listPanel.route'), render: order => order.routeName || (order.bookingType ? t(`bookingForm.types.${order.bookingType}`) : '—') },
+            { key: 'schedule', header: t('listPanel.schedule'), render: order => order.requestedPickupDate ? formatDate(new Date(`${order.requestedPickupDate}T00:00:00`)) : '—' },
+            { key: 'status', header: t('listPanel.status'), render: order => <OrderStatusBadge status={order.status} /> },
+          ]} />
+        </ListPanel>
+      </section>}
+    </>
   )
 }
 
-// Giữ đúng bố cục trong lúc chờ dữ liệu
 export function PortalSummaryLoading() {
-  const { t } = useTranslation()
-  return (
-    <>
-      <div className={s.stats}>{[1, 2, 3, 4].map(n => <div key={n} className={s.stat}><Skeleton lines={2} /></div>)}</div>
-      <Card title={t('portal.todoTitle')}><Skeleton lines={3} /></Card>
-    </>
-  )
+  return <>
+    <StatRow compact>{[1, 2, 3, 4].map(n => <div key={n} className={s.placeholder}><Skeleton lines={3} /></div>)}</StatRow>
+    <ListPanel loading />
+    <ListPanel loading />
+  </>
 }

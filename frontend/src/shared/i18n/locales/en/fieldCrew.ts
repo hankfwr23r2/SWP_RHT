@@ -52,6 +52,8 @@ export const fieldCrew = {
   },
   myTrips: {
     "run": {
+      "emptyStops": "No stops have been scheduled.",
+      "emptyStopsHint": "Contact dispatch to confirm the itinerary.",
       "stayIn": {
         "title": "Stable overnight",
         "hint": "The horses on board are left with a partner stable overnight. In the morning, collect them from the stable before leaving.",

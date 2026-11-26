@@ -52,6 +52,8 @@ export const fieldCrew = {
   },
   myTrips: {
     "run": {
+      "emptyStops": "Chưa có điểm dừng.",
+      "emptyStopsHint": "Liên hệ điều phối để xác nhận lộ trình.",
       "stayIn": {
         "title": "Gửi chuồng qua đêm",
         "hint": "Các con đang trên xe được gửi cho chuồng đối tác qua đêm. Sáng hôm sau bấm Nhận lại từ chuồng rồi mới rời trạm.",

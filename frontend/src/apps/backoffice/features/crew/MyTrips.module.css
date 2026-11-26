@@ -43,3 +43,16 @@
 }
 
 .feeding { min-width: 0; overflow-wrap: anywhere; white-space: pre-line; }
+
+.tripList { display: grid; gap: var(--space-4); padding: 0; margin: 0; list-style: none; }
+.tripCard, .stopCard, .currentStop { overflow-wrap: anywhere; }
+.tripMeta, .tripActions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); }
+.tripMeta { color: var(--color-muted); font-size: var(--text-sm); }
+.tripActions { margin-top: var(--space-2); }
+.tripActions > :global(.btn) { min-height: var(--touch-target); }
+.list .currentStop { border-color: var(--color-primary); border-inline-start-width: var(--space-1); background: var(--color-primary-soft); }
+.body:empty { display: none; }
+
+@media (max-width: 600px) {
+  .tripActions > button, .tripActions > a { width: 100%; }
+}

@@ -1,36 +1,18 @@
-/* Trang chủ của khách */
-.stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
-.greet { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-4); }
-.hello { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-1) var(--space-4); border-radius: var(--radius-full); background: var(--color-primary-soft); color: var(--color-primary); font-size: var(--text-sm); font-weight: var(--weight-semibold); overflow-wrap: anywhere; }
-.actions { display: flex; flex-wrap: wrap; gap: var(--space-3); }
-
-.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-3); }
-.stat { display: grid; gap: var(--space-1); padding: var(--space-4) var(--space-5); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); transition: border-color var(--duration-fast) var(--ease-standard); }
-a.stat:hover { border-color: var(--color-primary-bright); }
-.stat:focus-visible { outline: none; box-shadow: var(--focus-ring); }
-.stat b { font-size: 1.8rem; font-weight: 800; line-height: 1.1; color: var(--color-heading); }
-.stat > span { font-size: var(--text-sm); color: var(--color-muted); }
-.statWarn b { color: var(--color-warning); }
-
-.more { font-size: var(--text-sm); font-weight: var(--weight-semibold); color: var(--color-primary); }
-.none { display: flex; align-items: center; gap: var(--space-3); margin: 0; color: var(--color-muted); }
-.none i { font-size: var(--text-xl); color: var(--color-success); }
-.todoList { display: grid; gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
-.todo { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-4); align-items: center; padding: var(--space-4); border: 1px solid var(--color-border); border-left: 4px solid var(--color-primary); border-radius: var(--radius-sm); background: var(--color-surface); color: inherit; }
+.stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-8); }
+.sectionTitle { margin: 0 0 var(--space-3); font-size: var(--text-xl); }
+.placeholder { padding: var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); }
+.none { margin: 0; padding: var(--space-4); color: var(--color-muted); }
+.none i { color: var(--color-success); }
+.todoList { margin: 0; padding: 0; list-style: none; }
+.todoList li + li { border-block-start: 1px solid var(--color-border); }
+.todo { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-3); padding: var(--space-4); color: var(--color-text); }
 .todo:hover { background: var(--color-bg-subtle); }
-.todo:focus-visible { outline: none; box-shadow: var(--focus-ring); }
-.todoHead { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
-.todoTitle { margin-top: var(--space-1); font-weight: var(--weight-bold); color: var(--color-heading); }
-.todoSub { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); font-size: var(--text-sm); color: var(--color-muted); }
+.todo:focus-visible { outline-offset: calc(-1 * var(--space-1)); }
+.todoHead { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); }
+.todoHead b, .code { white-space: nowrap; }
+.todoAction, .code { color: var(--color-primary); font-weight: var(--weight-semibold); }
 
-.anchor { scroll-margin-top: 84px; }
-.steps { display: grid; gap: var(--space-4); margin: 0; padding: 0; list-style: none; }
-.steps li { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: var(--space-4); align-items: start; }
-.steps p { margin: 0; font-size: var(--text-sm); color: var(--color-muted); }
-.stepNum { display: grid; place-items: center; width: 36px; height: 36px; border: 2px solid var(--color-primary-bright); border-radius: var(--radius-full); background: var(--color-primary-soft); color: var(--color-primary); font-weight: 800; }
-
-@media (max-width: 820px) {
-  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .todo { grid-template-columns: minmax(0, 1fr); }
-  .todo > :global(.btn) { justify-self: start; }
+.stack > header { margin-bottom: 0; }
+@media (max-width: 600px) {
+  .stack > header > div:last-child { display: grid; width: 100%; grid-template-columns: minmax(0, 1fr); }
 }

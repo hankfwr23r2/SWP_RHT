@@ -14,7 +14,18 @@ describe('trang chủ khách', () => {
   it('việc cần làm: đơn mới nhất lên đầu, kèm bước tiếp theo', () => {
     expect(portalSummary(orders).todo.map(({ order, next }) => [order.id, next.key])).toEqual([[4, 'resubmit'], [1, 'quote']])
   })
+  it('uses the backend checklist and lists the newest booking by creation date', () => {
+    const confirmed: BookingOrder = { id: 2, status: 'CONFIRMED', createdAt: '2026-12-01T00:00:00Z' }
+    const delivered: BookingOrder = { id: 3, status: 'DELIVERED', createdAt: '2026-11-01T00:00:00Z' }
+    const summary = portalSummary([delivered, confirmed], [{
+      order: confirmed,
+      checklist: { items: [{ submitterType: 'CUSTOMER', satisfied: false, requirement: { mandatory: true } }] },
+    }])
+    expect(summary.todo.map(entry => entry.next.key)).toEqual(['documents'])
+    expect(summary.recent.map(order => order.id)).toEqual([2, 3])
+    expect(summary.moving).toBe(0)
+  })
   it('chưa có đơn thì mọi số bằng 0', () => {
-    expect(portalSummary([])).toEqual({ action: 0, processing: 0, moving: 0, todo: [] })
+    expect(portalSummary([])).toEqual({ action: 0, processing: 0, moving: 0, todo: [], recent: [] })
   })
 })
