@@ -88,7 +88,6 @@ export const staff = {
       "COMPANY_FAULT": "Company fault",
       "HORSE_CONDITION": "Horse condition",
       "CUSTOMER_DOCS": "Customer documents",
-      "AGENT_FAULT": "Agent fault",
       "FORCE_MAJEURE": "Force majeure",
       "RECIPIENT_ABSENT": "Recipient absent"
     },
@@ -158,7 +157,6 @@ export const staff = {
       "COMPANY": "Company pays",
       "CUSTOMER": "Customer pays",
       "CONSIGNEE": "Recipient pays",
-      "AGENT": "Agent pays"
     },
     "approveCost": "Approve cost",
     "approved": "Approved",

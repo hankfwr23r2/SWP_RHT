@@ -127,6 +127,8 @@ public class DeliveryRouteServiceImpl implements DeliveryRouteService {
 
     private Rules rules() {
         return new Rules(configs.getInt("MAX_CONTINUOUS_HOURS"), configs.getInt("MIN_REST_MINUTES"),
-                configs.getInt("MAX_DRIVE_HOURS_PER_DAY"), configs.getInt("STOP_BASE_MINUTES"), configs.getInt("STOP_MINUTES_PER_HORSE"));
+                configs.getInt("MAX_DRIVE_HOURS_PER_DAY"), configs.getInt("STOP_BASE_MINUTES"), configs.getInt("STOP_MINUTES_PER_HORSE"),
+                configs.getInt("MAX_TRANSFER_HORSE_HOURS"), configs.getInt("MAX_DIRECT_HORSE_HOURS"),
+                configs.getInt("HORSE_REST_INTERVAL_HOURS"));
     }
 }

@@ -74,8 +74,6 @@ export function handoverTypesAt(run: CrewTrip, stop: Stop): HandoverType[] {
   if (stop.stopType === 'DELIVERY' && alighting) types.push('DELIVERY')
   if (stop.stopType === 'HUB' && (alighting || failedAwaitingHub(run).some(h => (sequenceOf.get(h.leg?.alightTripStopId) ?? 0) < at))) types.push('HUB_IN')
   if (stop.stopType === 'HUB' && boarding) types.push('HUB_OUT')
-  // Cửa khẩu: giao cho đại lý (đơn xuất) hoặc nhận từ đại lý (đơn nhập); backend chọn đại lý theo chặng
-  if (stop.stopType === 'BORDER' && (alighting || boarding)) types.push('AGENT')
   // Nghỉ đêm ở trạm nghỉ hoặc cửa khẩu: gửi chuồng các con đi qua điểm này, rồi nhận lại trước khi rời
   if (stop.stopType === 'REST' || stop.stopType === 'VITAL_CHECK' || stop.stopType === 'BORDER') {
     if (horsesPassing(run, stop).length) types.push('STAY_IN')
@@ -92,20 +90,13 @@ export function canReturnUnpaid(run: CrewTrip, stop: Stop): boolean {
     && stop.id != null && (run.unpaidReturnStopIds ?? []).includes(stop.id)
 }
 
-// Không nhận một con ở nơi nhận: điểm đón của khách, hoặc cửa khẩu khi con lên xe tại đây (nhận từ đại lý, đơn nhập)
-export function canRefuse(run: CrewTrip, handover: Handover, legId: number): boolean {
-  if (handover.handoverType === 'PICKUP') return true
-  return handover.handoverType === 'AGENT' && (run.horses ?? []).some(h => h.leg?.id === legId && h.leg?.boardTripStopId === handover.tripStopId)
-}
+export const canRefuse = (handover: Handover) => handover.handoverType === 'PICKUP'
 
 // Nhận và giao ngựa phải có biên bản đã ký trước khi hoàn tất (MAN_HINH 4.3, 6.5)
 export const needsRecord = (handover: Handover) =>
-  handover.handoverType === 'PICKUP' || handover.handoverType === 'DELIVERY' || handover.handoverType === 'AGENT'
+  handover.handoverType === 'PICKUP' || handover.handoverType === 'DELIVERY'
 
-export function receivesOriginals(run: CrewTrip, handover: Handover): boolean {
-  return handover.handoverType === 'PICKUP' || (handover.handoverType === 'AGENT'
-    && (handover.horses ?? []).some(horse => horse.horseLegId != null && canRefuse(run, handover, horse.horseLegId)))
-}
+export const receivesOriginals = (handover: Handover) => handover.handoverType === 'PICKUP'
 
 export const canStart = (run: CrewTrip) => run.trip?.status === 'PLANNED' || run.trip?.status === 'DISPATCHED'
 

@@ -236,6 +236,56 @@ class TripExecutionFlowTest {
                         .formatted(testData.vehicle(2, 0).getId(), departureId))).andExpect(status().isCreated()));
     }
 
+    @Test
+    void linehaulCannotLeaveBorderUntilOnboardBookingHasItsDocuments() throws Exception {
+        long international = jdbc.queryForObject("SELECT id FROM booking WHERE code = 'DEV-EXPORT-001'", Long.class);
+        long departure = jdbc.queryForObject("SELECT departure_id FROM booking WHERE id = ?", Long.class, international);
+        jdbc.update("UPDATE departure SET run_confirmed_at = now(), run_confirmed_by = ? WHERE id = ?", coordinatorId, departure);
+        long linehaul = emptyLinehaul(departure);
+        Staff member = testData.staff(testData.unique("exec.border"), "DRIVER");
+        mvc.perform(post("/vehicle-trips/{id}/crew-assignments", linehaul).header(HttpHeaders.AUTHORIZATION, coordinator)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"staffId\":%d,\"crewRole\":\"DRIVER\"}".formatted(member.getUserId())))
+                .andExpect(status().isCreated());
+        entityManager.flush();
+        jdbc.update("UPDATE vehicle_trip SET status = 'IN_PROGRESS', actual_start_at = now() WHERE id = ?", linehaul);
+        jdbc.update("UPDATE trip_stop SET actual_arrival_at = now() WHERE vehicle_trip_id = ? AND stop_type = 'BORDER'", linehaul);
+        jdbc.update("""
+                INSERT INTO horse_leg (booking_horse_id, sequence_number, leg_type, from_location_id, to_location_id, vehicle_trip_id,
+                        board_trip_stop_id, alight_trip_stop_id, planned_start_at, planned_end_at, actual_start_at, status)
+                SELECT bh.id, 1, 'LINEHAUL', v.start_location_id, v.end_location_id, v.id,
+                    (SELECT id FROM trip_stop WHERE vehicle_trip_id = v.id ORDER BY sequence_number LIMIT 1),
+                    (SELECT id FROM trip_stop WHERE vehicle_trip_id = v.id ORDER BY sequence_number DESC LIMIT 1),
+                    v.planned_start_at, v.planned_end_at, now(), 'IN_PROGRESS'
+                FROM booking_horse bh CROSS JOIN vehicle_trip v WHERE bh.booking_id = ? AND v.id = ?
+                """, international, linehaul);
+        jdbc.update("UPDATE document SET status = 'REJECTED' WHERE booking_id = ? OR booking_horse_id IN (SELECT id FROM booking_horse WHERE booking_id = ?)",
+                international, international);
+        entityManager.clear();
+        long border = jdbc.queryForObject("SELECT id FROM trip_stop WHERE vehicle_trip_id = ? AND stop_type = 'BORDER'", Long.class, linehaul);
+        act(token(member, "DRIVER"), "/trip-stops/" + border + "/depart").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.data.tripStopId", org.hamcrest.Matchers.containsString("DEV-EXPORT-001 thiếu")));
+        assertThat(jdbc.queryForObject("SELECT actual_departure_at FROM trip_stop WHERE id = ?", java.sql.Timestamp.class, border)).isNull();
+    }
+
+    @Test
+    void pickupCannotLeaveRestStopWithoutEveryHorsesFeedAndWaterLog() throws Exception {
+        long rest = locations.findByCode("REST-SONLA").orElseThrow().getId();
+        entityManager.flush();
+        jdbc.update("UPDATE vehicle_trip SET trip_type = 'PICKUP', status = 'IN_PROGRESS', actual_start_at = now() WHERE id = ?", trip);
+        jdbc.update("""
+                UPDATE trip_stop SET stop_type = 'REST', location_id = ?, booking_address_id = NULL,
+                    actual_arrival_at = now() - interval '40 minutes' WHERE id = ?
+                """, rest, stops.get(2));
+        jdbc.update("""
+                UPDATE horse_leg SET leg_type = 'PICKUP', status = 'IN_PROGRESS', actual_start_at = now() - interval '4 hours',
+                    alight_trip_stop_id = ? WHERE id = ?
+                """, stops.getLast(), leg);
+        entityManager.clear();
+        act(driver, "/trip-stops/" + stops.get(2) + "/depart").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.data.healthLogs", org.hamcrest.Matchers.containsString("Chưa ghi ăn uống")));
+    }
+
     private String departureStatus(long departureId) {
         return jdbc.queryForObject("SELECT status FROM departure WHERE id = ?", String.class, departureId);
     }

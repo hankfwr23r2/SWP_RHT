@@ -16,8 +16,8 @@ class TrackingPolicyTest {
         assertThat(TrackingPolicy.holderAfter(HandoverType.HUB_OUT, false)).isEqualTo(CustodyHolder.COMPANY);
         assertThat(TrackingPolicy.holderAfter(HandoverType.STAY_IN, true)).isEqualTo(CustodyHolder.PARTY);
         assertThat(TrackingPolicy.holderAfter(HandoverType.STAY_OUT, false)).isEqualTo(CustodyHolder.COMPANY);
-        assertThat(TrackingPolicy.holderAfter(HandoverType.AGENT, true)).isEqualTo(CustodyHolder.PARTY);
-        assertThat(TrackingPolicy.holderAfter(HandoverType.AGENT, false)).isEqualTo(CustodyHolder.COMPANY);
+        assertThat(TrackingPolicy.holderAfter(HandoverType.STAY_IN, true)).isEqualTo(CustodyHolder.PARTY);
+        assertThat(TrackingPolicy.holderAfter(HandoverType.STAY_IN, false)).isEqualTo(CustodyHolder.COMPANY);
         assertThat(TrackingPolicy.holderAfter(HandoverType.DELIVERY, false)).isEqualTo(CustodyHolder.CONSIGNEE);
         assertThat(TrackingPolicy.holderAfter(HandoverType.RETURN, false)).isEqualTo(CustodyHolder.SHIPPER);
         // Đơn nhập trả lại cho đại lý ở cửa khẩu

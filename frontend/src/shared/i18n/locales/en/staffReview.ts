@@ -86,7 +86,6 @@ export const staffReview = {
       "CUSTOMER": "Submitted by customer",
       "COMPANY": "Submitted by our company",
       "CONSIGNEE": "Submitted by consignee",
-      "AGENT": "Submitted by agent"
     },
     "beforeQuoting": "Required before quoting",
     "beforePickup": "Required before pickup",

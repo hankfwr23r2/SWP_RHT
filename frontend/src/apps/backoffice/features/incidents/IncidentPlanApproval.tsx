@@ -6,7 +6,7 @@ import { ConfirmDialog } from '@shared/ui/ConfirmDialog'
 import { Field } from '@shared/ui/Field'
 import { Select } from '@shared/ui/Select'
 
-const CAUSES: CauseType[] = ['COMPANY_FAULT', 'AGENT_FAULT', 'FORCE_MAJEURE', 'HORSE_CONDITION', 'CUSTOMER_DOCS', 'RECIPIENT_ABSENT']
+const CAUSES: CauseType[] = ['COMPANY_FAULT', 'FORCE_MAJEURE', 'HORSE_CONDITION', 'CUSTOMER_DOCS', 'RECIPIENT_ABSENT']
 
 interface Props {
   incident: Incident

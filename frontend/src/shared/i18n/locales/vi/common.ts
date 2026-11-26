@@ -105,7 +105,7 @@ export const common = {
     phone: "Nội dung khách xác nhận qua điện thoại",
     save: "Xác nhận",
   },
-  handoverEvidence: { noCodeNext: "Bạn có thể xác nhận cho người nhận ngay trên đơn này.", recipient: "Họ tên người nhận", code: "Mã nhận ngựa 6 số", noCode: "Đơn chưa có mã nhận ngựa", confirm: "Xác nhận cho nhận ngựa", confirmMessage: "Sau khi xác nhận, nhân viên có thể giao ngựa mà không cần mã. Chỉ xác nhận khi người nhận sẵn sàng nhận ngựa.", confirmed: "Đã xác nhận cho nhận ngựa", originalMissing: "Không nhận bản gốc", condition: "Tình trạng ngựa", photo: "Ảnh tình trạng ngựa", record: "Biên bản giao nhận đã ký", photoAttached: "Đã có ảnh", photoSaved: "Đã lưu ảnh", agentProof: "Ảnh hoặc biên bản đại lý đã giao", manualEntry: "Gõ tay", manualToggle: "Gõ tay (không quét được chip)", manualReason: "Lý do gõ tay" },
+  handoverEvidence: { noCodeNext: "Bạn có thể xác nhận cho người nhận ngay trên đơn này.", recipient: "Họ tên người nhận", code: "Mã nhận ngựa 6 số", noCode: "Đơn chưa có mã nhận ngựa", confirm: "Xác nhận cho nhận ngựa", confirmMessage: "Sau khi xác nhận, nhân viên có thể giao ngựa mà không cần mã. Chỉ xác nhận khi người nhận sẵn sàng nhận ngựa.", confirmed: "Đã xác nhận cho nhận ngựa", originalMissing: "Không nhận bản gốc", condition: "Tình trạng ngựa", photo: "Ảnh tình trạng ngựa", record: "Biên bản giao nhận đã ký", photoAttached: "Đã có ảnh", photoSaved: "Đã lưu ảnh", manualEntry: "Gõ tay", manualToggle: "Gõ tay (không quét được chip)", manualReason: "Lý do gõ tay" },
   ui: {
     loading: 'Đang tải',
     processing: 'Đang xử lý',

@@ -50,25 +50,12 @@ class TripExecutionPolicyTest {
         assertThatThrownBy(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.PICKUP, TripStopType.HUB)).hasMessageContaining("PICKUP");
         assertThatThrownBy(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.HUB_IN, TripStopType.REST)).hasMessageContaining("REST");
         assertThatThrownBy(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.RETURN, TripStopType.DELIVERY)).hasMessageContaining("RETURN");
-        assertThatThrownBy(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.AGENT, TripStopType.PICKUP)).hasMessageContaining("AGENT");
-        assertThat(TripExecutionPolicy.isBoarding(HandoverType.PICKUP, false)).isTrue();
-        assertThat(TripExecutionPolicy.isBoarding(HandoverType.HUB_OUT, false)).isTrue();
-        assertThat(TripExecutionPolicy.isBoarding(HandoverType.DELIVERY, false)).isFalse();
-        assertThat(TripExecutionPolicy.isBoarding(HandoverType.HUB_IN, false)).isFalse();
+        assertThatThrownBy(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.HUB_OUT, TripStopType.BORDER)).hasMessageContaining("HUB_OUT");
+        assertThat(TripExecutionPolicy.isBoarding(HandoverType.PICKUP)).isTrue();
+        assertThat(TripExecutionPolicy.isBoarding(HandoverType.HUB_OUT)).isTrue();
+        assertThat(TripExecutionPolicy.isBoarding(HandoverType.DELIVERY)).isFalse();
+        assertThat(TripExecutionPolicy.isBoarding(HandoverType.HUB_IN)).isFalse();
         // Đại lý giao cho công ty (đơn nhập) thì ngựa lên xe; công ty giao cho đại lý (đơn xuất) thì xuống xe
-        assertThat(TripExecutionPolicy.isBoarding(HandoverType.AGENT, true)).isTrue();
-        assertThat(TripExecutionPolicy.isBoarding(HandoverType.AGENT, false)).isFalse();
-        assertThatCode(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.AGENT, TripStopType.BORDER)).doesNotThrowAnyException();
-    }
-
-    @Test
-    void borderHandoverRequiresCompleteDocumentsInBothDirections() {
-        assertThatThrownBy(() -> TripExecutionPolicy.requireBorderDocuments(false, "XUAT-01", false))
-                .hasMessage("Đơn XUAT-01 còn thiếu giấy bắt buộc. Chưa bàn giao cho đại lý được.");
-        assertThatThrownBy(() -> TripExecutionPolicy.requireBorderDocuments(false, "NHAP-01", true))
-                .hasMessage("Đơn NHAP-01 còn thiếu giấy bắt buộc (gồm giấy vận chuyển mẫu 14a). Không nhận ngựa ở cửa khẩu.");
-        assertThatCode(() -> TripExecutionPolicy.requireBorderDocuments(true, "XUAT-01", false)).doesNotThrowAnyException();
-        assertThatCode(() -> TripExecutionPolicy.requireBorderDocuments(true, "NHAP-01", true)).doesNotThrowAnyException();
     }
 
     @Test

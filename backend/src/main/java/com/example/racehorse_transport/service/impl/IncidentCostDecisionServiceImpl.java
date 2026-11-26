@@ -95,7 +95,6 @@ public class IncidentCostDecisionServiceImpl implements IncidentCostDecisionServ
         }
         CostPayerPolicy.requireBookingForCustomerSide(payer, cost.getBooking() != null);
         cost.setPayerType(payer);
-        cost.setAgentRecoveryRequired(cause == IncidentCauseType.AGENT_FAULT);
         if (!CostPayerPolicy.countsAgainstEmergencyLimit(cost) || cost.getCustomerResponseDueAt() != null) {
             return;
         }

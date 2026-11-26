@@ -14,7 +14,7 @@ import { IncidentSeveritySelect } from '@backoffice/shared/IncidentSeverity'
 import s from './MyTrips.module.css'
 
 const types: IncidentType[] = ['HEALTH', 'VEHICLE_BREAKDOWN', 'ACCIDENT', 'DELAY', 'DOCUMENT', 'OTHER']
-const causes: CauseType[] = ['COMPANY_FAULT', 'HORSE_CONDITION', 'CUSTOMER_DOCS', 'AGENT_FAULT', 'FORCE_MAJEURE', 'RECIPIENT_ABSENT']
+const causes: CauseType[] = ['COMPANY_FAULT', 'HORSE_CONDITION', 'CUSTOMER_DOCS', 'FORCE_MAJEURE', 'RECIPIENT_ABSENT']
 
 interface Props {
   run: CrewTrip

@@ -109,8 +109,8 @@ class TripGroupingFlowTest {
         // Chưa xếp chặng trục thì ngựa chưa tới hub giao, chưa gợi ý lượt giao
         suggest(day, danang, "DELIVERY").andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(0));
         sql("""
-                INSERT INTO horse_leg (booking_horse_id, sequence_number, leg_type, from_location_id, to_location_id, agent_party_id, planned_start_at, planned_end_at, status)
-                SELECT bh.id, 1, 'LINEHAUL', %d, %d, (SELECT min(id) FROM party), now(), now() + interval '1 day', 'PLANNED' FROM booking_horse bh WHERE bh.booking_id = %d"""
+                WITH test_trip AS (INSERT INTO vehicle_trip (code, vehicle_id, start_location_id, end_location_id, trip_type, status, planned_start_at, planned_end_at) SELECT 'TEST-' || left(md5(random()::text), 20), min(v.id), min(l.id), min(l.id), 'TRANSFER', 'COMPLETED', now(), now() + interval '1 hour' FROM vehicle v CROSS JOIN location l WHERE l.location_type = 'HUB' RETURNING id) INSERT INTO horse_leg (booking_horse_id, sequence_number, leg_type, from_location_id, to_location_id, vehicle_trip_id, planned_start_at, planned_end_at, status)
+                SELECT bh.id, 1, 'LINEHAUL', %d, %d, (SELECT id FROM test_trip), now(), now() + interval '1 day', 'PLANNED' FROM booking_horse bh WHERE bh.booking_id = %d"""
                 .formatted(hcm, danang, domestic));
         String body = content(suggest(day, danang, "DELIVERY").andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(1))

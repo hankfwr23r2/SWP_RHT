@@ -113,6 +113,14 @@ public class TripProgressNoticeServiceImpl implements TripProgressNoticeService 
     @Transactional(propagation = Propagation.MANDATORY)
     public void departed(TripStop stop) {
         var trip = stop.getVehicleTrip();
+        if (stop.getStopType() == TripStopType.BORDER && trip.getTripType() == VehicleTripType.LINEHAUL) {
+            legs.findActiveOnTrip(trip.getId(), Set.of(HorseLegStatus.PLANNED, HorseLegStatus.COMPLETED,
+                            HorseLegStatus.CANCELLED, HorseLegStatus.FAILED)).stream()
+                    .map(leg -> leg.getBookingHorse().getBooking()).distinct()
+                    .forEach(booking -> notifications.notify(List.of(booking.getCustomer().getUserId()), booking.getId(),
+                            "Đã qua cửa khẩu", "Đơn " + booking.getCode() + " đã qua " + stop.getLocation().getName() + ".",
+                            "/orders/" + booking.getId()));
+        }
         if (SUPPORTED.contains(trip.getTripType())) {
             refresh(stop, stop.getActualDepartureAt(), stop.getActualDepartureAt(),
                     stops.findByVehicleTrip_IdOrderBySequenceNumber(trip.getId()), configs.getInt(DeliveryEtaPolicy.NOTICE_THRESHOLD));
@@ -189,7 +197,8 @@ public class TripProgressNoticeServiceImpl implements TripProgressNoticeService 
             if (warn(trip, "Vượt giờ giao", late)) trip.setDeliveryWindowWarnedAt(now);
         }
         if (trip.getDeliveryRideWarnedAt() == null) {
-            var rules = new TripSchedulePolicy.Rules(0, 0, configs.getInt("MAX_DRIVE_HOURS_PER_DAY"), 0, 0);
+            var rules = new TripSchedulePolicy.Rules(0, 0, configs.getInt("MAX_DRIVE_HOURS_PER_DAY"), 0, 0,
+                    configs.getInt("MAX_TRANSFER_HORSE_HOURS"), configs.getInt("MAX_DIRECT_HORSE_HOURS"), 0);
             var limit = Duration.ofSeconds(TripSchedulePolicy.rideLimitSeconds(trip.getTripType() == VehicleTripType.DIRECT, rules));
             var late = legs.findActiveOnTrip(trip.getId(), Set.of(HorseLegStatus.PLANNED, HorseLegStatus.FAILED,
                             HorseLegStatus.CANCELLED, HorseLegStatus.COMPLETED)).stream()

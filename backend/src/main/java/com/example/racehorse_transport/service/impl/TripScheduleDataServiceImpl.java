@@ -16,6 +16,7 @@ import com.example.racehorse_transport.entity.BookingAddress;
 import com.example.racehorse_transport.entity.BookingHorse;
 import com.example.racehorse_transport.entity.Location;
 import com.example.racehorse_transport.entity.enums.AddressRole;
+import com.example.racehorse_transport.entity.enums.ActiveStatus;
 import com.example.racehorse_transport.entity.enums.LocationType;
 import com.example.racehorse_transport.entity.enums.TripStopType;
 import com.example.racehorse_transport.entity.enums.VehicleTripType;
@@ -79,6 +80,14 @@ public class TripScheduleDataServiceImpl implements TripScheduleDataService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<PlaceInput> activeRestStops() {
+        return locations.search(LocationType.REST_STOP, ActiveStatus.ACTIVE).stream()
+                .filter(location -> location.getLatitude() != null && location.getLongitude() != null)
+                .map(TripScheduleDataServiceImpl::networkPlace).toList();
+    }
+
+    @Override
     @Transactional
     public VehicleTripResponseDto save(PlannedTripRequestDto request, List<HorseInput> horses, PlannedTripResponseDto plan, String username) {
         VehicleTripResponseDto trip = dispatch.createCalculatedTrip(new VehicleTripCreateRequestDto(request.tripType(), null, request.vehicleId(),
@@ -127,6 +136,13 @@ public class TripScheduleDataServiceImpl implements TripScheduleDataService {
         if (location.getLatitude() == null || location.getLongitude() == null) {
             throw new DispatchRuleException("places", location.getName() + " chưa có tọa độ.");
         }
+        if (location.getLocationType() == LocationType.REST_STOP && location.getStatus() != ActiveStatus.ACTIVE) {
+            throw new DispatchRuleException("places", location.getName() + " không hoạt động.");
+        }
+        return networkPlace(location);
+    }
+
+    private static PlaceInput networkPlace(Location location) {
         TripStopType type = location.getLocationType() == LocationType.REST_STOP ? TripStopType.REST
                 : location.getLocationType() == LocationType.BORDER_GATE ? TripStopType.BORDER : TripStopType.HUB;
         return new PlaceInput(location.getId(), null, type, location.getName(), null, point(location.getLatitude(), location.getLongitude()));
@@ -144,7 +160,7 @@ public class TripScheduleDataServiceImpl implements TripScheduleDataService {
         if (board < 0 || alight < 0 || board >= alight) {
             throw new DispatchRuleException("places", "Danh sách điểm chưa có nơi đón hoặc nơi giao của đơn " + booking.getCode() + ".");
         }
-        return new HorseInput(line.getId(), board, alight);
+        return new HorseInput(line.getId(), board, alight, line.getHorse().getName());
     }
 
     private static int indexOf(List<PlaceInput> places, List<BookingAddress> own, AddressRole role) {
@@ -172,7 +188,9 @@ public class TripScheduleDataServiceImpl implements TripScheduleDataService {
 
     private Rules rules() {
         return new Rules(configs.getInt("MAX_CONTINUOUS_HOURS"), configs.getInt("MIN_REST_MINUTES"), configs.getInt("MAX_DRIVE_HOURS_PER_DAY"),
-                configs.getInt("STOP_BASE_MINUTES"), configs.getInt("STOP_MINUTES_PER_HORSE"));
+                configs.getInt("STOP_BASE_MINUTES"), configs.getInt("STOP_MINUTES_PER_HORSE"),
+                configs.getInt("MAX_TRANSFER_HORSE_HOURS"), configs.getInt("MAX_DIRECT_HORSE_HOURS"),
+                configs.getInt("HORSE_REST_INTERVAL_HOURS"));
     }
 
     private Window window(String side) {

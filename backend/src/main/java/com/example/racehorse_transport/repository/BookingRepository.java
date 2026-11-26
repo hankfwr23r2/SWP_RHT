@@ -232,10 +232,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                 AND hh.microchipMatched = true
                 AND l.status <> com.example.racehorse_transport.entity.enums.HorseLegStatus.CANCELLED
                 AND h.status = com.example.racehorse_transport.entity.enums.HandoverStatus.DONE
-                AND (h.handoverType = com.example.racehorse_transport.entity.enums.HandoverType.PICKUP
-                     OR (h.handoverType = com.example.racehorse_transport.entity.enums.HandoverType.AGENT
-                         AND h.toParty IS NULL AND l.bookingHorse.booking.bookingType =
-                             com.example.racehorse_transport.entity.enums.BookingType.IMPORT))
+                AND h.handoverType = com.example.racehorse_transport.entity.enums.HandoverType.PICKUP
             """)
     boolean hasReceivedHorses(Long bookingId);
 

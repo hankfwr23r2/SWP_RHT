@@ -86,7 +86,6 @@ export const staffReview = {
       "CUSTOMER": "Khách nộp",
       "COMPANY": "Công ty nộp",
       "CONSIGNEE": "Người nhận nộp",
-      "AGENT": "Đại lý nộp"
     },
     "beforeQuoting": "Cần trước khi báo giá",
     "beforePickup": "Cần trước khi đón ngựa",

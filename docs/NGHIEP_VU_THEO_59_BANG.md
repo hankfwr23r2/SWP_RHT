@@ -27,26 +27,17 @@
 
 Công ty là **đại lý tổ chức vận chuyển ngựa đua trọn gói** bằng đường bộ trong Việt Nam, Lào và Campuchia.
 - Công ty là đầu mối duy nhất với khách, được tự chọn tuyến và phương tiện.
-- Công ty được thuê lại bên khác thực hiện một phần dịch vụ: đại lý nước ngoài, thú y, chuồng gửi.
+- Công ty được thuê lại bên khác thực hiện một phần dịch vụ: thú y, chuồng gửi.
 - **Trọn gói vận chuyển và thủ tục, không gồm nơi cách ly.** Công ty lo hồ sơ kiểm dịch, giấy phép, hải quan và thú y lấy mẫu tại chuồng. Chủ ngựa hoặc bên nhận lo nơi cách ly. Công ty chỉ chở ngựa **đã đủ điều kiện**, thể hiện bằng giấy.
 - ~~Đoạn trong Việt Nam do xe công ty chạy. Đoạn ở nước ngoài do đại lý chạy, ngựa được bàn giao tại cửa khẩu.~~ **[Thay 26/11]** Xe công ty chạy trục qua cửa khẩu tới hub nước ngoài của công ty; hub đó đón, giao như hub trong nước.
 
 ### 1.2 Mô hình gom hàng qua hub
 
-> **[Thay 26/11, chờ thiết kế lược đồ]** Sơ đồ dưới còn nhánh đại lý ở cửa khẩu. Mô hình mới: [NGHIEP_VU_6_LUONG.md](NGHIEP_VU_6_LUONG.md), phần Bức tranh chung.
-
-Đơn đi trục có hai cách đưa và nhận ngựa tại mỗi đầu trong nước. Công ty có thể đón hoặc giao tận nơi nếu một chiều không quá nửa giới hạn lái mỗi ngày (5 giờ theo cấu hình 10 giờ). Khách cũng có thể đưa ngựa tới hub hoặc người nhận đến hub vào giờ đã hẹn. Ngựa phải có mặt trước giờ chuyến trục chạy theo `HUB_CHECKIN_HOURS` (mặc định 3 giờ). Quá hạn nhận, ngựa được gửi chuồng và người nhận trả phí. Trách nhiệm của công ty bắt đầu khi ký nhận ngựa tại hub và kết thúc khi bên nhận ký nhận. Đơn chạy thẳng và đầu nước ngoài dùng `COMPANY`. Cả hai địa chỉ gốc vẫn được khai để chọn hub và lập giấy tờ.
+Đơn đi trục có hai cách đưa và nhận ngựa tại mỗi đầu trong nước. Công ty có thể đón hoặc giao tận nơi nếu một chiều không quá giới hạn thời gian ngựa ngồi xe của chặng đón hoặc giao (8 giờ theo cấu hình). Khách cũng có thể đưa ngựa tới hub hoặc người nhận đến hub vào giờ đã hẹn. Ngựa phải có mặt trước giờ chuyến trục chạy theo `HUB_CHECKIN_HOURS` (mặc định 3 giờ). Quá hạn nhận, ngựa được gửi chuồng và người nhận trả phí. Trách nhiệm của công ty bắt đầu khi ký nhận ngựa tại hub và kết thúc khi bên nhận ký nhận. Đơn chạy thẳng và đầu nước ngoài dùng `COMPANY`. Cả hai địa chỉ gốc vẫn được khai để chọn hub và lập giấy tờ.
 
 ```
- Chuồng khách A ─┐   chặng ĐÓN                      chặng TRỤC CHÍNH                        chặng GIAO
- Chuồng khách B ─┼──(vehicle_trip PICKUP)──► HUB ──(vehicle_trip LINEHAUL theo departure)──► ...
- Chuồng khách C ─┘                           │                                              │
-                                     horse_stay ASSEMBLY                              Cửa khẩu: handover AGENT
-                                     (tối đa một đêm)                                 horse_leg do đại lý (agent_party_id)
-                                                                                            │
-                                                                            (vehicle_trip DELIVERY hoặc đại lý)
-                                                                                            ▼
-                                                                                  Người nhận: handover DELIVERY
+Nơi đón → hub xuất phát → lượt trục qua các điểm dừng → hub đích → nơi giao
+                                  (BORDER nếu quốc tế)
 ```
 
 Có ba lớp khái niệm, không được trộn lẫn:
@@ -57,12 +48,12 @@ Có ba lớp khái niệm, không được trộn lẫn:
 | **Vận hành xe** | Xe nào chạy, ai lái, dừng ở đâu | `vehicle_trip`, `trip_stop`, `crew_assignment` |
 | **Theo dõi ngựa** | Từng con ngựa đi chặng nào, ở đâu, ai đang giữ | `horse_leg`, `horse_stay`, `handover`, `horse_health_log` |
 
-Một **đơn** có nhiều ngựa. Một **lượt xe** chở ngựa của nhiều đơn. Bảng nối giữa hai phía là `horse_leg`: mỗi dòng là một con ngựa trên một lượt xe, hoặc trong tay một đại lý.
+Một **đơn** có nhiều ngựa. Một **lượt xe** chở ngựa của nhiều đơn. Bảng nối giữa hai phía là `horse_leg`: mỗi dòng là một con ngựa trên một lượt xe.
 
 **Trục chính có cả tuyến nội địa và tuyến quốc tế:**
 - Nội địa: hub ⇄ hub, ví dụ `HUB-HCM` ⇄ `HUB-DN`.
-- Quốc tế chiều xuất: hub → cửa khẩu, ví dụ `HUB-HCM` → `GATE-MOCBAI`.
-- Quốc tế chiều nhập: cửa khẩu → hub, ví dụ `GATE-MOCBAI` → `HUB-HCM`. Đại lý đưa ngựa tới cửa khẩu, bàn giao cho công ty, rồi ngựa đi chuyến trục về hub.
+- Quốc tế chiều xuất: hub Việt Nam → hub nước ngoài, ví dụ `HUB-HCM` → `HUB-PNH` qua `GATE-MOCBAI`.
+- Quốc tế chiều nhập: hub nước ngoài → hub Việt Nam, qua cửa khẩu.
 
 **Trụ sở và hub vệ tinh.** Mọi xe và nhân viên thuộc trụ sở (`HUB-HCM`). Hub vệ tinh (ví dụ `HUB-DN`) có vùng phục vụ và chỗ tập kết ngựa, nhưng không có xe hay nhân viên trực thuộc. Xe trục tới hub vệ tinh thì chạy luôn lượt giao ở vùng đó, rồi về trụ sở bằng chuyến trục chiều ngược.
 
@@ -123,7 +114,6 @@ Mỗi tài khoản có đúng một vai trò (`app_user.role_code`). Nhân viên
 
 | `party_role.role_type` | Ví dụ | Xuất hiện ở |
 |---|---|---|
-| `DEST_AGENT` | Đại lý vận tải Campuchia | `horse_leg.agent_party_id`, `handover.to_party_id` |
 | `STABLE` | Chuồng gửi qua đêm | `horse_stay.operator_party_id`, `incident_plan.handler_party_id` |
 | `VET` | Bác sĩ thú y, gồm khám và lấy mẫu tại chuồng | `incident_plan.handler_party_id` |
 | `RESCUE` | Đội cứu hộ xe | `incident_plan.handler_party_id` |
@@ -292,7 +282,7 @@ Hai nhánh chạy song song. Mỗi nhánh tự lưu trạng thái trên đối t
 | Tính **số km và ngày dự kiến** của từng chặng để báo giá: đón, trục, giao, hoặc một chặng chạy thẳng | Chỉ tính, chưa ghi `horse_leg` |
 | Lập **các lần lưu trú dự kiến** | `horse_stay`: ASSEMBLY ở hub, gồm số ngày lưu chuồng theo lịch đưa ngựa đã hẹn |
 
-Ở giai đoạn này **chưa tạo `horse_leg`**. Vì ràng buộc "xe hoặc đại lý, đúng một", chặng do xe công ty chạy chỉ được tạo khi đã có `vehicle_trip`, tức ở GĐ5. Riêng chặng ở nước ngoài do đại lý chạy (`agent_party_id`) có thể tạo sớm.
+Ở giai đoạn này **chưa tạo `horse_leg`**. Chặng chỉ được tạo khi đã có `vehicle_trip` ở GĐ5.
 
 **Khi thiếu thông tin:** chuyên viên trả đơn về khách, ghi lý do vào `booking_status_history.reason` và chuyển trạng thái `NEEDS_RESUBMISSION`. Khách bổ sung xong thì đơn quay lại `UNDER_REVIEW`.
 
@@ -424,7 +414,7 @@ Với `pickup_method = SELF`, kiểm giấy trước khi ký nhận tại hub, g
 
 ### GĐ7. Hành trình: các chặng và các lần lưu trú xen kẽ
 
-**Ai:** tài xế, hộ tống, điều phối viên, đại lý. **Trạng thái đơn:** vẫn `IN_OPERATION`.
+**Ai:** tài xế, hộ tống, điều phối viên. **Trạng thái đơn:** vẫn `IN_OPERATION`.
 
 #### 7.1 Về hub và tập kết
 
@@ -483,40 +473,19 @@ Việc chăm sóc suy ra từ nơi ngựa đang ở, nên đổi người thì v
 | Phí cầu đường, nhiên liệu | `cost_item` category TOLL hoặc FUEL, payer_type COMPANY, `vehicle_trip_id`. Biên lai là một `document` có `cost_item_id` |
 | Ghi nhận niêm phong, khử trùng xe nếu có. Đợt này không có quy tắc kiểm tra | `vehicle_trip.sealed_at`, `disinfected_at` |
 
-#### 7.4 Cửa khẩu và bàn giao cho đại lý
+#### 7.4 Cửa khẩu
 
-> **[Thay 26/11, chờ thiết kế lược đồ]** Không còn bàn giao đại lý. Cửa khẩu là điểm dừng `BORDER` giữa tuyến hub ⇄ hub nước ngoài: kiểm giấy riêng của cửa khẩu rồi xe đi tiếp. Giao nhận ở hub nước ngoài theo mục giao ngựa thông thường.
-
-| Việc | Bảng |
-|---|---|
-| Tới cửa khẩu, làm thủ tục (tính bằng giờ, không phải lưu trú) | `trip_stop` stop_type BORDER |
-| Cán bộ xác nhận giấy chứng nhận kiểm dịch | `document` liên quan được duyệt |
-| Bàn giao cho đại lý | `handover` AGENT, `from_party_id` NULL (công ty), `to_party_id` = đại lý. Có `handover_horse` và biên bản |
-| Chặng của công ty kết thúc, chặng của đại lý bắt đầu. Đại lý không có tài khoản: điều phối nhập hộ mốc và ảnh | `horse_leg` LINEHAUL COMPLETED. `horse_leg` kế tiếp có `agent_party_id`: IN_PROGRESS |
-| Bị giữ qua đêm ở cửa khẩu | `horse_stay` OVERNIGHT |
-
-Sau khi bàn giao cho đại lý, công ty **vẫn chịu trách nhiệm với khách**. Đại lý là bên được thuê lại.
-
-**Đơn nhập làm ngược chiều đơn xuất:**
-
-| Bước | Đơn xuất | Đơn nhập |
-|---|---|---|
-| Trước chuyến | Giấy kiểm dịch xuất khẩu, `QUARANTINE_CLEARANCE` | Văn bản đồng ý của Cục, giấy kiểm dịch nước xuất, khai báo đã xác nhận |
-| Liên hệ cửa khẩu Việt Nam | Công ty | Đại lý nước ngoài; công ty hỗ trợ giấy |
-| Tại cửa khẩu | Công ty giao cho đại lý: `handover` AGENT, `to_party_id` = đại lý | Đại lý giao cho công ty: `handover` AGENT, `from_party_id` = đại lý. **Thiếu giấy vận chuyển mẫu 14a (`IMPORT_TRANSPORT_CERT`) thì không cho nhận** |
-| Sau đó | Nước đến tự xử lý, không nằm trong trách nhiệm nơi cách ly của công ty | Xe trục chở về hub rồi giao tới địa chỉ chủ ngựa |
+Xe công ty chạy trục giữa hai hub ở cả hai chiều. Tổ xe ghi **Tới nơi** tại điểm `BORDER`, làm thủ tục và kiểm dịch. Trước khi **Rời đi**, hệ thống kiểm giấy chung và giấy riêng của cửa khẩu cho mọi đơn có ngựa trên xe. Nếu thiếu, màn hình nêu mã đơn, loại giấy, và tổ xe có thể mở sự cố Giấy tờ. Rời cửa khẩu thành công ghi `trip_stop.actual_departure_at` và gửi thông báo **Đã qua cửa khẩu** cho khách. Nếu cần gửi ngựa qua đêm, ghi `horse_stay` OVERNIGHT theo quy trình lưu trú.
 
 **Chờ số dư sau khi nhận ngựa.** Tại nhà khách, nhắc phút 0, 15 và 25. Điều phối ghi kết quả gọi khách và liên hệ khẩn cấp vào nhật ký đơn. Nếu còn đủ thời gian tới hub và thời gian ngồi xe của ngựa khác, điều phối có thể gia hạn 30 phút một lần. Quá hạn, trả ngựa và giấy tờ cho người gửi nếu có người nhận lại, nhả chỗ và chuyển đơn sang Cần chọn lại chuyến trong 30 ngày. Nếu vắng người nhận lại, điều phối xác nhận đưa ngựa về hub bằng điểm dừng an toàn của lượt xe.
 
-Tại hub, nhắc cuối ở T − 3 giờ. Ở T − 1 giờ, nếu chưa trả đủ thì nhả chỗ, hủy chặng kế hoạch và kết thúc HUB_OUT còn mở khi điểm dừng hết ngựa chờ lên xe. Phiên VNPAY còn hiệu lực được chờ kết quả tối đa 5 phút. Với đơn nhập, xe cửa khẩu vẫn đưa ngựa về hub và chỉ lập lượt giao tiếp sau khi khách trả số dư. Mốc T của đơn nhập là 24 giờ sau lúc ngựa vào hub.
+Tại hub, nhắc cuối ở T − 3 giờ. Ở T − 1 giờ, nếu chưa trả đủ thì nhả chỗ, hủy chặng kế hoạch và kết thúc HUB_OUT còn mở khi điểm dừng hết ngựa chờ lên xe. Phiên VNPAY còn hiệu lực được chờ kết quả tối đa 5 phút.
 
 Ngựa còn tại hub tiếp tục được chăm sóc hai lần mỗi ngày. Lưu trú STABLING tính phí từ T theo biểu phí phía máy chủ. Nhắc lúc 8:00 trong thời gian chờ phản hồi. Đơn không phản hồi hết hạn ba ngày thì hủy nếu điều phối đã ghi ít nhất ba lần gọi. Phí giữ được cấn vào cọc khi chốt phí. Gửi yêu cầu nhận lại bằng văn bản sau bảy ngày và báo quản lý 45 ngày kể từ văn bản. Khách có thể trả số dư và chọn lịch sau, nhận lại ngựa rồi chọn lịch trong 30 ngày, hoặc hủy và nhận lại. Bàn giao ngựa trực tiếp vẫn thực hiện khi còn nợ.
 
-Giả định của đợt này: địa chỉ giao của đơn nhập là nơi chủ ngựa cách ly. Luật yêu cầu niêm phong xe về nơi cách ly nên ghé hub là đơn giản hóa; quy tắc niêm phong đã bỏ qua (`NGU_CANH_THIET_KE_LAI.md` mục 4).
-
 #### 7.5 Ở nước đến (đơn EXPORT)
 
-Đại lý báo mốc, điều phối viên nhập hộ. Nơi cách ly ở nước đến do người nhận lo, công ty không vận hành và không ghi `horse_stay`.
+Xe trục tới hub nước ngoài của công ty, dỡ ngựa vào hub và giao theo quy trình GĐ8. Đơn nhập áp dụng cùng quy trình từ hub nước ngoài tới hub trong nước.
 
 ---
 
@@ -528,7 +497,7 @@ Giả định của đợt này: địa chỉ giao của đơn nhập là nơi c
 
 Với `delivery_method = SELF`, trả ngựa tại hub và ghi `handover` DELIVERY gắn với `horse_stay`. Quá giờ hẹn thì gửi chuồng, báo khách khi bắt đầu giữ và tính phí theo `STABLING_DAILY_FEE` khi rời hub.
 
-Giao ngựa **đối xứng với đón ngựa**. **Ai:** tài xế và hộ tống (giao trong nước), hoặc đại lý (giao ở nước ngoài). **Trạng thái:** `IN_OPERATION` → `DELIVERED`.
+Giao ngựa **đối xứng với đón ngựa**. **Ai:** tài xế và hộ tống của công ty ở cả hai đầu. **Trạng thái:** `IN_OPERATION` → `DELIVERED`.
 
 | Bước | Hành động | Bảng |
 |---|---|---|
@@ -567,7 +536,6 @@ Giao ngựa **đối xứng với đón ngựa**. **Ai:** tài xế và hộ t�
 | `cause_type` | Bên chịu (`cost_item.payer_type`) |
 |---|---|
 | `COMPANY_FAULT` | COMPANY |
-| `AGENT_FAULT` | COMPANY (công ty đòi lại đại lý theo hợp đồng riêng) |
 | `HORSE_CONDITION` | CUSTOMER |
 | `CUSTOMER_DOCS` | CUSTOMER |
 | `RECIPIENT_ABSENT` | CONSIGNEE, không trả thì CUSTOMER |
@@ -625,13 +593,13 @@ Quy trình theo bản cũ của nhóm. Khác bản cũ: sự cố gắn lượt 
 3. Xe trục đầu tiên rời điểm đầu thì chuyến sang `IN_PROGRESS`. Mọi lượt trục chưa hủy hoàn thành thì chuyến sang `COMPLETED`. Cấm hủy ở cả hai trạng thái hoặc khi còn đơn `IN_OPERATION`.
 4. Lịch sử ghi nguyên nhân COMPANY và chuyến vừa hủy. Khách chọn chuyến khác (miễn phí; đơn đã cọc thì giữ giá trong `PRICE_HOLD_DAYS`) hoặc hủy và được **hoàn 100%**. Đổi chuyến thì trừ `booked_stall_count` của chuyến cũ và cộng vào chuyến mới, giữ `FOR UPDATE` trên cả hai dòng.
 
-Khi đơn rời chuyến, gỡ các chặng PLANNED gồm cả chặng đại lý, trả vị trí khoang và bỏ lịch hẹn hub chưa bắt đầu trong cùng giao dịch. Nếu có gỡ, báo điều phối.
+Khi đơn rời chuyến, gỡ các chặng PLANNED, trả vị trí khoang và bỏ lịch hẹn hub chưa bắt đầu trong cùng giao dịch. Nếu có gỡ, báo điều phối.
 
 ### 5.3 Ngựa không đủ điều kiện
 
 1. Trước khi đón: thiếu hoặc không đạt `QUARANTINE_CLEARANCE` hay giấy bắt buộc khác thì xe không đi đón. Xử lý theo bảng "Đã cọc mà giấy không kịp" ở GĐ5.
 2. Lúc nhận: chip sai hoặc không đủ sức khỏe thì con đó bị loại (`booking_horse.status = EXCLUDED`), nhả chỗ, hủy các chặng phía sau, lập báo giá phiên bản mới cho các con còn lại.
-3. Đơn nhập không có giấy vận chuyển mẫu 14a: không nhận ngựa ở cửa khẩu, ngựa ở lại với đại lý.
+3. Thiếu giấy bắt buộc của cửa khẩu: chặn rời điểm dừng và mở sự cố Giấy tờ.
 4. Ngựa đang ở nước ngoài mà phải đưa về Việt Nam thì tạo **đơn IMPORT liên kết** qua `original_booking_id`.
 
 ### 5.4 Khách hủy đơn
@@ -668,8 +636,8 @@ Khách ở Bình Dương gửi 2 con ngựa (Sao Mai, Bạch Long) tới Phnom P
 | 20/12 | Đón ngựa | `vehicle_trip` PICKUP #T1 (ghép đơn cùng khu vực). `handover` PICKUP DONE. Khách trả số dư: `payment` BALANCE PAID. Xe rời: `booking` IN_OPERATION |
 | 20/12 | Vào hub, qua một đêm | `handover` HUB_IN, `horse_stay` ASSEMBLY × 2 tại `HUB-HCM`. Bữa tối và bữa sáng theo chỉ dẫn |
 | 21/12 | Chặng trục chính | `handover` HUB_OUT. `trip_stop`: hub → Trảng Bàng (nước, cỏ) → Mộc Bài. `horse_leg` #1.2, #2.2 LINEHAUL |
-| 21/12 | Cửa khẩu Mộc Bài | `handover` AGENT cho đại lý Campuchia. `horse_leg` #1.3, #2.3 có `agent_party_id` |
-| 22/12 | Đại lý giao ngựa, điều phối nhập hộ | `handover` DELIVERY DONE. `booking` DELIVERED |
+| 21/12 | Cửa khẩu Mộc Bài | Lượt trục rời `BORDER` khi đủ giấy, gửi thông báo Đã qua cửa khẩu |
+| 22/12 | Xe công ty giao sau khi tập kết ở hub Phnom Penh | `handover` DELIVERY DONE. `booking` DELIVERED |
 | 29/12 | Không phát sinh, tự đóng sau 7 ngày | `booking` COMPLETED, khách đánh giá |
 
 Chuỗi chặng của Sao Mai:
@@ -678,7 +646,7 @@ Chuỗi chặng của Sao Mai:
 |---|---|---|---|---|
 | 1 | PICKUP | `booking_address` PICKUP | `location` HUB-HCM | `vehicle_trip` #T1 |
 | 2 | LINEHAUL | `location` HUB-HCM | `location` GATE-MOCBAI | `vehicle_trip` #T7 |
-| 3 | DELIVERY | `location` GATE-MOCBAI | `booking_address` DELIVERY | đại lý (`agent_party_id`) |
+| 3 | DELIVERY | `location` HUB-PNH | `booking_address` DELIVERY | lượt giao của hub Phnom Penh |
 
 ### 6.2 Ví dụ trục nội địa: Đồng Nai đi Huế
 
@@ -907,7 +875,7 @@ Khách chọn nơi giao và người nhận tại từng nơi. Mọi nơi thuộ
 
 ## Đón hụt tại nơi nhận
 
-Tổ lái ghi từng con với nguyên nhân và ảnh. Với người gửi vắng, ghi kết quả gọi người gửi, khách và liên hệ khẩn cấp sau thời gian chờ theo cấu hình. Tại cửa khẩu, ngựa chưa nhận vẫn do đại lý giữ. Khi ghi hụt, ngựa vẫn ACTIVE, chỗ trên chuyến và báo giá hiện hành được giữ. Các chặng kế hoạch của con đó được gỡ để điều phối lập lại. Hoàn tất lần nhận và rời điểm đón hoặc cửa khẩu cần mọi con đã nhận hoặc đã ghi hụt.
+Tổ lái ghi từng con với nguyên nhân và ảnh. Với người gửi vắng, ghi kết quả gọi người gửi, khách và liên hệ khẩn cấp sau thời gian chờ theo cấu hình. Khi ghi hụt, ngựa vẫn ACTIVE, chỗ trên chuyến và báo giá hiện hành được giữ. Các chặng kế hoạch của con đó được gỡ để điều phối lập lại. Hoàn tất lần nhận và rời điểm đón cần mọi con đã nhận hoặc đã ghi hụt.
 
 Quản lý chốt khách, công ty hoặc bất khả kháng chịu trách nhiệm. Khách hoặc điều phối ghi lựa chọn trên đơn, với ghi chú cuộc gọi khi chọn hộ. A bỏ ngựa khỏi đơn, B đón lại một lần trên chuyến nếu đã có lượt phù hợp và tài xế, C hẹn tự đưa tới hub, D đưa cả đơn sang chọn lại chuyến nếu chưa nhận con nào. Đơn nhập dùng A hoặc D. Đơn chạy thẳng dùng A hoặc hẹn ngày đón mới. Khách có thể hủy đơn chưa nhận ngựa sau khi có kết luận trách nhiệm.
 

@@ -105,7 +105,10 @@ public class TripExecutionServiceImpl implements TripExecutionService {
         TripExecutionPolicy.requireInProgress(trip.getStatus());
         tripReadiness.requireTripUnblocked(trip.getId());
         boolean earlyOvernightDeparture = readiness.requireCanLeave(stop, earlyReason, member.getStaff().getUserId());
-        if (stop.getStopType() == TripStopType.PICKUP || stop.getStopType() == TripStopType.BORDER || stop.getStopType() == TripStopType.HUB) {
+        if (stop.getStopType() == TripStopType.BORDER && trip.getTripType() == VehicleTripType.LINEHAUL) {
+            tripReadiness.requireBorderClearance(stop);
+        }
+        if (stop.getStopType() == TripStopType.PICKUP || stop.getStopType() == TripStopType.HUB) {
             leavePickup(stop, member.getStaff().getUserId());
         }
         if (trip.getTripType() == VehicleTripType.LINEHAUL && previousOf(stop) == null) {
@@ -119,7 +122,6 @@ public class TripExecutionServiceImpl implements TripExecutionService {
         return trip.getId();
     }
 
-    // Đơn nhập có thể rời cửa khẩu về hub khi chưa thanh toán.
     private void leavePickup(TripStop stop, Long actorUserId) {
         legs.findByBoardTripStop_IdAndStatusIn(stop.getId(), Set.of(HorseLegStatus.IN_PROGRESS)).stream()
                 .map(leg -> leg.getBookingHorse().getBooking())

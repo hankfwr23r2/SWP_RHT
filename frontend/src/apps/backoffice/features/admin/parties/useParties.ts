@@ -3,7 +3,7 @@ import { useCatalogAction } from '@backoffice/shared/useCatalogAction'
 import { useCatalogForm } from '@backoffice/shared/useCatalogForm'
 
 export const partyTypes = ['PERSON', 'ORGANIZATION'] satisfies PartyCreate['partyType'][]
-export const assignableRoles = ['DEST_AGENT', 'STABLE', 'VET', 'RESCUE', 'INSURER'] satisfies PartyRoleCreate['roleType'][]
+export const assignableRoles = ['STABLE', 'VET', 'RESCUE', 'INSURER'] satisfies PartyRoleCreate['roleType'][]
 
 export function usePartyEditor(party: Party | undefined, reload: () => unknown, close: () => void) {
   const form = useCatalogForm({

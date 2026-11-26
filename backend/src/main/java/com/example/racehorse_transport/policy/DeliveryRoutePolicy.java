@@ -32,7 +32,7 @@ public final class DeliveryRoutePolicy {
             }
             if (roads[last][0] == null) return;
             drives.add(roads[last][0].driveSeconds());
-            if (drives.stream().mapToLong(Long::longValue).sum() > TripSchedulePolicy.rideLimitSeconds(true, rules)) return;
+            if (drives.stream().mapToLong(Long::longValue).sum() > java.time.Duration.ofHours(rules.maxDriveHoursPerDay()).getSeconds()) return;
             List<Integer> handled = new ArrayList<>();
             handled.add(0);
             order.forEach(place -> handled.add(horseCounts.get(place - 1)));

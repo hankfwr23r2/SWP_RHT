@@ -24,7 +24,7 @@ public final class TrackingPolicy {
         if (type == null) return CustodyHolder.SHIPPER;
         return switch (type) {
             case PICKUP, HUB_IN, HUB_OUT, SHIFT -> CustodyHolder.COMPANY;
-            case STAY_IN, STAY_OUT, AGENT -> toParty ? CustodyHolder.PARTY : CustodyHolder.COMPANY;
+            case STAY_IN, STAY_OUT -> toParty ? CustodyHolder.PARTY : CustodyHolder.COMPANY;
             case DELIVERY -> CustodyHolder.CONSIGNEE;
             // Đơn nhập trả ở cửa khẩu: đại lý nhận lại thay người gửi
             case RETURN -> toParty ? CustodyHolder.PARTY : CustodyHolder.SHIPPER;

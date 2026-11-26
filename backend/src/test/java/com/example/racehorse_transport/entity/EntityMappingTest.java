@@ -145,9 +145,10 @@ class EntityMappingTest {
 
     @Test
     void partnerKeepsItsRoles() {
-        Party agent = parties.findAll().stream().filter(p -> p.getDisplayName().startsWith("Đại lý")).findFirst().orElseThrow();
+        var partner = parties.findAll().stream().filter(p -> partyRoles.findById_PartyId(p.getId()).stream()
+                .anyMatch(role -> role.getId().getRoleType() == PartyRoleType.STABLE)).findFirst().orElseThrow();
 
-        assertThat(partyRoles.findById_PartyId(agent.getId())).extracting(r -> r.getId().getRoleType()).containsExactly(PartyRoleType.DEST_AGENT);
+        assertThat(partyRoles.findById_PartyId(partner.getId())).extracting(r -> r.getId().getRoleType()).containsExactly(PartyRoleType.STABLE);
     }
 
     @Test

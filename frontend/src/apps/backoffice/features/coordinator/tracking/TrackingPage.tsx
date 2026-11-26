@@ -3,7 +3,6 @@ import { ListPanel } from '@shared/ui/ListPanel'
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { custodyApi, type CustodyRow } from '@shared/api/custody'
-import { dispatchApi } from '@shared/api/dispatch'
 import { HealthCheckTaskAction } from '@backoffice/shared/HealthCheckTaskAction'
 import { StayHealthAction } from '@backoffice/shared/StayHealthAction'
 import { HorseHealthHistory } from '@backoffice/shared/HorseHealthHistory'
@@ -12,14 +11,12 @@ import { useLoad } from '@shared/hooks/useLoad'
 import { formatDateTime } from '@shared/lib/format'
 import { Badge } from '@shared/ui/Badge'
 import { Button } from '@shared/ui/Button'
-import { Field } from '@shared/ui/Field'
 import { EmptyState } from '@shared/ui/EmptyState'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { Input } from '@shared/ui/Input'
 import { Modal } from '@shared/ui/Modal'
 import { PageHeader } from '@shared/ui/PageHeader'
 import { Skeleton } from '@shared/ui/Skeleton'
-import { useToast } from '@shared/ui/toast'
 import { matchesCustody } from './custody'
 import { PickupBalanceDialog } from './PickupBalanceDialog'
 import s from './Tracking.module.css'
@@ -31,10 +28,6 @@ const REFRESH_MS = 60_000
 export default function TrackingPage() {
   const { t } = useTranslation()
   const [query, setQuery] = useState('')
-  const toast = useToast()
-  const [proof, setProof] = useState<File>()
-  const [savingProof, setSavingProof] = useState(false)
-  const [delivered, setDelivered] = useState<CustodyRow>()
   const [history, setHistory] = useState<CustodyRow>()
   const [journey, setJourney] = useState<CustodyRow>()
   const [balance, setBalance] = useState<CustodyRow>()
@@ -76,7 +69,6 @@ export default function TrackingPage() {
               <p className={s.line}><i className="fa-solid fa-heart-pulse" aria-hidden="true" /> {row.lastCheckAt ? t('tracking.lastCheck', { at: formatDateTime(new Date(row.lastCheckAt)) }) : t('tracking.noCheck')}
                 {row.nextCheckAt && row.holder === 'COMPANY' && ` · ${t('tracking.nextCheck', { at: formatDateTime(new Date(row.nextCheckAt)) })}`}</p>
               <div className={s.chips}>
-                {row.agentLegId && <Button size="sm" variant="primary" onClick={() => { setProof(undefined); setDelivered(row) }}>{t('dispatch.agent.complete')}</Button>}
                 {row.healthLogStayId != null && row.bookingHorseId != null && (
                   <StayHealthAction horseStayId={row.healthLogStayId} bookingHorseId={row.bookingHorseId}
                     horseName={row.horseName} reported onSaved={reload} />
@@ -105,28 +97,6 @@ export default function TrackingPage() {
       <ListPanel count={data ? rows.length : undefined} toolbar={<Input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={t('tracking.search')} aria-label={t('tracking.search')} />}>
         {content()}
       </ListPanel>
-      {delivered && (
-        <Modal title={t('dispatch.agent.complete')} onClose={() => setDelivered(undefined)}
-          footer={<Button variant="primary" disabled={!proof} loading={savingProof} onClick={async () => {
-            if (!proof || !delivered.agentLegId) return
-            setSavingProof(true)
-            try {
-              await dispatchApi.completeAgentLeg(delivered.agentLegId, proof)
-              toast(t('tracking.agentDelivered'), 'success')
-              setDelivered(undefined)
-              await reload()
-            } catch (e) {
-              toast(e instanceof Error ? e.message : String(e), 'error')
-            } finally {
-              setSavingProof(false)
-            }
-          }}>{t('dispatch.agent.complete')}</Button>}>
-          <p>{t('tracking.agentDeliveredMessage', { horse: delivered.horseName, agent: delivered.holderName })}</p>
-          <Field label={t('handoverEvidence.agentProof')} required>
-            {c => <Input {...c} type="file" accept="image/*,application/pdf" onChange={e => setProof(e.target.files?.[0])} />}
-          </Field>
-        </Modal>
-      )}
       {history?.bookingHorseId != null && (
         <HorseHealthHistory bookingHorseId={history.bookingHorseId} horseName={history.horseName} onClose={() => setHistory(undefined)} />
       )}

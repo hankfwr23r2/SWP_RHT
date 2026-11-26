@@ -201,7 +201,7 @@ class IncidentFlowTest {
     }
 
     @Test
-    void customerCanAcceptOnlyTheirPlanAndCostAndManagerCanRecoverAgentCost() throws Exception {
+    void customerCanAcceptOnlyTheirPlanAndConfirmedCompanyFaultReassignsPendingCosts() throws Exception {
         String customerName = jdbc.queryForObject("""
                 SELECT u.username FROM app_user u JOIN booking b ON b.customer_id = u.id WHERE b.id = ?
                 """, String.class, booking);
@@ -238,14 +238,12 @@ class IncidentFlowTest {
                 .andReturn().getResponse().getContentAsString(), "$.data.plans[1].id")).longValue();
         mvc.perform(post("/incident-plans/{id}/approve", next).header(HttpHeaders.AUTHORIZATION, manager)
                         .contentType(MediaType.APPLICATION_JSON).content("""
-                                {"confirmedCauseType":"AGENT_FAULT"}
+                                {"confirmedCauseType":"COMPANY_FAULT"}
                                 """))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.data.confirmedCauseType").value("AGENT_FAULT"));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.confirmedCauseType").value("COMPANY_FAULT"));
         act(manager, "/cost-items/" + declined + "/mark-recovered").andExpect(status().isConflict());
         act(manager, "/cost-items/" + declined + "/approve").andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.agentRecoveryRequired").value(true));
-        act(manager, "/cost-items/" + declined + "/mark-recovered").andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.agentRecoveredAt").exists());
+                 .andExpect(jsonPath("$.data.payerType").value("COMPANY"));
         mvc.perform(get("/incidents/{id}/cost-items", incident).header(HttpHeaders.AUTHORIZATION, manager))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[?(@.id == " + accepted + ")].payerType").value(org.hamcrest.Matchers.contains("CUSTOMER")));

@@ -94,12 +94,11 @@ export default function TripRunPage() {
     return (
     <div className={s.body}>
       <StatusBadge tone="info" label={`${t(`myTrips.run.handover.${handover.handoverType}`)} · ${t(`myTrips.run.handoverStatus.${handover.status}`)}`} />
-      {handover.partyName && <p className={s.line}>{t(isStableHandover(handover.handoverType) ? 'myTrips.run.stayIn.party' : 'myTrips.run.agentParty', { name: handover.partyName })}</p>}
+      {handover.partyName && <p className={s.line}>{t('myTrips.run.stayIn.party', { name: handover.partyName })}</p>}
       <ul className={s.list}>
         {(handover.horses ?? []).map(horse => {
           const legId = horse.horseLegId ?? 0
           const needsPhoto = handover.handoverType === 'PICKUP' || handover.handoverType === 'DELIVERY'
-            || handover.handoverType === 'AGENT' && receivesOriginals(data, handover)
           return (
             <li key={`${handoverId}:${legId}`} className={s.body}>
               <p className={s.line}>{horse.horseName} · {horse.bookingCode}</p>
@@ -121,7 +120,7 @@ export default function TripRunPage() {
                   if (photo) void run(() => tripExecutionApi.uploadHorsePhoto(handover.id ?? 0, legId, photo), t('handoverEvidence.photoSaved'))
                 }} />}
               </Field>}
-              {canRefuse(data, handover, legId) && (
+              {canRefuse(handover) && (
                 <Button variant="danger" size="lg" fullWidth
                   onClick={() => setRefusing({ handoverId: handover.id ?? 0, legId, name: horse.horseName ?? '' })}>
                   {t('myTrips.run.refusal.refuse')}
@@ -141,7 +140,7 @@ export default function TripRunPage() {
             onChange={e => setRecipient(code, { collectionCode: e.target.value || undefined })} />}
         </Field>
       </div>)}
-      {needsRecord(handover) && <HandoverPapersPanel handover={handover} receiving={receivesOriginals(data, handover)} onTrip={next => updateData(() => next)} />}
+      {needsRecord(handover) && <HandoverPapersPanel handover={handover} receiving={receivesOriginals(handover)} onTrip={next => updateData(() => next)} />}
       {needsRecord(handover) && !handover.recordAttached && <p className={s.muted}>{t('myTrips.run.papers.needRecord')}</p>}
       <Button variant="primary" size="lg" fullWidth loading={busy} disabled={needsRecord(handover) && !handover.recordAttached}
         onClick={() => isStableHandover(handover.handoverType) ? setConfirmStay(handover)

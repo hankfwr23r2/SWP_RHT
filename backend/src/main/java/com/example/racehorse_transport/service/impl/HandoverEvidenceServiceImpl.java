@@ -71,19 +71,6 @@ public class HandoverEvidenceServiceImpl implements HandoverEvidenceService {
         files.attach(record, RECORD, DocumentSubject.HANDOVER, handoverId, actor);
     }
 
-    @Override
-    @Transactional
-    public void recordAgentDelivery(HorseLeg leg, MultipartFile proof, Long actor) {
-        if (!isImageOrPdf(proof)) {
-            throw new DispatchRuleException("proof", "Cần ảnh hoặc biên bản đại lý đã giao.", true);
-        }
-        files.attach(proof, "AGENT_DELIVERY_PROOF", DocumentSubject.HORSE_LEG, leg.getId(), actor);
-        var line = leg.getBookingHorse();
-        var booking = line.getBooking();
-        notifications.notify(List.of(booking.getCustomer().getUser().getId()), booking.getId(),
-                "Đại lý đã giao ngựa", "Đại lý đã giao " + line.getHorse().getName() + ".", "/orders/" + booking.getId());
-    }
-
     private static boolean isImageOrPdf(MultipartFile file) {
         if (file == null || file.isEmpty()) return false;
         String type = file.getContentType();

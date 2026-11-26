@@ -31,7 +31,6 @@ export type PlannedTrip = Schemas['PlannedTripResponseDto']
 export type PlannedTripCreate = Schemas['PlannedTripRequestDto']
 export type LegType = NonNullable<HorseLeg['legType']>
 export type TripType = NonNullable<VehicleTripCreate['tripType']>
-export type AgentLegCreate = Schemas['AgentLegRequestDto']
 export type Partner = Schemas['PartyResponseDto']
 export type StallPlan = Schemas['StallPlanResponseDto']
 export type TripGroup = Schemas['TripGroupResponseDto']
@@ -88,13 +87,5 @@ export const dispatchApi = {
   stableAtHub: (stayId: number, note?: string) => post<HorseStay>(`/horse-stays/${stayId}/stabling`, { note }),
   deliverAtHub: (stayId: number, request: HubHandoverInput, photo: File, record: File) => hubHandover(stayId, 'deliveries', request, photo, record),
   parties: () => get<Partner[]>('/parties'),
-  createAgentLeg: (bookingHorseId: number, body: AgentLegCreate) => post<HorseLeg>(`/booking-horses/${bookingHorseId}/agent-legs`, body),
-  cancelAgentLeg: (legId: number) => post<null>(`/agent-legs/${legId}/cancel`),
-  startAgentLeg: (legId: number) => post<HorseLeg>(`/agent-legs/${legId}/start`),
-  completeAgentLeg: (legId: number, proof: File) => {
-    const body = new FormData()
-    body.append('proof', proof)
-    return postEvidence<HorseLeg>(`/agent-legs/${legId}/complete`, body)
-  },
   acknowledge: (assignmentId: number) => post<MyCrewAssignment>(`/crew-assignments/${assignmentId}/acknowledge`),
 }

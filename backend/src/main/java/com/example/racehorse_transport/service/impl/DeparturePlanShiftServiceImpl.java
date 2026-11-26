@@ -86,7 +86,6 @@ public class DeparturePlanShiftServiceImpl implements DeparturePlanShiftService 
             activeCrew(ids).stream().collect(Collectors.groupingBy(member -> member.getStaff().getUserId()))
                     .forEach(this::requireCrewSchedule);
         }
-        legs.findDownstreamAgentLegsForDelay(departureId).forEach(leg -> shiftLeg(leg, offset));
     }
 
     private void shiftTrip(Long departureId, VehicleTrip trip, List<TripStop> stopRows, List<HorseLeg> legRows, Duration offset) {

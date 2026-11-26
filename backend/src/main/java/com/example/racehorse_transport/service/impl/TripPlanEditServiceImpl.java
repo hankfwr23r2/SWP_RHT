@@ -5,9 +5,12 @@ import com.example.racehorse_transport.entity.TripStop;
 import com.example.racehorse_transport.entity.Vehicle;
 import com.example.racehorse_transport.entity.VehicleTrip;
 import com.example.racehorse_transport.entity.enums.VehicleTripType;
+import com.example.racehorse_transport.entity.enums.TripStopType;
+import com.example.racehorse_transport.entity.enums.HorseLegStatus;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.policy.DispatchPolicy;
 import com.example.racehorse_transport.policy.DispatchPolicy.Interval;
+import com.example.racehorse_transport.policy.TripSchedulePolicy;
 import com.example.racehorse_transport.repository.TripStopRepository;
 import com.example.racehorse_transport.service.CoordinatorAssignmentService;
 import com.example.racehorse_transport.service.CrewPositionService;
@@ -15,11 +18,15 @@ import com.example.racehorse_transport.service.HorseLegService;
 import com.example.racehorse_transport.service.StallPlanService;
 import com.example.racehorse_transport.service.TripPlanEditService;
 import com.example.racehorse_transport.service.TripPlanningService;
+import com.example.racehorse_transport.service.SystemConfigService;
 import com.example.racehorse_transport.service.TripProgressNoticeService;
 import com.example.racehorse_transport.service.VehicleService;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.time.Duration;
+import java.util.stream.IntStream;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -37,6 +44,7 @@ public class TripPlanEditServiceImpl implements TripPlanEditService {
     private final HorseLegService horseLegs;
     private final StallPlanService stallPlans;
     private final TripProgressNoticeService notices;
+    private final SystemConfigService configs;
 
     @Override
     @Transactional
@@ -76,6 +84,10 @@ public class TripPlanEditServiceImpl implements TripPlanEditService {
         }
         var crew = crewPositions.revalidateTrip(trip, previous, revisedTimes);
         var legs = horseLegs.replanTrip(trip, planned);
+        if (changeTimes && Set.of(VehicleTripType.PICKUP, VehicleTripType.DELIVERY, VehicleTripType.DIRECT).contains(trip.getTripType())) {
+            // Sửa giờ nằm trong giao dịch nên không gọi bản đồ để tự chèn trạm nghỉ; thiếu trạm thì chặn để điều phối thêm
+            requireRestStops(trip, planned, revisedTimes);
+        }
         if (linehaul) {
             var departure = trip.getDeparture();
             DispatchPolicy.requireRunnableDeparture(departure.getStatus(), departure.getRunConfirmedAt() != null);
@@ -84,6 +96,26 @@ public class TripPlanEditServiceImpl implements TripPlanEditService {
         }
         if (vehicleChanged) stallPlans.repack(trip, legs);
         notices.planChanged(trip, crew, legs);
+    }
+
+    private void requireRestStops(VehicleTrip trip, List<TripStop> planned, List<Interval> revised) {
+        var horses = horseLegs.horsesOnTrip(trip.getId()).stream().map(horse -> horse.leg())
+                .filter(leg -> leg.status() == HorseLegStatus.PLANNED).toList();
+        if (horses.isEmpty()) return;
+        int minRest = configs.getInt("MIN_REST_MINUTES");
+        var rules = new TripSchedulePolicy.Rules(0, minRest, 0, 0, 0, 0, 0, configs.getInt("HORSE_REST_INTERVAL_HOURS"));
+        var rests = IntStream.range(0, planned.size()).filter(index -> (planned.get(index).getStopType() == TripStopType.REST || planned.get(index).getStopType() == TripStopType.VITAL_CHECK)
+                && Duration.between(revised.get(index).start(), revised.get(index).end()).toMinutes() >= minRest)
+                .boxed().collect(Collectors.toSet());
+        var indexById = IntStream.range(0, planned.size()).boxed().collect(Collectors.toMap(index -> planned.get(index).getId(), index -> index));
+        var times = revised.stream().map(time -> new TripSchedulePolicy.StopTime(time.start(), time.end(), 0)).toList();
+        for (var leg : horses) {
+            var gap = TripSchedulePolicy.firstRestGap(indexById.get(leg.boardTripStopId()), indexById.get(leg.alightTripStopId()), times, rests, rules);
+            if (gap != null) {
+                throw new DispatchRuleException("stops", "Ngựa ngồi xe quá " + configs.getInt("HORSE_REST_INTERVAL_HOURS")
+                        + " giờ mà chưa có trạm nghỉ đủ " + minRest + " phút. Thêm trạm nghỉ hoặc tách lượt.", true);
+            }
+        }
     }
 
     private List<Interval> proposedTimes(VehicleTrip trip, List<TripStop> planned, List<Interval> currentTimes,

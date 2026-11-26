@@ -88,7 +88,6 @@ export const staff = {
       "COMPANY_FAULT": "Lỗi công ty",
       "HORSE_CONDITION": "Tình trạng ngựa",
       "CUSTOMER_DOCS": "Giấy tờ của khách",
-      "AGENT_FAULT": "Lỗi đại lý",
       "FORCE_MAJEURE": "Bất khả kháng",
       "RECIPIENT_ABSENT": "Người nhận vắng"
     },
@@ -158,7 +157,6 @@ export const staff = {
       "COMPANY": "Công ty chịu",
       "CUSTOMER": "Khách chịu",
       "CONSIGNEE": "Người nhận chịu",
-      "AGENT": "Đại lý chịu"
     },
     "approveCost": "Duyệt chi phí",
     "approved": "Đã duyệt",

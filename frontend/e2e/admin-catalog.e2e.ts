@@ -199,12 +199,12 @@ test('thêm giấy yêu cầu vào đúng quy định theo quốc gia và chiề
   await page.getByRole('button', { name: 'Thêm yêu cầu giấy tờ' }).click()
   await select(page, 'Loại giấy tờ', 'Giấy sức khỏe')
   await select(page, 'Cửa khẩu', 'Cửa khẩu A')
-  await select(page, 'Bên nộp', 'Đại lý')
+  await select(page, 'Bên nộp', 'Công ty vận chuyển')
   await page.getByRole('dialog').getByRole('button', { name: 'Lưu', exact: true }).click()
   await expect(page.getByText('Giấy sức khỏe')).toBeVisible()
   expect(requests).toEqual([{
     path: '/country-rules/3/document-requirements',
-    body: { documentTypeId: 2, gateLocationId: 2, submitterType: 'AGENT', mandatory: true },
+    body: { documentTypeId: 2, gateLocationId: 2, submitterType: 'COMPANY', mandatory: true },
   }])
 })
 

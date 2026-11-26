@@ -21,10 +21,12 @@ import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.TripStopRepository;
 import com.example.racehorse_transport.repository.VehicleTripRepository;
 import com.example.racehorse_transport.service.HandoverReadinessService;
+import com.example.racehorse_transport.service.DocumentCompletenessService;
 import com.example.racehorse_transport.service.PaymentReadinessService;
 import com.example.racehorse_transport.service.TripReadinessService;
 import com.example.racehorse_transport.service.VehicleService;
 import java.util.Map;
+import java.util.ArrayList;
 import java.util.Set;
 import java.util.TreeMap;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +45,7 @@ public class TripReadinessServiceImpl implements TripReadinessService {
     private final PaymentReadinessService paymentReadiness;
     private final VehicleService vehicles;
     private final IncidentRepository incidents;
+    private final DocumentCompletenessService documents;
     private final VehicleTripRepository trips;
     private final CrewAssignmentRepository crew;
     private final StaffRepository staff;
@@ -69,6 +72,28 @@ public class TripReadinessServiceImpl implements TripReadinessService {
             if (!otherTrips.isEmpty()) {
                 throw new DispatchRuleException("staffId", "Tổ lái còn lượt " + otherTrips.getFirst() + " chưa kết thúc.", true);
             }
+        }
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void requireBorderClearance(TripStop stop) {
+        Map<Long, Booking> onboard = new TreeMap<>();
+        for (HorseLeg leg : legs.findActiveOnTrip(stop.getVehicleTrip().getId(), Set.of(
+                HorseLegStatus.PLANNED, HorseLegStatus.COMPLETED, HorseLegStatus.CANCELLED, HorseLegStatus.FAILED))) {
+            var booking = leg.getBookingHorse().getBooking();
+            onboard.put(booking.getId(), booking);
+        }
+        var blocked = new ArrayList<String>();
+        onboard.forEach((id, booking) -> {
+            paymentReadiness.lockBooking(id);
+            var missing = documents.missingRequiredAtBorder(booking, stop.getLocation().getId());
+            if (!missing.isEmpty()) {
+                blocked.add("Đơn " + booking.getCode() + " thiếu " + String.join(", ", missing));
+            }
+        });
+        if (!blocked.isEmpty()) {
+            throw new DispatchRuleException("tripStopId", String.join(". ", blocked) + ".", true);
         }
     }
 

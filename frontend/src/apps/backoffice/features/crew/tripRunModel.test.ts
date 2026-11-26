@@ -33,35 +33,21 @@ describe('tripRunModel', () => {
     expect(canComplete(handed)).toBe(true)
   })
 
-  it('không nhận một con ở điểm đón, hoặc ở cửa khẩu khi con lên xe tại đó (nhận từ đại lý)', () => {
-    const r = run({}, { horses: [
-      { leg: { id: 9, boardTripStopId: 2, alightTripStopId: 3, status: 'PLANNED' } },
-      { leg: { id: 10, boardTripStopId: 1, alightTripStopId: 2, status: 'IN_PROGRESS' } },
-    ] })
-    expect(canRefuse(r, { handoverType: 'PICKUP', tripStopId: 2 }, 9)).toBe(true)
-    expect(canRefuse(r, { handoverType: 'AGENT', tripStopId: 2 }, 9)).toBe(true)
-    // Giao cho đại lý (đơn xuất): con xuống xe ở cửa khẩu, không có từ chối
-    expect(canRefuse(r, { handoverType: 'AGENT', tripStopId: 2 }, 10)).toBe(false)
-    expect(canRefuse(r, { handoverType: 'DELIVERY', tripStopId: 3 }, 9)).toBe(false)
+  it('offers refusal and original papers at pickup', () => {
+    expect(canRefuse({ handoverType: 'PICKUP' })).toBe(true)
+    expect(canRefuse({ handoverType: 'DELIVERY' })).toBe(false)
+    expect(receivesOriginals({ handoverType: 'PICKUP' })).toBe(true)
+    expect(receivesOriginals({ handoverType: 'DELIVERY' })).toBe(false)
   })
 
-  it('ở cửa khẩu có bàn giao với đại lý khi có con xuống xe (đơn xuất) hoặc lên xe (đơn nhập)', () => {
+  it('offers no horse transfer when the truck reaches a border stop', () => {
     const border = run({ stops: [
       { id: 1, stopType: 'HUB', actualArrivalAt: 't', actualDepartureAt: 't' },
       { id: 2, stopType: 'BORDER', actualArrivalAt: 't' },
     ] }, { horses: [{ leg: { id: 9, boardTripStopId: 1, alightTripStopId: 2, status: 'IN_PROGRESS' } }] })
-    expect(handoverTypesAt(border, border.trip!.stops![1])).toEqual(['AGENT'])
+    expect(handoverTypesAt(border, border.trip!.stops![1])).toEqual([])
     const empty = run({ stops: border.trip!.stops }, { horses: [] })
     expect(handoverTypesAt(empty, empty.trip!.stops![1])).toEqual([])
-  })
-
-  it('cho ghi nhận giấy gốc từ đại lý khi ngựa lên xe công ty tại cửa khẩu', () => {
-    const r = run({}, { horses: [
-      { leg: { id: 9, boardTripStopId: 2, alightTripStopId: 3 } },
-      { leg: { id: 10, boardTripStopId: 1, alightTripStopId: 2 } },
-    ] })
-    expect(receivesOriginals(r, { handoverType: 'AGENT', tripStopId: 2, horses: [{ horseLegId: 9 }] })).toBe(true)
-    expect(receivesOriginals(r, { handoverType: 'AGENT', tripStopId: 2, horses: [{ horseLegId: 10 }] })).toBe(false)
   })
 
   it('trả ngựa khi quá hạn số dư chỉ có ở điểm đón đang đứng, sau khi đã nhận con lên xe', () => {

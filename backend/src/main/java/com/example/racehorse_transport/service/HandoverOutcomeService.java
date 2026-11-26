@@ -15,8 +15,7 @@ public interface HandoverOutcomeService {
 
     void lockBookingsForCompletion(HandoverType type, List<HorseLeg> matched);
 
-    // Đánh dấu lần giao nhận DONE; con quét đúng chip lên xe hoặc xuống xe. Nhận từ khách (hoặc từ đại lý với đơn nhập, sau khi
-    // kiểm đủ giấy #35) thì lập khoản số dư; bàn giao đại lý thì chặng đại lý liền kề bắt đầu hoặc kết thúc; giao xong con cuối thì đơn DELIVERED (#16)
+    // Ghi giao nhận và cập nhật chặng. Lập số dư khi đón, báo đã giao sau con cuối cùng.
     void complete(Handover handover, List<HorseLeg> matched, Instant at, Long actorUserId);
 
     void requireSelfDeliveryBeforeCheckIn(Long horseId);

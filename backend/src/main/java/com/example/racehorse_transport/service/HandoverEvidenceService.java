@@ -16,7 +16,6 @@ public interface HandoverEvidenceService {
 
     void attachPhoto(HandoverHorse horse, MultipartFile photo, Long actor);
     void attachRecord(Long handoverId, MultipartFile record, Long actor);
-    void recordAgentDelivery(HorseLeg leg, MultipartFile proof, Long actor);
     List<Document> originals(
             Long handoverId, Set<Long> bookingIds, boolean receiving);
     void recordHubPapers(Handover handover, Long bookingId, boolean receiving,

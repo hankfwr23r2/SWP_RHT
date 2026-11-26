@@ -17,8 +17,11 @@ public interface DocumentCompletenessService {
 
     List<Document> findCandidateDocuments(Long bookingId);
 
-    // Luồng B kiểm toàn bộ giấy bắt buộc khi xe xuất phát đón (GĐ5), khi nhận tại hub nếu SELF, hoặc khi nhận ở cửa khẩu với IMPORT.
+    List<String> missingRequiredAtBorder(Booking booking, Long gateLocationId);
+
+    // Luồng B kiểm toàn bộ giấy bắt buộc khi xe xuất phát đón hoặc khi nhận tại hub nếu SELF.
     boolean isComplete(Long bookingId);
+
 
     // Khi sang QUOTING, chỉ kiểm giấy bắt buộc do CUSTOMER nộp.
     boolean isCompleteForQuoting(Long bookingId);

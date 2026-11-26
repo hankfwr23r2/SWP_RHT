@@ -75,6 +75,7 @@ public class TripGroupingServiceImpl implements TripGroupingService {
     private final LocationRepository locations;
     private final VehicleRepository vehicles;
     private final SystemConfigService configs;
+    private final com.example.racehorse_transport.service.TripScheduleService schedules;
 
     // Một đơn trong nhóm: địa chỉ cần ghé, các con chưa có chặng loại này, mốc giờ chuyến trục
     private record Entry(Booking booking, BookingAddress address, List<BookingHorse> horses, Instant departureAt, Instant arrivalAt) {}
@@ -138,7 +139,9 @@ public class TripGroupingServiceImpl implements TripGroupingService {
                 .max().orElse(0);
         double speed = configs.getInt("TRUCK_TOP_SPEED_KMH") * AVERAGE_SPEED_RATIO;
         Rules rules = new Rules(configs.getInt("MAX_CONTINUOUS_HOURS"), configs.getInt("MIN_REST_MINUTES"), configs.getInt("MAX_DRIVE_HOURS_PER_DAY"),
-                configs.getInt("STOP_BASE_MINUTES"), configs.getInt("STOP_MINUTES_PER_HORSE"));
+                configs.getInt("STOP_BASE_MINUTES"), configs.getInt("STOP_MINUTES_PER_HORSE"),
+                configs.getInt("MAX_TRANSFER_HORSE_HOURS"), configs.getInt("MAX_DIRECT_HORSE_HOURS"),
+                configs.getInt("HORSE_REST_INTERVAL_HOURS"));
         String side = pickup ? "PICKUP" : "DELIVERY";
         Window window = new Window(configs.getInt(side + "_WINDOW_START_HOUR"), configs.getInt(side + "_WINDOW_END_HOUR"));
         double maxHours = TripSchedulePolicy.rideLimitSeconds(false, rules) / 3600.0;
@@ -155,7 +158,23 @@ public class TripGroupingServiceImpl implements TripGroupingService {
                 // A newly unavailable route does not prevent suggestions for the other bookings.
             }
         }
-        return List.copyOf(result);
+        return result.stream().map(group -> withRestStops(group, tripType, rules)).toList();
+    }
+
+    private TripGroupResponseDto withRestStops(TripGroupResponseDto group, VehicleTripType tripType, Rules rules) {
+        if (group.hours() < rules.horseRestIntervalHours()) return group;
+        var request = new com.example.racehorse_transport.dto.dispatch.PlannedTripRequestDto(tripType, null,
+                group.stops().stream().map(stop -> new com.example.racehorse_transport.dto.dispatch.PlannedTripRequestDto.PlaceDto(
+                        stop.locationId(), stop.bookingAddressId())).toList(),
+                group.bookings().stream().flatMap(booking -> booking.horses().stream()).map(GroupHorseDto::bookingHorseId).toList(), null);
+        try {
+            var plan = schedules.plan(request);
+            return new TripGroupResponseDto(group.seats(), plan.km(), round(Duration.between(plan.startAt(), plan.endAt()).toSeconds() / 3600.0),
+                    plan.blocked(), group.bookings(), plan.stops().stream().map(stop -> new SuggestedStopDto(
+                            stop.locationId(), stop.bookingAddressId(), stop.stopType(), stop.arrivalAt(), stop.departureAt())).toList());
+        } catch (DispatchRuleException | com.example.racehorse_transport.exception.RoutingUnavailableException exception) {
+            return new TripGroupResponseDto(group.seats(), group.routeKm(), group.hours(), true, group.bookings(), group.stops());
+        }
     }
 
     private TripGroupResponseDto describeDelivery(List<Entry> visits, Location hub, Rules rules, Window window) {

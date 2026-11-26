@@ -202,7 +202,6 @@ class OperationsEntityMappingTest {
         Staff manager = staff.findByStaffCode("MGR-001").orElseThrow();
         Location hcm = locations.findByCode("HUB-HCM").orElseThrow();
         Location danang = locations.findByCode("HUB-DN").orElseThrow();
-        Party agent = parties.findAll().stream().filter(p -> p.getDisplayName().startsWith("Đại lý")).findFirst().orElseThrow();
         List<RouteStop> routePlan = routeStops.findById_RouteIdOrderById_SequenceNumber(booking.getDeparture().getRoute().getId());
 
         // Lượt xe trục chính và điểm dừng: điểm chép từ tuyến, và điểm là địa chỉ của khách
@@ -243,12 +242,12 @@ class OperationsEntityMappingTest {
         HorseLeg failedDelivery = leg(bookingHorse, 2, HorseLegType.DELIVERY, HorseLegStatus.FAILED);
         failedDelivery.setFromLocation(danang);
         failedDelivery.setToBookingAddress(delivery);
-        failedDelivery.setAgentParty(agent);
+        failedDelivery.setVehicleTrip(trip);
         failedDelivery = horseLegs.save(failedDelivery);
         HorseLeg redelivery = leg(bookingHorse, 3, HorseLegType.DELIVERY, HorseLegStatus.PLANNED);
         redelivery.setFromLocation(danang);
         redelivery.setToBookingAddress(delivery);
-        redelivery.setAgentParty(agent);
+        redelivery.setVehicleTrip(trip);
         redelivery.setReplacedHorseLeg(failedDelivery);
         horseLegs.save(redelivery);
 
@@ -391,7 +390,7 @@ class OperationsEntityMappingTest {
                 .singleElement().satisfies(c -> assertThat(c.getAssignedAt()).isNotNull());
         assertThat(horseLegs.findByBookingHorse_IdOrderBySequenceNumber(bookingHorse.getId())).satisfiesExactly(
                 first -> assertThat(first.getBoardTripStop().getSequenceNumber()).isEqualTo(1),
-                second -> assertThat(second.getAgentParty().getId()).isEqualTo(agent.getId()),
+                second -> assertThat(second.getVehicleTrip().getId()).isEqualTo(tripId),
                 third -> assertThat(third.getReplacedHorseLeg().getStatus()).isEqualTo(HorseLegStatus.FAILED));
         assertThat(horseStays.findById(quarantine.getId()).orElseThrow().getQuarantineResult()).isEqualTo(QuarantineResult.PASSED);
         assertThat(healthLogs.findAll()).filteredOn(h -> h.getTripStop() != null && h.getTripStop().getVehicleTrip().getId().equals(tripId))

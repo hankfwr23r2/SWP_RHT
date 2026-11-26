@@ -8,13 +8,12 @@ import com.example.racehorse_transport.policy.TrackingPolicy.CustodyHolder;
 import java.time.Instant;
 
 // Một con ngựa công ty hoặc đối tác đang giữ: ở đâu, ai giữ, lần khám gần nhất và hạn khám tới.
-// agentLegId: chặng giao đại lý đang chở, điều phối ghi đã giao.
 // stayType có khi đang lưu trú; legType, tripCode, vehicleTripId có khi đang trên đường. point: vị trí biết được gần nhất
 public record CustodyRowResponseDto(
         Long bookingHorseId, String horseName, Long bookingId, String bookingCode,
         CustodyHolder holder, String holderName, Instant holderSince,
         HorseStayType stayType, HorseLegType legType, Long vehicleTripId, String tripCode, String placeName, GeoPointDto point,
-        Instant lastCheckAt, HealthStatus healthStatus, Instant nextCheckAt, boolean careOverdue, Long agentLegId,
+        Instant lastCheckAt, HealthStatus healthStatus, Instant nextCheckAt, boolean careOverdue,
         boolean waitingPickupBalance, boolean balanceContactAllowed, Instant balanceHoldAt, Long unclaimedStayId, Long healthLogStayId,
         Long responsibleCoordinatorId, String responsibleCoordinatorName) {
 }

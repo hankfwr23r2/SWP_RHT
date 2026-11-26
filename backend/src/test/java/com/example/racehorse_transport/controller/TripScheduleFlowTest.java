@@ -111,14 +111,44 @@ class TripScheduleFlowTest {
 
     @Test
     void ridesOverTheLimitAndLateArrivalAreBlocked() throws Exception {
-        drive(6 * 3600);
-        plan("null").andExpect(status().isOk()).andExpect(jsonPath("$.data.blocked").value(true))
-                .andExpect(jsonPath("$.data.warnings", org.hamcrest.Matchers.hasItem("RIDE_TOO_LONG")));
+        drive(9 * 3600);
+        plan("null").andExpect(status().isConflict());
         create().andExpect(status().isConflict());
         drive(3600);
         Instant departure = jdbc.queryForObject("SELECT d.planned_departure_at FROM booking b JOIN departure d ON d.id = b.departure_id WHERE b.code = 'DEV-DOMESTIC-001'",
                 java.sql.Timestamp.class).toInstant();
         plan("\"" + departure.minusSeconds(3 * 3600) + "\"").andExpect(jsonPath("$.data.warnings", org.hamcrest.Matchers.hasItem("LATE_FOR_HUB")));
+    }
+
+    @Test
+    void sixHourPickupInsertsARealRestStopAndKeepsTheHorseAssignedToTheHub() throws Exception {
+        when(routing.truckRoute(anyList(), anyDouble(), anyInt(), any())).thenAnswer(invocation -> {
+            List<GeoPointDto> points = invocation.getArgument(0);
+            boolean pickupLoop = points.getFirst().equals(points.getLast());
+            long first = pickupLoop ? 3600 : 3 * 3600;
+            long second = pickupLoop ? 6 * 3600 : 3 * 3600;
+            return new RoadRouteDto(80, first + second, List.of(
+                    new RoadRouteDto.Leg(40, first, List.of(points.get(0), points.get(1))),
+                    new RoadRouteDto.Leg(40, second, List.of(points.get(1), points.get(2)))));
+        });
+        String body = content(create().andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.stops[2].stopType").value("REST")));
+        createdTrip = ((Number) JsonPath.read(body, "$.data.id")).longValue();
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM horse_leg hl JOIN trip_stop ts ON ts.id = hl.alight_trip_stop_id
+                WHERE hl.vehicle_trip_id = ? AND ts.stop_type = 'HUB' AND ts.sequence_number = 4
+                """, Integer.class, createdTrip)).isEqualTo(horses.size());
+        assertThat(jdbc.queryForObject("""
+                SELECT extract(epoch FROM planned_departure_at - planned_arrival_at)::int
+                FROM trip_stop WHERE vehicle_trip_id = ? AND stop_type = 'REST'
+                """, Integer.class, createdTrip)).isEqualTo(1800);
+    }
+
+    @Test
+    void sixHourPickupWithNoReachableRestStopIsBlocked() throws Exception {
+        drive(6 * 3600);
+        create().andExpect(status().isConflict())
+                .andExpect(jsonPath("$.data.places", org.hamcrest.Matchers.containsString("Không có trạm nghỉ phù hợp")));
     }
 
     @Test

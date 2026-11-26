@@ -1,7 +1,7 @@
 // Lập lượt xe: lượt trục theo chuyến; lượt đón, giao, chạy thẳng chọn đơn rồi hệ thống tính giờ; chuyển xe nhập giờ tay
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { dispatchApi, type DispatchBooking, type DispatchVehicle, type PlannedTrip, type TripType, type VehicleTrip } from '@shared/api/dispatch'
+import { dispatchApi, type DispatchBooking, type DispatchVehicle, type PlannedTrip, type PlannedTripCreate, type TripType, type VehicleTrip } from '@shared/api/dispatch'
 import { useLoad } from '@shared/hooks/useLoad'
 import { formatDate, formatDateTime } from '@shared/lib/format'
 import { Button } from '@shared/ui/Button'
@@ -42,6 +42,7 @@ function NewTripModal({ bookings, weekFrom, weekTo, onClose, onCreated }: Omit<P
   const [departureId, setDepartureId] = useState('')
   const [hubChoice, setHubChoice] = useState('')
   const [chosen, setChosen] = useState<number[]>([])
+  const [restPlaces, setRestPlaces] = useState<PlannedTripCreate['places']>()
   const [startAt, setStartAt] = useState<string>()
   const [plan, setPlan] = useState<PlannedTrip>()
   const [manual, setManual] = useState(false)
@@ -59,9 +60,9 @@ function NewTripModal({ bookings, weekFrom, weekTo, onClose, onCreated }: Omit<P
   const byHand = manual || tripType === 'TRANSFER'
   const eligible = bookings.filter(booking => horsesNeeding(tripType, [booking]).length > 0)
   const picked = eligible.filter(booking => chosen.includes(booking.id ?? 0))
-  const request = picked.length && hubId ? { tripType, places: placesFor(tripType, hubId, picked), bookingHorseIds: horsesNeeding(tripType, picked), startAt } : undefined
-  const reset = (type: TripType) => { setTripType(type); setChosen([]); setStartAt(undefined); setPlan(undefined); setManual(false); setStops(type === 'TRANSFER' ? [emptyStop(), emptyStop()] : [emptyStop(), emptyStop(), emptyStop()]) }
-  const toggle = (id: number) => { setPlan(undefined); setStartAt(undefined); setChosen(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id]) }
+  const request = picked.length && hubId ? { tripType, places: restPlaces ?? placesFor(tripType, hubId, picked), bookingHorseIds: horsesNeeding(tripType, picked), startAt } : undefined
+  const reset = (type: TripType) => { setTripType(type); setChosen([]); setStartAt(undefined); setPlan(undefined); setRestPlaces(undefined); setManual(false); setStops(type === 'TRANSFER' ? [emptyStop(), emptyStop()] : [emptyStop(), emptyStop(), emptyStop()]) }
+  const toggle = (id: number) => { setPlan(undefined); setRestPlaces(undefined); setStartAt(undefined); setChosen(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id]) }
 
   const finalPlace = stops.at(-1)?.place
   const needsFinalHub = tripType === 'PICKUP' || tripType === 'DELIVERY' || tripType === 'DIRECT'
@@ -102,7 +103,7 @@ function NewTripModal({ bookings, weekFrom, weekTo, onClose, onCreated }: Omit<P
           )}
           {tripType !== 'LINEHAUL' && !byHand && (
             <Field label={t('dispatch.create.hub')} required>
-              {c => <Select {...c} value={hubId ? String(hubId) : ''} onChange={value => { setPlan(undefined); setHubChoice(value) }} placeholder={t('tripWords.choose')}
+              {c => <Select {...c} value={hubId ? String(hubId) : ''} onChange={value => { setPlan(undefined); setRestPlaces(undefined); setHubChoice(value) }} placeholder={t('tripWords.choose')}
                 options={hubs.map(hub => ({ value: String(hub.id), label: hub.name ?? '' }))} />}
             </Field>
           )}
@@ -126,7 +127,7 @@ function NewTripModal({ bookings, weekFrom, weekTo, onClose, onCreated }: Omit<P
             <div><Button variant="ghost" size="sm" onClick={() => setManual(true)}>{t('dispatch.plan.manual')}</Button></div>
           </fieldset>
         )}
-        {request && !byHand && <TripPlanPreview request={request} onPlan={setPlan} onStart={setStartAt} onManual={() => setManual(true)} />}
+        {request && !byHand && <TripPlanPreview request={request} onPlan={setPlan} onStart={setStartAt} restStations={data.locations} onPlaces={places => { setPlan(undefined); setRestPlaces(places) }} onManual={() => setManual(true)} />}
         {tripType !== 'LINEHAUL' && byHand && (
           <ManualStops stops={stops} onChange={setStops} bookings={bookings} locations={data.locations}
             finalPlaceError={invalidFinalPlace ? t('dispatch.create.finalPlaceHub') : undefined} />
