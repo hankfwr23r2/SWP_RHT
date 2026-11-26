@@ -114,7 +114,7 @@ export const staffReview = {
     },
     "coverage": "Insurance option",
     "insurer": "Insurer",
-    "chooseInsurer": "Select an insurer",
+    "insurerPlaceholder": "Enter the insurer name from the quote",
     "coverageAmount": "Coverage amount",
     "premiumAmount": "Insurance premium",
     "currency": "Currency code",

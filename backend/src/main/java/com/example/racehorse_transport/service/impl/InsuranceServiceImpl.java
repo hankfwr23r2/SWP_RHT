@@ -5,18 +5,13 @@ import com.example.racehorse_transport.dto.booking.InsurancePremiumRefundRequest
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.BookingHorse;
 import com.example.racehorse_transport.entity.HorseInsurance;
-import com.example.racehorse_transport.entity.Party;
-import com.example.racehorse_transport.entity.PartyRole;
-import com.example.racehorse_transport.entity.PartyRoleId;
 import com.example.racehorse_transport.entity.TermsAcceptance;
 import com.example.racehorse_transport.entity.enums.HorseInsuranceStatus;
-import com.example.racehorse_transport.entity.enums.PartyRoleType;
 import com.example.racehorse_transport.entity.enums.TermsKind;
 import com.example.racehorse_transport.exception.BookingRuleException;
 import com.example.racehorse_transport.policy.InsuranceDeclarationPolicy;
 import com.example.racehorse_transport.policy.TermsDocumentPolicy;
 import com.example.racehorse_transport.repository.HorseInsuranceRepository;
-import com.example.racehorse_transport.repository.PartyRoleRepository;
 import com.example.racehorse_transport.repository.TermsAcceptanceRepository;
 import com.example.racehorse_transport.service.InsuranceService;
 import com.example.racehorse_transport.dto.booking.InsuranceEvidenceRequestDto;
@@ -38,7 +33,6 @@ import com.example.racehorse_transport.service.BookingHorseService;
 import com.example.racehorse_transport.service.DocumentService;
 import com.example.racehorse_transport.service.NotificationService;
 import com.example.racehorse_transport.util.FileFormats;
-import static com.example.racehorse_transport.policy.BookingSubmissionPolicy.businessDate;
 import static com.example.racehorse_transport.policy.InsuranceReviewPolicy.POLICY_DOCUMENT_CODE;
 import java.io.IOException;
 import java.time.Clock;
@@ -58,7 +52,6 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class InsuranceServiceImpl implements InsuranceService {
 
-    private final PartyRoleRepository roles;
     private final TermsAcceptanceRepository terms;
     private final HorseInsuranceRepository insurances;
     private final BookingRepository bookings;
@@ -96,9 +89,10 @@ public class InsuranceServiceImpl implements InsuranceService {
         assignments.requireAssigned(booking, username);
         HorseInsurance insurance = editableInsurance(booking, insuranceId);
         InsuranceReviewPolicy.requireStatus(insurance, HorseInsuranceStatus.DRAFT);
-        InsuranceReviewPolicy.validateEvidence(insurance.getCoverageOption(), request.coverageAmount(),
-                request.premiumAmount(), request.currencyCode(), request.quoteExpiresAt(), clock.instant());
-        request.applyTo(insurance, insurer(request.insurerPartyId(), businessDate(clock.instant())));
+        InsuranceReviewPolicy.validateEvidence(insurance.getCoverageOption(), request.insurerName(),
+                request.coverageAmount(), request.premiumAmount(), request.currencyCode(),
+                request.quoteExpiresAt(), clock.instant());
+        request.applyTo(insurance);
         insurance.setCoverageAmount(request.coverageAmount());
         insurance.setPremiumAmount(request.premiumAmount());
     }
@@ -113,9 +107,6 @@ public class InsuranceServiceImpl implements InsuranceService {
                 && insurances.hasPolicyFile(insuranceId, POLICY_DOCUMENT_CODE);
         InsuranceReviewPolicy.validateConfirmation(insurance, booking.getRequestedPickupDate(), departureDate(booking),
                 clock.instant(), hasPolicyFile);
-        if (insurance.getCoverageOption() != InsuranceCoverageOption.NONE) {
-            insurer(insurance.getInsurerParty().getId(), businessDate(clock.instant()));
-        }
         insurance.setConfirmedBy(actor);
         insurance.setConfirmedAt(clock.instant());
         insurance.setStatus(HorseInsuranceStatus.CONFIRMED);
@@ -189,9 +180,8 @@ public class InsuranceServiceImpl implements InsuranceService {
         InsuranceReviewPolicy.requireStatus(insurance, HorseInsuranceStatus.REVISION_REQUESTED);
         InsuranceReviewPolicy.validatePeriod(request.validFrom(), request.validTo(),
                 booking.getRequestedPickupDate(), departureDate(booking));
-        Party insurer = insurer(request.insurerPartyId(), businessDate(clock.instant()));
         attachPolicyFile(insurance, file, booking.getCustomer().getUserId());
-        request.applyTo(insurance, insurer);
+        request.applyTo(insurance);
         insurance.setCoverageAmount(null);
         insurance.setCurrencyCode(null);
         insurance.setStatus(HorseInsuranceStatus.DRAFT);
@@ -243,9 +233,8 @@ public class InsuranceServiceImpl implements InsuranceService {
             String ipAddress, MultipartFile file) {
         InsuranceDeclarationPolicy.validate(request);
         HorseInsurance insurance = switch (request.coverageOption()) {
-            case PERSONAL -> request.toEntity(horse, insurer(request.insurerPartyId(), submittedOn), null);
-            case ARRANGED -> request.toEntity(horse, null, null);
-            case NONE -> request.toEntity(horse, null, acceptWaiver(horse.getBooking(), ipAddress));
+            case PERSONAL, ARRANGED -> request.toEntity(horse, null);
+            case NONE -> request.toEntity(horse, acceptWaiver(horse.getBooking(), ipAddress));
         };
         insurance.setStatus(HorseInsuranceStatus.DRAFT);
         insurances.save(insurance);
@@ -266,16 +255,6 @@ public class InsuranceServiceImpl implements InsuranceService {
             throw new BookingRuleException("file", "Không đọc được tệp hợp đồng bảo hiểm.");
         }
         documents.attach(file, POLICY_DOCUMENT_CODE, DocumentSubject.INSURANCE, insurance.getId(), customerId);
-    }
-
-    private Party insurer(Long id, LocalDate submittedOn) {
-        if (id == null) {
-            return null;
-        }
-        return roles.findById(new PartyRoleId(id, PartyRoleType.INSURER))
-                .filter(role -> InsuranceDeclarationPolicy.isRoleEffective(role, submittedOn))
-                .map(PartyRole::getParty)
-                .orElseThrow(() -> new BookingRuleException("Đối tác chưa có vai trò bảo hiểm còn hiệu lực."));
     }
 
     private TermsAcceptance acceptWaiver(Booking booking, String ipAddress) {

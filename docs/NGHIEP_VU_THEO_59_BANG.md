@@ -117,7 +117,7 @@ Mỗi tài khoản có đúng một vai trò (`app_user.role_code`). Nhân viên
 | `STABLE` | Chuồng gửi qua đêm | `horse_stay.operator_party_id`, `incident_plan.handler_party_id` |
 | `VET` | Bác sĩ thú y, gồm khám và lấy mẫu tại chuồng | `incident_plan.handler_party_id` |
 | `RESCUE` | Đội cứu hộ xe | `incident_plan.handler_party_id` |
-| `INSURER` | Công ty bảo hiểm | `horse_insurance.insurer_party_id` |
+| `INSURER` | Vai trò danh mục đối tác được giữ lại; bảo hiểm theo đơn lưu tên hãng dạng văn bản |
 
 Đối tác không có tài khoản. Khách, người gửi và người nhận **không** tạo dòng `party`.
 
@@ -269,8 +269,8 @@ Hai nhánh chạy song song. Mỗi nhánh tự lưu trạng thái trên đối t
 |---|---|
 | Duyệt từng giấy: đạt / không đạt (bắt buộc ghi lý do) | `document.status`, `reviewed_by`, `reviewed_at`, `review_note` |
 | Kiểm tra còn thiếu giấy nào | `DocumentCompletenessPolicy` (đọc `document_requirement` và `document`) |
-| Bảo hiểm PERSONAL: kiểm hợp đồng. Thiếu thì yêu cầu khách bổ sung | `horse_insurance.status = REVISION_REQUESTED`, `revision_reason` |
-| Bảo hiểm ARRANGED: lấy báo giá từ công ty bảo hiểm | `horse_insurance.insurer_party_id`, `premium_amount`, `quote_expires_at` |
+| Bảo hiểm PERSONAL: kiểm tên hãng khách khai, hợp đồng và thời hạn. Thiếu/sai thì yêu cầu khách bổ sung | `horse_insurance.insurer_name`, `status = REVISION_REQUESTED`, `revision_reason` |
+| Bảo hiểm ARRANGED: lấy báo giá; chuyên viên tự nhập tên hãng, số phí và hạn báo giá | `horse_insurance.insurer_name`, `premium_amount`, `quote_expires_at` |
 | Xác nhận bảo hiểm | `horse_insurance.status = CONFIRMED`, `confirmed_by` |
 
 **Nhánh kế hoạch (điều phối viên)**

@@ -6835,8 +6835,7 @@ export interface components {
             acceptedWaiver?: boolean;
             /** @enum {string} */
             coverageOption: "PERSONAL" | "ARRANGED" | "NONE";
-            /** Format: int64 */
-            insurerPartyId?: number;
+            insurerName?: string;
             policyNumber?: string;
             /** Format: date */
             validFrom?: string;
@@ -6850,8 +6849,7 @@ export interface components {
             currencyCode?: string;
             /** Format: int64 */
             id?: number;
-            /** Format: int64 */
-            insurerPartyId?: number;
+            insurerName?: string;
             policyNumber?: string;
             premiumAmount?: number;
             /** Format: date-time */
@@ -6870,8 +6868,7 @@ export interface components {
         InsuranceEvidenceRequestDto: {
             coverageAmount: number;
             currencyCode: string;
-            /** Format: int64 */
-            insurerPartyId: number;
+            insurerName?: string;
             premiumAmount?: number;
             /** Format: date-time */
             quoteExpiresAt?: string;
@@ -7255,8 +7252,7 @@ export interface components {
             transactionNumber?: string;
         };
         PersonalInsuranceRevisionRequestDto: {
-            /** Format: int64 */
-            insurerPartyId: number;
+            insurerName: string;
             policyNumber: string;
             /** Format: date */
             validFrom: string;

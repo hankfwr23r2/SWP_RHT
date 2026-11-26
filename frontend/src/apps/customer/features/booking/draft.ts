@@ -17,7 +17,7 @@ export interface HorseChoice {
   feedSuppliedByOwner: boolean
   addOnServiceIds: number[]
   coverage: CoverageOption | ''
-  insurerPartyId: string
+  insurerName: string
   policyNumber: string
   policyFile?: File
   validFrom: string
@@ -60,7 +60,7 @@ const blankParty = (): PartyDraft => ({ fullName: '', phone: '', address: '', id
 
 export const emptyHorse = (): HorseChoice => ({
   stallTypeCode: '', dietNote: '', feedingsPerDay: '', feedSuppliedByOwner: false, addOnServiceIds: [],
-  coverage: '', insurerPartyId: '', policyNumber: '', validFrom: '', validTo: '', acceptedWaiver: false,
+  coverage: '', insurerName: '', policyNumber: '', validFrom: '', validTo: '', acceptedWaiver: false,
 })
 
 export const emptyDraft = (): BookingDraft => ({

@@ -108,7 +108,7 @@ test('bổ sung giấy và bảo hiểm rồi gửi lại đơn', async ({ page 
     status: 'NEEDS_RESUBMISSION', reviewReason: 'Giấy mờ',
     items: [{ requirement: { id: 4, documentTypeName: 'Sổ tiêm phòng', mandatory: true }, bookingHorseId: 21, submitterType: 'CUSTOMER' }],
     documents: [{ id: 1, requirementId: 4, bookingHorseId: 21, status: 'REJECTED', reviewNote: 'Ảnh mờ, chụp lại' }],
-    insurance: { id: 31, coverageOption: 'PERSONAL', status: 'REVISION_REQUESTED', revisionReason: 'Sai số hợp đồng', policyNumber: 'P1', insurerPartyId: 3, validFrom: '2099-01-01', validTo: '2099-02-01' },
+    insurance: { id: 31, coverageOption: 'PERSONAL', status: 'REVISION_REQUESTED', revisionReason: 'Sai số hợp đồng', policyNumber: 'P1', insurerName: 'Hãng A', validFrom: '2099-01-01', validTo: '2099-02-01' },
   })
   await expect(page.getByText('Giấy mờ')).toBeVisible()
   await expect(page.getByText('Ảnh mờ, chụp lại')).toBeVisible()
@@ -117,6 +117,7 @@ test('bổ sung giấy và bảo hiểm rồi gửi lại đơn', async ({ page 
   await dialog.locator('input[type=file]').setInputFiles({ name: 'so.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4') })
   await dialog.getByRole('button', { name: 'Nộp giấy' }).click()
   await expect(dialog).toHaveCount(0)
+  await page.getByLabel(/Hãng bảo hiểm/).fill('Hãng B')
   await page.getByLabel(/Số hợp đồng/).fill('P2')
   await page.getByRole('button', { name: 'Lưu bổ sung' }).click()
   await expect(page.getByText('Vui lòng điền mục này.', { exact: true })).toBeVisible()
@@ -132,6 +133,7 @@ test('bổ sung giấy và bảo hiểm rồi gửi lại đơn', async ({ page 
   await expect(page.getByText('Đang thẩm định').first()).toBeVisible()
   expect(calls.map(call => call.path)).toEqual(['/bookings/8/documents/upload', '/bookings/8/insurances/31/revise', '/bookings/8/resubmit'])
   expect(calls[1].body).toEqual(expect.stringContaining('"policyNumber":"P2"'))
+  expect(calls[1].body).toEqual(expect.stringContaining('"insurerName":"Hãng B"'))
   expect(calls[1].body).toEqual(expect.stringContaining('name="file"; filename="updated.pdf"'))
 })
 

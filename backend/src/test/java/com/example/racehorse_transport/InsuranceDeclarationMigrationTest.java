@@ -18,7 +18,7 @@ class InsuranceDeclarationMigrationTest {
             postgres.start();
             var source = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
             Flyway.configure().dataSource(source)
-                    .target("202611231600").load().migrate();
+                    .target("202612012201").load().migrate();
             var jdbc = new JdbcTemplate(source);
             insertConfirmedInsurance(jdbc);
             var existing = jdbc.queryForMap("""
@@ -26,12 +26,13 @@ class InsuranceDeclarationMigrationTest {
                     WHERE status = 'CONFIRMED' ORDER BY id LIMIT 1
                     """);
 
-            Flyway.configure().dataSource(source)
-                    .target("202611231800").load().migrate();
+            Flyway.configure().dataSource(source).load().migrate();
 
             assertThat(jdbc.queryForMap("""
                     SELECT id, booking_horse_id, confirmed_by, confirmed_at FROM horse_insurance WHERE id = ?
                     """, existing.get("id"))).isEqualTo(existing);
+            assertThat(jdbc.queryForObject("SELECT insurer_name FROM horse_insurance WHERE id = ?",
+                    String.class, existing.get("id"))).isEqualTo("Insurer");
             jdbc.update("DELETE FROM horse_insurance WHERE id = ?", existing.get("id"));
             Long draft = jdbc.queryForObject("""
                     INSERT INTO horse_insurance (booking_horse_id, coverage_option, status)
@@ -45,12 +46,15 @@ class InsuranceDeclarationMigrationTest {
                     """, existing.get("confirmed_by"), existing.get("confirmed_at"), draft))
                     .isInstanceOf(DataIntegrityViolationException.class).hasMessageContaining("ck_horse_insurance_arranged");
 
-            Long partyId = jdbc.queryForObject("SELECT min(id) FROM party", Long.class);
             assertThatThrownBy(() -> jdbc.update("""
                     UPDATE horse_insurance SET status = 'CONFIRMED', confirmed_by = ?, confirmed_at = ?,
-                        insurer_party_id = ? WHERE id = ?
-                    """, existing.get("confirmed_by"), existing.get("confirmed_at"), partyId, draft))
-                    .isInstanceOf(DataIntegrityViolationException.class).hasMessageContaining("ck_horse_insurance_coverage");
+                        coverage_amount = 100, currency_code = 'VND' WHERE id = ?
+                    """, existing.get("confirmed_by"), existing.get("confirmed_at"), draft))
+                    .isInstanceOf(DataIntegrityViolationException.class).hasMessageContaining("ck_horse_insurance_arranged");
+            jdbc.update("""
+                    UPDATE horse_insurance SET status = 'CONFIRMED', confirmed_by = ?, confirmed_at = ?,
+                        insurer_name = 'Insurer', coverage_amount = 100, currency_code = 'VND' WHERE id = ?
+                    """, existing.get("confirmed_by"), existing.get("confirmed_at"), draft);
         }
     }
 
@@ -91,11 +95,12 @@ class InsuranceDeclarationMigrationTest {
                     SELECT b.id, h.id, 'STANDARD', 'ACTIVE' FROM new_booking b CROSS JOIN new_horse h
                     RETURNING id
                 )
-                INSERT INTO horse_insurance (booking_horse_id, coverage_option, coverage_amount, currency_code,
-                                             policy_number, valid_from, valid_to, status, confirmed_by, confirmed_at)
-                SELECT new_line.id, 'PERSONAL', 100, 'VND', 'OLD-POLICY', CURRENT_DATE, CURRENT_DATE + 1,
+                INSERT INTO horse_insurance (booking_horse_id, coverage_option, insurer_party_id, coverage_amount,
+                                             currency_code, policy_number, valid_from, valid_to, status, confirmed_by, confirmed_at)
+                SELECT new_line.id, 'ARRANGED', party.id, 100, 'VND', 'OLD-POLICY', CURRENT_DATE, CURRENT_DATE + 1,
                        'CONFIRMED', staff.user_id, now()
-                FROM new_line CROSS JOIN staff WHERE staff.staff_code = 'INS-SPEC'
+                FROM new_line CROSS JOIN staff CROSS JOIN party
+                WHERE staff.staff_code = 'INS-SPEC' AND party.display_name = 'Insurer'
                 """);
     }
 }

@@ -6531,9 +6531,10 @@
             "enum" : [ "PERSONAL", "ARRANGED", "NONE" ],
             "type" : "string"
           },
-          "insurerPartyId" : {
-            "format" : "int64",
-            "type" : "integer"
+          "insurerName" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : "string"
           },
           "policyNumber" : {
             "type" : "string"
@@ -6566,9 +6567,8 @@
             "format" : "int64",
             "type" : "integer"
           },
-          "insurerPartyId" : {
-            "format" : "int64",
-            "type" : "integer"
+          "insurerName" : {
+            "type" : "string"
           },
           "policyNumber" : {
             "type" : "string"
@@ -6615,9 +6615,10 @@
             "pattern" : "[A-Z]{3}",
             "type" : "string"
           },
-          "insurerPartyId" : {
-            "format" : "int64",
-            "type" : "integer"
+          "insurerName" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : "string"
           },
           "premiumAmount" : {
             "type" : "number"
@@ -6627,7 +6628,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "coverageAmount", "currencyCode", "insurerPartyId" ],
+        "required" : [ "coverageAmount", "currencyCode" ],
         "type" : "object"
       },
       "InsurancePremiumRefundRequestDto" : {
@@ -7642,9 +7643,10 @@
       },
       "PersonalInsuranceRevisionRequestDto" : {
         "properties" : {
-          "insurerPartyId" : {
-            "format" : "int64",
-            "type" : "integer"
+          "insurerName" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : "string"
           },
           "policyNumber" : {
             "maxLength" : 50,
@@ -7660,7 +7662,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "insurerPartyId", "policyNumber", "validFrom", "validTo" ],
+        "required" : [ "insurerName", "policyNumber", "validFrom", "validTo" ],
         "type" : "object"
       },
       "PhoneCostConsentRequestDto" : {

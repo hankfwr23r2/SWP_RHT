@@ -52,11 +52,11 @@ function ReviewDetail({ id, detail, data }: {
       {reviewReason && <p>{t('staffReview.reviewReason', { reason: reviewReason })}</p>}
     </>}>
       {status && HAS_JOURNEY.includes(status) && <Card title={t('myOrders.journey')}><BookingJourney bookingId={id} /></Card>}
-      {(!data.insurers || !data.stallTypes || !data.documents) && <ErrorState onRetry={data.reload} retrying={state !== 'idle'} />}
+      {(!data.stallTypes || !data.documents) && <ErrorState onRetry={data.reload} retrying={state !== 'idle'} />}
       {data.checklist
         ? <DocumentsCard checklist={data.checklist} horses={detail.horses} status={detail.assignedToMe ? status : undefined} actions={actions} />
         : <Card title={t('staffReview.documents')}><ErrorState onRetry={data.reload} retrying={state !== 'idle'} /></Card>}
-      <InsurancesCard horses={detail.horses} status={status} canEdit={detail.assignedToMe === true} insurers={data.insurers}
+      <InsurancesCard horses={detail.horses} status={status} canEdit={detail.assignedToMe === true}
         documents={data.documents} actions={actions} />
     </DetailColumns>
   </>

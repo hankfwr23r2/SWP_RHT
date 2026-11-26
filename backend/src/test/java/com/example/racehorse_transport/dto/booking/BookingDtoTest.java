@@ -127,9 +127,9 @@ class BookingDtoTest {
         assertThat(selection.getQuantity()).isEqualTo(2);
         var arranged = new ObjectMapper().readValue("""
                 {"coverageOption":"ARRANGED","id":99,"status":"CONFIRMED","coverageAmount":200,
-                 "currencyCode":"VND","premiumAmount":100,"policyNumber":"ignore","insurerPartyId":99}
+                 "currencyCode":"VND","premiumAmount":100,"policyNumber":"ignore","insurerName":"ignore"}
                 """, InsuranceDeclarationRequestDto.class);
-        var insurance = arranged.toEntity(row, null, null);
+        var insurance = arranged.toEntity(row, null);
         assertThat(insurance.getBookingHorse()).isSameAs(row);
         assertThat(insurance.getId()).isNull();
         assertThat(insurance.getStatus()).isNull();
@@ -138,6 +138,12 @@ class BookingDtoTest {
         assertThat(insurance.getCoverageAmount()).isNull();
         assertThat(insurance.getCurrencyCode()).isNull();
         assertThat(insurance.getPremiumAmount()).isNull();
+
+        var personal = new InsuranceDeclarationRequestDto(InsuranceCoverageOption.PERSONAL, "P-01",
+                LocalDate.of(2027, 1, 1), LocalDate.of(2027, 2, 1), " Hãng A ", null)
+                .toEntity(row, null);
+        assertThat(personal.getInsurerName()).isEqualTo("Hãng A");
+        assertThat(personal.getPolicyNumber()).isEqualTo("P-01");
     }
 
     @Test
@@ -164,7 +170,7 @@ class BookingDtoTest {
         service.setId(8L);
         var addOn = new AddOnInput(8L, 2).toEntity(row, service);
         var insurance = new InsuranceDeclarationRequestDto(InsuranceCoverageOption.ARRANGED, null, null, null, null, null)
-                .toEntity(row, null, null);
+                .toEntity(row, null);
         insurance.setStatus(HorseInsuranceStatus.DRAFT);
 
         var horseDetail = BookingDetailResponseDto.HorseDetail.from(row, List.of(addOn), insurance);

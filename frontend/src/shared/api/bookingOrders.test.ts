@@ -38,7 +38,7 @@ it('giữ thứ tự các tệp hợp đồng trong yêu cầu multipart tạo �
 it('gửi dữ liệu bổ sung và tệp mới trong cùng yêu cầu', async () => {
   const file = pdf('updated.pdf')
   await bookingOrdersApi.reviseInsurance(42, 8, {
-    insurerPartyId: 3, policyNumber: 'P2', validFrom: '2099-01-01', validTo: '2099-01-10',
+    insurerName: 'Hãng bảo hiểm B', policyNumber: 'P2', validFrom: '2099-01-01', validTo: '2099-01-10',
   }, file)
 
   expect(sent[0].url).toBe('/bookings/42/insurances/8/revise')

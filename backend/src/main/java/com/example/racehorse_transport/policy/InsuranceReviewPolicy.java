@@ -26,8 +26,8 @@ public final class InsuranceReviewPolicy {
         }
     }
 
-    public static void validateEvidence(InsuranceCoverageOption option, BigDecimal coverage, BigDecimal premium,
-            String currency, Instant expiresAt, Instant now) {
+    public static void validateEvidence(InsuranceCoverageOption option, String insurerName, BigDecimal coverage,
+            BigDecimal premium, String currency, Instant expiresAt, Instant now) {
         if (option == InsuranceCoverageOption.NONE) {
             throw BookingRuleException.conflict("Miễn trách không có báo giá bảo hiểm.");
         }
@@ -37,6 +37,9 @@ public final class InsuranceReviewPolicy {
         }
         validateAmount(coverage, currency);
         if (option == InsuranceCoverageOption.ARRANGED) {
+            if (insurerName == null || insurerName.isBlank() || insurerName.strip().length() > 200) {
+                throw new BookingRuleException("Cần nhập tên hãng bảo hiểm mua hộ.");
+            }
             if (!"VND".equals(currency) || !isQuoteCurrent(expiresAt, now)) {
                 throw new BookingRuleException("Bảo hiểm mua hộ cần báo giá VND còn hạn.");
             }
@@ -85,11 +88,8 @@ public final class InsuranceReviewPolicy {
             }
             return;
         }
-        if (insurance.getInsurerParty() == null) {
-            throw BookingRuleException.conflict("Chưa có công ty bảo hiểm.");
-        }
-        validateEvidence(insurance.getCoverageOption(), insurance.getCoverageAmount(), insurance.getPremiumAmount(),
-                insurance.getCurrencyCode(), insurance.getQuoteExpiresAt(), now);
+        validateEvidence(insurance.getCoverageOption(), insurance.getInsurerName(), insurance.getCoverageAmount(),
+                insurance.getPremiumAmount(), insurance.getCurrencyCode(), insurance.getQuoteExpiresAt(), now);
         if (insurance.getCoverageOption() == InsuranceCoverageOption.PERSONAL) {
             validatePeriod(insurance.getValidFrom(), insurance.getValidTo(), pickup, departure);
         }

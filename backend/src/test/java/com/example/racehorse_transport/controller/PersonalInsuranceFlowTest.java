@@ -68,14 +68,9 @@ class PersonalInsuranceFlowTest {
         String assignedToken = token(assigned.getUser().getUsername(), "SPECIALIST");
         String otherToken = token(other.getUser().getUsername(), "SPECIALIST");
         LocalDate pickup = BookingSubmissionPolicy.businessDate(clock.instant()).plusDays(10);
-        long insurer = jdbc.queryForObject("""
-                INSERT INTO party (party_type, display_name, country_code, status)
-                VALUES ('ORGANIZATION', ?, 'VN', 'ACTIVE') RETURNING id
-                """, Long.class, data.unique("f2-insurer"));
-        jdbc.update("INSERT INTO party_role (party_id, role_type, valid_from) VALUES (?, 'INSURER', ?)",
-                insurer, pickup.minusMonths(1));
+        String insurerName = data.unique("f2-insurer");
         var personal = new InsuranceDeclarationRequestDto(InsuranceCoverageOption.PERSONAL,
-                "OLD-01", pickup, pickup.plusDays(5), insurer, null);
+                "OLD-01", pickup, pickup.plusDays(5), insurerName, null);
         var arranged = new InsuranceDeclarationRequestDto(InsuranceCoverageOption.ARRANGED, null, null, null, null, null);
         long horseWithRevision = horse(customerId);
         long horseWithoutFile = horse(customerId);
@@ -113,7 +108,7 @@ class PersonalInsuranceFlowTest {
                 .andExpect(jsonPath(policyNames(firstLine), contains("original.pdf")))
                 .andExpect(jsonPath(policyNames(lastLine), contains("second.pdf")));
 
-        var evidence = new InsuranceEvidenceRequestDto(insurer, BigDecimal.valueOf(1_000_000), null, "VND", null);
+        var evidence = new InsuranceEvidenceRequestDto(insurerName, BigDecimal.valueOf(1_000_000), null, "VND", null);
         insuranceAction(bookingId, lastInsurance, "record-evidence", assignedToken, evidence).andExpect(status().isOk());
         // Mô phỏng bảo hiểm khai trước khi hệ thống bắt buộc tệp.
         jdbc.update("DELETE FROM document WHERE horse_insurance_id = ?", lastInsurance);
@@ -126,7 +121,7 @@ class PersonalInsuranceFlowTest {
         insuranceAction(bookingId, firstInsurance, "request-revision", assignedToken, java.util.Map.of("reason", "Đổi hợp đồng"))
                 .andExpect(status().isOk());
 
-        var revision = new PersonalInsuranceRevisionRequestDto(insurer, "NEW-02", pickup, pickup.plusDays(8));
+        var revision = new PersonalInsuranceRevisionRequestDto("Hãng bảo hiểm mới", "NEW-02", pickup, pickup.plusDays(8));
         var reviseUrl = "/bookings/{id}/insurances/{insuranceId}/revise";
         mvc.perform(multipart(reviseUrl, bookingId, firstInsurance).file(requestPart(revision))
                         .header(HttpHeaders.AUTHORIZATION, ownerToken))
@@ -138,17 +133,21 @@ class PersonalInsuranceFlowTest {
         mvc.perform(get("/bookings/{id}", bookingId).header(HttpHeaders.AUTHORIZATION, ownerToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.horses[?(@.id == " + firstLine + ")].insurance.status", contains("REVISION_REQUESTED")))
-                .andExpect(jsonPath("$.data.horses[?(@.id == " + firstLine + ")].insurance.policyNumber", contains("OLD-01")));
+                .andExpect(jsonPath("$.data.horses[?(@.id == " + firstLine + ")].insurance.policyNumber", contains("OLD-01")))
+                .andExpect(jsonPath("$.data.horses[?(@.id == " + firstLine + ")].insurance.insurerName", contains(insurerName)));
 
         mvc.perform(multipart(reviseUrl, bookingId, firstInsurance).file(requestPart(revision)).file(pdf("file", "updated.pdf"))
                         .header(HttpHeaders.AUTHORIZATION, ownerToken))
                 .andExpect(status().isOk());
         files(bookingId, assignedToken).andExpect(jsonPath(policyNames(firstLine), contains("updated.pdf")));
-        insuranceAction(bookingId, firstInsurance, "record-evidence", assignedToken, evidence).andExpect(status().isOk());
+        var revisedEvidence = new InsuranceEvidenceRequestDto(
+                "Hãng bảo hiểm mới", BigDecimal.valueOf(1_000_000), null, "VND", null);
+        insuranceAction(bookingId, firstInsurance, "record-evidence", assignedToken, revisedEvidence).andExpect(status().isOk());
         insuranceAction(bookingId, firstInsurance, "confirm", assignedToken, null).andExpect(status().isOk());
         mvc.perform(get("/bookings/{id}/review-detail", bookingId).header(HttpHeaders.AUTHORIZATION, assignedToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.horses[?(@.id == " + firstLine + ")].insurance.status", contains("CONFIRMED")));
+                .andExpect(jsonPath("$.data.horses[?(@.id == " + firstLine + ")].insurance.status", contains("CONFIRMED")))
+                .andExpect(jsonPath("$.data.horses[?(@.id == " + firstLine + ")].insurance.insurerName", contains("Hãng bảo hiểm mới")));
     }
 
     private ResultActions insuranceAction(long bookingId, long insuranceId, String action, String token, Object body)

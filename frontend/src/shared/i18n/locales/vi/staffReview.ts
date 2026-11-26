@@ -114,7 +114,7 @@ export const staffReview = {
     },
     "coverage": "Phương án bảo hiểm",
     "insurer": "Hãng bảo hiểm",
-    "chooseInsurer": "Chọn hãng bảo hiểm",
+    "insurerPlaceholder": "Nhập tên hãng theo báo giá",
     "coverageAmount": "Số tiền bảo hiểm",
     "premiumAmount": "Phí bảo hiểm",
     "currency": "Mã tiền tệ",

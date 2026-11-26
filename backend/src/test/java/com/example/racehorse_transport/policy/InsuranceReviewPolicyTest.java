@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static com.example.racehorse_transport.entity.enums.InsuranceCoverageOption.*;
 import com.example.racehorse_transport.entity.HorseInsurance;
-import com.example.racehorse_transport.entity.Party;
 import com.example.racehorse_transport.entity.TermsAcceptance;
 import com.example.racehorse_transport.entity.enums.HorseInsuranceStatus;
 import com.example.racehorse_transport.exception.BookingRuleException;
@@ -20,14 +19,18 @@ class InsuranceReviewPolicyTest {
 
     @Test
     void arrangedRequiresPositiveWholeVndAndAnUnexpiredQuote() {
-        assertThatCode(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, COVERAGE, PREMIUM, "VND",
+        assertThatCode(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, "Hãng A", COVERAGE, PREMIUM, "VND",
                 NOW.plusSeconds(1), NOW)).doesNotThrowAnyException();
-        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, COVERAGE, new BigDecimal("2.5"),
+        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, "Hãng A", COVERAGE, new BigDecimal("2.5"),
                 "VND", NOW.plusSeconds(1), NOW)).isInstanceOf(BookingRuleException.class);
-        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, COVERAGE, PREMIUM, "VND",
+        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, "Hãng A", COVERAGE, PREMIUM, "VND",
                 NOW, NOW)).isInstanceOf(BookingRuleException.class);
-        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, COVERAGE, PREMIUM, "USD",
+        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, "Hãng A", COVERAGE, PREMIUM, "USD",
                 NOW.plusSeconds(1), NOW)).isInstanceOf(BookingRuleException.class);
+        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, " ", COVERAGE, PREMIUM, "VND",
+                NOW.plusSeconds(1), NOW)).isInstanceOf(BookingRuleException.class);
+        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, "A".repeat(201), COVERAGE, PREMIUM,
+                "VND", NOW.plusSeconds(1), NOW)).isInstanceOf(BookingRuleException.class);
     }
 
     @Test
@@ -46,7 +49,6 @@ class InsuranceReviewPolicyTest {
         HorseInsurance insurance = new HorseInsurance();
         insurance.setCoverageOption(PERSONAL);
         insurance.setStatus(HorseInsuranceStatus.DRAFT);
-        insurance.setInsurerParty(new Party());
         insurance.setCoverageAmount(COVERAGE);
         insurance.setCurrencyCode("VND");
         insurance.setValidFrom(pickup);

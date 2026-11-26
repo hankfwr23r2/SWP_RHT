@@ -124,9 +124,9 @@ describe('yêu cầu gửi backend', () => {
 
   it('chỉ gửi phần bảo hiểm của lựa chọn cuối cùng', () => {
     const draft = ready()
-    draft.horses[11] = { ...draft.horses[11], coverage: 'PERSONAL', policyNumber: ' P1 ', validFrom: '2099-01-01', validTo: '2099-02-01', insurerPartyId: '5', acceptedWaiver: true }
+    draft.horses[11] = { ...draft.horses[11], coverage: 'PERSONAL', policyNumber: ' P1 ', validFrom: '2099-01-01', validTo: '2099-02-01', insurerName: '  Hãng A ', acceptedWaiver: true }
     expect(createRequest(draft, hcm, dn).horses[0].insurance).toEqual({
-      coverageOption: 'PERSONAL', insurerPartyId: 5, policyNumber: 'P1', validFrom: '2099-01-01', validTo: '2099-02-01',
+      coverageOption: 'PERSONAL', insurerName: 'Hãng A', policyNumber: 'P1', validFrom: '2099-01-01', validTo: '2099-02-01',
     })
   })
 })

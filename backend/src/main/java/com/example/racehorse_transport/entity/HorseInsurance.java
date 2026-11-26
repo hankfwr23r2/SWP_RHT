@@ -48,10 +48,8 @@ public class HorseInsurance {
     @Column(name = "coverage_option", length = 30, nullable = false)
     private InsuranceCoverageOption coverageOption;
 
-    // Bắt buộc khi ARRANGED (CHECK ở DB)
-    @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "insurer_party_id")
-    private Party insurerParty;
+    @Column(name = "insurer_name", length = 200)
+    private String insurerName;
 
     @Column(name = "coverage_amount", precision = 15, scale = 2)
     private BigDecimal coverageAmount;

@@ -1158,7 +1158,7 @@ Index: `document_id`.
 | `id` | `bigint` | | PK, identity | |
 | `booking_horse_id` | `bigint` | | UK, FK → booking_horse, CASCADE | |
 | `coverage_option` | `varchar(30)` | | CK `PERSONAL, ARRANGED, NONE` | Khách tự mua / công ty mua giúp / không mua |
-| `insurer_party_id` | `bigint` | có | FK → party | Công ty bảo hiểm |
+| `insurer_name` | `varchar(200)` | có | | Tên hãng ghi theo hợp đồng hoặc báo giá |
 | `coverage_amount` | `numeric(15,2)` | có | CK `> 0` | |
 | `premium_amount` | `numeric(15,2)` | có | CK `>= 0` | Phí bảo hiểm |
 | `currency_code` | `char(3)` | có | | |
@@ -1175,13 +1175,13 @@ Index: `document_id`.
 | `confirmed_at` | `timestamptz` | có | | |
 
 Ràng buộc bảng:
-- `CHECK (status <> 'CONFIRMED' OR coverage_option <> 'ARRANGED' OR insurer_party_id IS NOT NULL)`
+- `CHECK (status <> 'CONFIRMED' OR coverage_option <> 'ARRANGED' OR (insurer_name IS NOT NULL AND btrim(insurer_name) <> ''))`
 - `CHECK (coverage_option <> 'NONE' OR waiver_terms_acceptance_id IS NOT NULL)`
 - `CHECK (status <> 'CONFIRMED' OR coverage_option = 'NONE' OR (coverage_amount IS NOT NULL AND currency_code IS NOT NULL))`
 - `CHECK (status <> 'REVISION_REQUESTED' OR (revision_reason IS NOT NULL AND revision_requested_at IS NOT NULL))`. Chỉ được yêu cầu bổ sung khi `coverage_option = PERSONAL` (kiểm ở service).
 - `CHECK (status <> 'CONFIRMED' OR (confirmed_by IS NOT NULL AND confirmed_at IS NOT NULL))`
 
-Index: `insurer_party_id`, `waiver_terms_acceptance_id`.
+Index: `waiver_terms_acceptance_id`.
 
 ---
 
@@ -1758,7 +1758,7 @@ Các quy tắc dưới đây cần so dữ liệu ở nhiều bảng nên CHECK 
 | 23 | `quotation.total_amount`, `pass_through_amount`, `deposit_amount` chỉ được ghi khi báo giá còn DRAFT, và phải khớp tổng các dòng. Tổng dòng ADJUSTMENT không được làm tổng báo giá âm. Báo giá có tổng hoặc tiền cọc bằng 0 thì không gửi được. Báo giá thay thế khi loại ngựa chỉ tính khoản giảm tới mức tiền còn lại ngoài thu hộ | quotation, quotation_line |
 | 24 | Thay báo giá đã ACCEPTED (ví dụ khi loại ngựa): chuyển bản cũ sang SUPERSEDED và bản mới sang ACCEPTED trong cùng một transaction | quotation |
 | 25 | Mọi thao tác làm đổi số chỗ xe ghép đã đặt (đặt chỗ, đổi chuyến, hủy, từ chối, báo giá hết hạn, loại ngựa) phải cập nhật `departure.booked_stall_count` trong cùng transaction, khi đang giữ `FOR UPDATE` | departure, booking, booking_horse |
-| 26 | Bên được tham chiếu phải có `party_role` còn hiệu lực đúng loại: `horse_stay.operator_party_id` là `QUARANTINE_FARM` hoặc `STABLE`; `horse_insurance.insurer_party_id` là `INSURER`. `incident_plan.handler_party_id` theo quy tắc #13 | party_role, horse_stay, horse_insurance |
+| 26 | Bên được tham chiếu phải có `party_role` còn hiệu lực đúng loại: `horse_stay.operator_party_id` là `QUARANTINE_FARM` hoặc `STABLE`. `incident_plan.handler_party_id` theo quy tắc #13 | party_role, horse_stay |
 | 27 | Vai trò khớp hồ sơ: tài khoản `CUSTOMER` có đúng một dòng `customer` và không có `staff`; vai trò khác có đúng một dòng `staff` và không có `customer`. Ghi trong cùng transaction | app_user, customer, staff |
 | 29 | Đơn EXPORT, IMPORT chỉ đi tuyến có cửa khẩu mà `counterpart_country_code` bằng nước đối tác của đơn | booking, route, location |
 | 30 | Mọi ngựa ACTIVE của một đơn đi cùng một lượt LINEHAUL | horse_leg, vehicle_trip |

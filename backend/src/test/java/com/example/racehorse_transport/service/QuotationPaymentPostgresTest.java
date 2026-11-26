@@ -118,10 +118,9 @@ class QuotationPaymentPostgresTest {
         long horse = attachHorse(fixture, "STANDARD");
         Instant insuranceDeadline = START.plusSeconds(120);
         jdbc.update("""
-                insert into horse_insurance (booking_horse_id, coverage_option, insurer_party_id, coverage_amount,
+                insert into horse_insurance (booking_horse_id, coverage_option, insurer_name, coverage_amount,
                     premium_amount, currency_code, quote_expires_at, status, confirmed_by, confirmed_at)
-                select ?, 'ARRANGED', p.id, 100000, 2500, 'VND', ?, 'CONFIRMED', ?, now()
-                from party p where p.display_name = 'Công ty bảo hiểm (mẫu)'
+                values (?, 'ARRANGED', 'Công ty bảo hiểm (mẫu)', 100000, 2500, 'VND', ?, 'CONFIRMED', ?, now())
                 """, horse, java.sql.Timestamp.from(insuranceDeadline), fixture.managerId());
         when(maps.routeOrEstimate(any(), any(), anyInt(), anyInt())).thenAnswer(invocation -> maps.route(
                 invocation.getArgument(0), invocation.getArgument(1), invocation.getArgument(2), invocation.getArgument(3)));
@@ -152,13 +151,12 @@ class QuotationPaymentPostgresTest {
         assignSpecialist(booking, specialist.getUserId());
         String specialistAuth = auth(specialist.getUser().getUsername(), "SPECIALIST");
         String managerAuth = auth(fixture.manager(), "MANAGER");
-        long insurer = sampleInsurer();
         Instant oldDeadline = START.plusSeconds(120);
         long insurance = jdbc.queryForObject("""
-                INSERT INTO horse_insurance (booking_horse_id, coverage_option, insurer_party_id, coverage_amount,
+                INSERT INTO horse_insurance (booking_horse_id, coverage_option, insurer_name, coverage_amount,
                     premium_amount, currency_code, quote_expires_at, status, confirmed_by, confirmed_at)
-                VALUES (?, 'ARRANGED', ?, 100000, 2500, 'VND', ?, 'CONFIRMED', ?, ?) RETURNING id
-                """, Long.class, horse, insurer, java.sql.Timestamp.from(oldDeadline), specialist.getUserId(),
+                VALUES (?, 'ARRANGED', 'Công ty bảo hiểm (mẫu)', 100000, 2500, 'VND', ?, 'CONFIRMED', ?, ?) RETURNING id
+                """, Long.class, horse, java.sql.Timestamp.from(oldDeadline), specialist.getUserId(),
                 java.sql.Timestamp.from(START));
         when(maps.routeOrEstimate(any(), any(), anyInt(), anyInt())).thenAnswer(invocation -> maps.route(
                 invocation.getArgument(0), invocation.getArgument(1), invocation.getArgument(2), invocation.getArgument(3)));
@@ -182,8 +180,8 @@ class QuotationPaymentPostgresTest {
                 """, String.class, insurance, specialist.getUserId())).isEqualTo("Báo giá của hãng đã hết hạn.");
         Instant newDeadline = START.plusSeconds(3600);
         insuranceAction(booking, insurance, specialistAuth, "record-evidence", """
-                {"insurerPartyId":%d,"coverageAmount":100000,"premiumAmount":4200,"currencyCode":"VND","quoteExpiresAt":"%s"}
-                """.formatted(insurer, newDeadline)).andExpect(status().isOk());
+                {"insurerName":"Công ty bảo hiểm (mẫu)","coverageAmount":100000,"premiumAmount":4200,"currencyCode":"VND","quoteExpiresAt":"%s"}
+                """.formatted(newDeadline)).andExpect(status().isOk());
         insuranceAction(booking, insurance, specialistAuth, "confirm", "{}").andExpect(status().isOk());
         assertThat(bookingStatus(fixture)).isEqualTo("QUOTING");
 
@@ -211,13 +209,12 @@ class QuotationPaymentPostgresTest {
         var specialist = data.staff(data.unique("personal-specialist"), "SPECIALIST");
         assignSpecialist(booking, specialist.getUserId());
         String specialistAuth = auth(specialist.getUser().getUsername(), "SPECIALIST");
-        long insurer = sampleInsurer();
         long insurance = jdbc.queryForObject("""
-                INSERT INTO horse_insurance (booking_horse_id, coverage_option, insurer_party_id, policy_number,
+                INSERT INTO horse_insurance (booking_horse_id, coverage_option, insurer_name, policy_number,
                     valid_from, valid_to, coverage_amount, currency_code, status, confirmed_by, confirmed_at)
-                VALUES (?, 'PERSONAL', ?, 'HD-01', '2027-01-01', '2027-02-01', 100000, 'VND', 'CONFIRMED', ?, ?)
+                VALUES (?, 'PERSONAL', 'Công ty bảo hiểm cá nhân', 'HD-01', '2027-01-01', '2027-02-01', 100000, 'VND', 'CONFIRMED', ?, ?)
                 RETURNING id
-                """, Long.class, horse, insurer, specialist.getUserId(), java.sql.Timestamp.from(START));
+                """, Long.class, horse, specialist.getUserId(), java.sql.Timestamp.from(START));
 
         insuranceAction(booking, insurance, specialistAuth, "reopen", """
                 {"reason":"Cập nhật hợp đồng."}
@@ -225,8 +222,8 @@ class QuotationPaymentPostgresTest {
         jdbc.update("UPDATE horse_insurance SET status = 'DRAFT', confirmed_by = NULL, confirmed_at = NULL WHERE id = ?",
                 insurance);
         insuranceAction(booking, insurance, specialistAuth, "record-evidence", """
-                {"insurerPartyId":%d,"coverageAmount":200000,"currencyCode":"VND"}
-                """.formatted(insurer)).andExpect(status().isConflict());
+                {"insurerName":"Công ty bảo hiểm cá nhân","coverageAmount":200000,"currencyCode":"VND"}
+                """).andExpect(status().isConflict());
         insuranceAction(booking, insurance, specialistAuth, "confirm", "{}").andExpect(status().isConflict());
     }
 
@@ -929,10 +926,6 @@ class QuotationPaymentPostgresTest {
 
     private String auth(String username, String role) {
         return "Bearer " + jwt.generateToken(username, List.of(role));
-    }
-
-    private long sampleInsurer() {
-        return jdbc.queryForObject("SELECT id FROM party WHERE display_name = 'Công ty bảo hiểm (mẫu)'", Long.class);
     }
 
     private ResultActions insuranceAction(long booking, long insurance, String auth, String action, String body)

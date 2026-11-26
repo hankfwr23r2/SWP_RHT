@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { BookingDocument } from '@shared/api/bookingDocuments'
 import type { BookingDetail, BookingStatus } from '@shared/api/bookingOrders'
-import type { Insurer } from '@shared/api/catalog'
 import { Button } from '@shared/ui/Button'
 import { Card } from '@shared/ui/Card'
 import { EmptyState } from '@shared/ui/EmptyState'
@@ -17,16 +16,15 @@ import s from '../Review.module.css'
 type Horse = NonNullable<BookingDetail['horses']>[number]
 const insuranceTone = { DRAFT: 'neutral', REVISION_REQUESTED: 'warning', CONFIRMED: 'success' } as const
 
-function HorseInsurance({ horse, editable, canEdit, insurers, documents, actions }: {
-  horse: Horse; editable: boolean; canEdit: boolean; insurers?: Insurer[]; documents?: BookingDocument[]; actions: ReviewActions
+function HorseInsurance({ horse, editable, canEdit, documents, actions }: {
+  horse: Horse; editable: boolean; canEdit: boolean; documents?: BookingDocument[]; actions: ReviewActions
 }) {
   const { t, i18n } = useTranslation()
   const [recording, setRecording] = useState(false)
   const [refunding, setRefunding] = useState(false)
   const insurance = horse.insurance
-  const { id, status, coverageOption, insurerPartyId, policyNumber, validFrom, validTo, revisionReason,
+  const { id, status, coverageOption, insurerName, policyNumber, validFrom, validTo, revisionReason,
     coverageAmount, premiumAmount, currencyCode, quoteExpiresAt, waiverTermsAcceptanceId } = insurance ?? {}
-  const insurer = insurers?.find(row => row.id === insurerPartyId)
   const policyFile = documents?.find(row => row.bookingHorseId === horse.id && row.typeCode === 'INSURANCE_POLICY')
   const options: ReviewAction[] = []
   const draft = editable && status === 'DRAFT' && id != null && coverageOption != null
@@ -46,7 +44,7 @@ function HorseInsurance({ horse, editable, canEdit, insurers, documents, actions
       </div>
       {!insurance ? <p>{t('staffReview.noInsurance')}</p> : <dl className={s.facts}>
         {coverageOption && <div><dt>{t('staffReview.coverage')}</dt><dd>{t(`bookingForm.services.coverage.${coverageOption}`)}</dd></div>}
-        {insurer && <div><dt>{t('staffReview.insurer')}</dt><dd>{insurer.displayName}</dd></div>}
+        {insurerName && <div><dt>{t('staffReview.insurer')}</dt><dd>{insurerName}</dd></div>}
         {policyNumber && <div><dt>{t('staffReview.policyNumber')}</dt><dd>{policyNumber}</dd></div>}
         {coverageOption === 'PERSONAL' && documents && <div>
           <dt>{t('staffReview.policyFile')}</dt>
@@ -65,7 +63,7 @@ function HorseInsurance({ horse, editable, canEdit, insurers, documents, actions
         {revisionReason && <div><dt>{t('staffReview.reason')}</dt><dd>{revisionReason}</dd></div>}
       </dl>}
       <div className={s.actions}>
-        {draft && insurers?.length && coverageOption !== 'NONE' ? <Button size="sm" disabled={actions.busy} onClick={() => {
+        {draft && coverageOption !== 'NONE' ? <Button size="sm" disabled={actions.busy} onClick={() => {
           actions.clear()
           setRecording(true)
         }}>{t(coverageOption === 'PERSONAL' ? 'staffReview.recordPolicy' : 'staffReview.recordEvidence')}</Button> : null}
@@ -73,16 +71,16 @@ function HorseInsurance({ horse, editable, canEdit, insurers, documents, actions
         {canEdit && horse.status === 'EXCLUDED' && status === 'CONFIRMED' && coverageOption === 'ARRANGED' && id != null &&
           <Button size="sm" disabled={actions.busy} onClick={() => setRefunding(true)}>{t('staffReview.recordPremiumRefund')}</Button>}
       </div>
-      {recording && id != null && insurance && insurers &&
-        <InsuranceEvidenceDialog insurance={insurance} id={id} insurers={insurers} actions={actions} onClose={() => setRecording(false)} />}
+      {recording && id != null && insurance &&
+        <InsuranceEvidenceDialog insurance={insurance} id={id} actions={actions} onClose={() => setRecording(false)} />}
       {refunding && id != null &&
         <InsurancePremiumRefundDialog id={id} actions={actions} onClose={() => setRefunding(false)} />}
     </div>
   </li>
 }
 
-export function InsurancesCard({ horses, status, canEdit, insurers, documents, actions }: {
-  horses?: BookingDetail['horses']; status?: BookingStatus; canEdit: boolean; insurers?: Insurer[];
+export function InsurancesCard({ horses, status, canEdit, documents, actions }: {
+  horses?: BookingDetail['horses']; status?: BookingStatus; canEdit: boolean;
   documents?: BookingDocument[]; actions: ReviewActions
 }) {
   const { t } = useTranslation()
@@ -90,7 +88,7 @@ export function InsurancesCard({ horses, status, canEdit, insurers, documents, a
   const quoting = status === 'QUOTING'
   return <Card title={t('staffReview.insurance')}>
     {horses?.length ? <ul className={s.list}>{horses.map(horse =>
-      <HorseInsurance key={horse.id} horse={horse} canEdit={canEdit} insurers={insurers} documents={documents} actions={actions}
+      <HorseInsurance key={horse.id} horse={horse} canEdit={canEdit} documents={documents} actions={actions}
         editable={canEdit && horse.status === 'ACTIVE' && (reviewing || (quoting && horse.insurance?.coverageOption === 'ARRANGED'))} />
     )}</ul> : <EmptyState title={t('staffReview.noHorses')} description={t('staffReview.noInsuranceHint')} />}
   </Card>
