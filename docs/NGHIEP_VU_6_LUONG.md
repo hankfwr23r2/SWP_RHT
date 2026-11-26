@@ -486,7 +486,7 @@ Tiếp ví dụ chuyến chạy **05:00 thứ Ba 08/12** (liên tỉnh), khách 
 5. **Đã sửa.** Chuyên viên thu hồi giấy đã duyệt trước khi nhận ngựa, bắt buộc ghi lý do, lưu kiểm toán và báo bên nộp. Hệ thống chặn xuất phát hoặc nhận ngựa nếu đơn thiếu giấy bắt buộc. Giấy đã theo xe thì xử lý qua sự cố giấy tờ.
 6. **Đã sửa phần nhắc và danh sách.** Đơn liên tỉnh chạy thẳng được nhắc theo ngày đón và hiện trong danh sách Đơn thiếu giấy sau khi đã cọc. Thao tác báo giấy không kịp vẫn áp dụng cho đơn có chuyến.
 7. **Đã sửa.** Kiểm lại giấy bắt buộc khi hoàn tất bàn giao đơn xuất cho đại lý ở cửa khẩu. Thiếu giấy thì ngựa vẫn trên xe.
-8. **Danh sách giấy mẫu lệch giữa Campuchia và Lào**: xuất Lào thiếu sổ tiêm, nhập Lào thiếu xét nghiệm. Cần nhóm xác nhận cố ý hay thiếu.
+8. **Giữ nguyên (chốt 26/11/2026).** Danh sách giấy mẫu của Lào khác Campuchia (xuất Lào không có sổ tiêm, nhập Lào không có xét nghiệm). Giấy cấu hình riêng theo nước và chiều, quản trị sửa được.
 9. **Đã sửa.** Hộ chiếu theo ngựa đã duyệt cho đơn liên tỉnh được dùng lại cho đơn xuất yêu cầu hộ chiếu của con đó nếu giấy còn hạn vào ngày chạy.
 10. **Đã sửa.** Khi nhận ngựa nhập từ đại lý ở cửa khẩu, kiểm bảo hiểm đã được xác nhận cho từng con, giống lượt đón và nhận ở hub.
 11. **Đã sửa.** Máy chủ kiểm chữ ký định dạng PDF, JPEG hoặc PNG trong nội dung tệp giấy tờ khi khách hoặc chuyên viên tải lên.
@@ -722,7 +722,7 @@ Theo cách hàng không, đã trình bày và chờ duyệt cuối:
 8. **Đã sửa.** Màn đặt hẹn khách tự chở hiện hạn có mặt ở hub và hệ thống từ chối giờ hẹn muộn hơn hạn.
 9. **Dồn chuyến, chạy xe nhỏ hơn, một khách thuê cả chuyến**: tài liệu có nêu, chưa có nút riêng. Hiện chỉ có Chạy, Hủy, Tạo chuyến đột xuất.
 10. **Đã sửa.** Điều phối tự lập lượt `TRANSFER` rỗng về hub gốc, không gắn chuyến bán và không cần quản lý xác nhận chạy.
-11. **Giờ lái mỗi ngày tính theo ngày lịch**, không theo 24 giờ liên tục: lái 8 giờ tối hôm trước và 8 giờ sáng hôm sau vẫn hợp lệ.
+11. **Giữ nguyên (chốt 26/11/2026).** Giờ lái mỗi ngày tính theo ngày lịch, không theo 24 giờ liên tục.
 
 ---
 
