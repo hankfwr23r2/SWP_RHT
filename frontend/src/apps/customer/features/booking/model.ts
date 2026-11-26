@@ -106,7 +106,7 @@ function insuranceInput(horse: HorseChoice): BookingCreateRequest['horses'][numb
   if (horse.coverage !== 'PERSONAL') return { coverageOption: 'ARRANGED' }
   return {
     coverageOption: 'PERSONAL',
-    insurerPartyId: horse.insurerPartyId ? Number(horse.insurerPartyId) : undefined,
+    insurerName: horse.insurerName.trim() || undefined,
     policyNumber: horse.policyNumber.trim(),
     validFrom: horse.validFrom,
     validTo: horse.validTo,

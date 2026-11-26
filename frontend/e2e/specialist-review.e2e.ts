@@ -16,7 +16,7 @@ const insurancePath = '/bookings/8/insurances'
 const order = { id, code: 'BK-TEST', requestedPickupDate: '2099-01-10', bookingType: 'EXPORT' } as const
 const horses: Horse[] = [
   { id: 21, horseId: 41, horseName: 'Gió Nam', status: 'ACTIVE', insurance: {
-    id: 31, status: 'DRAFT', coverageOption: 'PERSONAL', policyNumber: 'P1', insurerPartyId: 7, validFrom: '2099-01-01', validTo: '2099-02-01',
+    id: 31, status: 'DRAFT', coverageOption: 'PERSONAL', policyNumber: 'P1', insurerName: 'Hãng cá nhân', validFrom: '2099-01-01', validTo: '2099-02-01',
   } },
   { id: 22, horseName: 'Sao Mai', status: 'ACTIVE', insurance: { id: 32, status: 'DRAFT', coverageOption: 'ARRANGED' } },
   { id: 23, horseName: 'Mây Trắng', status: 'ACTIVE', insurance: { id: 33, status: 'DRAFT', coverageOption: 'NONE', waiverTermsAcceptanceId: 5 } },
@@ -230,8 +230,7 @@ test('ghi báo giá và xác nhận bảo hiểm, mở lại, yêu cầu bổ su
   await expect(page.getByRole('link', { name: 'Xem policy.pdf' })).toHaveAttribute('href', 'https://example.test/policy.pdf')
   await page.getByRole('button', { name: 'Ghi báo giá bảo hiểm', exact: true }).click()
   const evidence = page.getByRole('dialog')
-  await evidence.getByRole('combobox').click()
-  await page.getByRole('option', { name: 'Hãng A' }).click()
+  await evidence.getByLabel('Hãng bảo hiểm').fill('Hãng A')
   await evidence.getByLabel('Số tiền bảo hiểm').fill('10000000')
   await evidence.getByLabel('Phí bảo hiểm').fill('300000')
   await evidence.getByLabel('Mã tiền tệ').fill('VND')
@@ -239,7 +238,7 @@ test('ghi báo giá và xác nhận bảo hiểm, mở lại, yêu cầu bổ su
   await evidence.getByRole('button', { name: 'Ghi báo giá bảo hiểm', exact: true }).click()
   await expect(evidence).toHaveCount(0)
   expect(calls[0]).toEqual({ path: `${insurancePath}/32/record-evidence`, body: {
-    insurerPartyId: 7, coverageAmount: 10000000, premiumAmount: 300000, currencyCode: 'VND', quoteExpiresAt: '2099-01-20T06:00:00.000Z',
+    insurerName: 'Hãng A', coverageAmount: 10000000, premiumAmount: 300000, currencyCode: 'VND', quoteExpiresAt: '2099-01-20T06:00:00.000Z',
   } })
   const arranged = page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: 'Sao Mai', exact: true }) })
   await arranged.getByRole('button', { name: 'Xác nhận bảo hiểm', exact: true }).click()

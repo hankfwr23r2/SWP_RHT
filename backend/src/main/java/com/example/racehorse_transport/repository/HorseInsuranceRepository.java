@@ -19,7 +19,7 @@ public interface HorseInsuranceRepository extends JpaRepository<HorseInsurance, 
     boolean hasPolicyFile(Long insuranceId, String typeCode);
 
     @Query("""
-            SELECT i FROM HorseInsurance i LEFT JOIN FETCH i.insurerParty LEFT JOIN FETCH i.waiverTermsAcceptance
+            SELECT i FROM HorseInsurance i LEFT JOIN FETCH i.waiverTermsAcceptance
             WHERE i.bookingHorse.id IN :horseRowIds
             """)
     List<HorseInsurance> findForDetail(List<Long> horseRowIds);

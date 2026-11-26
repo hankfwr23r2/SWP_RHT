@@ -50,7 +50,6 @@ class BookingReviewServiceTest {
     private final BookingAssignmentService assignments = mock(BookingAssignmentService.class);
     private final DocumentService attachments = mock(DocumentService.class);
     private final HorseInsuranceRepository insurances = mock(HorseInsuranceRepository.class);
-    private final PartyRoleRepository roles = mock(PartyRoleRepository.class);
     private final BookingRoutingService routing = mock(BookingRoutingService.class);
     private final NotificationService notifications = mock(NotificationService.class);
     private final AuditService audit = mock(AuditService.class);
@@ -60,7 +59,7 @@ class BookingReviewServiceTest {
     private final DocumentReviewService docs = new DocumentReviewServiceImpl(
             bookings, horses, documents, requirements, assignments, attachments, completeness, notifications, audit, CLOCK);
     private final InsuranceService insurance = new InsuranceServiceImpl(
-            roles, mock(TermsAcceptanceRepository.class), insurances, bookings, assignments, notifications, audit, CLOCK,
+            mock(TermsAcceptanceRepository.class), insurances, bookings, assignments, notifications, audit, CLOCK,
             bookingHorses, attachments);
     private final BookingStatusHistoryRepository history = mock(BookingStatusHistoryRepository.class);
     private final BookingStatusService statuses = mock(BookingStatusService.class);
@@ -314,17 +313,11 @@ class BookingReviewServiceTest {
                 Map.of("status", HorseInsuranceStatus.CONFIRMED),
                 Map.of("status", HorseInsuranceStatus.DRAFT, "reason", "Đổi chuyến"));
 
-        Party insurer = new Party();
-        insurer.setId(8L);
-        PartyRole role = new PartyRole();
-        role.setParty(insurer);
-        role.setValidFrom(PICKUP.minusMonths(2));
-        when(roles.findById(new PartyRoleId(8L, PartyRoleType.INSURER))).thenReturn(Optional.of(role));
         insurance.requestRevision(BOOKING_ID, INSURANCE_ID, "specialist", "Cập nhật hạn hợp đồng");
         insurance.revise(BOOKING_ID, INSURANCE_ID, "customer",
-                new PersonalInsuranceRevisionRequestDto(8L, "new-policy", PICKUP, replacement.getDepartureDate()), FILE);
+                new PersonalInsuranceRevisionRequestDto("Hãng A", "new-policy", PICKUP, replacement.getDepartureDate()), FILE);
         insurance.recordEvidence(BOOKING_ID, INSURANCE_ID,
-                new InsuranceEvidenceRequestDto(8L, BigDecimal.TEN, null, "VND", null), "specialist");
+                new InsuranceEvidenceRequestDto("Hãng A", BigDecimal.TEN, null, "VND", null), "specialist");
         when(insurances.hasPolicyFile(INSURANCE_ID, "INSURANCE_POLICY")).thenReturn(true);
         insurance.confirm(BOOKING_ID, INSURANCE_ID, "specialist");
         assertThat(review.startQuoting(BOOKING_ID, "specialist").status()).isEqualTo(QUOTING);

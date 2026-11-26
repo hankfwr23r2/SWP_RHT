@@ -566,7 +566,7 @@ export const customer = {
     },
     insurance: {
       title: 'Bổ sung bảo hiểm',
-      chooseInsurer: 'Chọn hãng',
+      enterInsurer: 'Nhập tên hãng bảo hiểm',
       save: 'Lưu bổ sung',
       saved: 'Đã lưu bảo hiểm.',
       confirmTitle: 'Gửi hợp đồng bảo hiểm bổ sung?',
@@ -802,7 +802,7 @@ export const customer = {
         NONE: 'Cần đồng ý điều khoản trách nhiệm hạn chế.',
       },
       insurer: 'Hãng bảo hiểm',
-      otherInsurer: 'Hãng khác',
+      insurerPlaceholder: 'Nhập tên hãng bảo hiểm',
       policyNumber: 'Số hợp đồng',
       policyFile: 'Tệp hợp đồng bảo hiểm',
       policyFileHint: 'Chọn tệp PDF, JPG hoặc PNG, tối đa 5 MB.',

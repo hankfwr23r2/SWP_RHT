@@ -18,8 +18,7 @@ class BookingReviewDtoTest {
         row.setPremiumAmount(BigDecimal.ONE);
         row.setStatus(HorseInsuranceStatus.DRAFT);
         Instant expires = Instant.parse("2026-12-01T00:00:00Z");
-        Party insurer = new Party();
-        new InsuranceEvidenceRequestDto(3L, BigDecimal.ONE, BigDecimal.TEN, "VND", expires).applyTo(row, insurer);
+        new InsuranceEvidenceRequestDto("Hãng A", BigDecimal.ONE, BigDecimal.TEN, "VND", expires).applyTo(row);
         assertThat(row.getId()).isEqualTo(1L);
         assertThat(row.getCoverageAmount()).isEqualByComparingTo(BigDecimal.TEN);
         assertThat(row.getPremiumAmount()).isEqualByComparingTo(BigDecimal.ONE);
@@ -27,7 +26,10 @@ class BookingReviewDtoTest {
         assertThat(row.getConfirmedBy()).isNull();
         assertThat(row.getConfirmedAt()).isNull();
         assertThat(row.getQuoteExpiresAt()).isEqualTo(expires);
-        assertThat(row.getInsurerParty()).isSameAs(insurer);
+        assertThat(row.getInsurerName()).isEqualTo("Hãng A");
+
+        new InsuranceEvidenceRequestDto(null, BigDecimal.ONE, BigDecimal.TEN, "VND", expires).applyTo(row);
+        assertThat(row.getInsurerName()).isEqualTo("Hãng A");
     }
 
     @Test
@@ -37,12 +39,11 @@ class BookingReviewDtoTest {
         row.setRevisionReason("Bổ sung hợp đồng");
         row.setStatus(HorseInsuranceStatus.REVISION_REQUESTED);
         row.setCoverageAmount(BigDecimal.TEN);
-        Party insurer = new Party();
         LocalDate date = LocalDate.of(2026, 12, 1);
-        new PersonalInsuranceRevisionRequestDto(3L, " HĐ01 ", date, date.plusMonths(1)).applyTo(row, insurer);
+        new PersonalInsuranceRevisionRequestDto(" Hãng A ", " HĐ01 ", date, date.plusMonths(1)).applyTo(row);
         assertThat(row.getId()).isEqualTo(1L);
         assertThat(row.getPolicyNumber()).isEqualTo("HĐ01");
-        assertThat(row.getInsurerParty()).isSameAs(insurer);
+        assertThat(row.getInsurerName()).isEqualTo("Hãng A");
         assertThat(row.getStatus()).isEqualTo(HorseInsuranceStatus.REVISION_REQUESTED);
         assertThat(row.getCoverageAmount()).isEqualByComparingTo(BigDecimal.TEN);
         assertThat(row.getRevisionReason()).isEqualTo("Bổ sung hợp đồng");

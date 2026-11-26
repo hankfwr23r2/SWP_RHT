@@ -23,7 +23,7 @@ function renderInsurances(status: BookingStatus, canEdit = true, documents: Book
   function Page() {
     const actions = useReviewActions(1)
     return <InsurancesCard horses={horses} status={status} canEdit={canEdit} documents={documents}
-      insurers={[{ id: 1, displayName: 'Bảo hiểm mẫu' }]} actions={actions} />
+      actions={actions} />
   }
   return render(<RouterProvider router={createMemoryRouter([{ path: '/', Component: Page }])} />)
 }

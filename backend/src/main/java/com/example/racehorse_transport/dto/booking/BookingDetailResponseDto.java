@@ -79,13 +79,13 @@ public record BookingDetailResponseDto(BookingResponseDto booking, List<PartySna
     }
 
     public record InsuranceDetail(Long id, InsuranceCoverageOption coverageOption, HorseInsuranceStatus status,
-            Long insurerPartyId, String policyNumber, LocalDate validFrom, LocalDate validTo, Long waiverTermsAcceptanceId,
+            String insurerName, String policyNumber, LocalDate validFrom, LocalDate validTo, Long waiverTermsAcceptanceId,
             BigDecimal coverageAmount, BigDecimal premiumAmount, String currencyCode, Instant quoteExpiresAt,
             String revisionReason, BigDecimal refundedPremiumAmount) {
 
         public static InsuranceDetail from(HorseInsurance insurance) {
             return new InsuranceDetail(insurance.getId(), insurance.getCoverageOption(), insurance.getStatus(),
-                    insurance.getInsurerParty() == null ? null : insurance.getInsurerParty().getId(),
+                    insurance.getInsurerName(),
                     insurance.getPolicyNumber(), insurance.getValidFrom(), insurance.getValidTo(),
                     insurance.getWaiverTermsAcceptance() == null ? null : insurance.getWaiverTermsAcceptance().getId(),
                     insurance.getCoverageAmount(), insurance.getPremiumAmount(), insurance.getCurrencyCode(),

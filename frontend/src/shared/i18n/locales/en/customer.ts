@@ -566,7 +566,7 @@ export const customer = {
     },
     insurance: {
       title: 'Insurance update needed',
-      chooseInsurer: 'Choose an insurer',
+      enterInsurer: 'Enter insurer name',
       save: 'Save update',
       saved: 'Insurance saved.',
       confirmTitle: 'Send the updated insurance policy?',
@@ -802,7 +802,7 @@ export const customer = {
         NONE: 'You must accept the limited liability terms.',
       },
       insurer: 'Insurer',
-      otherInsurer: 'Another insurer',
+      insurerPlaceholder: 'Enter insurer name',
       policyNumber: 'Policy number',
       policyFile: 'Insurance policy file',
       policyFileHint: 'Choose a PDF, JPG or PNG file up to 5 MB.',

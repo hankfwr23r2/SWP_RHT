@@ -2,8 +2,6 @@
 import { useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { catalogApi } from '@shared/api/catalog'
-import { useLoad } from '@shared/hooks/useLoad'
 import { Button } from '@shared/ui/Button'
 import { Card } from '@shared/ui/Card'
 import { Input } from '@shared/ui/Input'
@@ -22,7 +20,6 @@ export default function Step3ServicesPage() {
   const { draft, save, setHorse } = useBookingDraft()
   const [submitted, setSubmitted] = useState(false)
   const [fileErrors, setFileErrors] = useState<Record<string, string>>(() => state?.insuranceFileErrors ?? {})
-  const insurers = useLoad(catalogApi.insurers, [], { toastOnError: false })
 
   if (!data.failed && !routeReady(draft)) return <Navigate to="/booking/route" replace />
   if (!data.failed && !horsesReady(draft)) return <Navigate to="/booking/horses" replace />
@@ -54,13 +51,13 @@ export default function Step3ServicesPage() {
 
   // Số, tệp hợp đồng và miễn trách là của riêng từng con.
   const copyToAll = (horseId: number) => {
-    const { addOnServiceIds, coverage, insurerPartyId } = draft.horses[horseId]
+    const { addOnServiceIds, coverage, insurerName } = draft.horses[horseId]
     save({
       horses: Object.fromEntries(draft.horseIds.map(id => [id, {
         ...draft.horses[id],
         addOnServiceIds: [...addOnServiceIds.filter(value => !bookingIds.includes(value)),
           ...draft.horses[id].addOnServiceIds.filter(value => bookingIds.includes(value))],
-        coverage, insurerPartyId,
+        coverage, insurerName,
         policyFile: coverage === 'PERSONAL' ? draft.horses[id].policyFile : undefined,
       }])),
     })
@@ -118,7 +115,7 @@ export default function Step3ServicesPage() {
                   ))}
                 </div>
               </fieldset>
-              <InsuranceChoice horseId={id} choice={choice} insurers={insurers.data ?? []}
+              <InsuranceChoice horseId={id} choice={choice}
                 missing={submitted && !insuranceReady(choice)} fileError={fileErrors[fileField]} onChange={patch => {
                   if (Object.hasOwn(patch, 'policyFile') && fileErrors[fileField]) {
                     setFileErrors(current => {

@@ -2,15 +2,12 @@ import { DateInput } from '@shared/ui/DateInput'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { BookingDetail } from '@shared/api/bookingOrders'
-import { catalogApi } from '@shared/api/catalog'
-import { useLoad } from '@shared/hooks/useLoad'
 import { documentUploadError } from '@shared/lib/documentUpload'
 import { Button } from '@shared/ui/Button'
 import { Card } from '@shared/ui/Card'
 import { ConfirmDialog } from '@shared/ui/ConfirmDialog'
 import { Field } from '@shared/ui/Field'
 import { Input } from '@shared/ui/Input'
-import { Select } from '@shared/ui/Select'
 import type { OrderData } from '../loaders'
 import { useInsuranceRevision } from '../useInsuranceRevision'
 import s from '../Orders.module.css'
@@ -31,11 +28,10 @@ export function InsuranceCard({ data }: { data: OrderData }) {
 
 function RevisionForm({ bookingId, horse }: { bookingId: number; horse: HorseDetail }) {
   const { t } = useTranslation()
-  const insurers = useLoad(catalogApi.insurers, [], { toastOnError: false })
   const insurance = horse.insurance!
   const { save, busy, error, fields, clearErrors } = useInsuranceRevision(bookingId, insurance.id!)
   const [form, setForm] = useState({
-    insurerPartyId: insurance.insurerPartyId ? String(insurance.insurerPartyId) : '',
+    insurerName: insurance.insurerName ?? '',
     policyNumber: insurance.policyNumber ?? '', validFrom: insurance.validFrom ?? '', validTo: insurance.validTo ?? '',
   })
   const [submitted, setSubmitted] = useState(false)
@@ -59,7 +55,7 @@ function RevisionForm({ bookingId, horse }: { bookingId: number; horse: HorseDet
     if (!file) return
     setConfirming(false)
     await save({
-      insurerPartyId: Number(form.insurerPartyId), policyNumber: form.policyNumber.trim(), validFrom: form.validFrom, validTo: form.validTo,
+      insurerName: form.insurerName.trim(), policyNumber: form.policyNumber.trim(), validFrom: form.validFrom, validTo: form.validTo,
     }, file)
   }
 
@@ -67,10 +63,11 @@ function RevisionForm({ bookingId, horse }: { bookingId: number; horse: HorseDet
     <div className={s.stack}>
       <p className={s.error}><strong>{horse.horseName}:</strong> {insurance.revisionReason}</p>
       <div className={s.options}>
-        <Field label={t('bookingForm.services.insurer')} required error={fields.insurerPartyId ?? missing(form.insurerPartyId)}>
-          {control => <Select {...control} value={form.insurerPartyId} onChange={insurerPartyId => set({ insurerPartyId })}
-            placeholder={t('myOrders.insurance.chooseInsurer')}
-            options={(insurers.data ?? []).map(insurer => ({ value: String(insurer.id), label: insurer.displayName ?? '' }))} />}
+        <Field label={t('bookingForm.services.insurer')} required
+          error={fields.insurerName ?? missing(form.insurerName)}>
+          {control => <Input {...control} maxLength={200} value={form.insurerName}
+            placeholder={t('bookingForm.services.insurerPlaceholder')}
+            onChange={event => set({ insurerName: event.target.value })} />}
         </Field>
         <Field label={t('bookingForm.services.policyNumber')} required error={fields.policyNumber ?? missing(form.policyNumber)}>
           {control => <Input {...control} maxLength={50} value={form.policyNumber} onChange={event => set({ policyNumber: event.target.value })} />}

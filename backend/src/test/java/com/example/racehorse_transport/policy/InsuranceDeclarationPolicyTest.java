@@ -1,11 +1,9 @@
 package com.example.racehorse_transport.policy;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.example.racehorse_transport.dto.booking.InsuranceDeclarationRequestDto;
-import com.example.racehorse_transport.entity.PartyRole;
 import com.example.racehorse_transport.entity.enums.InsuranceCoverageOption;
 import com.example.racehorse_transport.exception.BookingRuleException;
 import java.time.LocalDate;
@@ -34,18 +32,8 @@ class InsuranceDeclarationPolicyTest {
         assertThatCode(() -> InsuranceDeclarationPolicy.validate(new InsuranceDeclarationRequestDto(
                 InsuranceCoverageOption.NONE, null, null, null, null, true))).doesNotThrowAnyException();
         assertThatCode(() -> InsuranceDeclarationPolicy.validate(new InsuranceDeclarationRequestDto(
-                InsuranceCoverageOption.ARRANGED, "ignored", START, START.minusDays(1), -1L, false)))
+                InsuranceCoverageOption.ARRANGED, "ignored", START, START.minusDays(1), "ignored", false)))
                 .doesNotThrowAnyException();
     }
 
-    @Test
-    void roleValidityIncludesBothBoundaryDates() {
-        PartyRole role = new PartyRole();
-        role.setValidFrom(START);
-        role.setValidTo(START.plusDays(1));
-        assertThat(InsuranceDeclarationPolicy.isRoleEffective(role, START.minusDays(1))).isFalse();
-        assertThat(InsuranceDeclarationPolicy.isRoleEffective(role, START)).isTrue();
-        assertThat(InsuranceDeclarationPolicy.isRoleEffective(role, START.plusDays(1))).isTrue();
-        assertThat(InsuranceDeclarationPolicy.isRoleEffective(role, START.plusDays(2))).isFalse();
-    }
 }

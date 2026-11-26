@@ -1,9 +1,7 @@
 package com.example.racehorse_transport.policy;
 
 import com.example.racehorse_transport.dto.booking.InsuranceDeclarationRequestDto;
-import com.example.racehorse_transport.entity.PartyRole;
 import com.example.racehorse_transport.exception.BookingRuleException;
-import java.time.LocalDate;
 
 public final class InsuranceDeclarationPolicy {
 
@@ -28,10 +26,5 @@ public final class InsuranceDeclarationPolicy {
                 // Chỉ ghi nhận lựa chọn. Chuyên viên bổ sung thông tin bảo hiểm sau.
             }
         }
-    }
-
-    public static boolean isRoleEffective(PartyRole role, LocalDate date) {
-        return !date.isBefore(role.getValidFrom())
-                && (role.getValidTo() == null || !date.isAfter(role.getValidTo()));
     }
 }

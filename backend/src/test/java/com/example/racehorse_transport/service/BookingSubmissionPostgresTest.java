@@ -309,7 +309,7 @@ class BookingSubmissionPostgresTest {
         assertThat(count("""
                 SELECT count(*) FROM horse_insurance i JOIN booking_horse h ON h.id = i.booking_horse_id
                 WHERE h.booking_id = ? AND i.coverage_option = 'ARRANGED' AND i.status = 'DRAFT'
-                AND i.insurer_party_id IS NULL AND i.coverage_amount IS NULL AND i.policy_number IS NULL
+                AND i.insurer_name IS NULL AND i.coverage_amount IS NULL AND i.policy_number IS NULL
                 """, result.id())).isEqualTo(1);
         assertThatThrownBy(() -> bookings.submit(owner, null, request))
                 .isInstanceOfSatisfying(BookingRuleException.class, ex -> {
@@ -621,16 +621,10 @@ class BookingSubmissionPostgresTest {
         String owner = customer();
         String specialist = data.unique("a6-specialist");
         Long specialistId = data.staff(specialist, "SPECIALIST").getUserId();
-        Long insurer = jdbc.queryForObject("""
-                INSERT INTO party (party_type, display_name, country_code, status)
-                VALUES ('ORGANIZATION', ?, 'VN', 'ACTIVE') RETURNING id
-                """, Long.class, data.unique("a6-insurer"));
-        jdbc.update("INSERT INTO party_role (party_id, role_type, valid_from) VALUES (?, 'INSURER', ?)",
-                insurer, pickupDate().minusMonths(2));
         Long id = bookings.submit(owner, null, directArranged(owner)).id();
         review.intake(id, "manager.dev", specialistId);
         Long insuranceId = queries.get(owner, id).horses().getFirst().insurance().id();
-        var evidence = new com.example.racehorse_transport.dto.booking.InsuranceEvidenceRequestDto(insurer,
+        var evidence = new com.example.racehorse_transport.dto.booking.InsuranceEvidenceRequestDto("Hãng mua hộ",
                 new BigDecimal("8000000"), new BigDecimal("2500"), "VND", clock.instant().plusSeconds(3600));
         insurance.recordEvidence(id, insuranceId, evidence, specialist);
 
@@ -670,15 +664,9 @@ class BookingSubmissionPostgresTest {
         String other = customer();
         String specialist = data.unique("a6-specialist");
         Long specialistId = data.staff(specialist, "SPECIALIST").getUserId();
-        Long insurer = jdbc.queryForObject("""
-                INSERT INTO party (party_type, display_name, country_code, status)
-                VALUES ('ORGANIZATION', ?, 'VN', 'ACTIVE') RETURNING id
-                """, Long.class, data.unique("a6-insurer"));
         LocalDate date = pickupDate();
-        jdbc.update("INSERT INTO party_role (party_id, role_type, valid_from) VALUES (?, 'INSURER', ?)",
-                insurer, date.minusMonths(2));
         var declaration = new InsuranceDeclarationRequestDto(InsuranceCoverageOption.PERSONAL,
-                "ORIGINAL-01", date, date.plusDays(5), insurer, null);
+                "ORIGINAL-01", date, date.plusDays(5), "Hãng bảo hiểm cá nhân", null);
         when(cloudinary.uploadFile(any(), eq("documents/insurance")))
                 .thenReturn("https://example.test/" + data.unique("original") + ".pdf",
                         "https://example.test/" + data.unique("revised") + ".pdf");
@@ -689,7 +677,7 @@ class BookingSubmissionPostgresTest {
         review.intake(id, "manager.dev", specialistId);
         Long insuranceId = queries.get(owner, id).horses().getFirst().insurance().id();
         var revision = new com.example.racehorse_transport.dto.booking.PersonalInsuranceRevisionRequestDto(
-                insurer, "REVISED-02", date, date.plusDays(8));
+                "Hãng bảo hiểm cập nhật", "REVISED-02", date, date.plusDays(8));
         var file = new MockMultipartFile("file", "revised.pdf", "application/pdf", pdf);
         insurance.requestRevision(id, insuranceId, specialist, "Bổ sung số hợp đồng");
         assertThatThrownBy(() -> insurance.revise(id, insuranceId, other, revision, file))
@@ -698,6 +686,7 @@ class BookingSubmissionPostgresTest {
         var result = queries.get(owner, id).horses().getFirst().insurance();
         assertThat(result.status()).isEqualTo(HorseInsuranceStatus.DRAFT);
         assertThat(result.policyNumber()).isEqualTo("REVISED-02");
+        assertThat(result.insurerName()).isEqualTo("Hãng bảo hiểm cập nhật");
         assertThat(result.revisionReason()).isEqualTo("Bổ sung số hợp đồng");
         assertThatThrownBy(() -> insurance.revise(id, insuranceId, owner, revision, file))
                 .isInstanceOf(BookingRuleException.class);
@@ -757,7 +746,7 @@ class BookingSubmissionPostgresTest {
 
     private HorseInput horseInput(Long id, InsuranceCoverageOption option, boolean waiver, List<AddOnInput> addOns) {
         return new HorseInput(id, "STANDARD", "Hay", (short) 2, true, addOns,
-                new InsuranceDeclarationRequestDto(option, "Ignored", null, null, 999999L, waiver));
+                new InsuranceDeclarationRequestDto(option, "Ignored", null, null, "Ignored insurer", waiver));
     }
 
     private int count(String sql, Long... ids) {
