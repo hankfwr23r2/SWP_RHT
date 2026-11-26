@@ -68,7 +68,7 @@ const quote = { id: 5, version: 1, status: 'SENT', currencyCode: 'VND', totalAmo
 test('danh sách: đơn cần làm lên đầu, đơn xong nằm ở lịch sử, điện thoại không tràn ngang', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 740 })
   await open(page, '/orders', { status: 'AWAITING_DEPOSIT' })
-  await expect(page.getByRole('listitem').filter({ hasText: 'BK-' }).first()).toContainText('BK-TEST')
+  await expect(page.getByRole('link', { name: /^BK-/ }).first()).toContainText('BK-TEST')
   await expect(page.getByText('2 con ngựa')).toBeVisible()
   await expect(page.getByText('Xuất phát 12/01/2099')).toBeVisible()
   await expect(page.getByText('BK-XONG')).toHaveCount(0)

@@ -136,6 +136,7 @@ test('chuyến: xác nhận chạy, hủy phải có lý do, tạo chuyến đ�
   await page.getByRole('button', { name: 'Chạy', exact: true }).click()
   await page.getByRole('alertdialog').getByRole('button', { name: 'Chạy' }).click()
   await expect(page.getByText('Đã xác nhận chạy', { exact: true })).toBeVisible()
+  await page.getByLabel('Thao tác khác').first().click()
   await page.getByRole('button', { name: 'Hủy chuyến' }).click()
   await page.getByRole('dialog').getByRole('textbox').fill('Xe hỏng')
   await page.getByRole('dialog').getByRole('button', { name: 'Hủy chuyến' }).click()
