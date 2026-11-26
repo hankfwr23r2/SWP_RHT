@@ -130,11 +130,15 @@ public final class TripExecutionPolicy {
         }
     }
 
-    // Kết thúc lượt khi đã tới điểm cuối và không còn ngựa trên xe
-    public static void requireCanComplete(boolean lastStopArrived, long horsesStillOnBoard) {
+    public static void requireLastStopArrived(boolean lastStopArrived) {
         if (!lastStopArrived) {
             throw new DispatchRuleException("status", "Chưa tới điểm dừng cuối.", true);
         }
+    }
+
+    // Kết thúc lượt khi đã tới điểm cuối và không còn ngựa trên xe
+    public static void requireCanComplete(boolean lastStopArrived, long horsesStillOnBoard) {
+        requireLastStopArrived(lastStopArrived);
         if (horsesStillOnBoard > 0) {
             throw new DispatchRuleException("status", "Còn " + horsesStillOnBoard + " con ngựa trên xe chưa bàn giao.", true);
         }

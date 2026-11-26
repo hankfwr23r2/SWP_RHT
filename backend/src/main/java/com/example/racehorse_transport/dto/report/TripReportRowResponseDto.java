@@ -10,5 +10,5 @@ public record TripReportRowResponseDto(
         Long id, String code, VehicleTripType tripType, VehicleTripStatus status, String licensePlate,
         String startLocationName, String endLocationName, Instant plannedStartAt, Instant actualStartAt, Instant actualEndAt,
         int stopCount, int arrivedStopCount, int lateStopCount, int horseCount, int incidentCount, BigDecimal costTotal,
-        Double averageRating) {
+        Double averageRating, boolean returning, Instant returnExpectedAt, boolean returnLate) {
 }

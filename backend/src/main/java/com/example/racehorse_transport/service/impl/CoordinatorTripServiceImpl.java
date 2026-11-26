@@ -34,7 +34,8 @@ public class CoordinatorTripServiceImpl implements CoordinatorTripService {
             var current = trip.stops().stream().filter(stop -> stop.actualArrivalAt() != null).reduce((first, last) -> last);
             String point = current.map(stop -> stop.locationName() == null ? stop.addressLine() : stop.locationName())
                     .orElse(trip.startLocationName());
-            boolean late = (trip.actualStartAt() == null && trip.plannedStartAt().isBefore(now)) || trip.plannedEndAt().isBefore(now);
+            boolean late = trip.returnExpectedAt() != null ? trip.returnLate()
+                    : (trip.actualStartAt() == null && trip.plannedStartAt().isBefore(now)) || trip.plannedEndAt().isBefore(now);
             return new CoordinatorTripResponseDto(trip, point, late, legs.findActiveOnTrip(trip.id(), Set.of(HorseLegStatus.CANCELLED)).size());
         }).toList();
     }

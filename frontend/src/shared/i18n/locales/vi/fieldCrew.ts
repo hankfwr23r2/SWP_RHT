@@ -185,8 +185,11 @@ export const fieldCrew = {
       "loadError": "Không tải được lượt xe",
       "start": "Xuất phát",
       "complete": "Kết thúc lượt",
+      "backAtHub": "Đã về hub",
       "completion": {
         "condition": "Tình trạng xe",
+        "photo": "Ảnh chụp xe tại hub",
+        "photoAttached": "Đã lưu ảnh xe",
         "normal": "Bình thường",
         "needsMaintenance": "Cần bảo dưỡng",
         "note": "Ghi chú tình trạng xe",

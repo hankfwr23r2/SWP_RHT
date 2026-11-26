@@ -1,8 +1,9 @@
 import apiClient, { type ApiResponse } from './client'
+import type { VehicleTrip } from './dispatch'
 import type { components } from './generated/schema'
 
 type Schemas = components['schemas']
-export type CoordinatorTrip = Schemas['CoordinatorTripResponseDto']
+export type CoordinatorTrip = Omit<Schemas['CoordinatorTripResponseDto'], 'trip'> & { trip?: VehicleTrip }
 export type CoordinatorTripHorse = Schemas['CoordinatorTripHorseResponseDto']
 
 export const coordinatorAssignmentsApi = {

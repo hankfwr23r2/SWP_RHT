@@ -93,6 +93,15 @@ public interface HorseLegRepository extends JpaRepository<HorseLeg, Long> {
                              @Param("hubIn") HandoverType hubIn,
                              @Param("done") HandoverStatus done);
 
+    @Query("""
+            SELECT DISTINCT l.vehicleTrip.id FROM HorseLeg l
+            WHERE l.vehicleTrip.id IN :tripIds AND (l.status IN :unfinished OR (l.status = :failed AND NOT EXISTS (
+                SELECT 1 FROM HandoverHorse hh WHERE hh.horseLeg = l AND hh.handover.handoverType = :hubIn
+                    AND hh.handover.status = :done)))
+            """)
+    java.util.Set<Long> findTripIdsWithUnfinishedLegs(Collection<Long> tripIds, Collection<HorseLegStatus> unfinished,
+            HorseLegStatus failed, HandoverType hubIn, HandoverStatus done);
+
     // Chặng trục của các ngựa cùng đơn (quy tắc #30)
     @Query("""
             SELECT l.vehicleTrip.id FROM HorseLeg l

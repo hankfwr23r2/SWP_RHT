@@ -9,6 +9,7 @@ function newRun() {
   return {
     trip: {
       id: 9, code: 'VT-AAAA0009', tripType: 'PICKUP', status: 'PLANNED', licensePlate: '51C-12345', startLocationName: 'Hub HCM', endLocationName: 'Hub HCM',
+      returnPhotoAttached: false,
       stops: [
         { id: 1, sequenceNumber: 1, stopType: 'HUB', locationName: 'Hub HCM', plannedArrivalAt: '2031-03-05T01:00:00Z' } as Record<string, unknown>,
         { id: 2, sequenceNumber: 2, stopType: 'PICKUP', bookingCode: 'BK-AAAA0001', addressLine: 'Trại Long Thành', plannedArrivalAt: '2031-03-05T02:00:00Z' } as Record<string, unknown>,
@@ -20,7 +21,7 @@ function newRun() {
   }
 }
 
-test('tài xế ghi tình trạng xe trước khi kết thúc lượt', async ({ page }) => {
+test('tài xế chụp ảnh tại hub và ghi tình trạng xe trước khi kết thúc lượt', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 844 })
   await page.addInitScript(() => sessionStorage.setItem('SWP_SESSION_backoffice', JSON.stringify({ role: 'driver', name: 'Tài xế Một', username: 'driver@example.com' })))
   const run = newRun()
@@ -28,11 +29,20 @@ test('tài xế ghi tình trạng xe trước khi kết thúc lượt', async ({
   run.trip.stops[2].actualArrivalAt = '2031-03-05T05:00:00Z'
   run.horses[0].leg.status = 'COMPLETED'
   let report: unknown
+  let uploaded: string | null = null
+  const submitted: string[] = []
   await page.route('**/api/v1/**', route => {
     const request = route.request()
     const path = new URL(request.url()).pathname.replace('/api/v1', '')
     if (path === '/crew/vehicle-trips/9') return ok(route, run)
+    if (path === '/vehicle-trips/9/return-photo') {
+      submitted.push(path)
+      uploaded = request.postData()
+      run.trip.returnPhotoAttached = true
+      return ok(route, run)
+    }
     if (path === '/vehicle-trips/9/complete') {
+      submitted.push(path)
       report = request.postDataJSON()
       run.trip.status = 'COMPLETED'
       return ok(route, run)
@@ -40,17 +50,22 @@ test('tài xế ghi tình trạng xe trước khi kết thúc lượt', async ({
     return ok(route, [])
   })
   await page.goto('/backoffice/my-trips/9')
-  await page.getByRole('button', { name: 'Kết thúc lượt' }).click()
-  const dialog = page.getByRole('alertdialog', { name: 'Kết thúc lượt' })
+  await page.getByRole('button', { name: 'Đã về hub' }).click()
+  const dialog = page.getByRole('alertdialog', { name: 'Đã về hub' })
   const select = dialog.getByRole('combobox', { name: /Tình trạng xe/ })
   await expect(select).toHaveText('Bình thường')
   await select.click()
   await page.getByRole('option', { name: 'Cần bảo dưỡng' }).click()
-  const confirm = dialog.getByRole('button', { name: 'Kết thúc lượt' })
+  const confirm = dialog.getByRole('button', { name: 'Đã về hub' })
   await expect(confirm).toBeDisabled()
   await dialog.getByLabel('Ghi chú tình trạng xe').fill('Phanh có tiếng kêu')
+  await expect(confirm).toBeDisabled()
+  await dialog.getByLabel('Ảnh chụp xe tại hub').setInputFiles({ ...horsePhoto, name: 'return.jpg' })
+  await expect(confirm).toBeEnabled()
   await confirm.click()
   await expect(dialog).toHaveCount(0)
+  expect(submitted).toEqual(['/vehicle-trips/9/return-photo', '/vehicle-trips/9/complete'])
+  expect(uploaded).toContain('return.jpg')
   expect(report).toEqual({ endVehicleCondition: 'NEEDS_MAINTENANCE', endVehicleNote: 'Phanh có tiếng kêu' })
 })
 
