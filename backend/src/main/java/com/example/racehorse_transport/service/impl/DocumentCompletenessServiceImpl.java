@@ -55,25 +55,46 @@ public class DocumentCompletenessServiceImpl implements DocumentCompletenessServ
             return true;
         }
         RegulationPreviewResponseDto resolved = resolve(booking);
+        var requirements = resolved.requirements().stream()
+                // Giấy 14a được cấp tại cửa khẩu, phải có khi rời điểm BORDER.
+                .filter(requirement -> booking.getBookingType() != BookingType.IMPORT
+                        || !"IMPORT_TRANSPORT_CERT".equals(requirement.documentTypeCode()))
+                .toList();
         List<BookingHorse> active = horses.findForDetail(bookingId).stream()
                 .filter(horse -> horse.getStatus() == BookingHorseStatus.ACTIVE).toList();
         var rows = findCandidateDocuments(bookingId);
         var requiredOn = DocumentCompletenessPolicy.requiredOn(booking, businessDate(clock.instant()));
         if (missing != null) {
-            resolved.requirements().stream().map(requirement -> requirement.submitterType()).distinct()
+            requirements.stream().map(requirement -> requirement.submitterType()).distinct()
                     .filter(side -> !DocumentCompletenessPolicy.isComplete(
-                            bookingId, active, resolved.requirements(), rows, requiredOn, side))
+                            bookingId, active, requirements, rows, requiredOn, side))
                     .forEach(missing::add);
         }
         return !resolved.requirementsDependOnGate() && DocumentCompletenessPolicy.isComplete(
-                bookingId, active, resolved.requirements(), rows, requiredOn, submitter);
+                bookingId, active, requirements, rows, requiredOn, submitter);
     }
 
     @Override
     public RegulationPreviewResponseDto resolve(Booking booking) {
-        List<BookingAddress> rows = addresses.findAddressesForDetail(booking.getId());
         Departure departure = booking.getDeparture();
         Long gate = departure == null ? null : regulations.gateOf(departure.getRoute(), booking.getBookingType());
+        return resolveAtGate(booking, gate);
+    }
+
+    @Override
+    public List<String> missingRequiredAtBorder(Booking booking, Long gateLocationId) {
+        var resolved = resolveAtGate(booking, gateLocationId);
+        var active = horses.findForDetail(booking.getId()).stream()
+                .filter(horse -> horse.getStatus() == BookingHorseStatus.ACTIVE).toList();
+        var requiredOn = DocumentCompletenessPolicy.requiredOn(booking, businessDate(clock.instant()));
+        var missing = DocumentCompletenessPolicy.missingTypes(
+                booking.getId(), active, resolved.requirements(), findCandidateDocuments(booking.getId()), requiredOn);
+        return resolved.requirements().stream().filter(requirement -> missing.contains(requirement.documentTypeCode()))
+                .map(requirement -> requirement.documentTypeName()).distinct().sorted().toList();
+    }
+
+    private RegulationPreviewResponseDto resolveAtGate(Booking booking, Long gate) {
+        List<BookingAddress> rows = addresses.findAddressesForDetail(booking.getId());
         return regulations.resolve(booking.getBookingType(), countryOf(rows, AddressRole.PICKUP),
                 countryOf(rows, AddressRole.DELIVERY), booking.getRequestedPickupDate(), gate);
     }

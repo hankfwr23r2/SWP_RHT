@@ -18,6 +18,21 @@ import org.junit.jupiter.api.Test;
 
 class TripSchedulePolicyTest {
 
+    @org.junit.jupiter.api.Test
+    void requiresANetworkRestWhenTheHorsePassesFourContinuousHours() {
+        var rules = new TripSchedulePolicy.Rules(4, 30, 10, 20, 10, 8, 10, 4);
+        var start = java.time.Instant.parse("2026-12-10T01:00:00Z");
+        var unsplit = TripSchedulePolicy.schedule(start, java.util.List.of(1, 1),
+                java.util.List.of(6L * 3600), rules);
+        org.assertj.core.api.Assertions.assertThat(TripSchedulePolicy.firstRestGap(0, 1, unsplit, java.util.Set.of(), rules))
+                .isEqualTo(new TripSchedulePolicy.RestGap(0, 1, 4L * 3600));
+        var rests = java.util.Set.of(1);
+        var split = TripSchedulePolicy.schedule(start, java.util.List.of(1, 0, 1),
+                java.util.List.of(3L * 3600, 3L * 3600), rests, rules);
+        org.assertj.core.api.Assertions.assertThat(TripSchedulePolicy.firstRestGap(0, 2, split, rests, rules)).isNull();
+        org.assertj.core.api.Assertions.assertThat(split.getLast().arrival()).isEqualTo(start.plusSeconds(23_400));
+    }
+
     private static final ZoneId ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final Rules RULES = new Rules(4, 30, 10, 20, 10);
     private static final Window DAY = new Window(6, 18);

@@ -30,7 +30,7 @@ export function journeyEntries(horse: HorseJourney): JourneyEntry[] {
   const legs: JourneyEntry[] = (horse.legs ?? []).filter(leg => leg.status !== 'CANCELLED' || leg.actualStartAt).map(leg => ({
     key: `leg-${leg.id}`, kind: 'leg', type: leg.legType ?? '', state: LEG_STATE[leg.status ?? ''] ?? 'planned',
     at: leg.actualStartAt ?? leg.plannedStartAt, endAt: leg.actualEndAt ?? leg.plannedEndAt, planned: !leg.actualStartAt,
-    place: `${leg.fromName ?? ''} → ${leg.toName ?? ''}`, detail: leg.vehicleTripCode ?? leg.agentName,
+    place: `${leg.fromName ?? ''} → ${leg.toName ?? ''}`, detail: leg.vehicleTripCode,
     windows: windowsOf(leg),
   }))
   const stays: JourneyEntry[] = (horse.stays ?? []).map(stay => ({

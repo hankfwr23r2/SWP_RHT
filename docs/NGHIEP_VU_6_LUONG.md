@@ -155,7 +155,7 @@ Từ lúc đơn đã cọc tới lúc mỗi con có đủ xe, tổ lái, vị tr
 9. Khách được báo khung một giờ xe tới; giờ dời quá 30 phút thì báo lại.
 10. **Xe về** [Mới, theo thiết kế cũ nhánh `main`]: xong việc, xe và tổ lái ở trạng thái **Đang về** có giờ dự kiến; trễ thì có cờ cho điều phối và quản lý. Tài xế bấm **Đã về** tại hub gốc kèm **ảnh chụp tại chỗ** và **tình trạng xe**. Trước đó xe chưa nhận lượt mới. Xe chạy trục có thể về bằng **chuyến chiều ngược**.
 
-**Quy tắc giờ:** mỗi điểm dừng 20 phút + 10 phút mỗi con; lái 4 giờ nghỉ 30 phút; tài xế lái ≤ 10 giờ một ngày; ngựa ngồi xe đón, giao ≤ 5 giờ, chạy thẳng ≤ 10 giờ; trục chạy đủ 10 giờ thì nghỉ đêm 10 giờ. Lượt mới của xe và của người bắt đầu ở nơi lượt trước kết thúc.
+**Quy tắc giờ:** mỗi điểm dừng 20 phút + 10 phút mỗi con; lái 4 giờ nghỉ 30 phút; tài xế lái ≤ 10 giờ một ngày; ngựa ngồi xe đón, giao ≤ 8 giờ, chạy thẳng ≤ 10 giờ. Nếu ngựa ngồi xe liên tục quá 4 giờ, hệ thống chèn trạm nghỉ đang hoạt động với quãng đường đi thêm ít nhất và tính lại giờ; trục chạy đủ 10 giờ thì nghỉ đêm 10 giờ. Lượt mới của xe và của người bắt đầu ở nơi lượt trước kết thúc.
 
 ## Xử lý ngoại lệ
 
@@ -164,7 +164,7 @@ Từ lúc đơn đã cọc tới lúc mỗi con có đủ xe, tổ lái, vị tr
 | Lịch trục cần nhiều xe hơn hạn mức của hub | Báo quản trị khi lưu lịch hoặc tuyến [Mới] |
 | Chuyến đông hơn xe nền | Hệ thống tự gắn xe để sẵn lúc nhận đơn; hết thì chuyến **Hết chỗ** [Mới] |
 | Chuyến vắng | Bớt xe trước giờ chốt nếu số chỗ đã bán vẫn vừa [Mới]; hoặc quản lý dồn chuyến |
-| Ngựa ngồi xe quá 5 giờ, hoặc tới hub sau hạn có mặt | Chặn lập lượt, đề nghị tách lượt hoặc đi sớm hơn |
+| Ngựa vượt giới hạn giờ ngồi xe, không có trạm nghỉ phù hợp, hoặc tới hub sau hạn có mặt | Chặn lập lượt, đề nghị tách lượt hoặc đi sớm hơn |
 | Xe đang ở hub khác | Từ chối lượt bắt đầu sai chỗ, báo xe đang ở đâu |
 | Xếp trục khi chưa xếp đón | Từ chối, nhắc thứ tự đón → trục → giao |
 | Tài xế đã lái gần đủ giờ trong ngày | Từ chối, nói sẽ lái bao nhiêu giờ |
@@ -186,8 +186,8 @@ Từ lúc xe đầu tiên xuất phát tới lúc lượt cuối kết thúc. Gi
 2. Tổ lái bấm **Tới nơi**, **Rời đi** theo từng điểm dừng, đúng thứ tự.
 3. **Ở hub xuất phát:** ngựa lưu trú, được cho ăn và **khám 2 lần mỗi ngày**.
 4. **Khám trước khi chạy:** mỗi con một lần khám ngay trước khi lên xe trục. **Chưa khám thì không cho ra hub** [Mới: bắt buộc và chặn].
-5. **Chạy trục:** tới mỗi trạm nghỉ cho uống, ăn, ghi **từng con** (sức khỏe, uống, ăn, nhiệt độ nếu đo). Nghỉ ít nhất 30 phút. Nghỉ đêm có thể gửi chuồng đối tác rồi nhận lại sáng hôm sau.
-6. **Cửa khẩu** [Mới]: dừng làm thủ tục và kiểm dịch, kiểm giấy riêng của cửa khẩu, rồi **xe đi tiếp tới hub nước ngoài**.
+5. **Mọi lượt xe:** tới mỗi trạm nghỉ cho uống, ăn, ghi **từng con** (sức khỏe, uống, ăn, nhiệt độ nếu đo). Nghỉ ít nhất 30 phút. Nghỉ đêm có thể gửi chuồng đối tác rồi nhận lại sáng hôm sau.
+6. **Cửa khẩu**: dừng làm thủ tục và kiểm dịch, kiểm giấy riêng của cửa khẩu, rồi **xe đi tiếp tới hub nước ngoài**.
 7. **Tới hub đích:** dỡ ngựa vào hub theo quy trình, lưu trú, cho ăn, khám 2 lần mỗi ngày.
 8. **Khám trước khi giao:** mỗi con một lần khám trước khi ra khỏi hub đích. **Chưa khám thì không cho ra hub** [Mới].
 9. Thay hộ tống giữa đường: người mới tới điểm dừng, quét chip và ký nhận ca.
@@ -265,7 +265,7 @@ Từ lúc tổ lái đứng trước con ngựa ở nơi nhận tới lúc đơn
 2. **Số dư:** lập ngay sau lần nhận đầu tiên. Khách có **30 phút** để trả qua VNPAY. Xe chỉ rời khi mọi đơn lên xe ở đây đã trả đủ. Xe rời thì đơn **Đang vận chuyển**, khách hết quyền tự hủy.
 3. **Vào hub, ra hub:** quét chip từng con, mở và đóng lưu trú. Tự chở hoặc tự tới lấy tại hub thì điều phối giao nhận.
 4. **Giao người nhận:** quét chip, tình trạng và ảnh từng con, trả giấy gốc, biên bản đã ký, ghi tên người nhận và nhập **mã nhận ngựa 6 số** (hoặc xác nhận của chủ đơn).
-5. **Đơn quốc tế** [Mới]: giao nhận ở hub và nơi giao nước ngoài **y như trong nước**. Không còn bàn giao đại lý ở cửa khẩu và nút "đại lý đã giao".
+5. **Đơn quốc tế**: giao nhận ở hub và nơi giao nước ngoài **y như trong nước**. Không còn bàn giao đại lý ở cửa khẩu và nút "đại lý đã giao".
 6. Con cuối cùng được giao thì đơn **Đã giao**.
 7. **Quyết toán:** quản lý duyệt chi phí, lập **khoản thu thêm** cho phần khách chịu; khách trả trong trang đơn.
 8. **Đóng đơn:** quản lý đóng khi đã trả đúng phần báo giá, không còn sự cố hay khiếu nại mở, không còn khoản hoàn chờ. Hệ thống tự đóng sau **7 ngày** từ lúc Đã giao (cấu hình). Khoản thu thêm chưa trả không chặn đóng.

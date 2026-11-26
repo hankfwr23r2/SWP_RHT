@@ -22,7 +22,7 @@ export function GroupingPanel({ defaultDate, onCreated }: { defaultDate: string;
   const [kind, setKind] = useState<Kind>('PICKUP')
   const { data: setup } = useLoad(async () => {
     const [locations, vehicles] = await Promise.all([dispatchApi.locations(), dispatchApi.vehicles()])
-    return { hubs: hubsOf(locations, vehicles), vehicles: vehicles.filter(v => v.status === 'ACTIVE') }
+    return { locations, hubs: hubsOf(locations, vehicles), vehicles: vehicles.filter(v => v.status === 'ACTIVE') }
   }, [])
   const hubId = hubChoice || (setup?.hubs[0]?.id != null ? String(setup.hubs[0].id) : '')
   const { data: groups, loaded, error, reload } = useLoad(
@@ -39,7 +39,7 @@ export function GroupingPanel({ defaultDate, onCreated }: { defaultDate: string;
       <ul className={s.list} aria-label={t('dispatch.grouping.list')}>
         {groups.map((group, index) => (
           <li key={(group.bookings ?? []).map(booking => booking.bookingId).join('-')}>
-            <GroupCard group={group} index={index} kind={kind} vehicles={setup?.vehicles ?? []} onCreated={trip => { void reload(); onCreated(trip) }} />
+            <GroupCard group={group} index={index} kind={kind} vehicles={setup?.vehicles ?? []} locations={setup?.locations ?? []} onCreated={trip => { void reload(); onCreated(trip) }} />
           </li>
         ))}
       </ul>

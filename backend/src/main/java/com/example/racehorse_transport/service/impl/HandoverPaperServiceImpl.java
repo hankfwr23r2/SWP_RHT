@@ -90,10 +90,10 @@ public class HandoverPaperServiceImpl implements HandoverPaperService {
 
     // Nhận từ khách (đón) hoặc từ đại lý (cửa khẩu, đơn nhập) thì nhận giấy gốc; giao cho người nhận thì trả giấy gốc
     private static HandoverDocumentDirection directionOf(Handover handover) {
-        if (handover.getHandoverType() == HandoverType.PICKUP || handover.getHandoverType() == HandoverType.AGENT && handover.getFromParty() != null) {
+        if (handover.getHandoverType() == HandoverType.PICKUP) {
             return HandoverDocumentDirection.RECEIVED;
         }
-        if (handover.getHandoverType() == HandoverType.DELIVERY || handover.getHandoverType() == HandoverType.AGENT) {
+        if (handover.getHandoverType() == HandoverType.DELIVERY) {
             return HandoverDocumentDirection.RETURNED;
         }
         throw new DispatchRuleException("handoverType", "Lần giao nhận này không nhận hay trả giấy gốc.", true);

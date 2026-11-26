@@ -302,9 +302,14 @@ public class HorseLegServiceImpl implements HorseLegService {
         DispatchPolicy.requirePlannedWindow(board.getPlannedDepartureAt(), alight.getPlannedArrivalAt());
         if (legType != HorseLegType.LINEHAUL) {
             int maxDriveHoursPerDay = configs.getInt("MAX_DRIVE_HOURS_PER_DAY");
-            var rules = new TripSchedulePolicy.Rules(0, 0, maxDriveHoursPerDay, 0, 0);
+            var rules = new TripSchedulePolicy.Rules(0, configs.getInt("MIN_REST_MINUTES"), maxDriveHoursPerDay, 0, 0,
+                    configs.getInt("MAX_TRANSFER_HORSE_HOURS"), configs.getInt("MAX_DIRECT_HORSE_HOURS"),
+                    configs.getInt("HORSE_REST_INTERVAL_HOURS"));
             TripSchedulePolicy.requirePlannedRideWithinLimit(board.getPlannedDepartureAt(), alight.getPlannedArrivalAt(),
                     legType == HorseLegType.DIRECT, rules);
+            if (legType == HorseLegType.PICKUP || legType == HorseLegType.DELIVERY || legType == HorseLegType.DIRECT) {
+                requireHorseRest(tripStops, board, alight, rules);
+            }
             if (legType == HorseLegType.DELIVERY && failed == null) {
                 requireSharedDeliveryTrip(booking, trip, tripStops, board, maxDriveHoursPerDay);
             }
@@ -312,6 +317,27 @@ public class HorseLegServiceImpl implements HorseLegService {
         if (legType == HorseLegType.PICKUP && booking.getDeparture() != null) {
             DispatchPolicy.requireAtHubBeforeDeadline(alight.getPlannedArrivalAt(),
                     DispatchPolicy.hubCheckinDeadline(DepartureDelayPolicy.effectiveTime(booking.getDeparture()), configs.getInt("HUB_CHECKIN_HOURS")));
+        }
+    }
+
+    private static void requireHorseRest(List<TripStop> stops, TripStop board, TripStop alight, TripSchedulePolicy.Rules rules) {
+        var ridden = stops.stream().filter(stop -> stop.getSequenceNumber() >= board.getSequenceNumber()
+                && stop.getSequenceNumber() <= alight.getSequenceNumber()).toList();
+        var times = ridden.stream().map(stop -> new TripSchedulePolicy.StopTime(
+                stop.getPlannedArrivalAt(), stop.getPlannedDepartureAt(), 0)).toList();
+        var rests = java.util.stream.IntStream.range(1, ridden.size() - 1)
+                .filter(index -> {
+                    var stop = ridden.get(index);
+                    return stop.getStopType() == com.example.racehorse_transport.entity.enums.TripStopType.REST
+                            && stop.getLocation() != null
+                            && stop.getLocation().getLocationType() == com.example.racehorse_transport.entity.enums.LocationType.REST_STOP
+                            && stop.getLocation().getStatus() == com.example.racehorse_transport.entity.enums.ActiveStatus.ACTIVE
+                            && java.time.Duration.between(stop.getPlannedArrivalAt(), stop.getPlannedDepartureAt()).toMinutes() >= rules.minRestMinutes();
+                }).boxed().collect(java.util.stream.Collectors.toSet());
+        var gap = TripSchedulePolicy.firstRestGap(0, times.size() - 1, times, rests, rules);
+        if (gap != null) {
+            throw new DispatchRuleException("places", "Cần trạm nghỉ đủ " + rules.minRestMinutes()
+                    + " phút trước điểm " + ridden.get(gap.toStop()).getSequenceNumber() + ".", true);
         }
     }
 

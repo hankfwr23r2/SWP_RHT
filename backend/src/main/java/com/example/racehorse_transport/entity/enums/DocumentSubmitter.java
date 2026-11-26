@@ -4,6 +4,5 @@ package com.example.racehorse_transport.entity.enums;
 public enum DocumentSubmitter {
     CUSTOMER,
     CONSIGNEE,
-    COMPANY,
-    AGENT
+    COMPANY
 }

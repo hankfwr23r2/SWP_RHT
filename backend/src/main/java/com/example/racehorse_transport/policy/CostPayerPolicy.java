@@ -18,7 +18,7 @@ public final class CostPayerPolicy {
     // Bên chịu theo nguyên nhân sự cố. Đại lý lỗi thì công ty chịu trước rồi đòi lại theo hợp đồng riêng
     public static CostPayerType payerFor(IncidentCauseType cause) {
         return switch (cause) {
-            case COMPANY_FAULT, AGENT_FAULT, FORCE_MAJEURE -> CostPayerType.COMPANY;
+            case COMPANY_FAULT, FORCE_MAJEURE -> CostPayerType.COMPANY;
             case HORSE_CONDITION, CUSTOMER_DOCS -> CostPayerType.CUSTOMER;
             case RECIPIENT_ABSENT -> CostPayerType.CONSIGNEE;
         };

@@ -1,12 +1,13 @@
 // Xem trước giờ hệ thống tính cho một lượt xe; điều phối chỉ sửa giờ xuất phát, các mốc sau tự dời
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { dispatchApi, type PlannedTrip, type PlannedTripCreate } from '@shared/api/dispatch'
+import { dispatchApi, type NetworkLocation, type PlannedTrip, type PlannedTripCreate } from '@shared/api/dispatch'
 import { useLoad } from '@shared/hooks/useLoad'
 import { Button } from '@shared/ui/Button'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { Field } from '@shared/ui/Field'
 import { Input } from '@shared/ui/Input'
+import { Select } from '@shared/ui/Select'
 import { Skeleton } from '@shared/ui/Skeleton'
 import { isoToLocal, localToIso } from '@backoffice/shared/localTime'
 import { TripMap } from './TripMap'
@@ -16,11 +17,13 @@ import s from './Board.module.css'
 const BLOCKING = new Set(['RIDE_TOO_LONG', 'LATE_FOR_HUB', 'DRIVER_DAY_LIMIT'])
 
 // onPlan: kế hoạch mới nhất, hoặc undefined khi đang tính hay lỗi
-export function TripPlanPreview({ request, onPlan, onStart, onManual }: {
+export function TripPlanPreview({ request, onPlan, onStart, onManual, restStations, onPlaces }: {
   request: PlannedTripCreate
   onPlan: (plan: PlannedTrip | undefined) => void
   onStart: (startAt: string | undefined) => void
   onManual?: () => void
+  restStations?: NetworkLocation[]
+  onPlaces?: (places: PlannedTripCreate['places']) => void
 }) {
   const { t } = useTranslation()
   const [draft, setDraft] = useState('')
@@ -57,6 +60,15 @@ export function TripPlanPreview({ request, onPlan, onStart, onManual }: {
         }))} />
         <TripMap stops={stops} />
       </div>
+      {onPlaces && plan.stops?.map((stop, index) => stop.stopType === 'REST' && (
+        <Field key={index} label={t('dispatch.plan.restStation', { name: stop.name })}>
+          {control => <Select {...control} value={String(stop.locationId)} onChange={value => onPlaces(plan.stops!.map((point, at) =>
+            at === index ? { locationId: Number(value) }
+              : point.locationId != null ? { locationId: point.locationId } : { bookingAddressId: point.bookingAddressId }))}
+            options={(restStations ?? []).filter(station => station.locationType === 'REST_STOP' && station.id != null)
+              .map(station => ({ value: String(station.id), label: station.name ?? '' }))} />}
+        </Field>
+      ))}
       <div className={s.chips}>
         <Field label={t(transfer ? 'dispatch.plan.returnStart' : 'dispatch.plan.start')}>
           {c => <Input {...c} type="datetime-local" value={draft || (start ? isoToLocal(start) : '')} onChange={e => setDraft(e.target.value)} />}

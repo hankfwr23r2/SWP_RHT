@@ -31,14 +31,14 @@ public record HorseJourneyResponseDto(
         List<JourneyHealthLogResponseDto> healthLogs) {
 
     public record JourneyLegDto(Long id, Integer sequenceNumber, HorseLegType legType, HorseLegStatus status, String fromName, String toName,
-                         String vehicleTripCode, String agentName, Long replacedHorseLegId,
+                         String vehicleTripCode, Long replacedHorseLegId,
                          Instant plannedStartAt, Instant plannedEndAt, Instant actualStartAt, Instant actualEndAt,
                          ExpectedWindowDto pickupWindow, ExpectedWindowDto deliveryWindow) {
 
         public static JourneyLegDto from(HorseLeg leg, HourWindow pickupWindow, HourWindow deliveryWindow) {
             return new JourneyLegDto(leg.getId(), leg.getSequenceNumber(), leg.getLegType(), leg.getStatus(),
                     nameOf(leg.getFromLocation(), leg.getFromBookingAddress()), nameOf(leg.getToLocation(), leg.getToBookingAddress()),
-                    leg.getVehicleTrip() == null ? null : leg.getVehicleTrip().getCode(), nameOf(leg.getAgentParty()),
+                    leg.getVehicleTrip() == null ? null : leg.getVehicleTrip().getCode(),
                     leg.getReplacedHorseLeg() == null ? null : leg.getReplacedHorseLeg().getId(),
                     leg.getPlannedStartAt(), leg.getPlannedEndAt(), leg.getActualStartAt(), leg.getActualEndAt(),
                     ExpectedWindowDto.from(pickupWindow), ExpectedWindowDto.from(deliveryWindow));

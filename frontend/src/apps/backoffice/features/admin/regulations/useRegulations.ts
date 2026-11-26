@@ -11,7 +11,7 @@ export const owners = [
   'COST_ITEM', 'HANDOVER', 'VEHICLE', 'STAFF', 'PARTY', 'CUSTOMER',
 ] satisfies DocumentTypeCreate['ownerType'][]
 export const directions = ['INTERPROVINCE', 'EXPORT', 'IMPORT'] satisfies CountryRuleCreate['direction'][]
-export const submitters = ['CUSTOMER', 'CONSIGNEE', 'COMPANY', 'AGENT'] satisfies DocumentRequirementCreate['submitterType'][]
+export const submitters = ['CUSTOMER', 'CONSIGNEE', 'COMPANY'] satisfies DocumentRequirementCreate['submitterType'][]
 
 export function useDocumentTypesEditor(item: DocumentType | undefined, reload: () => unknown, close: () => void) {
   const form = useCatalogForm({ code: item?.code ?? '', name: item?.name ?? '', ownerType: item?.ownerType ?? '' })

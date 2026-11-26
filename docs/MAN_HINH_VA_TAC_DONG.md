@@ -75,7 +75,6 @@ Task nào làm tới thao tác nào thì đối chiếu dòng đó. Một dòng 
 | 4.9 | Nhận bàn giao (hộ tống mới) **[mới]** | Xem phiếu tóm tắt, quét chip, khám, ký | `handover` SHIFT, `handover_horse`, `horse_health_log` | Chip sai; chưa xem cảnh báo; không trong ca | Thẻ chuyển sang người mới | Ai đang chăm sóc |
 | 4.10 | Kết thúc ca, lượt xe (hộ tống) **[mới]** | **Kết thúc** | `vehicle_trip`, `crew_assignment` | Còn ngựa chưa có người nhận | Rảnh để nhận việc mới | |
 | 4.11 | Bảng phụ trách (điều phối) **[mới]** | Xem mọi con: ở đâu, ai giữ, việc trễ | | | Con không có người trong ca hiện đỏ đầu bảng | |
-| 4.11a | Đại lý đã giao (điều phối, trang Theo dõi) **[25/11]** | **Đại lý đã giao** trên con ngựa đại lý đang giữ | `horse_leg`, `booking` | Chặng chưa bàn giao ở cửa khẩu | Giao hết các con thì đơn `DELIVERED` | Đã giao |
 
 ## 5. Giấy đủ điều kiện cách ly
 
@@ -86,7 +85,6 @@ Công ty không vận hành nơi cách ly. Điều kiện cách ly thể hiện 
 | 5.1 | Đặt đơn (khách) | Xem danh sách giấy theo nước đến | Chưa ghi | Không kịp ngày làm giấy | | Giấy nào, ai nộp, cần trước mốc nào |
 | 5.2 | Thẩm định (chuyên viên) | Tải và duyệt `QUARANTINE_CLEARANCE` từng con (đơn EXPORT) | `document` | Không đạt mà thiếu lý do | Còn thiếu thì đơn nằm ở danh sách 3.5b | "Đã có xác nhận cách ly" từng con |
 | 5.3 | Lượt xe (tài xế, điều phối) | Xem danh sách con đủ, con thiếu | | Thiếu giấy thì nút **Xuất phát** khóa kèm tên ngựa và tên giấy | | |
-| 5.4 | Cửa khẩu chiều nhập (hộ tống) | Tải giấy vận chuyển mẫu 14a, **Nhận ngựa từ đại lý** | `document` IMPORT_TRANSPORT_CERT, `handover` AGENT (`from_party_id` = đại lý) | Thiếu giấy bắt buộc, chip sai | Trả 70% như 4.3; xe về hub | "Đã nhận ở cửa khẩu" |
 
 ## 6. Trục, cửa khẩu, giao, đóng đơn
 
@@ -95,8 +93,6 @@ Công ty không vận hành nơi cách ly. Điều kiện cách ly thể hiện 
 | 6.1 | Lượt xe trục (hộ tống) | Nhận ngựa từ hub | `handover` HUB_OUT, `horse_leg` | Chip sai, chưa xong dịch vụ trước chuyến | Danh sách ngựa của mọi khách kèm chỉ dẫn và số khoang từng con | "Đang đi trục" |
 | 6.1a | Lượt xe trục (tổ xe) | Rời điểm đầu, hoàn tất lượt | `departure.status` | Quản lý không thể hủy chuyến khi chuyến đã chạy hoặc đã hoàn tất | Xe đầu tiên rời điểm đầu thì chuyến đang chạy. Khi mọi lượt trục chưa hủy hoàn thành thì chuyến hoàn tất | |
 | 6.2 | Điểm dừng: trạm nghỉ (tài xế, hộ tống) | **Tới nơi**, cho nước và cỏ, đo và ghi ăn uống từng con, **Rời đi** | `trip_stop`, `horse_health_log` | Còn con chưa ghi; chưa nghỉ đủ 30 phút (rời sớm phải xác nhận kèm lý do) **[mới]** | Bỏ uống 2 trạm liền: `WATCH`, báo điều phối. Điều phối thấy giờ trễ | Trạm, ăn uống, chỉ số từng con |
-| 6.3 **[Thay 26/11]** | Điểm dừng: cửa khẩu chiều xuất (tài xế) | Tải giấy, **Bàn giao đại lý** | `document`, `handover` AGENT | Thiếu giấy; không có đối tác ở ít nhất một bên | **Trách nhiệm sang đại lý**; chặng đại lý bắt đầu | "Đã qua cửa khẩu" |
-| 6.4 **[Thay 26/11]** | Chặng đại lý (điều phối) | Nhập mốc và ảnh đại lý gửi | `horse_leg`, `document` | Mốc lùi thời gian | | Mốc, ghi rõ "theo đại lý" |
 | 6.5 | Điểm dừng: giao (tài xế) | **Bắt đầu chờ**, quét chip, ký, trả giấy gốc, **Hoàn tất** | `handover` DELIVERY, `handover_document`, `booking_horse` DELIVERED | Chip sai, thiếu chữ ký | Con cuối cùng xong: `DELIVERED` | "Đã giao", biên bản |
 | 6.6 | Như trên | **Không gặp người nhận** | `handover` TIMEOUT, `incident`, `horse_stay` STABLING | Chưa hết giờ chờ miễn phí | Xe đi về hub. Báo sẵn sàng chốt phí giữ, lượt giao lại xác định cước giao. HUB_OUT kiểm đã trả hai khoản. Người nhận tự tới hub lấy được ngay. | Ngựa ở đâu, phí |
 | 6.7 | Quyết toán (quản lý) | Duyệt từng chi phí, lập khoản thu thêm | `cost_item`, `payment` EXTRA_CHARGE | Khoản khách hoặc người nhận chưa hỏi và vượt hạn mức, trừ phí biểu phí gắn STABLING | Đóng khi hết nợ, không còn chi phí khách chịu chưa duyệt và không còn sự cố mở. Đơn không phát sinh tự đóng sau 7 ngày | Bảng kê, hạn và nút VNPAY. Nhắc 08:00 và chặn gửi đơn mới khi có khoản quá hạn. |
@@ -129,7 +125,6 @@ Công ty không vận hành nơi cách ly. Điều kiện cách ly thể hiện 
 | 4 | Hub vệ tinh không có nhân viên | Tổ xe trục ở lại tới khi giao; qua đêm thì gửi đối tác `STABLE` |
 | 5 | Ghi ăn uống | Cột `water_intake`, `feed_intake` của `horse_health_log` (**thay** quyết định ghi vào `note`) |
 | 6 | Dịch vụ cho ăn tính tiền | Ngừng `FEEDING` (chuyển `INACTIVE` bằng migration mới, làm cùng A3); giữ `VET_CHECK` với tên "Thú y tại chuồng". Chăm sóc chuẩn nằm trong cước |
-| 7 | Chặng đại lý: đại lý không có tài khoản | Điều phối nhập hộ, khách thấy "theo đại lý" |
 | 8 | Nghỉ và cho ăn | Tối đa 4 giờ, nghỉ ≥ 30 phút có nước và cỏ; bữa theo chỉ dẫn ở nơi nghỉ đêm và hub; tối đa 10 giờ lái mỗi ngày |
 | 9 | Thanh toán | Cọc theo tỷ lệ trên cước dịch vụ cộng đủ bảo hiểm và lệ phí thu hộ, trả trong hạn báo giá. Thu tổng trừ cọc sau khi nhận ngựa và trước khi xe rời, chờ tối đa 30 phút |
 | 10 | Ghép đơn | Khoang rộng 2 chỗ; ngựa cùng đơn cùng xe trục; quyết định chạy 48 giờ trước; ngưỡng cảnh báo 30% |
@@ -228,5 +223,5 @@ Thay 6.3, 6.4 và bổ sung theo [NGU_CANH_THIET_KE_LAI.md](NGU_CANH_THIET_KE_LA
 | H6 | Lượt xe của tôi (tài xế) | **Đã về hub gốc**: ảnh tại chỗ, tình trạng xe | Chưa tới mốc sớm nhất; thiếu ảnh | Xe và tổ lái rảnh; cần bảo dưỡng thì khóa xếp lượt | |
 | H7 | Lịch tuần theo xe (điều phối, quản lý) | Xem xe Đang về, giờ dự kiến, cờ trễ | | | |
 | H8 | **Các hub** (quản lý, chỉ xem) | Xem từng hub: ngựa đang ở, ô chuồng trống, xe theo trạng thái, nhân viên, chuyến đến và đi, sự cố mở | | | |
-| H9 | Lượt xe trục, điểm dừng cửa khẩu (tài xế) | **Tới nơi**, kiểm giấy riêng của cửa khẩu, **Rời đi** sang nước bên kia | Thiếu giấy riêng của cửa khẩu | Thiếu giấy thì mở sự cố loại Giấy tờ | "Đang làm thủ tục ở cửa khẩu", "Đã qua cửa khẩu" |
+| H9 | Lượt xe trục, điểm dừng cửa khẩu (tài xế) | **Tới nơi**, kiểm giấy chung và giấy riêng của cửa khẩu, **Rời đi** sang nước bên kia | Thiếu giấy bắt buộc của bất kỳ đơn nào trên xe | Thiếu giấy thì mở sự cố loại Giấy tờ | "Đang làm thủ tục ở cửa khẩu", "Đã qua cửa khẩu" |
 | H10 | Hub nước ngoài (nhân viên hub đó) | Đón, vào hub, ra hub, giao như hub trong nước | Như trong nước | Như trong nước | Như trong nước |

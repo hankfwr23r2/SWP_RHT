@@ -26,8 +26,7 @@ public final class DocumentReviewPolicy {
 
     public static void requirePartnerUpload(BookingStatus status, DocumentSubmitter submitter) {
         requireStaffReview(status);
-        if (submitter != DocumentSubmitter.COMPANY && submitter != DocumentSubmitter.CONSIGNEE
-                && submitter != DocumentSubmitter.AGENT) {
+        if (submitter != DocumentSubmitter.COMPANY && submitter != DocumentSubmitter.CONSIGNEE) {
             throw BookingRuleException.conflict("Giấy tờ này chỉ do khách hàng của đơn nộp.");
         }
     }

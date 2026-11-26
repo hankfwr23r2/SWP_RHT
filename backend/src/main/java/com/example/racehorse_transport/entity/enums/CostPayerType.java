@@ -4,6 +4,5 @@ package com.example.racehorse_transport.entity.enums;
 public enum CostPayerType {
     COMPANY,
     CUSTOMER,
-    CONSIGNEE,
-    AGENT
+    CONSIGNEE
 }

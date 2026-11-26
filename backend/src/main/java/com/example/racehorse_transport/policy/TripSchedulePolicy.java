@@ -10,13 +10,21 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 // Tính giờ lượt đón, giao, chạy thẳng từ thời gian lái từng đoạn (người dùng duyệt 24/11/2026), hàm thuần.
 // Nghỉ bắt buộc cộng vào thời gian đi đường; dừng nhận, giao đủ lâu thì tính là nghỉ.
 public final class TripSchedulePolicy {
 
-    public record Rules(int maxContinuousHours, int minRestMinutes, int maxDriveHoursPerDay, int stopBaseMinutes, int stopMinutesPerHorse) {}
+    public record Rules(int maxContinuousHours, int minRestMinutes, int maxDriveHoursPerDay, int stopBaseMinutes, int stopMinutesPerHorse,
+                        int maxTransferHorseHours, int maxDirectHorseHours, int horseRestIntervalHours) {
+        public Rules(int maxContinuousHours, int minRestMinutes, int maxDriveHoursPerDay, int stopBaseMinutes, int stopMinutesPerHorse) {
+            this(maxContinuousHours, minRestMinutes, maxDriveHoursPerDay, stopBaseMinutes, stopMinutesPerHorse, 0, 0, 0);
+        }
+    }
+
+    public record RestGap(int fromStop, int toStop, long secondsAvailable) {}
 
     // Khung giờ trong ngày, giờ kết thúc 24 nghĩa là hết ngày
     public record Window(int startHour, int endHour) {}
@@ -32,6 +40,11 @@ public final class TripSchedulePolicy {
 
     // horses: số ngựa lên hoặc xuống ở từng điểm. driveSeconds: thời gian lái từng đoạn. firstDeparture: giờ rời điểm đầu
     public static List<StopTime> schedule(Instant firstDeparture, List<Integer> horses, List<Long> driveSeconds, Rules rules) {
+        return schedule(firstDeparture, horses, driveSeconds, Set.of(), rules);
+    }
+
+    public static List<StopTime> schedule(Instant firstDeparture, List<Integer> horses, List<Long> driveSeconds,
+                                          Set<Integer> restStops, Rules rules) {
         if (horses.size() != driveSeconds.size() + 1) {
             throw new IllegalArgumentException("Số điểm dừng phải bằng số đoạn cộng một.");
         }
@@ -45,7 +58,7 @@ public final class TripSchedulePolicy {
             long rests = restsNeeded(total, maxContinuous);
             int restMinutes = Math.toIntExact(rests * rules.minRestMinutes());
             Instant arrival = leave.plusSeconds(driveSeconds.get(i)).plus(Duration.ofMinutes(restMinutes));
-            Duration dwell = dwell(horses.get(i + 1), rules);
+            Duration dwell = restStops.contains(i + 1) ? Duration.ofMinutes(rules.minRestMinutes()) : dwell(horses.get(i + 1), rules);
             leave = arrival.plus(dwell);
             carried = dwell.toMinutes() >= rules.minRestMinutes() ? 0 : total - rests * maxContinuous;
             result.add(new StopTime(arrival, leave, restMinutes));
@@ -67,17 +80,26 @@ public final class TripSchedulePolicy {
 
     // Lượt giao: rời hub khi ngựa sẵn sàng. Điểm giao nào rơi ngoài khung giờ thì dời cả lượt sang đầu khung giờ kế tiếp
     public static Instant deliveryDeparture(Instant ready, Window window, ZoneId zone, List<Integer> horses, List<Long> driveSeconds, Rules rules) {
-        List<StopTime> now = schedule(ready, horses, driveSeconds, rules);
+        return deliveryDeparture(ready, window, zone, horses, driveSeconds, Set.of(), rules);
+    }
+
+    public static Instant deliveryDeparture(Instant ready, Window window, ZoneId zone, List<Integer> horses,
+                                            List<Long> driveSeconds, Set<Integer> restStops, Rules rules) {
+        List<StopTime> now = schedule(ready, horses, driveSeconds, restStops, rules);
+        int firstAddress = 1;
         int lastAddress = now.size() - 2;
-        if (inWindow(now.get(1).arrival(), window, zone) && inWindow(now.get(lastAddress).arrival(), window, zone)) {
+        while (restStops.contains(firstAddress)) firstAddress++;
+        while (restStops.contains(lastAddress)) lastAddress--;
+        Instant firstArrival = now.get(firstAddress).arrival();
+        if (inWindow(firstArrival, window, zone) && inWindow(now.get(lastAddress).arrival(), window, zone)) {
             return ready;
         }
-        LocalDate day = LocalDate.ofInstant(now.get(1).arrival(), zone);
+        LocalDate day = LocalDate.ofInstant(firstArrival, zone);
         Instant opening = day.atTime(window.startHour(), 0).atZone(zone).toInstant();
-        if (!opening.isAfter(now.get(1).arrival())) {
+        if (!opening.isAfter(firstArrival)) {
             opening = day.plusDays(1).atTime(window.startHour(), 0).atZone(zone).toInstant();
         }
-        return departureToReachFirstStop(opening, driveSeconds, rules);
+        return opening.minus(Duration.between(ready, firstArrival));
     }
 
     public static boolean inWindow(Instant at, Window window, ZoneId zone) {
@@ -92,8 +114,24 @@ public final class TripSchedulePolicy {
 
     // Quy tắc #31: đón, giao một chiều không quá nửa giới hạn lái mỗi ngày; chạy thẳng không quá giới hạn ngày
     public static long rideLimitSeconds(boolean direct, Rules rules) {
+        int configured = direct ? rules.maxDirectHorseHours() : rules.maxTransferHorseHours();
+        if (configured > 0) return Duration.ofHours(configured).getSeconds();
         long day = rules.maxDriveHoursPerDay() * 3600L;
         return direct ? day : day / 2;
+    }
+
+    public static RestGap firstRestGap(int board, int alight, List<StopTime> times, Set<Integer> restStops, Rules rules) {
+        long limit = Duration.ofHours(rules.horseRestIntervalHours()).getSeconds();
+        Instant lastRestEnd = times.get(board).departure();
+        for (int to = board + 1; to <= alight; to++) {
+            long elapsed = Duration.between(lastRestEnd, times.get(to).arrival()).getSeconds();
+            if (elapsed > limit) {
+                long available = limit - Duration.between(lastRestEnd, times.get(to - 1).departure()).getSeconds();
+                return new RestGap(to - 1, to, available);
+            }
+            if (restStops.contains(to)) lastRestEnd = times.get(to).departure();
+        }
+        return null;
     }
 
     public static void requirePlannedRideWithinLimit(Instant board, Instant alight, boolean direct, Rules rules) {
@@ -108,7 +146,7 @@ public final class TripSchedulePolicy {
     public static void requireMultiPlaceDrivingLimit(List<Interval> stops, Rules rules) {
         long driving = drivingByDay(List.of(stops), ZoneId.of("Asia/Ho_Chi_Minh"), rules).values()
                 .stream().mapToLong(Long::longValue).sum();
-        if (driving > rideLimitSeconds(true, rules)) {
+        if (driving > Duration.ofHours(rules.maxDriveHoursPerDay()).getSeconds()) {
             throw new DispatchRuleException("places", "Lượt giao và quay về vượt giới hạn giờ lái.", true);
         }
     }

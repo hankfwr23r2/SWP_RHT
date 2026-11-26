@@ -59,7 +59,7 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
     public void lockBookingsForCompletion(HandoverType type, List<HorseLeg> matched) {
-        if (type == HandoverType.HUB_IN || type == HandoverType.HUB_OUT || type == HandoverType.PICKUP || type == HandoverType.AGENT) {
+        if (type == HandoverType.HUB_IN || type == HandoverType.HUB_OUT || type == HandoverType.PICKUP) {
             matched.stream().map(leg -> leg.getBookingHorse().getBooking().getId()).distinct().sorted()
                     .forEach(paymentReadiness::lockBooking);
         }
@@ -68,11 +68,10 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
     public void complete(Handover handover, List<HorseLeg> matched, Instant now, Long actorUserId) {
-        boolean agent = handover.getHandoverType() == HandoverType.AGENT;
-        boolean boarding = TripExecutionPolicy.isBoarding(handover.getHandoverType(), handover.getFromParty() != null);
+        boolean boarding = TripExecutionPolicy.isBoarding(handover.getHandoverType());
         List<Booking> bookings = matched.stream().map(l -> l.getBookingHorse().getBooking()).distinct()
                 .sorted(Comparator.comparing(Booking::getId)).toList();
-        if (handover.getHandoverType() == HandoverType.PICKUP || (agent && boarding)) {
+        if (handover.getHandoverType() == HandoverType.PICKUP) {
             matched.forEach(leg -> pickupMisses.requirePickupCanComplete(leg, now));
         }
         if (handover.getHandoverType() == HandoverType.PICKUP) {
@@ -84,12 +83,6 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
                         + " chưa trả đủ. Chưa thể đưa ngựa lên xe tại hub.", true);
             });
             matched.forEach(leg -> horseStays.requireStablingPaid(leg.getBookingHorse().getId()));
-        }
-        if (agent) {
-            bookings.forEach(booking -> handoverReadiness.requireDocumentsAtBorder(booking, boarding));
-            if (boarding) {
-                matched.forEach(leg -> handoverReadiness.requireConfirmedInsurance(leg.getBookingHorse()));
-            }
         }
         handover.setStatus(HandoverStatus.DONE);
         handover.setHandedAt(now);
@@ -130,20 +123,9 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
                     horseStays.openAssembly(leg, now);
                 }
             }
-            if (agent) {
-                // Đơn xuất: chặng đại lý kế tiếp bắt đầu. Đơn nhập: chặng đại lý trước đó kết thúc
-                HorseLeg adjacent = adjacentAgentLeg(leg, !boarding);
-                if (boarding) {
-                    adjacent.setStatus(HorseLegStatus.COMPLETED);
-                    adjacent.setActualEndAt(now);
-                } else {
-                    adjacent.setStatus(HorseLegStatus.IN_PROGRESS);
-                    adjacent.setActualStartAt(now);
-                }
-            }
         }
         legs.flush();
-        if (handover.getHandoverType() == HandoverType.PICKUP || agent && boarding) {
+        if (handover.getHandoverType() == HandoverType.PICKUP) {
             // Nhận ngựa từ khách xong thì lập khoản số dư; xe chỉ rời nơi nhận khi đã trả đủ (#32)
             bookings.stream().filter(b -> b.getStatus() == BookingStatus.CONFIRMED || b.getStatus() == BookingStatus.IN_OPERATION)
                     .forEach(b -> payments.requestBalance(b.getId(), now));
@@ -185,8 +167,6 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
     // B6: báo khách các mốc khách thấy trên đơn (MAN_HINH: đã nhận ngựa, đã qua cửa khẩu, đã giao). Mỗi đơn một thông báo
     private void notifyCustomers(Handover handover, List<HorseLeg> handed) {
         String place = handover.getTripStop() != null ? placeOf(handover) : handover.getHorseStay().getLocation().getName();
-        String party = handover.getToParty() != null ? handover.getToParty().getDisplayName()
-                : handover.getFromParty() != null ? handover.getFromParty().getDisplayName() : null;
         handed.stream().collect(Collectors.groupingBy(l -> l.getBookingHorse().getBooking(), LinkedHashMap::new,
                 Collectors.mapping(l -> l.getBookingHorse().getHorse().getName(), Collectors.joining(", "))))
                 .forEach((booking, names) -> {
@@ -194,9 +174,6 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
                         case PICKUP -> new String[] {"Đã nhận ngựa", "Công ty đã nhận " + names + " tại " + place + "."};
                         case DELIVERY -> new String[] {"Đã giao ngựa", names + " đã được giao cho người nhận tại " + place + "."};
                         case RETURN -> new String[] {"Đã trả ngựa", names + " đã được trả tại " + place + "."};
-                        case AGENT -> handover.getToParty() != null
-                                ? new String[] {"Đã qua cửa khẩu", names + " đã được bàn giao cho đại lý " + party + " tại " + place + " để chở tiếp tới nơi nhận."}
-                                : new String[] {"Đã nhận ngựa ở cửa khẩu", "Công ty đã nhận " + names + " từ đại lý " + party + " tại " + place + "."};
                         default -> null;
                     };
                     if (notice == null) return;
@@ -207,12 +184,6 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
     private static String placeOf(Handover handover) {
         var stop = handover.getTripStop();
         return stop.getLocation() != null ? stop.getLocation().getName() : stop.getBookingAddress().getAddressLine();
-    }
-
-    private HorseLeg adjacentAgentLeg(HorseLeg leg, boolean next) {
-        List<HorseLeg> chain = legs.findByBookingHorse_IdOrderBySequenceNumber(leg.getBookingHorse().getId()).stream()
-                .filter(l -> l.getStatus() != HorseLegStatus.CANCELLED && l.getStatus() != HorseLegStatus.FAILED).toList();
-        return chain.get(chain.indexOf(leg) + (next ? 1 : -1));
     }
 
     @Override

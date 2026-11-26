@@ -237,7 +237,6 @@ export const staffCatalog = {
       "ORGANIZATION": "Tổ chức"
     },
     "partyRoles": {
-      "DEST_AGENT": "Đại lý điểm đến",
       "QUARANTINE_FARM": "Trại cách ly",
       "STABLE": "Chuồng gửi",
       "VET": "Thú y",
@@ -305,7 +304,6 @@ export const staffCatalog = {
       "CUSTOMER": "Khách hàng",
       "CONSIGNEE": "Người nhận",
       "COMPANY": "Công ty vận chuyển",
-      "AGENT": "Đại lý"
     },
     "mandatory": {
       "true": "Bắt buộc",

@@ -237,7 +237,6 @@ export const staffCatalog = {
       "ORGANIZATION": "Organisation"
     },
     "partyRoles": {
-      "DEST_AGENT": "Destination agent",
       "QUARANTINE_FARM": "Quarantine farm",
       "STABLE": "Stable",
       "VET": "Veterinarian",
@@ -305,7 +304,6 @@ export const staffCatalog = {
       "CUSTOMER": "Customer",
       "CONSIGNEE": "Consignee",
       "COMPANY": "Transport company",
-      "AGENT": "Agent"
     },
     "mandatory": {
       "true": "Required",

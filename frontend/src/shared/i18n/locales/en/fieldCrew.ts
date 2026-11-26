@@ -82,7 +82,6 @@ export const fieldCrew = {
         "RETURNED": "Original returned"
       },
       "stall": "Stall {{n}}",
-      "agentParty": "Agent: {{name}}",
       "unpaidReturn": {
         "action": "Return horses: balance overdue",
         "title": "Return the received horses?",
@@ -200,7 +199,6 @@ export const fieldCrew = {
         "DELIVERY": "Deliver horses",
         "HUB_IN": "Hand into hub",
         "RETURN": "Return to shipper",
-        "AGENT": "Hand over with agent",
         "SHIFT": "Take over shift",
         "STAY_IN": "Stable overnight",
         "STAY_OUT": "Collect from stable",

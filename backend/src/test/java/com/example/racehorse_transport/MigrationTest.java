@@ -183,14 +183,14 @@ class MigrationTest {
     }
 
     @Test
-    void horseLegNeedsExactlyOneCarrier() {
+    void horseLegNeedsCompanyVehicleTrip() {
         long bookingHorseId = newBookingHorse(newBooking());
         assertThatThrownBy(() -> jdbc.update("""
                 INSERT INTO horse_leg (booking_horse_id, sequence_number, leg_type, from_location_id, to_location_id, planned_start_at, planned_end_at, status)
                 VALUES (?, 1, 'LINEHAUL', (SELECT id FROM location WHERE code = 'HUB-HCM'), (SELECT id FROM location WHERE code = 'HUB-PNH'),
                         TIMESTAMPTZ '2026-12-20 06:00+07', TIMESTAMPTZ '2026-12-20 08:00+07', 'PLANNED')""", bookingHorseId))
                 .isInstanceOf(DataAccessException.class)
-                .hasMessageContaining("ck_horse_leg_carrier");
+                .hasMessageContaining("vehicle_trip_id");
     }
 
     @Test
@@ -220,8 +220,8 @@ class MigrationTest {
 
     @Test
     void handoverBetweenSamePartnerIsRejected() {
-        Long agent = id("SELECT min(party_id) FROM party_role WHERE role_type = 'DEST_AGENT'");
-        assertThatThrownBy(() -> newHandover("AGENT", agent, agent))
+        Long stable = id("SELECT min(party_id) FROM party_role WHERE role_type = 'STABLE'");
+        assertThatThrownBy(() -> newHandover("STAY_IN", stable, stable))
                 .isInstanceOf(DataAccessException.class)
                 .hasMessageContaining("ck_handover_parties");
     }

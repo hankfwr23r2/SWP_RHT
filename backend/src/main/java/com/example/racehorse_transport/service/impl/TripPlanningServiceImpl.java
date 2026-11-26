@@ -10,6 +10,8 @@ import com.example.racehorse_transport.entity.TripStop;
 import com.example.racehorse_transport.entity.Vehicle;
 import com.example.racehorse_transport.entity.VehicleTrip;
 import com.example.racehorse_transport.entity.enums.AddressRole;
+import com.example.racehorse_transport.entity.enums.ActiveStatus;
+import com.example.racehorse_transport.entity.enums.LocationType;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.TripStopType;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
@@ -159,6 +161,17 @@ public class TripPlanningServiceImpl implements TripPlanningService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy địa chỉ của đơn " + stop.bookingAddressId()));
         requireCustomerAddress(address, stop.stopType(), sequence);
         return address;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public TripStop planRestStop(VehicleTrip trip, int sequence, TripStopRequestDto request) {
+        var location = findLocation(request.locationId());
+        if (request.stopType() != TripStopType.REST || location.getLocationType() != LocationType.REST_STOP
+                || location.getStatus() != ActiveStatus.ACTIVE) {
+            throw new DispatchRuleException("stops", "Điểm nghỉ phải là trạm nghỉ đang hoạt động.", true);
+        }
+        return request.toEntity(trip, sequence, location, null);
     }
 
     private static void requireCustomerAddress(BookingAddress address, TripStopType stopType, int sequence) {

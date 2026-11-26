@@ -31,8 +31,6 @@ export const staffDispatch = {
     "overdue": "Trễ khám",
     "unknownPlace": "Chưa có vị trí",
     "heldBy": "{{name}} đang giữ",
-    "agentDeliveredMessage": "Ghi {{agent}} đã giao {{horse}} tới nơi nhận. Giao hết các con thì đơn chuyển sang Đã giao.",
-    "agentDelivered": "Đã ghi đại lý giao xong",
     "heldByPartner": "Đối tác {{name}} đang giữ",
     "since": "từ {{at}}",
     "lastCheck": "Khám lúc {{at}}",
@@ -98,6 +96,7 @@ export const staffDispatch = {
       "noDriver": "Thiếu tài xế"
     },
     "plan": {
+      restStation: "Trạm nghỉ · {{name}}",
       "preview": "Xem giờ và bản đồ",
       "failed": "Chưa tính được giờ",
       "manual": "Nhập giờ tay",
@@ -220,31 +219,6 @@ export const staffDispatch = {
       "late": "Giờ hẹn không được muộn hơn hạn có mặt ở hub.",
       "appoint": "Hẹn giờ",
       "done": "Đã hẹn nhận ngựa tại hub"
-    },
-    "agent": {
-      "col": "Đại lý",
-      "open": "Chặng đại lý",
-      "title": "Chặng đại lý · {{horse}} · {{code}}",
-      "exportHint": "Đơn xuất: lập chặng xe tới cửa khẩu trước. Chặng đại lý đi từ cửa khẩu tới địa chỉ giao, bắt đầu khi tổ xe bàn giao ở cửa khẩu.",
-      "importHint": "Đơn nhập: lập chặng đại lý trước chặng xe. Đại lý đưa ngựa từ nơi gửi tới cửa khẩu, chặng kết thúc khi tổ xe nhận ngựa ở cửa khẩu.",
-      "legs": "Chặng đại lý của con ngựa",
-      "agent": "Đại lý",
-      "gate": "Cửa khẩu giao ngựa",
-      "plannedStart": "Bắt đầu dự kiến",
-      "plannedEnd": "Kết thúc dự kiến",
-      "create": "Lập chặng đại lý",
-      "created": "Đã lập chặng đại lý",
-      "start": "Đại lý đã nhận ngựa",
-      "started": "Đã ghi đại lý nhận ngựa",
-      "complete": "Đại lý đã giao",
-      "completed": "Đã ghi đại lý giao ngựa",
-      "cancel": "Gỡ",
-      "cancelled": "Đã gỡ chặng đại lý",
-      "status": {
-        "PLANNED": "Chưa chạy",
-        "IN_PROGRESS": "Đại lý đang chở",
-        "COMPLETED": "Đã xong"
-      }
     },
     "bookings": {
       "emptyTitle": "Không có đơn cần xếp xe trong tuần này",

@@ -139,15 +139,6 @@ public interface HorseLegRepository extends JpaRepository<HorseLeg, Long> {
     List<HorseLeg> findByVehicleTrip_IdIn(Collection<Long> vehicleTripIds);
 
     @Query("""
-            SELECT l FROM HorseLeg l WHERE l.bookingHorse.booking.departure.id = :departureId AND l.vehicleTrip IS NULL
-              AND l.agentParty IS NOT NULL AND l.status = com.example.racehorse_transport.entity.enums.HorseLegStatus.PLANNED
-              AND EXISTS (SELECT prior.id FROM HorseLeg prior WHERE prior.bookingHorse = l.bookingHorse
-                 AND prior.sequenceNumber < l.sequenceNumber
-                 AND prior.legType = com.example.racehorse_transport.entity.enums.HorseLegType.LINEHAUL
-                 AND prior.status <> com.example.racehorse_transport.entity.enums.HorseLegStatus.CANCELLED)
-            """)
-    List<HorseLeg> findDownstreamAgentLegsForDelay(Long departureId);
-    @Query("""
             SELECT COUNT(h) > 0 FROM BookingHorse h
             WHERE h.status = com.example.racehorse_transport.entity.enums.BookingHorseStatus.ACTIVE
               AND h.booking.id IN (

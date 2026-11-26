@@ -147,15 +147,6 @@ class DispatchPolicyTest {
     }
 
     @Test
-    void agentBelongsToTheForeignCountryAndImportGateMatchesTheDeparture() {
-        assertThatCode(() -> DispatchPolicy.requireAgentOfCountry("Đại lý", "KH", "KH")).doesNotThrowAnyException();
-        assertThatThrownBy(() -> DispatchPolicy.requireAgentOfCountry("Đại lý Lào", "LA", "KH")).hasMessageContaining("Đại lý Lào");
-        assertThatCode(() -> DispatchPolicy.requireGateOfDeparture(1L, null, null)).doesNotThrowAnyException();
-        assertThatCode(() -> DispatchPolicy.requireGateOfDeparture(1L, 1L, "Mộc Bài")).doesNotThrowAnyException();
-        assertThatThrownBy(() -> DispatchPolicy.requireGateOfDeparture(2L, 1L, "Mộc Bài")).hasMessageContaining("Mộc Bài");
-    }
-
-    @Test
     void newTripStartsWherePreviousTripEnded() {
         assertThatCode(() -> DispatchPolicy.requireStartsWherePreviousEnded("startLocationId", "Xe", 1L, 1L, "Hub A")).doesNotThrowAnyException();
         assertThatThrownBy(() -> DispatchPolicy.requireStartsWherePreviousEnded("startLocationId", "Xe", 1L, 2L, "Hub B"))

@@ -16,7 +16,7 @@ export function HandoverPapersPanel({ handover, receiving, onTrip }: { handover:
   const [file, setFile] = useState<File>()
   const [busy, setBusy] = useState(false)
   const handoverId = handover.id ?? 0
-  const showOriginals = receiving || handover.handoverType === 'DELIVERY' || handover.handoverType === 'AGENT'
+  const showOriginals = receiving || handover.handoverType === 'DELIVERY'
   // Giấy cần trả thu hẹp theo con đã quét
   const scanned = (handover.horses ?? []).filter(horse => horse.microchipMatched).length
   const { data: papers, updateData } = useLoad(

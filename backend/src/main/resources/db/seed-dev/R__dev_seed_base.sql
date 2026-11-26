@@ -306,8 +306,6 @@ ON CONFLICT (user_id) DO NOTHING;
 INSERT INTO party (party_type, display_name, phone, email, address, country_code, status)
 SELECT 'ORGANIZATION', v.display_name, v.phone, NULL, v.address, v.country_code, 'ACTIVE'
 FROM (VALUES
-          ('Đại lý vận tải Campuchia (mẫu)', '0855000001', 'Phnom Penh, Campuchia', 'KH'),
-          ('Đại lý vận tải Lào (mẫu)', '0856000001', 'Savannakhet, Lào', 'LA'),
           ('Phòng khám thú y ngựa (mẫu)', '0900000400', 'TP.HCM', 'VN'),
           ('Đội cứu hộ xe tải (mẫu)', '0900000500', 'TP.HCM', 'VN'),
           ('Công ty bảo hiểm (mẫu)', '0900000600', 'TP.HCM', 'VN'),
@@ -325,8 +323,6 @@ WHERE NOT EXISTS (SELECT 1 FROM party p WHERE p.display_name = v.display_name);
 INSERT INTO party_role (party_id, role_type, valid_from)
 SELECT p.id, v.role_type, DATE '2026-01-01'
 FROM (VALUES
-          ('Đại lý vận tải Campuchia (mẫu)', 'DEST_AGENT'),
-          ('Đại lý vận tải Lào (mẫu)', 'DEST_AGENT'),
           ('Phòng khám thú y ngựa (mẫu)', 'VET'),
           ('Đội cứu hộ xe tải (mẫu)', 'RESCUE'),
           ('Công ty bảo hiểm (mẫu)', 'INSURER'),
@@ -808,12 +804,6 @@ FROM document_type dt, country_rule cr
 WHERE dt.id = dr.document_type_id AND cr.id = dr.country_rule_id AND dt.code = 'IMPORT_PERMIT'
   AND cr.direction = 'IMPORT' AND cr.valid_from = DATE '2026-01-01';
 
-
--- Hợp nhất chủ thể nộp của các yêu cầu mẫu đã được nạp trước đây.
-UPDATE document_requirement dr SET submitter_type = 'COMPANY'
-FROM country_rule cr
-WHERE cr.id = dr.country_rule_id AND cr.valid_from = DATE '2026-01-01'
-  AND cr.country_code IN ('KH', 'LA') AND dr.submitter_type = 'AGENT';
 
 -- Giấy riêng (mẫu) theo nhóm hồ sơ tại ReferenceDataSeeder trên nhánh main.
 -- RegulationPolicy chọn giấy tại cửa khẩu thay dòng chung cùng loại.

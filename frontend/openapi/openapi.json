@@ -146,28 +146,6 @@
         },
         "type" : "object"
       },
-      "AgentLegRequestDto" : {
-        "properties" : {
-          "agentPartyId" : {
-            "format" : "int64",
-            "type" : "integer"
-          },
-          "gateLocationId" : {
-            "format" : "int64",
-            "type" : "integer"
-          },
-          "plannedEndAt" : {
-            "format" : "date-time",
-            "type" : "string"
-          },
-          "plannedStartAt" : {
-            "format" : "date-time",
-            "type" : "string"
-          }
-        },
-        "required" : [ "agentPartyId", "plannedEndAt", "plannedStartAt" ],
-        "type" : "object"
-      },
       "ApiResponseAuthResponse" : {
         "properties" : {
           "data" : {
@@ -508,20 +486,6 @@
         "properties" : {
           "data" : {
             "$ref" : "#/components/schemas/HealthLogResponseDto"
-          },
-          "message" : {
-            "type" : "string"
-          },
-          "status" : {
-            "type" : "string"
-          }
-        },
-        "type" : "object"
-      },
-      "ApiResponseHorseLegResponseDto" : {
-        "properties" : {
-          "data" : {
-            "$ref" : "#/components/schemas/HorseLegResponseDto"
           },
           "message" : {
             "type" : "string"
@@ -3016,7 +2980,7 @@
             "type" : "string"
           },
           "payerType" : {
-            "enum" : [ "COMPANY", "CUSTOMER", "CONSIGNEE", "AGENT" ],
+            "enum" : [ "COMPANY", "CUSTOMER", "CONSIGNEE" ],
             "type" : "string"
           },
           "recordedByName" : {
@@ -3250,10 +3214,6 @@
       },
       "CustodyRowResponseDto" : {
         "properties" : {
-          "agentLegId" : {
-            "format" : "int64",
-            "type" : "integer"
-          },
           "balanceContactAllowed" : {
             "type" : "boolean"
           },
@@ -4311,7 +4271,7 @@
             "type" : "boolean"
           },
           "submitterType" : {
-            "enum" : [ "CUSTOMER", "CONSIGNEE", "COMPANY", "AGENT" ],
+            "enum" : [ "CUSTOMER", "CONSIGNEE", "COMPANY" ],
             "type" : "string"
           }
         },
@@ -4350,7 +4310,7 @@
             "type" : "string"
           },
           "submitterType" : {
-            "enum" : [ "CUSTOMER", "CONSIGNEE", "COMPANY", "AGENT" ],
+            "enum" : [ "CUSTOMER", "CONSIGNEE", "COMPANY" ],
             "type" : "string"
           }
         },
@@ -4370,7 +4330,7 @@
             "type" : "boolean"
           },
           "submitterType" : {
-            "enum" : [ "CUSTOMER", "CONSIGNEE", "COMPANY", "AGENT" ],
+            "enum" : [ "CUSTOMER", "CONSIGNEE", "COMPANY" ],
             "type" : "string"
           }
         },
@@ -4631,7 +4591,7 @@
       "HandoverCreateRequestDto" : {
         "properties" : {
           "handoverType" : {
-            "enum" : [ "PICKUP", "HUB_IN", "HUB_OUT", "STAY_IN", "STAY_OUT", "AGENT", "DELIVERY", "RETURN", "SHIFT" ],
+            "enum" : [ "PICKUP", "HUB_IN", "HUB_OUT", "STAY_IN", "STAY_OUT", "DELIVERY", "RETURN", "SHIFT" ],
             "type" : "string"
           },
           "note" : {
@@ -4778,7 +4738,7 @@
             "type" : "string"
           },
           "handoverType" : {
-            "enum" : [ "PICKUP", "HUB_IN", "HUB_OUT", "STAY_IN", "STAY_OUT", "AGENT", "DELIVERY", "RETURN", "SHIFT" ],
+            "enum" : [ "PICKUP", "HUB_IN", "HUB_OUT", "STAY_IN", "STAY_OUT", "DELIVERY", "RETURN", "SHIFT" ],
             "type" : "string"
           },
           "horses" : {
@@ -5385,9 +5345,6 @@
       },
       "HorseLegResponseDto" : {
         "properties" : {
-          "agentName" : {
-            "type" : "string"
-          },
           "alightTripStopId" : {
             "format" : "int64",
             "type" : "integer"
@@ -5903,7 +5860,7 @@
       "IncidentReportRequestDto" : {
         "properties" : {
           "causeType" : {
-            "enum" : [ "COMPANY_FAULT", "HORSE_CONDITION", "CUSTOMER_DOCS", "AGENT_FAULT", "FORCE_MAJEURE", "RECIPIENT_ABSENT" ],
+            "enum" : [ "COMPANY_FAULT", "HORSE_CONDITION", "CUSTOMER_DOCS", "FORCE_MAJEURE", "RECIPIENT_ABSENT" ],
             "type" : "string"
           },
           "description" : {
@@ -5962,11 +5919,11 @@
             "type" : "string"
           },
           "causeType" : {
-            "enum" : [ "COMPANY_FAULT", "HORSE_CONDITION", "CUSTOMER_DOCS", "AGENT_FAULT", "FORCE_MAJEURE", "RECIPIENT_ABSENT" ],
+            "enum" : [ "COMPANY_FAULT", "HORSE_CONDITION", "CUSTOMER_DOCS", "FORCE_MAJEURE", "RECIPIENT_ABSENT" ],
             "type" : "string"
           },
           "confirmedCauseType" : {
-            "enum" : [ "COMPANY_FAULT", "HORSE_CONDITION", "CUSTOMER_DOCS", "AGENT_FAULT", "FORCE_MAJEURE", "RECIPIENT_ABSENT" ],
+            "enum" : [ "COMPANY_FAULT", "HORSE_CONDITION", "CUSTOMER_DOCS", "FORCE_MAJEURE", "RECIPIENT_ABSENT" ],
             "type" : "string"
           },
           "coordinatorStaffCode" : {
@@ -6266,7 +6223,7 @@
             "type" : "boolean"
           },
           "submitterType" : {
-            "enum" : [ "CUSTOMER", "CONSIGNEE", "COMPANY", "AGENT" ],
+            "enum" : [ "CUSTOMER", "CONSIGNEE", "COMPANY" ],
             "type" : "string"
           }
         },
@@ -6292,7 +6249,7 @@
             "type" : "string"
           },
           "handoverType" : {
-            "enum" : [ "PICKUP", "HUB_IN", "HUB_OUT", "STAY_IN", "STAY_OUT", "AGENT", "DELIVERY", "RETURN", "SHIFT" ],
+            "enum" : [ "PICKUP", "HUB_IN", "HUB_OUT", "STAY_IN", "STAY_OUT", "DELIVERY", "RETURN", "SHIFT" ],
             "type" : "string"
           },
           "id" : {
@@ -6364,9 +6321,6 @@
           },
           "actualStartAt" : {
             "format" : "date-time",
-            "type" : "string"
-          },
-          "agentName" : {
             "type" : "string"
           },
           "deliveryWindow" : {
@@ -6906,7 +6860,7 @@
       "PartyRoleCreateRequestDto" : {
         "properties" : {
           "roleType" : {
-            "enum" : [ "DEST_AGENT", "QUARANTINE_FARM", "STABLE", "VET", "RESCUE", "INSURER" ],
+            "enum" : [ "QUARANTINE_FARM", "STABLE", "VET", "RESCUE", "INSURER" ],
             "type" : "string"
           },
           "validFrom" : {
@@ -6924,7 +6878,7 @@
       "PartyRoleResponseDto" : {
         "properties" : {
           "roleType" : {
-            "enum" : [ "DEST_AGENT", "QUARANTINE_FARM", "STABLE", "VET", "RESCUE", "INSURER" ],
+            "enum" : [ "QUARANTINE_FARM", "STABLE", "VET", "RESCUE", "INSURER" ],
             "type" : "string"
           },
           "validFrom" : {
@@ -7342,7 +7296,7 @@
       "PlanApproveRequestDto" : {
         "properties" : {
           "confirmedCauseType" : {
-            "enum" : [ "COMPANY_FAULT", "HORSE_CONDITION", "CUSTOMER_DOCS", "AGENT_FAULT", "FORCE_MAJEURE", "RECIPIENT_ABSENT" ],
+            "enum" : [ "COMPANY_FAULT", "HORSE_CONDITION", "CUSTOMER_DOCS", "FORCE_MAJEURE", "RECIPIENT_ABSENT" ],
             "type" : "string"
           }
         },
@@ -8309,7 +8263,7 @@
             "type" : "string"
           },
           "payerType" : {
-            "enum" : [ "COMPANY", "CUSTOMER", "CONSIGNEE", "AGENT" ],
+            "enum" : [ "COMPANY", "CUSTOMER", "CONSIGNEE" ],
             "type" : "string"
           }
         },
@@ -8363,7 +8317,7 @@
       "ReportIncidentDto" : {
         "properties" : {
           "causeType" : {
-            "enum" : [ "COMPANY_FAULT", "HORSE_CONDITION", "CUSTOMER_DOCS", "AGENT_FAULT", "FORCE_MAJEURE", "RECIPIENT_ABSENT" ],
+            "enum" : [ "COMPANY_FAULT", "HORSE_CONDITION", "CUSTOMER_DOCS", "FORCE_MAJEURE", "RECIPIENT_ABSENT" ],
             "type" : "string"
           },
           "id" : {
@@ -10209,102 +10163,6 @@
         "tags" : [ "system-log-controller" ]
       }
     },
-    "/agent-legs/{id}/cancel" : {
-      "post" : {
-        "operationId" : "cancel_2",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseVoid"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "agent-leg-controller" ]
-      }
-    },
-    "/agent-legs/{id}/complete" : {
-      "post" : {
-        "operationId" : "complete_2",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "multipart/form-data" : {
-              "schema" : {
-                "properties" : {
-                  "proof" : {
-                    "format" : "binary",
-                    "type" : "string"
-                  }
-                },
-                "type" : "object"
-              }
-            }
-          }
-        },
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseHorseLegResponseDto"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "agent-leg-controller" ]
-      }
-    },
-    "/agent-legs/{id}/start" : {
-      "post" : {
-        "operationId" : "start_1",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseHorseLegResponseDto"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "agent-leg-controller" ]
-      }
-    },
     "/auth/change-password" : {
       "post" : {
         "operationId" : "changePassword",
@@ -10645,43 +10503,6 @@
           }
         },
         "tags" : [ "price-list-controller" ]
-      }
-    },
-    "/booking-horses/{id}/agent-legs" : {
-      "post" : {
-        "operationId" : "create_4",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/AgentLegRequestDto"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseHorseLegResponseDto"
-                }
-              }
-            },
-            "description" : "OK"
-          }
-        },
-        "tags" : [ "agent-leg-controller" ]
       }
     },
     "/booking-horses/{id}/complete-pickup-add-on" : {
@@ -17613,7 +17434,7 @@
           "name" : "roleType",
           "required" : true,
           "schema" : {
-            "enum" : [ "DEST_AGENT", "QUARANTINE_FARM", "STABLE", "VET", "RESCUE", "INSURER" ],
+            "enum" : [ "QUARANTINE_FARM", "STABLE", "VET", "RESCUE", "INSURER" ],
             "type" : "string"
           }
         } ],

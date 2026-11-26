@@ -72,12 +72,6 @@ public class PickupMissServiceImpl implements PickupMissService {
                 .map(leg -> leg.getVehicleTrip()).filter(java.util.Objects::nonNull).findFirst().orElse(null);
         journey.stream().filter(leg -> leg.getStatus() == HorseLegStatus.PLANNED)
                 .forEach(leg -> leg.setStatus(HorseLegStatus.CANCELLED));
-        // Đơn nhập hụt ở cửa khẩu: chặng đại lý đang chở kết thúc, ngựa ở lại với đại lý
-        journey.stream().filter(leg -> leg.getStatus() == HorseLegStatus.IN_PROGRESS
-                && leg.getAgentParty() != null).forEach(leg -> {
-                    leg.setStatus(HorseLegStatus.CANCELLED);
-                    leg.setActualEndAt(at);
-                });
         stays.dropAppointments(horseId);
         horse.setPickupMissedAt(at);
         horse.setPickupMissReason(reason);

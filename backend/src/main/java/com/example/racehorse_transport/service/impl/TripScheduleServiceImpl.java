@@ -20,6 +20,7 @@ import com.example.racehorse_transport.repository.RouteStopRepository;
 import com.example.racehorse_transport.service.PricingRouteService;
 import com.example.racehorse_transport.service.TripScheduleDataService;
 import com.example.racehorse_transport.service.TripScheduleDataService.PlaceInput;
+import com.example.racehorse_transport.service.TripScheduleDataService.HorseInput;
 import com.example.racehorse_transport.service.TripScheduleDataService.TripInput;
 import com.example.racehorse_transport.service.TripScheduleService;
 import com.example.racehorse_transport.service.VehicleService;
@@ -29,10 +30,13 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -52,7 +56,7 @@ public class TripScheduleServiceImpl implements TripScheduleService {
 
     @Override
     public PlannedTripResponseDto plan(PlannedTripRequestDto request) {
-        return configuredTransferPlan(request).orElseGet(() -> compute(request, data.load(request)));
+        return configuredTransferPlan(request).orElseGet(() -> compute(request, data.load(request)).plan());
     }
 
     @Override
@@ -65,11 +69,12 @@ public class TripScheduleServiceImpl implements TripScheduleService {
             return data.save(request, List.of(), configured.get(), username);
         }
         TripInput input = data.load(request);
-        PlannedTripResponseDto plan = compute(request, input);
+        var calculated = compute(request, input);
+        PlannedTripResponseDto plan = calculated.plan();
         if (plan.blocked()) {
             throw new DispatchRuleException("places", message(plan.warnings(), input), true);
         }
-        return data.save(request, input.horses(), plan, username);
+        return data.save(request, calculated.input().horses(), plan, username);
     }
 
     private Optional<PlannedTripResponseDto> configuredTransferPlan(PlannedTripRequestDto request) {
@@ -115,15 +120,41 @@ public class TripScheduleServiceImpl implements TripScheduleService {
         return freeFrom == null ? clock.instant() : notPast(freeFrom);
     }
 
-    private PlannedTripResponseDto compute(PlannedTripRequestDto request, TripInput input) {
+    private record Calculation(TripInput input, PlannedTripResponseDto plan) {}
+
+    private record RestCandidate(PlaceInput place, List<RoadRouteDto.Leg> legs) {
+        double distance() {
+            return legs.stream().mapToDouble(RoadRouteDto.Leg::km).sum();
+        }
+    }
+
+    private record RestNeed(HorseInput horse, TripSchedulePolicy.RestGap gap) {}
+
+    private Calculation compute(PlannedTripRequestDto request, TripInput input) {
         boolean direct = request.tripType() == VehicleTripType.DIRECT;
-        List<GeoPointDto> points = input.places().stream().map(PlaceInput::point).toList();
         Instant start = request.tripType() == VehicleTripType.TRANSFER ? transferStart(request) : request.startAt();
         Instant around = start != null ? start
                 : input.readyAt() != null ? notPast(input.readyAt())
                 : input.pickupDate() != null ? input.pickupDate().atTime(input.pickupWindow().startHour(), 0).atZone(BUSINESS_ZONE).toInstant()
                 : clock.instant();
-        List<RoadRouteDto.Leg> legs = roads.legs(points, LocalDateTime.ofInstant(around, BUSINESS_ZONE), input.weightTons(), input.topSpeedKmh());
+        LocalDateTime roadTime = LocalDateTime.ofInstant(around, BUSINESS_ZONE);
+        List<RoadRouteDto.Leg> legs = route(input.places(), input, roadTime);
+        if (request.tripType() == VehicleTripType.PICKUP || request.tripType() == VehicleTripType.DELIVERY || direct) {
+            RestNeed need = restNeed(input, legs, around);
+            if (need != null) {
+                var stations = data.activeRestStops();
+                do {
+                    int at = need.gap().toStop();
+                    var selected = chooseRest(input, legs, roadTime, stations, need);
+                    input = input.insertRest(at, selected.place());
+                    var revised = new ArrayList<>(legs);
+                    revised.remove(at - 1);
+                    revised.addAll(at - 1, selected.legs());
+                    legs = revised;
+                    need = restNeed(input, legs, around);
+                } while (need != null);
+            }
+        }
         List<Long> drives = legs.stream().map(RoadRouteDto.Leg::driveSeconds).toList();
         List<Integer> horses = input.horsesAtStops();
 
@@ -132,11 +163,11 @@ public class TripScheduleServiceImpl implements TripScheduleService {
                 case PICKUP, DIRECT -> TripSchedulePolicy.pickupDeparture(requirePickupDate(input), input.pickupWindow(), BUSINESS_ZONE, drives, input.rules());
                 case DELIVERY -> TripSchedulePolicy.deliveryDeparture(
                         notPast(requireReady(input)).plus(TripSchedulePolicy.dwell(horses.getFirst(), input.rules())),
-                        input.deliveryWindow(), BUSINESS_ZONE, horses, drives, input.rules());
+                        input.deliveryWindow(), BUSINESS_ZONE, horses, drives, restStops(input), input.rules());
                 default -> throw new DispatchRuleException("startAt", "Vui lòng chọn giờ xuất phát.");
             };
         }
-        List<StopTime> times = TripSchedulePolicy.schedule(start, horses, drives, input.rules());
+        List<StopTime> times = TripSchedulePolicy.schedule(start, horses, drives, restStops(input), input.rules());
         Set<Warning> warnings = warnings(request.tripType(), input, drives, times, direct);
 
         List<PlannedStopDto> stops = new ArrayList<>();
@@ -149,18 +180,54 @@ public class TripScheduleServiceImpl implements TripScheduleService {
                     leg == null ? 0 : Math.round(leg.driveSeconds() / 60.0), leg == null ? 0 : Math.round(leg.km() * 10) / 10.0,
                     time.restMinutes(), leg == null ? List.of() : thin(leg.shape())));
         }
-        return new PlannedTripResponseDto(times.getFirst().arrival(), times.getLast().departure(),
+        return new Calculation(input, new PlannedTripResponseDto(times.getFirst().arrival(), times.getLast().departure(),
                 Math.round(drives.stream().mapToLong(Long::longValue).sum() / 60.0),
                 Math.round(legs.stream().mapToDouble(RoadRouteDto.Leg::km).sum() * 10) / 10.0,
-                warnings.stream().anyMatch(Warning::blocking), List.copyOf(warnings), stops);
+                warnings.stream().anyMatch(Warning::blocking), List.copyOf(warnings), stops));
+    }
+
+    private List<RoadRouteDto.Leg> route(List<PlaceInput> places, TripInput input, LocalDateTime around) {
+        return roads.legs(places.stream().map(PlaceInput::point).toList(), around, input.weightTons(), input.topSpeedKmh());
+    }
+
+    private static Set<Integer> restStops(TripInput input) {
+        return IntStream.range(0, input.places().size()).filter(index -> input.places().get(index).stopType() == TripStopType.REST)
+                .boxed().collect(Collectors.toSet());
+    }
+
+    private static RestNeed restNeed(TripInput input, List<RoadRouteDto.Leg> legs, Instant around) {
+        if (input.rules().horseRestIntervalHours() <= 0) return null;
+        var stops = restStops(input);
+        var times = TripSchedulePolicy.schedule(around, input.horsesAtStops(),
+                legs.stream().map(RoadRouteDto.Leg::driveSeconds).toList(), stops, input.rules());
+        return input.horses().stream().map(horse -> new RestNeed(horse,
+                        TripSchedulePolicy.firstRestGap(horse.board(), horse.alight(), times, stops, input.rules())))
+                .filter(need -> need.gap() != null)
+                .min(Comparator.comparingInt((RestNeed need) -> need.gap().toStop())
+                        .thenComparingLong(need -> need.gap().secondsAvailable())).orElse(null);
+    }
+
+    private RestCandidate chooseRest(TripInput input, List<RoadRouteDto.Leg> legs, LocalDateTime roadTime,
+                                     List<PlaceInput> stations, RestNeed need) {
+        var from = input.places().get(need.gap().fromStop());
+        var to = input.places().get(need.gap().toStop());
+        var used = input.places().stream().map(PlaceInput::locationId).collect(Collectors.toSet());
+        long original = legs.get(need.gap().fromStop()).driveSeconds();
+        return stations.stream().filter(station -> !used.contains(station.locationId()))
+                .map(station -> new RestCandidate(station, route(List.of(from, station, to), input, roadTime)))
+                .filter(candidate -> candidate.legs().getFirst().driveSeconds() <= need.gap().secondsAvailable()
+                        && candidate.legs().getLast().driveSeconds() < original)
+                .min(Comparator.comparingDouble(RestCandidate::distance))
+                .orElseThrow(() -> new DispatchRuleException("places", "Không có trạm nghỉ phù hợp cho "
+                        + need.horse().horseName() + " trên đoạn " + from.name() + " → " + to.name()
+                        + " vượt " + input.rules().horseRestIntervalHours() + " giờ liên tục.", true));
     }
 
     private static Set<Warning> warnings(VehicleTripType type, TripInput input, List<Long> drives, List<StopTime> times, boolean direct) {
         Set<Warning> result = EnumSet.noneOf(Warning.class);
         long limit = TripSchedulePolicy.rideLimitSeconds(direct, input.rules());
-        if (input.horses().stream().anyMatch(h -> (input.multiPlaceDelivery()
-                ? Duration.between(times.get(h.board()).departure(), times.get(h.alight()).arrival()).getSeconds()
-                : TripSchedulePolicy.rideSeconds(drives, h.board(), h.alight())) > limit)) {
+        if (input.horses().stream().anyMatch(h ->
+                Duration.between(times.get(h.board()).departure(), times.get(h.alight()).arrival()).getSeconds() > limit)) {
             result.add(Warning.RIDE_TOO_LONG);
         }
         if (type == VehicleTripType.PICKUP && input.hubDeadline() != null && times.getLast().arrival().isAfter(input.hubDeadline())) {

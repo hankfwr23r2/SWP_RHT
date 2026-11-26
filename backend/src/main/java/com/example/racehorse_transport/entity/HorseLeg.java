@@ -21,7 +21,7 @@ import lombok.Setter;
 
 import java.time.Instant;
 
-// Một chặng di chuyển của một con ngựa. Chặng do xe công ty chở (vehicleTrip) hoặc do đại lý đảm nhận (agentParty).
+// One horse movement carried by a company vehicle trip.
 @Getter
 @Setter
 @NoArgsConstructor
@@ -62,16 +62,10 @@ public class HorseLeg {
     @JoinColumn(name = "to_booking_address_id")
     private BookingAddress toBookingAddress;
 
-    // Xe công ty chở hoặc đại lý chở, đúng một (CHECK ở DB)
-    @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "vehicle_trip_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "vehicle_trip_id", nullable = false)
     private VehicleTrip vehicleTrip;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "agent_party_id")
-    private Party agentParty;
-
-    // Lên và xuống xe ở điểm dừng nào. Chặng của đại lý thì để trống
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
     @JoinColumn(name = "board_trip_stop_id")
     private TripStop boardTripStop;

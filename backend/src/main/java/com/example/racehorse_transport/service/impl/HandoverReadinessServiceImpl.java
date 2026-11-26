@@ -4,7 +4,6 @@ import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.BookingHorse;
 import com.example.racehorse_transport.entity.enums.HorseInsuranceStatus;
 import com.example.racehorse_transport.exception.DispatchRuleException;
-import com.example.racehorse_transport.policy.TripExecutionPolicy;
 import com.example.racehorse_transport.repository.HorseInsuranceRepository;
 import com.example.racehorse_transport.service.DocumentCompletenessService;
 import com.example.racehorse_transport.service.HandoverReadinessService;
@@ -45,11 +44,6 @@ public class HandoverReadinessServiceImpl implements HandoverReadinessService {
         if (!documents.isComplete(booking.getId())) {
             throw new DispatchRuleException("documents", "Đơn " + booking.getCode() + " còn thiếu giấy tờ bắt buộc.", true);
         }
-    }
-
-    @Override
-    public void requireDocumentsAtBorder(Booking booking, boolean fromAgent) {
-        TripExecutionPolicy.requireBorderDocuments(documents.isComplete(booking.getId()), booking.getCode(), fromAgent);
     }
 
     private boolean isInsuranceConfirmed(BookingHorse horse) {

@@ -8,7 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
-// partyId: đại lý ở cửa khẩu (AGENT); bỏ trống thì hệ thống tự chọn khi chỉ có một đại lý
+// partyId: stable operator for STAY_IN or STAY_OUT
 public record HandoverCreateRequestDto(@NotNull HandoverType handoverType, @Size(max = 1000) String note, @Positive Long partyId) {
 
     // Trạng thái và giờ giao do service đặt

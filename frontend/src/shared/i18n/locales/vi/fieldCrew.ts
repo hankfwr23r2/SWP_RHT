@@ -82,7 +82,6 @@ export const fieldCrew = {
         "RETURNED": "Đã trả bản gốc"
       },
       "stall": "Khoang số {{n}}",
-      "agentParty": "Đại lý: {{name}}",
       "unpaidReturn": {
         "action": "Trả ngựa do quá hạn thanh toán",
         "title": "Trả lại ngựa đã nhận?",
@@ -200,7 +199,6 @@ export const fieldCrew = {
         "DELIVERY": "Giao ngựa",
         "HUB_IN": "Giao vào hub",
         "RETURN": "Trả ngựa cho người gửi",
-        "AGENT": "Bàn giao với đại lý",
         "SHIFT": "Nhận bàn giao ca",
         "STAY_IN": "Gửi chuồng qua đêm",
         "STAY_OUT": "Nhận lại từ chuồng",

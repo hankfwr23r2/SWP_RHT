@@ -13,7 +13,6 @@ import { Input } from '@shared/ui/Input'
 import { Modal } from '@shared/ui/Modal'
 import { PageHeader } from '@shared/ui/PageHeader'
 import { Skeleton } from '@shared/ui/Skeleton'
-import { AgentLegModal } from './AgentLegModal'
 import { GroupingPanel } from './GroupingPanel'
 import { HubAppointmentModal } from './HubAppointmentModal'
 import { CreateTripModal } from './CreateTripModal'
@@ -23,13 +22,6 @@ import { WeekBoard } from './WeekBoard'
 import { addDays, missingLegs, mondayOf, nextWaitingWeek, weekRange } from './dispatchModel'
 import b from './Board.module.css'
 import s from './Dispatch.module.css'
-
-// Lấy lại đơn và con ngựa từ dữ liệu mới nhất sau mỗi lần tải lại
-const agentTarget = (bookings: DispatchBooking[], key: { bookingId: number; bookingHorseId: number }): { booking: DispatchBooking; horse: DispatchHorse } | undefined => {
-  const booking = bookings.find(b => b.id === key.bookingId)
-  const horse = booking?.horses?.find(h => h.bookingHorseId === key.bookingHorseId)
-  return booking && horse ? { booking, horse } : undefined
-}
 
 const LOOKAHEAD_DAYS = 60
 const today = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' })
@@ -44,7 +36,6 @@ export default function DispatchPage() {
   const [creating, setCreating] = useState<boolean | DispatchVehicle>(false)
   const [openTripId, setOpenTripId] = useState<number>()
   const [journeyOf, setJourneyOf] = useState<DispatchBooking>()
-  const [agentOf, setAgentOf] = useState<{ bookingId: number; bookingHorseId: number }>()
   const [hubOf, setHubOf] = useState<{ booking: DispatchBooking; horse: DispatchHorse }>()
   const range = weekRange(weekStart)
   const { data, loaded, error, reload } = useLoad(async () => {
@@ -63,7 +54,6 @@ export default function DispatchPage() {
     return (
       <div className={b.layout}>
         <WaitingList bookings={data.bookings} next={data.next} onWeek={setWeekStart} onJourney={setJourneyOf}
-          onAgent={(booking, horse) => setAgentOf({ bookingId: booking.id ?? 0, bookingHorseId: horse.bookingHorseId ?? 0 })}
           onHub={(booking, horse) => setHubOf({ booking, horse })} />
         <WeekBoard weekStart={weekStart} vehicles={data.vehicles}
           trips={onlyMine ? data.trips.filter(trip => trip.coordinatorStaffCode != null && trip.coordinatorStaffCode === session?.staffCode) : data.trips}
@@ -108,9 +98,6 @@ export default function DispatchPage() {
       )}
       {openTripId !== undefined && data && (
         <TripDetailModal tripId={openTripId} bookings={data.bookings} onClose={() => setOpenTripId(undefined)} onChanged={() => void reload()} />
-      )}
-      {agentOf && data && agentTarget(data.bookings, agentOf) && (
-        <AgentLegModal {...agentTarget(data.bookings, agentOf)!} onClose={() => setAgentOf(undefined)} onChanged={() => void reload()} />
       )}
       {hubOf && <HubAppointmentModal {...hubOf} onClose={() => setHubOf(undefined)} onDone={() => setHubOf(undefined)} />}
       {journeyOf && (

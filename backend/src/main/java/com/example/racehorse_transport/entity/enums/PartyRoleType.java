@@ -2,7 +2,6 @@ package com.example.racehorse_transport.entity.enums;
 
 // Giá trị khớp CHECK trong migration.
 public enum PartyRoleType {
-    DEST_AGENT,
     QUARANTINE_FARM,
     STABLE,
     VET,

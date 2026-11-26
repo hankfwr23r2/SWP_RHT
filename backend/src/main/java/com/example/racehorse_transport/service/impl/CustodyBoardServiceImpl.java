@@ -125,7 +125,6 @@ public class CustodyBoardServiceImpl implements CustodyBoardService {
                 stay != null ? stay.getLocation().getName() : stop != null ? nameOf(stop.getLocation(), stop.getBookingAddress()) : null,
                 stay != null ? point(stay.getLocation(), null) : stop != null ? point(stop.getLocation(), stop.getBookingAddress()) : null,
                 lastCheck, log == null ? null : log.getHealthStatus(), next, holder == CustodyHolder.COMPANY && CareCheckPolicy.overdue(next, now),
-                moving != null && moving.getAgentParty() != null && moving.getLegType() == HorseLegType.DELIVERY ? moving.getId() : null,
                 waitingAtPickup, balanceContact, stay == null ? null : stay.getBalanceHoldAt(),
                 canResolveUnclaimed(stay, now) ? stay.getId() : null,
                 stay != null && HealthLogPolicy.canRecordStay(stay.getLocation().getLocationType(), stay.getStayType(), stay.getOperatorParty() != null) ? stay.getId() : null,

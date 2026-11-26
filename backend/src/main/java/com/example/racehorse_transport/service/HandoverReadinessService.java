@@ -10,5 +10,4 @@ public interface HandoverReadinessService {
 
     void requireDocumentsForPickup(Booking booking);
 
-    void requireDocumentsAtBorder(Booking booking, boolean fromAgent);
 }

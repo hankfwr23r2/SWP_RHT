@@ -32,7 +32,6 @@ class CostPayerPolicyTest {
     @Test
     void payerFollowsTheCauseForAllSixCauses() {
         assertThat(CostPayerPolicy.payerFor(IncidentCauseType.COMPANY_FAULT)).isEqualTo(CostPayerType.COMPANY);
-        assertThat(CostPayerPolicy.payerFor(IncidentCauseType.AGENT_FAULT)).isEqualTo(CostPayerType.COMPANY);
         assertThat(CostPayerPolicy.payerFor(IncidentCauseType.FORCE_MAJEURE)).isEqualTo(CostPayerType.COMPANY);
         assertThat(CostPayerPolicy.payerFor(IncidentCauseType.HORSE_CONDITION)).isEqualTo(CostPayerType.CUSTOMER);
         assertThat(CostPayerPolicy.payerFor(IncidentCauseType.CUSTOMER_DOCS)).isEqualTo(CostPayerType.CUSTOMER);

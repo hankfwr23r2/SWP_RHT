@@ -31,8 +31,6 @@ export const staffDispatch = {
     "overdue": "Check overdue",
     "unknownPlace": "No position yet",
     "heldBy": "Held by {{name}}",
-    "agentDeliveredMessage": "Record that {{agent}} delivered {{horse}}. The order becomes Delivered once every horse has arrived.",
-    "agentDelivered": "Agent delivery recorded",
     "heldByPartner": "Held by partner {{name}}",
     "since": "since {{at}}",
     "lastCheck": "Checked at {{at}}",
@@ -98,6 +96,7 @@ export const staffDispatch = {
       "noDriver": "No driver"
     },
     "plan": {
+      restStation: "Rest station · {{name}}",
       "preview": "See times and map",
       "failed": "Times could not be calculated",
       "manual": "Enter times by hand",
@@ -220,31 +219,6 @@ export const staffDispatch = {
       "late": "The appointment must be at or before the hub check-in deadline.",
       "appoint": "Book",
       "done": "Hub drop-off booked"
-    },
-    "agent": {
-      "col": "Agent",
-      "open": "Agent leg",
-      "title": "Agent leg · {{horse}} · {{code}}",
-      "exportHint": "Export: plan the vehicle leg to the border first. The agent leg runs from the border to the delivery address and starts when the crew hands over at the border.",
-      "importHint": "Import: plan the agent leg before any vehicle leg. The agent brings the horse from the shipper to the border; the leg ends when the crew receives the horse there.",
-      "legs": "Agent legs of this horse",
-      "agent": "Agent",
-      "gate": "Handover border gate",
-      "plannedStart": "Planned start",
-      "plannedEnd": "Planned end",
-      "create": "Add agent leg",
-      "created": "Agent leg added",
-      "start": "Agent has the horse",
-      "started": "Agent pickup recorded",
-      "complete": "Agent delivered",
-      "completed": "Agent delivery recorded",
-      "cancel": "Remove",
-      "cancelled": "Agent leg removed",
-      "status": {
-        "PLANNED": "Not started",
-        "IN_PROGRESS": "With the agent",
-        "COMPLETED": "Done"
-      }
     },
     "bookings": {
       "emptyTitle": "No bookings to dispatch this week",

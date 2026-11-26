@@ -12,14 +12,13 @@ import s from './Board.module.css'
 interface Props {
   bookings: DispatchBooking[]
   onJourney: (booking: DispatchBooking) => void
-  onAgent: (booking: DispatchBooking, horse: DispatchHorse) => void
   onHub: (booking: DispatchBooking, horse: DispatchHorse) => void
   // Tuần này hết đơn chờ: tuần gần nhất còn đơn, để mở luôn
   next?: { weekStart: string; count: number }
   onWeek: (weekStart: string) => void
 }
 
-export function WaitingList({ bookings, onJourney, onAgent, onHub, next, onWeek }: Props) {
+export function WaitingList({ bookings, onJourney, onHub, next, onWeek }: Props) {
   const { t } = useTranslation()
   const [all, setAll] = useState(false)
   const waiting = bookings.filter(booking => missingLegs(booking).length > 0)
@@ -53,8 +52,6 @@ export function WaitingList({ bookings, onJourney, onAgent, onHub, next, onWeek 
               {(booking.horses ?? []).filter(horse => all || horse.missingLegs?.length).map(horse => (
                 <li key={horse.bookingHorseId}>
                   <span><i className="fa-solid fa-horse-head" aria-hidden="true" /> {horse.horseName}{horse.deliveryAddress?.addressLine && ` · ${horse.deliveryAddress.addressLine}`}{horse.seats === 2 && ` · ${t('dispatch.stall.wide')}`}</span>
-                  {(booking.bookingType === 'EXPORT' || booking.bookingType === 'IMPORT')
-                    && <Button size="sm" variant="ghost" onClick={() => onAgent(booking, horse)}>{t('dispatch.agent.open')}</Button>}
                   {booking.pickupMethod === 'SELF' && booking.departureId
                     && <Button size="sm" variant="ghost" onClick={() => onHub(booking, horse)}>{t('dispatch.hub.open')}</Button>}
                 </li>
