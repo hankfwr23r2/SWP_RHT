@@ -69,17 +69,23 @@ test('tài xế chụp ảnh tại hub và ghi tình trạng xe trước khi k�
   expect(report).toEqual({ endVehicleCondition: 'NEEDS_MAINTENANCE', endVehicleNote: 'Phanh có tiếng kêu' })
 })
 
-test('hộ tống xuất phát, nhận ngựa có quét chip rồi rời điểm đón', async ({ page }) => {
+test('tài xế tới điểm đón và chờ hộ tống quét chip, khám và hoàn tất nhận ngựa', async ({ page, context }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.addInitScript(() => sessionStorage.setItem('SWP_SESSION_backoffice', JSON.stringify({ role: 'escort', name: 'Hộ tống Một', username: 'escort@example.com' })))
+  const driverPage = await context.newPage()
+  await driverPage.addInitScript(() => sessionStorage.setItem('SWP_SESSION_backoffice', JSON.stringify({ role: 'driver', name: 'Tài xế Một', username: 'driver@example.com' })))
   const run = newRun()
   const stop = (id: number) => run.trip.stops.find(s => s.id === id)!
   const papers = [{ documentId: 900, documentTypeName: 'Hộ chiếu ngựa', ownerLabel: 'Sao Mai', bookingCode: 'BK-AAAA0001', direction: null as string | null }]
   const sent: Record<string, unknown> = {}
-  await page.route('**/api/v1/**', async route => {
+  await context.route('**/api/v1/**', async route => {
     const request = route.request()
     const path = new URL(request.url()).pathname.replace('/api/v1', '')
     if (path === '/crew/vehicle-trips/9') return ok(route, run)
+    if (path === '/crew/vehicle-trips/9/departure-readiness') {
+      const current = run.trip.stops.find(stop => stop.actualArrivalAt && !stop.actualDepartureAt)
+      return ok(route, { stopId: current?.id, waitingForEscort: current?.id === 2 && run.horses[0].leg.status === 'PLANNED' })
+    }
     if (path === '/vehicle-trips/9/start') { run.trip.status = 'IN_PROGRESS'; return ok(route, run) }
     const arrive = path.match(/^\/trip-stops\/(\d+)\/arrive$/)
     if (arrive) { stop(Number(arrive[1])).actualArrivalAt = '2031-03-05T02:00:00Z'; return ok(route, run) }
@@ -112,19 +118,25 @@ test('hộ tống xuất phát, nhận ngựa có quét chip rồi rời điểm
     }
     return ok(route, [])
   })
-  await page.goto('/backoffice/my-trips/9')
-
-  await expect(page.getByRole('heading', { level: 1, name: 'VT-AAAA0009 · Đón' })).toBeVisible({ timeout: 15_000 })
-  await page.getByRole('button', { name: 'Xuất phát' }).click()
-  const stops = page.getByRole('list', { name: 'Điểm dừng' }).getByRole('listitem').filter({ has: page.locator('h2') })
-  const first = stops.nth(0)
-  const pickup = stops.nth(1)
+  await driverPage.goto('/backoffice/my-trips/9')
+  await expect(driverPage.getByRole('heading', { level: 1, name: 'VT-AAAA0009 · Đón' })).toBeVisible({ timeout: 15_000 })
+  await driverPage.getByRole('button', { name: 'Xuất phát' }).click()
+  const stops = (target: typeof page) => target.getByRole('list', { name: 'Điểm dừng' }).getByRole('listitem').filter({ has: target.locator('h2') })
+  const first = stops(driverPage).nth(0)
+  const driverPickup = stops(driverPage).nth(1)
 
   await first.getByRole('button', { name: 'Tới nơi' }).click()
   await first.getByRole('button', { name: 'Rời đi' }).click()
   await expect(first).toContainText('Đã rời')
 
-  await pickup.getByRole('button', { name: 'Tới nơi' }).click()
+  await driverPickup.getByRole('button', { name: 'Tới nơi' }).click()
+  const leave = driverPickup.getByRole('button', { name: 'Rời đi' })
+  await expect(driverPickup).toContainText('Chờ hộ tống hoàn tất')
+  await expect(leave).toBeDisabled()
+  await expect(driverPickup.getByRole('button', { name: 'Nhận ngựa' })).toHaveCount(0)
+
+  await page.goto('/backoffice/my-trips/9')
+  const pickup = stops(page).nth(1)
   await pickup.getByRole('button', { name: 'Nhận ngựa' }).click()
   await expect(pickup).toContainText('Chưa quét')
   // Đang giao nhận dở thì chưa có nút rời đi
@@ -158,8 +170,12 @@ test('hộ tống xuất phát, nhận ngựa có quét chip rồi rời điểm
   expect(sent.record).toBe(true)
   await pickup.getByRole('button', { name: 'Hoàn tất giao nhận' }).click()
 
-  await pickup.getByRole('button', { name: 'Rời đi' }).click()
-  await expect(pickup).toContainText('Đã rời')
+  await expect(pickup.getByRole('button', { name: 'Hoàn tất giao nhận' })).toHaveCount(0)
+  await driverPage.bringToFront()
+  await driverPage.evaluate(() => window.dispatchEvent(new Event('focus')))
+  await expect(leave).toBeEnabled()
+  await leave.click()
+  await expect(driverPickup).toContainText('Đã rời')
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0)
 })
 
@@ -304,7 +320,8 @@ test('quá hạn số dư thì hộ tống trả ngựa cho người gửi, còn
 
   const pickup = page.getByRole('list', { name: 'Điểm dừng' }).getByRole('listitem').filter({ has: page.locator('h2') }).nth(1)
   // Máy chủ chưa cho thì không có nút
-  await expect(pickup).toContainText('Rời đi', { timeout: 15_000 })
+  await expect(pickup).toContainText('Đang ở đây', { timeout: 15_000 })
+  await expect(pickup.getByRole('button', { name: 'Rời đi' })).toHaveCount(0)
   await expect(pickup.getByRole('button', { name: 'Trả ngựa do quá hạn thanh toán' })).toHaveCount(0)
   allowed = [2]
   await page.reload()
@@ -323,9 +340,11 @@ test('quá hạn số dư thì hộ tống trả ngựa cho người gửi, còn
   expect(sent).toEqual([{ handoverType: 'RETURN' }, { handoverType: 'RETURN' }])
 })
 
-test('ở trạm nghỉ hộ tống ghi ăn uống từng con, rời sớm thì gửi kèm lý do', async ({ page }) => {
+test('hộ tống ghi ăn uống ở trạm, tài xế gửi lý do khi rời sớm', async ({ page, context }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.addInitScript(() => sessionStorage.setItem('SWP_SESSION_backoffice', JSON.stringify({ role: 'escort', name: 'Hộ tống Một', username: 'escort@example.com' })))
+  const driverPage = await context.newPage()
+  await driverPage.addInitScript(() => sessionStorage.setItem('SWP_SESSION_backoffice', JSON.stringify({ role: 'driver', name: 'Tài xế Một', username: 'driver@example.com' })))
   const run = {
     trip: {
       id: 9, code: 'VT-AAAA0009', tripType: 'DIRECT', status: 'IN_PROGRESS', licensePlate: '51C-12345', startLocationName: 'Hub HCM', endLocationName: 'Hub HCM',
@@ -340,10 +359,11 @@ test('ở trạm nghỉ hộ tống ghi ăn uống từng con, rời sớm thì 
   }
   const logs: Record<string, unknown>[] = []
   const sent: Record<string, unknown> = {}
-  await page.route('**/api/v1/**', async route => {
+  await context.route('**/api/v1/**', async route => {
     const request = route.request()
     const path = new URL(request.url()).pathname.replace('/api/v1', '')
     if (path === '/crew/vehicle-trips/9') return ok(route, run)
+    if (path === '/crew/vehicle-trips/9/departure-readiness') return ok(route, { stopId: 3, waitingForEscort: logs.length === 0 })
     if (path === '/booking-horses/50/health-logs') return ok(route, logs)
     if (path === '/health-logs') {
       sent.log = request.postDataJSON()
@@ -371,15 +391,19 @@ test('ở trạm nghỉ hộ tống ghi ăn uống từng con, rời sớm thì 
   await expect(health).toContainText('Đã ghi')
   expect(sent.log).toEqual({ bookingHorseId: 50, tripStopId: 3, healthStatus: 'NORMAL', waterIntake: 'NORMAL', feedIntake: 'REDUCED' })
 
-  await rest.getByLabel('Lý do rời sớm (nếu chưa nghỉ đủ)').fill('Kịp giờ giao theo hẹn')
-  await rest.getByRole('button', { name: 'Rời đi' }).click()
-  await expect(rest).toContainText('Đã rời')
+  await expect(rest.getByRole('button', { name: 'Rời đi' })).toHaveCount(0)
+  await driverPage.goto('/backoffice/my-trips/9')
+  const driverRest = driverPage.getByRole('list', { name: 'Điểm dừng' }).getByRole('listitem').filter({ hasText: 'Trạm Phan Thiết' }).first()
+  await expect(driverRest.getByRole('region', { name: 'Ghi sức khỏe tại điểm này' })).toHaveCount(0)
+  await driverRest.getByLabel('Lý do rời sớm (nếu chưa nghỉ đủ)').fill('Kịp giờ giao theo hẹn')
+  await driverRest.getByRole('button', { name: 'Rời đi' }).click()
+  await expect(driverRest).toContainText('Đã rời')
   expect(sent.depart).toEqual({ earlyReason: 'Kịp giờ giao theo hẹn' })
 })
 
-test('tài xế bắt đầu chờ người nhận rồi ghi nhận không gặp, có hộp xác nhận', async ({ page }) => {
+test('hộ tống bắt đầu chờ người nhận rồi ghi nhận không gặp, có hộp xác nhận', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.addInitScript(() => sessionStorage.setItem('SWP_SESSION_backoffice', JSON.stringify({ role: 'driver', name: 'Tài xế Một', username: 'driver@example.com' })))
+  await page.addInitScript(() => sessionStorage.setItem('SWP_SESSION_backoffice', JSON.stringify({ role: 'escort', name: 'Hộ tống Một', username: 'escort@example.com' })))
   const handover: Record<string, unknown> = { id: 60, handoverType: 'DELIVERY', status: 'PENDING', tripStopId: 4, horses: [{ horseLegId: 70, bookingCode: 'BK-AAAA0001', horseName: 'Sao Mai' }] }
   const run = {
     trip: {
@@ -415,7 +439,7 @@ test('tài xế bắt đầu chờ người nhận rồi ghi nhận không gặp
   await expect(stop.getByRole('button', { name: 'Hoàn tất giao nhận' })).toHaveCount(0)
 })
 
-test('hộ tống thay ca thấy Nhận bàn giao ca ở điểm có ngựa đang trên xe, tài xế thì không', async ({ page, context }) => {
+test('chỉ hộ tống nhận ca mới thấy thao tác Nhận bàn giao ca', async ({ page, context }) => {
   const run = newRun()
   run.trip.status = 'IN_PROGRESS'
   Object.assign(run.trip.stops[0], { actualArrivalAt: '2031-03-05T01:00:00Z', actualDepartureAt: '2031-03-05T01:30:00Z' })
@@ -423,10 +447,10 @@ test('hộ tống thay ca thấy Nhận bàn giao ca ở điểm có ngựa đan
   run.horses[0].leg.status = 'IN_PROGRESS'
   run.handovers.push({ id: 50, handoverType: 'PICKUP', status: 'DONE', tripStopId: 2, horses: [] })
   let sent: unknown
-  const mock = async (target: typeof page) => target.route('**/api/v1/**', async route => {
+  const mock = async (target: typeof page, shiftHandoverStopIds: number[] = []) => target.route('**/api/v1/**', async route => {
     const request = route.request()
     const path = new URL(request.url()).pathname.replace('/api/v1', '')
-    if (path === '/crew/vehicle-trips/9') return ok(route, run)
+    if (path === '/crew/vehicle-trips/9') return ok(route, { ...run, shiftHandoverStopIds })
     if (path === '/trip-stops/2/handovers') {
       sent = request.postDataJSON()
       run.handovers.push({ id: 51, handoverType: 'SHIFT', status: 'PENDING', tripStopId: 2, horses: [{ horseLegId: 70, bookingCode: 'BK-AAAA0001', horseName: 'Sao Mai' }] })
@@ -444,9 +468,16 @@ test('hộ tống thay ca thấy Nhận bàn giao ca ở điểm có ngựa đan
   await expect(stopOf(driverPage).getByRole('button', { name: 'Rời đi' })).toBeVisible({ timeout: 15_000 })
   await expect(stopOf(driverPage).getByRole('button', { name: 'Nhận bàn giao ca' })).toHaveCount(0)
 
+  const currentEscort = await context.newPage()
+  await currentEscort.addInitScript(() => sessionStorage.setItem('SWP_SESSION_backoffice', JSON.stringify({ role: 'escort', name: 'Hộ tống đang giữ ngựa', username: 'escort@example.com' })))
+  await mock(currentEscort)
+  await currentEscort.goto('/backoffice/my-trips/9')
+  await expect(stopOf(currentEscort)).toContainText('Nhận ngựa · Đã xong')
+  await expect(stopOf(currentEscort).getByRole('button', { name: 'Nhận bàn giao ca' })).toHaveCount(0)
+
   await page.setViewportSize({ width: 390, height: 844 })
   await page.addInitScript(() => sessionStorage.setItem('SWP_SESSION_backoffice', JSON.stringify({ role: 'escort', name: 'Hộ tống thay ca', username: 'relief@example.com' })))
-  await mock(page)
+  await mock(page, [2])
   await page.goto('/backoffice/my-trips/9')
   await stopOf(page).getByRole('button', { name: 'Nhận bàn giao ca' }).click({ timeout: 15_000 })
   expect(sent).toEqual({ handoverType: 'SHIFT' })

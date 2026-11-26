@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.dto.operation.TripDepartureReadinessResponseDto;
 import com.example.racehorse_transport.service.DepartureService;
 import com.example.racehorse_transport.entity.enums.VehicleTripType;
 import com.example.racehorse_transport.entity.CrewAssignment;
@@ -45,6 +46,19 @@ public class TripExecutionServiceImpl implements TripExecutionService {
     private final Clock clock;
     private final DepartureService departures;
     private final TripProgressNoticeService notices;
+
+    @Override
+    @Transactional(readOnly = true)
+    public TripDepartureReadinessResponseDto departureReadiness(Long vehicleTripId, String username) {
+        var assignment = requireCrew(vehicleTripId, username);
+        if (assignment.getVehicleTrip().getStatus() == VehicleTripStatus.IN_PROGRESS) {
+            return stops.findFirstByVehicleTrip_IdAndActualArrivalAtIsNotNullOrderBySequenceNumberDesc(vehicleTripId)
+                    .filter(stop -> stop.getActualDepartureAt() == null)
+                    .map(stop -> TripDepartureReadinessResponseDto.from(stop, readiness.hasPendingHorseWork(stop)))
+                    .orElseGet(() -> new TripDepartureReadinessResponseDto(null, false));
+        }
+        return new TripDepartureReadinessResponseDto(null, false);
+    }
 
     @Override
     @Transactional

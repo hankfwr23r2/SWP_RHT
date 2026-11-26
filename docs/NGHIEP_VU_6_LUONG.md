@@ -189,7 +189,7 @@ Từ lúc xe đầu tiên xuất phát tới lúc lượt cuối kết thúc. Gi
 ## Nghiệp vụ chính
 
 1. **Xuất phát:** kiểm tổ lái đã nhận việc, mọi con có vị trí khoang, đủ giấy (nếu đón ở nhà khách).
-2. Tổ lái bấm **Tới nơi**, **Rời đi** theo từng điểm dừng, đúng thứ tự.
+2. Tài xế bấm **Tới nơi**, **Rời đi** theo từng điểm dừng, đúng thứ tự. Hộ tống thấy việc tại điểm ngay sau khi tài xế ghi đã tới. Hệ thống khóa **Rời đi** khi còn việc giao nhận hoặc chăm sóc tại điểm chưa hoàn tất.
 3. **Ở hub xuất phát:** ngựa lưu trú, được cho ăn và **khám 2 lần mỗi ngày**.
 4. **Khám trước khi chạy:** mỗi con một lần khám ngay trước khi lên xe trục. **Chưa khám thì không cho ra hub**.
 5. **Mọi lượt xe:** tới mỗi trạm nghỉ cho uống, ăn, ghi **từng con** (sức khỏe, uống, ăn, nhiệt độ nếu đo). Nghỉ ít nhất 30 phút. Nghỉ đêm có thể gửi chuồng đối tác rồi nhận lại sáng hôm sau.
@@ -197,7 +197,7 @@ Từ lúc xe đầu tiên xuất phát tới lúc lượt cuối kết thúc. Gi
 7. **Tới hub đích:** dỡ ngựa vào hub theo quy trình, lưu trú, cho ăn, khám 2 lần mỗi ngày.
 8. **Khám trước khi giao:** mỗi con một lần khám trước khi lên xe giao hoặc được người nhận tới hub lấy. **Chưa khám thì không cho ra hub**.
 9. Thay hộ tống giữa đường: người mới tới điểm dừng, quét chip và ký nhận ca.
-10. **Đã về hub** khi xe đã tới điểm dừng cuối và không còn ngựa trên xe. Tổ lái tải ảnh xe tại hub rồi xác nhận tình trạng xe (Bình thường hoặc Cần bảo dưỡng). Lượt chuyển sang hoàn thành sau khi xác nhận. Xe cần bảo dưỡng phải có ghi chú.
+10. **Đã về hub** khi xe đã tới điểm dừng cuối và không còn ngựa trên xe. Tài xế tải ảnh xe tại hub rồi xác nhận tình trạng xe (Bình thường hoặc Cần bảo dưỡng). Lượt chuyển sang hoàn thành sau khi xác nhận. Xe cần bảo dưỡng phải có ghi chú.
 11. **Theo dõi:**
     - điều phối: trang Theo dõi, con trễ khám tô đỏ;
     - **quản lý: màn Các hub** [Mới], mỗi hub có ngựa đang ở, ô chuồng trống, xe (rảnh, đang chạy, đang về, cần bảo dưỡng), nhân viên, chuyến đến và đi, sự cố mở;
@@ -272,10 +272,10 @@ Từ lúc tổ lái đứng trước con ngựa ở nơi nhận tới lúc đơn
 
 ## Nghiệp vụ chính
 
-1. **Nhận ngựa ở nhà khách:** quét chip từng con (gõ tay phải ghi lý do), ghi tình trạng và ảnh từng con, đánh dấu giấy gốc đã nhận, tải **biên bản đã ký**, hoàn tất. Người bấm là người phụ trách ngựa.
+1. **Nhận ngựa ở nhà khách:** hộ tống quét chip từng con (gõ tay phải ghi lý do), khám và ghi tình trạng, chụp ảnh từng con, đánh dấu giấy gốc đã nhận, tải **biên bản đã ký** và hoàn tất.
 2. **Số dư:** lập ngay sau lần nhận đầu tiên. Khách có **30 phút** để trả qua VNPAY. Xe chỉ rời khi mọi đơn lên xe ở đây đã trả đủ. Xe rời thì đơn **Đang vận chuyển**, khách hết quyền tự hủy.
 3. **Vào hub, ra hub:** quét chip từng con, mở và đóng lưu trú. Tự chở hoặc tự tới lấy tại hub thì điều phối giao nhận.
-4. **Giao người nhận:** quét chip, tình trạng và ảnh từng con, trả giấy gốc, biên bản đã ký, ghi tên người nhận và nhập **mã nhận ngựa 6 số** (hoặc xác nhận của chủ đơn).
+4. **Giao người nhận:** hộ tống quét chip, ghi tình trạng và chụp ảnh từng con, trả giấy gốc, tải biên bản đã ký, ghi tên người nhận và nhập **mã nhận ngựa 6 số** (hoặc xác nhận của chủ đơn).
 5. **Đơn quốc tế**: giao nhận ở hub và nơi giao nước ngoài **y như trong nước**. Không còn bàn giao đại lý ở cửa khẩu và nút "đại lý đã giao".
 6. Con cuối cùng được giao thì đơn **Đã giao**.
 7. **Quyết toán:** quản lý duyệt chi phí, lập **khoản thu thêm** cho phần khách chịu; khách trả trong trang đơn.

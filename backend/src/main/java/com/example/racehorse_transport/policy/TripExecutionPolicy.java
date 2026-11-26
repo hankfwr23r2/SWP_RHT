@@ -98,6 +98,18 @@ public final class TripExecutionPolicy {
         return type == HandoverType.PICKUP || type == HandoverType.HUB_OUT;
     }
 
+    public static boolean pickupAlreadyResolved(boolean hasCompletedPickup, boolean hasPlannedBoarding) {
+        return hasCompletedPickup && !hasPlannedBoarding;
+    }
+
+    public static boolean canReceiveShift(Long currentStaffId, Long receivingStaffId) {
+        return currentStaffId != null && !currentStaffId.equals(receivingStaffId);
+    }
+
+    public static boolean isRedundantShift(Collection<Long> currentStaffIds, Long receivingStaffId) {
+        return !currentStaffIds.isEmpty() && currentStaffIds.stream().allMatch(receivingStaffId::equals);
+    }
+
     // Chip đọc được khớp chip trong hồ sơ ngựa, sau khi chuẩn hóa
     public static boolean chipMatches(String scanned, String expected) {
         String normalized = MicrochipPolicy.normalize(scanned);

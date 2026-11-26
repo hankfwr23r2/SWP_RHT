@@ -22,7 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 // Biên bản giao nhận và giấy tờ gốc trong lần giao nhận (tổ xe, MAN_HINH 4.2, 4.3, 6.5)
 @RestController
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('DRIVER', 'ESCORT')")
+@PreAuthorize("hasRole('ESCORT')")
 public class HandoverPaperController {
 
     private final HandoverPaperService papers;

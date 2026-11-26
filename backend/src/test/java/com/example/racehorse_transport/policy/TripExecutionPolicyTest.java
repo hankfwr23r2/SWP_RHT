@@ -94,6 +94,23 @@ class TripExecutionPolicyTest {
     }
 
     @Test
+    void pickupIsResolvedOnlyAfterACompletedHandoverAndEveryHorseWasHandled() {
+        assertThat(TripExecutionPolicy.pickupAlreadyResolved(true, false)).isTrue();
+        assertThat(TripExecutionPolicy.pickupAlreadyResolved(true, true)).isFalse();
+        assertThat(TripExecutionPolicy.pickupAlreadyResolved(false, false)).isFalse();
+    }
+
+    @Test
+    void shiftRequiresAPreviousHolderAndASeparateReceiver() {
+        assertThat(TripExecutionPolicy.canReceiveShift(7L, 8L)).isTrue();
+        assertThat(TripExecutionPolicy.canReceiveShift(8L, 8L)).isFalse();
+        assertThat(TripExecutionPolicy.canReceiveShift(null, 8L)).isFalse();
+        assertThat(TripExecutionPolicy.isRedundantShift(java.util.List.of(8L, 8L), 8L)).isTrue();
+        assertThat(TripExecutionPolicy.isRedundantShift(java.util.List.of(7L, 8L), 8L)).isFalse();
+        assertThat(TripExecutionPolicy.isRedundantShift(java.util.List.of(), 8L)).isFalse();
+    }
+
+    @Test
     void waitingForTheRecipientStartsOnceAndFailsOnlyAfterTheFreeWait() {
         assertThatCode(() -> TripExecutionPolicy.requireCanStartWaiting(HandoverType.DELIVERY, true, false)).doesNotThrowAnyException();
         assertThatThrownBy(() -> TripExecutionPolicy.requireCanStartWaiting(HandoverType.PICKUP, true, false)).hasMessageContaining("lần giao ngựa đang mở");

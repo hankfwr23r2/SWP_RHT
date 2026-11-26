@@ -203,6 +203,9 @@ export const fieldCrew = {
       },
       "arrive": "Tới nơi",
       "depart": "Rời đi",
+      "waitingForEscort": "Chờ hộ tống hoàn tất việc chăm sóc hoặc giao nhận tại điểm dừng.",
+      "waitingForDriver": "Chờ tài xế xác nhận đã tới điểm này.",
+      "departureReadinessError": "Không kiểm tra được điều kiện rời điểm.",
       "handover": {
         "PICKUP": "Nhận ngựa",
         "DELIVERY": "Giao ngựa",

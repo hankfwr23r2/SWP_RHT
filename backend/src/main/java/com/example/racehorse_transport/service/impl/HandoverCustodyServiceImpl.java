@@ -27,8 +27,10 @@ import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.repository.TripStopRepository;
 import com.example.racehorse_transport.repository.VehicleTripRepository;
 import com.example.racehorse_transport.service.HandoverCustodyService;
+import com.example.racehorse_transport.service.HealthCheckTaskService;
 import com.example.racehorse_transport.service.HorseStayService;
 import com.example.racehorse_transport.service.IncidentPlanService;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +57,7 @@ public class HandoverCustodyServiceImpl implements HandoverCustodyService {
     private final HorseStayService stays;
     private final IncidentPlanService plans;
     private final CrewAssignmentRepository crew;
+    private final HealthCheckTaskService healthChecks;
 
     @Override
     @Transactional(readOnly = true)
@@ -162,6 +165,33 @@ public class HandoverCustodyServiceImpl implements HandoverCustodyService {
     @Transactional(readOnly = true)
     public Set<Long> legsAtStable(TripStop stop) {
         return horsesAtStable(stop).keySet();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ShiftAtStop shiftAtStop(TripStop stop, Long receivingStaffId) {
+        int sequence = stop.getSequenceNumber();
+        Set<Long> atStable = legsAtStable(stop);
+        List<HorseLeg> aboard = legs.findActiveOnTrip(stop.getVehicleTrip().getId(),
+                        Set.of(HorseLegStatus.CANCELLED, HorseLegStatus.FAILED)).stream()
+                .filter(leg -> leg.getStatus() == HorseLegStatus.IN_PROGRESS
+                        && leg.getBoardTripStop().getSequenceNumber() <= sequence
+                        && sequence < leg.getAlightTripStop().getSequenceNumber()
+                        && !atStable.contains(leg.getId()))
+                .toList();
+        Map<Long, Handover> currentHandovers = healthChecks.latestCompanyHandovers(
+                aboard.stream().map(leg -> leg.getBookingHorse().getId()).toList());
+        List<HorseLeg> eligible = new ArrayList<>();
+        List<Long> currentStaffIds = new ArrayList<>();
+        for (HorseLeg leg : aboard) {
+            Handover current = currentHandovers.get(leg.getBookingHorse().getId());
+            Long staffId = current == null ? null : current.getHandledBy().getUserId();
+            currentStaffIds.add(staffId);
+            if (TripExecutionPolicy.canReceiveShift(staffId, receivingStaffId)) {
+                eligible.add(leg);
+            }
+        }
+        return new ShiftAtStop(eligible, TripExecutionPolicy.isRedundantShift(currentStaffIds, receivingStaffId));
     }
 
     @Override

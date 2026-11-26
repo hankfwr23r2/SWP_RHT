@@ -41,6 +41,7 @@ class IncidentPlanExecutionFlowTest {
     private String coordinator;
     private String manager;
     private String escort;
+    private String driver;
     private long booking;
     private long delivery;
     private long hub;
@@ -58,6 +59,8 @@ class IncidentPlanExecutionFlowTest {
         manager = staffToken("MANAGER");
         Staff escortStaff = testData.staff(testData.unique("plan-execution.escort"), "ESCORT");
         escort = token(escortStaff, "ESCORT");
+        Staff driverStaff = testData.staff(testData.unique("plan-execution.driver"), "DRIVER");
+        driver = token(driverStaff, "DRIVER");
         booking = jdbc.queryForObject("SELECT id FROM booking WHERE code = 'DEV-DIRECT-001'", Long.class);
         start = jdbc.queryForObject("SELECT requested_pickup_date FROM booking WHERE id = ?", java.sql.Date.class, booking)
                 .toLocalDate().atTime(1, 0).toInstant(ZoneOffset.UTC);
@@ -78,6 +81,8 @@ class IncidentPlanExecutionFlowTest {
         stops = ids(created, "$.data.stops[*].id");
         postJson(coordinator, "/vehicle-trips/" + trip + "/crew-assignments",
                 "{\"staffId\":%d,\"crewRole\":\"ESCORT\"}".formatted(escortStaff.getUserId())).andExpect(status().isCreated());
+        postJson(coordinator, "/vehicle-trips/" + trip + "/crew-assignments",
+                "{\"staffId\":%d,\"crewRole\":\"DRIVER\"}".formatted(driverStaff.getUserId())).andExpect(status().isCreated());
         leg = assign(trip, horse, stops.get(1), stops.get(3));
         otherLeg = assign(trip, otherHorse, stops.get(1), stops.get(3));
         em.flush();
@@ -163,7 +168,7 @@ class IncidentPlanExecutionFlowTest {
                 SELECT booking_horse_id FROM horse_stay WHERE stay_type = 'OVERNIGHT' AND location_id = ?
                     AND operator_party_id = ? AND actual_end_at IS NULL
                 """, Long.class, hub, stable)).containsExactly(horse);
-        act(escort, "/trip-stops/" + stops.get(2) + "/depart").andExpect(status().isConflict());
+        act(driver, "/trip-stops/" + stops.get(2) + "/depart").andExpect(status().isConflict());
 
         long out = handoverId(openStable("STAY_OUT", stops.get(2), null, null).andExpect(status().isCreated()));
         scan(out, leg, "985000000100001").andExpect(status().isOk());
@@ -237,8 +242,8 @@ class IncidentPlanExecutionFlowTest {
         assertThat(legStatus(later.getFirst())).isEqualTo("CANCELLED");
         assertThat(legStatus(later.getLast())).isEqualTo("CANCELLED");
         assertThat(jdbc.queryForObject("SELECT status FROM handover WHERE id = ?", String.class, deliveryHandover)).isEqualTo("FAILED");
-        act(escort, "/trip-stops/" + stops.get(3) + "/depart").andExpect(status().isOk());
-        act(escort, "/trip-stops/" + stops.get(4) + "/arrive").andExpect(status().isOk());
+        act(driver, "/trip-stops/" + stops.get(3) + "/depart").andExpect(status().isOk());
+        act(driver, "/trip-stops/" + stops.get(4) + "/arrive").andExpect(status().isOk());
         long in = handoverId(postJson(escort, "/trip-stops/" + stops.get(4) + "/handovers",
                 "{\"handoverType\":\"HUB_IN\"}").andExpect(status().isCreated()));
         scan(in, leg, "985000000100001").andExpect(status().isOk());

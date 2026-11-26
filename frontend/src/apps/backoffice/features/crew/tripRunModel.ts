@@ -49,14 +49,9 @@ export function stablePlansAt(run: CrewTrip, stop: Stop, incidents: Incident[]):
   })
 }
 
-// Rời được khi đang ở điểm này và không còn giao nhận dở. Điểm cuối thì kết thúc lượt thay vì rời
+// Điều khiển rời điểm hiện tại. Điều kiện về ngựa lấy từ API; điểm cuối dùng thao tác về hub.
 export function canDepart(run: CrewTrip, stop: Stop): boolean {
-  const stops = stopsOf(run)
-  return running(run) && stopState(stop) === 'here' && !pendingAt(run, stop.id)
-    && horsesAtStable(run, stop).size === 0
-    && !((stop.stopType === 'PICKUP' || stop.stopType === 'BORDER') && (run.horses ?? [])
-      .some(h => h.leg?.boardTripStopId === stop.id && h.leg?.status === 'PLANNED'))
-    && stops[stops.length - 1]?.id !== stop.id
+  return running(run) && stopState(stop) === 'here' && stopsOf(run).at(-1)?.id !== stop.id
 }
 
 // Loại giao nhận cần làm ở điểm đang đứng, chưa mở và chưa xong
@@ -78,9 +73,7 @@ export function handoverTypesAt(run: CrewTrip, stop: Stop): HandoverType[] {
   if (stop.stopType === 'REST' || stop.stopType === 'VITAL_CHECK' || stop.stopType === 'BORDER') {
     if (horsesPassing(run, stop).length) types.push('STAY_IN')
   }
-  // Bàn giao ca: có con đang trên xe ở điểm này (đã lên, chưa tới điểm xuống)
-  if (horses.some(h => h.leg?.status === 'IN_PROGRESS'
-    && (sequenceOf.get(h.leg.boardTripStopId) ?? 0) <= at && at < (sequenceOf.get(h.leg.alightTripStopId) ?? 0))) types.push('SHIFT')
+  if (stop.id != null && run.shiftHandoverStopIds?.includes(stop.id)) types.push('SHIFT')
   return types
 }
 

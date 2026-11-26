@@ -26,6 +26,14 @@ class TrackingPolicyTest {
     }
 
     @Test
+    void onlyAShiftWithTheSameKnownCustodianIsRedundant() {
+        assertThat(TrackingPolicy.isRedundantShift(HandoverType.SHIFT, 7L, 7L)).isTrue();
+        assertThat(TrackingPolicy.isRedundantShift(HandoverType.SHIFT, 7L, 8L)).isFalse();
+        assertThat(TrackingPolicy.isRedundantShift(HandoverType.SHIFT, null, 7L)).isFalse();
+        assertThat(TrackingPolicy.isRedundantShift(HandoverType.HUB_OUT, 7L, 7L)).isFalse();
+    }
+
+    @Test
     void phoneSuffixIgnoresFormattingAndNeedsExactlyFourDigits() {
         assertThat(TrackingPolicy.phoneSuffixMatches("0909 000 001", "0001")).isTrue();
         assertThat(TrackingPolicy.phoneSuffixMatches("+855 12 000 001", "0001")).isTrue();

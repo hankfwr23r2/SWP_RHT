@@ -416,14 +416,20 @@ class TripExecutionFlowTest {
                 .andExpect(jsonPath("$.message").value("Tài xế chưa xác nhận nhận việc."));
         acknowledge(driver);
         acknowledge(escort);
+        act(escort, "/vehicle-trips/" + trip + "/start").andExpect(status().isForbidden());
         act(driver, "/vehicle-trips/" + trip + "/start").andExpect(status().isOk()).andExpect(jsonPath("$.data.trip.status").value("IN_PROGRESS"));
 
         // Đi theo thứ tự điểm dừng
-        act(escort, "/trip-stops/" + stops.get(1) + "/arrive").andExpect(status().isConflict())
+        act(driver, "/trip-stops/" + stops.get(1) + "/arrive").andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Chưa rời điểm dừng trước."));
         act(driver, "/trip-stops/" + stops.get(0) + "/arrive").andExpect(status().isOk());
         act(driver, "/trip-stops/" + stops.get(0) + "/depart").andExpect(status().isOk());
+        act(escort, "/trip-stops/" + stops.get(1) + "/arrive").andExpect(status().isForbidden());
         act(driver, "/trip-stops/" + stops.get(1) + "/arrive").andExpect(status().isOk());
+        act(driver, "/trip-stops/" + stops.get(1) + "/depart").andExpect(status().isConflict());
+        mvc.perform(get("/crew/vehicle-trips/{id}/departure-readiness", trip).header(HttpHeaders.AUTHORIZATION, driver))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.stopId").value(stops.get(1).intValue()))
+                .andExpect(jsonPath("$.data.waitingForEscort").value(true));
 
         // Khách mới trả cọc: số dư lập khi nhận ngựa xong (seed có sẵn số dư đã trả nên bỏ đi)
         entityManager.flush();
@@ -431,8 +437,14 @@ class TripExecutionFlowTest {
         entityManager.clear();
 
         // Giao nhận ở điểm đón: loại sai với điểm dừng bị từ chối
+        handover(driver, stops.get(1), "PICKUP").andExpect(status().isForbidden());
         handover(escort, stops.get(1), "DELIVERY").andExpect(status().isBadRequest());
         long pickup = handoverId(handover(escort, stops.get(1), "PICKUP").andExpect(status().isCreated()));
+        handover(escort, stops.get(1), "PICKUP").andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.handovers.length()").value(1))
+                .andExpect(jsonPath("$.data.handovers[0].id").value((int) pickup));
+        scan(driver, pickup, chip).andExpect(status().isForbidden());
+        act(escort, "/trip-stops/" + stops.get(1) + "/depart").andExpect(status().isForbidden());
         act(driver, "/trip-stops/" + stops.get(1) + "/depart").andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Còn lần giao nhận chưa xong ở điểm dừng này."));
         scan(escort, pickup, "985000000999999").andExpect(status().isOk())
@@ -453,6 +465,28 @@ class TripExecutionFlowTest {
                 .andExpect(jsonPath("$.data.handovers[0].recordAttached").value(true))
                 .andExpect(jsonPath("$.data.handovers[0].status").value("DONE"))
                 .andExpect(jsonPath("$.data.horses[0].leg.status").value("IN_PROGRESS"));
+        handover(escort, stops.get(1), "PICKUP").andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.handovers.length()").value(1))
+                .andExpect(jsonPath("$.data.handovers[0].status").value("DONE"));
+
+        // Phiếu trùng từ trước khi sửa có thể vẫn đang mở và có chứng từ riêng.
+        long duplicate = jdbc.queryForObject("""
+                INSERT INTO handover (handover_type, trip_stop_id, handled_by, status)
+                SELECT handover_type, trip_stop_id, handled_by, 'PENDING' FROM handover WHERE id = ?
+                RETURNING id
+                """, Long.class, pickup);
+        scan(escort, duplicate, chip).andExpect(status().isOk());
+        signedRecord(duplicate);
+        act(driver, "/trip-stops/" + stops.get(1) + "/depart").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Còn lần giao nhận chưa xong ở điểm dừng này."));
+        act(escort, "/handovers/" + duplicate + "/complete").andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.handovers[0].status").value("DONE"))
+                .andExpect(jsonPath("$.data.handovers[1].status").value("FAILED"))
+                .andExpect(jsonPath("$.data.handovers[1].recordAttached").value(true))
+                .andExpect(jsonPath("$.data.handovers[1].horses[0].photoAttached").value(true))
+                .andExpect(jsonPath("$.data.horses[0].leg.status").value("IN_PROGRESS"));
+        mvc.perform(post("/handovers/{id}/complete", pickup).header(HttpHeaders.AUTHORIZATION, escort))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.handovers[0].status").value("DONE"));
 
         // Nhận xong thì lập khoản số dư = tổng báo giá trừ tiền cọc, hạn tính từ lúc nhận
         var balance = jdbc.queryForMap("""
@@ -469,6 +503,9 @@ class TripExecutionFlowTest {
         entityManager.flush();
         jdbc.update("UPDATE payment SET status = 'PAID', paid_at = now() WHERE booking_id = ? AND payment_type = 'BALANCE'", booking);
         entityManager.clear();
+        mvc.perform(get("/crew/vehicle-trips/{id}/departure-readiness", trip).header(HttpHeaders.AUTHORIZATION, driver))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.stopId").value(stops.get(1).intValue()))
+                .andExpect(jsonPath("$.data.waitingForEscort").value(false));
         act(driver, "/trip-stops/" + stops.get(1) + "/depart").andExpect(status().isOk());
         assertThat(bookingStatus()).isEqualTo("IN_OPERATION");
 
@@ -610,6 +647,7 @@ class TripExecutionFlowTest {
         Staff driverStaff = testData.staff(testData.unique("exec.driver2"), "DRIVER");
         Staff escortStaff = testData.staff(testData.unique("exec.escort2"), "ESCORT");
         String driver2 = token(driverStaff, "DRIVER");
+        String escort2 = token(escortStaff, "ESCORT");
         long pickupTrip = id(mvc.perform(post("/vehicle-trips").header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"tripType\":\"PICKUP\",\"vehicleId\":%d,\"stops\":[%s,%s,%s]}".formatted(testData.vehicle(2, 0).getId(),
                         stop("locationId", hcm, "HUB", start, 0), stop("bookingAddressId", pickup, "PICKUP", start, 60), stop("locationId", hcm, "HUB", start, 240)))));
@@ -629,31 +667,31 @@ class TripExecutionFlowTest {
         jdbc.update("UPDATE booking SET booking_type = 'LOCAL' WHERE id = ?", domestic);
         entityManager.clear();
         acknowledge(driver2);
-        acknowledge(token(escortStaff, "ESCORT"));
+        acknowledge(escort2);
         act(driver2, "/vehicle-trips/" + pickupTrip + "/start").andExpect(status().isOk());
         act(driver2, "/trip-stops/" + pickupStops.get(0) + "/arrive").andExpect(status().isOk());
         act(driver2, "/trip-stops/" + pickupStops.get(0) + "/depart").andExpect(status().isOk());
         act(driver2, "/trip-stops/" + pickupStops.get(1) + "/arrive").andExpect(status().isOk());
-        long handover = handoverId(handover(driver2, pickupStops.get(1), "PICKUP").andExpect(status().isCreated()));
+        long handover = handoverId(handover(escort2, pickupStops.get(1), "PICKUP").andExpect(status().isCreated()));
 
         long first = jdbc.queryForObject("SELECT id FROM horse_leg WHERE booking_horse_id = ? AND vehicle_trip_id = ?", Long.class, lines.get(0), pickupTrip);
         long second = jdbc.queryForObject("SELECT id FROM horse_leg WHERE booking_horse_id = ? AND vehicle_trip_id = ?", Long.class, lines.get(1), pickupTrip);
         String firstChip = jdbc.queryForObject("SELECT h.microchip FROM booking_horse bh JOIN horse h ON h.id = bh.horse_id WHERE bh.id = ?", String.class, lines.get(0));
-        mvc.perform(post("/handovers/{id}/horses", handover).header(HttpHeaders.AUTHORIZATION, driver2).contentType(MediaType.APPLICATION_JSON)
+        mvc.perform(post("/handovers/{id}/horses", handover).header(HttpHeaders.AUTHORIZATION, escort2).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"horseLegId\":%d,\"conditionNote\":\"Khỏe\",\"microchip\":\"%s\"}".formatted(first, firstChip))).andExpect(status().isOk());
-        mvc.perform(post("/handovers/{id}/horses", handover).header(HttpHeaders.AUTHORIZATION, driver2).contentType(MediaType.APPLICATION_JSON)
+        mvc.perform(post("/handovers/{id}/horses", handover).header(HttpHeaders.AUTHORIZATION, escort2).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"horseLegId\":%d,\"microchip\":\"985000000999999\"}".formatted(second))).andExpect(status().isOk());
 
-        act(driver2, "/handovers/" + handover + "/complete").andExpect(status().isConflict());
+        act(escort2, "/handovers/" + handover + "/complete").andExpect(status().isConflict());
         act(driver2, "/trip-stops/" + pickupStops.get(1) + "/depart").andExpect(status().isConflict());
-        refuse(driver2, handover, second, " ").andExpect(status().isBadRequest());
-        refuse(driver2, handover, second, "Chip không khớp giấy tờ").andExpect(status().isOk())
+        refuse(escort2, handover, second, " ").andExpect(status().isBadRequest());
+        refuse(escort2, handover, second, "Chip không khớp giấy tờ").andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.handovers[0].horses.length()").value(1));
         assertThat(jdbc.queryForObject("SELECT status FROM booking_horse WHERE id = ?", String.class, lines.get(1))).isEqualTo("ACTIVE");
         assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE id = ?", String.class, second)).isEqualTo("CANCELLED");
         assertThat(jdbc.queryForList("SELECT status FROM quotation WHERE booking_id = ? ORDER BY version", String.class, domestic))
                 .containsExactly("ACCEPTED");
-        act(driver2, "/handovers/" + handover + "/complete").andExpect(status().isOk());
+        act(escort2, "/handovers/" + handover + "/complete").andExpect(status().isOk());
         for (int attempt = 0; attempt < 2; attempt++) {
             mvc.perform(post("/booking-horses/{id}/pickup-choices", lines.get(1))
                     .header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
@@ -674,11 +712,11 @@ class TripExecutionFlowTest {
         assertThat(jdbc.queryForList("SELECT status FROM quotation WHERE booking_id = ? ORDER BY version", String.class, domestic))
                 .containsExactly("SUPERSEDED", "ACCEPTED");
         assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE id = ?", String.class, first)).isEqualTo("IN_PROGRESS");
-        // Bảng phụ trách: con vừa nhận đang do tài xế ký nhận giữ, con bị loại không hiện
+        // Bảng phụ trách ghi nhận hộ tống đã ký nhận ngựa
         String row = "$.data[?(@.bookingHorseId == " + lines.get(0) + ")]";
         mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/custody-board").header(HttpHeaders.AUTHORIZATION, coordinator)).andExpect(status().isOk())
                 .andExpect(jsonPath(row + ".holder").value("COMPANY"))
-                .andExpect(jsonPath(row + ".holderName").value(driverStaff.getFullName()))
+                .andExpect(jsonPath(row + ".holderName").value(escortStaff.getFullName()))
                 .andExpect(jsonPath(row + ".legType").value("PICKUP"))
                 .andExpect(jsonPath(row + ".vehicleTripId").value((int) pickupTrip))
                 .andExpect(jsonPath(row + ".careOverdue").value(false))
@@ -936,6 +974,22 @@ class TripExecutionFlowTest {
         scan(escort, pickup, chip).andExpect(status().isOk());
         act(escort, "/handovers/" + pickup + "/complete").andExpect(status().isOk());
 
+        mvc.perform(get("/crew/vehicle-trips/{id}", trip).header(HttpHeaders.AUTHORIZATION, escort))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.shiftHandoverStopIds").isEmpty());
+        handover(escort, stops.get(1), "SHIFT").andExpect(status().isConflict());
+        long redundantShift = jdbc.queryForObject("""
+                INSERT INTO handover (handover_type, trip_stop_id, handled_by, status)
+                SELECT 'SHIFT', trip_stop_id, handled_by, 'PENDING' FROM handover WHERE id = ?
+                RETURNING id
+                """, Long.class, pickup);
+        mvc.perform(get("/crew/vehicle-trips/{id}/departure-readiness", trip).header(HttpHeaders.AUTHORIZATION, driver))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.waitingForEscort").value(true));
+        act(escort, "/handovers/" + redundantShift + "/complete").andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.handovers[1].status").value("FAILED"))
+                .andExpect(jsonPath("$.data.shiftHandoverStopIds").isEmpty());
+        mvc.perform(get("/crew/vehicle-trips/{id}/departure-readiness", trip).header(HttpHeaders.AUTHORIZATION, driver))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.waitingForEscort").value(false));
+
         // Lượt đang chạy chỉ thêm được hộ tống thay ca, không cần bắt đầu ở nơi lượt trước kết thúc
         Staff relief = testData.staff(testData.unique("exec.relief"), "ESCORT");
         Staff otherDriver = testData.staff(testData.unique("exec.driver.relief"), "DRIVER");
@@ -951,10 +1005,18 @@ class TripExecutionFlowTest {
                 .andExpect(jsonPath("$.message", startsWith("Nhân viên exec.escort")));
 
         // Tài xế không nhận bàn giao ca; hộ tống mới quét chip và ký, ngựa vẫn trên xe
-        handover(driver, stops.get(1), "SHIFT").andExpect(status().isConflict()).andExpect(jsonPath("$.message").value("Chỉ hộ tống nhận bàn giao ca."));
+        handover(driver, stops.get(1), "SHIFT").andExpect(status().isForbidden());
+        mvc.perform(get("/crew/vehicle-trips/{id}", trip).header(HttpHeaders.AUTHORIZATION, reliefToken))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.shiftHandoverStopIds[0]").value(stops.get(1).intValue()));
         long shift = handoverId(handover(reliefToken, stops.get(1), "SHIFT").andExpect(status().isCreated()));
+        handover(reliefToken, stops.get(1), "SHIFT").andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.handovers[2].id").value((int) shift));
+        scan(escort, shift, chip).andExpect(status().isForbidden());
         scan(reliefToken, shift, chip).andExpect(status().isOk());
-        act(reliefToken, "/handovers/" + shift + "/complete").andExpect(status().isOk());
+        act(reliefToken, "/handovers/" + shift + "/complete").andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.handovers[2].horses[0].microchipMatched").value(true))
+                .andExpect(jsonPath("$.data.shiftHandoverStopIds").isEmpty());
+        handover(reliefToken, stops.get(1), "SHIFT").andExpect(status().isConflict());
         assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE id = ?", String.class, leg)).isEqualTo("IN_PROGRESS");
 
         act(coordinator, "/crew-assignments/" + escortAssignment + "/release").andExpect(status().isOk());

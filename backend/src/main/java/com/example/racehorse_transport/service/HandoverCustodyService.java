@@ -9,6 +9,8 @@ import java.util.Set;
 
 public interface HandoverCustodyService {
 
+    record ShiftAtStop(List<HorseLeg> eligible, boolean alreadyResponsible) {}
+
     CrewAssignment requireCrew(Long tripId, String username);
 
     void lockCurrentStop(TripStop stop);
@@ -18,6 +20,8 @@ public interface HandoverCustodyService {
     void prepareStableHandover(Handover handover, Long partyId, Long planId);
 
     List<HorseLeg> stableCandidates(Handover handover);
+
+    ShiftAtStop shiftAtStop(TripStop stop, Long receivingStaffId);
 
     Set<Long> legsAtStable(TripStop stop);
 

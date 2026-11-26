@@ -203,6 +203,9 @@ export const fieldCrew = {
       },
       "arrive": "Arrived",
       "depart": "Leave",
+      "waitingForEscort": "Waiting for the escort to finish care or handover at this stop.",
+      "waitingForDriver": "Waiting for the driver to confirm arrival at this stop.",
+      "departureReadinessError": "Could not check whether the vehicle can leave.",
       "handover": {
         "PICKUP": "Receive horses",
         "DELIVERY": "Deliver horses",
