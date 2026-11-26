@@ -901,7 +901,7 @@ Ba lớp trạng thái không trộn vào nhau:
 8. **Chuyến không chuyển sang Đang chạy hay Đã xong** khi xe trục chạy (cũng nêu ở luồng 3).
 9. **Khách không được báo** khi ngựa tới hub, khi xe trục chạy, khi tới hub đích; chỉ báo lúc nhận, qua cửa khẩu và giao.
 10. **Đã sửa** · Tổ xe báo tình trạng khi kết thúc lượt. Xe cần bảo dưỡng được khóa xếp lượt mới và xuất phát, đồng thời hệ thống báo các lượt cần bố trí xe khác.
-11. **Không có vị trí xe theo thời gian thực**; vị trí là điểm dừng gần nhất đã bấm Tới nơi.
+11. **Ngoài phạm vi (chốt 26/11/2026).** Không làm vị trí xe theo thời gian thực; vị trí là điểm dừng gần nhất đã bấm Tới nơi.
 12. **Đã sửa.** Chỉ hoàn tất bàn giao ngựa cho đại lý ở cửa khẩu khi đơn xuất đủ giấy bắt buộc (2.F7).
 
 ---
