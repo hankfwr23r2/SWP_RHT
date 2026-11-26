@@ -38,6 +38,8 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import com.example.racehorse_transport.client.CloudinaryClient;
 import com.example.racehorse_transport.support.HandoverEvidenceFixtures;
+import com.example.racehorse_transport.support.HubExitCheckFixtures;
+import com.example.racehorse_transport.scheduler.HealthCheckTaskScheduler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Map;
 import org.springframework.test.web.servlet.ResultActions;
@@ -57,8 +59,10 @@ class HubSelfFlowTest {
     @Autowired private LocationRepository locations;
     @Autowired private EntityManager entityManager;
     @Autowired private BalanceHoldService balanceHolds;
+    @Autowired private HealthCheckTaskScheduler healthChecks;
 
     private String coordinator;
+    private Staff coordinatorStaff;
     private Staff driverStaff;
     private Staff escortStaff;
     private String driver;
@@ -73,7 +77,8 @@ class HubSelfFlowTest {
         var uploads = new java.util.concurrent.atomic.AtomicInteger();
         when(cloudinary.uploadFile(any(), anyString())).thenAnswer(invocation ->
                 "https://example.test/hub-evidence/" + uploads.incrementAndGet());
-        coordinator = token(testData.staff(testData.unique("hub.coordinator"), "COORDINATOR"), "COORDINATOR");
+        coordinatorStaff = testData.staff(testData.unique("hub.coordinator"), "COORDINATOR");
+        coordinator = token(coordinatorStaff, "COORDINATOR");
         driverStaff = testData.staff(testData.unique("hub.driver"), "DRIVER");
         escortStaff = testData.staff(testData.unique("hub.escort"), "ESCORT");
         driver = token(driverStaff, "DRIVER");
@@ -191,6 +196,21 @@ class HubSelfFlowTest {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM horse_stay WHERE id IN (" + join(stays) + ") AND actual_end_at IS NULL", Long.class))
                 .isEqualTo(lines.size());
         sql("UPDATE payment SET status = 'PAID', paid_at = now() WHERE booking_id = " + booking + " AND payment_type = 'BALANCE'");
+        act(escort, "/handovers/" + hubOut + "/complete").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message", startsWith("Chưa khám trước khi chạy: ")));
+        sql("UPDATE trip_stop SET planned_arrival_at = now(), planned_departure_at = now() + interval '2 hours' WHERE id = " + stops.getFirst());
+        healthChecks.run();
+        healthChecks.run();
+        long owner = jdbc.queryForObject("SELECT coordinator_id FROM vehicle_trip WHERE id = ?", Long.class, trip);
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM health_check_task t JOIN trip_stop p ON p.vehicle_trip_id = t.vehicle_trip_id
+                WHERE p.id = ? AND t.check_type = 'BEFORE_DEPARTURE' AND t.assigned_to = ? AND t.assigned_by = ?
+                    AND t.horse_stay_id IS NULL AND t.due_at = p.planned_departure_at
+                """, Long.class, stops.getFirst(), escortStaff.getUserId(), owner)).isEqualTo(lines.size());
+        recordHealth(escort, lines.getFirst(), stays.getFirst(), false);
+        act(escort, "/handovers/" + hubOut + "/complete").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Chưa khám trước khi chạy: " + horseName(lines.get(1))));
+        for (int i = 1; i < lines.size(); i++) recordHealth(escort, lines.get(i), stays.get(i), false);
         act(escort, "/handovers/" + hubOut + "/complete").andExpect(status().isOk());
         assertThat(jdbc.queryForObject("SELECT count(*) FROM horse_stay WHERE id IN (" + join(stays) + ") AND actual_end_at IS NOT NULL", Long.class))
                 .isEqualTo(lines.size());
@@ -305,11 +325,27 @@ class HubSelfFlowTest {
         // Đơn giao tận nơi thì không trả ở hub
         deliver(stays.getFirst(), chip(lines.getFirst())).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Con ngựa này không chờ người nhận tới hub."));
-        sql("UPDATE booking SET delivery_method = 'SELF' WHERE id = " + booking);
+        sql("UPDATE booking SET pickup_method = 'SELF', delivery_method = 'SELF' WHERE id = " + booking);
+        sql("UPDATE departure SET coordinator_id = " + coordinatorStaff.getUserId() + " WHERE id = " + departure);
         deliver(stays.getFirst(), "985000000999999").andExpect(status().isConflict());
+        deliver(stays.getFirst(), chip(lines.getFirst())).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Chưa khám trước khi giao: " + horseName(lines.getFirst())));
+        Instant appointment = Instant.now().plus(2, ChronoUnit.HOURS).truncatedTo(ChronoUnit.SECONDS);
+        for (long stay : stays) collectAt(stay, appointment).andExpect(status().isOk());
+        healthChecks.run();
+        healthChecks.run();
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM health_check_task t JOIN horse_stay s ON s.id = t.horse_stay_id
+                WHERE t.check_type = 'BEFORE_DELIVERY' AND t.assigned_to = ? AND t.assigned_by = ?
+                    AND t.vehicle_trip_id IS NULL AND t.due_at = s.planned_end_at AND s.id IN (
+                """ + join(stays) + ")", Long.class, coordinatorStaff.getUserId(), coordinatorStaff.getUserId())).isEqualTo(lines.size());
+        deliver(stays.getFirst(), chip(lines.getFirst())).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Chưa khám trước khi giao: " + horseName(lines.getFirst())));
+        recordHealth(coordinator, lines.getFirst(), stays.getFirst(), true);
         deliver(stays.getFirst(), chip(lines.getFirst())).andExpect(status().isOk()).andExpect(jsonPath("$.data.actualEndAt").isNotEmpty());
         assertThat(bookingStatus()).isEqualTo("IN_OPERATION");
         for (int i = 1; i < lines.size(); i++) {
+            recordHealth(coordinator, lines.get(i), stays.get(i), true);
             deliver(stays.get(i), chip(lines.get(i))).andExpect(status().isOk());
         }
         // Quy tắc #16: con cuối giao xong (lần giao DELIVERY tại hub) thì đơn DELIVERED
@@ -359,6 +395,7 @@ class HubSelfFlowTest {
         // Trễ chưa đủ 24 giờ thì không có phí; ở đây giữ 38 giờ là một lần đủ 24 giờ (mục 13.2)
         sql("UPDATE horse_stay SET planned_start_at = now() - interval '38 hour', actual_start_at = now() - interval '38 hour' WHERE id = " + stabling);
         // Người nhận vẫn lấy ngựa được. Phí tự duyệt và sinh khoản thu khi ngựa rời hub.
+        HubExitCheckFixtures.collectionDone(jdbc, stabling, coordinatorStaff.getUserId());
         deliver(stabling, chip(lines.getFirst())).andExpect(status().isOk()).andExpect(jsonPath("$.data.actualEndAt").isNotEmpty());
         entityManager.flush();
         var fee = jdbc.queryForMap("SELECT category, payer_type, amount, approved_at, extra_charge_payment_id FROM cost_item WHERE horse_stay_id = ?", stabling);
@@ -367,13 +404,32 @@ class HubSelfFlowTest {
         assertThat((java.math.BigDecimal) fee.get("amount")).isEqualByComparingTo("1000000");
         assertThat(fee.get("approved_at")).isNotNull();
         assertThat(fee.get("extra_charge_payment_id")).isNotNull();
-        for (int i = 1; i < lines.size(); i++) deliver(stays.get(i), chip(lines.get(i))).andExpect(status().isOk());
+        for (int i = 1; i < lines.size(); i++) {
+            HubExitCheckFixtures.collectionDone(jdbc, stays.get(i), coordinatorStaff.getUserId());
+            deliver(stays.get(i), chip(lines.get(i))).andExpect(status().isOk());
+        }
         assertThat(bookingStatus()).isEqualTo("DELIVERED");
     }
 
     private ResultActions stable(long stay) throws Exception {
         return mvc.perform(post("/horse-stays/{id}/stabling", stay).header(HttpHeaders.AUTHORIZATION, coordinator)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"note\":\"Người nhận báo tới muộn\"}"));
+    }
+
+    private void recordHealth(String actor, long line, long stay, boolean reported) throws Exception {
+        Map<String, Object> body = new java.util.HashMap<>(Map.of(
+                "bookingHorseId", line, "horseStayId", stay, "healthStatus", "NORMAL"));
+        if (reported) {
+            body.put("reportedBy", "Hộ tống");
+            body.put("reportChannel", "Điện thoại");
+        }
+        mvc.perform(post("/health-logs").header(HttpHeaders.AUTHORIZATION, actor)
+                .contentType(MediaType.APPLICATION_JSON).content(new ObjectMapper().writeValueAsString(body)))
+                .andExpect(status().isCreated());
+    }
+
+    private String horseName(long line) {
+        return jdbc.queryForObject("SELECT h.name FROM horse h JOIN booking_horse bh ON bh.horse_id = h.id WHERE bh.id = ?", String.class, line);
     }
 
     private ResultActions collectAt(long stay, java.time.Instant at) throws Exception {

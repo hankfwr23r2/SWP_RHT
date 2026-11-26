@@ -21,10 +21,16 @@ export const fieldCrew = {
     accept: "Nhận việc khám",
     accepted: "Đã nhận việc khám",
     overdue: "Quá hạn",
+    record: "Ghi khám",
+    hubExitTypes: {
+      BEFORE_DEPARTURE: "Khám trước khi chạy",
+      BEFORE_DELIVERY: "Khám trước khi giao",
+    },
     types: {
       ROUTINE: "Định kỳ",
       FOLLOW_UP: "Tái khám",
       BEFORE_DEPARTURE: "Trước khi khởi hành",
+      BEFORE_DELIVERY: "Trước khi giao",
     },
     status: {
       ASSIGNED: "Chờ nhận",

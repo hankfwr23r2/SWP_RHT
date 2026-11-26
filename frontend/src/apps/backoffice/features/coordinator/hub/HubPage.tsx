@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { dispatchApi, type HorseStay } from '@shared/api/dispatch'
 import { hubStallsApi } from '@shared/api/hubStalls'
 import { HubStallMoveDialog } from './HubStallMoveDialog'
-import { useLoad } from '@shared/hooks/useLoad'
+import { useAutoRefresh, useLoad } from '@shared/hooks/useLoad'
 import { formatDateTime } from '@shared/lib/format'
 import { Button } from '@shared/ui/Button'
 import { ConfirmDialog } from '@shared/ui/ConfirmDialog'
@@ -26,8 +26,7 @@ import { PageHeader } from '@shared/ui/PageHeader'
 import { localToIso } from '@backoffice/shared/localTime'
 import s from '@backoffice/shared/StaffPanels.module.css'
 import h from './Hub.module.css'
-import { HealthCheckTaskAction } from '@backoffice/shared/HealthCheckTaskAction'
-import { StayHealthAction } from '@backoffice/shared/StayHealthAction'
+import { HubStayHealth } from './HubStayHealth'
 import { HubStablingActions } from './HubStablingActions'
 
 // Nhận, trả ngựa (quét chip); không nhận (có lý do); hẹn giờ người nhận tới; gửi chuồng khi quá giờ hẹn (phí người nhận chịu)
@@ -64,6 +63,7 @@ export default function HubPage() {
     ])
     return { appointments, stays, inventory }
   }, [hubId], { toastOnError: false })
+  useAutoRefresh(reload)
 
   const isHubHandover = action?.kind === 'receive' || action?.kind === 'deliver' || action?.kind === 'returnHeld'
   const { data: papers, loaded: papersLoaded, error: papersError, reload: reloadPapers } = useLoad(
@@ -137,14 +137,7 @@ export default function HubPage() {
     ) },
     { key: 'type', header: t('dispatch.stays.colType'), render: stay =>
       stay.balanceHoldAt ? t('dispatch.stays.balanceHold') : t(`dispatch.stays.stayType.${stay.stayType}`) },
-    { key: 'health', header: t('myTrips.run.health.status'), render: stay =>
-      stay.id != null && stay.bookingHorseId != null && (
-        <span className={s.row}>
-          <StayHealthAction horseStayId={stay.id} bookingHorseId={stay.bookingHorseId}
-            horseName={stay.horseName} reported onSaved={reload} />
-          <HealthCheckTaskAction horseStayId={stay.id} bookingHorseId={stay.bookingHorseId} horseName={stay.horseName} />
-        </span>
-      ) },
+    { key: 'health', header: t('myTrips.run.health.status'), render: stay => <HubStayHealth stay={stay} onSaved={reload} /> },
     { key: 'since', header: t('dispatch.stays.colSince'), render: stay => (stay.actualStartAt ? formatDateTime(new Date(stay.actualStartAt)) : '') },
     {
       key: 'until',

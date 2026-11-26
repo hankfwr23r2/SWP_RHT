@@ -6129,7 +6129,7 @@ export interface components {
             /** Format: int64 */
             bookingHorseId: number;
             /** @enum {string} */
-            checkType: "ROUTINE" | "FOLLOW_UP" | "BEFORE_DEPARTURE";
+            checkType: "ROUTINE" | "FOLLOW_UP" | "BEFORE_DEPARTURE" | "BEFORE_DELIVERY";
             /** Format: date-time */
             dueAt: string;
             /** Format: int64 */
@@ -6149,7 +6149,7 @@ export interface components {
             canCancel?: boolean;
             cancelReason?: string;
             /** @enum {string} */
-            checkType?: "ROUTINE" | "FOLLOW_UP" | "BEFORE_DEPARTURE";
+            checkType?: "ROUTINE" | "FOLLOW_UP" | "BEFORE_DEPARTURE" | "BEFORE_DELIVERY";
             /** Format: date-time */
             doneAt?: string;
             /** Format: date-time */
@@ -6164,6 +6164,8 @@ export interface components {
             note?: string;
             overdue?: boolean;
             place?: string;
+            /** Format: int64 */
+            recordingHorseStayId?: number;
             /** @enum {string} */
             status?: "ASSIGNED" | "ACCEPTED" | "DONE" | "CANCELLED";
             /** Format: int64 */
@@ -6394,6 +6396,7 @@ export interface components {
             /** Format: int32 */
             feedingsPerDay?: number;
             horseName?: string;
+            hubExitChecks?: components["schemas"]["HealthCheckTaskResponseDto"][];
             hubStallCode?: string;
             /** Format: int64 */
             id?: number;
