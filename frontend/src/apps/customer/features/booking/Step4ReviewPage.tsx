@@ -17,7 +17,7 @@ import { PartyFields } from './components/PartyFields'
 import { ReviewList } from './components/ReviewList'
 import { PARTY_ROLES, useBookingDraft, type PartyDraft, type PartyRole } from './draft'
 import { addressText, findAddress, loadProfile, useBookingData } from './loaders'
-import { horsesReady, isHome, routeReady, servicesReady } from './model'
+import { horsesReady, routeReady, servicesReady } from './model'
 import { useSubmitBooking } from './useSubmitBooking'
 import s from './Booking.module.css'
 
@@ -129,7 +129,7 @@ export default function Step4ReviewPage() {
         </div>
       </Card>
 
-      <NeedToKnow draft={draft} pickupHome={isHome(pickup)} deliveryHome={isHome(delivery)} />
+      <NeedToKnow draft={draft} />
 
       <div>
         <label className={s.check}>

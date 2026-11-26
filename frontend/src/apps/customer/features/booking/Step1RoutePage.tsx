@@ -15,7 +15,7 @@ import { MethodChoice } from './components/MethodChoice'
 import { RegulationNotice } from './components/RegulationNotice'
 import { useBookingDraft, type Departure } from './draft'
 import { findAddress, useBookingData } from './loaders'
-import { addDays, bookingTypeOf, isHome, latestPickup, routeReady, todayIso } from './model'
+import { addDays, bookingTypeOf, latestPickup, routeReady, todayIso } from './model'
 import { useTransferOptions } from './useTransferOptions'
 import s from './Booking.module.css'
 
@@ -133,17 +133,17 @@ export default function Step1RoutePage() {
         {(direct || (linehaul && selected)) && (
           <Card title={t('bookingForm.route.transfer')}>
             <div className={s.stack}>
-              {linehaul && isHome(pickup) && (
+              {linehaul && (
                 <MethodChoice name="pickupMethod" legend={t('bookingForm.route.pickupMethod')} side="pickup"
                   value={draft.pickupMethod} hub={suggestions.data?.pickupHubName}
                   blocked={blocked.pickup} onChange={pickupMethod => save({ pickupMethod })} />
               )}
               <Field label={t(selfPickup ? 'bookingForm.route.hubDate' : 'bookingForm.route.pickupDate')} required error={dateError}
-                hint={linehaul ? t(type === 'IMPORT' ? 'bookingForm.route.importDateHint' : 'bookingForm.route.linehaulDateHint') : t('bookingForm.route.directDateHint')}>
+                hint={t(linehaul ? 'bookingForm.route.linehaulDateHint' : 'bookingForm.route.directDateHint')}>
                 {control => <Input {...control} type="date" value={draft.pickupDate} min={today} max={lastDay}
                   onChange={event => save({ pickupDate: event.target.value })} />}
               </Field>
-              {linehaul && isHome(delivery) && (
+              {linehaul && (
                 <MethodChoice name="deliveryMethod" legend={t('bookingForm.route.deliveryMethod')} side="delivery"
                   value={draft.deliveryMethod} hub={suggestions.data?.deliveryHubName}
                   blocked={blocked.delivery} onChange={deliveryMethod => save({ deliveryMethod })} />

@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.policy;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -8,6 +9,9 @@ import com.example.racehorse_transport.dto.booking.BookingCreateRequestDto.Addre
 import com.example.racehorse_transport.dto.booking.BookingCreateRequestDto.HorseInput;
 import com.example.racehorse_transport.dto.booking.BookingCreateRequestDto.PartyInput;
 import com.example.racehorse_transport.dto.booking.InsuranceDeclarationRequestDto;
+import com.example.racehorse_transport.entity.Location;
+import com.example.racehorse_transport.entity.Route;
+import com.example.racehorse_transport.entity.enums.ActiveStatus;
 import com.example.racehorse_transport.entity.enums.AddressRole;
 import com.example.racehorse_transport.entity.enums.BookingPartyRole;
 import com.example.racehorse_transport.entity.enums.BookingType;
@@ -48,15 +52,17 @@ class BookingSubmissionPolicyTest {
     }
 
     @Test
-    void acceptsPickupOnDepartureDayButRejectsLaterPickup() {
-        assertThatCode(() -> BookingSubmissionPolicy.validatePickupDate(BookingType.IMPORT, TODAY, TODAY)).doesNotThrowAnyException();
-        assertThatThrownBy(() -> BookingSubmissionPolicy.validatePickupDate(BookingType.IMPORT, TODAY.plusDays(1), TODAY))
+    void localKeepsTheGivenDateAndRejectsLaterPickup() {
+        assertThat(BookingSubmissionPolicy.latestPickupDate(BookingType.LOCAL, TODAY)).isEqualTo(TODAY);
+        assertThatCode(() -> BookingSubmissionPolicy.validatePickupDate(BookingType.LOCAL, TODAY, TODAY)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> BookingSubmissionPolicy.validatePickupDate(BookingType.LOCAL, TODAY.plusDays(1), TODAY))
                 .isInstanceOf(BookingRuleException.class);
     }
 
     @Test
     void linehaulPickupMustBeAtLeastOneCalendarDayBeforeDeparture() {
-        for (BookingType type : List.of(BookingType.INTERPROVINCE, BookingType.EXPORT)) {
+        for (BookingType type : List.of(BookingType.INTERPROVINCE, BookingType.EXPORT, BookingType.IMPORT)) {
+            assertThat(BookingSubmissionPolicy.latestPickupDate(type, TODAY)).isEqualTo(TODAY.minusDays(1));
             assertThatCode(() -> BookingSubmissionPolicy.validatePickupDate(type, TODAY.minusDays(1), TODAY))
                     .doesNotThrowAnyException();
             assertThatThrownBy(() -> BookingSubmissionPolicy.validatePickupDate(type, TODAY, TODAY))
@@ -65,22 +71,43 @@ class BookingSubmissionPolicyTest {
     }
 
     @Test
-    void onlyDomesticLinehaulEndsAllowSelfTransfer() {
-        var linehaul = HubResolutionPolicy.Routing.LINEHAUL;
+    void linehaulAllowsSelfTransferAtBothEnds() {
+        for (BookingType type : List.of(BookingType.INTERPROVINCE, BookingType.EXPORT, BookingType.IMPORT)) {
+            assertThatCode(() -> BookingSubmissionPolicy.validateTransfer(type, HubResolutionPolicy.Routing.LINEHAUL,
+                    TransferMethod.SELF, TransferMethod.SELF)).doesNotThrowAnyException();
+        }
+    }
+
+    @Test
+    void directRequiresCompanyTransferAtBothEnds() {
+        var direct = HubResolutionPolicy.Routing.DIRECT;
         var company = TransferMethod.COMPANY;
         var self = TransferMethod.SELF;
-        assertThatCode(() -> BookingSubmissionPolicy.validateTransfer(BookingType.INTERPROVINCE, linehaul, self, self))
+        assertThatCode(() -> BookingSubmissionPolicy.validateTransfer(BookingType.LOCAL, direct, company, company))
                 .doesNotThrowAnyException();
-        assertThatCode(() -> BookingSubmissionPolicy.validateTransfer(BookingType.EXPORT, linehaul, self, company))
-                .doesNotThrowAnyException();
-        assertThatCode(() -> BookingSubmissionPolicy.validateTransfer(BookingType.IMPORT, linehaul, company, self))
-                .doesNotThrowAnyException();
-        assertThatThrownBy(() -> BookingSubmissionPolicy.validateTransfer(BookingType.IMPORT, linehaul, self, company))
+        assertThatThrownBy(() -> BookingSubmissionPolicy.validateTransfer(BookingType.INTERPROVINCE, direct, self, company))
                 .isInstanceOf(BookingRuleException.class);
-        assertThatThrownBy(() -> BookingSubmissionPolicy.validateTransfer(BookingType.EXPORT, linehaul, company, self))
+        assertThatThrownBy(() -> BookingSubmissionPolicy.validateTransfer(BookingType.LOCAL, direct, company, self))
                 .isInstanceOf(BookingRuleException.class);
-        assertThatThrownBy(() -> BookingSubmissionPolicy.validateTransfer(BookingType.INTERPROVINCE,
-                HubResolutionPolicy.Routing.DIRECT, self, company)).isInstanceOf(BookingRuleException.class);
+    }
+
+    @Test
+    void routeMustBeActiveAndMatchThePickupAndDeliveryHubs() {
+        var pickup = new Location();
+        pickup.setId(1L);
+        var delivery = new Location();
+        delivery.setId(2L);
+        var route = new Route();
+        route.setOrigin(pickup);
+        route.setDestination(delivery);
+        route.setStatus(ActiveStatus.ACTIVE);
+        assertThatCode(() -> BookingSubmissionPolicy.validateRoute(route, BookingType.EXPORT, 1L, 2L))
+                .doesNotThrowAnyException();
+        assertThatThrownBy(() -> BookingSubmissionPolicy.validateRoute(route, BookingType.EXPORT, 2L, 1L))
+                .isInstanceOf(BookingRuleException.class);
+        route.setStatus(ActiveStatus.INACTIVE);
+        assertThatThrownBy(() -> BookingSubmissionPolicy.validateRoute(route, BookingType.EXPORT, 1L, 2L))
+                .isInstanceOf(BookingRuleException.class);
     }
 
     private static BookingCreateRequestDto request(LocalDate date, boolean accepted, List<HorseInput> horses) {

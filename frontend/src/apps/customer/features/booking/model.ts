@@ -34,7 +34,7 @@ export function bookingTypeOf(pickup?: CustomerAddress, delivery?: CustomerAddre
 // Ngày muộn nhất ô chọn ngày cho phép; backend vẫn kiểm lại
 export function latestPickup(type: BookingType | null, departureDate?: string) {
   if (!departureDate) return undefined
-  return type === 'IMPORT' ? departureDate : addDays(departureDate, -1)
+  return type === 'LOCAL' ? departureDate : addDays(departureDate, -1)
 }
 
 export function routeReady(draft: BookingDraft) {

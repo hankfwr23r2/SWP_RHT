@@ -5,7 +5,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -33,7 +32,6 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -135,7 +133,7 @@ class FullFlowIntegrationTest {
         assertThat(openStays(order, "ASSEMBLY", hcm)).isEqualTo(2);
 
         // Chặng trục: nhận ở hub, ghi uống ăn ở từng trạm nghỉ, giao vào HUB-DN
-        linehaul.runLinehaul(order, "HUB_IN");
+        linehaul.runLinehaul(order);
         assertThat(openStays(order, "ASSEMBLY", hcm)).isZero();
         assertThat(departureStatus(order)).isEqualTo("COMPLETED");
 
@@ -162,9 +160,9 @@ class FullFlowIntegrationTest {
         }
     }
 
-    // TP.HCM đi Phnom Penh: đón về HUB-HCM, chặng trục HCM-PNH tới cửa khẩu Mộc Bài, bàn giao đại lý Campuchia, đại lý giao
+    // TP.HCM đi Phnom Penh: đón về HUB-HCM, chặng trục HCM-PNH qua Mộc Bài tới HUB-PNH, rồi giao tại Phnom Penh
     @Test
-    void exportBookingIsHandedToTheAgentAtTheBorderAndTheAgentDelivers() throws Exception {
+    void exportBookingCrossesTheBorderAndTransfersAtPhnomPenhHub() throws Exception {
         Case order = confirmedBooking("DEV-EXPORT-001");
 
         Instant pickupStart = order.departureAt().minusSeconds(10 * 3600);
@@ -173,13 +171,18 @@ class FullFlowIntegrationTest {
         pickup.assign(order, 1, 2);
         Trip linehaul = linehaul(testData.vehicle(4, 0).getId(), order.departureId());
         linehaul.assign(order, 0, linehaul.lastStop());
-        long agent = jdbc.queryForObject("SELECT id FROM party WHERE display_name = 'Đại lý vận tải Campuchia (mẫu)'", Long.class);
-        Instant atGate = linehaul.plannedEndAt();
-        long agentLeg = id(mvc.perform(post("/booking-horses/{id}/agent-legs", order.horses().getFirst().id())
-                        .header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"agentPartyId\":%d,\"gateLocationId\":null,\"plannedStartAt\":\"%s\",\"plannedEndAt\":\"%s\"}"
-                                .formatted(agent, atGate, atGate.plusSeconds(86_400))))
-                .andExpect(status().isCreated()));
+        long pnh = locations.findByCode("HUB-PNH").orElseThrow().getId();
+        long deliveryVehicle = jdbc.queryForObject("""
+                SELECT v.id FROM vehicle v JOIN vehicle_class c ON c.id = v.vehicle_class_id
+                WHERE v.home_hub_location_id = ? AND c.code = 'LIGHT'
+                """, Long.class, pnh);
+        var driver = testData.staff(testData.unique("m3.pnh.driver"), "DRIVER", "HUB-PNH");
+        var escort = testData.staff(testData.unique("m3.pnh.escort"), "ESCORT", "HUB-PNH");
+        Instant deliveryStart = linehaul.plannedEndAt().plusSeconds(3600);
+        Trip delivery = plan("DELIVERY", deliveryVehicle, driver, escort, stop(pnh, "HUB", deliveryStart, 0),
+                address(order.delivery(), "DELIVERY", deliveryStart, 30), stop(pnh, "HUB", deliveryStart, 120));
+        delivery.assign(order, 0, 1);
+        assertThat(linehaul.stopTypes).contains("BORDER");
 
         pickup.start();
         pickup.pass(0);
@@ -190,17 +193,18 @@ class FullFlowIntegrationTest {
         pickup.handOver(2, "HUB_IN", order);
         pickup.complete();
 
-        // Tới cửa khẩu thì bàn giao cho đại lý; chặng của đại lý bắt đầu
-        linehaul.runLinehaul(order, "AGENT");
-        assertThat(legStatus(agentLeg)).isEqualTo("IN_PROGRESS");
-        assertThat(customerNotices(order)).contains("Đã qua cửa khẩu");
+        linehaul.runLinehaul(order);
         assertThat(departureStatus(order)).isEqualTo("COMPLETED");
 
-        // Điều phối nhập hộ mốc đại lý đã giao, kèm biên bản của đại lý
-        mvc.perform(multipart("/agent-legs/{id}/complete", agentLeg)
-                        .file(new MockMultipartFile("proof", "proof.pdf", "application/pdf", new byte[]{1}))
-                        .header(HttpHeaders.AUTHORIZATION, coordinator))
-                .andExpect(status().isOk());
+        delivery.start();
+        delivery.arrive(0);
+        delivery.handOver(0, "HUB_OUT", order);
+        delivery.depart(0);
+        delivery.arrive(1);
+        delivery.handOver(1, "DELIVERY", order);
+        delivery.depart(1);
+        delivery.arrive(2);
+        delivery.complete();
 
         assertThat(bookingStatus(order)).isEqualTo("DELIVERED");
         journey(order).andExpect(jsonPath("$.data.horses[0].legs[*].legType")
@@ -208,7 +212,7 @@ class FullFlowIntegrationTest {
                 .andExpect(jsonPath("$.data.horses[0].legs[*].status")
                         .value(org.hamcrest.Matchers.contains("COMPLETED", "COMPLETED", "COMPLETED")))
                 .andExpect(jsonPath("$.data.horses[0].handovers[*].handoverType")
-                        .value(org.hamcrest.Matchers.contains("PICKUP", "HUB_IN", "HUB_OUT", "AGENT")));
+                        .value(org.hamcrest.Matchers.contains("PICKUP", "HUB_IN", "HUB_OUT", "HUB_IN", "HUB_OUT", "DELIVERY")));
     }
 
     // ===================== Đoạn 1: thay thế tạm cho luồng A =====================
@@ -413,8 +417,8 @@ class FullFlowIntegrationTest {
                     .andExpect(status().isOk());
         }
 
-        // Nhận ngựa ở hub đầu tuyến, đi qua các trạm, giao ở điểm cuối tuyến (vào hub hoặc cho đại lý), kết thúc lượt
-        void runLinehaul(Case order, String handoverAtEnd) throws Exception {
+        // Nhận ngựa ở hub đầu tuyến, đi qua các trạm, giao vào hub cuối tuyến, kết thúc lượt
+        void runLinehaul(Case order) throws Exception {
             start();
             arrive(0);
             handOver(0, "HUB_OUT", order);
@@ -427,7 +431,7 @@ class FullFlowIntegrationTest {
                 }
             }
             arrive(lastStop());
-            handOver(lastStop(), handoverAtEnd, order);
+            handOver(lastStop(), "HUB_IN", order);
             complete();
         }
 
@@ -485,24 +489,12 @@ class FullFlowIntegrationTest {
         return jdbc.queryForObject("SELECT status FROM departure WHERE id = ?", String.class, order.departureId());
     }
 
-    private String legStatus(long legId) {
-        entityManager.flush();
-        return jdbc.queryForObject("SELECT status FROM horse_leg WHERE id = ?", String.class, legId);
-    }
-
     private int openStays(Case order, String type, long locationId) {
         entityManager.flush();
         return jdbc.queryForObject("""
                 SELECT count(*) FROM horse_stay s JOIN booking_horse bh ON bh.id = s.booking_horse_id
                 WHERE bh.booking_id = ? AND s.stay_type = ? AND s.location_id = ? AND s.actual_end_at IS NULL""",
                 Integer.class, order.id(), type, locationId);
-    }
-
-    // Tiêu đề các thông báo khách nhận được trên đơn
-    private List<String> customerNotices(Case order) {
-        entityManager.flush();
-        return jdbc.queryForList("SELECT n.title FROM notification n JOIN notification_recipient r ON r.notification_id = n.id "
-                + "JOIN booking b ON b.id = n.booking_id WHERE n.booking_id = ? AND r.user_id = b.customer_id ORDER BY n.id", String.class, order.id());
     }
 
     private static long id(ResultActions result) throws Exception {

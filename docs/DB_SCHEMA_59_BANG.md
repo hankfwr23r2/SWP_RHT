@@ -291,7 +291,7 @@ Không có `status` và `email`: lấy từ `app_user`.
 | `phone` | `varchar(20)` | | | |
 | `hire_date` | `date` | | | |
 | `employment_status` | `varchar(30)` | | CK `ACTIVE, ON_LEAVE, TERMINATED` | |
-| `home_hub_location_id` | `bigint` | | FK → location | Hub trực thuộc. Đợt này mọi nhân viên thuộc trụ sở. Hub vệ tinh không có nhân viên trực thuộc |
+| `home_hub_location_id` | `bigint` | | FK → location | Hub trực thuộc, hub bất kỳ (26/11/2026) |
 | `driver_license_class` | `varchar(10)` | có | | Chỉ có với tài xế |
 | `driver_license_expiry_date` | `date` | có | | |
 
@@ -531,7 +531,7 @@ Khi tính sức chứa, `STANDARD` chiếm 1 chỗ, `WIDE` chiếm 2 chỗ.
 | `vehicle_class_id` | `bigint` | | FK → vehicle_class | |
 | `standard_stall_count` | `int` | | CK `>= 0` | Số khoang thường ở bố trí mặc định. Chỉ dùng để tính tổng chỗ |
 | `wide_stall_count` | `int` | | CK `>= 0` | Số khoang rộng ở bố trí mặc định. Chỉ dùng để tính tổng chỗ, không giới hạn số con khoang rộng và không cố định vị trí |
-| `home_hub_location_id` | `bigint` | | FK → location | Hub gốc. Đợt này mọi xe thuộc trụ sở |
+| `home_hub_location_id` | `bigint` | | FK → location | Hub gốc, hub bất kỳ (26/11/2026) |
 | `status` | `varchar(30)` | | CK `ACTIVE, MAINTENANCE, RETIRED` | Quản trị viên đổi thủ công. Hệ thống chuyển sang bảo dưỡng khi tổ xe báo cần bảo dưỡng lúc kết thúc lượt hoặc khi xe được thay do sự cố. Mỗi lần đổi trạng thái ghi `audit_log` (quy tắc #36). Xe đang chạy hay rảnh suy ra từ `vehicle_trip` |
 
 Vách ngăn **di động**: hai vị trí liền nhau bất kỳ ghép thành một khoang rộng. Cả xe là một dãy liền, đánh số từ 1 tới tổng chỗ.
@@ -1681,7 +1681,7 @@ Các quy tắc dưới đây cần so dữ liệu ở nhiều bảng nên CHECK 
 
 | # | Quy tắc | Bảng liên quan |
 |---|---|---|
-| 1 | `location` được tham chiếu phải đúng `location_type`: `hub_service_area`, `staff.home_hub_location_id`, `vehicle.home_hub_location_id` là HUB. Hub gốc của xe phải có `is_headquarters = true`. `route.origin_location_id` là HUB hoặc BORDER_GATE. `document_requirement.gate_location_id` là BORDER_GATE | location |
+| 1 | `location` được tham chiếu phải đúng `location_type`: `hub_service_area`, `staff.home_hub_location_id`, `vehicle.home_hub_location_id` là HUB (hub bất kỳ, kể cả hub nước ngoài, từ 26/11/2026). `route.origin_location_id` và `route.destination_location_id` là HUB; cửa khẩu chỉ là `route_stop` loại `BORDER`. `document_requirement.gate_location_id` là BORDER_GATE | location |
 | 2 | `departure.route_id` phải bằng `departure_schedule.route_id` khi có `departure_schedule_id` | departure |
 | 3 | Chỉ nhận đặt chỗ khi `departure.status = OPEN`, `now() < booking_cutoff_at` và còn đủ chỗ (`booked_stall_count + số chỗ của đơn ≤ stall_capacity`; khoang thường 1 chỗ, khoang rộng 2 chỗ) | booking, departure |
 | 4 | `booking_cutoff_at` phải đủ xa: lấy `permit_lead_days` và `certificate_lead_days` từ `country_rule` | departure, country_rule |
@@ -1699,7 +1699,7 @@ Các quy tắc dưới đây cần so dữ liệu ở nhiều bảng nên CHECK 
 | 16 | `booking` chỉ chuyển sang DELIVERED khi mọi `booking_horse` ACTIVE đã có `horse_leg` leg_type DELIVERY hoặc DIRECT ở trạng thái COMPLETED | booking, horse_leg |
 | 17 | Đơn giá trong `quotation_line` phải lấy từ `price_item` thuộc đúng `quotation.price_list_id`. Ngoại lệ: dòng ADJUSTMENT nhập tay và dòng INSURANCE lấy `horse_insurance.premium_amount` hãng báo, cả hai có `price_item_id` NULL | quotation_line |
 | 18 | Mỗi lần đổi `booking.status` phải ghi một dòng `booking_status_history`, trong cùng transaction. Khi chuyển sang SCHEDULE_CHANGE_REQUIRED, lưu chuyến vừa lỡ và nguyên nhân (COMPANY khi hủy chuyến, NULL khi nhả đơn chưa cọc tại mốc quyết định) | booking, booking_status_history |
-| 19 | Chọn cách chạy theo hub, không theo `booking_type`: hub đón trùng hub giao thì chạy thẳng (`DIRECT`, `departure_id` NULL); khác hub thì đi trục (bắt buộc có `departure_id`, `route` nối hai hub hoặc nối hub với cửa khẩu) | booking, hub_service_area, route |
+| 19 | Chọn cách chạy theo hub, không theo `booking_type`: hub đón trùng hub giao thì chạy thẳng (`DIRECT`, `departure_id` NULL); khác hub thì đi trục (bắt buộc có `departure_id`, `route` nối hub đón với hub giao). Đơn xuất, nhập cũng cần hub ở cả hai đầu, kể cả hub nước ngoài; cửa khẩu của đơn là điểm dừng `BORDER` đầu tiên trên tuyến | booking, hub_service_area, route |
 | 20 | `vehicle_trip.start_location_id` phải bằng `end_location_id` của lượt chạy liền trước của cùng xe. Xe tới hub vệ tinh thì phải có lượt chạy về trụ sở, ví dụ chuyến trục chiều ngược | vehicle_trip |
 | 21 | Đợt này ngựa chỉ lên xe trục ở điểm đầu tuyến và xuống ở điểm cuối tuyến. Vì vậy `departure.booked_stall_count` đếm theo cả chuyến là đúng | horse_leg, trip_stop, departure |
 | 22 | Mọi khoản `payment` và `cost_item` của một đơn dùng cùng `currency_code` với báo giá. Chi phí phát sinh ở nước ngoài quy đổi lúc ghi; hóa đơn gốc lưu ở `document` | payment, cost_item, quotation |
@@ -1737,9 +1737,9 @@ Người dùng chốt **mô hình bến xe** ([NGU_CANH_THIET_KE_LAI.md](NGU_CAN
 
 | Bảng, cột hoặc quy tắc | Hiện tại | Hướng thay đổi |
 |---|---|---|
-| `location` loại HUB, `hub_service_area` | Hub chỉ ở Việt Nam | Thêm hub ở Lào, Campuchia và vùng phục vụ là tỉnh bên đó |
-| Quy tắc #1: hub gốc của xe phải là trụ sở; `vehicle.home_hub_location_id`, `staff.home_hub_location_id` "đợt này thuộc trụ sở" | Mọi xe, người thuộc trụ sở | Hub gốc là bất kỳ hub nào |
-| `route.origin_location_id`, `destination_location_id`; quy tắc #19 | Tuyến quốc tế kết thúc hoặc bắt đầu ở cửa khẩu | Tuyến luôn nối hai hub; cửa khẩu là `route_stop` loại `BORDER` |
+| `location` loại HUB, `hub_service_area` | **Đã làm ở M1 (dữ liệu mẫu)** | Hub Nha Trang, Vinh, Phnom Penh, Viêng Chăn, Savannakhet; tỉnh chỉ gán khi tâm tỉnh trong 8 giờ lái |
+| Quy tắc #1: hub gốc của xe, người | **Đã làm ở M1** | Hub gốc là bất kỳ hub nào |
+| `route.origin_location_id`, `destination_location_id`; quy tắc #19 | **Đã làm ở M1** | Tuyến luôn nối hai hub; cửa khẩu là `route_stop` loại `BORDER` |
 | `departure.stall_capacity`, `booked_stall_count`, `CHECK (booked_stall_count BETWEEN 0 AND stall_capacity)` | Số chỗ cố định theo lịch | Sức chứa theo xe nền và xe tăng cường của chuyến; hạn mức xe trục của hub; khóa khi đặt chỗ theo đội xe |
 | `departure_schedule` | Số chỗ theo lịch | Xe nền theo loại xe; lịch được kiểm với hạn mức xe của hub |
 | `system_config` | | Thêm thời gian nghỉ tối thiểu sau chuyến trục (12 giờ), tỷ lệ dự phòng (20%) |
@@ -1747,4 +1747,4 @@ Người dùng chốt **mô hình bến xe** ([NGU_CANH_THIET_KE_LAI.md](NGU_CAN
 | `horse_leg.agent_party_id`, `handover` loại `AGENT`, quy tắc #26, #28, #35, `party_role` `DEST_AGENT`, `submitter_type` `AGENT`, `cost_item.payer_type` `AGENT`, `incident.cause_type` `AGENT_FAULT` | Chặng và bàn giao đại lý ở cửa khẩu | Bỏ hoặc ngừng dùng; giao nhận ở hub nước ngoài dùng loại giao nhận thông thường |
 | `health_check_task.check_type` | `ROUTINE, FOLLOW_UP, BEFORE_DEPARTURE`, không bắt buộc | Thêm `BEFORE_DELIVERY`; bắt buộc khám trước khi ra hub ở cả hai đầu |
 | Trạng thái xe về | Vị trí suy ra từ lượt cuối | Thêm ghi nhận "Đã về hub gốc" có ảnh và tình trạng xe, theo thiết kế cũ nhánh `main` |
-| `document_requirement.gate_location_id` | Cửa khẩu suy từ điểm đầu, cuối tuyến | Cửa khẩu lấy từ `route_stop` loại `BORDER`; bổ sung giấy riêng theo cửa khẩu và các cửa khẩu của bản cũ |
+| `document_requirement.gate_location_id` | **Đã làm ở M1** | Cửa khẩu lấy từ `route_stop` loại `BORDER`; giấy riêng theo cửa khẩu và các cửa khẩu của bản cũ |

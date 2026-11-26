@@ -82,6 +82,25 @@ class RegulationControllerTest {
     }
 
     @Test
+    void mocBaiRequirementsReplaceGeneralRequirementsWithTheSameDocumentType() throws Exception {
+        String username = data.unique("regulation-export");
+        data.customer(username);
+        String token = "Bearer " + jwt.generateToken(username, List.of("CUSTOMER"));
+        Long gate = jdbc.queryForObject("SELECT id FROM location WHERE code = 'GATE-MOCBAI'", Long.class);
+
+        mvc.perform(post("/country-rules/preview").header(HttpHeaders.AUTHORIZATION, token)
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                                {"bookingType":"EXPORT","pickupCountryCode":"VN","deliveryCountryCode":"KH",
+                                 "requestedPickupDate":"2026-12-01","gateLocationId":%d}
+                                """.formatted(gate)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.requirementsDependOnGate").value(false))
+                .andExpect(jsonPath("$.data.requirements.length()").value(7))
+                .andExpect(jsonPath("$.data.requirements[?(@.gateLocationId == " + gate + ")].documentTypeCode")
+                        .value(org.hamcrest.Matchers.containsInAnyOrder("CUSTOMS_DECLARATION", "IMPORT_PERMIT", "QUARANTINE_CLEARANCE")));
+    }
+
+    @Test
     void rejectsDuplicateRequirementWithNullGate() throws Exception {
         Long ruleId = jdbc.queryForObject("""
                 SELECT id FROM country_rule WHERE country_code = 'VN' AND direction = 'INTERPROVINCE'

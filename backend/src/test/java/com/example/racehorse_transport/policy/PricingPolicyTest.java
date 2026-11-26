@@ -161,13 +161,15 @@ class PricingPolicyTest {
     }
 
     @Test
-    void earlyPickupDaysUseCalendarDaysAndExcludeImportAndDirect() {
+    void earlyPickupDaysUseCalendarDaysForAllLinehaulTypes() {
         LocalDate departure = LocalDate.of(2027, 2, 1);
         assertThat(PricingPolicy.earlyPickupDays(departure, departure)).isZero();
         assertThat(PricingPolicy.earlyPickupDays(departure.minusDays(1), departure)).isZero();
         assertThat(PricingPolicy.earlyPickupDays(BookingType.EXPORT, departure.minusDays(2), departure)).isEqualTo(1);
         assertThat(PricingPolicy.earlyPickupDays(BookingType.INTERPROVINCE, departure.minusDays(5), departure)).isEqualTo(4);
-        assertThat(PricingPolicy.earlyPickupDays(BookingType.IMPORT, departure.minusDays(5), departure)).isZero();
+        assertThat(PricingPolicy.earlyPickupDays(BookingType.IMPORT, departure.minusDays(5), departure)).isEqualTo(4);
+        assertThat(PricingPolicy.earlyPickupDays(BookingType.IMPORT, departure.minusDays(1), departure)).isZero();
+        assertThat(PricingPolicy.earlyPickupDays(BookingType.LOCAL, departure.minusDays(5), departure)).isZero();
         assertThat(PricingPolicy.earlyPickupDays(BookingType.INTERPROVINCE, departure.minusDays(5), null)).isZero();
     }
 

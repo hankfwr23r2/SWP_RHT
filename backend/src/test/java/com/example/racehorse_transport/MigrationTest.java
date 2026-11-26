@@ -76,8 +76,12 @@ class MigrationTest {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM province", Integer.class)).isEqualTo(77);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM role", Integer.class)).isEqualTo(7);
         assertThat(jdbc.queryForObject("SELECT name FROM role WHERE code = 'ESCORT'", String.class)).isEqualTo("Nhân viên hộ tống");
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM app_user WHERE username LIKE '%.dev'", Integer.class)).isEqualTo(15);
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM route_stop", Integer.class)).isEqualTo(72);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM app_user WHERE username LIKE '%.dev'", Integer.class)).isEqualTo(35);
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM route_stop stop
+                JOIN departure_schedule schedule ON schedule.route_id = stop.route_id
+                WHERE schedule.status = 'ACTIVE' AND schedule.valid_from = DATE '2026-11-01'
+                """, Integer.class)).isEqualTo(124);
     }
 
     @Test
@@ -183,7 +187,7 @@ class MigrationTest {
         long bookingHorseId = newBookingHorse(newBooking());
         assertThatThrownBy(() -> jdbc.update("""
                 INSERT INTO horse_leg (booking_horse_id, sequence_number, leg_type, from_location_id, to_location_id, planned_start_at, planned_end_at, status)
-                VALUES (?, 1, 'LINEHAUL', (SELECT id FROM location WHERE code = 'HUB-HCM'), (SELECT id FROM location WHERE code = 'GATE-MOCBAI'),
+                VALUES (?, 1, 'LINEHAUL', (SELECT id FROM location WHERE code = 'HUB-HCM'), (SELECT id FROM location WHERE code = 'HUB-PNH'),
                         TIMESTAMPTZ '2026-12-20 06:00+07', TIMESTAMPTZ '2026-12-20 08:00+07', 'PLANNED')""", bookingHorseId))
                 .isInstanceOf(DataAccessException.class)
                 .hasMessageContaining("ck_horse_leg_carrier");

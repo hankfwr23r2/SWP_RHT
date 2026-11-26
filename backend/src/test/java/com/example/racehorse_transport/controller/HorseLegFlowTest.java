@@ -316,9 +316,9 @@ class HorseLegFlowTest {
     }
 
     @Test
-    void exportBookingRidesPickupThenLinehaulToTheBorderGate() throws Exception {
+    void exportBookingRidesPickupThenLinehaulToTheForeignHub() throws Exception {
         Seed seed = seed("DEV-EXPORT-001");
-        long gate = locations.findByCode("GATE-MOCBAI").orElseThrow().getId();
+        long foreignHub = locations.findByCode("HUB-PNH").orElseThrow().getId();
         Instant start = seed.departureAt().minusSeconds(10 * 3600);
         long pickupTrip = tripId(createTrip(testData.vehicle(4, 0), "PICKUP", stop(hcm, "HUB", start, 0),
                 address(seed.pickup(), "PICKUP", start, 90), stop(hcm, "HUB", start, 240)));
@@ -328,7 +328,7 @@ class HorseLegFlowTest {
         long linehaul = tripId(createTrip(testData.vehicle(4, 0), "LINEHAUL", seed.departureId()));
         List<Long> linehaulStops = stopIds(linehaul);
         assign(linehaul, seed.horses().getFirst(), linehaulStops.getFirst(), linehaulStops.getLast()).andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data[0].leg.toName").value(locations.findById(gate).orElseThrow().getName()));
+                .andExpect(jsonPath("$.data[0].leg.toName").value(locations.findById(foreignHub).orElseThrow().getName()));
 
         // Lượt trục của chuyến khác không nhận ngựa của đơn này
         long otherDeparture = testData.departure("HCM-PNH", seed.pickupDate().plusDays(40), 9).getId();

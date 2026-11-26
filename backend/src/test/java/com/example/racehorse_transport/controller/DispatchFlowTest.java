@@ -46,10 +46,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 class DispatchFlowTest {
 
-    // Chuyến HCM-DN đột xuất lúc 06:00 UTC; tuyến có 8 điểm, điểm cuối HUB-DN tới sau 1781 phút
+    // Chuyến HCM-DN đột xuất lúc 06:00 UTC; tuyến có 8 điểm, điểm cuối HUB-DN tới sau 1747 phút
     private static final LocalDate DAY = LocalDate.of(2031, 3, 3);
     private static final Instant LINEHAUL_START = Instant.parse("2031-03-03T06:00:00Z");
-    private static final Instant LINEHAUL_END = Instant.parse("2031-03-04T11:41:00Z");
+    private static final Instant LINEHAUL_END = Instant.parse("2031-03-04T11:07:00Z");
 
     @Autowired private MockMvc mvc;
     @Autowired private JdbcTemplate jdbc;
@@ -84,7 +84,7 @@ class DispatchFlowTest {
                 .andExpect(jsonPath("$.data.startLocationId").value(hcm))
                 .andExpect(jsonPath("$.data.endLocationId").value(danang))
                 .andExpect(jsonPath("$.data.plannedStartAt").value("2031-03-03T06:00:00Z"))
-                .andExpect(jsonPath("$.data.plannedEndAt").value("2031-03-04T11:41:00Z"))
+                .andExpect(jsonPath("$.data.plannedEndAt").value("2031-03-04T11:07:00Z"))
                 .andExpect(jsonPath("$.data.stops.length()").value(8))
                 .andExpect(jsonPath("$.data.stops[1].stopType").value("REST"))
                 .andExpect(jsonPath("$.data.stops[1].plannedArrivalAt").value("2031-03-03T08:57:00Z"))
@@ -113,8 +113,8 @@ class DispatchFlowTest {
 
         postPlan("/dispatch/trip-plans", body).andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.startAt").value(LINEHAUL_END.toString()))
-                .andExpect(jsonPath("$.data.endAt").value("2031-03-05T17:23:00Z"))
-                .andExpect(jsonPath("$.data.stops[4].departureAt").value("2031-03-05T09:19:00Z"));
+                .andExpect(jsonPath("$.data.endAt").value("2031-03-05T16:28:00Z"))
+                .andExpect(jsonPath("$.data.stops[4].departureAt").value("2031-03-05T08:41:00Z"));
 
         long tripId = tripId(postPlan("/vehicle-trips/planned", body).andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.tripType").value("TRANSFER"))
@@ -123,9 +123,9 @@ class DispatchFlowTest {
                 .andExpect(jsonPath("$.data.startLocationId").value(danang))
                 .andExpect(jsonPath("$.data.endLocationId").value(hcm))
                 .andExpect(jsonPath("$.data.plannedStartAt").value(LINEHAUL_END.toString()))
-                .andExpect(jsonPath("$.data.plannedEndAt").value("2031-03-05T17:23:00Z"))
+                .andExpect(jsonPath("$.data.plannedEndAt").value("2031-03-05T16:28:00Z"))
                 .andExpect(jsonPath("$.data.stops.length()").value(8))
-                .andExpect(jsonPath("$.data.stops[4].plannedDepartureAt").value("2031-03-05T09:19:00Z")));
+                .andExpect(jsonPath("$.data.stops[4].plannedDepartureAt").value("2031-03-05T08:41:00Z")));
 
         mvc.perform(get("/vehicle-trips/{id}/horse-legs", tripId).header(HttpHeaders.AUTHORIZATION, coordinator))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data").isEmpty());

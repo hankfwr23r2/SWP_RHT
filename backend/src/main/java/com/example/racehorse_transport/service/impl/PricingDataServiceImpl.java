@@ -121,8 +121,9 @@ public class PricingDataServiceImpl implements PricingDataService {
         CustomerAddress pickup = ownedAddress(request.pickupAddressId(), username);
         CustomerAddress delivery = ownedAddress(request.deliveryAddressId(), username);
         BookingType type = bookingType(pickup, delivery);
-        Location originHub = domestic(pickup) ? hub(pickup) : null;
-        Location destinationHub = type == BookingType.LOCAL ? originHub : domestic(delivery) ? hub(delivery) : null;
+        // Hub nước ngoài như hub trong nước (mô hình bến xe): tra hub ở cả hai đầu
+        Location originHub = hub(pickup);
+        Location destinationHub = type == BookingType.LOCAL ? originHub : hub(delivery);
         boolean direct = HubResolutionPolicy.routingOf(type, hubId(originHub), hubId(destinationHub)) == Routing.DIRECT;
         List<RoadSegment> segments = direct ? List.of()
                 : transferSegments(pickup, originHub, delivery, destinationHub, TransferMethod.COMPANY, TransferMethod.COMPANY);
@@ -171,8 +172,9 @@ public class PricingDataServiceImpl implements PricingDataService {
 
     private RoutePlan routePlan(PricingPreviewRequestDto request, CustomerAddress pickup, CustomerAddress delivery,
                                 BookingType type, Instant now, int stalls) {
-        Location originHub = domestic(pickup) ? hub(pickup) : null;
-        Location destinationHub = type == BookingType.LOCAL ? originHub : domestic(delivery) ? hub(delivery) : null;
+        // Hub nước ngoài như hub trong nước (mô hình bến xe): tra hub ở cả hai đầu
+        Location originHub = hub(pickup);
+        Location destinationHub = type == BookingType.LOCAL ? originHub : hub(delivery);
         Routing routing = HubResolutionPolicy.routingOf(type, hubId(originHub), hubId(destinationHub));
         BookingSubmissionPolicy.validateTransfer(type, routing, request.pickupMethod(), request.deliveryMethod());
         if (routing == Routing.DIRECT) {
@@ -250,7 +252,7 @@ public class PricingDataServiceImpl implements PricingDataService {
 
     private static String province(CustomerAddress address) {
         if (address.getProvince() == null) {
-            throw new PricingRuleException("Địa chỉ trong nước cần có tỉnh hoặc thành phố.");
+            throw new PricingRuleException("Địa chỉ cần có tỉnh hoặc thành phố.");
         }
         return address.getProvince().getCode();
     }

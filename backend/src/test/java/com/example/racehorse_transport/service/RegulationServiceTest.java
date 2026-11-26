@@ -40,12 +40,13 @@ class RegulationServiceTest {
     @Mock private CountryRepository countries;
     @Mock private LocationRepository locations;
     @Mock private DepartureRepository departures;
+    @Mock private RouteStopRepository routeStops;
     private RegulationService service;
 
     @BeforeEach
     void setUp() {
         Clock clock = Clock.fixed(Instant.parse("2026-12-01T00:00:00Z"), ZoneOffset.UTC);
-        service = new RegulationServiceImpl(rules, types, requirements, countries, locations, departures, clock);
+        service = new RegulationServiceImpl(rules, types, requirements, countries, locations, departures, routeStops, clock);
     }
 
     @Test
@@ -54,7 +55,18 @@ class RegulationServiceTest {
         assertThat(result.rule()).isNull();
         assertThat(result.leadDays()).isZero();
         assertThat(result.requirements()).isEmpty();
-        verifyNoInteractions(rules, requirements, countries, locations, departures, types);
+        verifyNoInteractions(rules, requirements, countries, locations, departures, types, routeStops);
+    }
+
+    @Test
+    void internationalRouteUsesTheFirstBorderStop() {
+        Route route = new Route();
+        route.setId(42L);
+        when(routeStops.findBorderLocationIds(42L)).thenReturn(List.of(5L, 6L));
+
+        assertThat(service.gateOf(route, BookingType.EXPORT)).isEqualTo(5L);
+        assertThat(service.gateOf(route, BookingType.IMPORT)).isEqualTo(5L);
+        assertThat(service.gateOf(route, BookingType.INTERPROVINCE)).isNull();
     }
 
     @Test

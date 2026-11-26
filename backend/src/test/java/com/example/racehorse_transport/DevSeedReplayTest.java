@@ -33,7 +33,19 @@ class DevSeedReplayTest {
 
         jdbc.execute(new ClassPathResource("db/seed-dev/R__dev_seed_base.sql").getContentAsString(StandardCharsets.UTF_8));
 
+        jdbc.execute(new ClassPathResource("db/seed-dev/R__dev_seed_bookings.sql").getContentAsString(StandardCharsets.UTF_8));
+
         assertThat(jdbc.queryForObject("SELECT count(*) FROM trip_stop WHERE vehicle_trip_id = ?", Integer.class, trip)).isEqualTo(8);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM route_stop rs JOIN route r ON r.id = rs.route_id WHERE r.code = 'HCM-DN'", Integer.class)).isEqualTo(8);
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM booking b
+                JOIN departure d ON d.id = b.departure_id
+                JOIN route r ON r.id = d.route_id
+                JOIN location destination ON destination.id = r.destination_location_id
+                JOIN booking_address a ON a.booking_id = b.id AND a.address_type = 'DELIVERY'
+                JOIN hub_service_area area ON area.province_code = a.province_code AND area.hub_location_id = destination.id
+                WHERE b.code = 'DEV-EXPORT-001' AND r.code = 'HCM-PNH' AND destination.code = 'HUB-PNH'
+                  AND b.requested_pickup_date <= d.departure_date - 1
+                """, Integer.class)).isEqualTo(1);
     }
 }

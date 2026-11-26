@@ -92,8 +92,11 @@ public class TestData {
         return customers.saveAndFlush(customer);
     }
 
-    // Nhân viên thuộc trụ sở với một vai trò nội bộ
     public Staff staff(String username, String roleCode) {
+        return staff(username, roleCode, "HUB-HCM");
+    }
+
+    public Staff staff(String username, String roleCode, String homeHubCode) {
         AppUser user = user(username, roleCode);
         Staff profile = new Staff();
         profile.setUser(user);
@@ -102,7 +105,7 @@ public class TestData {
         profile.setPhone("0900000999");
         profile.setHireDate(LocalDate.of(2026, 1, 1));
         profile.setEmploymentStatus(EmploymentStatus.ACTIVE);
-        profile.setHomeHubLocation(locations.findByCode("HUB-HCM").orElseThrow());
+        profile.setHomeHubLocation(locations.findByCode(homeHubCode).orElseThrow());
         return staff.saveAndFlush(profile);
     }
 

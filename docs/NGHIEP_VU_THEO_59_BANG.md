@@ -94,8 +94,8 @@ Hub đón và hub giao tra từ `hub_service_area` theo tỉnh của `booking_ad
 |---|---|---|---|
 | `LOCAL` | Cùng tỉnh, chạy thẳng một chặng `DIRECT` | Không | Không |
 | `INTERPROVINCE` | Liên tỉnh, cần giấy kiểm dịch vận chuyển | Có (`VN`) | Có nếu hub đón khác hub giao. Cùng hub thì chạy thẳng |
-| `EXPORT` | VN → Lào hoặc Campuchia. Ngựa đã đủ điều kiện cách ly, công ty bàn giao cho đại lý ở cửa khẩu | Có (nước đến) | Có |
-| `IMPORT` | Lào hoặc Campuchia → VN. Ngược chiều đơn xuất: đại lý liên hệ cửa khẩu Việt Nam và bàn giao cho công ty ở đó. Chủ hàng bố trí nơi cách ly | Có (nước đi) | Có |
+| `EXPORT` | VN → Lào hoặc Campuchia. Ngựa đã đủ điều kiện cách ly. Đi trục từ hub trong nước qua cửa khẩu tới hub nước ngoài của công ty, rồi giao như trong nước (26/11/2026) | Có (nước đến) | Có |
+| `IMPORT` | Lào hoặc Campuchia → VN. Ngược chiều đơn xuất: hub nước ngoài đón ở nhà chủ ngựa, trục qua cửa khẩu về hub trong nước (26/11/2026). Chủ hàng bố trí nơi cách ly | Có (nước đi) | Có |
 
 Đơn hồi hương (khứ hồi) là một đơn `IMPORT` có `original_booking_id` trỏ về đơn đi.
 

@@ -16,7 +16,7 @@ SELECT s.id,
 FROM departure_schedule s
 JOIN departure_schedule_day sd ON sd.departure_schedule_id = s.id
 CROSS JOIN generate_series(current_date + 1, current_date + 42, interval '1 day') AS d
-WHERE s.status = 'ACTIVE'
+WHERE s.status = 'ACTIVE' AND d::date >= s.valid_from AND (s.valid_to IS NULL OR d::date <= s.valid_to)
   AND extract(isodow FROM d)::smallint = sd.day_of_week
 ON CONFLICT ON CONSTRAINT uk_departure_departure_schedule_id_departure_date DO NOTHING;
 
@@ -140,7 +140,7 @@ BEGIN
                       AND pi.stall_type_code IS NOT DISTINCT FROM l.stall
                       AND pi.km_from IS NOT DISTINCT FROM l.km_from;
 
-    -- ===================== Đơn 3: quốc tế TP.HCM -> Phnom Penh (trục HCM -> cửa khẩu Mộc Bài) =====================
+    -- ===================== Đơn 3: quốc tế TP.HCM -> Phnom Penh (trục HUB-HCM -> HUB-PNH qua Mộc Bài) =====================
     SELECT d.id INTO v_dep FROM departure d JOIN route r ON r.id = d.route_id
     WHERE r.code = 'HCM-PNH' AND d.status = 'OPEN' AND d.departure_date >= current_date + 14
     ORDER BY d.departure_date LIMIT 1;
@@ -157,7 +157,7 @@ BEGIN
 
     INSERT INTO booking_address (booking_id, address_type, address_line, province_code, country_code, latitude, longitude, contact_name, contact_phone)
     VALUES (v_booking, 'PICKUP', 'CLB Cưỡi ngựa Sài Gòn, TP.HCM', 'VN-79', 'VN', 10.800000, 106.740000, 'Chị Tư', '0909000022'),
-           (v_booking, 'DELIVERY', 'Genius Resort Equestrian Centre, Phnom Penh', 'KH-12', 'KH', 11.556400, 104.928200, 'Sok Dara', '+85512000001');
+           (v_booking, 'DELIVERY', 'Genius Resort Equestrian Centre, Phnom Penh (mẫu)', 'KH-12', 'KH', 11.556400, 104.928200, 'Sok Dara', '+85512000001');
 
     SELECT id INTO v_horse FROM horse WHERE microchip = '985000000100004';
     INSERT INTO booking_horse (booking_id, horse_id, stall_type_code, status) VALUES (v_booking, v_horse, 'STANDARD', 'ACTIVE') RETURNING id INTO v_line;
@@ -172,12 +172,14 @@ BEGIN
     RETURNING id INTO v_quotation;
     INSERT INTO quotation_line (quotation_id, line_number, line_type, billable_service_id, price_item_id, description, quantity, unit, unit_price, is_pass_through)
     SELECT v_quotation, l.line_number, l.line_type, s.id, pi.id, l.description, l.qty, l.unit, pi.unit_price, s.is_pass_through
-    FROM (VALUES (1, 'LINEHAUL', 'LINEHAUL_STALL', NULL::text, 'HCM-PNH'::text, 'STANDARD'::text, NULL::numeric, 'Cước trục HCM - Mộc Bài, 1 khoang tiêu chuẩn', 1::numeric, 'STALL'),
+    FROM (VALUES (1, 'LINEHAUL', 'LINEHAUL_STALL', NULL::text, 'HCM-PNH'::text, 'STANDARD'::text, NULL::numeric, 'Cước trục TP.HCM - Phnom Penh, 1 khoang tiêu chuẩn', 1::numeric, 'STALL'),
                  (2, 'PICKUP', 'PICKUP_KM', 'MEDIUM', NULL, NULL, 0.00, 'Cước chặng đón 20 km, xe hạng trung', 20, 'KM'),
                  (3, 'FUEL', 'FUEL_TOLL', NULL, NULL, NULL, NULL, 'Nhiên liệu và phí cầu đường chặng đón 20 km', 20, 'KM'),
                  (4, 'SERVICE', 'VET_CHECK', NULL, NULL, NULL, NULL, 'Thú y tại chuồng: khám và lấy mẫu', 1, 'HORSE'),
                  (5, 'DOCS', 'QUARANTINE_DOCS', NULL, NULL, NULL, NULL, 'Phí làm thủ tục kiểm dịch', 1, 'BOOKING'),
-                 (6, 'DOCS', 'GOV_FEE', NULL, NULL, NULL, NULL, 'Lệ phí nhà nước (thu hộ)', 1, 'BOOKING')
+                 (6, 'DOCS', 'GOV_FEE', NULL, NULL, NULL, NULL, 'Lệ phí nhà nước (thu hộ)', 1, 'BOOKING'),
+                 (7, 'DELIVERY', 'DELIVERY_KM', 'MEDIUM', NULL, NULL, 0.00, 'Cước chặng giao Phnom Penh 10 km (mẫu)', 10, 'KM'),
+                 (8, 'FUEL', 'FUEL_TOLL', NULL, NULL, NULL, NULL, 'Nhiên liệu và phí cầu đường chặng giao 10 km', 10, 'KM')
          ) AS l(line_number, line_type, service_code, class_code, route_code, stall, km_from, description, qty, unit)
     JOIN billable_service s ON s.code = l.service_code
     JOIN price_item pi ON pi.price_list_id = v_pl AND pi.billable_service_id = s.id

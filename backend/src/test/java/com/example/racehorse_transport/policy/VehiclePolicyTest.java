@@ -25,11 +25,11 @@ class VehiclePolicyTest {
     }
 
     @Test
-    void acceptsOnlyHeadquartersOfTypeHub() {
-        assertThatCode(() -> VehiclePolicy.requireHeadquarters(LocationType.HUB, true)).doesNotThrowAnyException();
-        assertThatThrownBy(() -> VehiclePolicy.requireHeadquarters(LocationType.HUB, false))
+    void requiresHomeLocationToBeAHub() {
+        assertThatCode(() -> VehiclePolicy.requireHomeHub(LocationType.HUB)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> VehiclePolicy.requireHomeHub(LocationType.BORDER_GATE))
                 .isInstanceOf(VehicleRuleException.class);
-        assertThatThrownBy(() -> VehiclePolicy.requireHeadquarters(LocationType.REST_STOP, true))
+        assertThatThrownBy(() -> VehiclePolicy.requireHomeHub(LocationType.REST_STOP))
                 .isInstanceOf(VehicleRuleException.class);
     }
 

@@ -325,7 +325,6 @@ export const customer = {
       "error": "Could not change the delivery destination. Please try again.",
       "conflict": "The order or price changed. Preview the charges again.",
       "reasons": {
-        "EXPORT": "Export orders are handed over to an agent.",
         "DIRECT": "Direct orders have no delivery hub for replanning.",
         "SELF": "You are collecting the horses at the hub.",
         "NOT_CONFIRMED": "The order must be confirmed.",
@@ -617,8 +616,8 @@ export const customer = {
     typeHints: {
       LOCAL: 'the truck collects and drives straight to the destination.',
       INTERPROVINCE: 'horses gather at a hub, take the main departure, then go to the destination.',
-      EXPORT: 'horses take the main departure to the border, then our agent takes over.',
-      IMPORT: 'our agent collects abroad and we take over at the border.',
+      EXPORT: 'horses travel from our hub in Vietnam through the border crossing to our hub in the destination country.',
+      IMPORT: 'horses travel from our hub in the origin country through the border crossing to our hub in Vietnam.',
     },
     methods: {
       pickup: {
@@ -722,13 +721,12 @@ export const customer = {
       pickupDate: 'Pickup date',
       hubDate: 'Date you bring the horse',
       linehaulDateHint: 'At least one day before departure. Earlier arrival adds stabling days.',
-      importDateHint: 'On or before the departure date from the border.',
       directDateHint: 'The truck drives straight there, without a hub stop.',
       badDate: 'This date does not fit the chosen departure.',
       documents: 'Documents you submit',
       optional: 'optional',
       noDocuments: 'You do not need to submit any document for this route.',
-      documentsHint: 'Submit them on the order page after sending. We and our agents handle the rest.',
+      documentsHint: 'Submit them on the order page after sending. We prepare the remaining documents.',
       directNotFeasible: 'Allow at least {{days}} days for paperwork. Choose a later pickup date.',
       notFeasible: 'The papers cannot be ready for this departure: at least {{days}} days are needed. Choose a later one.',
       next: 'Continue: horses',

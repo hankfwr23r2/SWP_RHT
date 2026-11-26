@@ -23,6 +23,7 @@ import com.example.racehorse_transport.support.TestData;
 import com.jayway.jsonpath.JsonPath;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -77,6 +78,33 @@ class BorderAgentFlowTest {
         chip = jdbc.queryForObject("SELECT h.microchip FROM booking_horse bh JOIN horse h ON h.id = bh.horse_id WHERE bh.id = ?", String.class, line);
         agent = jdbc.queryForObject("SELECT id FROM party WHERE display_name = 'Đại lý vận tải Campuchia (mẫu)'", Long.class);
         gate = locations.findByCode("GATE-MOCBAI").orElseThrow().getId();
+        legacyRoute("TEST-EXPORT-GATE", "HUB-HCM", "GATE-MOCBAI", 89, 226,
+                "('HUB-HCM', 'HUB', 0, 30), ('REST-TRANGBANG', 'REST', 160, 30), ('GATE-MOCBAI', 'BORDER', 226, 120)");
+        legacyRoute("TEST-IMPORT-GATE", "GATE-MOCBAI", "HUB-HCM", 103, 291,
+                "('GATE-MOCBAI', 'BORDER', 0, 60), ('REST-TRANGBANG', 'REST', 95, 30), ('HUB-HCM', 'HUB', 291, 0)");
+        LocalDate pickup = jdbc.queryForObject("SELECT requested_pickup_date FROM booking WHERE id = ?", LocalDate.class, booking);
+        long departure = testData.departure("TEST-EXPORT-GATE", pickup.plusDays(1), 9).getId();
+        entityManager.flush();
+        jdbc.update("UPDATE departure SET booked_stall_count = 1 WHERE id = ?", departure);
+        jdbc.update("UPDATE booking SET departure_id = ? WHERE id = ?", departure, booking);
+        entityManager.clear();
+    }
+
+    private void legacyRoute(String code, String origin, String destination, int km, int minutes, String stops) {
+        // M7 sẽ bỏ luồng đại lý. Tạo tuyến theo mô hình cũ trong transaction của riêng test.
+        long route = jdbc.queryForObject("""
+                INSERT INTO route (code, name, origin_location_id, destination_location_id, distance_km,
+                                   estimated_duration_minutes, status)
+                SELECT ?, ?, o.id, d.id, ?, ?, 'ACTIVE'
+                FROM location o CROSS JOIN location d WHERE o.code = ? AND d.code = ?
+                RETURNING id
+                """, Long.class, code, code, km, minutes, origin, destination);
+        jdbc.update("""
+                INSERT INTO route_stop (route_id, sequence_number, location_id, stop_type, arrival_offset_minutes, dwell_minutes)
+                SELECT ?, row_number() OVER (ORDER BY v.arrival), l.id, v.stop_type, v.arrival, v.dwell
+                FROM (VALUES %s) v(location_code, stop_type, arrival, dwell)
+                JOIN location l ON l.code = v.location_code
+                """.formatted(stops), route);
     }
 
     @Test
@@ -141,7 +169,7 @@ class BorderAgentFlowTest {
     void importHorseIsReceivedFromTheAgentOnlyWithCompleteDocuments() throws Exception {
         // Đơn mẫu đổi thành đơn nhập, đi chuyến Mộc Bài về TP.HCM
         java.time.LocalDate pickup = jdbc.queryForObject("SELECT requested_pickup_date FROM booking WHERE id = ?", java.sql.Date.class, booking).toLocalDate();
-        long departure = testData.departure("MOCBAI-HCM", pickup.plusDays(1), 9).getId();
+        long departure = testData.departure("TEST-IMPORT-GATE", pickup.plusDays(1), 9).getId();
         entityManager.flush();
         jdbc.update("UPDATE booking SET booking_type = 'IMPORT', departure_id = ? WHERE id = ?", departure, booking);
         // Đơn nhập: nhận ngựa ở Campuchia, giao ở Việt Nam (đổi chiều hai địa chỉ của đơn mẫu)
@@ -284,7 +312,7 @@ class BorderAgentFlowTest {
 
     private long[] openImportHandoverAtTheGate() throws Exception {
         java.time.LocalDate pickup = jdbc.queryForObject("SELECT requested_pickup_date FROM booking WHERE id = ?", java.sql.Date.class, booking).toLocalDate();
-        long departure = testData.departure("MOCBAI-HCM", pickup.plusDays(1), 9).getId();
+        long departure = testData.departure("TEST-IMPORT-GATE", pickup.plusDays(1), 9).getId();
         entityManager.flush();
         jdbc.update("UPDATE booking SET booking_type = 'IMPORT', departure_id = ? WHERE id = ?", departure, booking);
         jdbc.update("""

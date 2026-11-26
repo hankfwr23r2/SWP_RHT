@@ -22,13 +22,13 @@ class StaffAccountPolicyTest {
     }
 
     @Test
-    void permitsHeadquartersAndCompleteDriverLicenseOnly() {
+    void permitsHubAndCompleteDriverLicenseOnly() {
         var date = LocalDate.of(2030, 1, 1);
-        assertThatCode(() -> StaffAccountPolicy.requireHeadquarters(LocationType.HUB, true)).doesNotThrowAnyException();
+        assertThatCode(() -> StaffAccountPolicy.requireHomeHub(LocationType.HUB)).doesNotThrowAnyException();
         assertThatCode(() -> StaffAccountPolicy.requireValidLicense("DRIVER", "C", date)).doesNotThrowAnyException();
         assertThatThrownBy(() -> StaffAccountPolicy.requireValidLicense("MANAGER", "C", date)).isInstanceOf(AccountRuleException.class);
         assertThatThrownBy(() -> StaffAccountPolicy.requireValidLicense("DRIVER", "C", null)).isInstanceOf(AccountRuleException.class);
-        assertThatThrownBy(() -> StaffAccountPolicy.requireHeadquarters(LocationType.HUB, false)).isInstanceOf(AccountRuleException.class);
+        assertThatThrownBy(() -> StaffAccountPolicy.requireHomeHub(LocationType.REST_STOP)).isInstanceOf(AccountRuleException.class);
         assertThatThrownBy(() -> StaffAccountPolicy.requireStaffRole("CUSTOMER")).isInstanceOf(AccountRuleException.class);
     }
 

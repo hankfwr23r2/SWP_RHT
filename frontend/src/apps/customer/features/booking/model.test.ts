@@ -3,7 +3,7 @@ import type { CustomerAddress } from '@shared/api/customerAddresses'
 import { emptyDraft, emptyHorse, type BookingDraft } from './draft'
 import { addDays, bookingTypeOf, createRequest, insuranceReady, latestPickup, pricingRequest, routeReady, showDateTime, todayIso, transferRequest } from './model'
 
-const place = (id: number, countryCode: string, provinceCode: string): CustomerAddress =>
+const place = (id: number, countryCode: string, provinceCode: string): CustomerAddress & { id: number } =>
   ({ id, countryCode, provinceCode, addressLine: `Số ${id}`, ward: 'Phường X', latitude: 10, longitude: 106 })
 const hcm = place(1, 'VN', 'VN-79')
 const dn = place(2, 'VN', 'VN-48')
@@ -32,9 +32,11 @@ describe('ngày', () => {
     expect(addDays('2026-12-31', 1)).toBe('2027-01-01')
     expect(showDateTime('2026-11-30T22:00:00Z')).toBe('01/12/2026 05:00')
   })
-  it('liên tỉnh và xuất đi phải đón trước ngày xuất phát, nhập về được cùng ngày', () => {
+  it('mọi đơn đi trục phải đón trước ngày xuất phát ít nhất một ngày', () => {
     expect(latestPickup('INTERPROVINCE', '2099-01-20')).toBe('2099-01-19')
-    expect(latestPickup('IMPORT', '2099-01-20')).toBe('2099-01-20')
+    expect(latestPickup('EXPORT', '2099-01-20')).toBe('2099-01-19')
+    expect(latestPickup('IMPORT', '2099-01-20')).toBe('2099-01-19')
+    expect(latestPickup('LOCAL', '2099-01-20')).toBe('2099-01-20')
     expect(latestPickup('LOCAL')).toBeUndefined()
   })
 })
@@ -79,6 +81,18 @@ describe('yêu cầu gửi backend', () => {
   })
   it('đón cùng ngày xuất phát thì giờ đón nằm trước giờ xuất phát', () => {
     expect(pricingRequest({ ...ready(), pickupDate: '2099-01-20' })?.pickupAt).toBe('2099-01-19T21:00:00.000Z')
+  })
+  it.each([
+    ['EXPORT', hcm, kh],
+    ['IMPORT', kh, hcm],
+  ] as const)('gửi phương thức tự chở ở cả hai đầu đơn %s', (bookingType, pickup, delivery) => {
+    const draft: BookingDraft = {
+      ...ready(), pickupAddressId: pickup.id, deliveryAddressId: delivery.id,
+      pickupMethod: 'SELF', deliveryMethod: 'SELF',
+    }
+    expect(createRequest(draft, pickup, delivery)).toMatchObject({
+      bookingType, pickupMethod: 'SELF', deliveryMethod: 'SELF',
+    })
   })
   it('tạo đơn: đủ bốn bên, hai địa chỉ, không có số tiền tính sẵn', () => {
     const draft = ready()

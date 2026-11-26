@@ -156,29 +156,32 @@ class NetworkAdminFlowTest {
         long origin = createLocation(uniqueCode("HUB"), "HUB", "VN-79");
         long rest = createLocation(uniqueCode("REST"), "REST_STOP", "VN-80");
         long gate = locations.findByCode("GATE-MOCBAI").orElseThrow().getId();
+        long destination = locations.findByCode("HUB-PNH").orElseThrow().getId();
         String code = uniqueCode("R");
 
         // Điểm dừng đầu không phải điểm đầu tuyến: bị từ chối
-        call(post("/routes"), adminToken, routeBody(code, origin, gate, """
+        call(post("/routes"), adminToken, routeBody(code, origin, destination, """
                 [{"sequenceNumber":1,"locationId":%d,"stopType":"REST","arrivalOffsetMinutes":0,"dwellMinutes":10},
-                 {"sequenceNumber":2,"locationId":%d,"stopType":"BORDER","arrivalOffsetMinutes":60,"dwellMinutes":0}]""".formatted(rest, gate)))
+                 {"sequenceNumber":2,"locationId":%d,"stopType":"HUB","arrivalOffsetMinutes":180,"dwellMinutes":0}]""".formatted(rest, destination)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("điểm đầu tuyến")));
 
-        String created = call(post("/routes"), adminToken, routeBody(code, origin, gate, """
+        String created = call(post("/routes"), adminToken, routeBody(code, origin, destination, """
                 [{"sequenceNumber":1,"locationId":%d,"stopType":"HUB","arrivalOffsetMinutes":0,"dwellMinutes":30},
-                 {"sequenceNumber":2,"locationId":%d,"stopType":"BORDER","arrivalOffsetMinutes":120,"dwellMinutes":60}]""".formatted(origin, gate)))
+                 {"sequenceNumber":2,"locationId":%d,"stopType":"BORDER","arrivalOffsetMinutes":90,"dwellMinutes":60},
+                 {"sequenceNumber":3,"locationId":%d,"stopType":"HUB","arrivalOffsetMinutes":180,"dwellMinutes":0}]""".formatted(origin, gate, destination)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.stops.length()").value(2))
+                .andExpect(jsonPath("$.data.stops.length()").value(3))
                 .andReturn().getResponse().getContentAsString();
         long routeId = ((Number) JsonPath.read(created, "$.data.id")).longValue();
 
-        call(put("/routes/" + routeId), adminToken, routeBody(code, origin, gate, """
+        call(put("/routes/" + routeId), adminToken, routeBody(code, origin, destination, """
                 [{"sequenceNumber":1,"locationId":%d,"stopType":"HUB","arrivalOffsetMinutes":0,"dwellMinutes":30},
                  {"sequenceNumber":2,"locationId":%d,"stopType":"REST","arrivalOffsetMinutes":70,"dwellMinutes":30},
-                 {"sequenceNumber":3,"locationId":%d,"stopType":"BORDER","arrivalOffsetMinutes":120,"dwellMinutes":60}]""".formatted(origin, rest, gate)))
+                 {"sequenceNumber":3,"locationId":%d,"stopType":"BORDER","arrivalOffsetMinutes":120,"dwellMinutes":60},
+                 {"sequenceNumber":4,"locationId":%d,"stopType":"HUB","arrivalOffsetMinutes":210,"dwellMinutes":0}]""".formatted(origin, rest, gate, destination)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.stops.length()").value(3))
+                .andExpect(jsonPath("$.data.stops.length()").value(4))
                 .andExpect(jsonPath("$.data.stops[1].locationId").value(rest));
 
         // Địa điểm đang thuộc tuyến đang chạy thì không ngừng dùng được

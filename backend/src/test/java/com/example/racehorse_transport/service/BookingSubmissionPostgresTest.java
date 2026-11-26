@@ -182,6 +182,31 @@ class BookingSubmissionPostgresTest {
     }
 
     @Test
+    void importUsesTheForeignPickupHubAndRequiresPickupBeforeDeparture() {
+        String owner = customer();
+        LocalDate departureDate = pickupDate().plusWeeks(3);
+        var departure = data.departure("PNH-HCM", departureDate, 4);
+        var horse = horseInput(horse(owner), InsuranceCoverageOption.NONE, true, List.of());
+        var parties = request(departure.getId(), departureDate, List.of(horse)).parties();
+        var addresses = List.of(new AddressInput(AddressRole.PICKUP, "Điểm đón Phnom Penh (mẫu)", "KH-12", "KH",
+                new BigDecimal("11.556400"), new BigDecimal("104.928200"), "Liên hệ", "+85512000001", null, null),
+                address(AddressRole.DELIVERY, "VN-79"));
+        var sameDay = new BookingCreateRequestDto(BookingType.IMPORT, departure.getId(), departureDate, null,
+                parties, addresses, List.of(horse), true, TransferMethod.SELF, TransferMethod.COMPANY);
+
+        assertThatThrownBy(() -> bookings.submit(owner, "127.0.0.1", sameDay))
+                .isInstanceOf(BookingRuleException.class).hasMessageContaining("trước ngày xuất phát ít nhất một ngày");
+        assertThat(reserved(departure.getId())).isZero();
+
+        var oneDayBefore = new BookingCreateRequestDto(BookingType.IMPORT, departure.getId(), departureDate.minusDays(1),
+                null, parties, addresses, List.of(horse), true, TransferMethod.SELF, TransferMethod.COMPANY);
+        BookingResponseDto booking = bookings.submit(owner, "127.0.0.1", oneDayBefore);
+        assertThat(booking.departureId()).isEqualTo(departure.getId());
+        assertThat(booking.status()).isEqualTo(BookingStatus.PENDING_INTAKE);
+        assertThat(reserved(departure.getId())).isEqualTo(1);
+    }
+
+    @Test
     void rejectsNineWideHorsesOnDepartureWithNineSeats() {
         String owner = customer();
         LocalDate date = pickupDate();
