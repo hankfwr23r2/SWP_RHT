@@ -1684,6 +1684,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/crew/vehicle-trips/{id}/departure-readiness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["departureReadiness"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/custody-board": {
         parameters: {
             query?: never;
@@ -5159,6 +5175,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseTripDepartureReadinessResponseDto: {
+            data?: components["schemas"]["TripDepartureReadinessResponseDto"];
+            message?: string;
+            status?: string;
+        };
         ApiResponseTripReportResponseDto: {
             data?: components["schemas"]["TripReportResponseDto"];
             message?: string;
@@ -5618,6 +5639,7 @@ export interface components {
         CrewTripResponseDto: {
             handovers?: components["schemas"]["HandoverResponseDto"][];
             horses?: components["schemas"]["TripHorseResponseDto"][];
+            shiftHandoverStopIds?: number[];
             trip?: components["schemas"]["VehicleTripResponseDto"];
             unpaidReturnStopIds?: number[];
         };
@@ -8120,6 +8142,11 @@ export interface components {
             /** @enum {string} */
             endVehicleCondition: "NORMAL" | "NEEDS_MAINTENANCE";
             endVehicleNote?: string;
+        };
+        TripDepartureReadinessResponseDto: {
+            /** Format: int64 */
+            stopId?: number;
+            waitingForEscort?: boolean;
         };
         TripGroupResponseDto: {
             bookings?: components["schemas"]["GroupBookingDto"][];
@@ -11111,6 +11138,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseCrewTripResponseDto"];
+                };
+            };
+        };
+    };
+    departureReadiness: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseTripDepartureReadinessResponseDto"];
                 };
             };
         };

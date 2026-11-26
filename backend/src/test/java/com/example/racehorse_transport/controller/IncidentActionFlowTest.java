@@ -50,6 +50,7 @@ class IncidentActionFlowTest {
     private String coordinator;
     private String manager;
     private String escort;
+    private String driver;
     private long trip;
     private long leg;
     private long line;
@@ -61,6 +62,8 @@ class IncidentActionFlowTest {
         manager = token(testData.staff(testData.unique("action.manager"), "MANAGER"), "MANAGER");
         Staff escortStaff = testData.staff(testData.unique("action.escort"), "ESCORT");
         escort = token(escortStaff, "ESCORT");
+        Staff driverStaff = testData.staff(testData.unique("action.driver"), "DRIVER");
+        driver = token(driverStaff, "DRIVER");
         long booking = jdbc.queryForObject("SELECT id FROM booking WHERE code = 'DEV-DIRECT-001'", Long.class);
         long pickup = jdbc.queryForObject("SELECT id FROM booking_address WHERE booking_id = ? AND address_type = 'PICKUP'", Long.class, booking);
         long delivery = jdbc.queryForObject("SELECT id FROM booking_address WHERE booking_id = ? AND address_type = 'DELIVERY'", Long.class, booking);
@@ -76,6 +79,8 @@ class IncidentActionFlowTest {
         stops = JsonPath.read(created, "$.data.stops[*].id");
         mvc.perform(post("/vehicle-trips/{id}/crew-assignments", trip).header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"staffId\":%d,\"crewRole\":\"ESCORT\"}".formatted(escortStaff.getUserId()))).andExpect(status().isCreated());
+        mvc.perform(post("/vehicle-trips/{id}/crew-assignments", trip).header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"staffId\":%d,\"crewRole\":\"DRIVER\"}".formatted(driverStaff.getUserId()))).andExpect(status().isCreated());
         mvc.perform(post("/vehicle-trips/{id}/horse-legs", trip).header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"bookingHorseId\":%d,\"boardTripStopId\":%d,\"alightTripStopId\":%d}".formatted(line, stops.get(1).longValue(), stops.get(2).longValue())))
                 .andExpect(status().isCreated());
@@ -186,7 +191,7 @@ class IncidentActionFlowTest {
         long stay = jdbc.queryForObject("SELECT id FROM horse_stay WHERE booking_horse_id = ? AND actual_end_at IS NULL", Long.class, line);
         assertThat(jdbc.queryForObject("SELECT stay_type FROM horse_stay WHERE id = ?", String.class, stay)).isEqualTo("ASSEMBLY");
         TripReturnPhotoFixtures.attach(jdbc, trip);
-        act(escort, "/vehicle-trips/" + trip + "/complete").andExpect(status().isOk());
+        act(driver, "/vehicle-trips/" + trip + "/complete").andExpect(status().isOk());
     }
 
     private void approve(long incident, String type, long handler) throws Exception {

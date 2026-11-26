@@ -46,6 +46,7 @@ class HealthStayFlowTest {
 
     private String coordinator;
     private String escort;
+    private String driver;
     private Staff coordinatorStaff;
     private long booking;
     private long pickup;
@@ -78,18 +79,18 @@ class HealthStayFlowTest {
         List<Long> stops = runToPickupAndLeave("DIRECT", List.of(
                 stop("locationId", hcm, "HUB", 0), stop("bookingAddressId", pickup, "PICKUP", 60), stop("locationId", rest, "REST", 120),
                 stop("bookingAddressId", delivery, "DELIVERY", 240), stop("locationId", hcm, "HUB", 480)), 2);
-        act("/trip-stops/" + stops.get(2) + "/arrive").andExpect(status().isOk());
+        drive("/trip-stops/" + stops.get(2) + "/arrive").andExpect(status().isOk());
 
-        act("/trip-stops/" + stops.get(2) + "/depart").andExpect(status().isConflict())
+        drive("/trip-stops/" + stops.get(2) + "/depart").andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Chưa ghi ăn uống cho: Sao Mai."));
         log(stops.get(2), null, "NORMAL", null, null).andExpect(status().isCreated());
-        act("/trip-stops/" + stops.get(2) + "/depart").andExpect(status().isConflict())
+        drive("/trip-stops/" + stops.get(2) + "/depart").andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Chưa ghi ăn uống cho: Sao Mai."));
         log(stops.get(2), null, "NORMAL", "NORMAL", "NORMAL").andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.placeName").value(locations.findById(rest).orElseThrow().getName()));
-        act("/trip-stops/" + stops.get(2) + "/depart").andExpect(status().isConflict())
+        drive("/trip-stops/" + stops.get(2) + "/depart").andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Chưa nghỉ đủ 30 phút. Rời sớm phải ghi lý do."));
-        mvc.perform(post("/trip-stops/{id}/depart", stops.get(2)).header(HttpHeaders.AUTHORIZATION, escort).contentType(MediaType.APPLICATION_JSON)
+        mvc.perform(post("/trip-stops/{id}/depart", stops.get(2)).header(HttpHeaders.AUTHORIZATION, driver).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"earlyReason\":\"Kịp giờ giao theo hẹn\"}")).andExpect(status().isOk());
         entityManager.flush();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM audit_log WHERE action = 'LEAVE_REST_STOP_EARLY' AND target_id = ?", Integer.class, stops.get(2)))
@@ -104,7 +105,7 @@ class HealthStayFlowTest {
                 stop("locationId", hcm, "HUB", 0), stop("bookingAddressId", pickup, "PICKUP", 60), stop("locationId", rest, "REST", 120),
                 stop("bookingAddressId", delivery, "DELIVERY", 240), stop("locationId", hcm, "HUB", 480)), 2);
         long stopId = stops.get(2);
-        act("/trip-stops/" + stopId + "/arrive").andExpect(status().isOk());
+        drive("/trip-stops/" + stopId + "/arrive").andExpect(status().isOk());
         long tripId = jdbc.queryForObject("SELECT vehicle_trip_id FROM trip_stop WHERE id = ?", Long.class, stopId);
         long escortId = jdbc.queryForObject("""
                 SELECT staff_id FROM crew_assignment WHERE vehicle_trip_id = ? AND crew_role = 'ESCORT'
@@ -131,12 +132,12 @@ class HealthStayFlowTest {
     @ValueSource(strings = {"REST", "VITAL_CHECK"})
     void leavingAnOvernightRestEarlyRequiresAReasonAndAlertsCoordinators(String stopType) throws Exception {
         long stopId = arriveAtOvernightStop(stopType, 480, 7);
-        act("/trip-stops/" + stopId + "/depart").andExpect(status().isConflict())
+        drive("/trip-stops/" + stopId + "/depart").andExpect(status().isConflict())
                 .andExpect(jsonPath("$.data.earlyReason").value("Chưa nghỉ đủ 8 giờ. Rời sớm phải ghi lý do."));
         assertThat(earlyOvernightNotices()).isEmpty();
 
         String reason = "Di chuyển khỏi trạm do ngập đường";
-        mvc.perform(post("/trip-stops/{id}/depart", stopId).header(HttpHeaders.AUTHORIZATION, escort)
+        mvc.perform(post("/trip-stops/{id}/depart", stopId).header(HttpHeaders.AUTHORIZATION, driver)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"earlyReason\":\"%s\"}".formatted(reason)))
                 .andExpect(status().isOk());
 
@@ -154,7 +155,7 @@ class HealthStayFlowTest {
     void overnightVitalCheckCanDepartAfterRestingTheConfiguredHours() throws Exception {
         long stopId = arriveAtOvernightStop("VITAL_CHECK", 510, 8);
 
-        act("/trip-stops/" + stopId + "/depart").andExpect(status().isOk());
+        drive("/trip-stops/" + stopId + "/depart").andExpect(status().isOk());
         assertThat(earlyOvernightNotices()).isEmpty();
     }
 
@@ -167,7 +168,7 @@ class HealthStayFlowTest {
                 stop("locationId", rest, type, 120, plannedRestMinutes),
                 stop("bookingAddressId", delivery, "DELIVERY", 660), stop("locationId", hcm, "HUB", 720)), 2);
         long stopId = stops.get(2);
-        act("/trip-stops/" + stopId + "/arrive").andExpect(status().isOk());
+        drive("/trip-stops/" + stopId + "/arrive").andExpect(status().isOk());
         log(stopId, null, "NORMAL", "NORMAL", "NORMAL").andExpect(status().isCreated());
         entityManager.flush();
         jdbc.update("UPDATE trip_stop SET actual_arrival_at = clock_timestamp() - make_interval(hours => ?) WHERE id = ?",
@@ -195,7 +196,7 @@ class HealthStayFlowTest {
                 INSERT INTO horse_health_log (booking_horse_id, recorded_by, recorded_at, trip_stop_id, health_status, water_intake, feed_intake)
                 VALUES (?, ?, now() - interval '2 hours', ?, 'NORMAL', 'REFUSED', 'NORMAL')""",
                 line, jdbc.queryForObject("SELECT user_id FROM staff WHERE staff_code = (SELECT staff_code FROM staff ORDER BY user_id DESC LIMIT 1)", Long.class), stops.get(1));
-        act("/trip-stops/" + stops.get(2) + "/arrive").andExpect(status().isOk());
+        drive("/trip-stops/" + stops.get(2) + "/arrive").andExpect(status().isOk());
 
         log(stops.get(2), null, "NORMAL", "REFUSED", "REDUCED").andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.healthStatus").value("WATCH"));
@@ -210,7 +211,7 @@ class HealthStayFlowTest {
     void handingIntoHubOpensAnAssemblyStayWhereHealthIsLogged() throws Exception {
         List<Long> stops = runToPickupAndLeave("PICKUP", List.of(
                 stop("locationId", hcm, "HUB", 0), stop("bookingAddressId", pickup, "PICKUP", 60), stop("locationId", hcm, "HUB", 240)), 2);
-        act("/trip-stops/" + stops.get(2) + "/arrive").andExpect(status().isOk());
+        drive("/trip-stops/" + stops.get(2) + "/arrive").andExpect(status().isOk());
         long hubIn = handover(stops.get(2), "HUB_IN");
         scanAndComplete(hubIn);
 
@@ -223,7 +224,7 @@ class HealthStayFlowTest {
         log(stops.get(2), stay, "NORMAL", "NORMAL", "NORMAL").andExpect(status().isBadRequest());
         long trip = jdbc.queryForObject("SELECT vehicle_trip_id FROM trip_stop WHERE id = ?", Long.class, stops.get(2));
         TripReturnPhotoFixtures.attach(jdbc, trip);
-        act("/vehicle-trips/" + trip + "/complete")
+        drive("/vehicle-trips/" + trip + "/complete")
                 .andExpect(status().isOk());
     }
 
@@ -233,7 +234,7 @@ class HealthStayFlowTest {
                 stop("locationId", hcm, "HUB", 0), stop("bookingAddressId", pickup, "PICKUP", 60),
                 stop("locationId", hcm, "HUB", 240)), 2);
         long hubStop = stops.getLast();
-        act("/trip-stops/" + hubStop + "/arrive").andExpect(status().isOk());
+        drive("/trip-stops/" + hubStop + "/arrive").andExpect(status().isOk());
         long hubIn = handover(hubStop, "HUB_IN");
         scanAndComplete(hubIn);
         long stay = jdbc.queryForObject("SELECT id FROM horse_stay WHERE booking_horse_id = ? AND actual_end_at IS NULL",
@@ -269,7 +270,7 @@ class HealthStayFlowTest {
                 .andExpect(status().isOk()).andExpect(jsonPath(lineFilter + ".id").value((int) stay));
         mvc.perform(get("/custody-board").header(HttpHeaders.AUTHORIZATION, coordinator))
                 .andExpect(status().isOk()).andExpect(jsonPath(lineFilter + ".careOverdue").value(true));
-        postHealth(driver, body).andExpect(status().isCreated());
+        postHealth(driver, body).andExpect(status().isForbidden());
         postHealth(coordinator, withReport(logBody(null, stay, "CRITICAL", "NORMAL", "NORMAL"), """
                 "reportedBy":"Nhân viên chuồng","reportChannel":"Điện thoại","note":"Đã gọi bác sĩ"
                 """)).andExpect(status().isCreated())
@@ -284,7 +285,9 @@ class HealthStayFlowTest {
 
         jdbc.update("UPDATE horse_stay SET actual_end_at = clock_timestamp() WHERE id = ?", stay);
         entityManager.clear();
-        postHealth(driver, body).andExpect(status().isConflict());
+        postHealth(coordinator, withReport(body, """
+                "reportedBy":"Nhân viên chuồng","reportChannel":"Điện thoại"
+                """)).andExpect(status().isConflict());
         mvc.perform(get("/horse-stays/mine").header(HttpHeaders.AUTHORIZATION, driver))
                 .andExpect(status().isOk()).andExpect(jsonPath(lineFilter).isEmpty());
     }
@@ -307,7 +310,7 @@ class HealthStayFlowTest {
         log(stops.get(1), null, "NORMAL", "NORMAL", "NORMAL").andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Chỉ ghi khi xe đang ở điểm dừng này."));
         String stranger = token(testData.staff(testData.unique("health.stranger"), "ESCORT"), "ESCORT");
-        act("/trip-stops/" + stops.get(2) + "/arrive").andExpect(status().isOk());
+        drive("/trip-stops/" + stops.get(2) + "/arrive").andExpect(status().isOk());
         mvc.perform(post("/health-logs").header(HttpHeaders.AUTHORIZATION, stranger).contentType(MediaType.APPLICATION_JSON)
                         .content(logBody(stops.get(2), null, "NORMAL", "NORMAL", "NORMAL")))
                 .andExpect(status().isForbidden());
@@ -320,7 +323,7 @@ class HealthStayFlowTest {
         List<Long> stops = runToPickupAndLeave("DIRECT", List.of(
                 stop("locationId", hcm, "HUB", 0), stop("bookingAddressId", pickup, "PICKUP", 60), stop("locationId", rest, "REST", 120),
                 stop("bookingAddressId", delivery, "DELIVERY", 240), stop("locationId", hcm, "HUB", 480)), 2);
-        act("/trip-stops/" + stops.get(2) + "/arrive").andExpect(status().isOk());
+        drive("/trip-stops/" + stops.get(2) + "/arrive").andExpect(status().isOk());
         long stable = jdbc.queryForObject("SELECT id FROM party WHERE display_name = 'Chuồng gửi ngựa Đà Nẵng (mẫu)'", Long.class);
         long vet = jdbc.queryForObject("SELECT id FROM party WHERE display_name = 'Phòng khám thú y ngựa (mẫu)'", Long.class);
         mvc.perform(get("/stable-partners").header(HttpHeaders.AUTHORIZATION, escort)).andExpect(status().isOk())
@@ -351,13 +354,13 @@ class HealthStayFlowTest {
 
         // Chưa nhận lại thì chưa rời trạm
         log(stops.get(2), null, "NORMAL", "NORMAL", "NORMAL").andExpect(status().isCreated());
-        act("/trip-stops/" + stops.get(2) + "/depart").andExpect(status().isConflict())
+        drive("/trip-stops/" + stops.get(2) + "/depart").andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Còn ngựa đang gửi chuồng qua đêm: Sao Mai. Nhận lại trước khi rời trạm."));
         long out = handoverIdOf(stayHandover(stops.get(2), "STAY_OUT", null).andExpect(status().isCreated()));
         scanOnly(out);
         act("/handovers/" + out + "/complete").andExpect(status().isOk());
         assertThat(jdbc.queryForObject("SELECT actual_end_at IS NOT NULL FROM horse_stay WHERE booking_horse_id = ? AND stay_type = 'OVERNIGHT'", Boolean.class, line)).isTrue();
-        mvc.perform(post("/trip-stops/{id}/depart", stops.get(2)).header(HttpHeaders.AUTHORIZATION, escort).contentType(MediaType.APPLICATION_JSON)
+        mvc.perform(post("/trip-stops/{id}/depart", stops.get(2)).header(HttpHeaders.AUTHORIZATION, driver).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"earlyReason\":\"Nghỉ đêm xong\"}")).andExpect(status().isOk());
     }
 
@@ -394,7 +397,7 @@ class HealthStayFlowTest {
         long alight = type.equals("DIRECT") ? stops.get(stops.size() - 2) : stops.getLast();
         mvc.perform(post("/vehicle-trips/{id}/horse-legs", trip).header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"bookingHorseId\":%d,\"boardTripStopId\":%d,\"alightTripStopId\":%d}".formatted(line, stops.get(1), alight))).andExpect(status().isCreated());
-        String driver = token(driverStaff, "DRIVER");
+        driver = token(driverStaff, "DRIVER");
         for (String member : List.of(driver, escort)) {
             String mine = mvc.perform(get("/crew-assignments/mine").header(HttpHeaders.AUTHORIZATION, member)).andReturn().getResponse().getContentAsString();
             mvc.perform(post("/crew-assignments/{id}/acknowledge", ((Number) JsonPath.read(mine, "$.data[0].id")).longValue()).header(HttpHeaders.AUTHORIZATION, member))
@@ -402,11 +405,11 @@ class HealthStayFlowTest {
         }
         mvc.perform(post("/vehicle-trips/{id}/start", trip).header(HttpHeaders.AUTHORIZATION, driver).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"earlyReason\":\"Đã sẵn sàng xuất phát sớm\"}")).andExpect(status().isOk());
-        act("/trip-stops/" + stops.get(0) + "/arrive").andExpect(status().isOk());
-        act("/trip-stops/" + stops.get(0) + "/depart").andExpect(status().isOk());
-        act("/trip-stops/" + stops.get(1) + "/arrive").andExpect(status().isOk());
+        drive("/trip-stops/" + stops.get(0) + "/arrive").andExpect(status().isOk());
+        drive("/trip-stops/" + stops.get(0) + "/depart").andExpect(status().isOk());
+        drive("/trip-stops/" + stops.get(1) + "/arrive").andExpect(status().isOk());
         scanAndComplete(handover(stops.get(1), "PICKUP"));
-        act("/trip-stops/" + stops.get(1) + "/depart").andExpect(status().isOk());
+        drive("/trip-stops/" + stops.get(1) + "/depart").andExpect(status().isOk());
         return stops;
     }
 
@@ -434,6 +437,10 @@ class HealthStayFlowTest {
     private String logBody(Long stopId, Long stayId, String health, String water, String feed) {
         return "{\"bookingHorseId\":%d,\"tripStopId\":%s,\"horseStayId\":%s,\"healthStatus\":\"%s\",\"waterIntake\":%s,\"feedIntake\":%s}".formatted(
                 line, stopId, stayId, health, water == null ? null : "\"" + water + "\"", feed == null ? null : "\"" + feed + "\"");
+    }
+
+    private ResultActions drive(String path) throws Exception {
+        return mvc.perform(post(path).header(HttpHeaders.AUTHORIZATION, driver));
     }
 
     private ResultActions act(String path) throws Exception {

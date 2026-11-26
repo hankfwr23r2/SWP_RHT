@@ -8,6 +8,7 @@ import com.example.racehorse_transport.dto.operation.HandoverRefusalRequestDto;
 import com.example.racehorse_transport.dto.operation.HandoverScanRequestDto;
 import com.example.racehorse_transport.dto.operation.StopDepartRequestDto;
 import com.example.racehorse_transport.dto.operation.TripCompleteRequestDto;
+import com.example.racehorse_transport.dto.operation.TripDepartureReadinessResponseDto;
 import com.example.racehorse_transport.dto.operation.TripReturnPhotoRequestDto;
 import com.example.racehorse_transport.service.DeliveryFailureService;
 import com.example.racehorse_transport.service.HandoverService;
@@ -47,7 +48,14 @@ public class TripExecutionController {
         return ApiResponseDto.success(handovers.crewTrip(id, authentication.getName()), "Lượt xe");
     }
 
+    @GetMapping("/crew/vehicle-trips/{id}/departure-readiness")
+    @PreAuthorize("hasRole('DRIVER')")
+    public ApiResponseDto<TripDepartureReadinessResponseDto> departureReadiness(@PathVariable Long id, Authentication authentication) {
+        return ApiResponseDto.success(execution.departureReadiness(id, authentication.getName()), "Việc tại điểm dừng");
+    }
+
     @PostMapping("/vehicle-trips/{id}/start")
+    @PreAuthorize("hasRole('DRIVER')")
     public ApiResponseDto<CrewTripResponseDto> start(@PathVariable Long id, Authentication authentication,
             @Valid @RequestBody(required = false) com.example.racehorse_transport.dto.operation.TripStartRequestDto request) {
         execution.start(id, authentication.getName(), request == null ? null : request.earlyReason());
@@ -55,12 +63,14 @@ public class TripExecutionController {
     }
 
     @PostMapping("/trip-stops/{id}/arrive")
+    @PreAuthorize("hasRole('DRIVER')")
     public ApiResponseDto<CrewTripResponseDto> arrive(@PathVariable Long id, Authentication authentication) {
         Long tripId = execution.arrive(id, authentication.getName());
         return ApiResponseDto.success(handovers.crewTrip(tripId, authentication.getName()), "Đã tới điểm dừng");
     }
 
     @PostMapping("/trip-stops/{id}/depart")
+    @PreAuthorize("hasRole('DRIVER')")
     public ApiResponseDto<CrewTripResponseDto> depart(@PathVariable Long id, Authentication authentication,
                                                       @Valid @RequestBody(required = false) StopDepartRequestDto request) {
         Long tripId = execution.depart(id, request == null ? null : request.earlyReason(), authentication.getName());
@@ -68,18 +78,21 @@ public class TripExecutionController {
     }
 
     @PostMapping("/vehicle-trips/{id}/complete")
+    @PreAuthorize("hasRole('DRIVER')")
     public ApiResponseDto<CrewTripResponseDto> complete(@PathVariable Long id, Authentication authentication,
             @Valid @RequestBody(required = false) TripCompleteRequestDto request) {
         return ApiResponseDto.success(completion.complete(id, request, authentication.getName()), "Đã kết thúc lượt xe");
     }
 
     @PostMapping(value = "/vehicle-trips/{id}/return-photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('DRIVER')")
     public ApiResponseDto<CrewTripResponseDto> returnPhoto(@PathVariable Long id, Authentication authentication,
             @Valid @ModelAttribute TripReturnPhotoRequestDto request) {
         return ApiResponseDto.success(completion.attachReturnPhoto(id, request, authentication.getName()), "Đã lưu ảnh xe về hub");
     }
 
     @PostMapping("/trip-stops/{id}/handovers")
+    @PreAuthorize("hasRole('ESCORT')")
     public ResponseEntity<ApiResponseDto<CrewTripResponseDto>> createHandover(@PathVariable Long id, Authentication authentication,
                                                                                @RequestParam(required = false) @Positive(message = "Mã phương án phải là số dương.") Long incidentPlanId,
                                                                                @Valid @RequestBody HandoverCreateRequestDto request) {
@@ -88,29 +101,34 @@ public class TripExecutionController {
     }
 
     @PostMapping("/handovers/{id}/horses")
+    @PreAuthorize("hasRole('ESCORT')")
     public ApiResponseDto<CrewTripResponseDto> scan(@PathVariable Long id, Authentication authentication, @Valid @RequestBody HandoverScanRequestDto request) {
         return ApiResponseDto.success(handovers.scan(id, request, authentication.getName()), "Đã quét chip");
     }
 
     @PostMapping(value = "/handovers/{id}/refusals", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('ESCORT')")
     public ApiResponseDto<CrewTripResponseDto> refuse(@PathVariable Long id, Authentication authentication,
             @Valid @RequestPart HandoverRefusalRequestDto request, @RequestPart MultipartFile photo) {
         return ApiResponseDto.success(handovers.refuse(id, request, photo, authentication.getName()), "Đã ghi đón hụt");
     }
 
     @PostMapping("/handovers/{id}/complete")
+    @PreAuthorize("hasRole('ESCORT')")
     public ApiResponseDto<CrewTripResponseDto> completeHandover(@PathVariable Long id, Authentication authentication,
             @Valid @RequestBody(required = false) HandoverCompleteRequestDto request) {
         return ApiResponseDto.success(handovers.complete(id, request, authentication.getName()), "Đã hoàn tất giao nhận");
     }
 
     @PostMapping("/handovers/{id}/start-waiting")
+    @PreAuthorize("hasRole('ESCORT')")
     public ApiResponseDto<CrewTripResponseDto> startWaiting(@PathVariable Long id, Authentication authentication) {
         Long tripId = deliveryFailures.startWaiting(id, authentication.getName());
         return ApiResponseDto.success(handovers.crewTrip(tripId, authentication.getName()), "Đã bắt đầu chờ người nhận");
     }
 
     @PostMapping("/handovers/{id}/fail")
+    @PreAuthorize("hasRole('ESCORT')")
     public ApiResponseDto<CrewTripResponseDto> fail(@PathVariable Long id, Authentication authentication) {
         Long tripId = deliveryFailures.fail(id, authentication.getName());
         return ApiResponseDto.success(handovers.crewTrip(tripId, authentication.getName()), "Đã ghi nhận không gặp người nhận");

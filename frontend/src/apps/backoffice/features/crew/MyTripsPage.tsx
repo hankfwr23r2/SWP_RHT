@@ -82,8 +82,7 @@ export default function MyTripsPage() {
     <div className={s.page}>
       <PageHeader title={t('myTrips.title')} description={t('myTrips.description')} />
       {content()}
-      {session?.role === 'escort' && <MyHealthCheckTasks />}
-      <MyStayHealthPanel />
+      {session?.role === 'escort' && <><MyHealthCheckTasks /><MyStayHealthPanel /></>}
     </div>
   )
 }

@@ -9,11 +9,15 @@ import { ToastProvider } from '@shared/ui/toast'
 import TripRunPage from './TripRunPage'
 
 vi.mock('@shared/api/client', () => ({ default: { get: vi.fn(), post: vi.fn() } }))
-vi.mock('@shared/auth/AuthContext', () => ({ useAuth: () => ({ session: { role: 'driver' } }) }))
+let crewRole = 'driver'
+let waitingForEscort = false
+vi.mock('@shared/auth/AuthContext', () => ({ useAuth: () => ({ session: { role: crewRole } }) }))
 
 afterEach(() => {
   cleanup()
   vi.resetAllMocks()
+  crewRole = 'driver'
+  waitingForEscort = false
 })
 
 type Stop = NonNullable<NonNullable<CrewTrip['trip']>['stops']>[number]
@@ -33,6 +37,7 @@ function renderTrip(parked: boolean, list: Incident[], stop?: Stop, horses?: Cre
   }
   vi.mocked(apiClient.get).mockImplementation(async url => {
     if (url === '/crew/vehicle-trips/5') return { data: { data: trip } }
+    if (url === '/crew/vehicle-trips/5/departure-readiness') return { data: { data: { stopId: 21, waitingForEscort } } }
     if (url === '/vehicle-trips/5/incidents') return { data: { data: list.map(incident => ({ ...incident })) } }
     if (url === '/incidents/severity-defaults') return { data: { data: { OTHER: 'LOW', ACCIDENT: 'HIGH' } } }
     return { data: { data: [] } }
@@ -136,7 +141,42 @@ const approvedStableIncident: Incident = {
 }
 const horses: CrewTrip['horses'] = [{ horseName: 'Sao Mai', leg: { id: 31, status: 'IN_PROGRESS' } }]
 
+it('keeps the driver at pickup until the server confirms escort work is done', async () => {
+  waitingForEscort = true
+  renderTrip(true, [], { stopType: 'PICKUP' }, horses, [{
+    id: 40, tripStopId: 21, status: 'PENDING', handoverType: 'PICKUP',
+    horses: [{ horseLegId: 31, horseName: 'Sao Mai' }],
+  }])
+  const leave = await screen.findByRole<HTMLButtonElement>('button', { name: 'Rời đi' })
+  expect(await screen.findByText(/Chờ hộ tống hoàn tất/)).toBeTruthy()
+  expect(leave.disabled).toBe(true)
+  expect(screen.queryByRole('textbox', { name: 'Chip của Sao Mai' })).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Hoàn tất giao nhận' })).toBeNull()
+
+  waitingForEscort = false
+  fireEvent(window, new Event('focus'))
+  await waitFor(() => expect(leave.disabled).toBe(false))
+  fireEvent.click(leave)
+  expect(apiClient.post).toHaveBeenCalledWith('/trip-stops/21/depart', undefined)
+})
+
+it('shows completed pickup and removes the form after the server closes a duplicate', async () => {
+  crewRole = 'escort'
+  const completed: NonNullable<CrewTrip['handovers']>[number] = { id: 40, tripStopId: 21, status: 'DONE', handoverType: 'PICKUP' }
+  const duplicate: NonNullable<CrewTrip['handovers']>[number] = { id: 41, tripStopId: 21, status: 'PENDING', handoverType: 'PICKUP', recordAttached: true }
+  const trip = renderTrip(true, [], { stopType: 'PICKUP' }, horses, [completed, duplicate])
+  vi.mocked(apiClient.post).mockResolvedValueOnce({ status: 200, data: { data: {
+    ...trip, handovers: [completed, { ...duplicate, status: 'FAILED' }],
+  } } })
+
+  fireEvent.click(await screen.findByRole('button', { name: 'Hoàn tất giao nhận' }))
+  expect(await screen.findByText('Nhận ngựa · Đã xong')).toBeTruthy()
+  expect(screen.queryByRole('button', { name: 'Hoàn tất giao nhận' })).toBeNull()
+  expect(apiClient.post).toHaveBeenCalledWith('/handovers/41/complete', undefined)
+})
+
 it('shows the horse named by a rejected HUB_OUT completion and lets the crew retry', async () => {
+  crewRole = 'escort'
   const handover: NonNullable<CrewTrip['handovers']>[number] = {
     id: 40, tripStopId: 21, status: 'PENDING', handoverType: 'HUB_OUT',
     horses: [{ horseLegId: 31, horseName: 'Sao Mai', microchipMatched: true }],
@@ -146,6 +186,7 @@ it('shows the horse named by a rejected HUB_OUT completion and lets the crew ret
     .mockRejectedValueOnce(new Error('Chưa khám trước khi chạy: Sao Mai'))
     .mockResolvedValueOnce({ data: { data: { ...trip, handovers: [{ ...handover, status: 'DONE' }] } } })
   fireEvent.click(await screen.findByRole('button', { name: 'Hoàn tất giao nhận' }))
+  expect(screen.queryByRole('button', { name: 'Rời đi' })).toBeNull()
   expect(await screen.findByText('Chưa khám trước khi chạy: Sao Mai')).toBeTruthy()
   fireEvent.click(screen.getByRole('button', { name: 'Hoàn tất giao nhận' }))
   await waitFor(() => expect(screen.queryByRole('button', { name: 'Hoàn tất giao nhận' })).toBeNull())
@@ -153,6 +194,7 @@ it('shows the horse named by a rejected HUB_OUT completion and lets the crew ret
 })
 
 it('opens an incident handover at the hub for the approved partner and offers collection afterward', async () => {
+  crewRole = 'escort'
   const incidents = [approvedStableIncident]
   const trip = renderTrip(true, incidents, { locationId: 4, locationName: 'Hub trung chuyển' }, horses)
   const handover = { id: 40, handoverType: 'STAY_IN', tripStopId: 21, partyName: 'Chuồng Bình An',
@@ -177,12 +219,14 @@ it('opens an incident handover at the hub for the approved partner and offers co
 })
 
 it('explains why an approved stable plan cannot be carried out at the customer address', async () => {
+  crewRole = 'escort'
   renderTrip(true, [approvedStableIncident], { stopType: 'PICKUP', bookingAddressId: 41, addressLine: 'Địa chỉ khách' }, horses)
   expect(await screen.findByText('Không gửi chuồng tại địa chỉ khách được. Chọn đổi xe hoặc đưa về hub.')).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Gửi chuồng cho Chuồng Bình An' })).toBeNull()
 })
 
 it('requires a reason for a typed chip and shows the server validation at that field', async () => {
+  crewRole = 'escort'
   const horse = { horseLegId: 31, horseName: 'Sao Mai' }
   const handover: NonNullable<CrewTrip['handovers']>[number] = {
     id: 40, handoverType: 'HUB_IN', status: 'PENDING', tripStopId: 21, horses: [horse],

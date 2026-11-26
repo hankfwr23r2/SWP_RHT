@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -88,6 +89,43 @@ class TrackingFlowTest {
     }
 
     @Test
+    void theJourneyKeepsRealShiftChangesAndHidesARepeatByTheCurrentCustodian() throws Exception {
+        long horse = jdbc.queryForObject("SELECT min(id) FROM booking_horse WHERE booking_id = ?", Long.class, booking);
+        long location = jdbc.queryForObject("SELECT id FROM location WHERE code = 'HUB-HCM'", Long.class);
+        long firstStaff = jdbc.queryForObject("SELECT id FROM app_user WHERE username = 'manager.dev'", Long.class);
+        long secondStaff = testData.staff(testData.unique("tracking.escort"), "ESCORT").getUserId();
+        long stay = jdbc.queryForObject("""
+                INSERT INTO horse_stay (booking_horse_id, stay_type, location_id, planned_start_at, planned_end_at)
+                VALUES (?, 'ASSEMBLY', ?, now(), now() + interval '1 hour') RETURNING id
+                """, Long.class, horse, location);
+        long pickup = completedStayHandover("PICKUP", stay, firstStaff, 0);
+        long leg = addHandoverHorse(pickup, horse, location);
+        long repeatedShift = completedStayHandover("SHIFT", stay, secondStaff, 2);
+        long changedShift = completedStayHandover("SHIFT", stay, secondStaff, 1);
+        long returnedShift = completedStayHandover("SHIFT", stay, firstStaff, 3);
+        jdbc.update("""
+                INSERT INTO handover_horse (handover_id, horse_leg_id, is_microchip_matched)
+                VALUES (?, ?, true), (?, ?, true), (?, ?, true)
+                """, repeatedShift, leg, changedShift, leg, returnedShift, leg);
+
+        String timeline = "$.data.horses[0].handovers";
+        journey("customer1.dev", "CUSTOMER").andExpect(status().isOk())
+                .andExpect(jsonPath(timeline + ".length()").value(3))
+                .andExpect(jsonPath(timeline + "[0].id").value(pickup))
+                .andExpect(jsonPath(timeline + "[1].id").value(changedShift))
+                .andExpect(jsonPath(timeline + "[2].id").value(returnedShift));
+        assertThat(jdbc.queryForObject("SELECT status FROM handover WHERE id = ?", String.class, repeatedShift))
+                .isEqualTo("DONE");
+    }
+
+    private long completedStayHandover(String type, long stay, long staff, int secondsAfterPickup) {
+        return jdbc.queryForObject("""
+                INSERT INTO handover (handover_type, horse_stay_id, handled_by, status, handed_at)
+                VALUES (?, ?, ?, 'DONE', now() + ? * interval '1 second') RETURNING id
+                """, Long.class, type, stay, staff, secondsAfterPickup);
+    }
+
+    @Test
     void onlyOwnersSeeTheirHorsesHealthLogsWithoutInternalFields() throws Exception {
         long horse = jdbc.queryForObject("SELECT min(id) FROM booking_horse WHERE booking_id = ?", Long.class, booking);
         long stay = jdbc.queryForObject("""
@@ -120,7 +158,7 @@ class TrackingFlowTest {
                 .andExpect(jsonPath("$.data[0].horses[0].healthLogs").doesNotHaveJsonPath());
     }
 
-    private void addHandoverHorse(long handover, long horse, long location) {
+    private long addHandoverHorse(long handover, long horse, long location) {
         long leg = jdbc.queryForObject("""
                 WITH test_trip AS (INSERT INTO vehicle_trip (code, vehicle_id, start_location_id, end_location_id, trip_type, status, planned_start_at, planned_end_at) SELECT 'TEST-' || left(md5(random()::text), 20), min(v.id), min(l.id), min(l.id), 'TRANSFER', 'COMPLETED', now(), now() + interval '1 hour' FROM vehicle v CROSS JOIN location l WHERE l.location_type = 'HUB' RETURNING id) INSERT INTO horse_leg (booking_horse_id, sequence_number, leg_type, from_location_id, to_location_id,
                                        vehicle_trip_id, planned_start_at, planned_end_at, status)
@@ -128,6 +166,7 @@ class TrackingFlowTest {
                 RETURNING id
                 """, Long.class, horse, location, location);
         jdbc.update("INSERT INTO handover_horse (handover_id, horse_leg_id, is_microchip_matched) VALUES (?, ?, true)", handover, leg);
+        return leg;
     }
 
     @Test

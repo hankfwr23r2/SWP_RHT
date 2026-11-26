@@ -209,7 +209,7 @@ export const common = {
     stay: { ASSEMBLY: 'Staging at hub', QUARANTINE: 'Quarantine', OVERNIGHT: 'Overnight stop', STABLING: 'Stabling' },
     handover: {
       PICKUP: 'Received from shipper', HUB_IN: 'Into hub', HUB_OUT: 'Out of hub', STAY_IN: 'Into stay location', STAY_OUT: 'Out of stay location',
-      AGENT: 'Agent handover', DELIVERY: 'Delivered to consignee', RETURN: 'Returned to shipper',
+      AGENT: 'Agent handover', DELIVERY: 'Delivered to consignee', RETURN: 'Returned to shipper', SHIFT: 'Shift handover',
     },
   },
   captcha: {

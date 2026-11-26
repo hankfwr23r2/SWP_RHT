@@ -2110,6 +2110,20 @@
         },
         "type" : "object"
       },
+      "ApiResponseTripDepartureReadinessResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/TripDepartureReadinessResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseTripReportResponseDto" : {
         "properties" : {
           "data" : {
@@ -3323,6 +3337,13 @@
           "horses" : {
             "items" : {
               "$ref" : "#/components/schemas/TripHorseResponseDto"
+            },
+            "type" : "array"
+          },
+          "shiftHandoverStopIds" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
             },
             "type" : "array"
           },
@@ -9960,6 +9981,18 @@
         "required" : [ "endVehicleCondition" ],
         "type" : "object"
       },
+      "TripDepartureReadinessResponseDto" : {
+        "properties" : {
+          "stopId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "waitingForEscort" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
       "TripGroupResponseDto" : {
         "properties" : {
           "bookings" : {
@@ -14356,6 +14389,33 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseCrewTripResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "trip-execution-controller" ]
+      }
+    },
+    "/crew/vehicle-trips/{id}/departure-readiness" : {
+      "get" : {
+        "operationId" : "departureReadiness",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseTripDepartureReadinessResponseDto"
                 }
               }
             },

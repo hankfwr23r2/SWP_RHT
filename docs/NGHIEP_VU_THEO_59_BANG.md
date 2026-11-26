@@ -104,8 +104,8 @@ Hub đón và hub giao tra từ `hub_service_area` theo tỉnh của `booking_ad
 | `SPECIALIST` | Chuyên viên | Duyệt hồ sơ ngựa, giấy tờ kiểm dịch, bảo hiểm |
 | `COORDINATOR` | Điều phối viên | Gán đơn vào chuyến, lập chặng, lượt xe, lưu trú, đề xuất phương án sự cố |
 | `MANAGER` | Quản lý | Duyệt báo giá, phương án sự cố, khoản chi, quyết toán |
-| `DRIVER` | Tài xế | Chạy lượt xe, check-in điểm dừng, giao nhận |
-| `ESCORT` | Nhân viên hộ tống | Chăm ngựa, ghi nhật ký sức khỏe, quét chip |
+| `DRIVER` | Tài xế | Xuất phát, xác nhận tới và rời từng điểm, xác nhận xe về hub |
+| `ESCORT` | Nhân viên hộ tống | Khám, chăm sóc và quét chip, ghi nhật ký sức khỏe, giao nhận ngựa và giấy tờ |
 | `ADMIN` | Quản trị | Dữ liệu nền: tuyến, lịch, bảng giá, quy định, tài khoản |
 
 Mỗi tài khoản có đúng một vai trò (`app_user.role_code`). Nhân viên có thêm dòng `staff` (1–1 với `app_user`) chứa mã nhân viên, hub trực thuộc và bằng lái. Khách hàng (cá nhân hoặc tổ chức) có thêm dòng `customer` (1–1 với `app_user`), **không** có dòng `staff`. Khách được tham chiếu ở `booking.customer_id` và `horse.owner_customer_id`.
@@ -388,7 +388,7 @@ Giá cũ giữ trong `PRICE_HOLD_DAYS` ngày tính từ ngày chạy của chuy�
 
 Với `pickup_method = SELF`, kiểm giấy trước khi ký nhận tại hub, ghi `handover` PICKUP gắn với `horse_stay` và mở thời gian lưu chuồng thực tế. Lập khoản số dư sau khi nhận. Kiểm tra đã trả đủ trước khi xe rời nơi nhận ngựa.
 
-**Ai:** tài xế, hộ tống, khách trả số dư. **Trạng thái:** `CONFIRMED` → `IN_OPERATION` khi khách đã trả đủ và xe rời nơi nhận.
+**Ai:** tài xế xác nhận mốc xe, hộ tống khám và nhận ngựa, khách trả số dư. **Trạng thái:** `CONFIRMED` → `IN_OPERATION` khi khách đã trả đủ và xe rời nơi nhận.
 
 | Bước | Hành động | Bảng |
 |---|---|---|
@@ -401,7 +401,7 @@ Với `pickup_method = SELF`, kiểm giấy trước khi ký nhận tại hub, g
 | 7 | Ký biên bản | `document` loại HANDOVER_RECORD (`handover_id`), `handover.status = DONE`, `handed_at` |
 | 8 | Lập khoản số dư bằng tổng báo giá ACCEPTED trừ số đã trả (thường gọi là "70%"), khách trả qua VNPAY | `payment` BALANCE, `due_at` = lúc nhận + `BALANCE_WAIT_MINUTES` (30 phút) |
 | 9 | Trả đủ: ngựa lên đúng vị trí `stall_position` (màn hình hiện "Khoang số…") | `horse_leg` PICKUP: `status = IN_PROGRESS`, `actual_start_at` |
-| 10 | Rời điểm đón | `trip_stop.actual_departure_at`, `booking.status = IN_OPERATION` |
+| 10 | Tài xế rời điểm đón sau khi hộ tống hoàn tất giao nhận hoặc ghi đón hụt cho từng con, và đủ điều kiện thanh toán | `trip_stop.actual_departure_at`, `booking.status = IN_OPERATION` |
 
 **Không trả đủ trong 30 phút:** tổ xe trả ngựa và giấy gốc tại chỗ (`handover` RETURN), quản lý hủy đơn do khách (5.4), nhả chỗ. Các đơn khác trên xe đi tiếp. Link VNPAY mở trước hạn mà chưa có kết quả thì chờ thêm 5 phút sau hạn. Với đơn IMPORT nhận tại cửa khẩu, xe trục đưa ngựa về hub. Nếu số dư chưa đủ khi xe rời cửa khẩu thì đơn vẫn CONFIRMED. Tại hub, hệ thống kiểm số dư khi hoàn tất HUB_OUT. Đơn SCHEDULE_CHANGE_REQUIRED có thể thanh toán khoản số dư còn mở.
 
@@ -497,7 +497,7 @@ Xe trục tới hub nước ngoài của công ty, dỡ ngựa vào hub và giao
 
 Với `delivery_method = SELF`, trả ngựa tại hub và ghi `handover` DELIVERY gắn với `horse_stay`. Quá giờ hẹn thì gửi chuồng, báo khách khi bắt đầu giữ và tính phí theo `STABLING_DAILY_FEE` khi rời hub.
 
-Giao ngựa **đối xứng với đón ngựa**. **Ai:** tài xế và hộ tống của công ty ở cả hai đầu. **Trạng thái:** `IN_OPERATION` → `DELIVERED`.
+Giao ngựa **đối xứng với đón ngựa**. Tài xế xác nhận tới điểm, hộ tống hoàn tất giao nhận, rồi tài xế mới rời điểm. **Trạng thái:** `IN_OPERATION` → `DELIVERED`.
 
 | Bước | Hành động | Bảng |
 |---|---|---|
@@ -690,7 +690,7 @@ Nếu cùng khách đó gửi ngựa từ Đồng Nai sang Bình Dương thì c�
 | 9 | `vehicle_trip`, `trip_stop`, `crew_assignment` | Điều phối viên tạo. Tổ xe cập nhật giờ thực tế | GĐ5–8 |
 | 9 | `horse_leg`, `horse_stay` | Điều phối viên lập kế hoạch. Tổ xe hoặc đại lý cập nhật | GĐ5–8 |
 | 9 | `horse_health_log` | Hộ tống, thú y | GĐ6–8 |
-| 10 | `handover`, `handover_horse`, `handover_document` | Tài xế, hộ tống | GĐ6–8 |
+| 10 | `handover`, `handover_horse`, `handover_document` | Hộ tống trên lượt xe, điều phối khi giao nhận tại hub | GĐ6–8 |
 | 11 | `horse_insurance` | Khách khai. Chuyên viên báo giá và xác nhận | GĐ1–2 |
 | 12 | `quotation`, `quotation_line` | Hệ thống tính. Quản lý duyệt và gửi | GĐ3 |
 | 12 | `payment`, `payment_transaction` | Hệ thống tạo. Cổng VNPAY gọi lại | GĐ4, GĐ6, GĐ9 |

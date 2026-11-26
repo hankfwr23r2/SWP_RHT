@@ -1,10 +1,30 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, expect, it } from 'vitest'
+import i18n, { i18nReady } from '@shared/i18n'
 import { formatDateTime } from '@shared/lib/format'
 import { HorseJourney } from './HorseJourney'
 
 afterEach(cleanup)
+
+it.each([
+  ['vi', 'Bàn giao ca'],
+  ['en', 'Shift handover'],
+])('hiển thị nhãn bàn giao ca bằng tiếng %s', async (language, label) => {
+  await i18nReady
+  await i18n.changeLanguage(language)
+  try {
+    render(<HorseJourney horse={{
+      horseName: 'Sao Mai',
+      handovers: [{ id: 1, handoverType: 'SHIFT', status: 'DONE' }],
+    }} />)
+
+    expect(screen.getByText(label)).toBeTruthy()
+  } finally {
+    cleanup()
+    await i18n.changeLanguage('vi')
+  }
+})
 
 it('hiển thị từng bản ghi sức khỏe cùng thời điểm, nơi và các chỉ số', () => {
   const recordedAt = '2026-11-25T09:00:00Z'

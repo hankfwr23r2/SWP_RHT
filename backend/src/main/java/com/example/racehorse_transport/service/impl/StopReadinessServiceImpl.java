@@ -56,6 +56,15 @@ public class StopReadinessServiceImpl implements StopReadinessService {
     private final com.example.racehorse_transport.service.StablingTimelineService stablingTimeline;
 
     @Override
+    @Transactional(readOnly = true)
+    public boolean hasPendingHorseWork(TripStop stop) {
+        long pending = handovers.countByTripStop_IdAndStatus(stop.getId(), HandoverStatus.PENDING);
+        return pending > emptyHubOuts(stop).size() || hasUnfinishedBoarding(stop) || hasUnfinishedAlighting(stop)
+                || !horsesAtStable(stop).isEmpty()
+                || (REST_STOPS.contains(stop.getStopType()) && !horsesMissingRestLogs(stop).isEmpty());
+    }
+
+    @Override
     @Transactional(propagation = Propagation.MANDATORY)
     public boolean isPaidInFullForDeparture(Long bookingId) {
         payments.lockBooking(bookingId);
@@ -68,15 +77,16 @@ public class StopReadinessServiceImpl implements StopReadinessService {
         closeEmptyHubOut(stop);
         TripExecutionPolicy.requireCanDepart(stop.getActualArrivalAt() != null, stop.getActualDepartureAt() != null,
                 handovers.countByTripStop_IdAndStatus(stop.getId(), HandoverStatus.PENDING));
-        if ((stop.getStopType() == TripStopType.PICKUP || stop.getStopType() == TripStopType.BORDER)
-                && !legs.findByBoardTripStop_IdAndStatusIn(stop.getId(), Set.of(HorseLegStatus.PLANNED)).isEmpty()) {
+        if (hasUnfinishedBoarding(stop)) {
             throw new DispatchRuleException("tripStopId", "Còn ngựa chưa nhận hoặc chưa ghi đón hụt.", true);
         }
-        if (stop.getStopType() == TripStopType.DELIVERY
-                && !legs.findByAlightTripStop_IdAndStatusIn(stop.getId(), Set.of(HorseLegStatus.IN_PROGRESS)).isEmpty()) {
+        if (hasUnfinishedAlighting(stop)) {
             throw new DispatchRuleException("tripStopId", "Còn ngựa chưa giao hoặc chưa ghi không gặp người nhận.", true);
         }
-        requireNoHorseLeftAtStable(stop);
+        List<String> atStable = horsesAtStable(stop);
+        if (!atStable.isEmpty()) {
+            throw new DispatchRuleException("tripStopId", "Còn ngựa đang gửi chuồng qua đêm: " + String.join(", ", atStable) + ". Nhận lại trước khi rời trạm.", true);
+        }
         boolean earlyOvernightDeparture = false;
         if (stop.getStopType() == TripStopType.PICKUP) {
             requirePaid(stop);
@@ -106,10 +116,26 @@ public class StopReadinessServiceImpl implements StopReadinessService {
         return true;
     }
 
+    private boolean hasUnfinishedBoarding(TripStop stop) {
+        return (stop.getStopType() == TripStopType.PICKUP || stop.getStopType() == TripStopType.BORDER || stop.getStopType() == TripStopType.HUB)
+                && !legs.findByBoardTripStop_IdAndStatusIn(stop.getId(), Set.of(HorseLegStatus.PLANNED)).isEmpty();
+    }
+
+    private boolean hasUnfinishedAlighting(TripStop stop) {
+        return (stop.getStopType() == TripStopType.DELIVERY || stop.getStopType() == TripStopType.HUB)
+                && !legs.findByAlightTripStop_IdAndStatusIn(stop.getId(), Set.of(HorseLegStatus.IN_PROGRESS)).isEmpty();
+    }
+
+    private List<com.example.racehorse_transport.entity.Handover> emptyHubOuts(TripStop stop) {
+        if (stop.getStopType() != TripStopType.HUB || !legs.findByBoardTripStop_IdAndStatusIn(stop.getId(),
+                Set.of(HorseLegStatus.PLANNED, HorseLegStatus.IN_PROGRESS)).isEmpty()) {
+            return List.of();
+        }
+        return handovers.findByTripStop_IdAndHandoverTypeAndStatusOrderById(stop.getId(), HandoverType.HUB_OUT, HandoverStatus.PENDING);
+    }
+
     private void closeEmptyHubOut(TripStop stop) {
-        if (stop.getStopType() != TripStopType.HUB) return;
-        for (var open : handovers.findByTripStop_IdAndHandoverTypeAndStatusOrderById(
-                stop.getId(), HandoverType.HUB_OUT, HandoverStatus.PENDING)) {
+        for (var open : emptyHubOuts(stop)) {
             handovers.findForUpdate(open.getId()).filter(row -> row.getStatus() == HandoverStatus.PENDING)
                     .filter(row -> legs.findByBoardTripStop_IdAndStatusIn(stop.getId(),
                             Set.of(HorseLegStatus.PLANNED, HorseLegStatus.IN_PROGRESS)).isEmpty())
@@ -121,17 +147,14 @@ public class StopReadinessServiceImpl implements StopReadinessService {
     }
 
     // Nghỉ đêm: con đã gửi chuồng ở điểm này (lần giao nhận cuối ở đây là STAY_IN) phải được nhận lại trước khi xe đi
-    private void requireNoHorseLeftAtStable(TripStop stop) {
+    private List<String> horsesAtStable(TripStop stop) {
         Map<Long, String> last = new LinkedHashMap<>();
         handovers.findByTripStop_IdInOrderById(List.of(stop.getId())).stream()
                 .filter(h -> h.getStatus() == HandoverStatus.DONE && TripExecutionPolicy.isStableHandover(h.getHandoverType()))
                 .forEach(h -> scans.findById_HandoverId(h.getId()).stream().filter(r -> Boolean.TRUE.equals(r.getMicrochipMatched()))
                         .forEach(r -> last.put(r.getId().getHorseLegId(), h.getHandoverType() == HandoverType.STAY_IN
                                 ? r.getHorseLeg().getBookingHorse().getHorse().getName() : null)));
-        List<String> atStable = last.values().stream().filter(Objects::nonNull).toList();
-        if (!atStable.isEmpty()) {
-            throw new DispatchRuleException("tripStopId", "Còn ngựa đang gửi chuồng qua đêm: " + String.join(", ", atStable) + ". Nhận lại trước khi rời trạm.", true);
-        }
+        return last.values().stream().filter(Objects::nonNull).toList();
     }
 
     // Quy tắc #32: mọi đơn có ngựa đã nhận lên xe ở điểm đón này phải trả đủ
@@ -155,8 +178,7 @@ public class StopReadinessServiceImpl implements StopReadinessService {
         });
     }
 
-    // Quy tắc #34: mọi con đang trên xe đã ghi uống và ăn ở trạm này, và đã nghỉ đủ; rời sớm thì ghi lý do vào nhật ký
-    private boolean requireRestStopDone(TripStop stop, String earlyReason, Long actorUserId) {
+    private List<String> horsesMissingRestLogs(TripStop stop) {
         int sequence = stop.getSequenceNumber();
         List<HorseLeg> onBoard = legs.findActiveOnTrip(stop.getVehicleTrip().getId(), Set.of(HorseLegStatus.CANCELLED, HorseLegStatus.FAILED)).stream()
                 .filter(l -> l.getStatus() == HorseLegStatus.IN_PROGRESS
@@ -165,8 +187,13 @@ public class StopReadinessServiceImpl implements StopReadinessService {
         Set<Long> logged = healthLogs.findByTripStop_IdOrderByRecordedAt(stop.getId()).stream()
                 .filter(log -> log.getWaterIntake() != null && log.getFeedIntake() != null)
                 .map(HorseHealthLog::getBookingHorse).map(line -> line.getId()).collect(Collectors.toSet());
-        HealthLogPolicy.requireAllLogged(onBoard.stream().filter(l -> !logged.contains(l.getBookingHorse().getId()))
-                .map(l -> l.getBookingHorse().getHorse().getName()).toList());
+        return onBoard.stream().filter(l -> !logged.contains(l.getBookingHorse().getId()))
+                .map(l -> l.getBookingHorse().getHorse().getName()).toList();
+    }
+
+    // Quy tắc #34: mọi con đang trên xe đã ghi uống và ăn ở trạm này, và đã nghỉ đủ; rời sớm thì ghi lý do vào nhật ký
+    private boolean requireRestStopDone(TripStop stop, String earlyReason, Long actorUserId) {
+        HealthLogPolicy.requireAllLogged(horsesMissingRestLogs(stop));
         Instant now = clock.instant();
         int overnightRestHours = configs.getInt("OVERNIGHT_REST_HOURS");
         boolean overnight = HealthLogPolicy.isOvernightRest(stop.getPlannedArrivalAt(), stop.getPlannedDepartureAt(), overnightRestHours);

@@ -90,8 +90,8 @@ class DeliveryFailureFlowTest {
                 stop("bookingAddressId", delivery, "DELIVERY", 240), stop("locationId", hcm, "HUB", 480));
         first.assign(line, 1, 2);
         first.startAndReceiveAt(1);
-        first.act("/trip-stops/" + first.stops.get(1) + "/depart").andExpect(status().isOk());
-        first.act("/trip-stops/" + first.stops.get(2) + "/arrive").andExpect(status().isOk());
+        first.drive("/trip-stops/" + first.stops.get(1) + "/depart").andExpect(status().isOk());
+        first.drive("/trip-stops/" + first.stops.get(2) + "/arrive").andExpect(status().isOk());
         long handover = first.openHandover(2, "DELIVERY");
 
         first.act("/handovers/" + handover + "/fail").andExpect(status().isConflict()).andExpect(jsonPath("$.message").value("Chưa bắt đầu chờ người nhận."));
@@ -120,9 +120,9 @@ class DeliveryFailureFlowTest {
                 .andExpect(jsonPath("$.data.horses[0].handovers[1].status").value("TIMEOUT"));
 
         // Xe đưa ngựa về hub: chưa giao con vào hub thì chưa kết thúc lượt được
-        first.act("/trip-stops/" + first.stops.get(2) + "/depart").andExpect(status().isOk());
-        first.act("/trip-stops/" + first.stops.get(3) + "/arrive").andExpect(status().isOk());
-        first.act("/vehicle-trips/" + first.id + "/complete").andExpect(status().isConflict())
+        first.drive("/trip-stops/" + first.stops.get(2) + "/depart").andExpect(status().isOk());
+        first.drive("/trip-stops/" + first.stops.get(3) + "/arrive").andExpect(status().isOk());
+        first.drive("/vehicle-trips/" + first.id + "/complete").andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Còn 1 con ngựa trên xe chưa bàn giao."));
         // Giao vào hub: giữ và chăm sóc tại hub tới hạn STABLING_MAX_DAYS (3 ngày), báo khách hạn và phí mỗi ngày
         first.scanAndComplete(first.openHandover(3, "HUB_IN"));
@@ -133,7 +133,7 @@ class DeliveryFailureFlowTest {
                 .isEqualTo(3);
         assertThat(customerNotices()).contains("Ngựa đang được giữ tại hub");
         TripReturnPhotoFixtures.attach(jdbc, first.id);
-        first.act("/vehicle-trips/" + first.id + "/complete").andExpect(status().isOk());
+        first.drive("/vehicle-trips/" + first.id + "/complete").andExpect(status().isOk());
 
         // Quá hạn: mỗi sáng nhắc khách và quản lý, phí tạm tính vẫn chạy
         assertThat(horseStays.remindOverdueStabling()).isZero();
@@ -151,7 +151,7 @@ class DeliveryFailureFlowTest {
         assertThat(jdbc.queryForObject("SELECT replaced_horse_leg_id FROM horse_leg WHERE booking_horse_id = ? AND sequence_number = 2", Long.class, line))
                 .isEqualTo(failedLeg);
         second.acknowledgeAndStart();
-        second.act("/trip-stops/" + second.stops.get(0) + "/arrive").andExpect(status().isOk());
+        second.drive("/trip-stops/" + second.stops.get(0) + "/arrive").andExpect(status().isOk());
         var precharge = jdbc.queryForMap("""
                 SELECT category, payer_type, stabling_days, approved_at, extra_charge_payment_id
                 FROM cost_item WHERE horse_stay_id = ?
@@ -195,8 +195,8 @@ class DeliveryFailureFlowTest {
         entityManager.flush();
         assertThat(jdbc.queryForList("SELECT stabling_days FROM cost_item WHERE horse_stay_id = ? ORDER BY id", Long.class, stay))
                 .containsExactly(billedDays, 1L);
-        second.act("/trip-stops/" + second.stops.get(0) + "/depart").andExpect(status().isOk());
-        second.act("/trip-stops/" + second.stops.get(1) + "/arrive").andExpect(status().isOk());
+        second.drive("/trip-stops/" + second.stops.get(0) + "/depart").andExpect(status().isOk());
+        second.drive("/trip-stops/" + second.stops.get(1) + "/arrive").andExpect(status().isOk());
         long redelivery = second.openHandover(1, "DELIVERY");
         second.scanAndComplete(redelivery);
         assertThat(bookingStatus()).isEqualTo("DELIVERED");
@@ -214,19 +214,19 @@ class DeliveryFailureFlowTest {
                 stop("bookingAddressId", delivery, "DELIVERY", 240), stop("locationId", hcm, "HUB", 480));
         first.assign(line, 1, 2);
         first.startAndReceiveAt(1);
-        first.act("/trip-stops/" + first.stops.get(1) + "/depart").andExpect(status().isOk());
-        first.act("/trip-stops/" + first.stops.get(2) + "/arrive").andExpect(status().isOk());
+        first.drive("/trip-stops/" + first.stops.get(1) + "/depart").andExpect(status().isOk());
+        first.drive("/trip-stops/" + first.stops.get(2) + "/arrive").andExpect(status().isOk());
         long handover = first.openHandover(2, "DELIVERY");
         first.act("/handovers/" + handover + "/start-waiting").andExpect(status().isOk());
         entityManager.flush();
         jdbc.update("UPDATE handover SET wait_started_at = now() - interval '121 minutes' WHERE id = ?", handover);
         entityManager.clear();
         first.act("/handovers/" + handover + "/fail").andExpect(status().isOk());
-        first.act("/trip-stops/" + first.stops.get(2) + "/depart").andExpect(status().isOk());
-        first.act("/trip-stops/" + first.stops.get(3) + "/arrive").andExpect(status().isOk());
+        first.drive("/trip-stops/" + first.stops.get(2) + "/depart").andExpect(status().isOk());
+        first.drive("/trip-stops/" + first.stops.get(3) + "/arrive").andExpect(status().isOk());
         first.scanAndComplete(first.openHandover(3, "HUB_IN"));
         TripReturnPhotoFixtures.attach(jdbc, first.id);
-        first.act("/vehicle-trips/" + first.id + "/complete").andExpect(status().isOk());
+        first.drive("/vehicle-trips/" + first.id + "/complete").andExpect(status().isOk());
 
         Trip replacement = plan("DELIVERY", 24 * 60, stop("locationId", hcm, "HUB", 24 * 60),
                 stop("bookingAddressId", delivery, "DELIVERY", 24 * 60 + 120), stop("locationId", hcm, "HUB", 24 * 60 + 300));
@@ -280,16 +280,16 @@ class DeliveryFailureFlowTest {
                 stop("bookingAddressId", delivery, "DELIVERY", 240), stop("locationId", hcm, "HUB", 480));
         first.assign(line, 1, 2);
         first.startAndReceiveAt(1);
-        first.act("/trip-stops/" + first.stops.get(1) + "/depart").andExpect(status().isOk());
-        first.act("/trip-stops/" + first.stops.get(2) + "/arrive").andExpect(status().isOk());
+        first.drive("/trip-stops/" + first.stops.get(1) + "/depart").andExpect(status().isOk());
+        first.drive("/trip-stops/" + first.stops.get(2) + "/arrive").andExpect(status().isOk());
         long handover = first.openHandover(2, "DELIVERY");
         first.act("/handovers/" + handover + "/start-waiting").andExpect(status().isOk());
         entityManager.flush();
         jdbc.update("UPDATE handover SET wait_started_at = now() - interval '121 minutes' WHERE id = ?", handover);
         entityManager.clear();
         first.act("/handovers/" + handover + "/fail").andExpect(status().isOk());
-        first.act("/trip-stops/" + first.stops.get(2) + "/depart").andExpect(status().isOk());
-        first.act("/trip-stops/" + first.stops.get(3) + "/arrive").andExpect(status().isOk());
+        first.drive("/trip-stops/" + first.stops.get(2) + "/depart").andExpect(status().isOk());
+        first.drive("/trip-stops/" + first.stops.get(3) + "/arrive").andExpect(status().isOk());
         first.scanAndComplete(first.openHandover(3, "HUB_IN"));
         entityManager.flush();
 
@@ -334,8 +334,8 @@ class DeliveryFailureFlowTest {
                 stop("bookingAddressId", delivery, "DELIVERY", 240), stop("locationId", hcm, "HUB", 480));
         trip.assign(line, 1, 2);
         trip.startAndReceiveAt(1);
-        trip.act("/trip-stops/" + trip.stops.get(1) + "/depart").andExpect(status().isOk());
-        trip.act("/trip-stops/" + trip.stops.get(2) + "/arrive").andExpect(status().isOk());
+        trip.drive("/trip-stops/" + trip.stops.get(1) + "/depart").andExpect(status().isOk());
+        trip.drive("/trip-stops/" + trip.stops.get(2) + "/arrive").andExpect(status().isOk());
         long handover = trip.openHandover(2, "DELIVERY");
         trip.act("/handovers/" + handover + "/start-waiting").andExpect(status().isOk());
 
@@ -415,15 +415,15 @@ class DeliveryFailureFlowTest {
         void startAndReceiveAt(int pickupIndex) throws Exception {
             acknowledgeAndStart();
             for (int i = 0; i < pickupIndex; i++) {
-                act("/trip-stops/" + stops.get(i) + "/arrive").andExpect(status().isOk());
-                act("/trip-stops/" + stops.get(i) + "/depart").andExpect(status().isOk());
+                drive("/trip-stops/" + stops.get(i) + "/arrive").andExpect(status().isOk());
+                drive("/trip-stops/" + stops.get(i) + "/depart").andExpect(status().isOk());
             }
-            act("/trip-stops/" + stops.get(pickupIndex) + "/arrive").andExpect(status().isOk());
+            drive("/trip-stops/" + stops.get(pickupIndex) + "/arrive").andExpect(status().isOk());
             scanAndComplete(openHandover(pickupIndex, "PICKUP"));
         }
 
         long openHandover(int stopIndex, String type) throws Exception {
-            String body = mvc.perform(post("/trip-stops/{id}/handovers", stops.get(stopIndex)).header(HttpHeaders.AUTHORIZATION, driver)
+            String body = mvc.perform(post("/trip-stops/{id}/handovers", stops.get(stopIndex)).header(HttpHeaders.AUTHORIZATION, escort)
                     .contentType(MediaType.APPLICATION_JSON).content("{\"handoverType\":\"%s\"}".formatted(type)))
                     .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
             List<Number> ids = JsonPath.read(body, "$.data.handovers[*].id");
@@ -437,13 +437,17 @@ class DeliveryFailureFlowTest {
 
         void scan(long handover) throws Exception {
             long leg = jdbc.queryForObject("SELECT id FROM horse_leg WHERE booking_horse_id = ? AND vehicle_trip_id = ?", Long.class, line, id);
-            mvc.perform(post("/handovers/{id}/horses", handover).header(HttpHeaders.AUTHORIZATION, driver).contentType(MediaType.APPLICATION_JSON)
+            mvc.perform(post("/handovers/{id}/horses", handover).header(HttpHeaders.AUTHORIZATION, escort).contentType(MediaType.APPLICATION_JSON)
                     .content("{\"horseLegId\":%d,\"conditionNote\":\"Khỏe\",\"microchip\":\"%s\"}".formatted(leg, chip))).andExpect(status().isOk());
             signedRecord(handover);
         }
 
+        ResultActions drive(String path) throws Exception {
+            return mvc.perform(post(path).header(HttpHeaders.AUTHORIZATION, driver));
+        }
+
         ResultActions act(String path) throws Exception {
-            return mvc.perform(HandoverEvidenceFixtures.complete(mvc, jdbc, jwtUtils, path).header(HttpHeaders.AUTHORIZATION, driver));
+            return mvc.perform(HandoverEvidenceFixtures.complete(mvc, jdbc, jwtUtils, path).header(HttpHeaders.AUTHORIZATION, escort));
         }
     }
 

@@ -29,7 +29,7 @@ public class HealthLogController {
     private final HorseStayQueryService stays;
 
     @PostMapping("/health-logs")
-    @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT', 'COORDINATOR')")
+    @PreAuthorize("hasAnyRole('ESCORT', 'COORDINATOR')")
     public ResponseEntity<ApiResponseDto<HealthLogResponseDto>> record(@Valid @RequestBody HealthLogRequestDto request, Authentication authentication) {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponseDto.success(healthLogs.record(request, authentication.getName()), "Đã ghi sức khỏe"));
     }

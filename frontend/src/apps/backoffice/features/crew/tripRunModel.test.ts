@@ -71,14 +71,12 @@ describe('tripRunModel', () => {
     expect(stops.map(stopState)).toEqual(['left', 'here', 'waiting'])
   })
 
-  it('tới theo thứ tự, rời khi không còn giao nhận dở', () => {
+  it('hiện thao tác theo thứ tự điểm dừng, điểm cuối dùng xác nhận về hub', () => {
     const r = run()
     expect(canArrive(r, r.trip!.stops![2])).toBe(false)
-    expect(canDepart(r, r.trip!.stops![1])).toBe(false)
-    const resolved = run({}, { horses: [{ leg: { boardTripStopId: 2, status: 'IN_PROGRESS' } }] })
-    expect(canDepart(resolved, resolved.trip!.stops![1])).toBe(true)
-    const pending = run({}, { handovers: [{ id: 5, tripStopId: 2, status: 'PENDING' }] })
-    expect(canDepart(pending, pending.trip!.stops![1])).toBe(false)
+    expect(canDepart(r, r.trip!.stops![0])).toBe(false)
+    expect(canDepart(r, r.trip!.stops![1])).toBe(true)
+    expect(canDepart(r, { ...r.trip!.stops![2], actualArrivalAt: '2031-01-01T12:00:00Z' })).toBe(false)
     const notStarted = run({ status: 'PLANNED' })
     expect(canArrive(notStarted, notStarted.trip!.stops![0])).toBe(false)
   })
@@ -91,6 +89,15 @@ describe('tripRunModel', () => {
     expect(handoverTypesAt(atHub, atHub.trip!.stops![1])).toEqual(['HUB_IN'])
     const done = run({}, { horses: [{ leg: { boardTripStopId: 2, alightTripStopId: 3, status: 'IN_PROGRESS' } }] })
     expect(handoverTypesAt(done, done.trip!.stops![1])).toEqual([])
+  })
+
+  it('hiện nhận bàn giao ca khi backend cho phép tại đúng điểm đang đứng', () => {
+    const horses = [{ leg: { boardTripStopId: 2, alightTripStopId: 3, status: 'IN_PROGRESS' as const } }]
+    const currentEscort = run({}, { horses, shiftHandoverStopIds: [] })
+    expect(handoverTypesAt(currentEscort, currentEscort.trip!.stops![1])).toEqual([])
+    const relief = run({}, { horses, shiftHandoverStopIds: [2] })
+    expect(handoverTypesAt(relief, relief.trip!.stops![1])).toEqual(['SHIFT'])
+    expect(handoverTypesAt(relief, relief.trip!.stops![2])).toEqual([])
   })
 
   it('xuất phát khi chưa chạy, kết thúc khi đã tới điểm cuối', () => {

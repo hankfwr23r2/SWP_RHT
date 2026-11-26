@@ -31,6 +31,10 @@ public final class TrackingPolicy {
         };
     }
 
+    public static boolean isRedundantShift(HandoverType type, Long previousStaffId, Long receivingStaffId) {
+        return type == HandoverType.SHIFT && previousStaffId != null && previousStaffId.equals(receivingStaffId);
+    }
+
     // Tra cứu công khai: 4 số cuối điện thoại người gửi, bỏ qua dấu cách, dấu chấm, mã quốc gia
     public static boolean phoneSuffixMatches(String phone, String suffix) {
         if (phone == null || suffix == null || suffix.length() != PHONE_SUFFIX_LENGTH) return false;

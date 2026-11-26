@@ -209,7 +209,7 @@ export const common = {
     stay: { ASSEMBLY: 'Tập kết ở hub', QUARANTINE: 'Cách ly', OVERNIGHT: 'Nghỉ qua đêm', STABLING: 'Gửi chuồng' },
     handover: {
       PICKUP: 'Nhận ngựa từ người gửi', HUB_IN: 'Nhập hub', HUB_OUT: 'Xuất hub', STAY_IN: 'Vào nơi lưu trú', STAY_OUT: 'Rời nơi lưu trú',
-      AGENT: 'Giao nhận với đại lý', DELIVERY: 'Giao người nhận', RETURN: 'Trả lại người gửi',
+      AGENT: 'Giao nhận với đại lý', DELIVERY: 'Giao người nhận', RETURN: 'Trả lại người gửi', SHIFT: 'Bàn giao ca',
     },
   },
   captcha: {

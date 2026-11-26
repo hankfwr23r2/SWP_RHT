@@ -41,6 +41,7 @@ import com.example.racehorse_transport.security.PublicTrackingGuard;
 import com.example.racehorse_transport.service.TrackingService;
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -58,6 +59,9 @@ public class TrackingServiceImpl implements TrackingService {
 
     // Tra cứu công khai không hiện con đã loại khỏi đơn hoặc đã hủy
     private static final Set<BookingHorseStatus> HIDDEN_FROM_PUBLIC = Set.of(BookingHorseStatus.EXCLUDED, BookingHorseStatus.CANCELLED);
+    private static final Comparator<HandoverHorse> HANDOVER_ORDER =
+            Comparator.comparing((HandoverHorse row) -> row.getHandover().getHandedAt())
+                    .thenComparing(row -> row.getHandover().getId());
 
     private final BookingRepository bookings;
     private final BookingHorseRepository bookingHorses;
@@ -185,7 +189,9 @@ public class TrackingServiceImpl implements TrackingService {
             BookingHorse line, Journey journey, Map<Long, List<Document>> evidence, boolean includeChipEntry) {
         List<HandoverHorse> rows = journey.of(journey.handovers(), line);
         Set<Long> withRow = rows.stream().map(row -> row.getHandover().getId()).collect(Collectors.toSet());
+        Set<Long> redundantShiftIds = redundantShiftIds(rows);
         Stream<HorseJourneyResponseDto.JourneyHandoverDto> scanned = rows.stream()
+                .filter(row -> !redundantShiftIds.contains(row.getHandover().getId()))
                 .map(row -> HorseJourneyResponseDto.JourneyHandoverDto.from(row.getHandover(), row, includeChipEntry,
                         Boolean.TRUE.equals(row.getMicrochipMatched()) ? evidence.getOrDefault(row.getHandover().getId(), List.of()).stream()
                                 .filter(document -> document.getEvidenceHorseLeg() == null
@@ -221,13 +227,28 @@ public class TrackingServiceImpl implements TrackingService {
                         .collect(Collectors.groupingBy(handover -> handover.getTripStop().getId())));
     }
 
+    private static Set<Long> redundantShiftIds(List<HandoverHorse> rows) {
+        Set<Long> redundantIds = new HashSet<>();
+        Long previousStaffId = null;
+        for (HandoverHorse row : rows.stream().filter(TrackingServiceImpl::isCompletedCustodyHandover).sorted(HANDOVER_ORDER).toList()) {
+            Handover handover = row.getHandover();
+            Long receivingStaffId = holder(row) == CustodyHolder.COMPANY ? handover.getHandledBy().getUserId() : null;
+            if (TrackingPolicy.isRedundantShift(handover.getHandoverType(), previousStaffId, receivingStaffId)) {
+                redundantIds.add(handover.getId());
+            }
+            previousStaffId = receivingStaffId;
+        }
+        return redundantIds;
+    }
+
     // Lần giao nhận DONE mới nhất có chip khớp hoặc có kết quả cuối do quản lý ghi.
     private static HandoverHorse lastDone(List<HandoverHorse> rows) {
-        return rows.stream()
-                .filter(row -> row.getHandover().getStatus() == HandoverStatus.DONE
-                        && (Boolean.TRUE.equals(row.getMicrochipMatched()) || row.getHandover().getUnclaimedOutcome() != null))
-                .max(Comparator.comparing((HandoverHorse row) -> row.getHandover().getHandedAt()).thenComparing(row -> row.getHandover().getId()))
-                .orElse(null);
+        return rows.stream().filter(TrackingServiceImpl::isCompletedCustodyHandover).max(HANDOVER_ORDER).orElse(null);
+    }
+
+    private static boolean isCompletedCustodyHandover(HandoverHorse row) {
+        return row.getHandover().getStatus() == HandoverStatus.DONE
+                && (Boolean.TRUE.equals(row.getMicrochipMatched()) || row.getHandover().getUnclaimedOutcome() != null);
     }
 
     private static CustodyHolder holder(HandoverHorse last) {
