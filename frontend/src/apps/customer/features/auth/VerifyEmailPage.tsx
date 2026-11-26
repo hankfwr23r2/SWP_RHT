@@ -77,7 +77,7 @@ export default function VerifyEmailPage() {
         <button type="submit" className="btn btn-primary btn-full btn-lg" disabled={loading}>
           {loading ? t('authPages.verifying') : t('authPages.verifyBtn')}
         </button>
-        <button type="button" className="btn btn-ghost btn-full btn-lg" disabled={loading} onClick={() => void resend()} style={{ marginTop: 10 }}>
+        <button type="button" className={`btn btn-ghost btn-full btn-lg ${s.resend}`} disabled={loading} onClick={() => void resend()}>
           {t('authPages.resendOtp')}
         </button>
       </form>

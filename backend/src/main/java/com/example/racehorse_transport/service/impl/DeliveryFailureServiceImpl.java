@@ -1,0 +1,168 @@
+package com.example.racehorse_transport.service.impl;
+
+import com.example.racehorse_transport.entity.Handover;
+import com.example.racehorse_transport.entity.HorseLeg;
+import com.example.racehorse_transport.entity.Incident;
+import com.example.racehorse_transport.entity.Staff;
+import com.example.racehorse_transport.entity.enums.AppUserStatus;
+import com.example.racehorse_transport.entity.enums.CrewAssignmentStatus;
+import com.example.racehorse_transport.entity.enums.EmploymentStatus;
+import com.example.racehorse_transport.entity.enums.HandoverStatus;
+import com.example.racehorse_transport.entity.enums.HorseLegStatus;
+import com.example.racehorse_transport.entity.enums.IncidentCauseType;
+import com.example.racehorse_transport.entity.enums.IncidentStatus;
+import com.example.racehorse_transport.entity.enums.IncidentType;
+import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
+import com.example.racehorse_transport.exception.DispatchRuleException;
+import com.example.racehorse_transport.exception.ResourceNotFoundException;
+import com.example.racehorse_transport.policy.TripExecutionPolicy;
+import com.example.racehorse_transport.policy.DeliveryEtaPolicy;
+import com.example.racehorse_transport.policy.IncidentPolicy;
+import com.example.racehorse_transport.repository.CrewAssignmentRepository;
+import com.example.racehorse_transport.repository.HandoverRepository;
+import com.example.racehorse_transport.repository.HorseLegRepository;
+import com.example.racehorse_transport.repository.IncidentRepository;
+import com.example.racehorse_transport.repository.StaffRepository;
+import com.example.racehorse_transport.service.DeliveryFailureService;
+import com.example.racehorse_transport.service.NotificationService;
+import com.example.racehorse_transport.service.SystemConfigService;
+import java.time.Clock;
+import java.time.Instant;
+import java.util.List;
+import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.example.racehorse_transport.entity.TripStop;
+import com.example.racehorse_transport.entity.enums.TripStopType;
+import com.example.racehorse_transport.repository.TripStopRepository;
+
+@Service
+@RequiredArgsConstructor
+public class DeliveryFailureServiceImpl implements DeliveryFailureService {
+
+    private static final String FREE_WAIT = "HANDOVER_FREE_WAIT_MINUTES";
+
+    private final HandoverRepository handovers;
+    private final HorseLegRepository legs;
+    private final CrewAssignmentRepository crew;
+    private final IncidentRepository incidents;
+    private final com.example.racehorse_transport.service.CoordinatorRecipientService coordinatorRecipients;
+    private final NotificationService notifications;
+    private final SystemConfigService configs;
+    private final Clock clock;
+    private final TripStopRepository stops;
+
+    @Override
+    @Transactional
+    public Long startWaiting(Long handoverId, String username) {
+        Handover handover = lockOnCrew(handoverId, username);
+        TripExecutionPolicy.requireCanStartWaiting(handover.getHandoverType(), handover.getStatus() == HandoverStatus.PENDING, handover.getWaitStartedAt() != null);
+        // Tới sớm thì thời gian chờ đếm từ đầu khung giờ đã báo
+        Instant now = clock.instant();
+        TripStop stop = handover.getTripStop();
+        handover.setWaitStartedAt(DeliveryEtaPolicy.waitStart(now,
+                DeliveryEtaPolicy.reference(stop.getToldArrivalAt(), stop.getPlannedArrivalAt()),
+                configs.getInt(DeliveryEtaPolicy.TOLERANCE)));
+        return handover.getTripStop().getVehicleTrip().getId();
+    }
+
+    @Override
+    @Transactional
+    public Long fail(Long handoverId, String username) {
+        Handover handover = lockOnCrew(handoverId, username);
+        if (handover.getStatus() != HandoverStatus.PENDING) {
+            throw new DispatchRuleException("handoverId", "Lần giao nhận đã kết thúc.", true);
+        }
+        TripExecutionPolicy.requireFreeWaitOver(handover.getWaitStartedAt(), clock.instant(), waitMinutes(handover));
+        markFailed(handover);
+        return handover.getTripStop().getVehicleTrip().getId();
+    }
+
+    @Override
+    @Transactional
+    public int timeoutExpired() {
+        Instant now = clock.instant();
+        int shortestWait = Math.min(configs.getInt(FREE_WAIT), configs.getInt("INTERMEDIATE_WAIT_MINUTES"));
+        List<Handover> expired = handovers.findWaitingSince(HandoverStatus.PENDING, now.minusSeconds(60L * shortestWait))
+                .stream().filter(handover -> !now.isBefore(handover.getWaitStartedAt().plusSeconds(60L * waitMinutes(handover))))
+                .toList();
+        expired.forEach(this::markFailed);
+        return expired.size();
+    }
+
+    // Chờ ngắn chỉ áp dụng cho đơn giao nhiều nơi; lượt gom nhiều đơn giữ thời gian chờ như cũ
+    private static boolean sameBooking(TripStop first, TripStop second) {
+        return first.getBookingAddress() != null && second.getBookingAddress() != null
+                && first.getBookingAddress().getBooking().getId().equals(second.getBookingAddress().getBooking().getId());
+    }
+
+    private int waitMinutes(Handover handover) {
+        var current = handover.getTripStop();
+        boolean intermediate = stops.findByVehicleTrip_IdOrderBySequenceNumber(current.getVehicleTrip().getId()).stream()
+                .anyMatch(stop -> stop.getSequenceNumber() > current.getSequenceNumber()
+                        && stop.getStopType() == TripStopType.DELIVERY && sameBooking(stop, current));
+        return configs.getInt(intermediate ? "INTERMEDIATE_WAIT_MINUTES" : FREE_WAIT);
+    }
+
+    // Con chưa giao được: chặng FAILED; mỗi con một sự cố HANDOVER_TIMEOUT (người nhận vắng thì người nhận chịu, xe trễ thì công ty chịu); báo điều phối
+    private void markFailed(Handover handover) {
+        Instant now = clock.instant();
+        var stop = handover.getTripStop();
+        var cause = DeliveryEtaPolicy.companyFault(
+                DeliveryEtaPolicy.reference(stop.getToldArrivalAt(), stop.getPlannedArrivalAt()), stop.getActualArrivalAt(),
+                configs.getInt(DeliveryEtaPolicy.TOLERANCE)) ? IncidentCauseType.COMPANY_FAULT : IncidentCauseType.RECIPIENT_ABSENT;
+        List<HorseLeg> undelivered = legs.findByAlightTripStop_IdAndStatusIn(handover.getTripStop().getId(), Set.of(HorseLegStatus.IN_PROGRESS));
+        var perBooking = new java.util.LinkedHashMap<Long, Incident>();
+        for (HorseLeg leg : undelivered) {
+            leg.setStatus(HorseLegStatus.FAILED);
+            leg.setActualEndAt(now);
+            Incident incident = new Incident();
+            incident.setVehicleTrip(handover.getTripStop().getVehicleTrip());
+            incident.setHorseLeg(leg);
+            incident.setBooking(leg.getBookingHorse().getBooking());
+            incident.setIncidentType(IncidentType.HANDOVER_TIMEOUT);
+            incident.setSeverity(IncidentPolicy.defaultSeverity(incident.getIncidentType()));
+            incident.setCauseType(cause);
+            incident.setConfirmedCauseType(cause);
+            incident.setCauseConfirmedAt(now);
+            incident.setTitle("Không gặp người nhận: " + leg.getBookingHorse().getHorse().getName());
+            incident.setDescription(cause == IncidentCauseType.COMPANY_FAULT
+                    ? "Xe tới sau khung giờ đã báo, không gặp người nhận."
+                    : "Đã chờ hết thời gian chờ miễn phí tại điểm giao, không gặp người nhận.");
+            incident.setReportedBy(handover.getHandledBy());
+            incident.setStatus(IncidentStatus.REPORTED);
+            Incident saved = incidents.save(incident);
+            perBooking.putIfAbsent(leg.getBookingHorse().getBooking().getId(), saved);
+        }
+        handover.setStatus(HandoverStatus.TIMEOUT);
+        handover.setNote("Quá giờ chờ người nhận");
+        perBooking.values().forEach(this::notifyTimeout);
+    }
+
+    private void notifyTimeout(Incident incident) {
+        var booking = incident.getBooking();
+        var trip = incident.getVehicleTrip();
+        String message = "Lượt xe " + trip.getCode() + " không gặp người nhận của đơn " + booking.getCode() + ".";
+        notifications.notifyManagers(booking.getId(), "Quá hạn bàn giao", message,
+                "/manager/incidents?incidentId=" + incident.getId());
+        var coordinators = coordinatorRecipients.forTrip(trip);
+        if (!coordinators.isEmpty()) {
+            notifications.notify(coordinators, booking.getId(), "Giao ngựa không thành",
+                    message + " Tổ xe giao ngựa vào hub. Điều phối lập phương án xử lý tiếp theo.",
+                    "/coordinator/incidents?incidentId=" + incident.getId());
+        }
+    }
+
+    private Handover lockOnCrew(Long handoverId, String username) {
+        Handover handover = handovers.findForUpdate(handoverId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lần giao nhận " + handoverId));
+        var trip = handover.getTripStop().getVehicleTrip();
+        crew.findFirstByVehicleTrip_IdAndStaff_User_UsernameAndStatusNot(trip.getId(), username, CrewAssignmentStatus.RELEASED)
+                .orElseThrow(() -> new AccessDeniedException("Bạn không ở trong tổ lái của lượt xe này."));
+        if (trip.getStatus() != VehicleTripStatus.IN_PROGRESS) {
+            throw new DispatchRuleException("status", "Lượt xe chưa xuất phát hoặc đã kết thúc.", true);
+        }
+        return handover;
+    }
+}

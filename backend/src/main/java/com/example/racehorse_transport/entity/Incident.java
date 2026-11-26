@@ -1,6 +1,8 @@
 package com.example.racehorse_transport.entity;
 
+import com.example.racehorse_transport.entity.enums.ComplaintDecision;
 import com.example.racehorse_transport.entity.enums.IncidentCauseType;
+import com.example.racehorse_transport.entity.enums.IncidentSeverity;
 import com.example.racehorse_transport.entity.enums.IncidentStatus;
 import com.example.racehorse_transport.entity.enums.IncidentType;
 
@@ -20,6 +22,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.Generated;
 
 import java.math.BigDecimal;
@@ -30,6 +33,7 @@ import java.time.Instant;
 @Setter
 @NoArgsConstructor
 @Entity
+@DynamicUpdate
 @Table(name = "incident")
 public class Incident {
 
@@ -56,10 +60,25 @@ public class Incident {
     @Column(name = "incident_type", length = 30, nullable = false)
     private IncidentType incidentType;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "severity", length = 10, nullable = false)
+    private IncidentSeverity severity;
+
     // Nguyên nhân, quyết định ai chịu chi phí
     @Enumerated(EnumType.STRING)
-    @Column(name = "cause_type", length = 30, nullable = false)
+    @Column(name = "cause_type", length = 30)
     private IncidentCauseType causeType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "confirmed_cause_type", length = 30)
+    private IncidentCauseType confirmedCauseType;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cause_confirmed_by")
+    private Staff causeConfirmedBy;
+
+    @Column(name = "cause_confirmed_at")
+    private Instant causeConfirmedAt;
 
     @Column(name = "title", length = 200, nullable = false)
     private String title;
@@ -73,8 +92,8 @@ public class Incident {
     @Column(name = "longitude", precision = 9, scale = 6)
     private BigDecimal longitude;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "reported_by", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reported_by")
     private Staff reportedBy;
 
     // DB đặt giá trị mặc định now() lúc thêm dòng
@@ -86,6 +105,19 @@ public class Incident {
     @Column(name = "status", length = 30, nullable = false)
     private IncidentStatus status;
 
+    @Column(name = "rest_started_at")
+    private Instant restStartedAt;
+
+    @Column(name = "trip_unlocked_at")
+    private Instant tripUnlockedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "trip_unlocked_by")
+    private Staff tripUnlockedBy;
+
+    @Column(name = "trip_unlock_reason", length = 1000)
+    private String tripUnlockReason;
+
     // Người xác nhận ngựa đủ sức khỏe đi tiếp
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
     @JoinColumn(name = "fit_confirmed_by")
@@ -96,4 +128,22 @@ public class Incident {
 
     @Column(name = "resolved_at")
     private Instant resolvedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "booking_horse_id")
+    private BookingHorse bookingHorse;
+
+    @Column(name = "complaint_reply", columnDefinition = "text")
+    private String complaintReply;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "complaint_decision", length = 30)
+    private ComplaintDecision complaintDecision;
+
+    @Column(name = "complaint_decision_reason", columnDefinition = "text")
+    private String complaintDecisionReason;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "complaint_decided_by")
+    private Staff complaintDecidedBy;
 }

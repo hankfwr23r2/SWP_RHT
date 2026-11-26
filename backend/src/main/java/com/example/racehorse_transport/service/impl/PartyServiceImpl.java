@@ -1,5 +1,8 @@
 package com.example.racehorse_transport.service.impl;
 
+import java.time.Clock;
+import com.example.racehorse_transport.policy.BookingSubmissionPolicy;
+import com.example.racehorse_transport.dto.party.InsurerResponseDto;
 import com.example.racehorse_transport.dto.party.PartyCreateRequestDto;
 import com.example.racehorse_transport.dto.party.PartyResponseDto;
 import com.example.racehorse_transport.dto.party.PartyRoleCreateRequestDto;
@@ -34,6 +37,7 @@ public class PartyServiceImpl implements PartyService {
     private final PartyRepository parties;
     private final PartyRoleRepository roles;
     private final CountryRepository countries;
+    private final Clock clock;
 
     @Override
     @Transactional(readOnly = true)
@@ -46,6 +50,13 @@ public class PartyServiceImpl implements PartyService {
         return rows.stream()
                 .map(party -> PartyResponseDto.from(party, rolesById.getOrDefault(party.getId(), List.of())))
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<InsurerResponseDto> insurers() {
+        return parties.findActiveByRole(PartyRoleType.INSURER, BookingSubmissionPolicy.businessDate(clock.instant())).stream()
+                .map(InsurerResponseDto::from).toList();
     }
 
     @Override
@@ -76,6 +87,7 @@ public class PartyServiceImpl implements PartyService {
     public PartyRoleResponseDto addRole(Long partyId, PartyRoleCreateRequestDto request) {
         PartyRolePolicy.requireValidPeriod(request.validFrom(), request.validTo());
         Party party = lockParty(partyId);
+        PartyRolePolicy.requireAssignableRole(request.roleType());
         PartyRoleId roleId = new PartyRoleId(partyId, request.roleType());
         if (roles.existsById(roleId)) {
             throw new PartyRuleException.DuplicateRoleException();

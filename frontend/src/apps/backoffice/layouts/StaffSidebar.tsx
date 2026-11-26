@@ -1,66 +1,77 @@
-// Thanh bên của Manager: tài khoản, nút tiếp nhận đơn, menu (có số đơn chờ), danh sách đơn cần xử lý gấp. Thu gọn được thành cột biểu tượng.
-import { useCallback, useState } from 'react'
-import { NavLink, useLocation } from 'react-router'
+// Thanh bên của nhân viên: menu theo vai trò, thu gọn được thành cột biểu tượng, số việc đang chờ của quản lý.
+import { useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { bookingsApi, invalidateBookingsListCache } from '@shared/services/bookings'
-import { useAutoRefresh, useLoad } from '@shared/services/useLoad'
-import { accountsApi } from '@shared/services/accounts'
-import { workOf } from '../shared/staffWork'
 import { useAuth } from '@shared/auth/AuthContext'
-import type { StaffRole } from '@shared/types/role'
+import type { StaffRole } from '@shared/auth/role'
+import { useSpecialistWork } from '@backoffice/shared/useSpecialistWork'
+import { useStaffWork } from '@backoffice/shared/useStaffWork'
+import { Badge } from '@shared/ui/Badge'
 import { STAFF_MENUS } from './staffMenus'
+import { Button } from '@shared/ui/Button'
+import { TranslateToggle } from '@shared/ui/TranslateToggle'
+import { StaffProfileModal } from './StaffProfileModal'
 import s from './StaffSidebar.module.css'
 
 const KEY = 'SWP_MANAGER_SIDEBAR_COLLAPSED'
 const readCollapsed = () => { try { return localStorage.getItem(KEY) === '1' } catch { return false } }
 const prefetchManagerPage = (path: string) => {
-  const load = path === '/manager/intake'
-    ? () => import('../features/manager/intake/IntakePage')
-    : path === '/manager/approvals'
-      ? () => import('../features/manager/approvals/ApprovalsPage')
-      : path === '/manager/reports'
-        ? () => import('../features/manager/reports/ReportsPage')
-        : undefined
+  const load = path === '/manager/orders'
+    ? () => import('../features/manager/orders/ManagerOrdersPage')
+    : path === '/manager/reports'
+      ? () => import('../features/manager/reports/ReportsPage')
+      : undefined
   if (load) void load().catch(() => {})
 }
 
-export function StaffSidebar() {
+export function StaffSidebar({ mobileOpen, onNavigate }: { mobileOpen: boolean; onNavigate: () => void }) {
   const { t } = useTranslation()
-  const { session } = useAuth()
+  const { session, logout } = useAuth()
+  const navigate = useNavigate()
+  const [showProfile, setShowProfile] = useState(false)
   const role = session!.role as StaffRole
-  const { pathname } = useLocation()
   const [collapsed, setCollapsed] = useState(readCollapsed)
-  // Tải lại mỗi lần đổi trang để duyệt xong là số giảm ngay
-  const { data: all, reload } = useLoad(bookingsApi.list, [pathname])
-  const refresh = useCallback(() => { invalidateBookingsListCache(); reload() }, [reload])
-  useAutoRefresh(refresh)
-  const { data: accounts } = useLoad(role === 'admin' ? accountsApi.list : async () => [], [pathname, role])
-  const { counts: workCounts } = workOf(role, all ?? [], session!.name, session!.username)
-  // Quản trị viên: tổng số tài khoản ở mục duy nhất; các vai trò khác: số việc đang chờ
-  const count: Record<string, number> = role === 'admin'
-    ? { '/admin/accounts': accounts?.length ?? 0 }
-    : workCounts
+  const { pathname } = useLocation()
+  const activePath = STAFF_MENUS[role].filter(([to]) => pathname === to || pathname.startsWith(`${to}/`))
+    .sort(([left], [right]) => right.length - left.length)[0]?.[0]
+  const work = useStaffWork()
+  const specialist = useSpecialistWork(role === 'specialist')
+  const specialistCounts: Record<string, number | undefined> = {
+    '/specialist/verification': specialist?.verificationPending,
+    '/specialist/legal': specialist?.legalPending,
+    '/specialist/insurance': specialist?.insurancePending,
+  }
   const toggle = () => setCollapsed(c => { try { localStorage.setItem(KEY, c ? '0' : '1') } catch { /* không lưu được thì thôi */ } return !c })
 
   return (
-    <aside className={`${s.side} ${collapsed ? s.collapsed : ''}`} aria-label={t('staffSidebar.title', 'Menu')}>
+    <>
+    <aside className={`${s.side} ${collapsed ? s.collapsed : ''} ${mobileOpen ? s.open : ''}`} aria-label={t('staffSidebar.title', 'Menu')}>
       <div className={s.head}>
         <span>{t('staffSidebar.title', 'Menu')}</span>
-        <button className={s.toggle} onClick={toggle} aria-label={collapsed ? t('staffSidebar.expand', 'Mở rộng menu') : t('staffSidebar.collapse', 'Thu gọn menu')} title={collapsed ? t('staffSidebar.expand', 'Mở rộng menu') : t('staffSidebar.collapse', 'Thu gọn menu')}><i className="fa-regular fa-window-maximize" style={{ transform: 'rotate(90deg)' }} /></button>
+        <Button size="sm" className={s.toggle} icon={<i className={`fa-regular fa-window-maximize ${s.toggleIcon}`} />} onClick={toggle} aria-label={collapsed ? t('staffSidebar.expand', 'Mở rộng menu') : t('staffSidebar.collapse', 'Thu gọn menu')} title={collapsed ? t('staffSidebar.expand', 'Mở rộng menu') : t('staffSidebar.collapse', 'Thu gọn menu')} />
       </div>
 
-      <nav className={s.menu}>
+      <nav id="staff-navigation" className={s.menu} aria-label={t('header.navigation')}>
         {STAFF_MENUS[role].map(([to, label, opt]) => {
           const itemLabel = t(`staffMenus.${to}`, label)
+          const pending = role === 'specialist' ? specialistCounts[to]
+            : opt?.count ? work?.menuCounts?.[opt.count] : undefined
           return (
-            <NavLink key={to} to={to} end title={itemLabel} onPointerEnter={() => prefetchManagerPage(to)} onFocus={() => prefetchManagerPage(to)} className={({ isActive }) => `${s.item} ${isActive ? s.on : ''}`}>
+            <Link key={to} to={to} onClick={onNavigate} aria-current={to === activePath ? 'page' : undefined} title={itemLabel} aria-label={pending == null ? itemLabel : `${itemLabel} · ${pending}`} onPointerEnter={() => prefetchManagerPage(to)} onFocus={() => prefetchManagerPage(to)} className={`${s.item} ${to === activePath ? s.on : ''}`}>
               <i className={`fa-solid ${opt?.icon}`} aria-hidden="true" />
               <span>{itemLabel}</span>
-              {!!count[to] && <b className={`${s.count} ${to.endsWith('/locked') && count[to] ? s.countHot : ''}`} aria-label={role === 'admin' ? t('staffSidebar.accountsCount', { count: count[to] }) : t('staffSidebar.pendingCount', { count: count[to] })}>{count[to]}</b>}
-            </NavLink>
+              {pending != null && <Badge className={s.count} tone={pending > 0 ? "warning" : "neutral"}>{pending}</Badge>}
+            </Link>
           )
         })}
+        <div className={s.mobileAccount} hidden={!mobileOpen}>
+          <TranslateToggle />
+          <Button size="sm" onClick={() => { onNavigate(); setShowProfile(true) }}>{t('header.profile')}</Button>
+          <Button size="sm" onClick={() => { logout(); navigate('/login') }}>{t('staffTopbar.logout')}</Button>
+        </div>
       </nav>
     </aside>
+    {showProfile && session && <StaffProfileModal session={session} onClose={() => setShowProfile(false)} />}
+    </>
   )
 }

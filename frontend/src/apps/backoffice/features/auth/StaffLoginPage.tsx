@@ -4,10 +4,10 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import { authApi } from '@shared/api/auth'
 import { tokenStorage } from '@shared/api/client'
-import type { StaffRole } from '@shared/types/role'
+import type { StaffRole } from '@shared/auth/role'
 import { AuthShell, authStyles as s } from '@shared/ui/AuthShell'
 import { TurnstileWidget } from '@shared/ui/TurnstileWidget'
-import { HOME_OF } from '../../layouts/staffMenus'
+import { HOME_OF } from '@backoffice/layouts/staffMenus'
 
 function LoginForm({ managerOnly }: { managerOnly: boolean }) {
   const { t } = useTranslation()
@@ -61,7 +61,7 @@ function LoginForm({ managerOnly }: { managerOnly: boolean }) {
         username: res.email || res.username,
         staffCode: res.staffCode,
       })
-      navigate(HOME_OF[role] ?? '/manager')
+      navigate(HOME_OF[role] ?? '/manager/orders')
     } catch (err) {
       fail(err instanceof Error ? err.message : t('staffAuth.loginFailed', 'Đăng nhập không thành công. Vui lòng thử lại.'), 'password')
     } finally {
@@ -88,7 +88,7 @@ function LoginForm({ managerOnly }: { managerOnly: boolean }) {
         </div>
       </div>
       <TurnstileWidget key={captchaGeneration} action="staff_login" onTokenChange={setCaptchaToken} />
-      <p className="text-right small" style={{ marginBottom: 16 }}><Link to="/forgot-password" className="text-orange">{t('staffAuth.forgotPassword', 'Quên mật khẩu?')}</Link></p>
+      <p className={`text-right small ${s.forgot}`}><Link to="/forgot-password" className="text-orange">{t('staffAuth.forgotPassword', 'Quên mật khẩu?')}</Link></p>
       <button type="submit" className="btn btn-primary btn-full btn-lg" disabled={loading}>
         {loading ? t('staffAuth.loggingIn', 'Đang đăng nhập...') : managerOnly ? t('staffAuth.loginManager', 'Đăng nhập quản lý') : t('staffAuth.loginStaff', 'Đăng nhập')}
       </button>

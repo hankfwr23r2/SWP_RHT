@@ -49,7 +49,7 @@ class StaffAccountDtoTest {
         user.setStatus(AppUserStatus.LOCKED);
         staff.setUserId(9L);
         staff.setEmploymentStatus(EmploymentStatus.ON_LEAVE);
-        new StaffAccountUpdateRequestDto("DRV-NEW", "Updated driver", "0456", date, 5L, "C", date)
+        new StaffAccountUpdateRequestDto("DRV-NEW", "Updated driver", "0456", date, 5L, "C", date, null)
                 .applyTo(staff, hub);
 
         assertThat(StaffAccountResponseDto.from(staff)).isEqualTo(new StaffAccountResponseDto(

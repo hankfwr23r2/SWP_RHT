@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.dto.departure;
 
 import com.example.racehorse_transport.entity.enums.BookingType;
+import com.example.racehorse_transport.entity.enums.TransportMode;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -44,8 +45,11 @@ public class DepartureSuggestionQueryDto {
     @NotNull(message = "Chọn ngày muốn đi")
     private LocalDate fromDate;
 
-    // Số khoang cần (số ngựa)
-    @Min(value = 1, message = "Cần ít nhất 1 khoang")
-    @Max(value = 50, message = "Tối đa 50 khoang")
+    @Schema(description = "Số chỗ cần: khoang thường 1 chỗ, khoang rộng 2 chỗ")
+    @NotNull
+    @Min(value = 1, message = "Cần ít nhất 1 chỗ")
+    @Max(value = 100, message = "Tối đa 100 chỗ")
     private Integer stalls = 1;
+
+    private TransportMode transportMode = TransportMode.SHARED;
 }

@@ -1,10 +1,11 @@
-// Khung trang CÔNG KHAI (giới thiệu): topbar, header marketing, footer, nút nổi. Chuyển từ index.html + home.css.
+// Khung trang công khai: thanh trên, menu và chân trang.
 // Trang khách đã đăng nhập dùng khung gọn: CustomerLayout.tsx.
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, NavLink, useLocation } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import { TranslateToggle } from '@shared/ui/TranslateToggle'
+import { Button } from '@shared/ui/Button'
 import { CustomerLayout } from './CustomerLayout'
 import s from './SiteChrome.module.css'
 
@@ -81,7 +82,12 @@ function Footer() {
           <Link to="/login">{t('common.bookTrip')}</Link>
         </div>
       </div>
-      <div className={cx('wrap', s.copyright)}>{t('common.footerSub')}</div>
+      <div className={cx('wrap', s.copyright)}>
+        <span>{t('common.footerSub')}</span>
+        <Button variant="ghost" size="sm" icon={<i className="fa-solid fa-chevron-up" />} onClick={() => window.scrollTo({ top: 0 })}>
+          {t('header.backToTop')}
+        </Button>
+      </div>
     </footer>
   )
 }
@@ -91,7 +97,6 @@ export function PublicLayout({ children }: { children: ReactNode }) {
   const { session } = useAuth()
   const { pathname } = useLocation()
   const scrolled = useScrolled(10)
-  const showTop = useScrolled(600)
   const [menuOpen, setMenuOpen] = useState(false)
   if ((pathname === '/terms' || pathname === '/payment/vnpay-return') && session?.role === 'customer') {
     return <CustomerLayout>{children}</CustomerLayout>
@@ -101,28 +106,29 @@ export function PublicLayout({ children }: { children: ReactNode }) {
       <div className={s.topbar}>
         <div className={cx('wrap', s.topbarInner)}>
           <span>{t('common.brandTagline')}</span>
+          <TranslateToggle />
         </div>
       </div>
       <header className={cx(s.header, scrolled && s.scrolled)}>
         <div className={cx('wrap', s.headerInner)}>
           <Brand to="/" />
-          <button
-            type="button"
+          <Button
+            variant="ghost"
             className={s.menuToggle}
-            aria-label={menuOpen ? 'Đóng menu' : 'Mở menu'}
+            aria-label={t(menuOpen ? 'header.closeMenu' : 'header.openMenu')}
             aria-expanded={menuOpen}
             aria-controls="menu-chinh"
             onClick={() => setMenuOpen(o => !o)}
-          ><i className={`fa-solid ${menuOpen ? 'fa-xmark' : 'fa-bars'}`} aria-hidden="true" /></button>
-          <nav id="menu-chinh" className={cx(s.nav, menuOpen && s.open)} aria-label="Menu chính" onClick={() => setMenuOpen(false)}>
+            icon={<i className={`fa-solid ${menuOpen ? 'fa-xmark' : 'fa-bars'}`} />}
+          />
+          <nav id="menu-chinh" className={cx(s.nav, menuOpen && s.open)} aria-label={t('header.navigation')}
+            onClick={event => { if (event.target instanceof Element && event.target.closest('a')) setMenuOpen(false) }}>
             <PublicNav />
           </nav>
         </div>
       </header>
       <main>{children}</main>
       <Footer />
-      <button className={cx(s.floatTop, showTop && s.shown)} aria-label="Lên đầu trang" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}><i className="fa-solid fa-chevron-up" /></button>
-      <TranslateToggle />
     </>
   )
 }

@@ -64,7 +64,9 @@ main  (bản cũ, vẫn deploy được)
 ### 2.3 Hợp đồng API (OpenAPI → TypeScript)
 
 1. Backend có test `OpenApiExportTest` ghi `frontend/openapi/openapi.json` từ springdoc (đã có `springdoc-openapi`, `OpenApiConfig`).
-2. Frontend dùng **orval** sinh `src/shared/api/generated/` từ file đó. Hàm sinh ra gọi qua `apiClient` hiện có (mutator), nên giữ nguyên cơ chế token và refresh.
+2. Frontend dùng **openapi-typescript** sinh **kiểu dữ liệu** vào `src/shared/api/generated/schema.ts` từ file đó. Hàm gọi API viết tay, mỏng, trong `shared/api/<tài-nguyên>.ts`, dùng kiểu trong `generated/` và gọi qua `apiClient` hiện có, nên giữ nguyên cơ chế token và refresh (AGENTS.md mục 8.1).
+   - Công cụ là devDependency khóa phiên bản trong `package-lock.json`. Nó khai báo peer `typescript@^5`, dự án dùng TypeScript 6 nên `package.json` có `overrides` để công cụ dùng TypeScript của dự án (kết quả đã so: giống hệt khi chạy với TypeScript 5). Có bản hỗ trợ TypeScript 6 thì bỏ `overrides`.
+   - Không chọn orval: orval sinh cả hàm gọi API, trùng vai trò với `shared/api/<tài-nguyên>.ts` mà AGENTS.md mục 8.1 quy định.
 3. Lệnh: `npm run api:gen`. CI chạy lại lệnh và `git diff --exit-code`, lệch là đỏ.
 4. **Không bao giờ sửa tay hay gộp xung đột bằng tay** `openapi.json` và `generated/`: khi xung đột, chạy lại export và `api:gen`.
 
@@ -139,14 +141,18 @@ Có **3 thành viên** thì tách luồng A thành A-BE và A-FE (khách hàng),
 
 | Interface (trong `service/`) | Ai cài đặt | Ai gọi | Dùng khi |
 |---|---|---|---|
-| `BookingStatusService.transition(bookingId, toStatus, reason, actor)` | A | A, B | B chuyển đơn sang `IN_OPERATION` (handover PICKUP đầu tiên) và `DELIVERED` (chặng giao cuối cùng xong) |
-| `BookingHorseService.exclude(bookingHorseId, reason, actor)` | A | B | Ngựa không đạt khi nhận (GĐ6) hoặc trượt cách ly (5.3). A nhả khoang và tạo báo giá mới |
-| `DepartureService.reserve/release(departureId, stalls)` | A | A | Mọi thay đổi `booked_stall_count` |
+| `BookingStatusService.transition(bookingId, toStatus, reason, actor)` | A | A, B | B chuyển đơn sang `IN_OPERATION` (khách đã trả đủ và xe rời nơi nhận ngựa) và `DELIVERED` (chặng giao cuối cùng xong, hoặc ký trả ngựa tại hub ở đầu SELF) |
+| `BookingHorseService.exclude(bookingHorseId, reason, actor)` | A | B | Ngựa không đạt khi nhận (GĐ6), kể cả tại hub. A nhả chỗ và tạo báo giá mới |
+| `DepartureService.reserve/release(departureId, stalls)` | A | A | Mọi thay đổi `booked_stall_count`. `stalls` là số **chỗ** (khoang rộng 2 chỗ) |
 | `DocumentService.attach(file, documentTypeCode, ownerSubject, ownerId, uploadedByUserId)` | P0 | A, B | Ảnh hiện trường, biên bản giao nhận, biên lai, giấy tờ |
 | `PaymentService.createExtraCharge(bookingId, costItemIds, actorUserId)` | A | A (quyết toán) | Lập khoản thu thêm |
 | `CostItemService.linkExtraPayment(costItemIds, paymentId)` | B | A | Gắn khoản thu thêm vào chi phí |
+| `HorseLegService.cancelPlannedLegsOfBooking(bookingId)` | B | A | Đơn rời chuyến (báo giấy chậm, hủy chuyến, đổi chuyến, hủy đơn): hủy mọi `horse_leg` còn PLANNED của đơn, nhả chỗ trên lượt xe và vị trí khoang |
 | `NotificationService.notify(...)`, `AuditService.record(...)` | P0 | A, B | Mọi giai đoạn |
-| `PaymentReadinessService.isPaidInFull(bookingId)`, `DocumentCompletenessService.isComplete(bookingId)` | A | B | Kiểm điều kiện được đón ngựa khi xe xuất phát (GĐ5) |
+| `DocumentCompletenessService.isComplete(bookingId)` | A | B | Khi xe xuất phát đón (GĐ5), khi nhận tại hub nếu SELF, hoặc khi nhận tại cửa khẩu với IMPORT |
+| `PaymentReadinessService.isPaidInFull(bookingId)` | A | B | Khi xe **rời** nơi nhận ngựa (GĐ6) |
+| `PaymentService.requestBalance(bookingId, receivedAt)` | A | B | Khi hoàn tất nhận ngựa, lập số dư một lần cho đơn CONFIRMED đã cọc và có báo giá ACCEPTED |
+| `BookingCancellationService.cancelUnpaidAtPickup(bookingId, actorUserId)` | A | B | Trả ngựa tại chỗ khi quá hạn số dư và `PaymentCheckoutService.hasPendingBalanceConfirmation` là false (link mở trước hạn chờ thêm 5 phút sau hạn) |
 
 ---
 
@@ -169,7 +175,7 @@ Luồng B không phải chờ luồng A: đợt 0 đã có đủ entity, và `db
 | **M0** | App khởi động trên DB mới với `ddl-auto=validate`. Đăng nhập được bằng tài khoản seed. ArchUnit và lint xanh. `npm run api:gen` chạy được. Có bộ `shared/ui` và layout mới |
 | **M1** | Admin dựng được tuyến, lịch, xe. Scheduler sinh `departure`. Điều phối viên tạo lượt xe và gán ngựa cho đơn seed |
 | **M2** | Khách đặt đơn chọn chuyến, có xem trước giá. Tài xế đón ngựa, quét chip, giao vào hub. Đơn chuyển `IN_OPERATION` |
-| **M3** | Chạy trọn hai ví dụ trong `NGHIEP_VU_THEO_59_BANG.md` mục 6: Phnom Penh (quốc tế) và Đồng Nai → Huế (trục nội địa), kèm một ca chạy thẳng, một ca sự cố và một ca giao thất bại |
+| **M3** | Chạy trọn hai ví dụ trong `NGHIEP_VU_THEO_59_BANG.md` mục 6 (bản 23/11/2026): Phnom Penh (quốc tế) và Đồng Nai → Huế (trục nội địa), kèm một ca chạy thẳng, một ca sự cố và một ca giao thất bại |
 | **M4** | E2E mới xanh. Đã xóa hết code cũ. ERD sinh từ DB. Merge vào `main` |
 
 **Đồng bộ:** cuối mỗi đợt, hai thành viên cùng rebase, chạy Quality Gate đầy đủ trên `redesign/system-v2`, demo mốc, cập nhật bảng tiến độ (mục 10).
@@ -254,7 +260,7 @@ Mục tiêu: dựng sẵn **mọi thứ cả hai luồng cùng cần**, để t�
 | `shared/ui` | `Button`, `Input`, `Textarea`, `Select`, `Field` (nhãn + lỗi), `Modal`, `ConfirmDialog`, `Table` (tự chuyển thành thẻ trên điện thoại), `Badge`, `StatusBadge`, `Card`, `Tabs`, `Stepper`, `Skeleton`, `EmptyState`, `ErrorState`, `Toast`, `PageHeader` | `Modal.tsx`, `Select.tsx`, `toast.tsx`, `FormSelect`, `FileField`, các class `.btn`/`.card` trong `base.css` |
 | `shared/hooks` | Chuyển `useLoad`, `useAutoRefresh`, `useNow`, `usePagination`, `useRoadRoute` | Giữ nguyên logic |
 | Layout | `StaffLayout`, `StaffSidebar`, `StaffTopbar`, layout khách dựng lại bằng `shared/ui` | Cấu trúc layout hiện có |
-| Client sinh tự động | Cài `orval`, mutator dùng `apiClient`, lệnh `api:gen`, kiểm `git diff` trong CI | `shared/api/client.ts` giữ nguyên |
+| Kiểu API sinh tự động | Cài `openapi-typescript` (mục 2.3), lệnh `api:gen`, kiểm `git diff` của `openapi.json` và `generated/` trong CI | `shared/api/client.ts` giữ nguyên |
 | Alias | Thêm `@customer/*`, `@backoffice/*` vào `vite.config.ts` và `tsconfig.app.json`, đúng `AGENTS.md` mục 8.3 | `@shared` đã có |
 | Lint | oxlint `no-restricted-imports` theo `AGENTS.md` mục 8.3. Script `scripts/check-style.mjs` chặn mã màu và `style={{` trong file **mới** (file cũ nằm trong danh sách ngoại lệ, danh sách này chỉ được rút ngắn) | |
 | i18n | Tách `vi.ts`/`en.ts` (khoảng 1700 dòng mỗi file) theo namespace | Nội dung chuỗi hiện có |
@@ -276,7 +282,7 @@ Mục tiêu: dựng sẵn **mọi thứ cả hai luồng cùng cần**, để t�
 - Không ghi mã OTP ra log. Máy chưa cấu hình mail thì không gửi được mã; tài khoản trong seed dev đều đã xác thực email.
 - 10 interface gọi chéo ở mục 3.3 đã có trong `service/`, mỗi file ghi rõ luồng cài đặt và luồng gọi.
 - `TestData` (`support/TestData`, được `@PostgresIntegrationTest` nạp sẵn): tạo nhanh tài khoản, khách, nhân viên, đơn, chuyến đột xuất. Chỉ thêm method mới, không sửa method cũ.
-- `db/seed-dev/R__dev_seed_bookings.sql`: chuyến cho 8 tuần tới và 3 đơn CONFIRMED của `customer1.dev` (`DEV-DIRECT-001` chạy thẳng, `DEV-DOMESTIC-001` trục HCM-DN, `DEV-EXPORT-001` trục HCM-PNH), có ngựa, bảo hiểm đã xác nhận, báo giá ACCEPTED và đã trả đủ. Chuyến do seed sinh trùng lịch, nên test tạo chuyến riêng thì dùng chuyến đột xuất (`TestData.departure`).
+- `db/seed-dev/R__dev_seed_bookings.sql`: chuyến cho 6 tuần tới và 3 đơn CONFIRMED của `customer1.dev` (`DEV-DIRECT-001` chạy thẳng, `DEV-DOMESTIC-001` trục HCM-DN, `DEV-EXPORT-001` trục HCM-PNH), có ngựa, bảo hiểm đã xác nhận, báo giá ACCEPTED và đã trả đủ. Chuyến do seed sinh trùng lịch, nên test tạo chuyến riêng thì dùng chuyến đột xuất (`TestData.departure`).
 
 **Mốc M0** khi P0.1–P0.3 và P0-FE đã merge.
 
@@ -315,12 +321,12 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
 ### A2. Xe, nhân sự, đối tác, tham số (đợt 1)
 
 - **BE:**
-  - `VehicleService` (kiểm tổng khoang ≤ `vehicle_class.max_stall_count`, `home_hub_location_id` là HUB);
+  - `VehicleService` (kiểm tổng chỗ ≤ `vehicle_class.max_stall_count`, hub gốc là trụ sở). Đổi trạng thái xe và bỏ hạn đăng ký: A6b;
   - `AccountService` (tài khoản và `staff`);
   - `CustomerService` (hồ sơ khách cá nhân, tổ chức và sổ địa chỉ);
   - `PartyService` (đối tác và `party_role`);
   - `SystemConfigService` (chỉ tham số kỹ thuật).
-- **FE:** admin quản lý xe, tài khoản nhân viên, đối tác (đại lý, trại cách ly, thú y, bảo hiểm), tham số.
+- **FE:** admin quản lý xe, tài khoản nhân viên, đối tác (đại lý, thú y, chuồng gửi, bảo hiểm), tham số. Xe không có giấy tờ.
 - **Tận dụng:** `AdminAccountServiceImpl`, `SystemConfigServiceImpl` (bỏ các khóa giá), FE `admin/accounts`, `admin/horse-types`. Bỏ cách đọc sức chứa từ chuỗi `vehicle_type`.
 - **Xong khi:** đủ test CRUD và quy tắc. Đổi tham số thì ghi `audit_log`.
 
@@ -328,7 +334,7 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
 
 - **BE:**
   - `PriceListService`: CRUD; chỉ kích hoạt được khi không trùng hiệu lực (có sẵn EXCLUDE ở DB);
-  - `PricingPolicy` (hàm thuần): đầu vào là cách chạy, km các chặng, tuyến, hạng xe, loại khoang, số ngày cách ly, dịch vụ thêm; đầu ra là các dòng giá kèm `price_item_id`. Áp dụng các dòng `DIRECT`, `PICKUP`, `DELIVERY`, `LINEHAUL`, `FUEL`, `QUARANTINE`, `DOCS`;
+  - `PricingPolicy` (hàm thuần): đầu vào là cách chạy, km các chặng, tuyến, hạng xe, loại khoang, số ngày đón sớm, dịch vụ thêm; đầu ra là các dòng giá kèm `price_item_id`. Áp dụng các dòng `DIRECT`, `PICKUP`, `DELIVERY`, `LINEHAUL`, `FUEL`, `QUARANTINE`, `DOCS`;
   - `PricingService`: nạp `price_list` đang hiệu lực, gọi Valhalla lấy km, gọi policy;
   - endpoint `POST /pricing/preview`.
 - **FE:** admin quản lý bảng giá (bậc km, giá theo tuyến, hạng xe). Khối xem trước giá trong luồng đặt đơn.
@@ -340,7 +346,7 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
 
 ### A4. Quy định và yêu cầu giấy tờ (đợt 2)
 
-- **BE:** `RegulationService` (`country_rule` có EXCLUDE chống trùng hiệu lực, `document_type`, `document_requirement`). `RegulationPolicy`: tìm quy định theo nước đối tác, chiều đi và ngày; tính thời gian cần trước ngày đón (`permit_lead_days`, `certificate_lead_days`, `quarantine_days`).
+- **BE:** `RegulationService` (`country_rule` có EXCLUDE chống trùng hiệu lực, `document_type`, `document_requirement`). `RegulationPolicy`: tìm quy định theo nước đối tác, chiều đi và ngày; tính thời gian cần trước ngày đón (`permit_lead_days`, `certificate_lead_days`; `quarantine_days` bỏ ở A6b).
 - **FE:** admin quản lý quy định và giấy tờ yêu cầu. Danh sách giấy cần nộp hiển thị cho khách.
 - **Tận dụng:** dữ liệu trong `DocumentRequirementSeeder` → đưa vào seed SQL. FE `admin/rules`, `admin/documents`.
 - **Xong khi:** test chọn đúng quy định theo ngày hiệu lực và chiều đi, kể cả INTERPROVINCE cho VN.
@@ -370,9 +376,9 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
 ### A6. Thẩm định, giấy tờ, bảo hiểm (đợt 4)
 
 - **BE:**
-  - `DocumentReviewService` (duyệt hoặc từ chối, bắt buộc lý do);
-  - `DocumentCompletenessPolicy` (cách tính ở `DB_SCHEMA_59_BANG.md` mục 5) và cài đặt `DocumentCompletenessService`;
-  - `InsuranceService`: PERSONAL / ARRANGED / NONE, `REVISION_REQUESTED` chỉ với PERSONAL, xác nhận;
+  - `DocumentReviewService`: chuyên viên tải giấy của COMPANY, CONSIGNEE, AGENT và duyệt hoặc từ chối giấy ở UNDER_REVIEW, NEEDS_RESUBMISSION, QUOTING, AWAITING_DEPOSIT, CONFIRMED. Giấy do chuyên viên tải vẫn chờ duyệt. Từ chối phải có lý do. Ở CONFIRMED, khách được nộp lại giấy CUSTOMER bắt buộc nếu thiếu bản còn hiệu lực;
+  - `DocumentCompletenessService.isCompleteForQuoting` kiểm giấy bắt buộc của CUSTOMER. `isComplete` kiểm tất cả giấy bắt buộc khi xe xuất phát đón. Hai mốc dùng chung policy và đều chờ xác định yêu cầu phụ thuộc cửa khẩu. Checklist trả bên nộp và cờ cho hai mốc;
+  - `InsuranceService`: PERSONAL / ARRANGED / NONE, `REVISION_REQUESTED` chỉ với PERSONAL, xác nhận. Khi bắt đầu báo giá, kiểm lại bảo hiểm của từng ngựa ACTIVE theo ngày đón, ngày xuất phát hiện tại và hạn báo giá ARRANGED. Chuyên viên có thể mở lại CONFIRMED về DRAFT khi đơn UNDER_REVIEW hoặc NEEDS_RESUBMISSION, có lý do và audit;
   - trả đơn về khách (`NEEDS_RESUBMISSION`), từ chối đơn.
 - **FE:** chuyên viên duyệt hồ sơ, giấy tờ, bảo hiểm. Quản lý tiếp nhận đơn. Khách bổ sung hồ sơ.
 - **Tận dụng:**
@@ -381,6 +387,26 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
   - toàn bộ luồng nhánh `feat/insurance-resubmission`;
   - FE `specialist/*`, `manager/intake`, `InsuranceFields`, `InsuranceDocuments`, `orders/InsuranceRevision.tsx` (+ test).
 - **Xong khi:** test completeness với nhiều trường hợp (giấy theo con, giấy theo đơn, hết hạn, sai loại). Đủ điều kiện mới cho sang `QUOTING`.
+- **API:** nhân viên đọc `GET /bookings/review-queue`, `GET /bookings/{id}/review-detail` và `GET /bookings/{id}/documents/checklist`. Khách xem yêu cầu và kết quả của đơn mình qua `GET /bookings/{id}/documents/my-checklist`.
+- Thao tác đơn dùng `POST /bookings/{id}/intake`, `return-for-resubmission`, `resubmit`, `reject`, `change-departure`, `start-quoting`. Tải giấy qua `POST /bookings/{id}/documents/upload` (multipart) cho khách hoặc `POST /bookings/{id}/documents/upload-for-partner` (multipart) cho chuyên viên, duyệt qua `POST /bookings/{id}/documents/{documentId}/approve` hoặc `reject`.
+- Thao tác bảo hiểm dùng `POST /bookings/{id}/insurances/{insuranceId}/record-evidence`, `confirm`, `reopen`, `request-revision`, `revise`. Chuyên viên nhập phí và số tiền bảo hiểm theo chứng từ. Khoản VND dùng số nguyên đồng. Khách sửa thông tin hợp đồng PERSONAL sau yêu cầu bổ sung, giữ lý do gần nhất trên bảo hiểm và nhật ký yêu cầu trong `audit_log`.
+
+### A6b. Đồng bộ quyết định ngày 23/11/2026 (đợt 4, làm trước A7)
+
+Đưa các quyết định đã ghi trong `DB_SCHEMA_59_BANG.md`, `NGHIEP_VU_THEO_59_BANG.md`, `MAN_HINH_VA_TAC_DONG.md` vào code A1–A6. Danh sách file phải được duyệt riêng trước khi sửa.
+
+| Phần | Việc |
+|---|---|
+| Migration | Bỏ `country_rule.quarantine_days`, `vehicle.registration_expiry_date`; thêm `location.counterpart_country_code`, `booking.pickup_method`, `booking.delivery_method`, `horse_health_log.water_intake`, `feed_intake`; loại giấy và tham số mới; đổi tên `VET_CHECK`, `QUARANTINE_STAY`. Entity của B (`horse_health_log`) cần B đồng ý |
+| Seed dev | 6 tuyến mỗi tuần một chuyến, cửa khẩu Lao Bảo, đại lý Lào, điểm nghỉ đạt quy tắc #31, xe và tổ xe đủ chạy, quy định và giấy mới, bỏ trại cách ly |
+| A1 | Chỗ theo loại khoang, cửa khẩu khớp nước đối tác, quy tắc #31 khi lưu tuyến, mốc 48 giờ, màn hình chuyến cần quyết định, chuyến đột xuất |
+| A2 | Đổi trạng thái xe, quy tắc chỗ, bỏ hạn đăng ký, tham số mới |
+| A3 | Bỏ tính tiền cách ly, lưu chuồng theo ngày đón sớm, tự thêm `VET_CHECK` |
+| A4 | Bỏ ngày cách ly khỏi thời gian cần trước ngày đón |
+| A5 | Giữ chỗ theo loại khoang, chọn cách đưa và nhận ngựa |
+| A6 | `LAB_TEST` do công ty nộp, `QUARANTINE_CLEARANCE`, mốc kiểm của đơn nhập, danh sách đơn thiếu giấy chuyển A8 |
+
+**Xong khi:** 9 ngựa khoang rộng không đặt được trên chuyến 9 chỗ; đơn Lào không chọn được Mộc Bài; tuyến có đoạn quá 4 giờ bị từ chối; xe bảo dưỡng không gán được (B kiểm); không còn `quarantine_days` trong code.
 
 ### A7. Báo giá, đặt cọc, thanh toán (đợt 4)
 
@@ -389,7 +415,8 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
   - `PaymentService`: DEPOSIT, BALANCE, REFUND;
   - `VnpayClient`: callback và IPN ghi `payment_transaction`, chống trùng bằng UK;
   - cấp vận đơn;
-  - scheduler: hết hạn báo giá (nhả khoang), nhắc trả số dư;
+  - scheduler: hết hạn báo giá (nhả chỗ). Hạn báo giá theo quy tắc #33;
+  - `PaymentService.requestBalance(bookingId, receivedAt)`: luồng B gọi sau khi nhận ngựa xong. Tạo tối đa một khoản số dư cho đơn CONFIRMED đã trả cọc, bằng tổng báo giá ACCEPTED trừ số đã trả. Nếu số dư dương, hạn là `receivedAt + BALANCE_WAIT_MINUTES` và thông báo khách;
   - `PaymentReadinessService`.
 - **FE:** quản lý lập, điều chỉnh, gửi báo giá. Khách xem báo giá, chấp nhận, thanh toán VNPAY, trang kết quả trả về.
 - **Tận dụng:**
@@ -406,14 +433,26 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
 
 - **BE:**
   - `SettlementPolicy` (số còn nợ, theo `DB_SCHEMA_59_BANG.md` mục 5);
-  - `SettlementService`: lấy chi phí đã duyệt mà khách hoặc người nhận chịu, gọi `createExtraCharge` và `CostItemService.linkExtraPayment`, đóng đơn khi nợ bằng 0;
-  - hủy đơn: hoàn tiền theo biểu phí trước khi nhận ngựa, không hoàn sau khi nhận;
-  - `RatingService`.
+  - `SettlementService`: lấy chi phí đã duyệt mà khách hoặc người nhận chịu, gọi `PaymentService.createExtraCharge` qua `ExtraChargeService` và gắn chi phí qua `CostItemService.linkExtraPayment`. Khách thanh toán EXTRA_CHARGE qua VNPAY. Đóng đơn khi đủ điều kiện;
+  - hủy đơn theo `NGHIEP_VU_THEO_59_BANG.md` mục 5.4, gồm hủy do không trả số dư tại nơi nhận; tự đóng đơn không phát sinh sau 7 ngày;
+  - danh sách đơn thiếu giấy và đổi chuyến của đơn đã cọc (màn hình 3.5b), xử lý theo nguyên nhân ở GĐ5. Tính hạn giữ giá từ `previous_departure_id` và đếm theo `cause_type`;
+  - Hoàn chuyển khoản qua `RefundService`, liên kết từng khoản gốc. Không hoàn riêng dòng thu hộ và `VET_CHECK` (24/11/2026). `RatingService` cho đơn `DELIVERED` hoặc `COMPLETED`.
 - **FE:** quản lý quyết toán. Khách xem khoản thu thêm, thanh toán, đánh giá. Hóa đơn gửi qua mail.
 - **Tận dụng:** `SettlementServiceImpl`, `SettlementExpiryScheduler`, `BillMailServiceImpl`, `CustomerRatingController`, FE `orders/TripFeedback.tsx`, `manager/cancelled-orders`.
 - **Xong khi:** test số còn nợ trong các ca có hoàn tiền, có thu thêm, có khoản do người nhận chịu. Đóng đơn đúng điều kiện.
 
 ---
+
+### FE luồng A
+
+Trạng thái **chưa làm**. Thứ tự PR đã thống nhất ngày 24/11/2026.
+
+1. Tải nhanh, API đọc.
+2. Đặt đơn và Đơn của tôi. Làm song song Thẩm định, Mạng lưới và giá, Danh mục.
+3. Quản lý.
+4. Trang chủ, hồ sơ, xóa code cũ và E2E.
+
+Ưu tiên UI/UX thân thiện, tận dụng giao diện cũ và tăng tốc độ tải, nhất là lần đầu. Khi chưa chắc về nghiệp vụ, tham khảo cách làm tương tự ngoài thực tế.
 
 ## 7. Luồng B: vận hành
 
@@ -427,7 +466,8 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
   - `DispatchPolicy` (hàm thuần), gồm các quy tắc #8, #9, #10, #20, #21:
     - không trùng giờ xe hoặc nhân viên;
     - lượt mới bắt đầu ở nơi lượt trước kết thúc;
-    - số ngựa ≤ số khoang theo loại khoang tại mọi thời điểm;
+    - số chỗ ngựa chiếm ≤ tổng chỗ của xe tại mọi thời điểm (khoang rộng 2 chỗ);
+    - ngựa cùng đơn đi cùng lượt LINEHAUL (#30); chỉ gán xe ACTIVE (#36); nhân viên bắt đầu ở nơi lượt trước kết thúc (#10);
     - lên xuống trục ở đầu và cuối tuyến.
 - **FE:** bảng điều độ cho điều phối viên, theo ngày và theo chuyến: danh sách ngựa chờ, kéo ngựa vào lượt xe, bản đồ lộ trình, phân công tổ lái.
 - **Tận dụng:**
@@ -440,9 +480,10 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
 ### B2. Thực hiện tại điểm dừng và chuỗi giao nhận (đợt 2)
 
 - **BE:**
-  - `TripStopService`: xe xuất phát (kiểm `PaymentReadinessService`, `DocumentCompletenessService`, bảo hiểm CONFIRMED, tài xế đã xác nhận), tới và rời điểm dừng;
+  - `TripStopService`: xe xuất phát (kiểm `DocumentCompletenessService`, bảo hiểm CONFIRMED, tài xế đã xác nhận); rời nơi nhận ngựa thì kiểm `PaymentReadinessService` (#32); rời trạm nghỉ thì kiểm #34;
   - `HandoverService`: PICKUP, HUB_IN/OUT, STAY_IN/OUT, AGENT, DELIVERY, RETURN; quét chip (`MicrochipPolicy`); `handover_document` nhận và trả giấy gốc; biên bản qua `DocumentService`;
-  - cập nhật trạng thái `horse_leg`. Handover PICKUP đầu tiên thì gọi `BookingStatusService` → `IN_OPERATION`.
+  - đầu SELF nhận hoặc trả ngựa tại hub bằng `handover` PICKUP hoặc DELIVERY gắn `horse_stay`. Kiểm giấy khi nhận tại hub và giữ hai địa chỉ của đơn cho giấy tờ;
+  - cập nhật trạng thái `horse_leg`. Nhận ngựa xong thì gọi `requestBalance`; xe rời nơi nhận thì gọi `BookingStatusService` → `IN_OPERATION`. Đơn IMPORT nhận ngựa ở cửa khẩu (#35).
   - **Endpoint theo tài nguyên**, ví dụ:
     - `POST /vehicle-trips/{id}/start`;
     - `POST /trip-stops/{id}/arrive`, `POST /trip-stops/{id}/depart`;
@@ -454,25 +495,25 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
   - test `PickupChipCheckTest`, `DepartToPickupTest`, `CrewAcknowledgementTest`;
   - FE `driver/DriverJob.tsx`, `escort/EscortJob.tsx` (viết lại theo điểm dừng), `CameraCapture`, `CaptureField`, `shared/lib/capture.ts`, `captureScope.ts`, e2e `return-horses.e2e.ts`, `camera.e2e.ts`.
 - **Xong khi:**
-  - test không xuất phát được khi chưa trả đủ tiền;
+  - test không rời nơi nhận được khi chưa trả đủ tiền, quá giờ thì trả ngựa và hủy đơn;
   - test chip sai thì không nhận;
   - test giao nhận làm đúng chuyển trạng thái chặng và trạng thái đơn;
   - không còn endpoint kiểu `action`.
 
-### B3. Lưu trú, cách ly, sức khỏe (đợt 3)
+### B3. Lưu trú, cho ăn, sức khỏe (đợt 3)
 
 - **BE:**
-  - `HorseStayService`: ASSEMBLY, QUARANTINE, OVERNIGHT, STABLING; kéo dài cách ly; kết quả PASSED/FAILED. FAILED thì gọi `BookingHorseService.exclude` và tạo chặng RETURN;
-  - `HealthLogService`: đo tại điểm dừng, trong lúc lưu trú, hoặc trên đường.
-- **FE:** hộ tống ghi sức khỏe hằng ngày. Điều phối viên quản lý lưu trú tại hub và trại.
+  - `HorseStayService`: ASSEMBLY, OVERNIGHT, STABLING. Không làm cách ly (`QUARANTINE` ngừng dùng);
+  - `HealthLogService`: đo và ghi ăn uống (`water_intake`, `feed_intake`) tại điểm dừng, trong lúc lưu trú, hoặc trên đường. Bỏ uống 2 trạm liền thì WATCH và báo điều phối.
+- **FE:** hộ tống ghi sức khỏe hằng ngày. Điều phối viên quản lý lưu trú tại hub và chuồng gửi.
 - **Tận dụng:** `HorseHealthLogServiceImpl`, FE `escort/*`, `healthLogs` API cũ (đổi dữ liệu).
-- **Xong khi:** test luồng cách ly đạt và không đạt. Chuỗi chặng của con ngựa bị loại được hủy đúng.
+- **Xong khi:** test ghi ăn uống ở trạm, nghỉ đêm, hub; test chặn rời trạm khi thiếu. Chuỗi chặng của con ngựa bị loại được hủy đúng.
 
 ### B4. Sự cố, phương án, chi phí (đợt 4)
 
 - **BE:**
   - `IncidentService`: báo sự cố gắn `vehicle_trip` hoặc `horse_leg`; `incident_plan` có phiên bản, đề xuất, duyệt hoặc từ chối; xác nhận ngựa đủ sức đi tiếp; đóng sự cố;
-  - `CostItemService`: ghi chi phí, `CostPayerPolicy` (bên chịu theo `cause_type`), duyệt, kiểm hạn mức chi khẩn cấp, `linkExtraPayment`;
+  - `CostItemService`: ghi chi phí, `CostPayerPolicy` (bên chịu theo `cause_type`; `FORCE_MAJEURE` do công ty), duyệt, kiểm hạn mức chi khẩn cấp, `linkExtraPayment`;
   - phương án `TRANSFER_VEHICLE` và `RETURN_TO_HUB` gọi `DispatchService` và `HorseLegService`.
 - **FE:** tài xế báo SOS. Điều phối viên lập phương án trên bản đồ. Quản lý duyệt phương án và chi phí. Tổ xe ghi chi phí kèm biên lai.
 - **Tận dụng:**
@@ -598,6 +639,31 @@ Xong thì chạy Quality Gate và báo kết quả thật.
 
 ---
 
+## 11. Mô hình bến xe (quyết định 26/11/2026)
+
+Nguồn: [NGU_CANH_THIET_KE_LAI.md](NGU_CANH_THIET_KE_LAI.md) mục 4b, [NGHIEP_VU_6_LUONG.md](NGHIEP_VU_6_LUONG.md), phạm vi lược đồ ở mục cuối [DB_SCHEMA_59_BANG.md](DB_SCHEMA_59_BANG.md), màn H1–H10 ở [MAN_HINH_VA_TAC_DONG.md](MAN_HINH_VA_TAC_DONG.md).
+
+**Quy trình:** mỗi task bắt đầu bằng thiết kế lược đồ (nếu có), cập nhật `DB_SCHEMA_59_BANG.md` và **trình người dùng duyệt** trước khi viết migration và code (AGENTS.md mục 1.1, mục 4). Chủ sở hữu bảng giữ như mục 3: luồng A giữ mạng lưới, xe, đơn, giá, giấy tờ; luồng B giữ điều độ, giao nhận, lưu trú, sức khỏe, theo dõi.
+
+**Số migration:** A dùng `V202612011000`–`V202612011999`, B dùng `V202612012000`–`V202612012999`. Số phải lớn hơn migration mới nhất trên nhánh lúc gộp.
+
+| Mã | Việc | Luồng | Phụ thuộc | Xong khi |
+|---|---|---|---|---|
+| M1 | **Mạng lưới bến xe:** hub Lào, Campuchia và vùng phục vụ; tuyến hub ⇄ hub qua cửa khẩu (`route_stop` BORDER); hub gốc của xe, người là bất kỳ hub; giấy tờ lấy cửa khẩu từ điểm dừng tuyến, thêm giấy riêng theo cửa khẩu và các cửa khẩu của bản cũ; sắp lại lịch mẫu cho khớp vòng xe | A | Không | Đặt được đơn TP.HCM → Phnom Penh trên tuyến hub ⇄ hub; danh sách giấy có giấy riêng của Mộc Bài |
+| M2 | **Sức chứa theo đội xe:** xe nền theo lịch; policy tính số xe tối thiểu chạy lịch (nghỉ 12 giờ) và hạn mức trục của hub (dự phòng 20%, cấu hình); tăng cường, bớt xe (H2, H3); khách thấy Còn chỗ, Sắp đầy, Hết chỗ; khóa đặt chỗ theo đội xe | A | M1 | Hai khách đặt cùng lúc không vượt sức chứa; tăng cường mở thêm chỗ; lưu lịch quá hạn mức thì cảnh báo |
+| M3 | **Xe riêng:** lựa chọn khi đặt đơn (H1); cước trục tính sức chứa xe × đơn giá khoang STANDARD; báo giá | A | M2 | Đơn xe riêng có báo giá theo xe; danh sách của điều phối đánh dấu xe riêng |
+| M4 | **Xếp xe trục nhiều xe:** gợi ý chia ngựa vào nhiều xe theo cụm điểm giao ở hub đích rồi vừa số chỗ; xe riêng không ghép; ngựa cùng đơn chung xe; kiểm tổng chỗ các xe ≥ số chỗ đã bán (H4); nhánh giao gom theo cụm gần nhau | B | M2 (đọc sức chứa), M3 (cờ xe riêng) | Chuyến 11 con được gợi ý 2 xe, mỗi xe một cụm điểm giao |
+| M5 | **Khám bắt buộc hai đầu hub:** thêm `BEFORE_DELIVERY`; tự tạo việc khám trước khi chạy và trước khi giao; chặn ra hub khi chưa khám (H5) | B | Không | HUB_OUT bị chặn khi con chưa khám, mở lại khi đã khám |
+| M6 | **Xe về:** trạng thái Đang về, giờ dự kiến, cờ trễ; tài xế xác nhận về hub cuối của lượt kèm ảnh tại chỗ và tình trạng xe (H6, H7) | B | Không | Xe hoặc tổ lái còn lượt chưa kết thúc thì chưa xuất phát được lượt kế tiếp |
+| M7 | **Bỏ đại lý ở cửa khẩu:** gỡ chặng đại lý, bàn giao `AGENT`, nút "đại lý đã giao"; điểm dừng cửa khẩu kiểm giấy riêng rồi đi tiếp (H9); hub nước ngoài giao nhận như trong nước (H10) | B | M1 | Đơn xuất chạy trọn tới nơi giao ở Phnom Penh với đủ giao nhận có chip, ảnh, biên bản |
+| M8 | **Màn Các hub cho quản lý** (H8, chỉ xem) | B | Không | Quản lý xem được từng hub, kể cả hub nước ngoài sau M1 |
+| M10 | **Bắt buộc nghỉ trên chặng đón, giao, chạy thẳng:** ngựa ngồi xe đón, giao tối đa 8 giờ, chạy thẳng 10 giờ (cấu hình); con nào ngồi xe liên tục quá 4 giờ (cấu hình) thì lượt phải có trạm nghỉ, hệ thống gợi ý trạm nghỉ mạng lưới gần đường nhất, không có thì chặn lập lượt; ở trạm nghỉ giữ quy tắc cho ăn, uống, ghi sức khỏe, nghỉ 30 phút | B | M1 (trạm nghỉ nhánh, giới hạn 8 giờ) | Lượt đón Điện Biên → Hà Nội có trạm nghỉ Sơn La; không ghi ăn uống thì không rời trạm. **M1 và M10 gộp cùng lúc** hoặc M1 giữ 5 giờ tới khi M10 xong |
+| M9 | Cập nhật `FullFlowIntegrationTest`, `CommercialFlowIntegrationTest`, e2e và dữ liệu mẫu theo mô hình mới; ERD sinh lại | A + B | M1–M8 | CI xanh với ca xuất, nhập đi hub ⇄ hub |
+
+**Kế hoạch chi tiết và phân công mới (26/11/2026):** [KE_HOACH_BEN_XE.md](KE_HOACH_BEN_XE.md). A nhận thêm M4, M7, M10.
+
+**Làm song song (bản đầu):** A làm M1 → M2 → M3. B làm ngay M5, M6, M8 (không chờ A), rồi M7, M10 sau M1 và M4 sau M2, M3.
+
 ## 10. Bảng tiến độ
 
 > Mỗi người **chỉ sửa dòng của mình**, trong PR của task đó.
@@ -605,23 +671,34 @@ Xong thì chạy Quality Gate và báo kết quả thật.
 | Mã | Task | Luồng | Đợt | Trạng thái | PR |
 |---|---|---|---|---|---|
 | P0.1 | Dọn code cũ, Flyway, 59 bảng | A | 0 | Xong | #344 |
-| P0.2-A | Entity, repository nhóm 1–8 | A | 0 | Chờ review (nhánh `rd/p0-2a-entities`) | |
+| P0.2-A | Entity, repository nhóm 1–8 | A | 0 | Xong backend | #346 |
 | P0.2-B | Entity, repository nhóm 9–15 | B | 0 | Xong | #351 |
-| P0.3-A | Auth, interface gọi chéo, `TestData` | A | 0 | Chờ review (nhánh `rd/p0-3a-auth`) | |
-| P0.3-B | Document, Notification, Audit, ArchUnit, OpenAPI | B | 0 | Chờ review (nhánh `rd/p0-3b-shared-services`) | |
-| P0-FE | Token, `shared/ui`, layout, orval, lint, i18n | B | 0 | Chưa làm | |
-| A1 | Mạng lưới, tuyến, lịch, chuyến | A | 1 | Backend chờ review: PR1 danh mục (`rd/a1-network`), PR2 chuyến (`rd/a1-departures`). FE làm sau P0-FE | |
-| A2 | Xe, nhân sự, đối tác, tham số | A | 1 | Chưa làm | |
-| B1 | Điều độ | B | 1 | Chưa làm | |
-| A3 | Bảng giá, tính giá | A | 2 | Chưa làm | |
-| A4 | Quy định, giấy tờ yêu cầu | A | 2 | Chưa làm | |
-| B2 | Điểm dừng, giao nhận | B | 2 | Chưa làm | |
-| A5 | Đặt đơn | A | 3 | Chưa làm | |
-| B3 | Lưu trú, sức khỏe | B | 3 | Chưa làm | |
-| A6 | Thẩm định, bảo hiểm | A | 4 | Chưa làm | |
-| A7 | Báo giá, thanh toán | A | 4 | Chưa làm | |
-| B4 | Sự cố, chi phí | B | 4 | Chưa làm | |
-| B5 | Giao thất bại, giao lại | B | 4 | Chưa làm | |
-| A8 | Quyết toán, hủy, đánh giá | A | 5 | Chưa làm | |
-| B6 | Theo dõi, thông báo, báo cáo | B | 5 | Chưa làm | |
-| E | Tích hợp, dọn dẹp, ERD, merge | A + B | 6 | Chưa làm | |
+| P0.3-A | Auth, interface gọi chéo, `TestData` | A | 0 | Xong backend | #347 |
+| P0.3-B | Document, Notification, Audit, ArchUnit, OpenAPI | B | 0 | Xong | #353 |
+| P0-FE | Token, `shared/ui`, layout, openapi-typescript, lint, i18n | B | 0 | Xong (8 PR) | #355, #358, #367, #368, #369, #372, #373, #375 |
+| A1 | Mạng lưới, tuyến, lịch, chuyến | A | 1 | Xong backend | #348, #349 |
+| A2 | Xe, nhân sự, đối tác, tham số | A | 1 | Xong | |
+| B1 | Điều độ | B | 1 | Xong phần chính (4 PR). Vị trí khoang: backend #412, giao diện #414. Chỉ lập lượt trục khi chuyến đã chốt chạy, hợp đồng hủy chặng chưa chạy khi đơn rời chuyến (#415; luồng A cần gọi). Gợi ý gom đơn đón, giao: backend #418, giao diện #419 | #377, #378, #379, #380, #412, #414, #415, #418, #419 |
+| A3 | Bảng giá, tính giá | A | 2 | Xong backend | #365 |
+| A4 | Quy định, giấy tờ yêu cầu | A | 2 | Xong backend | #363 |
+| B2 | Điểm dừng, giao nhận | B | 2 | Xong: PR1 backend (#381), PR2 màn tổ xe (#382), PR3 nhận ngựa lập khoản số dư, kiểm thanh toán thật khi rời nơi nhận, không nhận một con (#398), PR4 quá hạn số dư thì trả ngựa tại chỗ và hủy đơn (#399), PR5 chặng đại lý và bàn giao AGENT ở cửa khẩu (backend #402, giao diện #403), PR7 khách tự chở tới hub và tự nhận ở hub SELF (backend #405, giao diện #407). PR9 đơn nhập quá hạn số dư thì trả ngựa cho đại lý ở cửa khẩu (#427). PR10 biên bản bắt buộc và giấy gốc (#428). PR11 hẹn giờ người nhận tới hub, quá giờ thì gửi chuồng có phí người nhận chịu (#429) | #381, #382, #398, #399, #402, #403, #405, #407, #427, #428, #429 |
+| A5 | Đặt đơn | A | 3 | Xong backend | #364, #366 |
+| B3 | Lưu trú, sức khỏe | B | 3 | Xong phần chính (2 PR). Bàn giao ca SHIFT, thay hộ tống giữa đường (#432). Nghỉ đêm OVERNIGHT gửi chuồng đối tác (#433). Không nhận ngựa ở cửa khẩu (đơn nhập) và ở hub (khách tự chở tới), hủy chặng của con bị loại (#436). B3 xong | #383, #384, #432, #433, #436 |
+| A6 | Thẩm định, bảo hiểm | A | 4 | Xong backend | #370 |
+| A6b | Đồng bộ quyết định 23/11/2026 | A | 4 | Xong backend | #374, #376, #394 |
+| A7 | Báo giá, thanh toán | A | 4 | Xong backend | #395 |
+| B4 | Sự cố, chi phí | B | 4 | Xong: sự cố, phương án, chi phí (#385, #386). Biên lai chi phí, ảnh hiện trường (#441). Thực hiện phương án đổi xe và đưa ngựa về hub (#442). B4 xong | #385, #386, #441, #442 |
+| B5 | Giao thất bại, giao lại | B | 4 | Xong: chờ người nhận, quá giờ thì giao thất bại, về hub, giao lại (#387). Gửi chuồng tại hub có hạn giữ, phí lưu chuồng và chăm sóc theo ngày, nhắc quá hạn (#440). Chờ luồng A: khoản thu phí khi người nhận tới hub đón lúc đơn còn IN_OPERATION | #387, #440 |
+| A8 | Quyết toán, hủy, đánh giá | A | 5 | Xong backend | #396, #397 |
+| B6 | Theo dõi, thông báo, báo cáo | B | 5 | Xong phần chính (6 PR): chuông thông báo, hành trình ngựa và tra cứu công khai, báo cáo vận hành, nhật ký hệ thống. Báo khách khi nhận, giao ngựa và qua cửa khẩu (#430). Báo cáo doanh thu `/reports/revenue` (#434). Màn Tổng quan `/manager` (#444). B6 xong | #388, #389, #390, #391, #392, #393, #430, #434, #444 |
+| E | Tích hợp, dọn dẹp, ERD, merge | A + B | 6 | Đang làm. B: xóa FE cũ xong, ngoại lệ `check-style` rỗng (#458–#461). `FullFlowIntegrationTest` có phần vận hành của 3 ca M3 (#463); phần thương mại ở `CommercialFlowIntegrationTest`, sau giao ở `settle`; ERD ở `docs/database/` | #458, #459, #460, #461, #463 |
+| M1 | Mạng lưới bến xe | A | 7 | Xong | #521 |
+| M2 | Sức chứa theo đội xe | A | 7 | Xong | #525 |
+| M3 | Xe riêng | A | 7 | Chưa làm | |
+| M4 | Xếp xe trục nhiều xe | A (nhận từ B 26/11) | 7 | Chưa làm | |
+| M5 | Khám bắt buộc hai đầu hub | B | 7 | Xong | #520 |
+| M6 | Xe về | B | 7 | Xong | #522 |
+| M7 | Bỏ đại lý ở cửa khẩu | A (nhận từ B 26/11) | 7 | Xong | #526 |
+| M8 | Màn Các hub | B | 7 | Xong | #523 |
+| M10 | Bắt buộc nghỉ trên chặng đón, giao | A (nhận từ B 26/11) | 7 | Xong | #526 |
+| M9 | Tích hợp mô hình bến xe | A + B | 7 | Chưa làm | |

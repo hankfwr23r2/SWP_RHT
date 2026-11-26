@@ -47,7 +47,7 @@ class DeparturePoliciesTest {
         Instant cutoff = NOW.plusSeconds(3600);
         assertThat(DepartureCapacityPolicy.reasonNotReservable(DepartureStatus.OPEN, cutoff, NOW, 9, 7, 2)).isEmpty();
         assertThat(DepartureCapacityPolicy.reasonNotReservable(DepartureStatus.OPEN, cutoff, NOW, 9, 8, 2)).get()
-                .asString().contains("còn 1 khoang");
+                .asString().contains("còn 1 chỗ");
         assertThat(DepartureCapacityPolicy.reasonNotReservable(DepartureStatus.CLOSED, cutoff, NOW, 9, 0, 1)).isPresent();
         assertThat(DepartureCapacityPolicy.reasonNotReservable(DepartureStatus.OPEN, NOW, NOW, 9, 0, 1)).get()
                 .asString().contains("giờ chốt");
@@ -69,5 +69,24 @@ class DeparturePoliciesTest {
         assertThat(DepartureCapacityPolicy.canCancel(DepartureStatus.CLOSED)).isTrue();
         assertThat(DepartureCapacityPolicy.canCancel(DepartureStatus.IN_PROGRESS)).isFalse();
         assertThat(DepartureCapacityPolicy.available(9, 11)).isZero();
+    }
+
+    @Test
+    void firstDepartureStartsTheRunAndLastTripCompletesItIdempotently() {
+        assertThat(DepartureCapacityPolicy.afterLinehaulDeparture(DepartureStatus.CLOSED)).isEqualTo(DepartureStatus.IN_PROGRESS);
+        assertThat(DepartureCapacityPolicy.afterLinehaulDeparture(DepartureStatus.IN_PROGRESS)).isEqualTo(DepartureStatus.IN_PROGRESS);
+        assertThat(DepartureCapacityPolicy.afterLinehaulDeparture(DepartureStatus.COMPLETED)).isEqualTo(DepartureStatus.COMPLETED);
+        assertThat(DepartureCapacityPolicy.afterLinehaulCompletion(DepartureStatus.IN_PROGRESS, true)).isEqualTo(DepartureStatus.IN_PROGRESS);
+        assertThat(DepartureCapacityPolicy.afterLinehaulCompletion(DepartureStatus.IN_PROGRESS, false)).isEqualTo(DepartureStatus.COMPLETED);
+        assertThat(DepartureCapacityPolicy.afterLinehaulCompletion(DepartureStatus.COMPLETED, false)).isEqualTo(DepartureStatus.COMPLETED);
+        assertThatThrownBy(() -> DepartureCapacityPolicy.afterLinehaulDeparture(DepartureStatus.CANCELLED)).hasMessageContaining("đã hủy");
+        assertThat(DepartureCapacityPolicy.canCancel(DepartureStatus.COMPLETED)).isFalse();
+    }
+
+    @Test
+    void nineWideHorsesDoNotFitNineSeats() {
+        int seats = StallSeatPolicy.total(java.util.Map.of("WIDE", 9));
+        assertThat(DepartureCapacityPolicy.reasonNotReservable(DepartureStatus.OPEN, NOW.plusSeconds(60), NOW, 9, 0, seats))
+                .contains("Chuyến chỉ còn 9 chỗ.");
     }
 }

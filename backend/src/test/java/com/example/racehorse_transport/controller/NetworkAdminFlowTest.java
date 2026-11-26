@@ -30,6 +30,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 @PostgresIntegrationTest
 @AutoConfigureMockMvc
 class NetworkAdminFlowTest {
+    @Autowired private com.example.racehorse_transport.repository.VehicleClassRepository vehicleClasses;
 
     @Autowired private MockMvc mvc;
     @Autowired private TestData testData;
@@ -87,13 +88,30 @@ class NetworkAdminFlowTest {
     void locationExposesLocalTimesAsStrings() throws Exception {
         String body = """
                 {"code":"%s","name":"Cửa khẩu","locationType":"BORDER_GATE","countryCode":"VN",
-                 "address":"Địa chỉ","openingTime":"00:00:00","closingTime":"23:59:00"}
+                 "counterpartCountryCode":"KH","address":"Địa chỉ","openingTime":"00:00:00","closingTime":"23:59:00"}
                 """.formatted(uniqueCode("GATE"));
         call(post("/locations"), adminToken, body)
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.locationType").value("BORDER_GATE"))
+                .andExpect(jsonPath("$.data.counterpartCountryCode").value("KH"))
                 .andExpect(jsonPath("$.data.openingTime").value("00:00:00"))
                 .andExpect(jsonPath("$.data.closingTime").value("23:59:00"));
+    }
+
+    @Test
+    void borderGateNeedsForeignCounterpartAndQuarantineFarmIsNotAccepted() throws Exception {
+        String gate = """
+                {"code":"%s","name":"Cửa khẩu","locationType":"BORDER_GATE","countryCode":"VN"%s,"address":"Địa chỉ"}""";
+        call(post("/locations"), adminToken, gate.formatted(uniqueCode("GATE"), "")).andExpect(status().isBadRequest());
+        call(post("/locations"), adminToken, gate.formatted(uniqueCode("GATE"), ",\"counterpartCountryCode\":\"VN\""))
+                .andExpect(status().isBadRequest());
+
+        String code = uniqueCode("REST");
+        long id = createLocation(code, "REST_STOP", "VN-1");
+        String farm = """
+                {"code":"%s","name":"Trại","locationType":"QUARANTINE_FARM","countryCode":"VN","address":"Địa chỉ"}""";
+        call(post("/locations"), adminToken, farm.formatted(uniqueCode("QF"))).andExpect(status().isBadRequest());
+        call(put("/locations/" + id), adminToken, farm.formatted(code)).andExpect(status().isBadRequest());
     }
 
     @Test
@@ -139,37 +157,40 @@ class NetworkAdminFlowTest {
         long origin = createLocation(uniqueCode("HUB"), "HUB", "VN-79");
         long rest = createLocation(uniqueCode("REST"), "REST_STOP", "VN-80");
         long gate = locations.findByCode("GATE-MOCBAI").orElseThrow().getId();
+        long destination = locations.findByCode("HUB-PNH").orElseThrow().getId();
         String code = uniqueCode("R");
 
         // Điểm dừng đầu không phải điểm đầu tuyến: bị từ chối
-        call(post("/routes"), adminToken, routeBody(code, origin, gate, """
+        call(post("/routes"), adminToken, routeBody(code, origin, destination, """
                 [{"sequenceNumber":1,"locationId":%d,"stopType":"REST","arrivalOffsetMinutes":0,"dwellMinutes":10},
-                 {"sequenceNumber":2,"locationId":%d,"stopType":"BORDER","arrivalOffsetMinutes":60,"dwellMinutes":0}]""".formatted(rest, gate)))
+                 {"sequenceNumber":2,"locationId":%d,"stopType":"HUB","arrivalOffsetMinutes":180,"dwellMinutes":0}]""".formatted(rest, destination)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("điểm đầu tuyến")));
 
-        String created = call(post("/routes"), adminToken, routeBody(code, origin, gate, """
+        String created = call(post("/routes"), adminToken, routeBody(code, origin, destination, """
                 [{"sequenceNumber":1,"locationId":%d,"stopType":"HUB","arrivalOffsetMinutes":0,"dwellMinutes":30},
-                 {"sequenceNumber":2,"locationId":%d,"stopType":"BORDER","arrivalOffsetMinutes":120,"dwellMinutes":60}]""".formatted(origin, gate)))
+                 {"sequenceNumber":2,"locationId":%d,"stopType":"BORDER","arrivalOffsetMinutes":90,"dwellMinutes":60},
+                 {"sequenceNumber":3,"locationId":%d,"stopType":"HUB","arrivalOffsetMinutes":180,"dwellMinutes":0}]""".formatted(origin, gate, destination)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.stops.length()").value(2))
+                .andExpect(jsonPath("$.data.stops.length()").value(3))
                 .andReturn().getResponse().getContentAsString();
         long routeId = ((Number) JsonPath.read(created, "$.data.id")).longValue();
 
-        call(put("/routes/" + routeId), adminToken, routeBody(code, origin, gate, """
+        call(put("/routes/" + routeId), adminToken, routeBody(code, origin, destination, """
                 [{"sequenceNumber":1,"locationId":%d,"stopType":"HUB","arrivalOffsetMinutes":0,"dwellMinutes":30},
-                 {"sequenceNumber":2,"locationId":%d,"stopType":"REST","arrivalOffsetMinutes":70,"dwellMinutes":20},
-                 {"sequenceNumber":3,"locationId":%d,"stopType":"BORDER","arrivalOffsetMinutes":120,"dwellMinutes":60}]""".formatted(origin, rest, gate)))
+                 {"sequenceNumber":2,"locationId":%d,"stopType":"REST","arrivalOffsetMinutes":70,"dwellMinutes":30},
+                 {"sequenceNumber":3,"locationId":%d,"stopType":"BORDER","arrivalOffsetMinutes":120,"dwellMinutes":60},
+                 {"sequenceNumber":4,"locationId":%d,"stopType":"HUB","arrivalOffsetMinutes":210,"dwellMinutes":0}]""".formatted(origin, rest, gate, destination)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.stops.length()").value(3))
+                .andExpect(jsonPath("$.data.stops.length()").value(4))
                 .andExpect(jsonPath("$.data.stops[1].locationId").value(rest));
 
         // Địa điểm đang thuộc tuyến đang chạy thì không ngừng dùng được
         call(post("/locations/" + rest + "/deactivate"), adminToken, null).andExpect(status().isConflict());
 
         String schedule = call(post("/departure-schedules"), adminToken, """
-                {"routeId":%d,"departureTime":"06:00","bookingCutoffHours":72,"stallCapacity":9,
-                 "validFrom":"2026-12-01","daysOfWeek":[5,2]}""".formatted(routeId))
+                {"routeId":%d,"departureTime":"06:00","bookingCutoffHours":72,"baseVehicleClassId":%d,"baseVehicleCount":1,
+                 "validFrom":"2026-12-01","daysOfWeek":[5,2]}""".formatted(routeId, vehicleClasses.findByCode("HEAVY").orElseThrow().getId()))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.status").value("ACTIVE"))
                 .andExpect(jsonPath("$.data.daysOfWeek[0]").value(2))
@@ -182,6 +203,44 @@ class NetworkAdminFlowTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.status").value("ENDED"));
         call(post("/departure-schedules/" + departureScheduleId + "/resume"), adminToken, null).andExpect(status().isConflict());
         call(get("/departure-schedules").param("routeId", String.valueOf(routeId)), customerToken, null).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void onlyOneDirectionOfARoutePairCanBeOutbound() throws Exception {
+        long origin = createLocation(uniqueCode("HUB"), "HUB", "VN-79");
+        long destination = createLocation(uniqueCode("HUB"), "HUB", "VN-80");
+        String outCode = uniqueCode("R");
+        String backCode = uniqueCode("R");
+        String created = call(post("/routes"), adminToken, fleetRouteBody(outCode, origin, destination, true))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.fleetOutbound").value(true))
+                .andReturn().getResponse().getContentAsString();
+        long outbound = ((Number) JsonPath.read(created, "$.data.id")).longValue();
+
+        String claim = fleetRouteBody(backCode, destination, origin, true);
+        call(post("/routes"), adminToken, claim).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Cặp tuyến chỉ có một chiều đi."));
+        String reverse = call(post("/routes"), adminToken, fleetRouteBody(backCode, destination, origin, false))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.fleetOutbound").value(false))
+                .andReturn().getResponse().getContentAsString();
+        long inbound = ((Number) JsonPath.read(reverse, "$.data.id")).longValue();
+
+        call(put("/routes/" + inbound), adminToken, claim).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Cặp tuyến chỉ có một chiều đi."));
+        call(put("/routes/" + outbound), adminToken, fleetRouteBody(outCode, origin, destination, false))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.fleetOutbound").value(false));
+        call(put("/routes/" + inbound), adminToken, claim)
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.fleetOutbound").value(true));
+    }
+
+    private static String fleetRouteBody(String code, long origin, long destination, boolean outbound) {
+        return """
+                {"code":"%s","name":"Tuyến thử","originLocationId":%d,"destinationLocationId":%d,
+                 "distanceKm":75.5,"estimatedDurationMinutes":120,"fleetOutbound":%b,
+                 "stops":[{"sequenceNumber":1,"locationId":%d,"stopType":"HUB","arrivalOffsetMinutes":0,"dwellMinutes":30},
+                          {"sequenceNumber":2,"locationId":%d,"stopType":"HUB","arrivalOffsetMinutes":120,"dwellMinutes":0}]}"""
+                .formatted(code, origin, destination, outbound, origin, destination);
     }
 
     private static String routeBody(String code, long origin, long destination, String stops) {

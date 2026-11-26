@@ -28,6 +28,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 @PostgresIntegrationTest
 @AutoConfigureMockMvc
 class DepartureFlowTest {
+    @Autowired private com.example.racehorse_transport.repository.VehicleClassRepository vehicleClasses;
 
     private static final String TODAY = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh")).toString();
 
@@ -35,6 +36,7 @@ class DepartureFlowTest {
     @Autowired private TestData testData;
     @Autowired private JwtUtils jwtUtils;
     @Autowired private RouteRepository routes;
+    @Autowired private org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     private String customerToken;
     private String managerToken;
@@ -80,9 +82,24 @@ class DepartureFlowTest {
     }
 
     @Test
-    void exportGoesToBorderGateAndImportComesFromIt() throws Exception {
+    void privateSuggestionsKeepSoldOutDeparturesWithFullLabel() throws Exception {
+        mvc.perform(suggestions("INTERPROVINCE", "VN-75", "VN-46")
+                        .param("transportMode", "PRIVATE").param("stalls", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.departures.length()", greaterThan(0)))
+                .andExpect(jsonPath("$.data.departures[*].availability", everyItem(is("FULL"))));
+        mvc.perform(suggestions("INTERPROVINCE", "VN-75", "VN-46")
+                        .param("transportMode", "PRIVATE").param("stalls", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.departures[*].availability",
+                        org.hamcrest.Matchers.hasItem("AVAILABLE")));
+    }
+
+    @Test
+    void exportAndImportUseBothHubs() throws Exception {
         mvc.perform(suggestions("EXPORT", "VN-79", "KH-12").param("deliveryLatitude", "11.5564").param("deliveryLongitude", "104.9282"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.deliveryHubCode").value("HUB-PNH"))
                 .andExpect(jsonPath("$.data.departures.length()", greaterThan(0)))
                 .andExpect(jsonPath("$.data.departures[*].routeCode", everyItem(is("HCM-PNH"))));
 
@@ -90,7 +107,52 @@ class DepartureFlowTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.routing").value("LINEHAUL"))
                 .andExpect(jsonPath("$.data.departures.length()", greaterThan(0)))
-                .andExpect(jsonPath("$.data.departures[*].routeCode", everyItem(is("MOCBAI-HCM"))));
+                .andExpect(jsonPath("$.data.pickupHubCode").value("HUB-PNH"))
+                .andExpect(jsonPath("$.data.departures[*].routeCode", everyItem(is("PNH-HCM"))));
+    }
+
+    @Test
+    void saysWhichSideHasNoHubAndWhereTheCompanyServes() throws Exception {
+        // Dữ liệu mẫu phục vụ đủ 34 tỉnh: tạm bỏ Điện Biên khỏi vùng hub để có một tỉnh chưa phục vụ
+        Long hubId = jdbc.queryForObject("SELECT hub_location_id FROM hub_service_area WHERE province_code = 'VN-11'", Long.class);
+        jdbc.update("DELETE FROM hub_service_area WHERE province_code = 'VN-11'");
+        try {
+            unservedSides();
+        } finally {
+            jdbc.update("INSERT INTO hub_service_area (hub_location_id, province_code) VALUES (?, 'VN-11')", hubId);
+        }
+    }
+
+    private void unservedSides() throws Exception {
+        mvc.perform(suggestions("INTERPROVINCE", "VN-11", "VN-48"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.unavailable").value("PICKUP_NOT_SERVED"))
+                .andExpect(jsonPath("$.data.servedProvinces.length()", greaterThan(0)))
+                .andExpect(jsonPath("$.data.departures.length()").value(0));
+        mvc.perform(suggestions("IMPORT", "KH-12", "VN-11"))
+                .andExpect(jsonPath("$.data.unavailable").value("DELIVERY_NOT_SERVED"));
+        mvc.perform(suggestions("EXPORT", "VN-79", "KH-1"))
+                .andExpect(jsonPath("$.data.unavailable").value("DELIVERY_NOT_SERVED"));
+        mvc.perform(suggestions("IMPORT", "KH-1", "VN-79"))
+                .andExpect(jsonPath("$.data.unavailable").value("PICKUP_NOT_SERVED"));
+        // Hub Đà Nẵng chỉ có tuyến quốc tế đi Lào
+        mvc.perform(suggestions("EXPORT", "VN-48", "KH-12"))
+                .andExpect(jsonPath("$.data.unavailable").value("NO_ROUTE"))
+                .andExpect(jsonPath("$.data.pickupHubName").isNotEmpty());
+    }
+
+    @Test
+    void marksDeparturesTooCloseToFinishThePapers() throws Exception {
+        long routeId = routes.findByCode("HCM-DN").orElseThrow().getId();
+        String body = mvc.perform(post("/departures").header(HttpHeaders.AUTHORIZATION, "Bearer " + managerToken)
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                                {"routeId":%d,"departureDate":"%s","departureTime":"07:00","bookingCutoffHours":24,"vehicleClassId":%d,"vehicleCount":1}"""
+                                .formatted(routeId, LocalDate.now().plusDays(4), vehicleClasses.findByCode("MEDIUM").orElseThrow().getId())))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        int id = com.jayway.jsonpath.JsonPath.read(body, "$.data.id");
+        mvc.perform(suggestions("INTERPROVINCE", "VN-75", "VN-46"))
+                .andExpect(jsonPath("$.data.leadDays", greaterThan(0)))
+                .andExpect(jsonPath("$.data.tooLateDepartureIds", org.hamcrest.Matchers.hasItem(id)));
     }
 
     @Test
@@ -102,8 +164,8 @@ class DepartureFlowTest {
     void managerCreatesAdHocDepartureAndCustomerCannot() throws Exception {
         long routeId = routes.findByCode("HCM-DN").orElseThrow().getId();
         String body = """
-                {"routeId":%d,"departureDate":"%s","departureTime":"07:00","bookingCutoffHours":48,"stallCapacity":6}"""
-                .formatted(routeId, LocalDate.now().plusDays(40));
+                {"routeId":%d,"departureDate":"%s","departureTime":"07:00","bookingCutoffHours":48,"vehicleClassId":%d,"vehicleCount":1}"""
+                .formatted(routeId, LocalDate.now().plusDays(40), vehicleClasses.findByCode("MEDIUM").orElseThrow().getId());
 
         mvc.perform(post("/departures").header(HttpHeaders.AUTHORIZATION, "Bearer " + customerToken)
                         .contentType(MediaType.APPLICATION_JSON).content(body))

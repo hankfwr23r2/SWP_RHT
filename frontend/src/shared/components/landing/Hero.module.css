@@ -1,0 +1,34 @@
+/* Banner trượt của trang chủ */
+.hero { position: relative; height: 520px; overflow: hidden; background: var(--navy); }
+.hero-slide { position: absolute; inset: 0; display: flex; align-items: center; opacity: 0; visibility: hidden; transition: opacity 0.9s, visibility 0.9s; }
+.hero-slide::before { content: ''; position: absolute; inset: 0; background-image: linear-gradient(90deg, rgba(15, 23, 42, 0.92) 0%, rgba(15, 23, 42, 0.65) 45%, rgba(15, 23, 42, 0.15) 100%), var(--bg); background-size: cover; background-position: center; transform: scale(1.08); transition: transform 6s ease-out; }
+.hero-slide-plain::before { background-image: radial-gradient(circle at 80% 30%, rgba(234, 88, 12, 0.45), transparent 55%), linear-gradient(135deg, #0f172a, #1e293b); }
+.hero-slide.active { opacity: 1; visibility: visible; }
+.hero-slide.active::before { transform: scale(1); }
+.hero-content { position: relative; color: white; padding-bottom: 60px; }
+/* Chữ banner: mỗi từ trượt lên từ sau "mặt nạ" (GSAP điều khiển) */
+.hero .line { display: block; overflow: hidden; padding-bottom: 0.08em; }
+.hero .word { display: inline-block; will-change: transform; }
+.hero-tag { display: inline-block; background: rgba(234, 88, 12, 0.18); border: 1px solid rgba(251, 146, 60, 0.6); color: #fdba74; padding: 6px 14px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; margin-bottom: 18px; }
+.hero h1 { font-size: clamp(2rem, 4.5vw, 3.2rem); line-height: 1.15; font-weight: 800; margin-bottom: 16px; }
+.hero h1 .hl { color: #fb923c; }
+.hero p { max-width: 520px; color: #cbd5e1; font-size: 1.05rem; margin-bottom: 28px; }
+.hero-dots { position: absolute; left: 50%; bottom: 76px; transform: translateX(-50%); display: flex; align-items: center; gap: 4px; z-index: 2; }
+/* Vùng bấm 24px, chấm hiển thị vẽ bằng ::before */
+.hero-dot { display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: none; border-radius: 999px; background: none; cursor: pointer; transition: width 0.3s; }
+.hero-dot::before { content: ''; width: 10px; height: 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.45); transition: width 0.3s, background-color 0.3s; }
+.hero-dot.active { width: 36px; }
+.hero-dot.active::before { width: 28px; background: var(--orange); }
+.hero-pause { display: grid; place-items: center; width: 28px; height: 28px; margin-right: 6px; padding: 0; border: 1px solid rgba(255, 255, 255, 0.45); border-radius: 999px; background: rgba(15, 23, 42, 0.35); color: white; font-size: 0.7rem; cursor: pointer; transition: border-color 0.2s, background-color 0.2s; }
+.hero-pause:hover { border-color: white; background: rgba(15, 23, 42, 0.6); }
+.hero-dot:focus-visible, .hero-pause:focus-visible { outline: 2px solid white; outline-offset: 2px; }
+
+@media (max-width: 820px) {
+    .hero { height: 480px; }
+    .hero-slide::before { background-image: linear-gradient(180deg, rgba(15, 23, 42, 0.6) 0%, rgba(15, 23, 42, 0.88) 100%), var(--bg); }
+}
+
+/* Điện thoại: ảnh nền bản nhỏ */
+@media (max-width: 700px) {
+  .hero-slide:not(.hero-slide-plain)::before { background-image: linear-gradient(90deg, rgba(15, 23, 42, 0.92) 0%, rgba(15, 23, 42, 0.65) 45%, rgba(15, 23, 42, 0.15) 100%), var(--bg-sm); }
+}

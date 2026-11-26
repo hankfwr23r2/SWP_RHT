@@ -1,0 +1,126 @@
+package com.example.racehorse_transport.policy;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import com.example.racehorse_transport.entity.enums.HandoverType;
+import com.example.racehorse_transport.entity.enums.MicrochipEntryMethod;
+import com.example.racehorse_transport.entity.enums.TripStopType;
+import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
+import java.time.Instant;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+
+class TripExecutionPolicyTest {
+
+    @Test
+    void tripStartsOnlyWhenPlannedAndDriverAcknowledged() {
+        assertThatCode(() -> TripExecutionPolicy.requireStartable(VehicleTripStatus.PLANNED, true)).doesNotThrowAnyException();
+        assertThatCode(() -> TripExecutionPolicy.requireStartable(VehicleTripStatus.DISPATCHED, true)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> TripExecutionPolicy.requireStartable(VehicleTripStatus.IN_PROGRESS, true)).hasMessageContaining("đã chạy");
+        assertThatThrownBy(() -> TripExecutionPolicy.requireStartable(VehicleTripStatus.PLANNED, false)).hasMessageContaining("Tài xế chưa xác nhận");
+        assertThatThrownBy(() -> TripExecutionPolicy.requireInProgress(VehicleTripStatus.PLANNED)).hasMessageContaining("chưa xuất phát");
+    }
+
+    @Test
+    void stopsAreVisitedInOrder() {
+        assertThatCode(() -> TripExecutionPolicy.requireCanArrive(false, true)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> TripExecutionPolicy.requireCanArrive(true, true)).hasMessageContaining("Đã ghi nhận tới");
+        assertThatThrownBy(() -> TripExecutionPolicy.requireCanArrive(false, false)).hasMessageContaining("Chưa rời điểm dừng trước");
+
+        assertThatCode(() -> TripExecutionPolicy.requireCanDepart(true, false, 0)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> TripExecutionPolicy.requireCanDepart(false, false, 0)).hasMessageContaining("Chưa tới");
+        assertThatThrownBy(() -> TripExecutionPolicy.requireCanDepart(true, true, 0)).hasMessageContaining("Đã rời");
+        assertThatThrownBy(() -> TripExecutionPolicy.requireCanDepart(true, false, 1)).hasMessageContaining("giao nhận chưa xong");
+    }
+
+    @Test
+    void handoverTypeMustFitTheStop() {
+        assertThatCode(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.PICKUP, TripStopType.PICKUP)).doesNotThrowAnyException();
+        assertThatCode(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.RETURN, TripStopType.PICKUP)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.RETURN, TripStopType.BORDER)).hasMessageContaining("RETURN");
+        // Bàn giao ca ở bất kỳ điểm dừng nào
+        assertThatCode(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.SHIFT, TripStopType.REST)).doesNotThrowAnyException();
+        assertThatCode(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.STAY_IN, TripStopType.REST)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.STAY_OUT, TripStopType.DELIVERY)).hasMessageContaining("STAY_OUT");
+        assertThatCode(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.DELIVERY, TripStopType.DELIVERY)).doesNotThrowAnyException();
+        assertThatCode(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.HUB_IN, TripStopType.HUB)).doesNotThrowAnyException();
+        assertThatCode(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.HUB_OUT, TripStopType.HUB)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.PICKUP, TripStopType.HUB)).hasMessageContaining("PICKUP");
+        assertThatThrownBy(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.HUB_IN, TripStopType.REST)).hasMessageContaining("REST");
+        assertThatThrownBy(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.RETURN, TripStopType.DELIVERY)).hasMessageContaining("RETURN");
+        assertThatThrownBy(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.HUB_OUT, TripStopType.BORDER)).hasMessageContaining("HUB_OUT");
+        assertThat(TripExecutionPolicy.isBoarding(HandoverType.PICKUP)).isTrue();
+        assertThat(TripExecutionPolicy.isBoarding(HandoverType.HUB_OUT)).isTrue();
+        assertThat(TripExecutionPolicy.isBoarding(HandoverType.DELIVERY)).isFalse();
+        assertThat(TripExecutionPolicy.isBoarding(HandoverType.HUB_IN)).isFalse();
+        // Đại lý giao cho công ty (đơn nhập) thì ngựa lên xe; công ty giao cho đại lý (đơn xuất) thì xuống xe
+    }
+
+    @Test
+    void chipIsComparedAfterNormalizing() {
+        assertThat(TripExecutionPolicy.chipMatches("985 000-000 100002", "985000000100002")).isTrue();
+        assertThat(TripExecutionPolicy.chipMatches("985000000100003", "985000000100002")).isFalse();
+        assertThat(TripExecutionPolicy.chipMatches("", "")).isFalse();
+        assertThatCode(() -> TripExecutionPolicy.requireSomeMatched(List.of(false, true))).doesNotThrowAnyException();
+        assertThatThrownBy(() -> TripExecutionPolicy.requireSomeMatched(List.of(false))).hasMessageContaining("quét đúng chip");
+        assertThatThrownBy(() -> TripExecutionPolicy.requireSomeMatched(List.of())).hasMessageContaining("quét đúng chip");
+    }
+
+    @Test
+    void manualChipEntryRequiresANonBlankReason() {
+        assertThat(TripExecutionPolicy.manualEntryReason(MicrochipEntryMethod.MANUAL, "  Máy đọc bị hỏng  "))
+                .isEqualTo("Máy đọc bị hỏng");
+        assertThat(TripExecutionPolicy.manualEntryReason(MicrochipEntryMethod.SCAN, "Lý do cũ")).isNull();
+        assertThatThrownBy(() -> TripExecutionPolicy.manualEntryReason(MicrochipEntryMethod.MANUAL, null))
+                .hasMessage("Vui lòng ghi lý do gõ tay mã chip.");
+        assertThatThrownBy(() -> TripExecutionPolicy.manualEntryReason(MicrochipEntryMethod.MANUAL, " \t\n "))
+                .hasMessage("Vui lòng ghi lý do gõ tay mã chip.");
+    }
+
+    @Test
+    void incidentStableHandoverRequiresANetworkLocation() {
+        assertThatCode(() -> TripExecutionPolicy.requireNetworkStableStop(true)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> TripExecutionPolicy.requireNetworkStableStop(false))
+                .hasMessage("Không gửi chuồng tại địa chỉ khách được. Chọn đổi xe hoặc đưa về hub.");
+    }
+
+    @Test
+    void tripCompletesAtLastStopWithNoHorseLeftOnBoard() {
+        assertThatCode(() -> TripExecutionPolicy.requireCanComplete(true, 0)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> TripExecutionPolicy.requireCanComplete(false, 0)).hasMessageContaining("điểm dừng cuối");
+        assertThatThrownBy(() -> TripExecutionPolicy.requireCanComplete(true, 2)).hasMessageContaining("Còn 2 con");
+    }
+
+    @Test
+    void pickupIsResolvedOnlyAfterACompletedHandoverAndEveryHorseWasHandled() {
+        assertThat(TripExecutionPolicy.pickupAlreadyResolved(true, false)).isTrue();
+        assertThat(TripExecutionPolicy.pickupAlreadyResolved(true, true)).isFalse();
+        assertThat(TripExecutionPolicy.pickupAlreadyResolved(false, false)).isFalse();
+    }
+
+    @Test
+    void shiftRequiresAPreviousHolderAndASeparateReceiver() {
+        assertThat(TripExecutionPolicy.canReceiveShift(7L, 8L)).isTrue();
+        assertThat(TripExecutionPolicy.canReceiveShift(8L, 8L)).isFalse();
+        assertThat(TripExecutionPolicy.canReceiveShift(null, 8L)).isFalse();
+        assertThat(TripExecutionPolicy.isRedundantShift(java.util.List.of(8L, 8L), 8L)).isTrue();
+        assertThat(TripExecutionPolicy.isRedundantShift(java.util.List.of(7L, 8L), 8L)).isFalse();
+        assertThat(TripExecutionPolicy.isRedundantShift(java.util.List.of(), 8L)).isFalse();
+    }
+
+    @Test
+    void waitingForTheRecipientStartsOnceAndFailsOnlyAfterTheFreeWait() {
+        assertThatCode(() -> TripExecutionPolicy.requireCanStartWaiting(HandoverType.DELIVERY, true, false)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> TripExecutionPolicy.requireCanStartWaiting(HandoverType.PICKUP, true, false)).hasMessageContaining("lần giao ngựa đang mở");
+        assertThatThrownBy(() -> TripExecutionPolicy.requireCanStartWaiting(HandoverType.DELIVERY, false, false)).hasMessageContaining("lần giao ngựa đang mở");
+        assertThatThrownBy(() -> TripExecutionPolicy.requireCanStartWaiting(HandoverType.DELIVERY, true, true)).hasMessageContaining("Đã bắt đầu chờ");
+
+        Instant started = Instant.parse("2031-03-05T10:00:00Z");
+        assertThatCode(() -> TripExecutionPolicy.requireFreeWaitOver(started, started.plusSeconds(120 * 60), 120)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> TripExecutionPolicy.requireFreeWaitOver(started, started.plusSeconds(119 * 60), 120)).hasMessageContaining("Chưa hết 120 phút");
+        assertThatThrownBy(() -> TripExecutionPolicy.requireFreeWaitOver(null, started, 120)).hasMessageContaining("Chưa bắt đầu chờ");
+    }
+}
+

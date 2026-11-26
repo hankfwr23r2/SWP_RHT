@@ -16,6 +16,7 @@ import com.example.racehorse_transport.entity.Horse;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.enums.DocumentStatus;
 import com.example.racehorse_transport.entity.enums.DocumentSubject;
+import com.example.racehorse_transport.exception.BookingRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.AppUserRepository;
 import com.example.racehorse_transport.repository.DocumentRepository;
@@ -117,6 +118,16 @@ class DocumentServiceTest {
 
         assertThatThrownBy(() -> documentService.attach(empty, "HORSE_PASSPORT", DocumentSubject.HORSE, horseId, customerUserId))
                 .isInstanceOf(IllegalArgumentException.class);
+        verify(storage, never()).uploadFile(any(), anyString());
+    }
+
+    @Test
+    void reviewUploadRejectsFileWithMisleadingExtensionAndContentTypeBeforeUpload() {
+        MockMultipartFile spoofed = new MockMultipartFile("file", "passport.pdf", "application/pdf", new byte[] {1});
+
+        assertThatThrownBy(() -> documentService.attachForReview(spoofed, "HEALTH_CERT", DocumentSubject.BOOKING, 1L,
+                customerUserId, null, java.time.LocalDate.now()))
+                .isInstanceOf(BookingRuleException.class).hasMessageContaining("PDF, JPG hoặc PNG");
         verify(storage, never()).uploadFile(any(), anyString());
     }
 

@@ -7,7 +7,8 @@ public enum HandoverType {
     HUB_OUT,
     STAY_IN,
     STAY_OUT,
-    AGENT,
     DELIVERY,
-    RETURN
+    RETURN,
+    // Bàn giao ca: người phụ trách mới ký nhận, ngựa không đổi chỗ
+    SHIFT
 }

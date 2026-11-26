@@ -29,6 +29,13 @@ import java.time.LocalDate;
 @Table(name = "departure")
 public class Departure {
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "coordinator_id")
+    private Staff coordinator;
+
+    @Column(name = "coordinator_reminded_on")
+    private LocalDate coordinatorRemindedOn;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
@@ -38,6 +45,10 @@ public class Departure {
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
     @JoinColumn(name = "departure_schedule_id")
     private DepartureSchedule departureSchedule;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "merged_into_departure_id")
+    private Departure mergedIntoDeparture;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "route_id", nullable = false)
@@ -49,10 +60,29 @@ public class Departure {
     @Column(name = "planned_departure_at", nullable = false)
     private Instant plannedDepartureAt;
 
+    @Column(name = "revised_departure_at")
+    private Instant revisedDepartureAt;
+
+    @Column(name = "run_reminded_at")
+    private Instant runRemindedAt;
+
+    @Column(name = "delayed_at")
+    private Instant delayedAt;
+
+    @Column(name = "delay_reason", length = 500)
+    private String delayReason;
+
+    @Column(name = "delay_escalated_at")
+    private Instant delayEscalatedAt;
+
+    @Column(name = "auto_cancelled_at")
+    private Instant autoCancelledAt;
+
     @Column(name = "booking_cutoff_at", nullable = false)
     private Instant bookingCutoffAt;
 
     // snapshot: chép từ lịch, sửa được cho từng chuyến
+    // derived: DepartureServiceImpl
     @Column(name = "stall_capacity", nullable = false)
     private Integer stallCapacity;
 
@@ -63,4 +93,12 @@ public class Departure {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 30, nullable = false)
     private DepartureStatus status;
+
+    // Quản lý xác nhận chạy từ mốc quyết định; NULL = chưa xác nhận
+    @Column(name = "run_confirmed_at")
+    private Instant runConfirmedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "run_confirmed_by")
+    private AppUser runConfirmedBy;
 }

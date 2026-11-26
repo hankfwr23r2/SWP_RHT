@@ -1,9 +1,12 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.service.DepartureFleetService;
 import com.example.racehorse_transport.dto.departure.DepartureResponseDto;
 import com.example.racehorse_transport.dto.departure.DepartureSuggestionQueryDto;
 import com.example.racehorse_transport.dto.departure.DepartureSuggestionResponseDto;
+import com.example.racehorse_transport.dto.departure.DepartureSuggestionResponseDto.Unavailable;
 import com.example.racehorse_transport.dto.route.GeoPointDto;
+import com.example.racehorse_transport.entity.CountryRule;
 import com.example.racehorse_transport.entity.Departure;
 import com.example.racehorse_transport.entity.Location;
 import com.example.racehorse_transport.entity.Province;
@@ -11,10 +14,14 @@ import com.example.racehorse_transport.entity.Route;
 import com.example.racehorse_transport.entity.enums.ActiveStatus;
 import com.example.racehorse_transport.entity.enums.BookingType;
 import com.example.racehorse_transport.entity.enums.DepartureStatus;
-import com.example.racehorse_transport.entity.enums.LocationType;
-import com.example.racehorse_transport.policy.DepartureCapacityPolicy;
+import com.example.racehorse_transport.entity.enums.DepartureAvailability;
+import com.example.racehorse_transport.entity.enums.TransportMode;
+import com.example.racehorse_transport.entity.enums.RuleDirection;
+import com.example.racehorse_transport.policy.DepartureRoutePolicy;
 import com.example.racehorse_transport.policy.HubResolutionPolicy;
 import com.example.racehorse_transport.policy.HubResolutionPolicy.Routing;
+import com.example.racehorse_transport.policy.RegulationPolicy;
+import com.example.racehorse_transport.repository.CountryRuleRepository;
 import com.example.racehorse_transport.repository.DepartureRepository;
 import com.example.racehorse_transport.repository.HubServiceAreaRepository;
 import com.example.racehorse_transport.repository.ProvinceRepository;
@@ -22,10 +29,10 @@ import com.example.racehorse_transport.repository.RouteRepository;
 import com.example.racehorse_transport.service.DepartureSuggestionService;
 import java.math.BigDecimal;
 import java.time.Clock;
-import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.Map;
-import java.util.function.Predicate;
+
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -41,7 +48,9 @@ public class DepartureSuggestionServiceImpl implements DepartureSuggestionServic
     private final HubServiceAreaRepository serviceAreas;
     private final RouteRepository routes;
     private final DepartureRepository departures;
+    private final CountryRuleRepository countryRules;
     private final Clock clock;
+    private final DepartureFleetService fleet;
 
     @Override
     @Transactional(readOnly = true)
@@ -53,66 +62,72 @@ public class DepartureSuggestionServiceImpl implements DepartureSuggestionServic
 
         Location pickupHub = hubOf(pickup.getCode());
         Location deliveryHub = hubOf(delivery.getCode());
-        Routing routing = HubResolutionPolicy.routingOf(query.getBookingType(),
-                pickupHub == null ? null : pickupHub.getId(), deliveryHub == null ? null : deliveryHub.getId());
+        Long pickupHubId = pickupHub == null ? null : pickupHub.getId();
+        Long deliveryHubId = deliveryHub == null ? null : deliveryHub.getId();
+        boolean noPickupHub = HubResolutionPolicy.missingPickupHub(query.getBookingType(), pickupHubId);
+        if (noPickupHub || HubResolutionPolicy.missingDeliveryHub(query.getBookingType(), deliveryHubId)) {
+            return DepartureSuggestionResponseDto.builder().departures(List.of())
+                    .unavailable(noPickupHub ? Unavailable.PICKUP_NOT_SERVED : Unavailable.DELIVERY_NOT_SERVED)
+                    .servedProvinces(servedProvinces()).build();
+        }
+        Routing routing = HubResolutionPolicy.routingOf(query.getBookingType(), pickupHubId, deliveryHubId);
 
         DepartureSuggestionResponseDto.DepartureSuggestionResponseDtoBuilder response = DepartureSuggestionResponseDto.builder()
                 .routing(routing)
                 .pickupHubCode(pickupHub == null ? null : pickupHub.getCode())
-                .deliveryHubCode(deliveryHub == null ? null : deliveryHub.getCode());
+                .pickupHubName(pickupHub == null ? null : pickupHub.getName())
+                .deliveryHubCode(deliveryHub == null ? null : deliveryHub.getCode())
+                .deliveryHubName(deliveryHub == null ? null : deliveryHub.getName());
         if (routing == Routing.DIRECT) {
             return response.departures(List.of()).build();
         }
 
-        // Tuyến phù hợp và khoảng cách từ cửa khẩu tới điểm ở nước ngoài (0 với tuyến nội địa) để xếp thứ tự
-        Map<Long, Double> routeDistance = routes.findByStatusWithEndpoints(ActiveStatus.ACTIVE).stream()
-                .filter(routeMatcher(query.getBookingType(), pickupHub, deliveryHub))
-                .collect(Collectors.toMap(Route::getId, route -> foreignLegKm(query, route)));
-        if (routeDistance.isEmpty()) {
-            return response.departures(List.of()).build();
+        // Tuyến nối đúng hub đón với hub giao (mô hình bến xe)
+        Set<Long> routeIds = routes.findByStatusWithEndpoints(ActiveStatus.ACTIVE).stream()
+                .filter(route -> DepartureRoutePolicy.matches(route, query.getBookingType(), pickupHubId, deliveryHubId))
+                .map(Route::getId).collect(Collectors.toSet());
+        if (routeIds.isEmpty()) {
+            return response.departures(List.of()).unavailable(Unavailable.NO_ROUTE).build();
         }
 
-        List<DepartureResponseDto> found = departures.findBookable(routeDistance.keySet(), DepartureStatus.OPEN, clock.instant(),
-                        query.getFromDate(), query.getStalls()).stream()
-                .sorted(Comparator.<Departure>comparingDouble(d -> routeDistance.get(d.getRoute().getId()))
-                        .thenComparing(Departure::getPlannedDepartureAt))
+        boolean privateMode = query.getTransportMode() == TransportMode.PRIVATE;
+        List<Candidate> found = departures.findOpenForBooking(routeIds, DepartureStatus.OPEN, clock.instant(),
+                        query.getFromDate()).stream()
+                .map(d -> new Candidate(d, privateMode ? 0 : fleet.sellableCapacity(d) - d.getStallCapacity()))
+                .filter(candidate -> privateMode || candidate.sellableStalls() >= query.getStalls())
                 .limit(MAX_SUGGESTIONS)
-                .map(d -> DepartureResponseDto.from(d, DepartureCapacityPolicy.available(d.getStallCapacity(), d.getBookedStallCount())))
                 .toList();
-        return response.departures(found).build();
+        List<CountryRule> rules = countryRules.findByCountry_CodeAndDirection(
+                RegulationPolicy.partnerCountry(query.getBookingType(), pickup.getCountry().getCode(), delivery.getCountry().getCode()),
+                RuleDirection.valueOf(query.getBookingType().name()));
+        return response
+                .departures(found.stream().map(candidate -> DepartureResponseDto.forCustomer(candidate.departure(),
+                        privateMode ? privateAvailability(candidate.departure(), query.getStalls())
+                                : fleet.availability(candidate.departure(), candidate.spareCapacity()))).toList())
+                .leadDays(found.isEmpty() ? null : RegulationPolicy.leadDays(rules, found.getFirst().departure().getDepartureDate()))
+                .tooLateDepartureIds(found.stream().map(Candidate::departure).filter(d -> !RegulationPolicy.feasible(
+                        RegulationPolicy.leadDays(rules, d.getDepartureDate()), clock.instant(), d.getBookingCutoffAt()))
+                        .map(Departure::getId).toList())
+                .build();
     }
 
-    // Tuyến nội địa nối đúng hai hub; xuất khẩu đi từ hub đón tới cửa khẩu; nhập khẩu đi từ cửa khẩu về hub giao
-    private static Predicate<Route> routeMatcher(BookingType type, Location pickupHub, Location deliveryHub) {
-        return route -> switch (type) {
-            case INTERPROVINCE -> route.getOrigin().getId().equals(pickupHub.getId())
-                    && route.getDestination().getId().equals(deliveryHub.getId());
-            case EXPORT -> route.getOrigin().getId().equals(pickupHub.getId())
-                    && route.getDestination().getLocationType() == LocationType.BORDER_GATE;
-            case IMPORT -> route.getOrigin().getLocationType() == LocationType.BORDER_GATE
-                    && route.getDestination().getId().equals(deliveryHub.getId());
-            case LOCAL -> false;
-        };
+    private DepartureAvailability privateAvailability(Departure departure, int stalls) {
+        return fleet.privateStock(departure, stalls, false).isPresent()
+                ? DepartureAvailability.AVAILABLE : DepartureAvailability.FULL;
     }
 
-    // Quãng đường chim bay giữa cửa khẩu và điểm ở nước ngoài, chỉ dùng để xếp hạng; thiếu tọa độ thì coi như bằng nhau
-    private static double foreignLegKm(DepartureSuggestionQueryDto query, Route route) {
-        if (query.getBookingType() == BookingType.EXPORT) {
-            return distance(route.getDestination(), query.getDeliveryLatitude(), query.getDeliveryLongitude());
+    private record Candidate(Departure departure, long spareCapacity) {
+        private long sellableStalls() {
+            return departure.getStallCapacity() - (long) departure.getBookedStallCount() + spareCapacity;
         }
-        if (query.getBookingType() == BookingType.IMPORT) {
-            return distance(route.getOrigin(), query.getPickupLatitude(), query.getPickupLongitude());
-        }
-        return 0;
     }
 
-    private static double distance(Location gate, BigDecimal latitude, BigDecimal longitude) {
-        if (gate.getLatitude() == null || latitude == null || longitude == null) {
-            return 0;
-        }
-        return GeoPointDto.distanceKm(new GeoPointDto(gate.getLatitude().doubleValue(), gate.getLongitude().doubleValue()),
-                new GeoPointDto(latitude.doubleValue(), longitude.doubleValue()));
+    private List<String> servedProvinces() {
+        return serviceAreas.findAllWithHubAndProvince().stream()
+                .filter(area -> area.getHub().getStatus() == ActiveStatus.ACTIVE)
+                .map(area -> area.getProvince().getName()).sorted().toList();
     }
+
 
     private Province province(String code) {
         return provinces.findById(code.trim())

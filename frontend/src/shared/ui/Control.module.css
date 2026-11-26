@@ -1,0 +1,45 @@
+/* Dùng chung cho Input và Textarea */
+.control {
+  width: 100%;
+  min-height: 40px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  transition: border-color var(--duration-base) var(--ease-standard), box-shadow var(--duration-base) var(--ease-standard);
+}
+
+.control::placeholder {
+  color: var(--color-muted);
+}
+
+.control:focus-visible {
+  outline: none;
+  border-color: var(--color-primary-bright);
+  box-shadow: var(--focus-ring);
+}
+
+.control[aria-invalid='true'] {
+  border-color: var(--color-danger);
+}
+
+.control:disabled {
+  background: var(--color-bg-subtle);
+  color: var(--color-muted);
+  cursor: not-allowed;
+}
+
+.multiline {
+  min-height: 96px;
+  resize: vertical;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .control {
+    transition: none;
+  }
+}

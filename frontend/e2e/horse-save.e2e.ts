@@ -1,117 +1,97 @@
 import { expect, test, type Page } from '@playwright/test'
 
-async function openForm(page: Page, options: { failDocument?: boolean; failRefresh?: boolean; chip?: string } = {}) {
-  const state = { creates: 0, updates: 0, uploads: {} as Record<string, number>, reads: 0 }
-  const documents: { id: number; horseId: number; documentType: string; status: string; fileUrl: string }[] = []
-  const horse = { id: 9, horseName: 'Tí Tèo', microchipID: '985112000374959', breed: 'Arabian', gender: 'mare', color: 'Black', age: 5 }
+// Thêm hồ sơ ngựa trên trang thật, API được mô phỏng
+async function openForm(page: Page, { duplicate = false, failVaccine = false } = {}) {
+  const state = { created: [] as Record<string, unknown>[], uploaded: [] as string[] }
+  let savedHorse: Record<string, unknown> | undefined
+  const codes = ['HORSE_PASSPORT', 'VACCINATION_RECORD']
+  await page.addInitScript(() => {
+    sessionStorage.setItem('SWP_SESSION_customer', JSON.stringify({ role: 'customer', name: 'Khách thử', username: 'customer.test' }))
+    localStorage.setItem('SWP_ACCESS_TOKEN_customer', `e30.${btoa(JSON.stringify({ exp: 4102444800 }))}.x`)
+  })
   await page.route('**/api/v1/**', async route => {
     const request = route.request()
-    const path = new URL(request.url()).pathname
-    const reply = (data: unknown) => route.fulfill({ json: { status: 'success', data } })
-    if (path.endsWith('/horse-types')) return reply([{ id: 1, typeName: 'Arabian' }])
-    if (path.endsWith('/horses') && request.method() === 'POST') {
-      state.creates++
-      return reply(horse)
-    }
-    if (path.endsWith('/horses/9') && request.method() === 'PUT') {
-      state.updates++
-      return reply(horse)
-    }
-    if (path.endsWith('/horses/9')) {
-      state.reads++
-      if (options.failRefresh && state.reads === 1) return route.fulfill({ status: 503, json: { message: 'Chưa tải lại được hồ sơ.' } })
-      return reply(horse)
-    }
-    if (path.endsWith('/horse-documents/horse/9')) return reply(documents)
-    if (path.endsWith('/horse-documents/upload')) {
-      const type = request.postDataBuffer()!.toString().match(/name="documentType"\r\n\r\n([^\r\n]+)/)![1]
-      state.uploads[type] = (state.uploads[type] ?? 0) + 1
-      if (options.failDocument && type === 'VACCINATION' && state.uploads[type] === 1) {
-        // Nginx returns HTML for 413; the user must still receive a useful message.
-        return route.fulfill({ status: 413, contentType: 'text/html', body: '<h1>413 Request Entity Too Large</h1>' })
+    const path = new URL(request.url()).pathname.replace('/api/v1', '')
+    if (path === '/horse-types') return route.fulfill({ json: { status: 'success', data: [{ id: 1, name: 'Thoroughbred' }] } })
+    if (path === '/horses/document-types') return route.fulfill({ json: { status: 'success', data: [
+      { code: 'HORSE_PASSPORT', name: 'Hộ chiếu ngựa' }, { code: 'VACCINATION_RECORD', name: 'Sổ tiêm phòng' },
+    ] } })
+    if (path === '/horses' && request.method() === 'POST') {
+      state.created.push(request.postDataJSON())
+      if (duplicate && state.created.length === 1) {
+        return route.fulfill({ status: 409, json: { status: 'error', message: 'Mã microchip đã được đăng ký.', data: null } })
       }
-      if (type === 'BLOOD_TEST') await new Promise(resolve => setTimeout(resolve, 120))
-      const doc = { id: documents.length + 1, horseId: 9, documentType: type, status: 'PENDING', fileUrl: `https://example.test/${type}.pdf` }
-      documents.push(doc)
-      return reply(doc)
+      savedHorse = { ...state.created.at(-1), id: 9, status: 'ACTIVE', horseTypeName: 'Thoroughbred' }
+      return route.fulfill({ status: 201, json: { status: 'success', data: savedHorse } })
     }
-    return reply([])
+    if (path === '/horses/9/documents' && request.method() === 'POST') {
+      const documentTypeCode = codes.find(code => request.postData()?.includes(code))
+      if (!documentTypeCode || !savedHorse) return route.fulfill({ status: 400, json: { status: 'error' } })
+      const first = !state.uploaded.includes(documentTypeCode)
+      state.uploaded.push(documentTypeCode)
+      if (failVaccine && first && documentTypeCode === 'VACCINATION_RECORD') {
+        return route.fulfill({ status: 400, json: { status: 'error', data: { file: 'Tệp cần tải lại.' } } })
+      }
+      return route.fulfill({ status: 201, json: { status: 'success', data: { documentTypeCode, status: 'UPLOADED', canUpload: false } } })
+    }
+    if (path === '/horses') return route.fulfill({ json: { status: 'success', data: savedHorse ? [savedHorse] : [] } })
+    return route.fulfill({ json: { status: 'success', data: [] } })
   })
-  await page.route('**/horse-save-test', route => route.fulfill({ contentType: 'text/html', body: `<!doctype html><html><body><div id="root"></div><script type="module">import R from '/@react-refresh';R.injectIntoGlobalHook(window);window.$RefreshReg$=()=>{};window.$RefreshSig$=()=>t=>t;window.__vite_plugin_react_preamble_installed__=true;</script><script type="module" src="/e2e/fixtures/horseSaveHarness.tsx"></script></body></html>` }))
-  await page.goto('/horse-save-test')
-  await page.getByLabel('Tên ngựa', { exact: true }).fill('Tí Tèo')
-  await page.getByLabel('Mã microchip', { exact: true }).fill(options.chip ?? '985 112-000374959')
-  await page.getByLabel('Màu lông', { exact: true }).fill('Black')
-  await page.getByLabel('Năm sinh', { exact: true }).fill('2021')
-  await expect(page.getByRole('button', { name: 'Lưu vào hồ sơ', exact: true })).toBeEnabled()
-  await page.getByRole('tab', { name: 'Giấy tờ', exact: false }).click()
-  return state
+  await page.goto('/horses')
+  await page.getByRole('button', { name: 'Thêm ngựa' }).first().click()
+  const form = page.getByRole('dialog')
+  await form.getByLabel(/Mã microchip/).fill('985112000374959')
+  await form.getByRole('textbox', { name: 'Tên ngựa', exact: true }).fill('Tí Tèo')
+  await form.getByRole('combobox').nth(0).click()
+  await page.getByRole('option', { name: 'Thoroughbred' }).click()
+  await form.getByRole('combobox').nth(1).click()
+  await page.getByRole('option').first().click()
+  await form.getByLabel('Màu lông').fill('Nâu')
+  await form.getByLabel('Năm sinh').fill('2019')
+  return { state, form }
 }
 
-async function selectDocuments(page: Page) {
-  for (let index = 0; index < 3; index++) {
-    await page.locator('input[type=file]').nth(index).setInputFiles({
-      name: `document-${index}.pdf`, mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 test'),
-    })
-  }
-}
-
-test('microchip that is not 15 digits blocks saving before any request', async ({ page }) => {
-  const state = await openForm(page, { chip: 'VN-374959' })
-  await selectDocuments(page)
-
-  await page.getByRole('button', { name: 'Lưu vào hồ sơ', exact: true }).click()
-
-  await expect(page.getByText('Mã microchip phải gồm đúng 15 chữ số', { exact: false })).toBeVisible()
-  expect(state.creates).toBe(0)
+test('mã chip không đủ 15 số thì không gửi yêu cầu nào', async ({ page }) => {
+  const { state, form } = await openForm(page)
+  await form.getByLabel(/Mã microchip/).fill('VN-374959')
+  await form.getByRole('button', { name: 'Lưu' }).click()
+  await expect(form.getByText('Mã microchip phải gồm đúng 15 chữ số.')).toBeVisible()
+  expect(state.created).toHaveLength(0)
 })
 
-test('oversized document blocks saving before any horse or upload request', async ({ page }) => {
-  const state = await openForm(page)
-  await page.locator('input[type=file]').first().setInputFiles({ name: 'large.pdf', mimeType: 'application/pdf', buffer: Buffer.alloc(5 * 1024 * 1024 + 1) })
-  await expect(page.getByRole('alert')).toContainText('Tệp vượt quá 5 MB')
-  await expect(page.getByRole('button', { name: 'Lưu vào hồ sơ', exact: true })).toBeDisabled()
-  // Even a programmatic submit must run validation before creating the horse.
-  await page.locator('#horse-form').evaluate(form => (form as HTMLFormElement).requestSubmit())
-  await expect(page.getByRole('alert')).toContainText('Tệp vượt quá 5 MB')
-  expect(state.creates).toBe(0)
-  expect(state.uploads).toEqual({})
-  await selectDocuments(page)
-  await expect(page.getByRole('button', { name: 'Lưu vào hồ sơ', exact: true })).toBeEnabled()
+test('lưu một lần rồi hiện trong danh sách', async ({ page }) => {
+  const { state, form } = await openForm(page)
+  await form.getByRole('button', { name: 'Lưu' }).click()
+  await expect(form).toHaveCount(0)
+  await expect(page.getByText('Tí Tèo')).toBeVisible()
+  expect(state.created).toMatchObject([{ name: 'Tí Tèo', microchip: '985112000374959', horseTypeId: 1, color: 'Nâu', birthYear: 2019 }])
 })
 
-test('partial upload retry reuses saved horse and only sends the failed document', async ({ page }) => {
-  const state = await openForm(page, { failDocument: true })
-  await selectDocuments(page)
-  await page.getByRole('button', { name: 'Lưu vào hồ sơ', exact: true }).click()
-  await expect(page.getByRole('alert').filter({ hasText: 'Thông tin ngựa đã được lưu' })).toBeVisible()
-  await expect(page.getByRole('alert').filter({ hasText: 'Mỗi tệp tối đa 5 MB' })).toBeVisible()
-  await expect(page.getByRole('tab', { name: 'Giấy tờ', exact: false })).toContainText('2/3 đã lưu')
-  await page.getByRole('tab', { name: 'Nhận dạng', exact: false }).click()
-  await expect(page.getByLabel('Mã microchip', { exact: true })).toBeDisabled()
-  await page.getByRole('button', { name: 'Lưu thay đổi', exact: true }).click()
-  await expect(page.getByTestId('saved-horse')).toContainText('H-009')
-  expect(state.creates).toBe(1)
-  expect(state.uploads).toEqual({ PASSPORT: 1, VACCINATION: 2, BLOOD_TEST: 1 })
+test('mã chip đã đăng ký thì báo ngay dưới ô và giữ dữ liệu đã nhập', async ({ page }) => {
+  const { form } = await openForm(page, { duplicate: true })
+  await form.getByRole('button', { name: 'Lưu' }).click()
+  await expect(form.getByText(/đã được đăng ký/)).toBeVisible()
+  await expect(form.getByRole('textbox', { name: 'Tên ngựa', exact: true })).toHaveValue('Tí Tèo')
 })
 
-test('failure to refresh after upload does not recreate horse or upload documents twice', async ({ page }) => {
-  const state = await openForm(page, { failRefresh: true })
-  await selectDocuments(page)
-  await page.getByRole('button', { name: 'Lưu vào hồ sơ', exact: true }).click()
-  await expect(page.getByRole('alert')).toContainText('Thông tin ngựa đã được lưu')
-  await page.getByRole('button', { name: 'Lưu thay đổi', exact: true }).click()
-  await expect(page.getByTestId('saved-horse')).toContainText('H-009')
-  expect(state.creates).toBe(1)
-  expect(state.uploads).toEqual({ PASSPORT: 1, VACCINATION: 1, BLOOD_TEST: 1 })
-})
-
-test('closing a partial save reports the existing profile to refresh the horse list', async ({ page }) => {
-  const state = await openForm(page, { failDocument: true })
-  await selectDocuments(page)
-  await page.getByRole('button', { name: 'Lưu vào hồ sơ', exact: true }).click()
-  await expect(page.getByRole('alert').filter({ hasText: 'Thông tin ngựa đã được lưu' })).toBeVisible()
-  await page.getByRole('button', { name: 'Đóng', exact: true }).last().click()
-  await expect(page.getByTestId('saved-horse')).toContainText('H-009')
-  expect(state.creates).toBe(1)
+test('360 px, lưu hồ sơ và thử tải lại đúng giấy lỗi', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 })
+  const { state, form } = await openForm(page, { failVaccine: true })
+  await form.getByRole('tab', { name: 'Giấy tờ (0/2)' }).click()
+  await form.getByLabel('Chọn tệp Hộ chiếu ngựa').setInputFiles({
+    name: 'passport.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.7'),
+  })
+  await form.getByLabel('Chọn tệp Sổ tiêm phòng').setInputFiles({
+    name: 'vaccines.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.7'),
+  })
+  await expect(form.getByRole('tab', { name: 'Giấy tờ (2/2)' })).toBeVisible()
+  await expect.poll(() => form.evaluate(dialog => dialog.scrollWidth <= dialog.clientWidth)).toBe(true)
+  await form.getByRole('button', { name: 'Lưu', exact: true }).click()
+  await expect(form.getByText(/Thông tin ngựa đã được lưu/)).toBeVisible()
+  await form.getByRole('button', { name: 'Thử lại giấy tờ' }).click()
+  await expect(form).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: 'Tí Tèo' })).toBeVisible()
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360)
+  expect(state.created).toHaveLength(1)
+  expect(state.uploaded).toEqual(['HORSE_PASSPORT', 'VACCINATION_RECORD', 'VACCINATION_RECORD'])
 })

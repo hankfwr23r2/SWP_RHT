@@ -1,4 +1,4 @@
-import type { Session } from '../types/role'
+import type { Session } from './role'
 
 export const SESSION_KEY = 'SWP_SESSION'
 

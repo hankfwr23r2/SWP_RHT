@@ -1,4 +1,4 @@
-import type { CountryCode } from '../config/network'
+type CountryCode = 'VN' | 'LA' | 'KH'
 
 const NAME_PATTERN = /^[\p{L}\p{M}]+(?:[ '\u2019-][\p{L}\p{M}]+)*$/u
 const CONTACT_NAME_PATTERN = /^(?=.*[\p{L}])[\p{L}\p{M}\d]+(?:[ .,'&()/+-][\p{L}\p{M}\d]+)*$/u

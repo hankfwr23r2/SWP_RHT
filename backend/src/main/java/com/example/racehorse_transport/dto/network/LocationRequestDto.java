@@ -40,6 +40,9 @@ public class LocationRequestDto {
     @Pattern(regexp = "^[A-Z]{2}$", message = "Mã quốc gia gồm 2 chữ in hoa")
     private String countryCode;
 
+    @Pattern(regexp = "^[A-Z]{2}$")
+    private String counterpartCountryCode;
+
     @Size(max = 10, message = "Mã tỉnh tối đa 10 ký tự")
     private String provinceCode;
 
@@ -65,17 +68,18 @@ public class LocationRequestDto {
     private String contactPhone;
 
     // Địa điểm mới, chưa lưu. Quốc gia, tỉnh do service nạp rồi truyền vào; trạng thái do service đặt.
-    public Location toEntity(Country country, Province province) {
+    public Location toEntity(Country country, Province province, Country counterpartCountry) {
         Location location = new Location();
-        applyTo(location, country, province);
+        applyTo(location, country, province, counterpartCountry);
         return location;
     }
 
-    public void applyTo(Location location, Country country, Province province) {
+    public void applyTo(Location location, Country country, Province province, Country counterpartCountry) {
         location.setCode(code.trim().toUpperCase(Locale.ROOT));
         location.setName(name.trim());
         location.setLocationType(locationType);
         location.setCountry(country);
+        location.setCounterpartCountry(counterpartCountry);
         location.setProvince(province);
         location.setAddress(address.trim());
         location.setLatitude(latitude);

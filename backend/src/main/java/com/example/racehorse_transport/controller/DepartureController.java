@@ -1,12 +1,18 @@
 package com.example.racehorse_transport.controller;
 
+import com.example.racehorse_transport.dto.departure.DepartureVehicleRemoveRequestDto;
+import com.example.racehorse_transport.dto.departure.DepartureDetailResponseDto;
 import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.dto.departure.DepartureCancelRequestDto;
+import com.example.racehorse_transport.dto.departure.DepartureConfirmRunRequestDto;
 import com.example.racehorse_transport.dto.departure.DepartureCreateRequestDto;
+import com.example.racehorse_transport.dto.departure.DepartureDecisionResponseDto;
+import com.example.racehorse_transport.dto.departure.DepartureMergeRequestDto;
 import com.example.racehorse_transport.dto.departure.DepartureResponseDto;
 import com.example.racehorse_transport.dto.departure.DepartureSuggestionQueryDto;
 import com.example.racehorse_transport.dto.departure.DepartureSuggestionResponseDto;
 import com.example.racehorse_transport.entity.enums.DepartureStatus;
+import com.example.racehorse_transport.service.DepartureDecisionService;
 import com.example.racehorse_transport.service.DepartureService;
 import com.example.racehorse_transport.service.DepartureSuggestionService;
 import jakarta.validation.Valid;
@@ -35,6 +41,7 @@ public class DepartureController {
 
     private final DepartureService departureService;
     private final DepartureSuggestionService suggestionService;
+    private final DepartureDecisionService decisionService;
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'COORDINATOR')")
@@ -53,11 +60,44 @@ public class DepartureController {
         return ResponseEntity.ok(ApiResponseDto.success(suggestionService.suggest(query), "Gợi ý chuyến"));
     }
 
+    // Chuyến cần quyết định: số chỗ đã cọc, mốc quyết định, cảnh báo dưới mức tối thiểu
+    @GetMapping("/decisions")
+    @PreAuthorize("hasAnyRole('MANAGER', 'COORDINATOR')")
+    public ResponseEntity<ApiResponseDto<List<DepartureDecisionResponseDto>>> decisions(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ResponseEntity.ok(ApiResponseDto.success(decisionService.decisions(from, to), "Chuyến cần quyết định"));
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('MANAGER', 'COORDINATOR')")
+    public ResponseEntity<ApiResponseDto<DepartureDetailResponseDto>> detail(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponseDto.success(departureService.detail(id), "Chi tiết chuyến"));
+    }
+
+    @PostMapping("/{id}/vehicles/{allotmentId}/remove")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<ApiResponseDto<DepartureDetailResponseDto>> removeVehicle(@PathVariable Long id,
+            @PathVariable Long allotmentId, @Valid @RequestBody DepartureVehicleRemoveRequestDto request,
+            Authentication authentication) {
+        return ResponseEntity.ok(ApiResponseDto.success(
+                departureService.removeVehicle(id, allotmentId, request.reason(), authentication.getName()), "Đã bỏ xe"));
+    }
+
+    @PostMapping("/{id}/confirm-run")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<ApiResponseDto<DepartureDecisionResponseDto>> confirmRun(@PathVariable Long id,
+            @Valid @RequestBody(required = false) DepartureConfirmRunRequestDto request, Authentication authentication) {
+        return ResponseEntity.ok(ApiResponseDto.success(
+                decisionService.confirmRun(id, authentication.getName(), request), "Đã xác nhận chạy"));
+    }
+
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-    public ResponseEntity<ApiResponseDto<DepartureResponseDto>> createAdHoc(@Valid @RequestBody DepartureCreateRequestDto request) {
+    public ResponseEntity<ApiResponseDto<DepartureResponseDto>> createAdHoc(
+            @Valid @RequestBody DepartureCreateRequestDto request, Authentication authentication) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponseDto.success(departureService.createAdHoc(request), "Đã tạo chuyến đột xuất"));
+                .body(ApiResponseDto.success(departureService.createAdHoc(request, authentication.getName()), "Đã tạo chuyến đột xuất"));
     }
 
     // Người hủy lấy từ Authentication
@@ -67,5 +107,19 @@ public class DepartureController {
             @PathVariable Long id, @Valid @RequestBody DepartureCancelRequestDto request, Authentication authentication) {
         return ResponseEntity.ok(ApiResponseDto.success(
                 departureService.cancel(id, request.getReason(), authentication.getName()), "Đã hủy chuyến"));
+    }
+
+    @GetMapping("/{id}/merge-targets")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<ApiResponseDto<List<DepartureResponseDto>>> mergeTargets(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponseDto.success(departureService.mergeTargets(id), "Danh sách chuyến đích"));
+    }
+
+    @PostMapping("/{id}/merge")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<ApiResponseDto<DepartureResponseDto>> merge(@PathVariable Long id,
+            @Valid @RequestBody DepartureMergeRequestDto request, Authentication authentication) {
+        return ResponseEntity.ok(ApiResponseDto.success(
+                departureService.merge(id, request, authentication.getName()), "Đã dồn chuyến"));
     }
 }

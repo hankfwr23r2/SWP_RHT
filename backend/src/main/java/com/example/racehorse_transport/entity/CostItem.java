@@ -52,6 +52,10 @@ public class CostItem {
     @Column(name = "currency_code", length = 3, nullable = false)
     private String currencyCode;
 
+    // snapshot: số ngày tính trong dòng phí giữ ngựa này
+    @Column(name = "stabling_days")
+    private Long stablingDays;
+
     // Ai chịu khoản này
     @Enumerated(EnumType.STRING)
     @Column(name = "payer_type", length = 30, nullable = false)
@@ -84,11 +88,44 @@ public class CostItem {
     @Column(name = "is_customer_consulted", nullable = false)
     private Boolean customerConsulted = false;
 
+    @Column(name = "customer_agreed")
+    private Boolean customerAgreed;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_response_by")
+    private AppUser customerResponseBy;
+
+    @Column(name = "customer_response_at")
+    private Instant customerResponseAt;
+
+    @Column(name = "customer_response_due_at")
+    private Instant customerResponseDueAt;
+
+    @Column(name = "phone_consent_note", length = 500)
+    private String phoneConsentNote;
+
+    @Column(name = "emergency_override_reason", length = 500)
+    private String emergencyOverrideReason;
+
+    @Column(name = "agent_recovery_required", nullable = false)
+    private boolean agentRecoveryRequired;
+
+    @Column(name = "agent_recovered_at")
+    private Instant agentRecoveredAt;
+
+    // snapshot: phần phí giữ đã cấn vào tiền cọc của đơn hủy
+    @Column(name = "stabling_deposit_credit", nullable = false, precision = 15, scale = 2)
+    private BigDecimal stablingDepositCredit = BigDecimal.ZERO;
+
+    // snapshot: phần phí giữ được cấn bằng cước giao chưa chạy khi hủy vì không có người nhận
+    @Column(name = "stabling_delivery_credit", nullable = false, precision = 15, scale = 2)
+    private BigDecimal stablingDeliveryCredit = BigDecimal.ZERO;
+
     @Column(name = "incurred_at", nullable = false)
     private Instant incurredAt;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "recorded_by", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "recorded_by")
     private Staff recordedBy;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = true)

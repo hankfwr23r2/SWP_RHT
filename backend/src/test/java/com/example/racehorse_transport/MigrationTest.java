@@ -10,7 +10,7 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
-// Flyway dựng đủ 59 bảng theo docs/DB_SCHEMA_59_BANG.md, và các ràng buộc quan trọng thật sự chặn dữ liệu sai.
+// Flyway dựng đủ 64 bảng theo docs/DB_SCHEMA_59_BANG.md, và các ràng buộc quan trọng thật sự chặn dữ liệu sai.
 // Mỗi test chạy trong một transaction và được rollback. Câu lệnh vi phạm ràng buộc luôn là câu cuối của test.
 @PostgresIntegrationTest
 @Transactional
@@ -18,6 +18,14 @@ class MigrationTest {
 
     @Autowired
     private JdbcTemplate jdbc;
+
+    @Test
+    void seedsLinehaulDeliveryClusterRadiusWithEditableBounds() {
+        assertThat(jdbc.queryForObject("""
+                SELECT config_value = '60' AND unit = 'KM' AND min_value = 1 AND max_value = 300
+                FROM system_config WHERE config_key = 'LINEHAUL_CLUSTER_RADIUS_KM'
+                """, Boolean.class)).isTrue();
+    }
 
     private long id(String sql, Object... args) {
         Long value = jdbc.queryForObject(sql, Long.class, args);
@@ -62,12 +70,42 @@ class MigrationTest {
     }
 
     @Test
-    void createsAllFiftyNineTables() {
+    void privateVehicleRequiresABookingAndDefaultsExistingBookingsToShared() {
+        long booking = newBooking();
+        assertThat(jdbc.queryForObject("SELECT transport_mode FROM booking WHERE id = ?", String.class, booking))
+                .isEqualTo("SHARED");
+        assertThatThrownBy(() -> jdbc.update("""
+                INSERT INTO departure_vehicle (departure_id, vehicle_class_id, vehicle_count, allotment_type, created_at)
+                SELECT min(d.id), (SELECT min(id) FROM vehicle_class), 1, 'PRIVATE', now() FROM departure d
+                """)).isInstanceOf(DataAccessException.class)
+                .hasMessageContaining("departure_vehicle_private_booking_check");
+    }
+
+    @Test
+    void createsAllTables() {
         Integer tables = jdbc.queryForObject("""
                 SELECT count(*) FROM information_schema.tables
                 WHERE table_schema = 'public' AND table_type = 'BASE TABLE' AND table_name <> 'flyway_schema_history'""",
                 Integer.class);
-        assertThat(tables).isEqualTo(59);
+        assertThat(tables).isEqualTo(64);
+    }
+
+    @Test
+    void seedBuildsDepartureCapacityFromAllotments() {
+        Integer invalid = jdbc.queryForObject("""
+                SELECT count(*) FROM departure d
+                WHERE d.stall_capacity <> COALESCE((
+                    SELECT sum(a.vehicle_count * vc.max_stall_count)
+                    FROM departure_vehicle a JOIN vehicle_class vc ON vc.id = a.vehicle_class_id
+                    WHERE a.departure_id = d.id
+                ), 0)
+                AND d.departure_schedule_id IS NOT NULL
+                """, Integer.class);
+        assertThat(invalid).isZero();
+        assertThat(jdbc.queryForList("""
+                SELECT l.code FROM vehicle v JOIN location l ON l.id = v.home_hub_location_id
+                WHERE v.service_role = 'SPARE' AND v.license_plate LIKE 'M1-%'
+                """, String.class)).containsExactlyInAnyOrder("HUB-HCM", "HUB-DN", "HUB-VINH");
     }
 
     @Test
@@ -76,8 +114,12 @@ class MigrationTest {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM province", Integer.class)).isEqualTo(77);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM role", Integer.class)).isEqualTo(7);
         assertThat(jdbc.queryForObject("SELECT name FROM role WHERE code = 'ESCORT'", String.class)).isEqualTo("Nhân viên hộ tống");
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM app_user WHERE username LIKE '%.dev'", Integer.class)).isEqualTo(8);
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM route_stop", Integer.class)).isEqualTo(16);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM app_user WHERE username LIKE '%.dev'", Integer.class)).isEqualTo(87);
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM route_stop stop
+                JOIN departure_schedule schedule ON schedule.route_id = stop.route_id
+                WHERE schedule.status = 'ACTIVE' AND schedule.valid_from = DATE '2026-11-01'
+                """, Integer.class)).isEqualTo(124);
     }
 
     @Test
@@ -97,9 +139,13 @@ class MigrationTest {
                 WHERE q.total_amount <> (SELECT sum(amount) FROM quotation_line l WHERE l.quotation_id = q.id)
                    OR q.total_amount <> (SELECT sum(amount) FROM payment p WHERE p.quotation_id = q.id AND p.status = 'PAID')""",
                 Integer.class)).isZero();
-        // Khoang đã đặt của chuyến khớp số ngựa của các đơn mẫu đi trục (2 + 1)
+        // Chỗ đã đặt khớp loại khoang của các đơn mẫu đi trục: 3 khoang thường
         assertThat(jdbc.queryForObject("""
                 SELECT sum(d.booked_stall_count) FROM departure d WHERE d.id IN (SELECT departure_id FROM booking WHERE code LIKE 'DEV-%')""",
+                Integer.class)).isEqualTo(3);
+        assertThat(jdbc.queryForObject("""
+                SELECT sum(CASE bh.stall_type_code WHEN 'WIDE' THEN 2 ELSE 1 END) FROM booking_horse bh
+                JOIN booking b ON b.id = bh.booking_id AND b.code LIKE 'DEV-%' AND b.departure_id IS NOT NULL""",
                 Integer.class)).isEqualTo(3);
     }
 
@@ -125,8 +171,8 @@ class MigrationTest {
     @Test
     void countryRulesOfSameDirectionCannotOverlap() {
         assertThatThrownBy(() -> jdbc.update("""
-                INSERT INTO country_rule (country_code, direction, permit_lead_days, certificate_lead_days, quarantine_days, valid_from)
-                VALUES ('KH', 'EXPORT', 10, 5, 5, DATE '2027-01-01')"""))
+                INSERT INTO country_rule (country_code, direction, permit_lead_days, certificate_lead_days, valid_from)
+                VALUES ('KH', 'EXPORT', 10, 5, DATE '2027-01-01')"""))
                 .isInstanceOf(DataAccessException.class)
                 .hasMessageContaining("ex_country_rule_period");
     }
@@ -175,14 +221,14 @@ class MigrationTest {
     }
 
     @Test
-    void horseLegNeedsExactlyOneCarrier() {
+    void horseLegNeedsCompanyVehicleTrip() {
         long bookingHorseId = newBookingHorse(newBooking());
         assertThatThrownBy(() -> jdbc.update("""
                 INSERT INTO horse_leg (booking_horse_id, sequence_number, leg_type, from_location_id, to_location_id, planned_start_at, planned_end_at, status)
-                VALUES (?, 1, 'LINEHAUL', (SELECT id FROM location WHERE code = 'HUB-HCM'), (SELECT id FROM location WHERE code = 'GATE-MOCBAI'),
+                VALUES (?, 1, 'LINEHAUL', (SELECT id FROM location WHERE code = 'HUB-HCM'), (SELECT id FROM location WHERE code = 'HUB-PNH'),
                         TIMESTAMPTZ '2026-12-20 06:00+07', TIMESTAMPTZ '2026-12-20 08:00+07', 'PLANNED')""", bookingHorseId))
                 .isInstanceOf(DataAccessException.class)
-                .hasMessageContaining("ck_horse_leg_carrier");
+                .hasMessageContaining("vehicle_trip_id");
     }
 
     @Test
@@ -212,8 +258,8 @@ class MigrationTest {
 
     @Test
     void handoverBetweenSamePartnerIsRejected() {
-        Long agent = id("SELECT party_id FROM party_role WHERE role_type = 'DEST_AGENT'");
-        assertThatThrownBy(() -> newHandover("AGENT", agent, agent))
+        Long stable = id("SELECT min(party_id) FROM party_role WHERE role_type = 'STABLE'");
+        assertThatThrownBy(() -> newHandover("STAY_IN", stable, stable))
                 .isInstanceOf(DataAccessException.class)
                 .hasMessageContaining("ck_handover_parties");
     }

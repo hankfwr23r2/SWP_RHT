@@ -8,6 +8,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+import java.math.BigDecimal;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -30,4 +31,11 @@ public class Province {
 
     @Column(name = "name", length = 200, nullable = false)
     private String name;
+
+    // Trung tâm tỉnh
+    @Column(name = "latitude", nullable = false, precision = 9, scale = 6)
+    private BigDecimal latitude;
+
+    @Column(name = "longitude", nullable = false, precision = 9, scale = 6)
+    private BigDecimal longitude;
 }

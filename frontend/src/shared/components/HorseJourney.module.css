@@ -1,0 +1,19 @@
+.wrap { display: grid; gap: 16px; }
+.horse { display: grid; gap: 12px; }
+.head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.muted { color: var(--muted); font-size: 0.86rem; }
+.list { display: grid; list-style: none; margin: 0; padding: 0; }
+.item { display: grid; grid-template-columns: 34px 1fr; gap: 12px; position: relative; padding-bottom: 18px; }
+.item::before { content: ''; position: absolute; left: 16px; top: 34px; bottom: 0; width: 2px; background: var(--line); }
+.item:last-child { padding-bottom: 0; }
+.item:last-child::before { display: none; }
+.dot { width: 34px; height: 34px; border-radius: 999px; display: grid; place-items: center; font-size: 0.85rem; border: 2px solid var(--line); background: var(--color-surface); color: var(--muted); z-index: 1; }
+.planned .dot { border-style: dashed; }
+.done .dot { background: var(--green); border-color: var(--green); color: var(--color-surface); }
+.done::before { background: var(--green); }
+.current .dot { background: var(--orange); border-color: var(--orange); color: var(--color-surface); }
+.problem .dot { background: var(--amber-soft); border-color: var(--amber); color: var(--amber); }
+.top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.window { font-size: 0.86rem; color: var(--color-text); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.time { font-size: 0.82rem; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.manualReason { color: var(--color-muted); font-size: var(--text-sm); overflow-wrap: anywhere; }

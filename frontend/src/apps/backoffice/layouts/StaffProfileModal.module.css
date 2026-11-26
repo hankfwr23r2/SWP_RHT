@@ -1,0 +1,5 @@
+.details { display: grid; grid-template-columns: minmax(110px, 0.7fr) 1.3fr; gap: var(--space-3) var(--space-5); margin: 0; }
+.details dt { color: var(--color-muted); }
+.details dd { margin: 0; }
+.strong { font-weight: var(--weight-semibold); }
+.wrap { overflow-wrap: anywhere; }

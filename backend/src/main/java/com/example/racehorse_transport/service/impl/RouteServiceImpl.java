@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.repository.VehicleClassRepository;
 import com.example.racehorse_transport.dto.network.DepartureScheduleRequestDto;
 import com.example.racehorse_transport.dto.network.DepartureScheduleResponseDto;
 import com.example.racehorse_transport.dto.network.RouteRequestDto;
@@ -13,6 +14,7 @@ import com.example.racehorse_transport.entity.Route;
 import com.example.racehorse_transport.entity.enums.ActiveStatus;
 import com.example.racehorse_transport.entity.enums.ScheduleStatus;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
+import com.example.racehorse_transport.exception.RouteFleetConflictException;
 import com.example.racehorse_transport.policy.RouteStopsPolicy;
 import com.example.racehorse_transport.repository.DepartureScheduleDayRepository;
 import com.example.racehorse_transport.repository.DepartureScheduleRepository;
@@ -20,6 +22,7 @@ import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.repository.RouteRepository;
 import com.example.racehorse_transport.repository.RouteStopRepository;
 import com.example.racehorse_transport.service.RouteService;
+import com.example.racehorse_transport.service.SystemConfigService;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -35,6 +38,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class RouteServiceImpl implements RouteService {
 
     private final RouteRepository routes;
+    private final VehicleClassRepository vehicleClasses;
+    private final SystemConfigService config;
     private final RouteStopRepository routeStops;
     private final LocationRepository locations;
     private final DepartureScheduleRepository schedules;
@@ -59,6 +64,7 @@ public class RouteServiceImpl implements RouteService {
         Location origin = activeLocation(request.getOriginLocationId());
         Location destination = activeLocation(request.getDestinationLocationId());
         Map<Long, Location> stopLocations = validateStops(request, origin, destination);
+        requireAvailableFleetDirection(request.isFleetOutbound(), origin.getId(), destination.getId(), null);
 
         Route route = request.toEntity(origin, destination);
         route.setStatus(ActiveStatus.ACTIVE);
@@ -75,6 +81,7 @@ public class RouteServiceImpl implements RouteService {
         Location origin = activeLocation(request.getOriginLocationId());
         Location destination = activeLocation(request.getDestinationLocationId());
         Map<Long, Location> stopLocations = validateStops(request, origin, destination);
+        requireAvailableFleetDirection(request.isFleetOutbound(), origin.getId(), destination.getId(), id);
 
         request.applyTo(route, origin, destination);
         // Thay toàn bộ điểm dừng; lệnh xóa tự flush thay đổi của tuyến trước khi chạy
@@ -117,7 +124,8 @@ public class RouteServiceImpl implements RouteService {
     public DepartureScheduleResponseDto createSchedule(DepartureScheduleRequestDto request) {
         Route route = activeRoute(request.getRouteId());
         requireValidPeriod(request);
-        DepartureSchedule schedule = request.toEntity(route);
+        DepartureSchedule schedule = request.toEntity(route, vehicleClasses.findById(request.getBaseVehicleClassId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hạng xe.")));
         schedule.setStatus(ScheduleStatus.ACTIVE);
         schedule = schedules.save(schedule);
         return DepartureScheduleResponseDto.from(schedule, saveDays(schedule, request.getDaysOfWeek()));
@@ -132,7 +140,8 @@ public class RouteServiceImpl implements RouteService {
         }
         Route route = activeRoute(request.getRouteId());
         requireValidPeriod(request);
-        request.applyTo(schedule, route);
+        request.applyTo(schedule, route, vehicleClasses.findById(request.getBaseVehicleClassId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hạng xe.")));
         // Đổi lịch không đổi các chuyến đã sinh: sức chứa và giờ chạy đã chép vào từng chuyến
         scheduleDays.deleteByScheduleId(id);
         return DepartureScheduleResponseDto.from(schedule, saveDays(schedule, request.getDaysOfWeek()));
@@ -182,7 +191,11 @@ public class RouteServiceImpl implements RouteService {
                 .map(stop -> new RouteStopsPolicy.Stop(stop.getSequenceNumber(), stop.getLocationId(), byId.get(stop.getLocationId()).getLocationType(),
                         stop.getStopType(), stop.getArrivalOffsetMinutes(), stop.getDwellMinutes()))
                 .toList();
-        List<String> errors = RouteStopsPolicy.violations(origin.getId(), origin.getLocationType(), destination.getId(), destination.getLocationType(), stops);
+        var limits = new RouteStopsPolicy.Limits(config.getInt("MAX_CONTINUOUS_HOURS"),
+                config.getInt("MIN_REST_MINUTES"), config.getInt("MAX_DRIVE_HOURS_PER_DAY"),
+                config.getInt("OVERNIGHT_REST_HOURS"));
+        List<String> errors = RouteStopsPolicy.violations(origin.getId(), origin.getLocationType(),
+                destination.getId(), destination.getLocationType(), stops, limits);
         if (!errors.isEmpty()) {
             throw new IllegalArgumentException(String.join(" ", errors));
         }
@@ -217,6 +230,16 @@ public class RouteServiceImpl implements RouteService {
                 .ifPresent(other -> {
                     throw new IllegalStateException("Mã tuyến " + normalized + " đã được dùng.");
                 });
+    }
+
+    private void requireAvailableFleetDirection(boolean outbound, long originId, long destinationId, Long routeId) {
+        if (!outbound) return;
+
+        // Hai chiều khóa cùng một hub để tránh cùng được đánh dấu chiều đi khi lưu đồng thời.
+        locations.findForUpdate(Math.min(originId, destinationId));
+        if (routes.fleetOutboundIds(destinationId, originId).stream().anyMatch(other -> !other.equals(routeId))) {
+            throw new RouteFleetConflictException();
+        }
     }
 
     private Route findRoute(Long id) {

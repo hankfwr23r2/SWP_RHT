@@ -3,7 +3,9 @@ package com.example.racehorse_transport.client;
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
@@ -17,9 +19,13 @@ import org.springframework.web.client.RestClientResponseException;
 
 // Gửi email (OTP, hóa đơn). Có BREVO_API_KEY thì gửi qua API HTTPS của Brevo (Render gói miễn phí chặn cổng SMTP 25/465/587);
 // không có thì gửi qua SMTP (MAIL_HOST), như khi chạy local với Gmail. Lỗi gửi ném MailException kèm lý do.
+// Địa chỉ thuộc đuôi dành cho thử nghiệm (RFC 2606, vd tài khoản mẫu @racehorse.test) không có hộp thư thật: chỉ ghi log, không gửi.
+@Slf4j
 @Component
 public class MailClient {
     private static final String SENDER_NAME = "Vận chuyển Ngựa";
+    private static final List<String> RESERVED_TLDS = List.of("test", "example", "invalid", "localhost");
+    private static final List<String> RESERVED_DOMAINS = List.of("example.com", "example.net", "example.org");
 
     private final JavaMailSender smtp;
     private final String brevoApiKey;
@@ -46,14 +52,25 @@ public class MailClient {
     }
 
     public void send(String to, String subject, String text) {
+        if (skipReserved(to, subject, text)) return;
         if (!brevoApiKey.isEmpty()) sendWithBrevo(to, subject, text, null);
         else sendWithSmtp(to, subject, text);
     }
 
     // Thư HTML kèm bản chữ thuần cho trình đọc thư không hiện HTML (dùng cho mail hóa đơn)
     public void sendHtml(String to, String subject, String html, String text) {
+        if (skipReserved(to, subject, text)) return;
         if (!brevoApiKey.isEmpty()) sendWithBrevo(to, subject, text, html);
         else sendHtmlWithSmtp(to, subject, html, text);
+    }
+
+    private static boolean skipReserved(String to, String subject, String text) {
+        String domain = to == null ? "" : to.substring(to.lastIndexOf('@') + 1).trim().toLowerCase(Locale.ROOT);
+        boolean reserved = RESERVED_TLDS.stream().anyMatch(tld -> domain.equals(tld) || domain.endsWith("." + tld))
+                || RESERVED_DOMAINS.stream().anyMatch(name -> domain.equals(name) || domain.endsWith("." + name));
+        // Nội dung in ra log để vẫn thử được OTP với tài khoản mẫu
+        if (reserved) log.info("Không gửi mail tới địa chỉ thử nghiệm {}: {}\n{}", to, subject, text);
+        return reserved;
     }
 
     private void sendWithBrevo(String to, String subject, String text, String html) {

@@ -58,4 +58,7 @@ public class Route {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 30, nullable = false)
     private ActiveStatus status;
+
+    @Column(name = "fleet_outbound", nullable = false)
+    private boolean fleetOutbound;
 }

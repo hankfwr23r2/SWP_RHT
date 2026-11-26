@@ -19,7 +19,7 @@ public final class HubResolutionPolicy {
     private HubResolutionPolicy() {
     }
 
-    // pickupHubId, deliveryHubId: hub phục vụ tỉnh của điểm đón, điểm giao. Phía nước ngoài của đơn quốc tế để null.
+    // pickupHubId, deliveryHubId: hub phục vụ tỉnh của điểm đón, điểm giao, kể cả hub nước ngoài (mô hình bến xe 26/11/2026).
     public static Routing routingOf(BookingType bookingType, Long pickupHubId, Long deliveryHubId) {
         Objects.requireNonNull(bookingType, "bookingType");
         return switch (bookingType) {
@@ -28,9 +28,10 @@ public final class HubResolutionPolicy {
                 requireServed(pickupHubId);
                 yield Routing.DIRECT;
             }
-            // Đơn quốc tế luôn đi trục tới hoặc từ cửa khẩu
+            // Đơn quốc tế luôn đi trục giữa hub trong nước và hub nước ngoài
             case EXPORT, IMPORT -> {
-                requireServed(bookingType == BookingType.EXPORT ? pickupHubId : deliveryHubId);
+                requireServed(pickupHubId);
+                requireServed(deliveryHubId);
                 yield Routing.LINEHAUL;
             }
             case INTERPROVINCE -> {
@@ -39,6 +40,15 @@ public final class HubResolutionPolicy {
                 yield pickupHubId.equals(deliveryHubId) ? Routing.DIRECT : Routing.LINEHAUL;
             }
         };
+    }
+
+    // Tỉnh của nơi đón hoặc nơi giao chưa thuộc hub nào, ở trong nước hay nước ngoài
+    public static boolean missingPickupHub(BookingType bookingType, Long pickupHubId) {
+        return pickupHubId == null;
+    }
+
+    public static boolean missingDeliveryHub(BookingType bookingType, Long deliveryHubId) {
+        return bookingType != BookingType.LOCAL && deliveryHubId == null;
     }
 
     // Loại đơn phải khớp nơi đón và nơi giao. Công ty đặt tại Việt Nam nên VN là phía trong nước.

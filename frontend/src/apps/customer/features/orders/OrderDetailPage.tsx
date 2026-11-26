@@ -1,500 +1,115 @@
-import { InsuranceSummary } from '@shared/ui/InsuranceFields'
-// Chi tiết đơn phía khách: tiến độ, bước tiếp theo, bổ sung hồ sơ, báo giá, đặt cọc, tiến độ giấy tờ, xe và ngựa, trả số dư.
-import { lazy, Suspense, useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router'
+// Chi tiết đơn của khách: việc tiếp theo, báo giá và thanh toán, giấy tờ, hành trình, đổi chuyến, hủy, đánh giá.
+import { PrivateVehicleBadge } from '@shared/components/PrivateVehicleBadge'
+import { useEffect, useState } from 'react'
+import { Button } from '@shared/ui/Button'
+import { DeliveryChangeDialog } from './components/DeliveryChangeDialog'
+import { Link, useLocation, useRevalidator } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { useAuth } from '@shared/auth/AuthContext'
-import { DEPOSIT_RATE, HORSE_DOC, INCIDENT_KIND, customerStepOf } from '@shared/config/booking-rules'
-import { effectiveArrivalOf } from '@shared/lib/booking'
-import { restLabel, restTitle } from '@shared/lib/routePreview'
-import { formatClock, formatDate, formatDateTime, formatVND } from '@shared/lib/format'
-import { usePageData } from '@shared/routing/pageData'
-import { customerBookingsApi, type CustomerBookingView, type TripTeam } from '@shared/services/bookings'
-import { horsesApi } from '@shared/services/horses'
-import { useLoad } from '@shared/services/useLoad'
-import type { HorseProfile } from '@shared/types/booking'
-import { insuranceBeforeQuote, insuranceRevisionPending, type InsuranceResubmission } from '@shared/types/insurance'
-import { BookingStatusBadge } from '@shared/ui/BookingStatusBadge'
-import { Modal } from '@shared/ui/Modal'
-import { PolicyLink } from '@shared/ui/PolicyLink'
-import { QuoteSheet } from '@shared/ui/QuoteSheet'
-import { TripTimeline, type JourneyTimelineIncident } from '@shared/ui/TripTimeline'
-import { useToast } from '@shared/ui/toast'
-import { useNow } from '@shared/ui/useNow'
+import { PickupMissPanel } from '@shared/components/PickupMissPanel'
+import { BookingJourney } from '@shared/components/HorseJourney'
+import { OrderStatusBadge } from '@shared/components/OrderStatusBadge'
+import { CANCELLABLE, HAS_JOURNEY, RATEABLE } from '@shared/components/orderSteps'
+import { PageTitle, PageTitleCode } from '@shared/ui/PageHeader'
+import { Card } from '@shared/ui/Card'
+import { DetailColumns } from '@shared/ui/DetailColumns'
+import { ErrorState } from '@shared/ui/ErrorState'
+import { formatDateTime } from '@shared/lib/format'
+import { BookingDelayCard } from './components/BookingDelayCard'
+import { CancelOrder } from './components/CancelOrder'
+import { CollectionCodeCard } from './components/CollectionCodeCard'
+import { DeliveryComplaintCard } from './components/DeliveryComplaintCard'
+import { DocumentsCard } from './components/DocumentsCard'
+import { IncidentDecisionsCard } from './components/IncidentDecisionsCard'
+import { InsuranceCard } from './components/InsuranceCard'
+import { NextStepBanner } from './components/NextStepBanner'
+import { OrderInfo } from './components/OrderInfo'
+import { PaymentsCard } from './components/PaymentsCard'
+import { QuoteCard } from './components/QuoteCard'
+import { RatingCard } from './components/RatingCard'
+import { StablingClockCard } from './components/StablingClockCard'
+import { RescheduleCard } from './components/RescheduleCard'
+import { useOrderData } from './loaders'
+import { useBookingDelay } from './useBookingDelay'
+import s from './Orders.module.css'
 
-const TripTrackMap = lazy(() => import('@shared/ui/TripTrackMap').then(m => ({ default: m.TripTrackMap })))
-import { HorseFormModal } from '../horses/HorseFormModal'
-import { IncidentsCard, RatingCard } from './TripFeedback'
-import { ClearanceProgressCard } from './ClearanceProgressCard'
-import { ScheduleChangeCard } from './ScheduleChangeCard'
-import { CustomerInsuranceStatusLine, InsuranceRevisionModal } from './InsuranceRevision'
-import { revisionProblem } from './insuranceRevisionRules'
-import { OrderFacts } from './OrderFacts.tsx'
-import type { orderDetailLoader } from './loaders'
-import { POST_PAYMENT, ROUTE_STAGE, ROUTE_VISIBLE, nextStep } from './nextStep'
-import s from './OrderDetail.module.css'
-
-// Chưa đặt cọc: khách rút yêu cầu miễn phí (khớp CustomerBookingRules ở backend)
-const BEFORE_DEPOSIT = new Set(['pending_intake', 'under_review', 'resubmission_requested', 'pending_commercial'])
-
-const TONE: Record<string, string> = { info: s.nextInfo, orange: s.nextOrange, warning: s.nextWarning, danger: s.nextDanger, success: s.nextSuccess, muted: s.nextMuted }
-const placeName = (n: string) => n.split(' — ')[0]
-
-function Progress({ b }: { b: CustomerBookingView }) {
-  const { t } = useTranslation()
-  const at = customerStepOf(b.status)
-  const expired = b.status === 'quote_expired' || b.status === 'rejected'
-  const stepNames = [
-    t('bookingSteps.step1'),
-    t('bookingSteps.step2'),
-    t('bookingSteps.step3'),
-    t('bookingSteps.step4'),
-    t('bookingSteps.step5'),
-    t('bookingSteps.step6'),
-  ]
-  return (
-    <>
-      <p className={s.stepNow2}>{at >= stepNames.length ? t('bookingSteps.completed') : t('bookingSteps.stepNow', { step: at + 1, total: stepNames.length, name: stepNames[at] })}</p>
-      <ol className={s.progress} aria-label={t('bookingSteps.ariaLabel')}>
-        {stepNames.map((label, i) => {
-          const done = i < at
-          const state = done ? s.stepDone : i === at ? (expired ? s.stepStop : s.stepNow) : ''
-          return (
-            <li key={label} className={`${s.stepItem} ${state}`} aria-current={i === at ? 'step' : undefined}>
-              <span className={s.stepNum}>{done ? <i className="fa-solid fa-check" aria-hidden="true" /> : expired && i === at ? <i className="fa-solid fa-xmark" aria-hidden="true" /> : i + 1}</span>
-              <div>{label}</div>
-            </li>
-          )
-        })}
-      </ol>
-    </>
-  )
-}
-
-function Resubmit({ b, owner, onDone }: { b: CustomerBookingView; owner: string; onDone: () => void }) {
-  const { t } = useTranslation()
-  const toast = useToast()
-  const { data: horses, reload } = useLoad(() => horsesApi.list(owner), [owner])
-  const [edit, setEdit] = useState<HorseProfile | null>(null)
-  const [busy, setBusy] = useState(false)
-  const [editingInsurance, setEditingInsurance] = useState<string | null>(null)
-  const [drafts, setDrafts] = useState<Record<string, InsuranceResubmission>>({})
-  const items = b.medical?.status === 'resubmit' ? b.medical?.resubmit?.items ?? [] : []
-  // Bảo hiểm được yêu cầu bổ sung đi chung thẻ Bổ sung hồ sơ, nhưng có tiến độ riêng với hồ sơ y tế
-  const insuranceItems = insuranceBeforeQuote(b.status) ? b.horses.filter(h => insuranceRevisionPending(h.insurance) && h.insurance.option) : []
-  const insuranceMissing = insuranceItems.filter(h => { const d = drafts[h.horseId]; return !d || !!revisionProblem(d, h.insurance.option!) })
-  const send = async () => {
-    if (insuranceMissing.length) { toast(t('insuranceRevision.updateAllFirst', 'Cập nhật bảo hiểm cho {{names}} trước khi gửi.', { names: insuranceMissing.map(h => h.name).join(', ') }), 'error'); return }
-    setBusy(true)
-    try { await customerBookingsApi.resubmit(owner, b.id, insuranceItems.map(h => drafts[h.horseId])); toast(t('orderDetail.resubmitSuccess')); onDone() } catch (e) { toast(e instanceof Error ? e.message : 'Không gửi được', 'error'); setBusy(false) }
-  }
-  const editingHorse = insuranceItems.find(h => h.horseId === editingInsurance)
-  return (
-    <div className="card">
-      <div className="card-header"><h3><i className="fa-solid fa-file-circle-exclamation" /> {t('orderDetail.resubmitTitle')}</h3></div>
-      <div className={s.fix}>
-        {items.map(it => {
-          const h = horses?.find(x => x.id === it.horseId)
-          return (
-            <div key={it.horseId + it.doc} className={s.fixItem}>
-              <span><b>{h?.name ?? it.horseId}</b>: {HORSE_DOC[it.doc].label}</span>
-              {h && <button className="btn btn-primary btn-sm" onClick={() => setEdit(h)}>{t('orderDetail.updateDoc')}</button>}
-            </div>
-          )
-        })}
-        {insuranceItems.map(h => {
-          const draft = drafts[h.horseId]
-          const switched = draft && draft.insurance.option !== h.insurance.option
-          return (
-            <div key={`${h.horseId}-insurance`} className={s.fixItem}>
-              <span>
-                <b>{h.name}</b>: {t('insuranceRevision.itemLabel', 'Bảo hiểm chuyến đi')}
-                <small className="text-muted" style={{ display: 'block' }}>{h.insurance.revisionReason}</small>
-                {draft && <small className="badge badge-success" style={{ marginTop: 4 }}>{switched ? t('insuranceRevision.draftSwitched', 'Đã chọn đổi phương án') : t('insuranceRevision.draftReady', 'Đã cập nhật')}</small>}
-              </span>
-              <button className="btn btn-primary btn-sm" onClick={() => setEditingInsurance(h.horseId)}>{t('insuranceRevision.updateBtn', 'Cập nhật bảo hiểm')}</button>
-            </div>
-          )
-        })}
-      </div>
-      <p className="form-hint" style={{ margin: '12px 0' }}>{t('orderDetail.resubmitHint')}</p>
-      <button className="btn btn-primary" disabled={busy} onClick={send}><i className="fa-solid fa-paper-plane" /> {busy ? t('orderDetail.resubmitSending') : t('orderDetail.resubmitBtn')}</button>
-      {edit && <HorseFormModal owner={owner} horse={edit} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); reload(); toast(t('orderDetail.updateDoc')) }} />}
-      {editingHorse && <InsuranceRevisionModal horseName={editingHorse.name} horseId={editingHorse.horseId}
-        current={{ ...editingHorse.insurance, option: editingHorse.insurance.option! }} draft={drafts[editingHorse.horseId]}
-        onClose={() => setEditingInsurance(null)}
-        onSave={draft => { setDrafts(current => ({ ...current, [draft.horseId]: draft })); setEditingInsurance(null) }} />}
-    </div>
-  )
-}
-
-function PayCard({ b, owner, onDone }: { b: CustomerBookingView; owner: string; onDone: () => void }) {
-  const toast = useToast()
-  const [ok, setOk] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const [rejecting, setRejecting] = useState(false)
-  const [why, setWhy] = useState('')
-  const now = useNow()
-  const expired = now >= b.quote!.expiresAt
-  const confirming = expired && !!b.depositConfirmationUntil && now < b.depositConfirmationUntil
-  // Khách không đồng ý báo giá: đóng đơn (Cancelled), chưa cọc nên miễn phí
-  const reject = async () => {
-    setBusy(true)
-    try { await customerBookingsApi.rejectQuote(owner, b.id, why); toast('Đã từ chối báo giá, đơn được đóng và không mất phí'); onDone() } catch (e) { toast(e instanceof Error ? e.message : 'Không từ chối được', 'error'); setBusy(false) }
-  }
-  const pay = async () => {
-    setBusy(true)
-    // Chuyển sang cổng VNPAY; đơn chỉ được cấp Vận đơn khi VNPAY xác nhận đã nhận tiền
-    try { window.location.assign(await customerBookingsApi.vnpayUrl(b.id, 'DEPOSIT')) } catch (e) { toast(e instanceof Error ? e.message : 'Không tạo được link thanh toán', 'error'); setBusy(false); onDone() }
-  }
-  return (
-    <div className={`card ${s.pay}`}>
-      <div className="card-header"><h3><i className="fa-solid fa-credit-card" /> {confirming ? 'Đang xác nhận thanh toán' : expired ? 'Đã hết hạn đặt cọc' : 'Đặt cọc giữ xe'}</h3></div>
-      {expired && <p role="status" className="form-hint">{confirming ? `Xe và kíp xe được giữ đến ${formatDateTime(b.depositConfirmationUntil!)} để chờ kết quả VNPAY. Không cần thanh toán lại.` : 'Không thể tạo phiên thanh toán mới. Nếu tài khoản đã bị trừ tiền, vui lòng liên hệ nhà xe để đối soát.'}</p>}
-      <div className={s.payAmount}><span>Số tiền cần đặt cọc ({(b.quote!.total > 0 ? Number((b.quote!.deposit / b.quote!.total * 100).toFixed(2)) : DEPOSIT_RATE * 100).toLocaleString('vi-VN')}%)</span><strong>{formatVND(b.quote!.deposit)}</strong></div>
-      {effectiveArrivalOf(b) && (
-        <div className={s.eta} aria-label="Lịch trình dự kiến">
-          <i className="fa-solid fa-flag-checkered" aria-hidden="true" />
-          <div><span>Dự kiến khởi hành</span><b>{formatDateTime(b.route!.legs[0].departAt)}</b></div>
-          <div><span>Dự kiến đến nơi</span><b>{formatDateTime(effectiveArrivalOf(b)!)}</b></div>
-          <small>Thời gian dự kiến theo lộ trình đã duyệt, có thể thay đổi nếu gặp sự cố trên đường.</small>
-        </div>
-      )}
-      <p className="form-hint"><i className="fa-solid fa-shield-halved" /> Thanh toán qua cổng VNPAY bằng thẻ ATM nội địa, Visa/Master hoặc quét QR. Vận đơn được cấp ngay khi VNPAY xác nhận.</p>
-      <p className="form-hint"><PolicyLink doc="transport">Xem điều khoản vận chuyển</PolicyLink></p>
-      <label className={s.ack}><input type="checkbox" checked={ok} onChange={e => setOk(e.target.checked)} /><span>Tôi đã đọc và đồng ý điều khoản vận chuyển, đồng ý đặt cọc {formatVND(b.quote!.deposit)}.</span></label>
-      <button className="btn btn-primary btn-lg btn-full" disabled={!ok || busy || expired} onClick={pay}>{busy ? 'Đang chuyển sang VNPAY…' : 'Thanh toán cọc qua VNPAY'}</button>
-      <button className="btn btn-ghost btn-full" style={{ marginTop: 8 }} disabled={busy || expired} onClick={() => setRejecting(true)}><i className="fa-solid fa-ban" /> Không đồng ý, từ chối báo giá</button>
-      {rejecting && (
-        <Modal onClose={() => setRejecting(false)} title="Từ chối báo giá?" subtitle="Bạn chưa đặt cọc nên không mất phí. Đơn sẽ đóng, xe và nhân sự được nhả cho đơn khác."
-          footer={<><button className="btn btn-ghost" onClick={() => setRejecting(false)}>Xem lại báo giá</button><button className="btn btn-danger" disabled={busy} onClick={reject}>Xác nhận từ chối</button></>}>
-          <div className="form-group" style={{ margin: 0 }}><label htmlFor="rq">Lý do (không bắt buộc)</label><textarea id="rq" className="form-control" rows={3} placeholder="Ví dụ: giá cao hơn dự kiến" value={why} onChange={e => setWhy(e.target.value)} /></div>
-        </Modal>
-      )}
-    </div>
-  )
-}
-
-// Xe và ngựa trên từng xe (PRD mục 10.2): một đơn có thể có nhiều xe
-function TripsCard({ team }: { team: TripTeam[] }) {
-  if (!team.length) return null
-  return (
-    <div className="card">
-      <div className="card-header"><h3><i className="fa-solid fa-truck" /> {team.length > 1 ? `${team.length} xe của đơn` : 'Xe của đơn'}</h3></div>
-      {team.map((t, i) => (
-        <div key={t.tripId} className={s.horseRow}>
-          <div><b>{team.length > 1 ? `Xe ${i + 1}: ` : ''}{t.vehicle.plate}</b> <small>{t.vehicle.kind} · {t.vehicle.stalls} ngăn · mã chuyến {t.tripId}</small></div>
-          <div style={{ textAlign: 'right' }}>Tài xế {t.driver.name} · hộ tống {t.escort.name}</div>
-          <small>Chở: {t.horseNames.join(', ')}</small>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-// Thanh toán 70% còn lại vào ngày bốc ngựa
-function BalanceCard({ b, showAction = true }: { b: CustomerBookingView; showAction?: boolean }) {
-  const toast = useToast()
-  const [busy, setBusy] = useState(false)
-  if (!b.quote || !POST_PAYMENT.includes(b.status)) return null
-  const pay = async () => {
-    setBusy(true)
-    try { window.location.assign(await customerBookingsApi.vnpayUrl(b.id, 'BALANCE')) } catch (e) { toast(e instanceof Error ? e.message : 'Không tạo được link thanh toán', 'error'); setBusy(false) }
-  }
-  const canPay = b.canPayBalance === true
-  return (
-    <div className="card">
-      <div className="card-header"><h3><i className="fa-solid fa-wallet" /> Thanh toán</h3></div>
-      <div className={s.bank}>
-        <div><span>Đặt cọc ({(b.quote.total > 0 ? Number((b.quote.deposit / b.quote.total * 100).toFixed(2)) : DEPOSIT_RATE * 100).toLocaleString('vi-VN')}%)</span><b>{formatVND(b.payment?.amount ?? b.quote.deposit)} · đã trả</b></div>
-        <div><span>Còn lại 70% (ngày bốc ngựa)</span><b>{formatVND(b.quote.balance)}{b.balance ? ' · đã trả' : ''}</b></div>
-      </div>
-      {canPay && showAction && <button className="btn btn-primary btn-lg btn-full" style={{ marginTop: 12 }} disabled={busy} onClick={pay}>{busy ? 'Đang chuyển sang VNPAY…' : `Thanh toán ${formatVND(b.quote.balance)} qua VNPAY`}</button>}
-      {!b.balance && !canPay && showAction && <p className="form-hint" style={{ marginTop: 10 }}>Nút thanh toán sẽ mở khi xe sẵn sàng đón ngựa.</p>}
-    </div>
-  )
-}
-
-// Chính sách chi phí sự cố (PRD mục 11.5): nội dung ở trang riêng
-function IncidentPolicy() {
-  return (
-    <div className="card">
-    </div>
-  )
-}
-
-// Hủy đơn (chỉ sau cọc, trước khi trả 70%): mất cọc. Backend quyết định được hủy hay không và số tiền mất.
-function CancelModal({ b, owner, onClose, onDone }: { b: CustomerBookingView; owner: string; onClose: () => void; onDone: () => void }) {
-  const { t } = useTranslation()
-  const toast = useToast()
-  const [reason, setReason] = useState('')
-  const [busy, setBusy] = useState(false)
-  const penalty = b.cancelPenalty ?? 0
-  const send = async () => {
-    setBusy(true)
-    try { await customerBookingsApi.cancel(owner, b.id, reason); toast('Đã hủy đơn'); onDone() } catch (e) { toast(e instanceof Error ? e.message : 'Không hủy được', 'error'); setBusy(false) }
-  }
-  return (
-    <Modal onClose={onClose} title={t('orderDetail.cancelModalTitle', { id: b.id })} subtitle={t('orderDetail.cancelModalDesc')}
-      footer={<><button className="btn btn-ghost" onClick={onClose}>{t('common.cancel')}</button><button className="btn btn-danger" disabled={busy || !reason.trim()} onClick={send}>{busy ? t('orderDetail.cancelling') : t('orderDetail.confirmCancelBtn')}</button></>}>
-      <div className={s.refundBox}>
-        <div><span>Phí hủy phần cọc vận chuyển</span><b className="text-red">{formatVND(penalty)}</b></div>
-      </div>
-      <div className="form-group" style={{ margin: '14px 0 0' }}><label htmlFor="cr" className="required">Lý do hủy</label><textarea id="cr" className="form-control" rows={3} placeholder={t('orderDetail.cancelReasonPlaceholder')} value={reason} onChange={e => setReason(e.target.value)} /></div>
-    </Modal>
-  )
-}
-
-// Lộ trình đã được Manager duyệt (Flow 3): các chặng, trạm nghỉ, cửa khẩu và nhắc chuẩn bị bản gốc
-function RouteCard({ b }: { b: CustomerBookingView }) {
-  const r = b.route!
-  const adjusted = (b.trips ?? []).filter(trip => trip.incidentRoute)
-  return (
-    <div className="card">
-      <div className="card-header"><h3><i className="fa-solid fa-map-location-dot" /> Lộ trình</h3></div>
-      {adjusted.map(trip => <p key={trip.tripId}><b>Chuyến {trip.tripId} đã đổi tuyến:</b> dự kiến đến {formatDateTime(trip.incidentRoute!.newEta)}.</p>)}
-      {adjusted.length > 0 && <p className="form-hint">Các chặng dưới đây là kế hoạch ban đầu. Tuyến SOS đã duyệt được đánh dấu trên bản đồ theo từng chuyến.</p>}
-      <ol className={s.legList}>
-        {r.legs.map((l, i) => (
-          <li key={l.no}>
-            <div><b>Chặng {l.no}:</b> {restTitle(l.from)} → {restTitle(l.to)}</div>
-            <div className="sub-text">Khởi hành {formatDateTime(l.departAt)} · đến khoảng {formatClock(l.arriveAt)}</div>
-            {r.rests[i] && <div className="sub-text"><i className="fa-solid fa-location-dot" /> {restTitle(r.rests[i].name)}: {restLabel(r.rests[i])}</div>}
-          </li>
-        ))}
-      </ol>
-      {r.borderEta && <p className="form-hint" style={{ marginTop: 10 }}><i className="fa-solid fa-flag" /> Dự kiến tới cửa khẩu {b.gate} lúc {formatDateTime(r.borderEta)}.</p>}
-      <div className="alert alert-info" style={{ marginTop: 14 }}><i className="fa-solid fa-folder-open" /><div><b>Nhắc bàn giao:</b> chuẩn bị sẵn các bản gốc hồ sơ (Hộ chiếu ngựa, Sổ tiêm, Phiếu xét nghiệm) để giao cho tài xế tại điểm đón.</div></div>
-    </div>
-  )
-}
-
-type Tab = 'journey' | 'docs' | 'insurance' | 'pay' | 'history' | 'info'
+// Các lý do khách cần biết khi đơn vốn đổi được nơi giao; loại đơn không áp dụng thì không nhắc tới
+const SHOWN_REASONS = ['BALANCE_PAID', 'DELIVERY_PLANNED', 'LIMIT']
 
 export default function OrderDetailPage() {
-  const { t, i18n } = useTranslation()
-  const tabLabel: Record<Tab, string> = {
-    journey: t('orderDetail.tabs.plan'),
-    docs: t('orderDetail.tabs.docs'),
-    insurance: t('orderDetail.tabs.insurance'),
-    pay: t('orderDetail.tabs.pay'),
-    history: t('orderDetail.tabs.history'),
-    info: t('orderDetail.tabs.info'),
-  }
-  const { id = '' } = useParams()
-  const { session } = useAuth()
-  const owner = session!.name
-  const now = useNow()
-  const { b, reload } = usePageData<typeof orderDetailLoader>()
-  const [cancelling, setCancelling] = useState(false)
-  const [picked, setPicked] = useState<Tab | null>(null)
-  const { data: team = [] } = useLoad(() => customerBookingsApi.team(id), [id, b?.status])
-  const reloadAll = () => reload()
-  // Đang chạy: cập nhật định kỳ để thấy mốc check-in mới
-  const running = ['pending_intake', 'under_review', 'pending_commercial', 'schedule_change_required', 'awaiting_payment', 'en_route_to_pickup', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active'].includes(b?.status ?? '')
-  useEffect(() => { if (running) reload() }, [now, running, reload])
+  const { t } = useTranslation()
+  const data = useOrderData()
+  const { revalidate, state } = useRevalidator()
+  const { hash } = useLocation()
+  const [changingDelivery, setChangingDelivery] = useState(false)
+  const booking = data.detail?.booking
+  const delay = useBookingDelay(data.id)
+  const status = booking?.status
 
-  if (b === undefined) return <div className="page"><div className="wrap"><p className="text-muted">{t('common.loading')}</p></div></div>
-  const trips = b.trips ?? []
-  const next = nextStep(b, now)
-  const hasJourney = trips.some(t => t.run) || (ROUTE_VISIBLE.includes(b.status) && !!b.route) || !!b.incidents?.length
-  const tabs: Tab[] = [...(hasJourney ? ['journey' as const] : []), ...(POST_PAYMENT.includes(b.status) ? ['docs' as const] : []), ...(b.quote ? ['pay' as const] : []), 'insurance', 'history', 'info']
-  // Tab mặc định theo giai đoạn: đang đi đường thì Hành trình, đang làm giấy thì Giấy tờ, còn lại Thanh toán / Thông tin
-  const auto: Tab = ROUTE_STAGE.includes(b.status) ? 'journey' : POST_PAYMENT.includes(b.status) ? 'docs' : b.quote ? 'pay' : 'info'
-  const tab = picked && tabs.includes(picked) ? picked : tabs.includes(auto) ? auto : 'info'
-  const events = [
-    { time: b.createdAt, text: 'Gửi yêu cầu đặt đơn' },
-    ...(b.medical?.status === 'approved' && b.medical.at ? [{ time: b.medical.at, text: 'Duyệt hồ sơ ngựa đạt' }] : []),
-    ...(b.route?.completedAt ? [{ time: b.route.completedAt, text: 'Xác nhận xe và lộ trình' }] : []),
-    ...(b.quote ? [{ time: b.quote.sentAt, text: 'Báo giá được gửi cho bạn' }] : []),
-    ...(b.payment ? [{ time: b.payment.paidAt, text: 'Đặt cọc' }] : []),
-    ...(b.clearance?.doneAt ? [{ time: b.clearance.doneAt, text: 'Hoàn tất giấy kiểm dịch và hải quan' }] : []),
-    ...(b.balance ? [{ time: b.balance.paidAt, text: 'Thanh toán phần còn lại' }] : []),
-  ].sort((x, y) => x.time - y.time)
-  const route = `${placeName(b.origin.name)} → ${placeName(b.dest.name)}`
-  const feedbackOpen = b.status === 'completed'
-  const canPayBalance = b.canPayBalance === true
-  const needResubmit = (b.status === 'under_review' && b.medical?.status === 'resubmit')
-    || (insuranceBeforeQuote(b.status) && b.horses.some(h => insuranceRevisionPending(h.insurance)))
-  const journeyIncidents: JourneyTimelineIncident[] = (b.incidents ?? []).map(incident => ({
-    id: incident.id,
-    tripId: incident.tripId,
-    reportedAt: incident.reportedAt,
-    title: INCIDENT_KIND[incident.kind].label,
-    detail: incident.status === 'resolved'
-      ? (i18n.language === 'en'
-        ? `Resolved at ${formatDateTime(incident.resolvedAt ?? incident.reportedAt)}, transporter resumes route`
-        : `Đã xử lý xong lúc ${formatDateTime(incident.resolvedAt ?? incident.reportedAt)}, xe tiếp tục hành trình`)
-      : incident.status === 'active'
-        ? (i18n.language === 'en'
-          ? `Active emergency plan in progress${incident.newEta ? `, updated ETA ${formatDateTime(incident.newEta)}` : ''}`
-          : `Đang xử lý theo phương án đã duyệt${incident.newEta ? `, thời gian dự kiến mới ${formatDateTime(incident.newEta)}` : ''}`)
-        : (i18n.language === 'en'
-          ? 'Management is formulating a plan. The manager will call you.'
-          : 'Nhà xe đang lập và duyệt phương án, Quản lý sẽ gọi điện cho bạn'),
-  }))
-  const runningTrips = trips.filter(trip => trip.run)
-  const assignedIncidentIds = new Set(runningTrips.flatMap(trip => journeyIncidents
-    .filter(incident => incident.tripId === trip.tripId || (!incident.tripId && runningTrips.length === 1))
-    .map(incident => incident.id)))
-  const unassignedIncidents = (b.incidents ?? []).filter(incident => !assignedIncidentIds.has(incident.id))
+  useEffect(() => {
+    if (hash) document.getElementById(hash.slice(1))?.scrollIntoView({ block: 'start' })
+  }, [data.id, hash, status])
+
+  if (!booking || !status) {
+    return <div className="page"><div className="wrap"><ErrorState onRetry={revalidate} retrying={state !== 'idle'} /></div></div>
+  }
 
   return (
-    <div className="page">
-      <div className="wrap">
-        <div className="breadcrumb"><Link to="/portal">{t('nav.home')}</Link> / <Link to="/orders">{t('orders.title')}</Link> / <span className="text-orange font-semibold">{b.id}</span></div>
-        <div className={`page-header ${s.titleRow}`}><div><h1>{t('orders.orderId')}: {b.id}</h1><p>{route} · {t('orderDetail.departAtLabel', { date: formatDate(b.departAt) })} · {b.horses.length} {t('booking.horsesUnit')}</p></div><BookingStatusBadge status={b.status} labels={b} /></div>
-
-        <div className={s.main}>
-          <Progress b={b} />
-          {b.cancellation?.insuranceCollected ? <div className="alert alert-info">Bảo hiểm thu hộ: {formatVND(b.cancellation.insuranceCollected)}. {b.cancellation.insuranceReconciliationPending ? 'Đang chờ quản lý đối soát riêng với bên thứ ba.' : `Đã đối soát, hoàn khách ${formatVND(b.cancellation.refund)}.`}</div> : null}
-
-          {/* Việc của bạn bây giờ: thẻ nổi + form hành động ngay bên dưới */}
-          <div className={`${s.next} ${TONE[next.tone]}`} role="status">
-            <i className={`fa-solid ${next.icon}`} aria-hidden="true" />
-            <div className={s.nextBody}>
-              <h2>{next.title}</h2>
-              {(next.actionNeeded || b.status === 'rejected' || b.status === 'cancelled') && <p>{next.text}</p>}
-              {b.status === 'rejected' && <Link to="/booking/route" className="btn btn-primary"><i className="fa-solid fa-plus" /> Đặt chuyến mới</Link>}
-              {next.cta && <a href="#viec-cua-ban" className="btn btn-primary" onClick={e => { e.preventDefault(); document.getElementById('viec-cua-ban')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}>{next.cta} <i className="fa-solid fa-arrow-down" /></a>}
-            </div>
-          </div>
-          {(needResubmit || b.status === 'schedule_change_required' || b.status === 'awaiting_payment' || canPayBalance || feedbackOpen) && (
-            <div id="viec-cua-ban" className={s.main}>
-              {b.status === 'schedule_change_required' && <ScheduleChangeCard b={b} onDone={reloadAll} />}
-              {needResubmit && <Resubmit b={b} owner={owner} onDone={reloadAll} />}
-              {b.status === 'awaiting_payment' && b.quote && <PayCard b={b} owner={owner} onDone={reloadAll} />}
-              {canPayBalance && <BalanceCard b={b} />}
-              {feedbackOpen && <RatingCard b={b} owner={owner} onDone={reloadAll} />}
-            </div>
-          )}
-
-          {b.horses.some(h => h.status === 'unfit' || h.status === 'chip_mismatch') && (
-            <div className="card" style={{ borderLeft: '4px solid var(--red, #dc2626)', background: '#fff5f5' }}>
-              <div className="card-header">
-                <h3 style={{ color: 'var(--red, #dc2626)', margin: 0, fontSize: '1.05rem' }}>
-                  <i className="fa-solid fa-triangle-exclamation" /> Thông báo an sinh ngựa tại điểm đón
-                </h3>
-              </div>
-              <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
-                {b.horses.filter(h => h.status === 'unfit' || h.status === 'chip_mismatch').map(h => (
-                  <div key={h.horseId} style={{ fontSize: '0.92rem', padding: '6px 0', borderBottom: '1px dashed var(--line, #e2e8f0)' }}>
-                    <p style={{ margin: '0 0 4px', fontWeight: 600 }}>
-                      Cá thể <b>{h.name}</b> (Microchip: {h.microchip}) không thể khởi hành do: <span style={{ color: 'var(--red, #dc2626)' }}>{h.unfitInfo?.reason ?? 'Sốt/Ốm'}</span>
-                      {h.unfitInfo?.chipRead ? ` (chip đọc được: ${h.unfitInfo.chipRead})` : ''}
-                      {h.unfitInfo?.temperature ? ` (Thân nhiệt: ${h.unfitInfo.temperature}°C)` : ''}
-                    </p>
-                    {h.unfitInfo?.symptoms && <p className="sub-text" style={{ margin: '0 0 4px' }}>Triệu chứng: {h.unfitInfo.symptoms}</p>}
-                    {h.unfitInfo?.discountAmount ? (
-                      <p style={{ margin: 0, color: 'var(--green, #16a34a)', fontWeight: 600 }}>
-                        <i className="fa-solid fa-circle-check" /> Khoản chi phí đã được giảm trừ cho bạn: {formatVND(h.unfitInfo.discountAmount)}
-                      </p>
-                    ) : null}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className={s.tabs} role="tablist" aria-label={t('orderDetail.tabs.info')}>
-            {tabs.map(k => <button key={k} role="tab" aria-selected={tab === k} className={`${s.tab} ${tab === k ? s.tabOn : ''}`} onClick={() => setPicked(k)}>{tabLabel[k]}</button>)}
-          </div>
-
-          {tab === 'journey' && (
-            <>
-              {runningTrips.length > 0 && (
-                <div className="card">
-                  <div className="card-header"><h3><i className="fa-solid fa-location-dot" /> Hành trình</h3>{b.status === 'in_transit' && <span className="badge badge-info">Đang chạy</span>}</div>
-                  {runningTrips.map((t, i) => (
-                    <div key={t.tripId}>
-                      {trips.length > 1 && <p className="form-hint" style={{ margin: '8px 0' }}><b>Xe {trips.indexOf(t) + 1}</b> · {t.tripId}</p>}
-                      <TripTimeline
-                        trip={t}
-                        now={now}
-                        incidents={journeyIncidents.filter(incident => incident.tripId === t.tripId || (!incident.tripId && runningTrips.length === 1))}
-                      />
-                      {i < runningTrips.length - 1 && <hr style={{ margin: '14px 0' }} />}
-                    </div>
-                  ))}
-                </div>
-              )}
-              {trips.length > 0 && b.route && (ROUTE_VISIBLE.includes(b.status) || trips.some(t => t.run)) && (
-                <div className="card">
-                  <div className="card-header"><h3><i className="fa-solid fa-map-location-dot" /> {t('orderDetail.trackingMap')}</h3></div>
-                  <Suspense fallback={<div style={{ padding: 32, textAlign: 'center', color: 'var(--muted)' }}><i className="fa-solid fa-spinner fa-spin" /> {t('orderDetail.mapLoading')}</div>}>
-                    <TripTrackMap b={b} trips={trips} />
-                  </Suspense>
-                </div>
-              )}
-              <IncidentsCard incidents={unassignedIncidents} />
-              {ROUTE_VISIBLE.includes(b.status) && b.route && <RouteCard b={b} />}
-              <TripsCard team={team} />
-            </>
-          )}
-
-          {tab === 'docs' && <ClearanceProgressCard b={b} />}
-          {tab === 'insurance' && <div className="card"><div className="card-header"><h3>{b.payment ? t('insuranceRevision.tabTitlePolicy', 'Thông tin bảo hiểm và hợp đồng') : t('insuranceRevision.tabTitleQuote', 'Lựa chọn và báo giá bảo hiểm')}</h3></div>{b.horses.map(h => <section key={h.horseId} style={{ padding: 20 }}><h4>{h.name}</h4><CustomerInsuranceStatusLine status={b.status} insurance={h.insurance} hasQuote={!!b.quote} /><InsuranceSummary insurance={h.insurance} phase={b.payment ? 'all' : 'quote'} /></section>)}</div>}
-
-          {tab === 'pay' && (
-            <>
-              {POST_PAYMENT.includes(b.status) && <BalanceCard b={b} showAction={false} />}
-
-              {b.quote && (
-                <div className="card">
-                  <div className="card-header"><h3><i className="fa-solid fa-file-invoice-dollar" /> Báo giá</h3></div>
-                  {b.quote.insuranceSnapshot?.map(h => <div key={h.horseId}><b>{h.name}</b><InsuranceSummary insurance={h.insurance} phase="quote" /></div>)}
-                  <QuoteSheet
-                    {...b.quote}
-                    bookingCode={b.id}
-                    waybillNo={b.waybill?.no}
-                    paymentRef={b.payment?.reference}
-                    consignor={b.consignor}
-                    consignee={b.consignee}
-                    routeDetails={{
-                      originName: b.origin.name,
-                      destName: b.dest.name,
-                      departAt: b.departAt,
-                    }}
-                    invoiceDate={b.quote.sentAt || b.createdAt}
-                    expiresAt={b.status === 'awaiting_payment' ? b.quote.expiresAt : undefined}
-                    showCalculation
-                  />
-                </div>
-              )}
-              <IncidentPolicy />
-            </>
-          )}
-
-          {tab === 'history' && (
-            <>
-              <div className="card">
-                <div className="card-header"><h3><i className="fa-solid fa-clock-rotate-left" /> Lịch sử đơn</h3></div>
-                <ol className={s.timeline}>
-                  {events.map(e => <li key={e.time + e.text} className={s.tl}><span className={s.tlDot}><i className="fa-solid fa-check" aria-hidden="true" /></span><div>{e.text}<div className={s.tlTime}>{formatDateTime(e.time)}</div></div></li>)}
-                </ol>
-              </div>
-            </>
-          )}
-
-          {tab === 'info' && (
-            <>
-              <OrderFacts b={b} team={team} />
-              {b.canCancel && (
-                <div className="card">
-                  <div className="card-header">
-                    <h3><i className="fa-solid fa-circle-info" /> {t('orderDetail.cancelCardTitle')}</h3>
-                    <button className="btn btn-danger btn-sm" onClick={() => setCancelling(true)}>
-                      <i className="fa-solid fa-ban" /> {t('orderDetail.cancelBtn')}
-                    </button>
-                  </div>
-                  <p className="form-hint">{BEFORE_DEPOSIT.has(b.status) ? t('orderDetail.withdrawNotice') : t('orderDetail.cancelNotice')}</p>
-                </div>
-              )}
-            </>
-          )}
+    <div className="page"><div className="wrap">
+      <div className="breadcrumb"><Link to="/orders">{t('myOrders.title')}</Link> / <span>{booking.code}</span></div>
+      <header className={s.heading}>
+        <div>
+          <div className={s.row}><PageTitle><PageTitleCode>{booking.code}</PageTitleCode></PageTitle><OrderStatusBadge status={status} /><PrivateVehicleBadge mode={booking.transportMode} /></div>
+          {booking.waybillNumber && <p>{t('myOrders.waybill', { code: booking.waybillNumber })}</p>}
         </div>
-      </div>
-      {cancelling && <CancelModal b={b} owner={owner} onClose={() => setCancelling(false)} onDone={() => { setCancelling(false); reloadAll() }} />}
-    </div>
+      </header>
+      <DetailColumns actions={<>
+        <NextStepBanner data={data} />
+        {data.detail?.canChangeDelivery && (
+          <Button onClick={() => setChangingDelivery(true)}>{t('myOrders.deliveryChange.title')}</Button>
+        )}
+        {data.detail?.deliveryChangeDisabledReason && SHOWN_REASONS.includes(data.detail.deliveryChangeDisabledReason) && (
+          <p className={s.hint}>{t(`myOrders.deliveryChange.reasons.${data.detail.deliveryChangeDisabledReason}`)}</p>
+        )}
+        {changingDelivery && data.detail && <DeliveryChangeDialog id={data.id} detail={data.detail}
+          onClose={() => setChangingDelivery(false)} onChanged={revalidate} />}
+        {!delay.data?.requiresManagerContact && (CANCELLABLE.includes(status) || delay.data?.canRefundFull) && (
+          <CancelOrder bookingId={data.id} refund={delay.data?.canRefundFull ? {
+            preview: delay.refundPreview,
+            submit: async reason => { await delay.refund(reason); await delay.reload() },
+          } : undefined} />
+        )}
+      </>} info={<OrderInfo data={data} />}>
+        <BookingDelayCard delay={delay.data} loaded={delay.loaded} error={delay.error?.message} onRetry={delay.reload} />
+        <PickupMissPanel bookingId={data.id} mode="customer" onChanged={revalidate} />
+        {(status === 'IN_OPERATION' || data.detail?.balanceHoldAt) && <StablingClockCard bookingId={data.id} onChanged={revalidate} />}
+        {data.detail?.balanceHoldAt && (
+          <Card title={t('myOrders.balanceHold.title')}>
+            <p>{t('myOrders.balanceHold.since', { at: formatDateTime(new Date(data.detail.balanceHoldAt)) })}</p>
+            <p>{t(status === 'CANCELLED' ? 'myOrders.balanceHold.cancelled' : 'myOrders.balanceHold.options')}</p>
+          </Card>
+        )}
+        {(status === 'SCHEDULE_CHANGE_REQUIRED' || delay.data?.canRescheduleFree) && (
+          <section id="reschedule" className={s.section}>
+            <RescheduleCard key={data.id} data={data} excludeDepartureId={delay.data?.departureId}
+              reschedule={delay.data?.canRescheduleFree ? async body => {
+                await delay.reschedule(body)
+                await delay.reload()
+              } : undefined} />
+          </section>
+        )}
+        <section id="quote" className={s.section}><QuoteCard data={data} /></section>
+        <section id="payments" className={s.section}><PaymentsCard data={data} /></section>
+        {(HAS_JOURNEY.includes(status) || data.detail?.balanceHoldAt)
+          && <Card title={t('myOrders.journey')}><BookingJourney bookingId={data.id} /></Card>}
+        {HAS_JOURNEY.includes(status) && <IncidentDecisionsCard bookingId={data.id} />}
+        <InsuranceCard data={data} />
+        <section id="documents" className={s.section}><DocumentsCard data={data} /></section>
+        {status === 'IN_OPERATION' && <CollectionCodeCard bookingId={data.id} />}
+        {(status === 'DELIVERED' || status === 'COMPLETED') && (
+          <DeliveryComplaintCard key={data.id} bookingId={data.id} horses={data.detail?.horses ?? []} />
+        )}
+        {RATEABLE.includes(status) && data.detail?.rated === false && <section id="rating" className={s.section}><RatingCard bookingId={data.id} /></section>}
+      </DetailColumns>
+    </div></div>
   )
 }

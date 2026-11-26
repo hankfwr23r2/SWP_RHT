@@ -38,16 +38,16 @@ class CustomerDtoTest {
         country.setCode("VN");
         var province = new Province();
         province.setCode("VN-79");
-        var request = new CustomerAddressCreateRequestDto(" Home ", " Address ", null, "VN-79", "VN", null, null, true);
+        var request = new CustomerAddressCreateRequestDto(" Home ", " Address ", "Phường Bến Nghé", "VN-79", "VN", null, null, true);
         var address = request.toEntity(customer, country, province);
         assertThat(address.getId()).isNull();
         assertThat(address.getDefaultAddress()).isFalse();
         address.setId(9L);
         address.setDefaultAddress(true);
-        new CustomerAddressUpdateRequestDto(" Farm ", "New address", null, "VN-79", "VN", null, null, false)
+        new CustomerAddressUpdateRequestDto(" Farm ", "New address", "Phường Bến Nghé", "VN-79", "VN", null, null, false)
                 .applyTo(address, country, province);
         assertThat(address.getCustomer()).isSameAs(customer);
         assertThat(CustomerAddressResponseDto.from(address)).isEqualTo(
-                new CustomerAddressResponseDto(9L, "Farm", "New address", null, "VN-79", "VN", null, null, true));
+                new CustomerAddressResponseDto(9L, "Farm", "New address", "Phường Bến Nghé", "VN-79", "VN", null, null, true));
     }
 }

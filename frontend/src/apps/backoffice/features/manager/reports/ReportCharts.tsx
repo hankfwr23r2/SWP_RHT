@@ -1,8 +1,10 @@
-// Hai biểu đồ SVG của báo cáo: đường + vùng (doanh thu, chi phí theo ngày) và cột (số chuyến hoàn thành theo ngày).
+// Biểu đồ SVG của báo cáo doanh thu: đường + vùng (doanh thu, chi phí theo ngày hoặc theo tuần).
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { DayPoint } from '@shared/lib/report'
 import s from './Reports.module.css'
+
+// Một điểm trên biểu đồ: một ngày, hoặc một tuần khi kỳ dài hơn 31 ngày
+export interface DayPoint { label: string; at: number; revenue: number; cost: number }
 
 const H = 260, PAD = { l: 52, r: 12, t: 14, b: 28 }
 const nice = (max: number) => { if (max <= 0) return 1; const p = 10 ** Math.floor(Math.log10(max)); return Math.ceil(max / p) * p }
@@ -17,11 +19,12 @@ function Frame({ pts, max, min = 0, fmt, children, hover, setHover, tip, W = 640
       <svg viewBox={`0 0 ${W} ${H}`} role="img">
         {[0, 0.25, 0.5, 0.75, 1].map(t => { const value = min + (max - min) * t; return <g key={t}><line x1={PAD.l} x2={W - PAD.r} y1={y(value)} y2={y(value)} /><text x={PAD.l - 8} y={y(value) + 4} textAnchor="end">{fmt(value)}</text></g> })}
         {min < 0 && <line x1={PAD.l} x2={W - PAD.r} y1={y(0)} y2={y(0)} strokeDasharray="3 3" />}
-        {hover !== null && <rect x={PAD.l + step * hover} y={PAD.t} width={step} height={plotH} fill="#1d5fa8" opacity={0.07} />}
+        {hover !== null && <rect x={PAD.l + step * hover} y={PAD.t} width={step} height={plotH} className={s.hoverBand} />}
         {children(x, y, step)}
         {pts.map((p, i) => i % every === 0 && <text key={p.at} x={x(i)} y={H - 8} textAnchor="middle">{p.label}</text>)}
         {pts.map((p, i) => <rect key={'h' + p.at} x={PAD.l + step * i} y={PAD.t} width={step} height={plotH} fill="transparent" onMouseEnter={() => setHover(i)} />)}
       </svg>
+      {/* check-style: dynamic khung số liệu đặt theo cột đang trỏ */}
       {hover !== null && <div className={s.tip} style={{ left: `${(x(hover) / W) * 100}%` }}>{tip(pts[hover])}</div>}
     </div>
   )
@@ -40,24 +43,13 @@ export function MoneyChart({ pts }: { pts: DayPoint[] }) {
         const line = (k: 'revenue' | 'cost') => pts.map((p, i) => `${i ? 'L' : 'M'} ${x(i)} ${y(p[k])}`).join(' ')
         return (
           <>
-            <path d={`${line('revenue')} L ${x(pts.length - 1)} ${y(0)} L ${x(0)} ${y(0)} Z`} fill="#1d5fa8" opacity={0.12} />
-            <path d={line('revenue')} fill="none" stroke="#1d5fa8" strokeWidth={2.5} strokeLinejoin="round" />
-            <path d={line('cost')} fill="none" stroke="#eb6834" strokeWidth={2.5} strokeLinejoin="round" strokeDasharray="5 4" />
-            {hover !== null && <><circle cx={x(hover)} cy={y(pts[hover].revenue)} r={4.5} fill="#1d5fa8" stroke="#fff" strokeWidth={2} /><circle cx={x(hover)} cy={y(pts[hover].cost)} r={4.5} fill="#eb6834" stroke="#fff" strokeWidth={2} /></>}
+            <path d={`${line('revenue')} L ${x(pts.length - 1)} ${y(0)} L ${x(0)} ${y(0)} Z`} className={s.revenueArea} />
+            <path d={line('revenue')} className={s.revenueLine} />
+            <path d={line('cost')} className={s.costLine} />
+            {hover !== null && <><circle cx={x(hover)} cy={y(pts[hover].revenue)} r={4.5} className={`${s.dot} ${s.revenueDot}`} /><circle cx={x(hover)} cy={y(pts[hover].cost)} r={4.5} className={`${s.dot} ${s.costDot}`} /></>}
           </>
         )
       }}
-    </Frame>
-  )
-}
-
-export function TripsChart({ pts }: { pts: DayPoint[] }) {
-  const [hover, setHover] = useState<number | null>(null)
-  const max = Math.max(4, nice(Math.max(...pts.map(p => p.trips), 0)))
-  if (!pts.some(p => p.trips)) return <div className={s.empty}>Chưa có chuyến nào giao xong trong khoảng này.</div>
-  return (
-    <Frame W={380} pts={pts} max={max} fmt={v => String(Math.round(v))} hover={hover} setHover={setHover} tip={p => <><b>{p.label}</b><div><span>Chuyến hoàn thành</span><span>{p.trips}</span></div></>}>
-      {(x, y, step) => pts.map((p, i) => { const bw = Math.min(26, step * 0.6); return <rect key={p.at} x={x(i) - bw / 2} y={y(p.trips)} width={bw} height={y(0) - y(p.trips)} rx={4} fill="#1d5fa8" opacity={hover === i ? 1 : 0.85} /> })}
     </Frame>
   )
 }

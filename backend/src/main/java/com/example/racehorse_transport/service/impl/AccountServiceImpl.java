@@ -2,6 +2,7 @@ package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.dto.account.StaffAccountCreateRequestDto;
 import com.example.racehorse_transport.dto.account.StaffAccountResponseDto;
+import com.example.racehorse_transport.dto.account.StaffAccountStatusRequestDto;
 import com.example.racehorse_transport.dto.account.StaffAccountUpdateRequestDto;
 import com.example.racehorse_transport.entity.Location;
 import com.example.racehorse_transport.entity.enums.AppUserStatus;
@@ -14,12 +15,16 @@ import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.repository.RoleRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.service.AccountService;
+import com.example.racehorse_transport.service.BookingAssignmentService;
+import com.example.racehorse_transport.service.AuditService;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +41,8 @@ public class AccountServiceImpl implements AccountService {
     private final RoleRepository roles;
     private final LocationRepository locations;
     private final PasswordEncoder passwordEncoder;
+    private final AuditService audit;
+    private final BookingAssignmentService assignments;
 
     @Override
     @Transactional(readOnly = true)
@@ -58,7 +65,7 @@ public class AccountServiceImpl implements AccountService {
         StaffAccountPolicy.requirePasswordFitsBcrypt(request.password());
         var role = roles.findById(roleCode)
                 .orElseThrow(() -> new AccountRuleException("Vai trò nhân viên không hợp lệ."));
-        var hub = headquarters(request.homeHubLocationId());
+        var hub = homeHub(request.homeHubLocationId());
         var user = request.toAccount();
         user.setRole(role);
         user.setStatus(AppUserStatus.ACTIVE);
@@ -84,7 +91,14 @@ public class AccountServiceImpl implements AccountService {
         var profile = staff.findForUpdate(id).orElseThrow(this::missingStaff);
         StaffAccountPolicy.requireValidLicense(profile.getUser().getRole().getCode(),
                 request.driverLicenseClass(), request.driverLicenseExpiryDate());
-        request.applyTo(profile, headquarters(request.homeHubLocationId()));
+        var nextEmploymentStatus = request.employmentStatus();
+        if (nextEmploymentStatus != null && nextEmploymentStatus != profile.getEmploymentStatus()) {
+            if (nextEmploymentStatus != EmploymentStatus.ACTIVE) {
+                assignments.requireNoWork(profile);
+            }
+            profile.setEmploymentStatus(nextEmploymentStatus);
+        }
+        request.applyTo(profile, homeHub(request.homeHubLocationId()));
         try {
             staff.flush();
         } catch (DataIntegrityViolationException ex) {
@@ -93,10 +107,40 @@ public class AccountServiceImpl implements AccountService {
         return StaffAccountResponseDto.from(profile);
     }
 
-    private Location headquarters(Long id) {
+    @Override
+    @Transactional
+    public StaffAccountResponseDto lockStaffAccount(Long id, String username, StaffAccountStatusRequestDto request) {
+        return changeStatus(id, username, request, AppUserStatus.LOCKED, "LOCK_STAFF_ACCOUNT");
+    }
+
+    @Override
+    @Transactional
+    public StaffAccountResponseDto unlockStaffAccount(Long id, String username, StaffAccountStatusRequestDto request) {
+        return changeStatus(id, username, request, AppUserStatus.ACTIVE, "UNLOCK_STAFF_ACCOUNT");
+    }
+
+    private StaffAccountResponseDto changeStatus(Long id, String username, StaffAccountStatusRequestDto request,
+                                                 AppUserStatus next, String action) {
+        var actor = users.findByUsername(username)
+                .filter(user -> user.getStatus() == AppUserStatus.ACTIVE && "ADMIN".equals(user.getRole().getCode()))
+                .orElseThrow(() -> new AccessDeniedException("Chỉ quản trị viên được khóa tài khoản."));
+        var profile = staff.findForUpdate(id).orElseThrow(this::missingStaff);
+        var user = profile.getUser();
+        AppUserStatus previous = user.getStatus();
+        StaffAccountPolicy.requireStatusTransition(previous, next, actor.getId().equals(user.getId()));
+        if (next == AppUserStatus.LOCKED) {
+            assignments.requireNoWork(profile);
+        }
+        user.setStatus(next);
+        audit.record(actor.getId(), action, "app_user", user.getId(), Map.of("status", previous),
+                Map.of("status", next, "reason", request.reason().strip()));
+        return StaffAccountResponseDto.from(profile);
+    }
+
+    private Location homeHub(Long id) {
         Location hub = locations.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy địa điểm."));
-        StaffAccountPolicy.requireHeadquarters(hub.getLocationType(), hub.isHeadquarters());
+        StaffAccountPolicy.requireHomeHub(hub.getLocationType());
         return hub;
     }
 

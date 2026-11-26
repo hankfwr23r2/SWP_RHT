@@ -1,8 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
-import { ROLE_LABEL } from '@shared/types/role'
+import { ROLE_LABEL } from '@shared/auth/role'
+import { Button } from '@shared/ui/Button'
+import { Card } from '@shared/ui/Card'
 import { ChangePasswordModal } from '@shared/ui/ChangePasswordModal'
+import { ProfileHeader } from '@shared/ui/ProfileHeader'
 import s from './StaffProfilePage.module.css'
 
 export default function StaffProfilePage() {
@@ -14,27 +17,19 @@ export default function StaffProfilePage() {
 
   return (
     <div className={s.page}>
-      <header className={s.heading}>
-        <div>
-          <h1>{t('staffProfile.pageTitle', 'Hồ sơ nhân viên')}</h1>
-          <p>{t('staffProfile.pageSubtitle', 'Thông tin tài khoản và bảo mật của bạn.')}</p>
-        </div>
-        <button type="button" className="btn btn-primary" onClick={() => setChangingPassword(true)}>
-          <i className="fa-solid fa-key" /> {t('staffProfile.changePassword', 'Đổi mật khẩu')}
-        </button>
-      </header>
-
-      <section className={s.card} aria-labelledby="profile-info-title">
-        <h2 id="profile-info-title">{t('staffProfile.accountInfo', 'Thông tin tài khoản')}</h2>
+      <ProfileHeader name={session.name} detail={session.username} role={t(`roles.${session.role}`, ROLE_LABEL[session.role])}
+        facts={[{ label: t('staffProfile.staffCode'), value: session.staffCode || t('staffProfile.noStaffCode') }]}>
+        <Button variant="primary" icon={<i className="fa-solid fa-key" />} onClick={() => setChangingPassword(true)}>
+          {t('staffProfile.changePassword')}
+        </Button>
+      </ProfileHeader>
+      <Card title={t('staffProfile.accountInfo')}>
         <dl className={s.details}>
-          <div><dt>{t('staffProfile.fullName', 'Họ và tên')}</dt><dd>{session.name}</dd></div>
-          <div><dt>{t('staffProfile.username', 'Email / tên đăng nhập')}</dt><dd>{session.username}</dd></div>
-          <div><dt>{t('staffProfile.staffCode', 'Mã nhân viên')}</dt><dd>{session.staffCode || t('staffProfile.noStaffCode', 'Chưa có mã nhân viên')}</dd></div>
-          <div><dt>{t('staffProfile.role', 'Vai trò')}</dt><dd>{t(`roles.${session.role}`, ROLE_LABEL[session.role])}</dd></div>
+          <div><dt>{t('staffProfile.fullName')}</dt><dd>{session.name}</dd></div>
+          <div><dt>{t('staffProfile.username')}</dt><dd>{session.username}</dd></div>
         </dl>
-        <p className={s.note}>{t('staffProfile.managedByAdminNote', 'Thông tin tài khoản do quản trị viên quản lý. Bạn có thể tự thay đổi mật khẩu.')}</p>
-      </section>
-
+        <p className={s.note}>{t('staffProfile.managedByAdminNote')}</p>
+      </Card>
       {changingPassword && <ChangePasswordModal onClose={() => setChangingPassword(false)} />}
     </div>
   )

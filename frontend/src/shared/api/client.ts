@@ -165,7 +165,7 @@ apiClient.interceptors.response.use(
       if (data?.data && typeof data.data === 'object' && !Array.isArray(data.data)) {
         const details = Object.entries(data.data)
           .map(([, val]) => (typeof val === 'string' ? val : JSON.stringify(val)))
-          .filter(Boolean)
+          .filter(detail => detail && detail !== serverMessage)
         if (details.length > 0) {
           serverMessage = `${serverMessage}: ${details.join(', ')}`
         }

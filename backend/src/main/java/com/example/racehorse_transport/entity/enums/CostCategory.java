@@ -9,5 +9,7 @@ public enum CostCategory {
     RESCUE,
     REPAIR,
     WAITING,
+    REDELIVERY,
+    PLANNED_STABLING,
     OTHER
 }
