@@ -9610,6 +9610,16 @@
             "format" : "date-time",
             "type" : "string"
           },
+          "returnExpectedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "returnLate" : {
+            "type" : "boolean"
+          },
+          "returning" : {
+            "type" : "boolean"
+          },
           "startLocationName" : {
             "type" : "string"
           },
@@ -9626,6 +9636,16 @@
             "type" : "string"
           }
         },
+        "type" : "object"
+      },
+      "TripReturnPhotoRequestDto" : {
+        "properties" : {
+          "file" : {
+            "format" : "binary",
+            "type" : "string"
+          }
+        },
+        "required" : [ "file" ],
         "type" : "object"
       },
       "TripStartRequestDto" : {
@@ -9956,6 +9976,19 @@
           "plannedStartAt" : {
             "format" : "date-time",
             "type" : "string"
+          },
+          "returnExpectedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "returnLate" : {
+            "type" : "boolean"
+          },
+          "returnPhotoAttached" : {
+            "type" : "boolean"
+          },
+          "returning" : {
+            "type" : "boolean"
           },
           "routeCode" : {
             "type" : "string"
@@ -19668,6 +19701,42 @@
           }
         },
         "tags" : [ "incident-controller" ]
+      }
+    },
+    "/vehicle-trips/{id}/return-photo" : {
+      "post" : {
+        "operationId" : "returnPhoto",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TripReturnPhotoRequestDto"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCrewTripResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "trip-execution-controller" ]
       }
     },
     "/vehicle-trips/{id}/stall-plan" : {

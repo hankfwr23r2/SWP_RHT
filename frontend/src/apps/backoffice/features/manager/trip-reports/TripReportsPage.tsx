@@ -12,6 +12,7 @@ import { Input } from '@shared/ui/Input'
 import { PageHeader } from '@shared/ui/PageHeader'
 import { Skeleton } from '@shared/ui/Skeleton'
 import { Table, type TableColumn } from '@shared/ui/Table'
+import { TripReturnDetails } from '@backoffice/shared/TripReturnDetails'
 import { SummaryCards } from './SummaryCards'
 import { TripReportModal } from './TripReportModal'
 import s from './TripReports.module.css'
@@ -40,7 +41,10 @@ export default function TripReportsPage() {
     { key: 'type', header: t('opsReport.colType'), render: r => t(`tripWords.type.${r.tripType}`) },
     { key: 'vehicle', header: t('opsReport.colVehicle'), render: r => r.licensePlate },
     { key: 'start', header: t('opsReport.colStart'), render: r => (r.plannedStartAt ? formatDateTime(new Date(r.plannedStartAt)) : '') },
-    { key: 'status', header: t('opsReport.colStatus'), render: r => t(`tripWords.status.${r.status}`) },
+    { key: 'status', header: t('opsReport.colStatus'), render: r => <>
+      {!r.returning && t(`tripWords.status.${r.status}`)}
+      <TripReturnDetails trip={r} />
+    </> },
     { key: 'onTime', header: t('opsReport.colLate'), render: r => t('opsReport.lateOf', { late: r.lateStopCount, arrived: r.arrivedStopCount }) },
     { key: 'horses', header: t('opsReport.colHorses'), render: r => r.horseCount },
     { key: 'incidents', header: t('opsReport.colIncidents'), render: r => r.incidentCount },

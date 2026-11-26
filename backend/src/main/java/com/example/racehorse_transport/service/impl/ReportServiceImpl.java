@@ -23,6 +23,8 @@ import com.example.racehorse_transport.entity.enums.IncidentStatus;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.ReportPolicy;
+import com.example.racehorse_transport.policy.TripReturnPolicy;
+import com.example.racehorse_transport.policy.TripReturnPolicy.Progress;
 import com.example.racehorse_transport.repository.BookingRatingRepository;
 import com.example.racehorse_transport.repository.CostItemRepository;
 import com.example.racehorse_transport.repository.HorseHealthLogRepository;
@@ -31,6 +33,7 @@ import com.example.racehorse_transport.repository.IncidentRepository;
 import com.example.racehorse_transport.repository.TripStopRepository;
 import com.example.racehorse_transport.repository.VehicleTripRepository;
 import com.example.racehorse_transport.service.ReportService;
+import com.example.racehorse_transport.service.TripReturnService;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Collection;
@@ -57,6 +60,7 @@ public class ReportServiceImpl implements ReportService {
     private final CostItemRepository costs;
     private final BookingRatingRepository ratings;
     private final HorseHealthLogRepository healthLogs;
+    private final TripReturnService returns;
 
     // Dữ liệu của các lượt xe trong báo cáo, gom theo lượt xe
     private record Facts(List<VehicleTrip> trips, Map<Long, List<TripStop>> stops, Map<Long, List<HorseLeg>> legs,
@@ -76,7 +80,8 @@ public class ReportServiceImpl implements ReportService {
     @Transactional(readOnly = true)
     public List<TripReportRowResponseDto> trips(Instant from, Instant to) {
         Facts facts = load(inRange(from, to));
-        return facts.trips().stream().map(trip -> row(trip, facts)).toList();
+        var progress = returns.progress(facts.trips(), facts.stops());
+        return facts.trips().stream().map(trip -> row(trip, facts, progress.getOrDefault(trip.getId(), TripReturnPolicy.NOT_RETURNING))).toList();
     }
 
     @Override
@@ -86,7 +91,8 @@ public class ReportServiceImpl implements ReportService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lượt xe " + vehicleTripId));
         Facts facts = load(List.of(trip));
         List<HorseLeg> tripLegs = facts.of(facts.legs(), trip);
-        return new TripReportResponseDto(row(trip, facts),
+        var progress = returns.progress(facts.trips(), facts.stops()).getOrDefault(trip.getId(), TripReturnPolicy.NOT_RETURNING);
+        return new TripReportResponseDto(row(trip, facts, progress),
                 facts.of(facts.stops(), trip).stream().map(stop -> new ReportStopDto(stop.getSequenceNumber(), stop.getStopType(), nameOf(stop),
                         stop.getPlannedArrivalAt(), stop.getActualArrivalAt(), stop.getActualDepartureAt(),
                         ReportPolicy.isLate(stop.getPlannedArrivalAt(), stop.getActualArrivalAt()))).toList(),
@@ -104,7 +110,7 @@ public class ReportServiceImpl implements ReportService {
     @Transactional(readOnly = true)
     public OperationsSummaryResponseDto summary(Instant from, Instant to) {
         Facts facts = load(inRange(from, to));
-        List<TripReportRowResponseDto> rows = facts.trips().stream().map(trip -> row(trip, facts)).toList();
+        List<TripReportRowResponseDto> rows = facts.trips().stream().map(trip -> row(trip, facts, TripReturnPolicy.NOT_RETURNING)).toList();
         List<Incident> allIncidents = facts.incidents().values().stream().flatMap(List::stream).toList();
         List<CostItem> allCosts = facts.costs().values().stream().flatMap(List::stream).distinct().toList();
         List<BookingRating> allRatings = facts.ratingsOf(facts.legs().values().stream().flatMap(List::stream).toList());
@@ -142,7 +148,7 @@ public class ReportServiceImpl implements ReportService {
                 bookingIds.isEmpty() ? Map.of() : ratings.findByBookingIdIn(bookingIds).stream().collect(Collectors.toMap(BookingRating::getBookingId, r -> r)));
     }
 
-    private static TripReportRowResponseDto row(VehicleTrip trip, Facts facts) {
+    private static TripReportRowResponseDto row(VehicleTrip trip, Facts facts, Progress progress) {
         List<TripStop> tripStops = facts.of(facts.stops(), trip);
         List<HorseLeg> tripLegs = facts.of(facts.legs(), trip);
         int arrived = (int) tripStops.stream().filter(stop -> stop.getActualArrivalAt() != null).count();
@@ -152,7 +158,7 @@ public class ReportServiceImpl implements ReportService {
         return new TripReportRowResponseDto(trip.getId(), trip.getCode(), trip.getTripType(), trip.getStatus(), trip.getVehicle().getLicensePlate(),
                 trip.getStartLocation().getName(), trip.getEndLocation().getName(), trip.getPlannedStartAt(), trip.getActualStartAt(), trip.getActualEndAt(),
                 tripStops.size(), arrived, late, horses, facts.of(facts.incidents(), trip).size(), sum(facts.of(facts.costs(), trip)),
-                average(facts.ratingsOf(tripLegs)));
+                average(facts.ratingsOf(tripLegs)), progress.returning(), progress.expectedAt(), progress.late());
     }
 
     private static Long tripOf(CostItem cost) {

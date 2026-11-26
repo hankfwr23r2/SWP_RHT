@@ -13,6 +13,7 @@ import { Skeleton } from '@shared/ui/Skeleton'
 import { StatusBadge } from '@shared/ui/StatusBadge'
 import { Table, type TableColumn } from '@shared/ui/Table'
 import { IncidentSeverityBadge } from '@backoffice/shared/IncidentSeverity'
+import { TripReturnDetails } from '@backoffice/shared/TripReturnDetails'
 import s from './Overview.module.css'
 
 const DAY_MS = 86_400_000
@@ -49,7 +50,10 @@ export default function OverviewPage() {
     { key: 'type', header: t('opsReport.colType'), render: r => t(`dispatch.tripType.${r.tripType}`) },
     { key: 'vehicle', header: t('opsReport.colVehicle'), render: r => r.licensePlate },
     { key: 'start', header: t('opsReport.colStart'), render: r => (r.plannedStartAt ? formatDateTime(new Date(r.plannedStartAt)) : '') },
-    { key: 'status', header: t('opsReport.colStatus'), render: r => t(`dispatch.tripStatus.${r.status}`) },
+    { key: 'status', header: t('opsReport.colStatus'), render: r => <>
+      {!r.returning && t(`dispatch.tripStatus.${r.status}`)}
+      <TripReturnDetails trip={r} />
+    </> },
     { key: 'incidents', header: t('opsReport.colIncidents'), render: r => r.incidentCount },
   ]
 

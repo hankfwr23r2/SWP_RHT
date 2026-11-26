@@ -1,11 +1,12 @@
 // Tổ xe thực hiện lượt xe theo điểm dừng (B2). Mọi thao tác trả về lượt xe nhìn từ tổ xe.
 import apiClient, { type ApiResponse } from './client'
 import { formResponseOptions, readFormResponse } from './customerAddresses'
+import type { VehicleTrip } from './dispatch'
 import type { components } from './generated/schema'
 
 type Schemas = components['schemas']
 export type DeliveryRecipient = Schemas['DeliveryRecipientRequestDto']
-export type CrewTrip = Schemas['CrewTripResponseDto']
+export type CrewTrip = Omit<Schemas['CrewTripResponseDto'], 'trip'> & { trip?: VehicleTrip }
 export type Handover = Schemas['HandoverResponseDto']
 export type HandoverScanRequest = Schemas['HandoverScanRequestDto']
 export type HandoverHorse = Schemas['HandoverHorseDto']
@@ -29,6 +30,13 @@ export const tripExecutionApi = {
     post<CrewTrip>(`/vehicle-trips/${tripId}/start`, earlyReason ? { earlyReason } : undefined),
   complete: async (tripId: number, endVehicleCondition: string, endVehicleNote?: string) =>
     readFormResponse<CrewTrip>(await apiClient.post(`/vehicle-trips/${tripId}/complete`, { endVehicleCondition, endVehicleNote }, formResponseOptions)),
+  uploadReturnPhoto: async (tripId: number, file: File) => {
+    const body = new FormData()
+    body.append('file', file)
+    return readFormResponse<CrewTrip>(await apiClient.post(`/vehicle-trips/${tripId}/return-photo`, body, {
+      ...formResponseOptions, headers: { 'Content-Type': 'multipart/form-data' },
+    }))
+  },
   arrive: (stopId: number) => post<CrewTrip>(`/trip-stops/${stopId}/arrive`),
   depart: (stopId: number, earlyReason?: string) => post<CrewTrip>(`/trip-stops/${stopId}/depart`, earlyReason ? { earlyReason } : undefined),
   openHandover: (stopId: number, handoverType: HandoverType, partyId?: number, incidentPlanId?: number) =>

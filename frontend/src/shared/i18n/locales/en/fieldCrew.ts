@@ -185,8 +185,11 @@ export const fieldCrew = {
       "loadError": "Could not load the trip",
       "start": "Start trip",
       "complete": "Finish trip",
+      "backAtHub": "Back at hub",
       "completion": {
         "condition": "Vehicle condition",
+        "photo": "Vehicle photo at the hub",
+        "photoAttached": "Vehicle photo saved",
         "normal": "Normal",
         "needsMaintenance": "Needs maintenance",
         "note": "Vehicle condition note",

@@ -53,6 +53,7 @@ public class TripExecutionServiceImpl implements TripExecutionService {
         CrewAssignment member = requireCrew(trip.getId(), username);
         TripExecutionPolicy.requireStartable(trip.getStatus(),
                 crew.existsByVehicleTrip_IdAndCrewRoleAndStatus(trip.getId(), CrewRole.DRIVER, CrewAssignmentStatus.ACKNOWLEDGED));
+        tripReadiness.requireVehicleAndCrewAvailable(trip);
         if (trip.getTripType() == VehicleTripType.DELIVERY && legs.hasIncompleteMultiPlaceDelivery(trip.getId())) {
             throw new DispatchRuleException("bookingHorseIds", "Cần xếp đủ ngựa của đơn nhiều nơi giao trước khi xuất phát.", true);
         }

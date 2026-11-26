@@ -3,8 +3,10 @@ package com.example.racehorse_transport.repository;
 import com.example.racehorse_transport.entity.Document;
 
 import jakarta.persistence.LockModeType;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -62,6 +64,9 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     boolean existsByHandover_IdAndEvidenceHorseLeg_IdAndDocumentType_Code(Long handoverId, Long horseLegId, String code);
 
     boolean existsByHandover_IdAndDocumentType_Code(Long handoverId, String documentTypeCode);
+
+    @Query("SELECT DISTINCT d.vehicleTrip.id FROM Document d WHERE d.vehicleTrip.id IN :tripIds AND d.documentType.code = :code")
+    Set<Long> findTripIdsWithPhoto(Collection<Long> tripIds, String code);
 
     @Query("""
             SELECT d FROM Document d JOIN FETCH d.documentType JOIN FETCH d.handover h
