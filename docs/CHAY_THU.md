@@ -48,39 +48,48 @@ Mở nhiều vai cùng lúc thì dùng nhiều cửa sổ ẩn danh. Tua giờ x
 
 Phiên đăng nhập làm mới bằng cookie 15 ngày theo giờ thật, không bị ảnh hưởng.
 
-## Kịch bản: đơn liên tỉnh TP.HCM → Đà Nẵng (đã chạy trọn ngày 25/11/2026)
+## Kịch bản: đơn liên tỉnh TP.HCM → Huế (mô hình bến xe)
 
 | # | Vai | Màn | Làm gì |
 |---|---|---|---|
-| 1 | Khách | Sổ địa chỉ, Hồ sơ ngựa | Thêm nơi đón ở TP.HCM, nơi giao ở Đà Nẵng, một con ngựa mới (4 con mẫu đang nằm trong đơn mẫu) |
-| 2 | Khách | Đặt chuyến mới | Chọn chuyến không bị ghi "Không kịp làm giấy", gửi đơn |
+| 1 | Khách | Sổ địa chỉ, Hồ sơ ngựa | Thêm nơi đón ở TP.HCM, nơi giao ở Huế, một con ngựa mới (4 con mẫu đang nằm trong đơn mẫu) |
+| 2 | Khách | Đặt chuyến mới | Chọn chuyến tuyến TP.HCM – Đà Nẵng có nhãn Còn chỗ và không bị ghi "Không kịp làm giấy"; chọn dịch vụ cho cả đơn và cho từng con, gửi đơn |
 | 3 | Khách | Chi tiết đơn | Nộp hộ chiếu ngựa, sổ tiêm phòng (tệp PDF hoặc ảnh bất kỳ) |
 | 4 | Chuyên viên | Thẩm định đơn | Tiếp nhận, duyệt giấy, xác nhận bảo hiểm, bắt đầu báo giá |
 | 5 | Quản lý | Đơn hàng | Lập bản nháp, gửi khách |
 | 6 | Khách | Chi tiết đơn | Chấp nhận, trả cọc |
-| 7 | Chuyên viên | Đơn thiếu giấy | Nộp thay và duyệt giấy kiểm dịch |
-| 8 | Trang tua giờ | | Tua tới trong 48 giờ trước giờ chạy |
-| 9 | Quản lý | Chuyến cần quyết định | **Chạy** |
-| 10 | Điều phối | Điều độ | Gom tự động lượt **Đón**; **Lập lượt xe** loại **Trục** rồi xếp ngựa; Gom tự động lượt **Giao** ở hub Đà Nẵng với chính xe trục. Mỗi lượt phân công tài xế và hộ tống. Xếp đúng thứ tự đón, trục, giao |
-| 11 | Tài xế, hộ tống | Lượt xe của tôi | Nhận việc, xuất phát, tới, nhận ngựa (quét chip, nhận giấy gốc, tải biên bản), hoàn tất |
-| 12 | Khách | Chi tiết đơn | Trả số dư. Chưa trả thì xe không rời được |
-| 13 | Tài xế | Lượt xe của tôi | Rời, tới hub, giao vào hub, kết thúc lượt |
-| 14 | Tài xế, hộ tống | Lượt trục | Nhận từ hub, mỗi trạm ghi ăn uống và nghỉ 30 phút (tua 1 giờ), gửi chuồng qua đêm, nhận lại, giao vào hub |
-| 15 | Tài xế, hộ tống | Lượt giao | Nhận từ hub, giao ngựa, về hub, kết thúc |
-| 16 | Khách, quản lý | Chi tiết đơn | Đánh giá; đóng đơn |
-| 17 | Quản lý, điều phối | Chuyến cần quyết định, Điều độ | Đưa xe về: quản lý xác nhận chạy chuyến Đà Nẵng – TP.HCM, điều phối bấm **Lập lượt về** ở hàng của xe |
+| 7 | Trang tua giờ | | Tua tới trong 48 giờ trước giờ chạy |
+| 8 | Quản lý | Chuyến cần quyết định | Xem các xe của chuyến, bấm **Chạy** |
+| 9 | Điều phối | Điều độ | Gom tự động lượt **Đón** ở hub TP.HCM; **Gợi ý chia xe** rồi lập các lượt **Trục**; gom tự động lượt **Giao** ở hub Đà Nẵng. Mỗi lượt phân công tài xế và hộ tống của hub đó |
+| 10 | Tài xế, hộ tống | Lượt xe của tôi | Nhận việc, xuất phát, tới, nhận ngựa (quét chip, nhận giấy gốc, tải biên bản), hoàn tất |
+| 11 | Khách | Chi tiết đơn | Trả số dư. Chưa trả thì xe không rời được |
+| 12 | Tài xế | Lượt xe của tôi | Rời, tới hub, giao vào hub, kết thúc lượt |
+| 13 | Hộ tống | Lượt trục | Ghi khám **trước khi chạy** rồi nhận từ hub; mỗi trạm nghỉ ghi ăn, uống, sức khỏe và nghỉ 30 phút (tua 1 giờ); tới hub Đà Nẵng giao vào hub |
+| 14 | Hộ tống, tài xế | Lượt giao | Ghi khám **trước khi giao**, nhận từ hub, giao người nhận với mã nhận ngựa 6 số |
+| 15 | Khách, quản lý | Chi tiết đơn | Đánh giá; đóng đơn |
+| 16 | Tài xế lượt trục | Lượt xe của tôi | Xe về hub gốc: tới giờ thì bấm **Đã về**, kèm ảnh và tình trạng xe |
 
-Các loại khác: **chạy thẳng** (cùng hub, ví dụ Củ Chi → Bến Cát) bỏ bước 8, 9 và chỉ có một lượt; **đơn xuất** thêm **Chặng đại lý** ở Điều độ, bàn giao ở cửa khẩu, rồi điều phối bấm **Đại lý đã giao** ở trang Theo dõi.
+Các loại khác:
+- **Chạy thẳng** (cùng hub, ví dụ Củ Chi → Biên Hòa): bỏ bước 7, 8 và chỉ có một lượt.
+- **Đơn xuất** (TP.HCM → Phnom Penh qua Mộc Bài) và **đơn nhập** (Viêng Chăn → Vinh qua Cầu Treo): tuyến trục đi thẳng tới hub nước ngoài của công ty. Ở điểm dừng cửa khẩu, xe chỉ rời được khi mọi đơn trên xe đủ giấy của cửa khẩu đó. Đón và giao ở nước ngoài do xe và người của hub nước ngoài làm, như hub trong nước.
+- **Xe riêng**: khách chọn ở màn 1; báo giá tính đủ số chỗ của xe; gợi ý chia xe đặt đơn vào đúng xe giữ riêng.
+
+Kịch bản đầy đủ cho team test: tài liệu "Bộ test case các luồng chính" (5 kịch bản và bảng mốc giờ).
 
 ## Vùng phục vụ của dữ liệu mẫu
 
 | Hub | Tỉnh |
 |---|---|
-| Trụ sở TP.HCM | TP.HCM, Đồng Nai, Tây Ninh, Vĩnh Long, Cần Thơ, An Giang, Cà Mau, Đồng Tháp, Đắk Lắk, Khánh Hòa, Lâm Đồng |
-| Hub Đà Nẵng | Đà Nẵng, Huế, Quảng Ngãi, Quảng Trị, Gia Lai |
-| Hub Hà Nội | Hà Nội và 16 tỉnh, thành phía Bắc, xa nhất về phía nam là Hà Tĩnh |
+| Trụ sở TP.HCM | TP.HCM, Đồng Nai, Tây Ninh, Đồng Tháp, Vĩnh Long, An Giang, Cần Thơ, Cà Mau |
+| Hub Nha Trang | Khánh Hòa, Lâm Đồng, Đắk Lắk, Gia Lai |
+| Hub Đà Nẵng | Đà Nẵng, Huế, Quảng Ngãi, Quảng Trị |
+| Hub Vinh | Nghệ An, Hà Tĩnh, Thanh Hóa |
+| Hub Hà Nội | Hà Nội, Hải Phòng, Bắc Ninh, Hưng Yên, Ninh Bình, Phú Thọ, Quảng Ninh, Thái Nguyên, Tuyên Quang, Lạng Sơn, Cao Bằng, Lào Cai, Lai Châu, Điện Biên, Sơn La |
+| Hub Phnom Penh | Các tỉnh Campuchia, trừ Banteay Meanchey và Ratanakiri |
+| Hub Viêng Chăn | Vientiane Capital, Vientiane, Bolikhamsai, Xaisomboun, Xiangkhouang, Luang Prabang, Houaphan, Oudomxay, Xaignabouli |
+| Hub Savannakhet | Savannakhet, Khammouane, Salavan, Champasak, Xekong, Attapeu |
 
-Các tỉnh không có trong bảng chưa có hub: trang đặt đơn nói rõ và liệt kê các tỉnh đang phục vụ. Campuchia chỉ đi và về qua hub TP.HCM (Mộc Bài), Lào chỉ qua hub Đà Nẵng (Lao Bảo); mỗi đơn có tối đa một chặng trục.
+Tỉnh không có trong bảng (ví dụ Banteay Meanchey, Ratanakiri, Bokeo, Luang Namtha, Phongsaly) chưa được phục vụ: trang đặt đơn nói rõ và liệt kê các tỉnh đang phục vụ. Mỗi đơn có tối đa một chặng trục, nối hub đón với hub giao.
 
 ## Máy cũ không khởi động được backend
 

@@ -126,8 +126,8 @@ public class LinehaulAllocationServiceImpl implements LinehaulAllocationService 
 
     private LinehaulSuggestionResponseDto suggest(Departure departure) {
         DispatchPolicy.requireRunnableDeparture(departure.getStatus(), departure.getRunConfirmedAt() != null);
-        if (!trips.findByDeparture_IdAndTripTypeAndStatusNotInOrderById(departure.getId(), VehicleTripType.LINEHAUL,
-                Set.of(VehicleTripStatus.CANCELLED)).isEmpty()) {
+        if (trips.existsByDeparture_IdAndTripTypeAndStatusNotIn(departure.getId(), VehicleTripType.LINEHAUL,
+                Set.of(VehicleTripStatus.CANCELLED))) {
             throw conflict("Chuyến đã có lượt trục. Hãy quản lý các lượt hiện có.");
         }
         Map<Long, List<BookingHorse>> byBooking = horses.findForLinehaul(departure.getId(), BookingHorseStatus.ACTIVE, READY).stream()
