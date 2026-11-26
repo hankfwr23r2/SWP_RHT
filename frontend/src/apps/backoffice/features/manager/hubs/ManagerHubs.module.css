@@ -55,4 +55,14 @@
   font-variant-numeric: tabular-nums;
 }
 
+.requirementSummary, .requirementNote {
+  margin: var(--space-4) 0 0;
+  font-size: var(--text-sm);
+}
+
+.requirementSummary > span { white-space: normal; }
+
+.breakdown, .requirementNote { color: var(--color-muted); }
+.breakdown { display: block; margin-top: var(--space-1); }
+
 .code { white-space: nowrap; }

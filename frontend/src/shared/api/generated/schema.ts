@@ -6517,6 +6517,14 @@ export interface components {
             /** Format: date-time */
             plannedStartAt: string;
         };
+        HubBranchBreakdownResponseDto: {
+            /** Format: int64 */
+            sixSeat?: number;
+            /** Format: int64 */
+            spare?: number;
+            /** Format: int64 */
+            twoSeat?: number;
+        };
         HubCollectionTimeRequestDto: {
             /** Format: date-time */
             collectAt: string;
@@ -6531,6 +6539,15 @@ export interface components {
             routeCode?: string;
             /** @enum {string} */
             status?: "OPEN" | "CLOSED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+        };
+        HubFleetRequirementResponseDto: {
+            /** Format: int64 */
+            actual?: number;
+            breakdown?: components["schemas"]["HubBranchBreakdownResponseDto"];
+            /** @enum {string} */
+            item?: "LINEHAUL" | "SPARE" | "BRANCH" | "DRIVER" | "ESCORT";
+            /** Format: int64 */
+            required?: number;
         };
         HubFleetResponseDto: {
             idle?: components["schemas"]["HubVehicleGroupResponseDto"];
@@ -6572,6 +6589,7 @@ export interface components {
             countryName?: string;
             departures?: components["schemas"]["HubDepartureResponseDto"][];
             fleet?: components["schemas"]["HubFleetResponseDto"];
+            fleetRequirement?: components["schemas"]["HubFleetRequirementResponseDto"][];
             headquarters?: boolean;
             /** Format: int32 */
             horseCount?: number;
@@ -7690,6 +7708,7 @@ export interface components {
             distanceKm: number;
             /** Format: int32 */
             estimatedDurationMinutes: number;
+            fleetOutbound?: boolean;
             name: string;
             /** Format: int64 */
             originLocationId: number;
@@ -7704,6 +7723,7 @@ export interface components {
             distanceKm?: number;
             /** Format: int32 */
             estimatedDurationMinutes?: number;
+            fleetOutbound?: boolean;
             /** Format: int64 */
             id?: number;
             name?: string;

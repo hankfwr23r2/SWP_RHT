@@ -18,6 +18,13 @@ const hub: HubOverview = {
   stalls: { available: 3, total: 5 },
   fleet: { idle: emptyGroup, running: emptyGroup, maintenance: emptyGroup,
     returning: { count: 1, vehicles: [{ id: 9, licensePlate: '51C-12345', tripCode: 'VT-0009' }] } },
+  fleetRequirement: [
+    { item: 'LINEHAUL', required: 2, actual: 1 },
+    { item: 'SPARE', required: 1, actual: 0 },
+    { item: 'BRANCH', required: 4, actual: 5, breakdown: { sixSeat: 2, twoSeat: 1, spare: 1 } },
+    { item: 'DRIVER', required: 3, actual: 2 },
+    { item: 'ESCORT', required: 3, actual: 3 },
+  ],
   staff: [{ roleCode: 'DRIVER', count: 2 }],
   arrivals: [{ id: 8, routeCode: 'PNH-HCM', originName: 'Hub Phnom Penh', destinationName: 'Hub TP.HCM', departureAt: at, status: 'OPEN' }],
   departures: [], openIncidentCount: 1,
@@ -69,6 +76,30 @@ it('opens hub details with the server counts, current stays, returning vehicles 
   fireEvent.click(screen.getByRole('link', { name: 'Về danh sách hub' }))
   expect(await screen.findByRole('link', { name: hub.name })).toBeTruthy()
   expect(apiClient.get).toHaveBeenCalledExactlyOnceWith('/hubs/overview')
+})
+
+it('shows fleet shortfalls on cards and compares each requirement in the hub details', async () => {
+  const sufficient = {
+    ...hub, id: 2, code: 'HUB-PNH', name: 'Hub Phnom Penh',
+    fleetRequirement: hub.fleetRequirement?.map(row => ({ ...row, actual: Math.max(row.actual, row.required) })),
+  }
+  vi.mocked(apiClient.get).mockResolvedValue(response([hub, sufficient]))
+  openPage()
+
+  const card = await screen.findByRole('link', { name: hub.name })
+  expect(within(card).getByText('Thiếu: 2 xe, 1 tài xế')).toBeTruthy()
+  expect(within(screen.getByRole('link', { name: sufficient.name })).getByText('Đủ theo quy chế')).toBeTruthy()
+  fireEvent.click(card)
+
+  const table = within(await screen.findByRole('table', { name: 'Theo quy chế đội xe' }))
+  expect(table.getAllByRole('columnheader').map(header => header.textContent)).toEqual(['Hạng mục', 'Cần', 'Đang có', 'Lệch'])
+  const branch = within(table.getByRole('row', { name: /Xe đón giao/ }))
+  expect(branch.getByText('6 chỗ: 2 · 2 chỗ: 1 · dự phòng: 1')).toBeTruthy()
+  expect(branch.getAllByRole('cell').slice(1).map(cell => cell.textContent)).toEqual(['4', '5', '+1'])
+  const linehaul = within(table.getByRole('row', { name: /Xe trục/ }))
+  expect(linehaul.getAllByRole('cell').slice(1).map(cell => cell.textContent)).toEqual(['2', '1', '-1'])
+  expect(linehaul.getByText('-1').querySelector('.fa-triangle-exclamation')).toBeTruthy()
+  expect(screen.getByText('Số cần tính từ lịch chạy đang hiệu lực và tham số quy chế.')).toBeTruthy()
 })
 
 it('shows loading, a retryable error, and the empty state', async () => {

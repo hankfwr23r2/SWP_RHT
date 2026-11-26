@@ -138,6 +138,7 @@ export const staffNetwork = {
       "mapStop": "Điểm dừng cần chọn trên bản đồ",
       "distanceKm": "Quãng đường (km)",
       "estimatedDurationMinutes": "Thời gian dự kiến (phút)",
+      "fleetOutbound": "Chiều đi của cặp tuyến (xe trục thuộc hub đầu tuyến)",
       "routeId": "Tuyến",
       "daysOfWeek": "Ngày chạy trong tuần",
       "departureTime": "Giờ xuất phát (giờ Việt Nam)",

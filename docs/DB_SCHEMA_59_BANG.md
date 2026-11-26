@@ -425,11 +425,13 @@ Index: `owner_customer_id`, `horse_type_id`.
 | `distance_km` | `numeric(8,2)` | | CK `> 0` | |
 | `estimated_duration_minutes` | `int` | | CK `> 0` | |
 | `status` | `varchar(30)` | | CK `ACTIVE, INACTIVE` | |
+| `fleet_outbound` | `boolean` | | default `false` | Chiều đi của cặp tuyến đảo đầu và cuối. Hub đầu tuyến sở hữu xe trục của cặp |
 
 Ràng buộc bảng: `CHECK (origin_location_id <> destination_location_id)`.
 Index: `origin_location_id`, `destination_location_id`.
 
 Loại điểm đầu, điểm cuối và điểm dừng được kiểm ở `RouteStopsPolicy` (cần so với bảng `location`).
+`RouteService` kiểm tra khi tạo hoặc sửa tuyến. Nếu tuyến ngược đã bật `fleet_outbound`, yêu cầu bật chiều đi trả HTTP 409.
 
 ### 4.2 `route_stop`: các điểm dừng trên tuyến
 
@@ -1547,7 +1549,7 @@ Chỉ chứa tham số **không phải giá tiền**, ví dụ thời gian chờ
 | `config_value` | `varchar(500)` | | | |
 | `min_value` | `int` | có | CHECK cùng có giá trị hoặc cùng NULL với `max_value` | Cận dưới, tính cả giá trị cận |
 | `max_value` | `int` | có | CHECK `min_value <= max_value` khi có giới hạn | Cận trên, tính cả giá trị cận |
-| `unit` | `varchar(30)` | có | | `MINUTE`, `HOUR`, `DAY`, `COUNT`, `TEXT` (giá trị chữ, chỉ sửa qua API dạng chữ) |
+| `unit` | `varchar(30)` | có | | `MINUTE`, `HOUR`, `DAY`, `COUNT`, `PERCENT`, `TEXT` (giá trị chữ, chỉ sửa qua API dạng chữ). `LINEHAUL_REST_HOURS` dùng `HOURS` |
 | `config_group` | `varchar(50)` | | | |
 | `description` | `text` | có | | |
 | `updated_by` | `bigint` | có | FK → staff(user_id) | |
@@ -1635,6 +1637,17 @@ Hạn nội bộ ở điểm 1.F5:
 | `BOOKING_INTAKE_DUE_HOURS` | `BOOKING` | 4 | 1 | 168 |
 | `BOOKING_REVIEW_DUE_HOURS` | `BOOKING` | 24 | 1 | 168 |
 | `BOOKING_QUOTE_DUE_HOURS` | `QUOTATION` | 24 | 1 | 168 |
+
+Tham số quy chế đội xe ở màn Tham số, nhóm `SCHEDULE`. Báo cáo dùng lại `LINEHAUL_REST_HOURS` và `SPARE_VEHICLE_PERCENT` của M2.
+
+| Tham số | Đơn vị | Mặc định | Giới hạn | Ý nghĩa |
+|---|---|---:|---|---|
+| `CREW_PER_VEHICLE_PERCENT` | `PERCENT` | 120 | 100–1000 | Tỷ lệ nhân sự mỗi vai trò (tài xế và hộ tống) trên số xe chạy |
+| `SMALL_BRANCH_VEHICLES_PER_HUB` | `COUNT` | 1 | 0–100 | Số xe nhánh 2 chỗ mỗi hub |
+| `MIN_BRANCH_SPARE_PER_HUB` | `COUNT` | 1 | 0–100 | Số xe dự phòng nhánh tối thiểu mỗi hub |
+| `BRANCH_SHARE_PERCENT` | `PERCENT` | 50 | 0–100 | Tỷ lệ chỗ dành cho ngựa do công ty đón, giao |
+| `BRANCH_VEHICLE_STALLS` | `COUNT` | 6 | 1–100 | Sức chứa dùng để tính số xe nhánh |
+| `SPARE_HUB_MIN_PAIRS` | `COUNT` | 2 | 1–100 | Số cặp tuyến tối thiểu mà hub sở hữu để giữ xe để sẵn |
 
 ### 15.5 `route_cache`: bộ đệm kết quả tính lộ trình
 

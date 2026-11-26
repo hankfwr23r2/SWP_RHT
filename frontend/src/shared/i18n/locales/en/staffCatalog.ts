@@ -327,8 +327,10 @@ export const staffCatalog = {
       "units": {
         "MINUTE": "minutes",
         "HOUR": "hours",
+        "HOURS": "hours",
         "DAY": "days",
         "COUNT": "",
+        "PERCENT": "%",
         "VND": "VND"
       },
       "groups": {
@@ -347,6 +349,12 @@ export const staffCatalog = {
         "SCHEDULE": "Schedules"
       },
       "keys": {
+        "CREW_PER_VEHICLE_PERCENT": "Driver and escort ratio per operating vehicle",
+        "SMALL_BRANCH_VEHICLES_PER_HUB": "Two-stall branch vehicles per hub",
+        "MIN_BRANCH_SPARE_PER_HUB": "Minimum spare branch vehicles per hub",
+        "BRANCH_SHARE_PERCENT": "Share of horses collected or delivered by the company",
+        "BRANCH_VEHICLE_STALLS": "Stall capacity of a branch vehicle",
+        "SPARE_HUB_MIN_PAIRS": "Minimum route pairs for a hub to keep standby vehicles",
         "PICKUP_WINDOW_START_HOUR": "Earliest pickup hour",
         "PICKUP_WINDOW_END_HOUR": "Latest hour to reach the hub on pickup day",
         "DELIVERY_WINDOW_START_HOUR": "Earliest delivery hour",

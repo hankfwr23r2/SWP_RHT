@@ -9,6 +9,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.example.racehorse_transport.PostgresIntegrationTest;
+import com.example.racehorse_transport.entity.Location;
+import com.example.racehorse_transport.entity.enums.EmploymentStatus;
+import com.example.racehorse_transport.entity.enums.VehicleServiceRole;
+import com.example.racehorse_transport.entity.enums.VehicleStatus;
 import com.example.racehorse_transport.security.JwtUtils;
 import com.example.racehorse_transport.support.TestData;
 import jakarta.persistence.EntityManager;
@@ -16,6 +20,7 @@ import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -145,6 +150,81 @@ class HubOverviewFlowTest {
                 .andExpect(jsonPath(pnh + ".openIncidentCount").value(3))
                 .andExpect(jsonPath(pnh + ".incidents[*].title", containsInAnyOrder(
                         "Khớp cả lượt và ngựa", "Sự cố của ngựa đang ở hub", "Sự cố lượt tới hub")));
+    }
+
+    @Test
+    void comparesCurrentScheduleRequirementsWithTheFleetAndStaffByHomeHub() throws Exception {
+        String manager = token("MANAGER");
+        String origin = "M8-FLEET-OUT";
+        String destination = "M8-FLEET-BACK";
+        long home = hub(origin, "VN", "HUB", "ACTIVE");
+        long away = hub(destination, "KH", "HUB", "ACTIVE");
+        Instant now = clock.instant();
+        LocalDate today = LocalDate.ofInstant(now, ZoneId.of("Asia/Ho_Chi_Minh"));
+        long outbound = route("M8-FLEET-OB", home, away);
+        long inbound = route("M8-FLEET-IB", away, home);
+        jdbc.update("UPDATE route SET fleet_outbound = true WHERE id = ?", outbound);
+        schedule(outbound, "ACTIVE", today, today, 1, 1);
+        schedule(inbound, "ACTIVE", today, null, 3, 1);
+        schedule(outbound, "ACTIVE", today.plusDays(1), null, 1, 5);
+        schedule(outbound, "ACTIVE", today.minusDays(2), today.minusDays(1), 1, 5);
+        schedule(outbound, "PAUSED", today, null, 1, 5);
+        long inactive = route("M8-FLEET-INACTIVE", home, away);
+        jdbc.update("UPDATE route SET status = 'INACTIVE' WHERE id = ?", inactive);
+        schedule(inactive, "ACTIVE", today, null, 1, 5);
+
+        long linehaul = fleetVehicle(home, VehicleServiceRole.LINEHAUL, VehicleStatus.ACTIVE);
+        fleetVehicle(home, VehicleServiceRole.LINEHAUL, VehicleStatus.RETIRED);
+        fleetVehicle(home, VehicleServiceRole.SPARE, VehicleStatus.MAINTENANCE);
+        fleetVehicle(home, VehicleServiceRole.BRANCH, VehicleStatus.ACTIVE);
+        fleetVehicle(away, VehicleServiceRole.BRANCH, VehicleStatus.ACTIVE);
+        data.staff(data.unique("m8.driver"), "DRIVER", origin);
+        data.staff(data.unique("m8.escort"), "ESCORT", origin);
+        data.staff(data.unique("m8.driver"), "DRIVER", origin).setEmploymentStatus(EmploymentStatus.ON_LEAVE);
+        data.staff(data.unique("m8.driver"), "DRIVER", destination);
+        entities.flush();
+        trip(linehaul, home, away, now.minus(3, ChronoUnit.DAYS), "COMPLETED");
+        entities.clear();
+
+        String requirements = "$.data[?(@.code == 'M8-FLEET-OUT')].fleetRequirement";
+        String other = "$.data[?(@.code == 'M8-FLEET-BACK')].fleetRequirement";
+        overview(manager).andExpect(status().isOk())
+                .andExpect(jsonPath(requirements + "[*].item", contains("LINEHAUL", "SPARE", "BRANCH", "DRIVER", "ESCORT")))
+                .andExpect(jsonPath(requirements + "[0].required").value(1))
+                .andExpect(jsonPath(requirements + "[0].actual").value(1))
+                .andExpect(jsonPath(requirements + "[0].breakdown").doesNotExist())
+                .andExpect(jsonPath(requirements + "[1].required").value(0))
+                .andExpect(jsonPath(requirements + "[1].actual").value(1))
+                .andExpect(jsonPath(requirements + "[2].required").value(3))
+                .andExpect(jsonPath(requirements + "[2].actual").value(1))
+                .andExpect(jsonPath(requirements + "[2].breakdown.sixSeat").value(1))
+                .andExpect(jsonPath(requirements + "[2].breakdown.twoSeat").value(1))
+                .andExpect(jsonPath(requirements + "[2].breakdown.spare").value(1))
+                .andExpect(jsonPath(requirements + "[3].required").value(4))
+                .andExpect(jsonPath(requirements + "[3].actual").value(1))
+                .andExpect(jsonPath(requirements + "[4].required").value(4))
+                .andExpect(jsonPath(requirements + "[4].actual").value(1))
+                .andExpect(jsonPath(other + "[0].required").value(0))
+                .andExpect(jsonPath(other + "[0].actual").value(0))
+                .andExpect(jsonPath(other + "[2].required").value(3))
+                .andExpect(jsonPath(other + "[3].required").value(3));
+    }
+
+    private long fleetVehicle(long hub, VehicleServiceRole role, VehicleStatus status) {
+        var vehicle = data.vehicle(2, 0);
+        vehicle.setHomeHubLocation(entities.getReference(Location.class, hub));
+        vehicle.setServiceRole(role);
+        vehicle.setStatus(status);
+        return vehicle.getId();
+    }
+
+    private void schedule(long route, String status, LocalDate from, LocalDate to, int day, int vehicles) {
+        long id = jdbc.queryForObject("""
+                INSERT INTO departure_schedule (route_id, departure_time, booking_cutoff_hours, base_vehicle_class_id,
+                                                base_vehicle_count, valid_from, valid_to, status)
+                SELECT ?, TIME '05:00', 72, id, ?, ?, ?, ? FROM vehicle_class WHERE code = 'HEAVY' RETURNING id
+                """, Long.class, route, vehicles, from, to, status);
+        jdbc.update("INSERT INTO departure_schedule_day (departure_schedule_id, day_of_week) VALUES (?, ?)", id, day);
     }
 
     private long hub(String code, String country, String type, String status) {

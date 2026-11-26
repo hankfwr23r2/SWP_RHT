@@ -12,6 +12,9 @@ type HubDeparture = Required<Pick<Schemas['DepartureResponse'], 'id' | 'routeCod
   departureAt: string
 }
 type HubIncident = Required<Pick<Schemas['IncidentResponseDto'], 'id' | 'title' | 'severity' | 'status' | 'reportedAt'>>
+export type HubFleetRequirement = Required<Omit<Schemas['HubFleetRequirementResponseDto'], 'breakdown'>> & {
+  breakdown?: Required<Schemas['HubBranchBreakdownResponseDto']>
+}
 
 export type HubOverview = Required<Pick<Schemas['LocationResponse'], 'id' | 'code' | 'name' | 'countryCode'>> & {
   provinceName: string | null
@@ -21,6 +24,7 @@ export type HubOverview = Required<Pick<Schemas['LocationResponse'], 'id' | 'cod
   horses: HubHorse[]
   stalls: Required<Pick<Schemas['HubStallInventoryResponseDto'], 'total' | 'available'>>
   fleet: Record<'idle' | 'running' | 'returning' | 'maintenance', HubVehicleGroup>
+  fleetRequirement?: HubFleetRequirement[]
   staff: HubStaffRole[]
   arrivals: HubDeparture[]
   departures: HubDeparture[]

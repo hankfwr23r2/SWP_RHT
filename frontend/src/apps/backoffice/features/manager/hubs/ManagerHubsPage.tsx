@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router'
-import { hubsApi, type HubOverview } from '@shared/api/hubs'
+import { hubsApi, type HubFleetRequirement, type HubOverview } from '@shared/api/hubs'
 import { useLoad } from '@shared/hooks/useLoad'
 import { formatDateTime } from '@shared/lib/format'
 import { Card } from '@shared/ui/Card'
@@ -22,8 +22,31 @@ const fleetLabels = [
   ['maintenance', 'managerHubs.maintenance'],
 ] as const satisfies readonly (readonly [keyof HubOverview['fleet'], string])[]
 
+const requirementLabels = {
+  LINEHAUL: 'managerHubs.requirement.linehaul',
+  SPARE: 'managerHubs.requirement.spare',
+  BRANCH: 'managerHubs.requirement.branch',
+  DRIVER: 'roles.driver',
+  ESCORT: 'roles.escort',
+} as const satisfies Record<HubFleetRequirement['item'], string>
+
 const hubLocation = (hub: HubOverview, headquartersLabel: string) =>
   [hub.code, hub.provinceName, hub.countryName, hub.headquarters ? headquartersLabel : null].filter(Boolean).join(' · ')
+
+function FleetRequirementSummary({ rows }: { rows: HubFleetRequirement[] }) {
+  const { t } = useTranslation()
+  const missing = { vehicles: 0, drivers: 0, escorts: 0 }
+  for (const row of rows) {
+    const count = Math.max(0, row.required - row.actual)
+    if (row.item === 'DRIVER') missing.drivers += count
+    else if (row.item === 'ESCORT') missing.escorts += count
+    else missing.vehicles += count
+  }
+  const labels = Object.entries(missing).flatMap(([key, count]) => count > 0 ? [t(`managerHubs.requirement.missing.${key}`, { count })] : [])
+  return <p className={s.requirementSummary}>{labels.length
+    ? <StatusBadge tone="warning" label={t('managerHubs.requirement.shortage', { items: labels.join(', ') })} />
+    : t('managerHubs.requirement.sufficient')}</p>
+}
 
 export default function ManagerHubsPage() {
   const { t } = useTranslation()
@@ -57,6 +80,7 @@ export default function ManagerHubsPage() {
                   ? <StatusBadge tone="warning" label={String(hub.openIncidentCount)} />
                   : hub.openIncidentCount}</dd></div>
               </dl>
+              {!!hub.fleetRequirement?.length && <FleetRequirementSummary rows={hub.fleetRequirement} />}
             </Card>
           </Link>
         </li>)}
@@ -72,6 +96,29 @@ export default function ManagerHubsPage() {
 }
 
 const dateTime = (value: string) => <time dateTime={value}>{formatDateTime(new Date(value))}</time>
+
+function FleetRequirementTable({ rows }: { rows: HubFleetRequirement[] }) {
+  const { t } = useTranslation()
+  const title = t('managerHubs.requirement.title')
+  const columns: TableColumn<HubFleetRequirement>[] = [
+    { key: 'item', header: t('managerHubs.requirement.item'), render: row => <div>
+      {t(requirementLabels[row.item])}
+      {row.breakdown && <small className={s.breakdown}>{t('managerHubs.requirement.breakdown', { ...row.breakdown })}</small>}
+    </div> },
+    { key: 'required', header: t('managerHubs.requirement.required'), render: row => row.required, align: 'end' },
+    { key: 'actual', header: t('managerHubs.requirement.actual'), render: row => row.actual, align: 'end' },
+    { key: 'difference', header: t('managerHubs.requirement.difference'), align: 'end', render: row => {
+      const difference = row.actual - row.required
+      if (difference < 0) return <StatusBadge tone="warning" label={String(difference)} />
+      return difference > 0 ? `+${difference}` : difference
+    } },
+  ]
+
+  return <Card title={title}>
+    <Table caption={title} columns={columns} rows={rows} rowKey={row => row.item} />
+    <p className={s.requirementNote}>{t('managerHubs.requirement.note')}</p>
+  </Card>
+}
 
 function HubDetails({ hub }: { hub: HubOverview }) {
   const { t } = useTranslation()
@@ -113,6 +160,7 @@ function HubDetails({ hub }: { hub: HubOverview }) {
   return <div className={s.details}>
     <StatTile icon={<i className="fa-solid fa-warehouse" />} label={t('managerHubs.stalls')}
       value={`${hub.stalls.available}/${hub.stalls.total}`} />
+    {!!hub.fleetRequirement?.length && <FleetRequirementTable rows={hub.fleetRequirement} />}
     <Card title={horses}>
       {hub.horses.length ? <Table caption={horses} columns={horseColumns} rows={hub.horses} rowKey={row => row.id} />
         : <EmptyState compact title={t('dispatch.stays.emptyTitle')} description={t('dispatch.stays.emptyDescription')} />}

@@ -466,6 +466,17 @@ ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, origin_location_id = EXCL
     destination_location_id = EXCLUDED.destination_location_id, distance_km = EXCLUDED.distance_km,
     estimated_duration_minutes = EXCLUDED.estimated_duration_minutes, status = EXCLUDED.status;
 
+DO $m8$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns
+               WHERE table_schema = current_schema() AND table_name = 'route' AND column_name = 'fleet_outbound') THEN
+        UPDATE route SET fleet_outbound = code IN (
+            'HCM-NT', 'NT-DN', 'HCM-DN', 'DN-VINH', 'VINH-HN',
+            'DN-HN', 'HCM-HN', 'HCM-PNH', 'DN-SVK', 'VINH-VTE'
+        );
+    END IF;
+END $m8$;
+
 -- Cập nhật tại chỗ vì trip_stop tham chiếu khóa của route_stop.
 INSERT INTO route_stop (route_id, sequence_number, location_id, stop_type, arrival_offset_minutes, dwell_minutes)
 SELECT r.id, v.seq, l.id, v.stop_type, v.arrival_offset, v.dwell

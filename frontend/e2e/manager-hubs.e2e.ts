@@ -10,6 +10,11 @@ const data = [
     id: 1, code: 'HUB-HCM', name: 'Trụ sở TP.HCM', provinceName: 'Hồ Chí Minh', countryCode: 'VN', countryName: 'Việt Nam', headquarters: true,
     horseCount: 1, horses: [{ id: 2, horseName: 'Sao Mai', bookingCode: 'BK-20310305-0000000123', stayType: 'ASSEMBLY', actualStartAt: at }],
     stalls: { total: 6, available: 5 }, fleet: { idle, running: emptyGroup, returning, maintenance: emptyGroup },
+    fleetRequirement: [
+      { item: 'LINEHAUL', required: 2, actual: 1 }, { item: 'SPARE', required: 1, actual: 0 },
+      { item: 'BRANCH', required: 4, actual: 5, breakdown: { sixSeat: 2, twoSeat: 1, spare: 1 } },
+      { item: 'DRIVER', required: 3, actual: 2 }, { item: 'ESCORT', required: 3, actual: 2 },
+    ],
     staff: [{ roleCode: 'DRIVER', count: 2 }], arrivals: [departure], departures: [],
     openIncidentCount: 1, incidents: [{ id: 6, title: 'Xe hỏng máy trên đường về hub', severity: 'HIGH', status: 'REPORTED', reportedAt: at }],
   },
@@ -17,6 +22,11 @@ const data = [
     id: 2, code: 'HUB-PNH', name: 'Hub Phnom Penh', provinceName: null, countryCode: 'KH', countryName: 'Campuchia', headquarters: false,
     horseCount: 0, horses: [], stalls: { total: 4, available: 4 },
     fleet: { idle: emptyGroup, running: emptyGroup, returning: emptyGroup, maintenance: emptyGroup },
+    fleetRequirement: [
+      { item: 'LINEHAUL', required: 0, actual: 0 }, { item: 'SPARE', required: 0, actual: 0 },
+      { item: 'BRANCH', required: 3, actual: 3, breakdown: { sixSeat: 1, twoSeat: 1, spare: 1 } },
+      { item: 'DRIVER', required: 3, actual: 3 }, { item: 'ESCORT', required: 3, actual: 3 },
+    ],
     staff: [], arrivals: [], departures: [departure], openIncidentCount: 0, incidents: [],
   },
 ]
@@ -56,5 +66,23 @@ test('danh sách và chi tiết hub ở 360 px không tràn ngang', async ({ pag
 
   await card.click()
   await expect(page.getByText('BK-20310305-0000000123')).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0)
+})
+
+test('hiện thiếu hoặc đủ theo quy chế và xem bảng nhu cầu ở 360 px', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 740 })
+  await page.goto('/backoffice/manager/hubs')
+  const hcm = page.getByRole('link', { name: 'Trụ sở TP.HCM' })
+  await expect(hcm.getByText('Thiếu: 2 xe, 1 tài xế, 1 hộ tống')).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Hub Phnom Penh' }).getByText('Đủ theo quy chế')).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0)
+
+  await hcm.click()
+  const table = page.getByRole('table', { name: 'Theo quy chế đội xe' })
+  const branch = table.getByRole('row', { name: /Xe đón giao/ })
+  await expect(branch.getByText('6 chỗ: 2 · 2 chỗ: 1 · dự phòng: 1')).toBeVisible()
+  await expect(branch.getByText('+1', { exact: true })).toBeVisible()
+  await expect(table.getByRole('row', { name: /Xe trục/ }).getByText('-1', { exact: true })).toBeVisible()
+  await expect(page.getByText('Số cần tính từ lịch chạy đang hiệu lực và tham số quy chế.')).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0)
 })
