@@ -12,12 +12,12 @@ Người dùng duyệt ngày 26/11/2026. Nguồn: quyết định ở [NGU_CANH_
 
 | Mã | Việc | Ai | Phụ thuộc |
 |---|---|---|---|
-| M1 | Mạng lưới bến xe, dữ liệu mẫu theo quy chế | A | Không |
-| M2 | Sức chứa theo xe, tự gắn xe để sẵn, nhãn Còn chỗ / Sắp đầy / Hết chỗ cho khách | A | M1 |
+| M1 | Xong | #521 | Không |
+| M2 | Xong | #525 | M1 |
 | M3 | Xe riêng | A | M2 |
 | M4 | Chia ngựa vào nhiều xe trục theo cụm điểm giao | **A (nhận từ B)** | M2, M3 |
-| M7 | Gỡ chặng và bàn giao đại lý | **A (nhận từ B)** | M1 |
-| M10 | Bắt buộc trạm nghỉ trên chặng đón, giao dài; chặng tới 8 giờ | **A (nhận từ B)** | M1 |
+| M7 | Xong | #526 | M1 |
+| M10 | Xong | #526 | M1 |
 | M5 | Khám bắt buộc ở hai đầu hub | B | Không |
 | M6 | Xe về hub gốc (ảnh, tình trạng xe) | B | Không |
 | M8 | Màn Các hub cho quản lý, số cần theo quy chế | B | Không |
@@ -63,12 +63,12 @@ Hiện trạng cần sửa:
 
 | Mã | Tình trạng | PR |
 |---|---|---|
-| M1 | PR mở | #521 |
-| M2 | PR mở | |
+| M1 | Xong | #521 |
+| M2 | Xong | #525 |
 | M3 | Chưa làm | |
 | M4 | Chưa làm | |
-| M7 | PR mở | |
-| M10 | PR mở | |
+| M7 | Xong | #526 |
+| M10 | Xong | #526 |
 | M5 | Xong (bạn B) | #520 |
 | M6 | Xong (bạn B) | #522 |
 | M8 | Xong (bạn B) | #523 |
