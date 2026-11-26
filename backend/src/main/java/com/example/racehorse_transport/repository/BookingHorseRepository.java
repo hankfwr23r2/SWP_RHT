@@ -1,8 +1,11 @@
 package com.example.racehorse_transport.repository;
 
+import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.BookingHorse;
 import com.example.racehorse_transport.entity.enums.BookingHorseStatus;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
+import com.example.racehorse_transport.entity.enums.HorseInsuranceStatus;
+import com.example.racehorse_transport.entity.enums.InsuranceCoverageOption;
 
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -61,6 +64,13 @@ public interface BookingHorseRepository extends JpaRepository<BookingHorse, Long
             """)
     List<BookingHorse> findForLinehaul(Long departureId, BookingHorseStatus status, Collection<BookingStatus> bookingStatuses);
 
+    @Query("""
+            SELECT DISTINCT b FROM BookingHorse h JOIN h.booking b JOIN FETCH b.specialist
+            WHERE h.horse.id = :horseId AND h.status = ACTIVE AND b.status IN :statuses
+            """)
+    List<Booking> findAssignedBookingsForHorse(
+            Long horseId, Collection<BookingStatus> statuses);
+
     // Bảng phụ trách
     @EntityGraph(attributePaths = {"horse", "booking"})
     List<BookingHorse> findByStatusAndBooking_StatusIn(BookingHorseStatus status, Collection<BookingStatus> bookingStatuses);
@@ -81,6 +91,22 @@ public interface BookingHorseRepository extends JpaRepository<BookingHorse, Long
             """)
     List<HorseBooking> findBusyHorses(Collection<Long> horseIds, BookingHorseStatus horseStatus,
             Collection<BookingStatus> endedStatuses);
+
+    @Query("""
+            SELECT h.booking.id AS bookingId, h.horse.name AS horseName, insurance.coverageOption AS coverageOption,
+                   insurance.status AS insuranceStatus
+            FROM BookingHorse h LEFT JOIN HorseInsurance insurance ON insurance.bookingHorse = h
+            WHERE h.booking.id IN :bookingIds AND h.status = ACTIVE
+            ORDER BY h.id
+            """)
+    List<SpecialistHorse> findSpecialistHorses(Collection<Long> bookingIds);
+
+    interface SpecialistHorse {
+        Long getBookingId();
+        String getHorseName();
+        InsuranceCoverageOption getCoverageOption();
+        HorseInsuranceStatus getInsuranceStatus();
+    }
 
     interface HorseBooking {
         Long getHorseId();

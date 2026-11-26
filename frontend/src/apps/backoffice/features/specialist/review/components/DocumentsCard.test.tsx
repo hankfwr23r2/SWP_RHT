@@ -39,7 +39,6 @@ it('hiện hộ chiếu dùng lại trong hồ sơ chuyên viên với đúng co
   const missing = within(screen.getByText('Hộ chiếu ngựa · Gió Nam').closest('li')!)
   expect(missing.getByText('Chưa đáp ứng')).toBeTruthy()
   expect(missing.queryByRole('link')).toBeNull()
-  expect(missing.getByRole('button', { name: 'Yêu cầu khách nộp' })).toBeTruthy()
 })
 
 it('bắt buộc nhập lý do khi thu hồi giấy và gửi lý do đã bỏ khoảng trắng', async () => {
@@ -97,5 +96,4 @@ it('cho duyệt giấy nộp từ hồ sơ ngựa dù chưa gắn với yêu c�
   const vaccines = within(screen.getByText('Sổ tiêm phòng · Sao Mai').closest('li')!)
   expect(vaccines.getByText('Chờ duyệt')).toBeTruthy()
   expect(vaccines.getByRole('button', { name: 'Duyệt giấy' })).toBeTruthy()
-  expect(vaccines.queryByRole('button', { name: 'Yêu cầu khách nộp' })).toBeNull()
 })

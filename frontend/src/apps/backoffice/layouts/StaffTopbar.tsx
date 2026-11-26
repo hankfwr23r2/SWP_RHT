@@ -17,8 +17,8 @@ import s from './StaffShell.module.css'
 // Trang danh sách nhận từ khóa tìm kiếm của từng vai trò
 const SEARCH_IN: Record<StaffRole, string> = { admin: '/admin/accounts', manager: '/manager/orders', specialist: HOME_OF.specialist, coordinator: HOME_OF.coordinator, driver: HOME_OF.driver, escort: HOME_OF.escort }
 
-function reviewNoticeLink(path: string) {
-  return path.replace(/^(?:\/backoffice)?\/specialist\/verification(?=\/|\?|#|$)/, '/specialist/review')
+function specialistNoticeLink(path: string) {
+  return path.replace(/^\/backoffice(?=\/specialist(?:\/|[?#]|$))/, '')
 }
 
 export function StaffTopbar({ menuOpen, onToggleMenu }: { menuOpen: boolean; onToggleMenu: () => void }) {
@@ -53,7 +53,7 @@ export function StaffTopbar({ menuOpen, onToggleMenu }: { menuOpen: boolean; onT
       </form>
       <div className={s.right}>
         <div className={s.desktopControls}><TranslateToggle /></div>
-        <NoticeBell resolveLink={role === 'specialist' ? reviewNoticeLink : undefined} />
+        <NoticeBell resolveLink={role === 'specialist' ? specialistNoticeLink : undefined} />
         <Button className={s.logout} icon={<i className="fa-solid fa-arrow-right-from-bracket" />} onClick={() => { logout(); navigate('/login') }} aria-label={t('staffTopbar.logout', 'Đăng xuất')} title={t('staffTopbar.logout', 'Đăng xuất')} />
       <Button variant="ghost" size="sm" className={s.menuToggle} aria-label={t(menuOpen ? 'header.closeMenu' : 'header.openMenu')}
         aria-expanded={menuOpen} aria-controls="staff-navigation" onClick={onToggleMenu} icon={<i className={`fa-solid ${menuOpen ? 'fa-xmark' : 'fa-bars'}`} />} />

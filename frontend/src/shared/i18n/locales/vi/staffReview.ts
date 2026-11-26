@@ -1,5 +1,51 @@
 export const staffReview = {
-  "staffReview": {
+  staffReview: {
+    workspace: {
+      back: 'Về danh sách',
+      horseNames: 'Ngựa',
+      border: 'Giấy riêng của cửa khẩu',
+      "orderCode": "Mã đơn",
+      "search": "Tìm theo mã đơn, khách hoặc ngựa",
+      "due": "Hạn chuẩn bị giấy",
+      "coverage": "{{arranged}} mua hộ · {{personal}} tự có · {{uninsured}} không mua",
+      "horseReview": "Đối chiếu hồ sơ {{count}} ngựa",
+      "horseNavigation": "Chọn ngựa để đối chiếu",
+      "previous": "Con trước",
+      "next": "Con sau",
+      "chip": "Mã chip",
+      "breed": "Giống",
+      "sex": "Giới tính",
+      "year": "Năm sinh",
+      "color": "Màu lông",
+      "checked": "Đã đối chiếu",
+      "checkAll": "Đánh dấu tất cả",
+      "preview": "Xem trước tệp",
+      openTab: 'Mở trong tab mới',
+      "requestedDocuments": "Giấy cần bổ sung",
+      "selectDocument": "Chọn ít nhất một giấy cần bổ sung.",
+      "orderDocuments": "Giấy chung của đơn",
+      "nextStep": "Bước tiếp theo",
+      "submitted": "Đã nộp {{submitted}}/{{total}}",
+      "horseBatch": "Ngựa trong lô",
+      "departure": "Chuyến #{{id}}",
+      "stages": {
+        "TO_REVIEW": "Cần duyệt",
+        "WAITING_CUSTOMER": "Chờ khách bổ sung",
+        "REVIEWED": "Đã duyệt",
+        "AWAITING_INTAKE": "Chờ tiếp nhận",
+        "TO_PREPARE": "Cần chuẩn bị",
+        "IN_PROGRESS": "Đang làm",
+        "COMPLETE": "Đã đủ",
+        "TO_PROCESS": "Cần báo giá hãng / kiểm tra",
+        "CONFIRMED": "Đã xác nhận"
+      },
+      "sexes": {
+        "STALLION": "Đực",
+        "MARE": "Cái",
+        "GELDING": "Đực thiến"
+      },
+      "filter": "{{label}} ({{count}})"
+    },
     assignmentTabs: 'Phân công đơn',
     mine: 'Đơn của tôi',
     all: 'Tất cả',

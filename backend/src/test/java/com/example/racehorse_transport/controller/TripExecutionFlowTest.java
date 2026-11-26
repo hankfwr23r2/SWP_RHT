@@ -761,7 +761,7 @@ class TripExecutionFlowTest {
 
         revokeDocument(certificate, token(specialist, "SPECIALIST"), "Giấy kiểm dịch sai").andExpect(status().isOk());
         entityManager.flush();
-        assertThat(documentNoticeRecipients("Giấy kiểm dịch sai", "/specialist/review/" + booking))
+        assertThat(documentNoticeRecipients("Giấy kiểm dịch sai", "/specialist/legal/" + booking))
                 .containsExactly(specialist.getUserId());
         act(escort, "/handovers/" + pickup + "/complete").andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Đơn DEV-DIRECT-001 còn thiếu giấy tờ bắt buộc."));

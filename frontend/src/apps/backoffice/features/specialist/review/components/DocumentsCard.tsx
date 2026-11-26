@@ -4,9 +4,11 @@ import type { BookingDocument, ChecklistItem, DocumentChecklist } from '@shared/
 import type { BookingDetail, BookingStatus } from '@shared/api/bookingOrders'
 import { Button } from '@shared/ui/Button'
 import { Card } from '@shared/ui/Card'
+import { Modal } from '@shared/ui/Modal'
 import { EmptyState } from '@shared/ui/EmptyState'
 import { StatusBadge } from '@shared/ui/StatusBadge'
-import { documentsFor, itemKey, showDate, showsDocumentActions } from '../reviewDisplay'
+import { formatDate } from '@shared/lib/format'
+import { documentsFor, itemKey, showsDocumentActions } from '../reviewDisplay'
 import type { ReviewAction, ReviewActions } from '../useReviewActions'
 import { ActionButtons } from './ActionButtons'
 import { ChecklistFacts } from './ChecklistFacts'
@@ -17,7 +19,9 @@ const documentTone = { UPLOADED: 'info', APPROVED: 'success', REJECTED: 'danger'
 
 function DocumentRow({ document, editable, actions }: { document: BookingDocument; editable: boolean; actions: ReviewActions }) {
   const { t } = useTranslation()
+  const [preview, setPreview] = useState(false)
   const { id, status, fileUrl, fileName, expiryDate, reviewNote } = document
+  const isImage = /\.(?:png|jpe?g)$/i.test(fileName ?? '')
   const pending = editable && status === 'UPLOADED'
   const options: ReviewAction[] = []
   if (editable && id != null) {
@@ -27,11 +31,19 @@ function DocumentRow({ document, editable, actions }: { document: BookingDocumen
   return <li className={s.item} data-pending={pending || undefined}>
     <div className={s.stack}>
       <div className={s.row}>
+        {fileUrl && <Button size="sm" onClick={() => setPreview(true)}>{t('staffReview.workspace.preview')}</Button>}
         {fileUrl && <a className={s.file} href={fileUrl} target="_blank" rel="noopener noreferrer">
           <i className="fa-solid fa-eye" aria-hidden="true" /> {t('staffReview.viewFile', { name: fileName ?? '' })}</a>}
         {status && <StatusBadge tone={documentTone[status]} label={t(`staffReview.documentStatus.${status}`)} />}
       </div>
-      {expiryDate && <p>{t('staffReview.expiry', { date: showDate(expiryDate) })}</p>}
+      {preview && fileUrl && <Modal wide title={fileName ?? t('staffReview.workspace.preview')} onClose={() => setPreview(false)}
+        footer={<a className={s.file} href={fileUrl} target="_blank" rel="noopener noreferrer">
+          {t('staffReview.workspace.openTab')}
+        </a>}>
+        {isImage ? <img className={s.previewImage} src={fileUrl} alt={fileName} />
+          : <iframe className={s.preview} src={fileUrl} title={fileName ?? t('staffReview.workspace.preview')} referrerPolicy="no-referrer" />}
+      </Modal>}
+      {expiryDate && <p>{t('staffReview.expiry', { date: formatDate(expiryDate) })}</p>}
       {reviewNote && <p>{reviewNote}</p>}
       {options.length > 0 && <ActionButtons options={options} actions={actions} />}
     </div>
@@ -74,9 +86,6 @@ export function DocumentsCard({ checklist, horses, status, actions }: {
               </div>
               {!!documents.length && <ul className={s.list}>{documents.map(document =>
                 <DocumentRow key={document.id} document={document} editable={editable} actions={actions} />)}</ul>}
-              {status === 'UNDER_REVIEW' && item.requirement && submitter === 'CUSTOMER' && item.satisfied === false
-                && !documents.some(document => document.status === 'UPLOADED')
-                && <ActionButtons options={[actions.askDocument([item.requirement?.documentTypeName, horse?.horseName].filter(Boolean).join(' · '))]} actions={actions} />}
               {canUpload && <div><Button size="sm" disabled={actions.busy} onClick={() => {
                 actions.clear()
                 setUploading(item)

@@ -9,6 +9,7 @@ export function ChecklistFacts({ item, horseName }: { item: ChecklistItem; horse
       {horseName && ` · ${horseName}`}
     </strong>
     <p>{submitter && t(`staffReview.submitter.${submitter}`)}
+      {item.requirement?.gateLocationId != null && ' · ' + t('staffReview.workspace.border')}
       {item.requiredForQuoting && ` · ${t('staffReview.beforeQuoting')}`}
       {item.requiredBeforePickup && ` · ${t('staffReview.beforePickup')}`}
       {!item.requirement?.mandatory && ` · ${t('staffReview.optional')}`}
