@@ -1,3 +1,4 @@
+import { DateInput } from '@shared/ui/DateInput'
 // Điều độ (điều phối viên): đơn chờ xếp xe và lượt xe trong tuần (docs/MAN_HINH_VA_TAC_DONG.md mục 3.9)
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -9,7 +10,6 @@ import { useAutoRefresh, useLoad } from '@shared/hooks/useLoad'
 import { Button } from '@shared/ui/Button'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { Field } from '@shared/ui/Field'
-import { Input } from '@shared/ui/Input'
 import { Modal } from '@shared/ui/Modal'
 import { PageHeader } from '@shared/ui/PageHeader'
 import { Skeleton } from '@shared/ui/Skeleton'
@@ -74,7 +74,7 @@ export default function DispatchPage() {
           <div className={s.toolbar}>
             <Button aria-label={t('dispatch.board.previous')} icon={<i className="fa-solid fa-chevron-left" />} onClick={() => setWeekStart(addDays(weekStart, -7))} />
             <Field label={t('dispatch.weekFrom')} className={s.week}>
-              {control => <Input {...control} type="date" value={weekStart} onChange={e => e.target.value && setWeekStart(mondayOf(e.target.value))} />}
+              {control => <DateInput {...control} value={weekStart} onValueChange={value => value && setWeekStart(mondayOf(value))} />}
             </Field>
             <Button aria-label={t('dispatch.board.next')} icon={<i className="fa-solid fa-chevron-right" />} onClick={() => setWeekStart(addDays(weekStart, 7))} />
             <Button aria-pressed={onlyMine} onClick={() => setOnlyMine(value => !value)}>{t('coordAssignment.mine')}</Button>

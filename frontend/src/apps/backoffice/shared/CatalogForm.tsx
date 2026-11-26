@@ -1,3 +1,4 @@
+import { DateInput } from '@shared/ui/DateInput'
 
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -58,7 +59,9 @@ export function CatalogForm({ title, intro, fields, values, setValue, save, busy
             error={attempted && missing(field) ? t('staffCatalog.required') : errors[name]}>
             {control => options
               ? <Select {...control} options={options} value={value} onChange={change} disabled={busy || readOnly} placeholder={t('staffCatalog.choose')} />
-              : type === 'textarea'
+               : type === 'date'
+                ? <DateInput {...control} name={name} value={value} onValueChange={change} disabled={busy || readOnly} min={min} max={max} />
+                : type === 'textarea' 
                 ? <Textarea {...control} value={value} onChange={event => change(event.target.value)} disabled={busy} readOnly={readOnly} maxLength={maxLength} />
                 : <Input {...control} name={name} type={type ?? 'text'} value={value} onChange={event => change(event.target.value)} disabled={busy}
                   readOnly={readOnly} min={min} max={max} minLength={minLength} maxLength={maxLength}

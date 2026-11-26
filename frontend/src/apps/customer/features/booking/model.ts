@@ -15,11 +15,7 @@ const DAY_MS = 24 * HOUR_MS
 export const todayIso = (now = Date.now()) => new Date(now + 7 * HOUR_MS).toISOString().slice(0, 10)
 export const addDays = (iso: string, days: number) =>
   new Date(Date.parse(`${iso}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10)
-export const showDate = (iso: string) => iso.split('-').reverse().join('/')
-export function showDateTime(instant: string) {
-  const local = new Date(Date.parse(instant) + 7 * HOUR_MS).toISOString()
-  return `${showDate(local.slice(0, 10))} ${local.slice(11, 16)}`
-}
+export { formatDate as showDate, formatDateTime as showDateTime } from '@shared/lib/format'
 
 export const isHome = (address: CustomerAddress | undefined) => address?.countryCode === HOME_COUNTRY
 
@@ -93,7 +89,7 @@ const text = (value: string) => value.trim() || undefined
 function addressInput(kind: AddressKind, address: CustomerAddress, contact: Pick<PartyDraft, "fullName" | "phone">, note: string) {
   return {
     addressType: kind,
-    addressLine: [address.addressLine, address.ward].filter(Boolean).join(', ').slice(0, 500),
+    addressLine: ([address.addressLine, address.ward].filter(Boolean).join(', ') || address.provinceCode || '').slice(0, 500),
     provinceCode: address.provinceCode!,
     countryCode: address.countryCode!,
     latitude: address.latitude!,

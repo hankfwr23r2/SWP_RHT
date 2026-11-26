@@ -3,7 +3,11 @@ package com.example.racehorse_transport.service.impl;
 import com.example.racehorse_transport.client.ValhallaClient;
 import com.example.racehorse_transport.dto.route.RoadRouteDto;
 import com.example.racehorse_transport.dto.route.GeoPointDto;
+import com.example.racehorse_transport.entity.enums.ServiceLayer;
+import com.example.racehorse_transport.exception.NoTruckRouteException;
 import com.example.racehorse_transport.exception.RoutingUnavailableException;
+import com.example.racehorse_transport.policy.PricingPolicy;
+import com.example.racehorse_transport.service.SystemConfigService;
 import com.example.racehorse_transport.service.PricingRouteService;
 import jakarta.persistence.EntityManagerFactory;
 import java.math.BigDecimal;
@@ -22,6 +26,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 public class PricingRouteServiceImpl implements PricingRouteService {
     private final ValhallaClient routing;
     private final EntityManagerFactory entityManagerFactory;
+    private final SystemConfigService configs;
 
     @Override
     @Transactional(propagation = Propagation.NEVER)
@@ -44,6 +49,20 @@ public class PricingRouteServiceImpl implements PricingRouteService {
         }
         // Km tính tiền: km gần nhất, tối thiểu 1 km
         return new RoadEstimate(BigDecimal.valueOf(Math.max(1, Math.round(km))).setScale(2), route.driveSeconds());
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.NEVER)
+    public RoadEstimate routeOrEstimate(RoadSegment segment, LocalDateTime time, int weightTons, int topSpeedKmh) {
+        try {
+            return route(segment, time, weightTons, topSpeedKmh);
+        } catch (NoTruckRouteException e) {
+            if (segment.layer() == ServiceLayer.DIRECT) throw e;
+            BigDecimal km = PricingPolicy.estimatedRoadKm(segment.from(), segment.to(), configs.getInt("ROAD_DISTANCE_FACTOR"));
+            // Km tính tiền làm tròn như đường thật, tối thiểu 1 km
+            return new RoadEstimate(BigDecimal.valueOf(Math.max(1, Math.round(km.doubleValue()))).setScale(2),
+                    PricingPolicy.estimatedDriveSeconds(km, topSpeedKmh));
+        }
     }
 
     @Override

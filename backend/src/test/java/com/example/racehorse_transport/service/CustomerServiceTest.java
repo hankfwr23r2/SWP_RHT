@@ -30,7 +30,7 @@ class CustomerServiceTest {
 
         assertThat(customers.customerAddresses(owner)).extracting(a -> a.defaultAddress()).containsExactly(false, true);
         var updated = customers.updateCustomerAddress(owner, first.id(), new CustomerAddressUpdateRequestDto(
-                "Updated", "Address 1", null, "VN-79", "VN", null, null, true));
+                "Updated", "Address 1", "Phường Bến Nghé", "VN-79", "VN", null, null, true));
         assertThat(updated.defaultAddress()).isTrue();
         assertThat(customers.customerAddresses(owner)).extracting(a -> a.defaultAddress()).containsExactly(true, false);
         customers.deleteCustomerAddress(owner, first.id());
@@ -48,9 +48,9 @@ class CustomerServiceTest {
         assertThatThrownBy(() -> customers.deleteCustomerAddress(other, addressId))
                 .isInstanceOf(ResourceNotFoundException.class);
         assertThatThrownBy(() -> customers.updateCustomerAddress(other, addressId, new CustomerAddressUpdateRequestDto(
-                "Other", "Address", null, "VN-79", "VN", null, null, true))).isInstanceOf(ResourceNotFoundException.class);
+                "Other", "Address", "Phường Bến Nghé", "VN-79", "VN", null, null, true))).isInstanceOf(ResourceNotFoundException.class);
         assertThatThrownBy(() -> customers.createCustomerAddress(owner, new CustomerAddressCreateRequestDto(
-                "Wrong country", "Address", null, "VN-79", "KH", null, null, false))).isInstanceOf(CustomerRuleException.class);
+                "Wrong country", "Address", "Phường Bến Nghé", "VN-79", "KH", null, null, false))).isInstanceOf(CustomerRuleException.class);
         assertThat(customers.customerAddresses(other)).isEmpty();
         assertThat(customers.customerAddresses(owner)).hasSize(1);
     }
@@ -61,11 +61,11 @@ class CustomerServiceTest {
         BigDecimal farLat = new BigDecimal("15.505957");
         BigDecimal farLng = new BigDecimal("106.479492");
         assertThatThrownBy(() -> customers.createCustomerAddress(owner, new CustomerAddressCreateRequestDto(
-                "Far", "Address", null, "VN-79", "VN", farLat, farLng, false))).isInstanceOf(CustomerRuleException.class);
+                "Far", "Address", "Phường Bến Nghé", "VN-79", "VN", farLat, farLng, false))).isInstanceOf(CustomerRuleException.class);
         long id = customers.createCustomerAddress(owner, new CustomerAddressCreateRequestDto(
-                "Near", "Address", null, "VN-79", "VN", new BigDecimal("10.973"), new BigDecimal("106.493"), false)).id();
+                "Near", "Address", "Phường Bến Nghé", "VN-79", "VN", new BigDecimal("10.973"), new BigDecimal("106.493"), false)).id();
         assertThatThrownBy(() -> customers.updateCustomerAddress(owner, id, new CustomerAddressUpdateRequestDto(
-                "Near", "Address", null, "VN-79", "VN", farLat, farLng, false))).isInstanceOf(CustomerRuleException.class);
+                "Near", "Address", "Phường Bến Nghé", "VN-79", "VN", farLat, farLng, false))).isInstanceOf(CustomerRuleException.class);
         assertThat(customers.customerAddresses(owner)).singleElement()
                 .satisfies(saved -> assertThat(saved.latitude()).isEqualByComparingTo("10.973"));
     }
@@ -89,6 +89,6 @@ class CustomerServiceTest {
     }
 
     private CustomerAddressCreateRequestDto address(String label, boolean defaultAddress) {
-        return new CustomerAddressCreateRequestDto(label, "Address", null, "VN-79", "VN", null, null, defaultAddress);
+        return new CustomerAddressCreateRequestDto(label, "Address", "Phường Bến Nghé", "VN-79", "VN", null, null, defaultAddress);
     }
 }

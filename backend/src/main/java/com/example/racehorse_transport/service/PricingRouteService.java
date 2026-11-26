@@ -12,6 +12,10 @@ public interface PricingRouteService {
 
     RoadEstimate route(RoadSegment segment, LocalDateTime time, int weightTons, int topSpeedKmh);
 
+    // Như route; chặng đón, giao không tìm được đường xe tải thì ước lượng theo đường chim bay nhân hệ số đường bộ.
+    // Điều phối xác nhận đường thật khi lập lượt. Chạy thẳng vẫn báo không có đường.
+    RoadEstimate routeOrEstimate(RoadSegment segment, LocalDateTime time, int weightTons, int topSpeedKmh);
+
     // Lộ trình xe tải qua nhiều điểm, từng đoạn kèm đường vẽ
     List<RoadRouteDto.Leg> legs(List<GeoPointDto> points, LocalDateTime time, int weightTons, int topSpeedKmh);
 

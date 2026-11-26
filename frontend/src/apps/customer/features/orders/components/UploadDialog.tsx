@@ -1,10 +1,10 @@
+import { DateInput } from '@shared/ui/DateInput'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { bookingDocumentsApi, type ChecklistItem } from '@shared/api/bookingDocuments'
 import { Button } from '@shared/ui/Button'
 import { Field } from '@shared/ui/Field'
 import { FileField } from '@shared/ui/FileField'
-import { Input } from '@shared/ui/Input'
 import { Modal } from '@shared/ui/Modal'
 import { useOrderAction } from '../useOrderAction'
 import s from '../Orders.module.css'
@@ -40,7 +40,7 @@ export function UploadDialog({ bookingId, item, horseName, onClose }: Props) {
         <FileField label={t('myOrders.documents.file')} required fileName={file?.name} onChange={(_, next) => setFile(next)}
           error={submitted && !file ? t('bookingForm.required') : undefined} />
         <Field label={t('myOrders.documents.expiryLabel')} hint={t('myOrders.documents.expiryHint')}>
-          {control => <Input {...control} type="date" value={expiry} onChange={event => setExpiry(event.target.value)} />}
+          {control => <DateInput {...control} value={expiry} onValueChange={value => setExpiry(value)} />}
         </Field>
         {error && <p className={s.error} role="alert">{error}</p>}
       </div>

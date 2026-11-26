@@ -105,4 +105,21 @@ describe('Modal', () => {
     expect(document.activeElement).toBe(opener)
     expect(document.body.style.overflow).toBe('')
   })
+
+  it('form trong hộp thoại không gửi form của trang chứa nó', () => {
+    const outer = vi.fn((event: { preventDefault: () => void }) => event.preventDefault())
+    const inner = vi.fn((event: { preventDefault: () => void }) => event.preventDefault())
+    render(
+      <form onSubmit={outer}>
+        <Modal title="Thêm địa chỉ" onClose={() => {}} footer={<button type="submit" form="address">Lưu</button>}>
+          <form id="address" onSubmit={inner}><input aria-label="Tên" /></form>
+        </Modal>
+      </form>,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+    expect(inner).toHaveBeenCalledTimes(1)
+    expect(outer).not.toHaveBeenCalled()
+    // Hộp thoại nằm ngoài form của trang
+    expect(screen.getByRole('dialog').closest('form')).toBeNull()
+  })
 })

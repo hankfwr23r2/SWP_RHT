@@ -11,7 +11,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["search"];
+        get: operations["search_1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2238,6 +2238,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["writeOff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/geocode/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["search"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4745,6 +4761,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListGeocodeResultResponseDto: {
+            data?: components["schemas"]["GeocodeResultResponseDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseListHandoverPaperResponseDto: {
             data?: components["schemas"]["HandoverPaperResponseDto"][];
             message?: string;
@@ -5599,14 +5620,14 @@ export interface components {
             waitingPickupBalance?: boolean;
         };
         CustomerAddressCreateRequestDto: {
-            addressLine: string;
+            addressLine?: string;
             countryCode: string;
             defaultAddress?: boolean;
             label: string;
             latitude?: number;
             longitude?: number;
             provinceCode: string;
-            ward?: string;
+            ward: string;
         };
         CustomerAddressResponseDto: {
             addressLine?: string;
@@ -5621,14 +5642,14 @@ export interface components {
             ward?: string;
         };
         CustomerAddressUpdateRequestDto: {
-            addressLine: string;
+            addressLine?: string;
             countryCode: string;
             defaultAddress?: boolean;
             label: string;
             latitude?: number;
             longitude?: number;
             provinceCode: string;
-            ward?: string;
+            ward: string;
         };
         CustomerProfileResponseDto: {
             /** @enum {string} */
@@ -6077,6 +6098,13 @@ export interface components {
             lat?: number;
             /** Format: double */
             lng?: number;
+        };
+        GeocodeResultResponseDto: {
+            label?: string;
+            /** Format: double */
+            latitude?: number;
+            /** Format: double */
+            longitude?: number;
         };
         GroupBookingDto: {
             addressLine?: string;
@@ -8335,7 +8363,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    search: {
+    search_1: {
         parameters: {
             query: {
                 from: string;
@@ -12031,6 +12059,29 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponsePaymentResponseDto"];
+                };
+            };
+        };
+    };
+    search: {
+        parameters: {
+            query: {
+                q: string;
+                countryCode: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListGeocodeResultResponseDto"];
                 };
             };
         };

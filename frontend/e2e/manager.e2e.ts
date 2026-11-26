@@ -147,7 +147,7 @@ test('chuyến: xác nhận chạy, hủy phải có lý do, tạo chuyến đ�
   await dialog.getByRole('combobox').first().click()
   await expect(page.getByRole('option', { name: 'Tuyến ngừng' })).toHaveCount(0)
   await page.getByRole('option', { name: 'TP.HCM – Đà Nẵng' }).click()
-  await dialog.getByLabel(/Ngày đi/).fill('2099-02-01')
+  await dialog.getByLabel(/Ngày đi/).fill('01/02/2099')
   await dialog.getByLabel(/Giờ đi/).fill('05:30')
   await dialog.getByLabel(/Chốt sổ trước/).fill('72')
   await dialog.getByRole('combobox').nth(1).click()

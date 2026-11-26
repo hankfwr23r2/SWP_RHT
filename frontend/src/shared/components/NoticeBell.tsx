@@ -31,7 +31,11 @@ export function NoticeBell({ resolveLink }: { resolveLink?: (path: string) => st
   useAutoRefresh(load)
   useEffect(() => {
     if (!open) return
-    const onDown = (e: MouseEvent) => { if (!box.current?.contains(e.target as Node)) setOpen(false) }
+    // Hộp xác nhận mở từ khung này nằm ở cuối trang (portal): bấm trong hộp đó không tính là bấm ra ngoài
+    const onDown = (e: MouseEvent) => {
+      const target = e.target as Element
+      if (!box.current?.contains(target) && !target.closest?.('[data-dialog]')) setOpen(false)
+    }
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
     document.addEventListener('mousedown', onDown)
     document.addEventListener('keydown', onKey)

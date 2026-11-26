@@ -75,6 +75,9 @@ class CommercialFlowIntegrationTest {
                 SELECT u.id, ?, 'MARE', (SELECT min(id) FROM horse_type), 'ACTIVE' FROM app_user u WHERE u.username = ? RETURNING id
                 """, Long.class, data.unique("Ngựa"), username);
         when(cloudinary.uploadFile(any(), anyString())).thenAnswer(call -> "https://example.test/" + java.util.UUID.randomUUID() + ".pdf");
+        // Báo giá gọi routeOrEstimate: chuyển sang route đã giả lập ở từng test
+        when(maps.routeOrEstimate(any(), any(), anyInt(), anyInt())).thenAnswer(invocation -> maps.route(
+                invocation.getArgument(0), invocation.getArgument(1), invocation.getArgument(2), invocation.getArgument(3)));
         when(maps.route(any(), any(), anyInt(), anyInt())).thenReturn(new PricingRouteService.RoadEstimate(new BigDecimal("45"), 3600));
     }
 

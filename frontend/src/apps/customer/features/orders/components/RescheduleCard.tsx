@@ -1,3 +1,4 @@
+import { DateInput } from '@shared/ui/DateInput'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { BookingReschedule } from '@shared/api/bookingOrders'
@@ -7,7 +8,6 @@ import { ConfirmDialog } from '@shared/ui/ConfirmDialog'
 import { EmptyState } from '@shared/ui/EmptyState'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { Field } from '@shared/ui/Field'
-import { Input } from '@shared/ui/Input'
 import { Skeleton } from '@shared/ui/Skeleton'
 import { moment, showDate } from '../format'
 import type { OrderData } from '../loaders'
@@ -76,7 +76,7 @@ export function RescheduleCard({ data, excludeDepartureId, reschedule }: Props) 
           )}
         {selected && (
           <Field label={t('bookingForm.route.pickupDate')} required error={badDate ? t('bookingForm.route.badDate') : undefined}>
-            {control => <Input {...control} type="date" min={today} max={last} value={pickupDate} onChange={event => setPickupDate(event.target.value)} />}
+            {control => <DateInput {...control} min={today} max={last} value={pickupDate} onValueChange={value => setPickupDate(value)} />}
           </Field>
         )}
         {error && <p className={s.error} role="alert">{error}</p>}

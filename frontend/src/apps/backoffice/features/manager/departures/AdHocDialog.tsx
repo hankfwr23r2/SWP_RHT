@@ -1,3 +1,4 @@
+import { DateInput } from '@shared/ui/DateInput'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { departuresApi, type RouteOption } from '@shared/api/departures'
@@ -67,7 +68,7 @@ export function AdHocDialog({ routes, onClose, onCreated }: Props) {
         </Field>
         <div className={s.grid}>
           <Field label={t('mgr.departures.date')} required error={fields.departureDate}>
-            {control => <Input {...control} type="date" min={today} value={form.departureDate} onChange={event => set({ departureDate: event.target.value })} />}
+            {control => <DateInput {...control} min={today} value={form.departureDate} onValueChange={value => set({ departureDate: value })} />}
           </Field>
           <Field label={t('mgr.departures.time')} required error={fields.departureTime}>
             {control => <Input {...control} type="time" value={form.departureTime} onChange={event => set({ departureTime: event.target.value })} />}

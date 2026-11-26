@@ -1,3 +1,4 @@
+import { formatDate } from '@shared/lib/format'
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
 import { useTranslation } from 'react-i18next'
@@ -110,7 +111,7 @@ function DeliveryChangePrice({ price }: { price: DeliveryChangePreview }) {
     {rows.map(([label, amount]) => <div key={label}><dt>{t(`${key}.${label}`)}</dt>
       <dd>{amount == null ? '—' : money.format(amount)}</dd></div>)}
     <div><dt>{t(`${key}.arrival`)}</dt><dd>{price.estimatedDeliveryDate
-      ? new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium', timeZone: 'UTC' }).format(new Date(price.estimatedDeliveryDate))
+      ? formatDate(price.estimatedDeliveryDate)
       : '—'}</dd></div>
   </dl>
 }

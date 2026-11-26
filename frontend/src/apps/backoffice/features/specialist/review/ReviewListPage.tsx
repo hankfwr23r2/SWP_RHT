@@ -21,7 +21,7 @@ import { useReviewQueue } from './useReviewQueue'
 import s from './Review.module.css'
 
 function ReviewQueue({ status, query, mine, initial, tabs, toolbar }: { status: ReviewStatus; query: string; mine: boolean; initial?: BookingSummary[]; tabs: ComponentProps<typeof ListPanel>['tabs']; toolbar: ReactNode }) {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const { data, loaded, error, reload, busy, pageError, hasMore, more } = useReviewQueue(status, mine, initial)
   const rows = (data ?? initial ?? []).filter(row => matchesReview(row, query))
   return <ListPanel tabs={tabs} toolbar={toolbar} loading={!loaded && !initial && !error}
@@ -37,7 +37,7 @@ function ReviewQueue({ status, query, mine, initial, tabs, toolbar }: { status: 
           {row.customerName && <div><dt>{t('staffReview.queueFields.customer')}</dt><dd>{row.customerName}{row.customerPhone && ` · ${row.customerPhone}`}</dd></div>}
           <div><dt>{t('staffReview.queueFields.specialist')}</dt><dd>{row.specialistName ?? t('staffReview.unassigned')}</dd></div>
           {row.routeName && <div><dt>{t('listPanel.route')}</dt><dd><OrderRoute {...row} /></dd></div>}
-          {row.requestedPickupDate && <div><dt>{t('staffReview.queueFields.pickup')}</dt><dd>{showDate(row.requestedPickupDate, i18n.language)}</dd></div>}
+          {row.requestedPickupDate && <div><dt>{t('staffReview.queueFields.pickup')}</dt><dd>{showDate(row.requestedPickupDate)}</dd></div>}
           {row.horseCount != null && <div><dt>{t('staffReview.queueFields.horses')}</dt><dd>{row.horseCount}</dd></div>}
         </dl>
         {row.id != null && <div className={s.reviewAction}><ReviewRowActions row={{ id: row.id }} /></div>}

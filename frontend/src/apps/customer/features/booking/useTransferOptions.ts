@@ -8,7 +8,7 @@ import { transferRequest } from './model'
 
 export type BlockedReason = NonNullable<NonNullable<TransferOptions['pickup']>['status']>
 
-const blockedBy = (end: TransferOptions['pickup']) => (end?.companyAllowed === false ? end.status : undefined)
+const blockedBy = (end: TransferOptions['pickup']) => (end?.status === 'TOO_FAR' || end?.status === 'NO_ROUTE' ? end.status : undefined)
 
 export function useTransferOptions(draft: BookingDraft, save: (patch: Partial<BookingDraft>) => void) {
   const request = transferRequest(draft)
@@ -22,8 +22,8 @@ export function useTransferOptions(draft: BookingDraft, save: (patch: Partial<Bo
   const delivery = blockedBy(options?.delivery)
 
   useEffect(() => {
-    if (pickup && draft.pickupMethod === 'COMPANY') save({ pickupMethod: 'SELF' })
-    if (delivery && draft.deliveryMethod === 'COMPANY') save({ deliveryMethod: 'SELF' })
+    if (pickup === 'TOO_FAR' && draft.pickupMethod === 'COMPANY') save({ pickupMethod: 'SELF' })
+    if (delivery === 'TOO_FAR' && draft.deliveryMethod === 'COMPANY') save({ deliveryMethod: 'SELF' })
   }, [pickup, delivery, draft.pickupMethod, draft.deliveryMethod, save])
 
   return { pickup, delivery }

@@ -22,7 +22,7 @@ describe('hiển thị hồ sơ chuyên viên', () => {
   })
 
   it('hiển thị ngày lịch theo ngày backend gửi và giờ báo giá theo giờ Việt Nam', () => {
-    expect(showDate('2026-12-01', 'en-GB')).toBe('1 Dec 2026')
-    expect(showDate('2026-12-01T18:00:00Z', 'en-GB')).toContain('2 Dec 2026')
+    expect(showDate('2026-12-01')).toBe('01/12/2026')
+    expect(showDate('2026-12-01T18:00:00Z')).toBe('02/12/2026 01:00')
   })
 })

@@ -8,7 +8,7 @@ import { auditTimestamp } from './auditDisplay'
 import { useAuditDetail } from './useAuditLogs'
 
 export function AuditDetail({ id, close }: { id: string; close: () => void }) {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const request = useAuditDetail(id)
   const item = request.data
   const changes = item ? auditChanges(item.oldData ?? null, item.newData ?? null, Boolean(item.legacy)) : []
@@ -27,7 +27,7 @@ export function AuditDetail({ id, close }: { id: string; close: () => void }) {
     <CatalogState loading={!request.loaded} failed={Boolean(request.error)} reload={request.reload} empty={!item}>
       {item && <div className={s.stack}>
         <dl className={s.grid}>
-          <div><dt>{t('systemLogs.time')}</dt><dd>{auditTimestamp(item.createdAt, i18n.language)}</dd></div>
+          <div><dt>{t('systemLogs.time')}</dt><dd>{auditTimestamp(item.createdAt)}</dd></div>
           <div><dt>{t('systemLogs.actor')}</dt><dd>{item.actorName ?? unknown}
             {item.actorRole && <> · {t(`roles.${item.actorRole.toLowerCase()}`, { defaultValue: unknown })}</>}
             {item.actorEmail && <><br />{item.actorEmail}</>}</dd></div>

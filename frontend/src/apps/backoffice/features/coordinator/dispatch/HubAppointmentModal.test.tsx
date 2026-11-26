@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { formatDateTime } from '@shared/lib/format'
 import { afterEach, beforeAll, expect, it, vi } from 'vitest'
 import apiClient from '@shared/api/client'
 import { dispatchTexts } from '@shared/i18n/staffTexts'
@@ -24,7 +25,7 @@ it('shows the deadline from the booking and allows an appointment at that time',
 
   const input = screen.getByLabelText<HTMLInputElement>(/^Giờ hẹn/)
   const submit = screen.getByRole<HTMLButtonElement>('button', { name: 'Hẹn giờ' })
-  expect(screen.getByText('Hạn có mặt ở hub là 05/03/2031 15:00.')).toBeTruthy()
+  expect(screen.getByText(`Hạn có mặt ở hub là ${formatDateTime(new Date(deadline))}.`)).toBeTruthy()
   expect(input.max).toBe(deadline)
 
   fireEvent.change(input, { target: { value: '2031-03-05T15:01' } })

@@ -1,10 +1,10 @@
+import { DateInput } from '@shared/ui/DateInput'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ChecklistItem } from '@shared/api/bookingDocuments'
 import { Button } from '@shared/ui/Button'
 import { Field } from '@shared/ui/Field'
 import { FileField } from '@shared/ui/FileField'
-import { Input } from '@shared/ui/Input'
 import { Modal } from '@shared/ui/Modal'
 import type { ReviewActions } from '../useReviewActions'
 import s from '../Review.module.css'
@@ -35,8 +35,8 @@ export function UploadPartnerDialog({ item, horseName, actions, onClose }: {
           onChange={(_, next) => { setFile(next); actions.clear() }} onValidationError={setFileError}
           error={actions.fields.file || (submitted && !file ? t('staffReview.required') : undefined)} />
         <Field label={t('staffReview.expiryDate')} error={actions.fields.expiryDate}>
-          {control => <Input {...control} type="date" value={expiry}
-            onChange={event => { setExpiry(event.target.value); actions.clear() }} />}
+          {control => <DateInput {...control} value={expiry}
+            onValueChange={value => { setExpiry(value); actions.clear() }} />}
         </Field>
       </fieldset>
       {actions.error && (!Object.keys(actions.fields).length || actions.fields.requirementId || actions.fields.bookingHorseId)

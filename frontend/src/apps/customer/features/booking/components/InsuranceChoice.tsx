@@ -1,3 +1,4 @@
+import { DateInput } from '@shared/ui/DateInput'
 import { useTranslation } from 'react-i18next'
 import type { Insurer } from '@shared/api/catalog'
 import { documentUploadError } from '@shared/lib/documentUpload'
@@ -47,10 +48,10 @@ export function InsuranceChoice({ horseId, choice, insurers, missing, fileError,
             {control => <Input {...control} maxLength={50} value={choice.policyNumber} onChange={event => onChange({ policyNumber: event.target.value })} />}
           </Field>
           <Field label={t('bookingForm.services.validFrom')} required error={required(choice.validFrom)}>
-            {control => <Input {...control} type="date" value={choice.validFrom} onChange={event => onChange({ validFrom: event.target.value })} />}
+            {control => <DateInput {...control} value={choice.validFrom} onValueChange={value => onChange({ validFrom: value })} />}
           </Field>
           <Field label={t('bookingForm.services.validTo')} required error={badRange ? t('bookingForm.services.badRange') : required(choice.validTo)}>
-            {control => <Input {...control} type="date" value={choice.validTo} min={choice.validFrom || undefined} onChange={event => onChange({ validTo: event.target.value })} />}
+            {control => <DateInput {...control} value={choice.validTo} min={choice.validFrom || undefined} onValueChange={value => onChange({ validTo: value })} />}
           </Field>
           <Field label={t('bookingForm.services.policyFile')} required
             hint={choice.policyFile?.name ?? t('bookingForm.services.policyFileHint')}

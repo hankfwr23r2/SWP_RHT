@@ -1,3 +1,4 @@
+import { DateInput } from '@shared/ui/DateInput'
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ROLE_LABEL } from '@shared/auth/role'
@@ -38,8 +39,8 @@ export function AuditFilters({ params, defaults, options, apply }: {
   }))]
   return <form className={s.form} onSubmit={submit} onReset={() => { setTarget(''); setAction(''); setRole(''); apply(new URLSearchParams(defaults)) }}>
     <div className={s.grid}>
-      <Field label={t('systemLogs.from')} required>{control => <Input {...control} name="from" type="date" defaultValue={params.get('from') ?? defaults.from} />}</Field>
-      <Field label={t('systemLogs.to')} required>{control => <Input {...control} name="to" type="date" defaultValue={params.get('to') ?? defaults.to} />}</Field>
+      <Field label={t('systemLogs.from')} required>{control => <DateInput {...control} name="from" defaultValue={params.get('from') ?? defaults.from} />}</Field>
+      <Field label={t('systemLogs.to')} required>{control => <DateInput {...control} name="to" defaultValue={params.get('to') ?? defaults.to} />}</Field>
       <Field label={t('systemLogs.group')}>{control => <Select {...control} value={target} options={optionsFor(Object.keys(options).sort(), 'targets')}
         onChange={value => { setTarget(value); setAction('') }} />}</Field>
       <Field label={t('systemLogs.action')}>{control => <Select {...control} value={action} options={optionsFor(actions, 'actions')} onChange={setAction} />}</Field>

@@ -60,7 +60,8 @@
 /* Danh sách gắn vào body nên phải nằm trên hộp thoại */
 .menu {
   position: fixed;
-  z-index: calc(var(--z-modal) + 1);
+  /* Trên mọi lớp hộp thoại lồng nhau (Modal cộng độ sâu lồng), dưới thông báo Toast */
+  z-index: calc(var(--z-modal) + 40);
   max-height: 280px;
   margin: 0;
   padding: var(--space-1);

@@ -45,7 +45,8 @@ test('quản lý xem số liệu vận hành và báo cáo một lượt xe', as
   await expect(cards).toContainText('75%', { timeout: 15_000 })
   await expect(cards).toContainText('2 trễ / 8 điểm đã tới')
   await expect(cards).toContainText('Khách 1,500,000 ₫')
-  await page.getByLabel('Từ ngày').fill('2031-03-01')
+  await page.getByLabel('Đến ngày').fill('31/03/2031')
+  await page.getByLabel('Từ ngày').fill('01/03/2031')
   await expect.poll(() => ranges.at(-1)).toMatch(/^2031-02-28T17:00:00.000Z /)
 
   await page.getByRole('table', { name: 'Lượt xe trong khoảng ngày' }).getByRole('button', { name: 'Xem' }).click()

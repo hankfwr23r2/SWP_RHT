@@ -1,3 +1,4 @@
+import { DateInput } from '@shared/ui/DateInput'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { BookingDetail } from '@shared/api/bookingOrders'
@@ -75,11 +76,11 @@ function RevisionForm({ bookingId, horse }: { bookingId: number; horse: HorseDet
           {control => <Input {...control} maxLength={50} value={form.policyNumber} onChange={event => set({ policyNumber: event.target.value })} />}
         </Field>
         <Field label={t('bookingForm.services.validFrom')} required error={fields.validFrom ?? missing(form.validFrom)}>
-          {control => <Input {...control} type="date" value={form.validFrom} onChange={event => set({ validFrom: event.target.value })} />}
+          {control => <DateInput {...control} value={form.validFrom} onValueChange={value => set({ validFrom: value })} />}
         </Field>
         <Field label={t('bookingForm.services.validTo')} required
           error={fields.validTo ?? (badRange ? t('bookingForm.services.badRange') : missing(form.validTo))}>
-          {control => <Input {...control} type="date" value={form.validTo} onChange={event => set({ validTo: event.target.value })} />}
+          {control => <DateInput {...control} value={form.validTo} onValueChange={value => set({ validTo: value })} />}
         </Field>
         <Field label={t('bookingForm.services.policyFile')} required
           hint={file?.name ?? t('bookingForm.services.policyFileHint')}

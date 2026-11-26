@@ -26,11 +26,11 @@ export function MethodChoice({ name, legend, side, value, hub, blocked, onChange
       <legend>{legend}</legend>
       <div className={s.options}>
         {(['COMPANY', 'SELF'] as const).map(method => {
-          const locked = method === 'COMPANY' && !!blocked
+          const locked = method === 'COMPANY' && blocked === 'TOO_FAR'
           return (
             <label key={method} className={s.option}>
               <input type="radio" name={name} checked={value === method} disabled={locked}
-                aria-describedby={locked ? noteId : undefined} onChange={() => onChange(method)} />
+                aria-describedby={method === 'COMPANY' && blocked ? noteId : undefined} onChange={() => onChange(method)} />
               <strong>{t(`bookingForm.methods.${side}.${method}`)}</strong>
               <span>{t(`bookingForm.methodHints.${side}.${method}`, { hub: hub ?? '' })}</span>
               {rules && <span className={s.rule}>{t(`bookingForm.methodRules.${side}.${method}`, { ...rules })}</span>}
@@ -41,7 +41,7 @@ export function MethodChoice({ name, legend, side, value, hub, blocked, onChange
       {blocked && (
         <p id={noteId} className={s.alert} role="status">
           <span>{t(`bookingForm.companyBlocked.${side}.${blocked}`)} {blocked === 'TOO_FAR' && hours && t('bookingForm.companyBlocked.limit', { hours })}</span>
-          <span>{t(`bookingForm.companyBlocked.${side}.switched`)}</span>
+          {blocked === 'TOO_FAR' && <span>{t(`bookingForm.companyBlocked.${side}.switched`)}</span>}
         </p>
       )}
     </fieldset>

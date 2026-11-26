@@ -22,6 +22,11 @@ vi.mock('leaflet', () => ({
       getBounds: () => ({ contains: () => true }), getZoom: () => 10,
     }),
     circleMarker: () => ({ addTo() { return this }, setLatLng: vi.fn(), remove: vi.fn() }),
+    marker: () => ({
+      addTo() { return this }, setLatLng: vi.fn(), remove: vi.fn(), on: vi.fn(), off: vi.fn(),
+      dragging: { enable: vi.fn(), disable: vi.fn() },
+    }),
+    divIcon: () => ({}),
     control: { zoom: () => ({ addTo() { return this }, remove: vi.fn() }) },
   },
 }))
@@ -143,15 +148,14 @@ describe('Address book', () => {
     fireEvent.click(screen.getByRole('checkbox', { name: 'Đặt làm địa chỉ mặc định' }))
     fireEvent.click(screen.getByRole('button', { name: 'Lưu' }))
     expect(post).not.toHaveBeenCalled()
-    // Quên ghim: bản đồ tự mở kèm lỗi
+    // Quên ghim: báo lỗi ngay trên bản đồ (bản đồ luôn mở sẵn)
     expect(await screen.findByText(/Hãy chọn một vị trí/)).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Ẩn bản đồ' })).toBeTruthy()
     await waitFor(() => expect(setView).toHaveBeenLastCalledWith([10.776, 106.7], 10, { animate: false }))
     fireEvent.change(await screen.findByRole('textbox', { name: 'Vĩ độ' }), { target: { value: '10.12345678' } })
     fireEvent.change(screen.getByRole('textbox', { name: 'Kinh độ' }), { target: { value: '106.12345678' } })
     fireEvent.click(screen.getByRole('button', { name: 'Lưu' }))
     const error = await screen.findByText('Địa chỉ chưa đầy đủ.')
-    expect(street.getAttribute('aria-describedby')).toBe(error.id)
+    expect(street.getAttribute('aria-describedby')).toContain(error.id)
     fireEvent.change(street, { target: { value: address.addressLine } })
     fireEvent.click(screen.getByRole('button', { name: 'Lưu' }))
     expect(await screen.findByText('Vị trí ghim quá xa TP. Hồ Chí Minh. Hãy ghim lại hoặc chọn tỉnh khác.')).toBeTruthy()

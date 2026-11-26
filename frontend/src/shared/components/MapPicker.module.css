@@ -1,7 +1,7 @@
 .picker { display: grid; gap: var(--space-3); }
 .picker p { margin: 0; color: var(--color-muted); font-size: var(--text-sm); }
 .map {
-  height: 16rem;
+  height: 22.5rem;
   isolation: isolate;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -9,10 +9,10 @@
 }
 .map[hidden] { display: none; }
 .map:focus-visible { outline: 2px solid var(--color-primary); }
-.marker { stroke: var(--color-primary); fill: var(--color-primary); fill-opacity: .8; }
+.marker { background: var(--color-primary); border: 2px solid var(--color-surface); border-radius: 50%; }
 .coordinates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
 
 @media (max-width: 480px) {
-  .map { height: 12rem; }
+  .map { height: 17.5rem; }
   .coordinates { grid-template-columns: 1fr; }
 }

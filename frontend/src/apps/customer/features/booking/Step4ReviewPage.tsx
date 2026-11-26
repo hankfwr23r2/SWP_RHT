@@ -29,13 +29,27 @@ export default function Step4ReviewPage() {
   const navigate = useNavigate()
   const toast = useToast()
   const data = useBookingData()
-  const { draft, save, setParty } = useBookingDraft()
+  const { draft: savedDraft, save, setParty } = useBookingDraft()
   const { submit, busy, order, error, fields } = useSubmitBooking()
   const [submitted, setSubmitted] = useState(false)
   const [confirming, setConfirming] = useState(false)
 
-  const pickup = findAddress(data, draft.pickupAddressId)
-  const delivery = findAddress(data, draft.deliveryAddressId)
+  const pickup = findAddress(data, savedDraft.pickupAddressId)
+  const delivery = findAddress(data, savedDraft.deliveryAddressId)
+
+  const pickupText = pickup ? addressText(data, pickup) : ''
+  const deliveryText = delivery ? addressText(data, delivery) : ''
+  const parties = savedDraft.parties
+  const shipperAddress = parties.SHIPPER.address || pickupText
+  const draft = {
+    ...savedDraft,
+    parties: {
+      SHIPPER: { ...parties.SHIPPER, address: shipperAddress },
+      CONSIGNEE: { ...parties.CONSIGNEE, address: parties.CONSIGNEE.address || deliveryText },
+      PAYER: { ...parties.PAYER, address: parties.PAYER.address || shipperAddress },
+      EMERGENCY_CONTACT: { ...parties.EMERGENCY_CONTACT, address: parties.EMERGENCY_CONTACT.address || shipperAddress },
+    },
+  }
 
   if (order) {
     return (

@@ -25,18 +25,19 @@ interface Props {
   value: MapPoint | null
   // Nơi mở bản đồ khi chưa ghim, ví dụ trung tâm tỉnh đã chọn
   center?: MapPoint
+  searchPoint?: MapPoint
   onChange: (point: MapPoint | null) => void
   disabled?: boolean
   latitudeError?: string
   longitudeError?: string
 }
 
-export default function MapPicker({ value, center, onChange, disabled, latitudeError, longitudeError }: Props) {
+export default function MapPicker({ value, center, searchPoint, onChange, disabled, latitudeError, longitudeError }: Props) {
   const { t } = useTranslation()
   const container = useRef<HTMLDivElement>(null)
   const locationControls = useRef<HTMLDivElement>(null)
   const map = useRef<L.Map | null>(null)
-  const marker = useRef<L.CircleMarker | null>(null)
+  const marker = useRef<L.Marker | null>(null)
   const initialPoint = useRef(value)
   const [latitude, setLatitude] = useState(value?.latitude.toFixed(6) ?? '')
   const [longitude, setLongitude] = useState(value?.longitude.toFixed(6) ?? '')
@@ -74,6 +75,13 @@ export default function MapPicker({ value, center, onChange, disabled, latitudeE
     if (!map.current || mapError || pinned || centerLatitude == null || centerLongitude == null) return
     map.current.setView([centerLatitude, centerLongitude], 10, { animate: false })
   }, [mapError, pinned, centerLatitude, centerLongitude])
+
+  useEffect(() => {
+    if (!searchPoint) return
+    setLatitude(searchPoint.latitude.toFixed(6))
+    setLongitude(searchPoint.longitude.toFixed(6))
+    if (!mapError) map.current?.setView([searchPoint.latitude, searchPoint.longitude], 15, { animate: false })
+  }, [mapError, searchPoint])
 
   const zoomIn = t('mapPicker.zoomIn')
   const zoomOut = t('mapPicker.zoomOut')
@@ -113,11 +121,28 @@ export default function MapPicker({ value, center, onChange, disabled, latitudeE
     }
     const position: L.LatLngTuple = [value.latitude, value.longitude]
     if (marker.current) marker.current.setLatLng(position)
-    else marker.current = L.circleMarker(position, { className: s.marker, radius: 9 }).addTo(instance)
+    else marker.current = L.marker(position, {
+      icon: L.divIcon({ className: s.marker, iconSize: [18, 18] }),
+      draggable: !disabled && !locating,
+      keyboard: false,
+    }).addTo(instance)
+    if (disabled || locating) marker.current.dragging?.disable()
+    else marker.current.dragging?.enable()
+    const current = marker.current
+    const move = () => {
+      const { lat, lng } = current.getLatLng().wrap()
+      const point = parseMapPoint(String(lat), String(lng))
+      if (!point) return
+      setLatitude(point.latitude.toFixed(6))
+      setLongitude(point.longitude.toFixed(6))
+      onChange(point)
+    }
+    current.on('dragend', move)
     if (!instance.getBounds().contains(position) || instance.getZoom() < 10) {
       instance.setView(position, 15, { animate: false })
     }
-  }, [mapError, value])
+    return () => { current.off('dragend', move) }
+  }, [disabled, locating, mapError, onChange, value])
 
   const locate = () => {
     setLocationError(false)
