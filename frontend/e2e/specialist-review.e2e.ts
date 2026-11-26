@@ -172,9 +172,10 @@ test('duyệt giấy từng ngựa, từ chối kèm lý do và nộp giấy tha
   const { calls } = await open(page, detailPath)
   await expect(page.getByRole('link', { name: 'Xem passport.pdf' })).toHaveAttribute('href', 'https://example.test/passport.pdf')
   await confirm(page, 'Duyệt giấy')
+  await expect(page.getByText('Đã đáp ứng', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Con sau' }).click()
   await expect(page.getByRole('heading', { name: 'Sao Mai', exact: true })).toBeVisible()
-  await expect(page.getByText('Đã đáp ứng', { exact: true })).toBeVisible()
+  await expect(page.getByText('Chờ duyệt', { exact: true })).toBeVisible()
 
   await page.getByRole('button', { name: 'Từ chối giấy', exact: true }).click()
   const rejection = page.getByRole('alertdialog')

@@ -363,7 +363,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["queue_1"];
+        get: operations["queue"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3787,7 +3787,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["summary_1"];
+        get: operations["summary"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3915,7 +3915,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["queue"];
+        get: operations["specialistWorkQueue"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3931,7 +3931,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["summary"];
+        get: operations["specialistWorkSummary"];
         put?: never;
         post?: never;
         delete?: never;
@@ -9046,7 +9046,7 @@ export interface operations {
             };
         };
     };
-    queue_1: {
+    queue: {
         parameters: {
             query?: {
                 mine?: boolean;
@@ -14959,7 +14959,7 @@ export interface operations {
             };
         };
     };
-    summary_1: {
+    summary: {
         parameters: {
             query: {
                 from: string;
@@ -15186,7 +15186,7 @@ export interface operations {
             };
         };
     };
-    queue: {
+    specialistWorkQueue: {
         parameters: {
             query?: {
                 all?: boolean;
@@ -15208,7 +15208,7 @@ export interface operations {
             };
         };
     };
-    summary: {
+    specialistWorkSummary: {
         parameters: {
             query?: never;
             header?: never;
