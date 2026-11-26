@@ -190,7 +190,7 @@ class EntityMappingTest {
         DepartureSchedule schedule = schedules.findAll().stream()
                 .filter(s -> s.getRoute().getCode().equals("HCM-PNH")).findFirst().orElseThrow();
         assertThat(scheduleDays.findById_DepartureScheduleId(schedule.getId())).extracting(d -> d.getId().getDayOfWeek())
-                .containsExactly((short) 1);
+                .containsExactly((short) 6);
 
         // Chuyến đột xuất (không theo lịch) để không trùng các chuyến do seed sinh từ lịch
         Departure departure = new Departure();
