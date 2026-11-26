@@ -236,13 +236,9 @@ public final class PricingPolicy {
                                       List<BillableService> catalog, PricingInput input, BigDecimal roadKm) {
         Line fuel = roadKm.signum() > 0 ? lines.removeLast() : null;
         if (input.routeId() != null) {
-            Map<String, Integer> billable = new TreeMap<>(input.stallsByType());
-            if (input.privateVehicle() != null) {
-                int freeStalls = input.privateVehicle().billableStalls() - StallSeatPolicy.total(input.stallsByType());
-                if (freeStalls > 0) {
-                    billable.merge("STANDARD", freeStalls, Integer::sum);
-                }
-            }
+            Map<String, Integer> billable = input.privateVehicle() == null
+                    ? new TreeMap<>(input.stallsByType())
+                    : Map.of("STANDARD", input.privateVehicle().billableStalls());
             billable.forEach((stall, count) -> addLayer(lines, list, items, catalog,
                     ServiceLayer.LINEHAUL, new Match(input.routeId(), null, stall, input.linehaulKm()),
                     BigDecimal.valueOf(count)));

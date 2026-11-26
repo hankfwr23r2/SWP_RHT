@@ -111,7 +111,7 @@ Người dùng chốt qua trao đổi ngày 26/11/2026. **Code chưa làm.** Ngh
 | **Bỏ số chỗ cố định 9.** Mỗi hub có hạn mức xe trục = số xe tối thiểu chạy hết lịch (nghỉ ít nhất **12 giờ** sau mỗi chuyến) + dự phòng (khởi đầu 20%). Sức chứa bán = xe nền, tăng khi tăng cường từ dự phòng. Khách thấy Còn chỗ, Sắp đầy, Hết chỗ | Số xe = thời gian một vòng chia khoảng cách giữa hai chuyến ([TCRP](https://www.nap.edu/read/22409/chapter/5)); dự phòng 20% là hướng dẫn FTA cho xe buýt ([Spare ratio](https://en.wikipedia.org/wiki/Spare_ratio)). Mô phỏng lịch mẫu: cần 5 xe với nghỉ 12 giờ, dữ liệu mẫu chỉ có 3 |
 | **Sắp lại lịch trục mẫu** cho khớp vòng xe | Lịch mẫu để xe nằm chờ ở bến đầu kia, tỷ lệ chạy 18–32% |
 | **Xếp ngựa lên xe trục:** gần điểm giao trước (nhánh giao ở hub đích xong dưới 4 giờ), vừa số chỗ sau. Hệ thống gợi ý, điều phối chỉnh | Người dùng chốt thứ tự ưu tiên |
-| **Xe riêng:** ngựa của đơn không đi chung xe với đơn khác ở mọi chặng; đi đúng lịch trục; dùng được xe 2, 4 chỗ; giá theo nguyên xe | Bản `main` mỗi đơn có xe riêng nguyên chuyến; bản thiết kế lại chưa có lựa chọn này |
+| **Xe riêng:** ngựa của đơn không đi chung xe với đơn khác ở mọi chặng; đi đúng lịch trục; dùng xe đủ chỗ. Cước trục = sức chứa xe × đơn giá khoang STANDARD; chọn khoang WIDE không đổi đơn giá, nhưng có thể làm phải chọn hạng xe lớn hơn | Cập nhật theo quyết định người dùng 26/11/2026; giá vẫn tính theo nguyên xe nhưng không áp đơn giá WIDE |
 | **Tới hub đích luôn dỡ ngựa** theo quy trình, rồi xếp xe giao theo cụm điểm giao gần nhau | Thay cách cũ "xe trục chạy luôn lượt giao ở hub vệ tinh" |
 | **Khám sức khỏe bắt buộc ở hai đầu hub:** trước khi chạy trục và trước khi giao. Chưa khám thì không cho ra hub | Người dùng chốt. Hiện đã có loại việc khám `BEFORE_DEPARTURE` nhưng chưa bắt buộc |
 | **Xe về** theo thiết kế cũ nhánh `main`: Đang về có giờ dự kiến, cờ trễ, tài xế xác nhận về hub gốc kèm ảnh tại chỗ và tình trạng xe; chưa về thì chưa nhận lượt mới. Hub gốc là bất kỳ hub nào | `HomeReturnPanel`, `FleetServiceImpl` trên nhánh `main` |
@@ -131,7 +131,7 @@ Người dùng chốt qua trao đổi ngày 26/11/2026. **Code chưa làm.** Ngh
 - [ ] Xe có thêm ô giấy phép liên vận (nước, hạn) để chỉ gán xe có phép cho chuyến quốc tế không?
 - [x] ~~Ai được tăng cường xe~~: hệ thống tự gắn xe để sẵn khi xe nền đầy (26/11/2026), quản lý bỏ bớt xe thừa. Xem `QUY_CHE_DOI_XE.md`.
 - [ ] Bỏ chuyến đột xuất do quản lý tạo không (tăng cường và xe riêng đã thay được)?
-- [ ] Giá xe riêng theo nguyên xe tính thế nào cho từng chặng?
+- [x] **Giá xe riêng:** cước trục bằng sức chứa xe × đơn giá khoang STANDARD; cước đón/giao theo km và hạng xe riêng.
 - [ ] Gộp nguyên nhân sự cố Lỗi đại lý vào Lỗi công ty?
 - [ ] Danh sách chuồng gửi đêm có lọc theo nơi nghỉ không (phải thêm địa điểm cho đối tác)?
 - [ ] Bổ sung dữ liệu thật về điểm mạng lưới, vùng phục vụ của hub, tuyến, lịch chạy, bảng giá và quy định.

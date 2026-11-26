@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 
 class PricingPolicyTest {
     @Test
-    void billsEverySeatOfPrivateVehicleWithWidePricedAsOneWideStall() {
+    void billsPrivateVehicleCapacityAtStandardRateRegardlessOfHorseStallChoices() {
         var linehaul = service(1, ServiceLayer.LINEHAUL, BillingUnit.PER_STALL, false);
         var standard = item(1, linehaul, "100", null, null);
         var wide = item(2, linehaul, "170", null, null);
@@ -32,8 +32,19 @@ class PricingPolicyTest {
                 0, List.of(), new PrivateVehicle(2L, "MEDIUM", 6));
 
         var result = PricingPolicy.calculate(priceList, List.of(standard, wide), List.of(linehaul), input);
-        assertThat(result.lines()).extracting(Line::quantity).containsExactly(BigDecimal.valueOf(4), BigDecimal.ONE);
-        assertThat(result.total()).isEqualByComparingTo("570");
+        assertThat(result.lines()).singleElement().satisfies(line -> {
+            assertThat(line.priceItemId()).isEqualTo(1L);
+            assertThat(line.stallTypeCode()).isEqualTo("STANDARD");
+            assertThat(line.quantity()).isEqualByComparingTo("6");
+            assertThat(line.unitPrice()).isEqualByComparingTo("100");
+            assertThat(line.amount()).isEqualByComparingTo("600");
+        });
+
+        var allWide = new PricingInput("VND", LocalDate.of(2026, 11, 25), BookingType.INTERPROVINCE,
+                4L, BigDecimal.ONE, List.of(), Map.of("WIDE", 2), 2, List.of(),
+                0, List.of(), new PrivateVehicle(2L, "MEDIUM", 6));
+        var wideResult = PricingPolicy.calculate(priceList, List.of(standard, wide), List.of(linehaul), allWide);
+        assertThat(wideResult.total()).isEqualByComparingTo(result.total());
     }
 
     @Test

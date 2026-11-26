@@ -1797,7 +1797,7 @@ Người dùng chốt **mô hình bến xe** ([NGU_CANH_THIET_KE_LAI.md](NGU_CAN
 | `departure.stall_capacity`, `booked_stall_count`, `CHECK (booked_stall_count BETWEEN 0 AND stall_capacity)` | **Đã làm ở M2** | Sức chứa theo xe nền và xe tăng cường của chuyến; hạn mức xe trục của hub; khóa khi đặt chỗ theo đội xe |
 | `departure_schedule` | Số chỗ theo lịch | Xe nền theo loại xe; lịch được kiểm với hạn mức xe của hub |
 | `system_config` | | Thêm thời gian nghỉ tối thiểu sau chuyến trục (12 giờ), tỷ lệ dự phòng (20%) |
-| `booking` | Chỉ có xe ghép | Thêm lựa chọn xe riêng; báo giá xe riêng theo nguyên xe (`price_item`) |
+| `booking` | Chỉ có xe ghép | Thêm lựa chọn xe riêng; cước trục tính đủ sức chứa xe theo đơn giá khoang STANDARD (`price_item`) |
 | Chặng và bàn giao đại lý ở cửa khẩu | Gỡ chặng đại lý, mã loại đại lý và các quy tắc liên quan | Đã thực hiện ở M7 |
 | `health_check_task.check_type` | `ROUTINE, FOLLOW_UP, BEFORE_DEPARTURE`, không bắt buộc | **Đã làm ở M5** (#520) |
 | Trạng thái xe về | Vị trí suy ra từ lượt cuối | Thêm ghi nhận "Đã về hub gốc" có ảnh và tình trạng xe, theo thiết kế cũ nhánh `main` |

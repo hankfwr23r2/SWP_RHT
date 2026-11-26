@@ -681,6 +681,7 @@ export const customer = {
     },
     price: {
       deliveryEstimates: 'Ngày giao dự kiến',
+      privateLinehaul: 'Cước trục xe riêng ({{count}} chỗ × đơn giá khoang tiêu chuẩn)',
       total: 'Giá tạm tính',
       transport: 'Vận chuyển',
       required: 'Bắt buộc theo tuyến',
