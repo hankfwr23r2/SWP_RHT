@@ -23,6 +23,7 @@ export type DeliveryChangeSelection = Schemas['DeliveryChangeRequestDto']
 export type DeliveryChangePreview = Schemas['DeliveryChangeResponseDto']
 export type BookingDelay = Schemas['BookingDelayResponseDto']
 export type BookingReschedule = Schemas['BookingRescheduleRequestDto']
+export type BookingMergeSuggestion = BookingReschedule & Required<Pick<Schemas['DepartureResponse'], 'departureDate'>>
 export type InsuranceRevision = Schemas['PersonalInsuranceRevisionRequestDto']
 
 const multipartOptions = { ...formResponseOptions, headers: { 'Content-Type': 'multipart/form-data' } }
@@ -66,6 +67,8 @@ export const bookingOrdersApi = {
     (await apiClient.post<ApiResponse<BookingOrder>>(`/bookings/${id}/delay/reschedule`, body)).data.data,
   cancel: async (id: number, reason: string) =>
     (await apiClient.post<ApiResponse<BookingCancellation>>(`/bookings/${id}/cancel`, { reason })).data.data,
+  mergeSuggestion: async (id: number) =>
+    (await apiClient.get<ApiResponse<BookingMergeSuggestion | null>>(`/bookings/${id}/reschedule-suggestion`)).data.data,
   reschedule: async (id: number, body: Schemas['BookingRescheduleRequestDto']) =>
     (await apiClient.post<ApiResponse<BookingOrder>>(`/bookings/${id}/reschedule`, body)).data.data,
   resubmit: async (id: number) =>

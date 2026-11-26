@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service;
 
+import com.example.racehorse_transport.dto.departure.DepartureConfirmRunRequestDto;
 import com.example.racehorse_transport.dto.departure.DepartureDecisionResponseDto;
 import java.time.LocalDate;
 import java.util.List;
@@ -10,6 +11,8 @@ public interface DepartureDecisionService {
     List<DepartureDecisionResponseDto> decisions(LocalDate fromDate, LocalDate toDate);
 
     DepartureDecisionResponseDto confirmRun(Long departureId, String username);
+
+    DepartureDecisionResponseDto confirmRun(Long departureId, String username, DepartureConfirmRunRequestDto request);
 
     // Scheduler gọi. Mỗi đơn một transaction. Trả về số đơn đã nhả.
     int releaseUnconfirmed();

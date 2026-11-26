@@ -559,6 +559,9 @@ export const customer = {
       done: 'Departure changed.',
       confirmTitle: 'Change departure?',
       confirmMessage: 'The order will travel on {{date}}.',
+      mergeSuggestion: 'Your departure was merged into the {{date}} departure',
+      mergePickup: 'Proposed pickup on {{date}}.',
+      acceptMerge: 'Accept the departure change',
     },
     cancel: {
       open: 'Cancel order',

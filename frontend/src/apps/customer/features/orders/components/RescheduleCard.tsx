@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { bookingOrdersApi, type BookingReschedule } from '@shared/api/bookingOrders'
-import { useLoad } from '@shared/hooks/useLoad'
+import type { BookingReschedule } from '@shared/api/bookingOrders'
 import { Button } from '@shared/ui/Button'
 import { Card } from '@shared/ui/Card'
 import { ConfirmDialog } from '@shared/ui/ConfirmDialog'
@@ -12,8 +11,8 @@ import { Input } from '@shared/ui/Input'
 import { Skeleton } from '@shared/ui/Skeleton'
 import { moment, showDate } from '../format'
 import type { OrderData } from '../loaders'
-import { dayAfter, dayBefore, todayIso } from '../dates'
-import { useOrderAction } from '../useOrderAction'
+import { dayBefore } from '../dates'
+import { useReschedule } from '../useReschedule'
 import s from '../Orders.module.css'
 
 // Chọn lại chuyến khi lịch phải đổi
@@ -25,25 +24,13 @@ interface Props {
 
 export function RescheduleCard({ data, excludeDepartureId, reschedule }: Props) {
   const { t } = useTranslation()
-  const { run, busy, error } = useOrderAction()
-  const [today] = useState(() => todayIso())
+  const { today, merge, suggestions, submit, accept, busy, error } = useReschedule(data, reschedule)
   const [departureId, setDepartureId] = useState<number>()
   const [pickupDate, setPickupDate] = useState('')
   const [confirming, setConfirming] = useState(false)
   const booking = data.detail?.booking
-  const seats = (data.detail?.horses ?? []).filter(horse => horse.status === 'ACTIVE')
-    .reduce((sum, horse) => sum + (data.stallTypes?.find(stall => stall.code === horse.stallTypeCode)?.seats ?? 1), 0)
-
-  const { data: suggestion, loaded, error: loadError, reload } = useLoad(async () => {
-    const pickup = data.detail?.addresses?.find(address => address.addressType === 'PICKUP')
-    const delivery = data.detail?.addresses?.find(address => address.addressType === 'DELIVERY')
-    return bookingOrdersApi.suggestions({
-      bookingType: booking!.bookingType!, fromDate: dayAfter(today), stalls: Math.max(1, seats),
-      pickupProvinceCode: pickup?.provinceCode ?? '', deliveryProvinceCode: delivery?.provinceCode ?? '',
-      pickupLatitude: pickup?.latitude, pickupLongitude: pickup?.longitude,
-      deliveryLatitude: delivery?.latitude, deliveryLongitude: delivery?.longitude,
-    })
-  }, [data.id], { toastOnError: false })
+  const { data: suggestion, loaded, error: loadError, reload } = suggestions
+  const offered = booking?.status === 'SCHEDULE_CHANGE_REQUIRED' && merge.data?.departureId != null ? merge.data : null
 
   const departures = (suggestion?.departures ?? []).filter(departure => departure.id !== (excludeDepartureId ?? booking?.departureId))
   const selected = departures.find(departure => departure.id === departureId)
@@ -56,8 +43,7 @@ export function RescheduleCard({ data, excludeDepartureId, reschedule }: Props) 
   }
   const send = async () => {
     setConfirming(false)
-    const body = { departureId: departureId!, requestedPickupDate: pickupDate }
-    await run(() => reschedule ? reschedule(body) : bookingOrdersApi.reschedule(data.id, body), t('myOrders.reschedule.done'))
+    await submit({ departureId: departureId!, requestedPickupDate: pickupDate })
   }
 
   // Đơn chạy thẳng đổi ngày đón ở thẻ đón hụt, không chọn chuyến
@@ -66,8 +52,14 @@ export function RescheduleCard({ data, excludeDepartureId, reschedule }: Props) 
   return (
     <Card title={t('myOrders.reschedule.title')}>
       <div className={s.stack}>
+        {merge.error && <ErrorState message={merge.error.message} onRetry={merge.reload} />}
+        {offered && !merge.error && <div className={s.stack}>
+          <strong>{t('myOrders.reschedule.mergeSuggestion', { date: showDate(offered.departureDate) })}</strong>
+          <p>{t('myOrders.reschedule.mergePickup', { date: showDate(offered.requestedPickupDate) })}</p>
+          <div><Button variant="primary" loading={busy} onClick={() => void accept()}>{t('myOrders.reschedule.acceptMerge')}</Button></div>
+        </div>}
         {loadError ? <ErrorState message={loadError.message} onRetry={reload} /> : !loaded ? <Skeleton lines={3} /> : !departures.length
-          ? <EmptyState icon={<i className="fa-solid fa-truck" />} title={t('bookingForm.route.noDeparture')} description={t('myOrders.reschedule.none')} />
+          ? !offered && <EmptyState icon={<i className="fa-solid fa-truck" />} title={t('bookingForm.route.noDeparture')} description={t('myOrders.reschedule.none')} />
           : (
             <fieldset className={s.options}>
               {departures.map(departure => (
@@ -86,7 +78,8 @@ export function RescheduleCard({ data, excludeDepartureId, reschedule }: Props) 
           </Field>
         )}
         {error && <p className={s.error} role="alert">{error}</p>}
-        <div><Button variant="primary" loading={busy} disabled={!selected || badDate} onClick={() => setConfirming(true)}>{t('myOrders.reschedule.send')}</Button></div>
+        <div><Button variant={offered ? 'secondary' : 'primary'} loading={busy} disabled={!selected || badDate}
+          onClick={() => setConfirming(true)}>{t('myOrders.reschedule.send')}</Button></div>
       </div>
       {confirming && selected && <ConfirmDialog title={t('myOrders.reschedule.confirmTitle')}
         message={t('myOrders.reschedule.confirmMessage', { date: showDate(selected.departureDate ?? '') })}

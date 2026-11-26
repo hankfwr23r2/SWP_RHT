@@ -14,6 +14,7 @@ import java.util.Optional;
 
 public interface BookingStatusHistoryRepository extends JpaRepository<BookingStatusHistory, Long> {
 
+    @EntityGraph(attributePaths = {"previousDeparture", "previousDeparture.mergedIntoDeparture"})
     Optional<BookingStatusHistory> findFirstByBooking_IdAndToStatusOrderByChangedAtDescIdDesc(Long bookingId, BookingStatus status);
 
     @EntityGraph(attributePaths = "changedBy")

@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.dto.departure.DepartureConfirmRunRequestDto;
 import com.example.racehorse_transport.dto.departure.DepartureDecisionResponseDto;
 import com.example.racehorse_transport.dto.departure.DepartureDecisionResponseDto.ReceivedBookingResponseDto;
 import com.example.racehorse_transport.entity.AppUser;
@@ -12,6 +13,7 @@ import com.example.racehorse_transport.entity.enums.EmploymentStatus;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.DepartureDecisionPolicy;
 import com.example.racehorse_transport.policy.DepartureDelayPolicy;
+import com.example.racehorse_transport.policy.DepartureMergePolicy;
 import com.example.racehorse_transport.policy.StallSeatPolicy;
 import com.example.racehorse_transport.repository.AppUserRepository;
 import com.example.racehorse_transport.repository.BookingHorseRepository;
@@ -64,6 +66,12 @@ public class DepartureDecisionServiceImpl implements DepartureDecisionService {
     @Override
     @Transactional
     public DepartureDecisionResponseDto confirmRun(Long departureId, String username) {
+        return confirmRun(departureId, username, null);
+    }
+
+    @Override
+    @Transactional
+    public DepartureDecisionResponseDto confirmRun(Long departureId, String username, DepartureConfirmRunRequestDto request) {
         AppUser actor = users.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài khoản " + username));
         Departure departure = departures.findForUpdate(departureId)
@@ -73,10 +81,16 @@ public class DepartureDecisionServiceImpl implements DepartureDecisionService {
                 .ifPresent(reason -> {
                     throw new IllegalStateException(reason);
                 });
+        int previousCapacity = departure.getStallCapacity();
+        if (request != null && request.stallCapacity() != null) {
+            DepartureDecisionPolicy.validateRunCapacity(request.stallCapacity(), departure.getBookedStallCount(), previousCapacity);
+            request.applyTo(departure);
+        }
         departure.setRunConfirmedAt(now);
         departure.setRunConfirmedBy(actor);
         audit.record(actor.getId(), "CONFIRM_DEPARTURE_RUN", "departure", departureId,
-                Map.of("runConfirmed", false), Map.of("runConfirmed", true));
+                Map.of("runConfirmed", false, "stallCapacity", previousCapacity),
+                Map.of("runConfirmed", true, "stallCapacity", departure.getStallCapacity()));
         notifyCoordinators(departure);
         return toDtos(List.of(departure)).getFirst();
     }
@@ -125,7 +139,8 @@ public class DepartureDecisionServiceImpl implements DepartureDecisionService {
                     reasonNotConfirmable(departure, decisionHours, now).isEmpty(),
                     departure.getRunRemindedAt() != null && departure.getRunConfirmedAt() == null
                             && DepartureDelayPolicy.notStarted(departure.getStatus()),
-                    DepartureDelayPolicy.notStarted(departure.getStatus()), receivedBookings(departure));
+                    DepartureDelayPolicy.notStarted(departure.getStatus()), receivedBookings(departure),
+                    DepartureMergePolicy.canMergeSource(departure));
         }).toList();
     }
 
@@ -155,7 +170,8 @@ public class DepartureDecisionServiceImpl implements DepartureDecisionService {
                 .map(Staff::getUserId).toList();
         if (!coordinators.isEmpty()) {
             notifications.notify(coordinators, null, "Chuyến đã được xác nhận chạy",
-                    "Lập lượt xe trục cho chuyến " + departure.getRoute().getName() + " ngày " + departure.getDepartureDate() + ".", null);
+                    "Lập lượt xe trục cho chuyến " + departure.getRoute().getName() + " ngày " + departure.getDepartureDate()
+                            + " với " + departure.getStallCapacity() + " chỗ.", null);
         }
     }
 }

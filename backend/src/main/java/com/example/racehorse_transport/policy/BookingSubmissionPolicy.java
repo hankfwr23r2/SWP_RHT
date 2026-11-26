@@ -85,9 +85,13 @@ public final class BookingSubmissionPolicy {
     }
 
     public static void validatePriceHold(LocalDate missedDate, LocalDate replacementDate, int holdDays) {
-        if (replacementDate.isAfter(missedDate.plusDays(holdDays))) {
+        if (replacementDate.isAfter(priceHoldThrough(missedDate, holdDays))) {
             throw BookingRuleException.conflict("Chuyến mới nằm ngoài hạn giữ giá.");
         }
+    }
+
+    public static LocalDate priceHoldThrough(LocalDate missedDate, int holdDays) {
+        return missedDate.plusDays(holdDays);
     }
 
     public static void validatePickupDate(LocalDate pickupDate, LocalDate departureDate) {
@@ -97,11 +101,15 @@ public final class BookingSubmissionPolicy {
     }
 
     public static void validatePickupDate(BookingType type, LocalDate pickupDate, LocalDate departureDate) {
-        if ((type == BookingType.INTERPROVINCE || type == BookingType.EXPORT)
-                && !pickupDate.isBefore(departureDate)) {
+        LocalDate latest = latestPickupDate(type, departureDate);
+        if (latest.isBefore(departureDate) && pickupDate.isAfter(latest)) {
             throw new BookingRuleException("Ngày đưa ngựa đến phải trước ngày xuất phát ít nhất một ngày.");
         }
         validatePickupDate(pickupDate, departureDate);
+    }
+
+    public static LocalDate latestPickupDate(BookingType type, LocalDate departureDate) {
+        return (type == BookingType.INTERPROVINCE || type == BookingType.EXPORT) ? departureDate.minusDays(1) : departureDate;
     }
 
     public static void validateTransfer(BookingType type, HubResolutionPolicy.Routing routing,

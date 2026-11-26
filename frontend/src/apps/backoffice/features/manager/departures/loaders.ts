@@ -13,6 +13,9 @@ export async function departuresLoader() {
 
 export const useRoutesData = () => useLoaderData() as Awaited<ReturnType<typeof departuresLoader>>
 
+export const useMergeTargets = (departureId: number) =>
+  useLoad(() => departuresApi.mergeTargets(departureId), [departureId], { toastOnError: false })
+
 // Khoảng ngày nằm trên đường dẫn để quay lại không mất bộ lọc
 export function useDecisions() {
   const [params, setParams] = useSearchParams()

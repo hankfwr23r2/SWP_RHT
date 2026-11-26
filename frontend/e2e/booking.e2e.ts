@@ -147,6 +147,7 @@ test('bảo hiểm tự có cần tệp hợp đồng và giữ tệp khi quay l
     name: 'policy.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.7'),
   })
   await next.click()
+  await expect(page.getByRole('heading', { name: 'Xem lại và gửi đơn' })).toBeVisible()
   await page.getByRole('link', { name: 'Quay lại' }).click()
   await expect(page.getByText('policy.pdf')).toBeVisible()
   await next.click()

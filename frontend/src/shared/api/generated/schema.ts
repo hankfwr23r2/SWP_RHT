@@ -1364,6 +1364,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/bookings/{id}/reschedule-suggestion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["rescheduleSuggestion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/bookings/{id}/resubmit": {
         parameters: {
             query?: never;
@@ -1982,6 +1998,38 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["delay"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/departures/{id}/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["merge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/departures/{id}/merge-targets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["mergeTargets"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4435,6 +4483,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseBookingMergeSuggestionResponseDto: {
+            data?: components["schemas"]["BookingMergeSuggestionResponseDto"];
+            message?: string;
+            status?: string;
+        };
         ApiResponseBookingResponseDto: {
             data?: components["schemas"]["BookingResponseDto"];
             message?: string;
@@ -5159,6 +5212,14 @@ export interface components {
             /** @enum {string} */
             status?: "PENDING_INTAKE" | "UNDER_REVIEW" | "NEEDS_RESUBMISSION" | "QUOTING" | "AWAITING_DEPOSIT" | "QUOTE_EXPIRED" | "CONFIRMED" | "SCHEDULE_CHANGE_REQUIRED" | "IN_OPERATION" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED";
         };
+        BookingMergeSuggestionResponseDto: {
+            /** Format: date */
+            departureDate?: string;
+            /** Format: int64 */
+            departureId?: number;
+            /** Format: date */
+            requestedPickupDate?: string;
+        };
         BookingQuotingRequestDto: unknown;
         BookingReassignmentRequestDto: {
             reason: string;
@@ -5625,6 +5686,10 @@ export interface components {
         DepartureCancelRequest: {
             reason: string;
         };
+        DepartureConfirmRunRequestDto: {
+            /** Format: int32 */
+            stallCapacity?: number;
+        };
         DepartureCreateRequest: {
             /** Format: int32 */
             bookingCutoffHours: number;
@@ -5642,6 +5707,7 @@ export interface components {
             belowMinimum?: boolean;
             /** Format: int32 */
             bookedStallCount?: number;
+            canMerge?: boolean;
             canRevise?: boolean;
             /** Format: int32 */
             committedStallCount?: number;
@@ -5679,6 +5745,11 @@ export interface components {
             reason: string;
             /** Format: date-time */
             revisedDepartureAt: string;
+        };
+        DepartureMergeRequestDto: {
+            reason: string;
+            /** Format: int64 */
+            targetDepartureId: number;
         };
         DepartureResponse: {
             /** Format: int32 */
@@ -10169,6 +10240,28 @@ export interface operations {
             };
         };
     };
+    rescheduleSuggestion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingMergeSuggestionResponseDto"];
+                };
+            };
+        };
+    };
     resubmit: {
         parameters: {
             query?: never;
@@ -11250,7 +11343,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DepartureConfirmRunRequestDto"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
@@ -11285,6 +11382,54 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseDepartureResponse"];
+                };
+            };
+        };
+    };
+    merge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DepartureMergeRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDepartureResponse"];
+                };
+            };
+        };
+    };
+    mergeTargets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListDepartureResponse"];
                 };
             };
         };

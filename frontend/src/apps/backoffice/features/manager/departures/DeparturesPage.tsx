@@ -2,9 +2,8 @@ import { ListPanel } from '@shared/ui/ListPanel'
 // Chuyến cần quyết định: xác nhận chạy, hủy chuyến, tạo chuyến đột xuất.
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { departuresApi, type DepartureDecision, type DepartureDelayRequest } from '@shared/api/departures'
+import { departuresApi, type DepartureDecision } from '@shared/api/departures'
 import { Button } from '@shared/ui/Button'
-import { ConfirmDialog } from '@shared/ui/ConfirmDialog'
 import { EmptyState } from '@shared/ui/EmptyState'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { Field } from '@shared/ui/Field'
@@ -17,11 +16,12 @@ import { moment, showDate } from '@backoffice/shared/staffFormat'
 import { useStaffAction } from '@backoffice/shared/useStaffAction'
 import { AdHocDialog } from './AdHocDialog'
 import { DelayDialog } from './DelayDialog'
+import { ConfirmRunDialog, MergeDepartureDialog } from './DepartureDecisionDialogs'
 import { DepartureTable } from './DepartureTable'
 import { useDecisions, useRoutesData } from './loaders'
 import s from '@backoffice/shared/StaffPanels.module.css'
 
-type Dialog = { kind: 'confirm' | 'cancel' | 'delay' | 'assign'; row: DepartureDecision } | { kind: 'create' } | null
+type Dialog = { kind: 'confirm' | 'cancel' | 'merge' | 'delay' | 'assign'; row: DepartureDecision } | { kind: 'create' } | null
 
 export default function DeparturesPage() {
   const { t } = useTranslation()
@@ -34,23 +34,19 @@ export default function DeparturesPage() {
   const open = (next: Dialog) => { clearError(); setFields({}); setDialog(next) }
   const name = (row: DepartureDecision) => `${row.routeName} · ${row.plannedDepartureAt ? moment(row.plannedDepartureAt) : showDate(row.departureDate ?? '')}`
 
-  const confirm = async (row: DepartureDecision) => {
-    setDialog(null)
-    if (await run(() => departuresApi.confirmRun(row.id!), t('mgr.departures.confirmed'))) await reload()
-  }
   const cancel = async (row: DepartureDecision, reason: string) => {
     if (await run(() => departuresApi.cancel(row.id!, reason), t('mgr.departures.cancelled'))) { setDialog(null); await reload() }
   }
-  const delay = async (row: DepartureDecision, body: DepartureDelayRequest) => {
+  const submit = async (action: () => Promise<unknown>, done: string) => {
     setFields({})
     const saved = await run(async () => {
       try {
-        await departuresApi.delay(row.id!, body)
+        await action()
       } catch (cause) {
         setFields((cause as Error & { fields?: Record<string, string> }).fields ?? {})
         throw cause
       }
-    }, t('mgr.departures.delay.saved'))
+    }, done)
     if (saved) { setDialog(null); await reload() }
   }
 
@@ -60,7 +56,7 @@ export default function DeparturesPage() {
     if (!data.length) return <EmptyState compact icon={<i className="fa-solid fa-truck" />} title={t('mgr.departures.empty')} description={t('mgr.departures.emptyHint')} />
     return <DepartureTable rows={data.slice(0, limit)} busy={busy} onConfirm={row => open({ kind: 'confirm', row })}
       onCancel={row => open({ kind: 'cancel', row })} onDelay={row => open({ kind: 'delay', row })}
-      onAssign={row => open({ kind: 'assign', row })} />
+      onMerge={row => open({ kind: 'merge', row })} onAssign={row => open({ kind: 'assign', row })} />
   }
 
   return (
@@ -79,11 +75,12 @@ export default function DeparturesPage() {
       {dialog?.kind === 'assign' && dialog.row.id != null && <CoordinatorAssignmentDialog resource="departures"
         id={dialog.row.id} currentId={dialog.row.coordinatorId} onClose={() => setDialog(null)}
         onSaved={() => { setDialog(null); void reload() }} />}
-      {dialog?.kind === 'confirm' && (
-        <ConfirmDialog title={t('mgr.departures.confirmTitle')} confirmLabel={t('mgr.departures.confirm')} onConfirm={() => confirm(dialog.row)} onCancel={() => setDialog(null)}
-          message={<>{name(dialog.row)}<br />{t('mgr.departures.confirmHint', { committed: dialog.row.committedStallCount, capacity: dialog.row.stallCapacity })}
-            {!!dialog.row.uncommittedBookingCount && <><br />{t('mgr.departures.uncommitted', { count: dialog.row.uncommittedBookingCount })}</>}</>} />
-      )}
+      {dialog?.kind === 'confirm' && <ConfirmRunDialog row={dialog.row} name={name(dialog.row)} busy={busy} error={error} fields={fields}
+        onConfirm={capacity => submit(() => departuresApi.confirmRun(dialog.row.id!, capacity), t('mgr.departures.confirmed'))}
+        onClose={() => setDialog(null)} />}
+      {dialog?.kind === 'merge' && <MergeDepartureDialog row={dialog.row} name={name(dialog.row)} busy={busy} error={error} fields={fields}
+        onConfirm={body => submit(() => departuresApi.merge(dialog.row.id!, body), t('mgr.departures.merge.done'))}
+        onClose={() => setDialog(null)} />}
       {dialog?.kind === 'cancel' && (
         <ReasonDialog title={t('mgr.departures.cancelTitle')} confirmLabel={t('mgr.departures.cancel')} busy={busy} error={error}
           onConfirm={reason => cancel(dialog.row, reason)} onCancel={() => setDialog(null)}>
@@ -93,7 +90,8 @@ export default function DeparturesPage() {
       )}
       {dialog?.kind === 'create' && <AdHocDialog routes={routes} onClose={() => setDialog(null)} onCreated={() => { setDialog(null); void reload() }} />}
       {dialog?.kind === 'delay' && <DelayDialog row={dialog.row} busy={busy} error={error} fields={fields}
-        onConfirm={body => { void delay(dialog.row, body) }} onClose={() => setDialog(null)} />}
+        onConfirm={body => { void submit(() => departuresApi.delay(dialog.row.id!, body), t('mgr.departures.delay.saved')) }}
+        onClose={() => setDialog(null)} />}
     </div>
   )
 }

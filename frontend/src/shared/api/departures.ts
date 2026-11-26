@@ -4,15 +4,21 @@ import type { components } from './generated/schema'
 
 type Schemas = components['schemas']
 export type Departure = Schemas['DepartureResponse']
-export type DepartureDecision = Schemas['DepartureDecisionResponseDto']
+export type DepartureDecision = Schemas['DepartureDecisionResponseDto'] & { canMerge?: boolean }
 export type DepartureCreate = Schemas['DepartureCreateRequest']
 export type DepartureDelayRequest = Schemas['DepartureDelayRequestDto']
+export type DepartureMergeRequest = Pick<Schemas['DepartureCancelRequest'], 'reason'> & { targetDepartureId: number }
 export type RouteOption = Schemas['RouteResponse']
 
 export const departuresApi = {
   decisions: async (from: string, to: string) =>
     (await apiClient.get<ApiResponse<DepartureDecision[]>>('/departures/decisions', { params: { from, to } })).data.data,
-  confirmRun: async (id: number) => (await apiClient.post<ApiResponse<DepartureDecision>>(`/departures/${id}/confirm-run`, {})).data.data,
+  confirmRun: async (id: number, stallCapacity?: Departure['stallCapacity']) =>
+    readFormResponse<DepartureDecision>(await apiClient.post(`/departures/${id}/confirm-run`, { stallCapacity }, formResponseOptions)),
+  mergeTargets: async (id: number) =>
+    (await apiClient.get<ApiResponse<Departure[]>>(`/departures/${id}/merge-targets`)).data.data,
+  merge: async (id: number, body: DepartureMergeRequest) =>
+    readFormResponse<Departure>(await apiClient.post(`/departures/${id}/merge`, body, formResponseOptions)),
   delay: async (id: number, body: DepartureDelayRequest) =>
     readFormResponse<Departure>(await apiClient.post(`/departures/${id}/delay`, body, formResponseOptions)),
   cancel: async (id: number, reason: string) => (await apiClient.post<ApiResponse<Departure>>(`/departures/${id}/cancel`, { reason })).data.data,
