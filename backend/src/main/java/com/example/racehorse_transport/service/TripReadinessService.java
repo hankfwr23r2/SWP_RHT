@@ -4,6 +4,8 @@ import com.example.racehorse_transport.entity.VehicleTrip;
 import com.example.racehorse_transport.entity.TripStop;
 
 public interface TripReadinessService {
+    void requireVehicleAndCrewAvailable(VehicleTrip trip);
+
     void requireReadyToStart(VehicleTrip trip);
 
     void requireTripUnblocked(Long tripId);

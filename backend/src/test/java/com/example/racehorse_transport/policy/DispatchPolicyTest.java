@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.example.racehorse_transport.entity.Location;
+import com.example.racehorse_transport.entity.Vehicle;
 import com.example.racehorse_transport.entity.VehicleTrip;
 import com.example.racehorse_transport.entity.enums.CrewRole;
 import com.example.racehorse_transport.entity.enums.EmploymentStatus;
@@ -70,6 +72,19 @@ class DispatchPolicyTest {
 
         assertThat(neighbors.previous()).isSameAs(before);
         assertThat(neighbors.next()).isSameAs(after);
+    }
+
+    @Test
+    void vehiclePositionIsThePreviousTripsEndOrItsHomeHub() {
+        Location home = new Location();
+        Location destination = new Location();
+        Vehicle vehicle = new Vehicle();
+        vehicle.setHomeHubLocation(home);
+        VehicleTrip previous = new VehicleTrip();
+        previous.setEndLocation(destination);
+
+        assertThat(DispatchPolicy.endLocationOrHome(vehicle, previous)).isSameAs(destination);
+        assertThat(DispatchPolicy.endLocationOrHome(vehicle, null)).isSameAs(home);
     }
 
     private static VehicleTrip scheduledTrip(Interval window) {

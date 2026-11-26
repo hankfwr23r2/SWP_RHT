@@ -52,11 +52,12 @@ class HealthCheckTaskDtoTest {
         task.setStatus(HealthCheckTaskStatus.ASSIGNED);
 
         assertThat(HealthCheckAssigneeResponseDto.from(escort)).isEqualTo(new HealthCheckAssigneeResponseDto(3L, "Escort"));
-        var response = HealthCheckTaskResponseDto.from(task, true, false);
+        var response = HealthCheckTaskResponseDto.from(task, true, false, 2L);
         assertThat(response.horseName()).isEqualTo("Horse");
         assertThat(response.place()).isEqualTo("Hub");
         assertThat(response.assigneeName()).isEqualTo("Escort");
         assertThat(response.overdue()).isTrue();
         assertThat(response.canCancel()).isFalse();
+        assertThat(response.recordingHorseStayId()).isEqualTo(2L);
     }
 }

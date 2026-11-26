@@ -1,0 +1,58 @@
+.page, .details {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  overflow-wrap: anywhere;
+}
+
+.details { gap: var(--space-6); }
+
+.hubs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 21rem), 1fr));
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cardLink {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.cardLink:hover .card { border-color: var(--color-primary); }
+.card { height: 100%; }
+
+.name {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.name i { color: var(--color-primary); }
+
+.location, .metrics dt {
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+}
+
+.location { margin: 0 0 var(--space-4); }
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin: 0;
+}
+
+.metrics dd {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.code { white-space: nowrap; }

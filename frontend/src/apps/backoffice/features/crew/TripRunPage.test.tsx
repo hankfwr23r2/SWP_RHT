@@ -5,6 +5,7 @@ import { afterEach, expect, it, vi } from 'vitest'
 import apiClient from '@shared/api/client'
 import type { Incident } from '@shared/api/incidentOps'
 import type { CrewTrip } from '@shared/api/tripExecution'
+import { ToastProvider } from '@shared/ui/toast'
 import TripRunPage from './TripRunPage'
 
 vi.mock('@shared/api/client', () => ({ default: { get: vi.fn(), post: vi.fn() } }))
@@ -17,7 +18,8 @@ afterEach(() => {
 
 type Stop = NonNullable<NonNullable<CrewTrip['trip']>['stops']>[number]
 
-function renderTrip(parked: boolean, list: Incident[], stop?: Stop, horses?: CrewTrip['horses'], handovers?: CrewTrip['handovers']) {
+function renderTrip(parked: boolean, list: Incident[], stop?: Stop, horses?: CrewTrip['horses'], handovers?: CrewTrip['handovers'],
+  tripDetails?: CrewTrip['trip']) {
   const trip: CrewTrip = {
     trip: {
       id: 5, status: 'IN_PROGRESS', code: 'TEST-TRIP', tripType: 'DIRECT',
@@ -25,6 +27,7 @@ function renderTrip(parked: boolean, list: Incident[], stop?: Stop, horses?: Cre
         { id: 21, stopType: 'HUB', actualArrivalAt: parked ? '2031-01-01T09:00:00Z' : undefined, ...stop },
         { id: 22, stopType: 'HUB' },
       ],
+      ...tripDetails,
     },
     horses, handovers,
   }
@@ -38,9 +41,59 @@ function renderTrip(parked: boolean, list: Incident[], stop?: Stop, horses?: Cre
   const router = createMemoryRouter([{ path: '/my-trips/:id', element: <TripRunPage /> }], {
     initialEntries: ['/my-trips/5'],
   })
-  render(<RouterProvider router={router} />)
+  render(<ToastProvider><RouterProvider router={router} /></ToastProvider>)
   return trip
 }
+
+it('shows the return ETA and late flag while the confirmation waits for the last stop', async () => {
+  const eta = '2031-01-01T10:45:00Z'
+  renderTrip(false, [], undefined, undefined, undefined, { returning: true, returnExpectedAt: eta, returnLate: true })
+
+  expect(await screen.findByText('Đang về')).toBeTruthy()
+  expect(screen.getByText(/^Dự kiến về /).getAttribute('datetime')).toBe(eta)
+  expect(screen.getByText('Trễ')).toBeTruthy()
+  expect((screen.getByRole('button', { name: 'Đã về hub' }) as HTMLButtonElement).disabled).toBe(true)
+})
+
+it('captures a photo before confirming the condition and keeps the uploaded photo after a retry', async () => {
+  const trip = renderTrip(true, [], undefined, undefined, undefined, { stops: [
+    { id: 21, stopType: 'HUB', actualArrivalAt: '2031-01-01T09:00:00Z', actualDepartureAt: '2031-01-01T09:15:00Z' },
+    { id: 22, stopType: 'HUB', actualArrivalAt: '2031-01-01T10:00:00Z' },
+  ] })
+  let attempts = 0
+  vi.mocked(apiClient.post).mockImplementation(async url => {
+    if (url === '/vehicle-trips/5/return-photo') {
+      return { status: 200, data: { data: { ...trip, trip: { ...trip.trip, returnPhotoAttached: true } } } }
+    }
+    attempts += 1
+    if (attempts === 1) return { status: 409, data: { message: 'Kiểm tra ghi chú.', data: { endVehicleNote: 'Mô tả rõ tình trạng xe.' } } }
+    return { status: 200, data: { data: { ...trip, trip: { ...trip.trip, status: 'COMPLETED' } } } }
+  })
+
+  fireEvent.click(await screen.findByRole('button', { name: 'Đã về hub' }))
+  const dialog = within(screen.getByRole('alertdialog', { name: 'Đã về hub' }))
+  const confirm = dialog.getByRole<HTMLButtonElement>('button', { name: 'Đã về hub' })
+  expect(confirm.disabled).toBe(true)
+  const input = dialog.getByLabelText(/Ảnh chụp xe tại hub/)
+  expect(input.getAttribute('capture')).toBe('environment')
+  const photo = new File(['image'], 'return.jpg', { type: 'image/jpeg' })
+  fireEvent.change(input, { target: { files: [photo] } })
+  expect(confirm.disabled).toBe(false)
+  fireEvent.click(confirm)
+
+  expect(await dialog.findByText('Đã lưu ảnh xe')).toBeTruthy()
+  expect(await dialog.findByText('Mô tả rõ tình trạng xe.')).toBeTruthy()
+  const [upload, complete] = vi.mocked(apiClient.post).mock.calls
+  expect(upload[0]).toBe('/vehicle-trips/5/return-photo')
+  expect((upload[1] as FormData).get('file')).toEqual(photo)
+  expect(complete.slice(0, 2)).toEqual(['/vehicle-trips/5/complete', { endVehicleCondition: 'NORMAL', endVehicleNote: undefined }])
+
+  fireEvent.click(confirm)
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
+  expect(vi.mocked(apiClient.post).mock.calls.map(([url]) => url)).toEqual([
+    '/vehicle-trips/5/return-photo', '/vehicle-trips/5/complete', '/vehicle-trips/5/complete',
+  ])
+})
 
 it.each([[false, 'Tới nơi'], [true, 'Rời đi']] as const)('uses the server lock before showing the stop action (%s)', async (parked, label) => {
   const incident: Incident = {
@@ -82,6 +135,22 @@ const approvedStableIncident: Incident = {
   plans: [{ id: 77, status: 'APPROVED', resolutionType: 'STABLE_NEARBY', handlerPartyId: 88, handlerPartyName: 'Chuồng Bình An' }],
 }
 const horses: CrewTrip['horses'] = [{ horseName: 'Sao Mai', leg: { id: 31, status: 'IN_PROGRESS' } }]
+
+it('shows the horse named by a rejected HUB_OUT completion and lets the crew retry', async () => {
+  const handover: NonNullable<CrewTrip['handovers']>[number] = {
+    id: 40, tripStopId: 21, status: 'PENDING', handoverType: 'HUB_OUT',
+    horses: [{ horseLegId: 31, horseName: 'Sao Mai', microchipMatched: true }],
+  }
+  const trip = renderTrip(true, [], undefined, horses, [handover])
+  vi.mocked(apiClient.post)
+    .mockRejectedValueOnce(new Error('Chưa khám trước khi chạy: Sao Mai'))
+    .mockResolvedValueOnce({ data: { data: { ...trip, handovers: [{ ...handover, status: 'DONE' }] } } })
+  fireEvent.click(await screen.findByRole('button', { name: 'Hoàn tất giao nhận' }))
+  expect(await screen.findByText('Chưa khám trước khi chạy: Sao Mai')).toBeTruthy()
+  fireEvent.click(screen.getByRole('button', { name: 'Hoàn tất giao nhận' }))
+  await waitFor(() => expect(screen.queryByRole('button', { name: 'Hoàn tất giao nhận' })).toBeNull())
+  expect(apiClient.post).toHaveBeenNthCalledWith(2, '/handovers/40/complete', undefined)
+})
 
 it('opens an incident handover at the hub for the approved partner and offers collection afterward', async () => {
   const incidents = [approvedStableIncident]

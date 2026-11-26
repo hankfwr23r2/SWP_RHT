@@ -19,6 +19,9 @@ export const coordinator = {
       "DRIVER": "Driver",
       "ESCORT": "Escort"
     },
-    choose: "Choose"
+    choose: "Choose",
+    returning: "Returning",
+    returnExpectedAt: "Expected back {{time}}",
+    returnLate: "Late"
   },
 } as const

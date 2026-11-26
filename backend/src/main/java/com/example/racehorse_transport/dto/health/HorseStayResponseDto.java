@@ -4,6 +4,7 @@ import com.example.racehorse_transport.entity.HorseStay;
 import com.example.racehorse_transport.entity.enums.HorseStayType;
 import com.example.racehorse_transport.entity.enums.TransferMethod;
 import java.time.Instant;
+import java.util.List;
 
 // pickupMethod, deliveryMethod: khách tự chở tới hub hoặc tự nhận ở hub (SELF) thì giao nhận ngay tại hub
 public record HorseStayResponseDto(Long id, Long bookingHorseId, String bookingCode, String horseName, HorseStayType stayType,
@@ -12,7 +13,8 @@ public record HorseStayResponseDto(Long id, Long bookingHorseId, String bookingC
                                    Instant balanceHoldAt, boolean returnForBalance, Instant readyAt,
                                    String dietNote, Short feedingsPerDay, Boolean feedSuppliedByOwner,
                                    String hubStallCode, boolean canChangeHubStall, boolean suggestIsolation,
-                                   Long responsibleCoordinatorId, String responsibleCoordinatorName) {
+                                   Long responsibleCoordinatorId, String responsibleCoordinatorName,
+                                   List<HealthCheckTaskResponseDto> hubExitChecks) {
 
     public static HorseStayResponseDto from(HorseStay stay) {
         return from(stay, stay.getBalanceHoldAt() != null);
@@ -28,6 +30,11 @@ public record HorseStayResponseDto(Long id, Long bookingHorseId, String bookingC
 
     public static HorseStayResponseDto from(HorseStay stay, boolean returnForBalance, boolean canChangeHubStall,
                                             boolean suggestIsolation, com.example.racehorse_transport.entity.Staff owner) {
+        return from(stay, returnForBalance, canChangeHubStall, suggestIsolation, owner, List.of());
+    }
+
+    public static HorseStayResponseDto from(HorseStay stay, boolean returnForBalance, boolean canChangeHubStall, boolean suggestIsolation,
+                                            com.example.racehorse_transport.entity.Staff owner, List<HealthCheckTaskResponseDto> hubExitChecks) {
         var stall = stay.getHubStall();
         var line = stay.getBookingHorse();
         return new HorseStayResponseDto(stay.getId(), line.getId(), line.getBooking().getCode(), line.getHorse().getName(), stay.getStayType(),
@@ -35,6 +42,6 @@ public record HorseStayResponseDto(Long id, Long bookingHorseId, String bookingC
                 stay.getPlannedStartAt(), line.getBooking().getPickupMethod(), line.getBooking().getDeliveryMethod(),
                 stay.getBalanceHoldAt(), returnForBalance, stay.getReadyAt(), line.getDietNote(), line.getFeedingsPerDay(), line.getFeedSuppliedByOwner(),
                 stall == null ? null : stall.getCode(), canChangeHubStall, suggestIsolation,
-                owner == null ? null : owner.getUserId(), owner == null ? null : owner.getFullName());
+                owner == null ? null : owner.getUserId(), owner == null ? null : owner.getFullName(), hubExitChecks);
     }
 }

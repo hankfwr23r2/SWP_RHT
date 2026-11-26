@@ -15,25 +15,26 @@ import { Textarea } from '@shared/ui/Textarea'
 import { useHealthCheckAssignment } from './useHealthCheckAssignment'
 import s from './HealthCheckTask.module.css'
 
-type Props = HealthCheckTarget & { horseName?: string }
-const TYPES = ['ROUTINE', 'FOLLOW_UP', 'BEFORE_DEPARTURE'] as const
+type Props = HealthCheckTarget & { horseName?: string; onChanged?: () => void }
+const TYPES = ['ROUTINE', 'FOLLOW_UP', 'BEFORE_DEPARTURE', 'BEFORE_DELIVERY'] as const
 
-export function HealthCheckTaskAction({ horseName, ...target }: Props) {
+export function HealthCheckTaskAction({ horseName, onChanged, ...target }: Props) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   return <>
     <Button size="sm" onClick={() => setOpen(true)}>{t('healthCheckTasks.assign')}</Button>
-    {open && <AssignmentDialog target={target} horseName={horseName} onClose={() => setOpen(false)} />}
+    {open && <AssignmentDialog target={target} horseName={horseName} onChanged={onChanged} onClose={() => setOpen(false)} />}
   </>
 }
 
-function AssignmentDialog({ target, horseName, onClose }: {
+function AssignmentDialog({ target, horseName, onChanged, onClose }: {
   target: HealthCheckTarget
   horseName?: string
+  onChanged?: () => void
   onClose: () => void
 }) {
   const { t } = useTranslation()
-  const { assignees, tasks, errors, assign, cancel } = useHealthCheckAssignment(target)
+  const { assignees, tasks, errors, assign, cancel } = useHealthCheckAssignment(target, onChanged)
   const [escort, setEscort] = useState('')
   const [type, setType] = useState<HealthCheckTaskDraft['checkType']>('ROUTINE')
   const [due, setDue] = useState('')

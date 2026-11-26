@@ -5,7 +5,7 @@ import { useAuth } from '@shared/auth/AuthContext'
 import { PickupMissPanel } from '@shared/components/PickupMissPanel'
 import { dispatchApi, type DispatchBooking, type DispatchHorse, type DispatchVehicle, type VehicleTrip } from '@shared/api/dispatch'
 import { BookingJourney } from '@shared/components/HorseJourney'
-import { useLoad } from '@shared/hooks/useLoad'
+import { useAutoRefresh, useLoad } from '@shared/hooks/useLoad'
 import { Button } from '@shared/ui/Button'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { Field } from '@shared/ui/Field'
@@ -47,6 +47,7 @@ export default function DispatchPage() {
       : nextWaitingWeek(await dispatchApi.bookings(addDays(range.toDate, 1), addDays(range.toDate, LOOKAHEAD_DAYS)))
     return { bookings, trips, vehicles, next }
   }, [weekStart], { toastOnError: false })
+  useAutoRefresh(reload)
 
   const content = () => {
     if (!loaded) return <Skeleton variant="block" lines={4} />

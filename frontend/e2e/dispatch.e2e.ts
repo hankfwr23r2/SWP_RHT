@@ -40,10 +40,13 @@ async function signIn(page: Page, role: 'coordinator' | 'driver') {
 }
 
 // failBookings: danh sách đơn lỗi cho tới khi test đặt lại false (StrictMode gọi effect hai lần nên không dùng "lỗi một lần")
-async function mockDispatch(page: Page, control: { failBookings?: boolean; vehicleAway?: boolean; replacementAvailable?: boolean } = {}) {
+async function mockDispatch(page: Page, control: { failBookings?: boolean; vehicleAway?: boolean; replacementAvailable?: boolean; returning?: boolean } = {}) {
   const sent: Record<string, unknown> = {}
   let horses: unknown[] = []
   let changedTrip: typeof linehaul | undefined
+  const initialTrip = control.returning ? {
+    ...linehaul, status: 'IN_PROGRESS', returning: true, returnExpectedAt: '2031-03-06T21:00:00Z', returnLate: true,
+  } : linehaul
   await page.route('**/api/v1/**', async route => {
     const request = route.request()
     const path = new URL(request.url()).pathname.replace('/api/v1', '')
@@ -54,8 +57,8 @@ async function mockDispatch(page: Page, control: { failBookings?: boolean; vehic
       }
       return ok(route, [booking])
     }
-    if (method === 'GET' && path === '/vehicle-trips') return ok(route, [changedTrip ?? linehaul])
-    if (method === 'GET' && path === '/vehicle-trips/9') return ok(route, changedTrip ?? linehaul)
+    if (method === 'GET' && path === '/vehicle-trips') return ok(route, [changedTrip ?? initialTrip])
+    if (method === 'GET' && path === '/vehicle-trips/9') return ok(route, changedTrip ?? initialTrip)
     if (method === 'PATCH' && path === '/vehicle-trips/9') {
       sent.edit = request.postDataJSON()
       changedTrip = { ...linehaul, vehicleId: 5, licensePlate: '51C-44444' }
@@ -113,6 +116,22 @@ async function mockDispatch(page: Page, control: { failBookings?: boolean; vehic
 }
 
 test.beforeEach(() => { linehaul.crew = [] })
+
+test('điều phối xem lượt đang về trễ trên lịch xe và chi tiết lượt', async ({ page }) => {
+  await signIn(page, 'coordinator')
+  await mockDispatch(page, { returning: true })
+  await page.goto('/backoffice/coordinator/dispatch')
+  await page.getByLabel('Tuần bắt đầu từ').fill('2031-03-05')
+
+  const trip = page.getByRole('region', { name: 'Lượt xe trong tuần' }).getByRole('button', { name: /VT-AAAA0009/ })
+  await expect(trip).toContainText('Đang về')
+  await expect(trip.getByText('Trễ', { exact: true })).toBeVisible()
+  await expect(trip.getByText(/^Dự kiến về /)).toHaveAttribute('datetime', '2031-03-06T21:00:00Z')
+  await trip.click()
+  const detail = page.getByRole('dialog', { name: /VT-AAAA0009/ })
+  await expect(detail.getByText('Đang về', { exact: true })).toBeVisible()
+  await expect(detail.getByText('Trễ', { exact: true })).toBeVisible()
+})
 
 test('điều phối xếp ngựa vào lượt xe trục và phân công tài xế', async ({ page }) => {
   await signIn(page, 'coordinator')

@@ -83,6 +83,7 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
                         + " chưa trả đủ. Chưa thể đưa ngựa lên xe tại hub.", true);
             });
             matched.forEach(leg -> horseStays.requireStablingPaid(leg.getBookingHorse().getId()));
+            matched.forEach(handoverReadiness::requireHubExitCheck);
         }
         handover.setStatus(HandoverStatus.DONE);
         handover.setHandedAt(now);

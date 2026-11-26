@@ -222,6 +222,6 @@ Thay 6.3, 6.4 và bổ sung theo [NGU_CANH_THIET_KE_LAI.md](NGU_CANH_THIET_KE_LA
 | H5 | Hub (hộ tống, điều phối) | **Khám trước khi chạy**, **Khám trước khi giao** từng con | | Thiếu khám thì chặn ra hub | Nhật ký sức khỏe từng con |
 | H6 | Lượt xe của tôi (tài xế) | **Đã về hub gốc**: ảnh tại chỗ, tình trạng xe | Chưa tới mốc sớm nhất; thiếu ảnh | Xe và tổ lái rảnh; cần bảo dưỡng thì khóa xếp lượt | |
 | H7 | Lịch tuần theo xe (điều phối, quản lý) | Xem xe Đang về, giờ dự kiến, cờ trễ | | | |
-| H8 | **Các hub** (quản lý, chỉ xem) | Xem từng hub: ngựa đang ở, ô chuồng trống, xe theo trạng thái, nhân viên, chuyến đến và đi, sự cố mở | | | |
+| H8 | **Các hub** (quản lý, chỉ xem, `/manager/hubs`) | Xem từng hub: ngựa đang ở, ô chuồng trống, xe theo trạng thái, nhân viên, chuyến đến và đi, sự cố mở | | | |
 | H9 | Lượt xe trục, điểm dừng cửa khẩu (tài xế) | **Tới nơi**, kiểm giấy chung và giấy riêng của cửa khẩu, **Rời đi** sang nước bên kia | Thiếu giấy bắt buộc của bất kỳ đơn nào trên xe | Thiếu giấy thì mở sự cố loại Giấy tờ | "Đang làm thủ tục ở cửa khẩu", "Đã qua cửa khẩu" |
 | H10 | Hub nước ngoài (nhân viên hub đó) | Đón, vào hub, ra hub, giao như hub trong nước | Như trong nước | Như trong nước | Như trong nước |

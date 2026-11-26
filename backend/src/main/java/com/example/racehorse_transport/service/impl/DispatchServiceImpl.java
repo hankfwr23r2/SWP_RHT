@@ -8,6 +8,7 @@ import com.example.racehorse_transport.dto.dispatch.VehicleTripUpdateRequestDto;
 import com.example.racehorse_transport.dto.dispatch.DispatchVehicleResponseDto;
 import com.example.racehorse_transport.entity.Vehicle;
 import com.example.racehorse_transport.entity.VehicleTrip;
+import com.example.racehorse_transport.entity.TripStop;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import com.example.racehorse_transport.entity.enums.VehicleTripType;
@@ -16,6 +17,7 @@ import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.DispatchPolicy;
 import com.example.racehorse_transport.policy.DispatchPolicy.Interval;
 import com.example.racehorse_transport.policy.StallSeatPolicy;
+import com.example.racehorse_transport.policy.TripReturnPolicy;
 import com.example.racehorse_transport.repository.CrewAssignmentRepository;
 import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.repository.TripStopRepository;
@@ -25,6 +27,7 @@ import com.example.racehorse_transport.service.CoordinatorAssignmentService;
 import com.example.racehorse_transport.service.VehicleService;
 import com.example.racehorse_transport.service.TripPlanningService;
 import com.example.racehorse_transport.service.TripPlanEditService;
+import com.example.racehorse_transport.service.TripReturnService;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +49,7 @@ public class DispatchServiceImpl implements DispatchService {
     private final CoordinatorAssignmentService assignments;
     private final TripPlanningService planning;
     private final TripPlanEditService edits;
+    private final TripReturnService returns;
 
     @Override
     @Transactional(readOnly = true)
@@ -126,8 +130,10 @@ public class DispatchServiceImpl implements DispatchService {
             return List.of();
         }
         List<Long> ids = found.stream().map(VehicleTrip::getId).toList();
-        Map<Long, List<TripStopResponseDto>> stopsByTrip = stops.findByVehicleTrip_IdInOrderByVehicleTrip_IdAscSequenceNumberAsc(ids).stream()
-                .collect(Collectors.groupingBy(s -> s.getVehicleTrip().getId(), Collectors.mapping(TripStopResponseDto::from, Collectors.toList())));
+        Map<Long, List<TripStop>> stopsByTrip = stops.findByVehicleTrip_IdInOrderByVehicleTrip_IdAscSequenceNumberAsc(ids).stream()
+                .collect(Collectors.groupingBy(s -> s.getVehicleTrip().getId()));
+        var returnProgress = returns.progress(found, stopsByTrip);
+        var photographedTrips = returns.photographedTripIds(ids);
         Map<Long, List<CrewAssignmentResponseDto>> crewByTrip = crew.findByVehicleTrip_IdInOrderById(ids).stream()
                 .collect(Collectors.groupingBy(a -> a.getVehicleTrip().getId(), Collectors.mapping(CrewAssignmentResponseDto::from, Collectors.toList())));
         Set<Long> manualTripIds = planning.manualTripIds(found.stream()
@@ -137,8 +143,10 @@ public class DispatchServiceImpl implements DispatchService {
             long openIncidents = assignments.openIncidents(trip.getId());
             boolean takeOverAllowed = com.example.racehorse_transport.policy.CoordinatorAssignmentPolicy.canTakeOver(
                     trip.getStatus(), openIncidents > 0);
-            return VehicleTripResponseDto.from(trip, stopsByTrip.getOrDefault(trip.getId(), List.of()),
-                    crewByTrip.getOrDefault(trip.getId(), List.of()), openIncidents, takeOverAllowed, manualTripIds.contains(trip.getId()));
+            var tripStops = stopsByTrip.getOrDefault(trip.getId(), List.of()).stream().map(TripStopResponseDto::from).toList();
+            return VehicleTripResponseDto.from(trip, tripStops,
+                    crewByTrip.getOrDefault(trip.getId(), List.of()), openIncidents, takeOverAllowed, manualTripIds.contains(trip.getId()),
+                    returnProgress.getOrDefault(trip.getId(), TripReturnPolicy.NOT_RETURNING), photographedTrips.contains(trip.getId()));
         }).toList();
     }
 

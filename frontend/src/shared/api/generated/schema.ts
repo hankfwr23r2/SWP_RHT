@@ -2820,6 +2820,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/hubs/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["hubOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/incident-plans/{id}/accept": {
         parameters: {
             query?: never;
@@ -4228,6 +4244,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vehicle-trips/{id}/return-photo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["returnPhoto"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/vehicle-trips/{id}/stall-plan": {
         parameters: {
             query?: never;
@@ -4750,6 +4782,11 @@ export interface components {
         };
         ApiResponseListHorseTypeResponseDto: {
             data?: components["schemas"]["HorseTypeResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListHubOverviewResponseDto: {
+            data?: components["schemas"]["HubOverviewResponseDto"][];
             message?: string;
             status?: string;
         };
@@ -6129,7 +6166,7 @@ export interface components {
             /** Format: int64 */
             bookingHorseId: number;
             /** @enum {string} */
-            checkType: "ROUTINE" | "FOLLOW_UP" | "BEFORE_DEPARTURE";
+            checkType: "ROUTINE" | "FOLLOW_UP" | "BEFORE_DEPARTURE" | "BEFORE_DELIVERY";
             /** Format: date-time */
             dueAt: string;
             /** Format: int64 */
@@ -6149,7 +6186,7 @@ export interface components {
             canCancel?: boolean;
             cancelReason?: string;
             /** @enum {string} */
-            checkType?: "ROUTINE" | "FOLLOW_UP" | "BEFORE_DEPARTURE";
+            checkType?: "ROUTINE" | "FOLLOW_UP" | "BEFORE_DEPARTURE" | "BEFORE_DELIVERY";
             /** Format: date-time */
             doneAt?: string;
             /** Format: date-time */
@@ -6164,6 +6201,8 @@ export interface components {
             note?: string;
             overdue?: boolean;
             place?: string;
+            /** Format: int64 */
+            recordingHorseStayId?: number;
             /** @enum {string} */
             status?: "ASSIGNED" | "ACCEPTED" | "DONE" | "CANCELLED";
             /** Format: int64 */
@@ -6394,6 +6433,7 @@ export interface components {
             /** Format: int32 */
             feedingsPerDay?: number;
             horseName?: string;
+            hubExitChecks?: components["schemas"]["HealthCheckTaskResponseDto"][];
             hubStallCode?: string;
             /** Format: int64 */
             id?: number;
@@ -6448,11 +6488,70 @@ export interface components {
             /** Format: date-time */
             collectAt: string;
         };
+        HubDepartureResponseDto: {
+            /** Format: date-time */
+            departureAt?: string;
+            destinationName?: string;
+            /** Format: int64 */
+            id?: number;
+            originName?: string;
+            routeCode?: string;
+            /** @enum {string} */
+            status?: "OPEN" | "CLOSED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+        };
+        HubFleetResponseDto: {
+            idle?: components["schemas"]["HubVehicleGroupResponseDto"];
+            maintenance?: components["schemas"]["HubVehicleGroupResponseDto"];
+            returning?: components["schemas"]["HubVehicleGroupResponseDto"];
+            running?: components["schemas"]["HubVehicleGroupResponseDto"];
+        };
         HubHandoverRequestDto: {
             conditionNote: string;
             microchip: string;
             papers?: components["schemas"]["HandoverPaperRequestDto"][];
             recipient?: components["schemas"]["DeliveryRecipientRequestDto"];
+        };
+        HubHorseResponseDto: {
+            /** Format: date-time */
+            actualStartAt?: string;
+            bookingCode?: string;
+            horseName?: string;
+            /** Format: int64 */
+            id?: number;
+            /** @enum {string} */
+            stayType?: "ASSEMBLY" | "QUARANTINE" | "OVERNIGHT" | "STABLING";
+        };
+        HubIncidentResponseDto: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: date-time */
+            reportedAt?: string;
+            /** @enum {string} */
+            severity?: "LOW" | "MEDIUM" | "HIGH";
+            /** @enum {string} */
+            status?: "REPORTED" | "PLAN_PENDING" | "PLAN_ACTIVE" | "RESOLVED" | "CLOSED";
+            title?: string;
+        };
+        HubOverviewResponseDto: {
+            arrivals?: components["schemas"]["HubDepartureResponseDto"][];
+            code?: string;
+            countryCode?: string;
+            countryName?: string;
+            departures?: components["schemas"]["HubDepartureResponseDto"][];
+            fleet?: components["schemas"]["HubFleetResponseDto"];
+            headquarters?: boolean;
+            /** Format: int32 */
+            horseCount?: number;
+            horses?: components["schemas"]["HubHorseResponseDto"][];
+            /** Format: int64 */
+            id?: number;
+            incidents?: components["schemas"]["HubIncidentResponseDto"][];
+            name?: string;
+            /** Format: int32 */
+            openIncidentCount?: number;
+            provinceName?: string;
+            staff?: components["schemas"]["HubStaffRoleResponseDto"][];
+            stalls?: components["schemas"]["HubStallCountsResponseDto"];
         };
         HubRefusalRequestDto: {
             reason: string;
@@ -6472,9 +6571,20 @@ export interface components {
         HubStablingRequestDto: {
             note?: string;
         };
+        HubStaffRoleResponseDto: {
+            /** Format: int64 */
+            count?: number;
+            roleCode?: string;
+        };
         HubStallChangeRequestDto: {
             /** Format: int64 */
             hubStallId: number;
+        };
+        HubStallCountsResponseDto: {
+            /** Format: int64 */
+            available?: number;
+            /** Format: int64 */
+            total?: number;
         };
         HubStallCreateRequestDto: {
             code: string;
@@ -6496,6 +6606,17 @@ export interface components {
             occupied?: boolean;
             /** @enum {string} */
             stallKind?: "STANDARD" | "ISOLATION";
+        };
+        HubVehicleGroupResponseDto: {
+            /** Format: int32 */
+            count?: number;
+            vehicles?: components["schemas"]["HubVehicleResponseDto"][];
+        };
+        HubVehicleResponseDto: {
+            /** Format: int64 */
+            id?: number;
+            licensePlate?: string;
+            tripCode?: string;
         };
         IncidentPlanRequestDto: {
             estimatedCost?: number;
@@ -7901,6 +8022,10 @@ export interface components {
             licensePlate?: string;
             /** Format: date-time */
             plannedStartAt?: string;
+            /** Format: date-time */
+            returnExpectedAt?: string;
+            returnLate?: boolean;
+            returning?: boolean;
             startLocationName?: string;
             /** @enum {string} */
             status?: "PLANNED" | "DISPATCHED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
@@ -7908,6 +8033,10 @@ export interface components {
             stopCount?: number;
             /** @enum {string} */
             tripType?: "PICKUP" | "LINEHAUL" | "DELIVERY" | "TRANSFER" | "DIRECT";
+        };
+        TripReturnPhotoRequestDto: {
+            /** Format: binary */
+            file: string;
         };
         TripStartRequestDto: {
             earlyReason?: string;
@@ -8041,6 +8170,11 @@ export interface components {
             plannedEndAt?: string;
             /** Format: date-time */
             plannedStartAt?: string;
+            /** Format: date-time */
+            returnExpectedAt?: string;
+            returnLate?: boolean;
+            returnPhotoAttached?: boolean;
+            returning?: boolean;
             routeCode?: string;
             /** Format: int64 */
             startLocationId?: number;
@@ -12797,6 +12931,26 @@ export interface operations {
             };
         };
     };
+    hubOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListHubOverviewResponseDto"];
+                };
+            };
+        };
+    };
     acceptPlan: {
         parameters: {
             query?: never;
@@ -15386,6 +15540,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListIncidentResponseDto"];
+                };
+            };
+        };
+    };
+    returnPhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": components["schemas"]["TripReturnPhotoRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCrewTripResponseDto"];
                 };
             };
         };

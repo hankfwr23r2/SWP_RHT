@@ -1,5 +1,7 @@
 package com.example.racehorse_transport.policy;
 
+import com.example.racehorse_transport.entity.Location;
+import com.example.racehorse_transport.entity.Vehicle;
 import com.example.racehorse_transport.entity.VehicleTrip;
 import com.example.racehorse_transport.entity.enums.CrewRole;
 import com.example.racehorse_transport.entity.enums.DepartureStatus;
@@ -140,6 +142,11 @@ public final class DispatchPolicy {
         if (otherTrips.stream().anyMatch(planned::overlaps)) {
             throw new DispatchRuleException(field, subject + " đã có lượt chạy khác trùng giờ.", true);
         }
+    }
+
+    // Vị trí xe lấy từ điểm cuối của lượt được xét, hoặc hub gốc khi chưa có lượt.
+    public static Location endLocationOrHome(Vehicle vehicle, VehicleTrip previous) {
+        return previous == null ? vehicle.getHomeHubLocation() : previous.getEndLocation();
     }
 
     // Quy tắc #20 (xe) và #10 (nhân viên): lượt mới bắt đầu ở nơi lượt trước kết thúc.

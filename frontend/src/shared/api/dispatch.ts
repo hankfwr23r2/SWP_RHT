@@ -4,7 +4,11 @@ import { formResponseOptions, readFormResponse } from './customerAddresses'
 import type { components } from './generated/schema'
 
 type Schemas = components['schemas']
-export type VehicleTrip = Schemas['VehicleTripResponseDto'] & { manualStopTimesEditable?: boolean }
+export type TripReturnProgress = { returning?: boolean; returnExpectedAt?: string | null; returnLate?: boolean }
+export type VehicleTrip = Schemas['VehicleTripResponseDto'] & TripReturnProgress & {
+  manualStopTimesEditable?: boolean
+  returnPhotoAttached?: boolean
+}
 export type TripStop = Schemas['TripStopResponseDto']
 export type CrewAssignment = Schemas['CrewAssignmentResponseDto']
 export type DispatchBooking = Schemas['DispatchBookingResponseDto']
