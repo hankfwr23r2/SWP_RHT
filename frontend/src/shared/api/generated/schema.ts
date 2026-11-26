@@ -4228,6 +4228,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vehicle-trips/{id}/return-photo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["returnPhoto"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/vehicle-trips/{id}/stall-plan": {
         parameters: {
             query?: never;
@@ -7904,6 +7920,10 @@ export interface components {
             licensePlate?: string;
             /** Format: date-time */
             plannedStartAt?: string;
+            /** Format: date-time */
+            returnExpectedAt?: string;
+            returnLate?: boolean;
+            returning?: boolean;
             startLocationName?: string;
             /** @enum {string} */
             status?: "PLANNED" | "DISPATCHED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
@@ -7911,6 +7931,10 @@ export interface components {
             stopCount?: number;
             /** @enum {string} */
             tripType?: "PICKUP" | "LINEHAUL" | "DELIVERY" | "TRANSFER" | "DIRECT";
+        };
+        TripReturnPhotoRequestDto: {
+            /** Format: binary */
+            file: string;
         };
         TripStartRequestDto: {
             earlyReason?: string;
@@ -8044,6 +8068,11 @@ export interface components {
             plannedEndAt?: string;
             /** Format: date-time */
             plannedStartAt?: string;
+            /** Format: date-time */
+            returnExpectedAt?: string;
+            returnLate?: boolean;
+            returnPhotoAttached?: boolean;
+            returning?: boolean;
             routeCode?: string;
             /** Format: int64 */
             startLocationId?: number;
@@ -15389,6 +15418,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListIncidentResponseDto"];
+                };
+            };
+        };
+    };
+    returnPhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": components["schemas"]["TripReturnPhotoRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCrewTripResponseDto"];
                 };
             };
         };

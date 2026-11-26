@@ -12,6 +12,7 @@ import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.security.JwtUtils;
 import com.example.racehorse_transport.support.TestData;
+import com.example.racehorse_transport.support.TripReturnPhotoFixtures;
 import com.jayway.jsonpath.JsonPath;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
@@ -184,6 +185,7 @@ class IncidentActionFlowTest {
         entityManager.flush();
         long stay = jdbc.queryForObject("SELECT id FROM horse_stay WHERE booking_horse_id = ? AND actual_end_at IS NULL", Long.class, line);
         assertThat(jdbc.queryForObject("SELECT stay_type FROM horse_stay WHERE id = ?", String.class, stay)).isEqualTo("ASSEMBLY");
+        TripReturnPhotoFixtures.attach(jdbc, trip);
         act(escort, "/vehicle-trips/" + trip + "/complete").andExpect(status().isOk());
     }
 

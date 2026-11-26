@@ -19,6 +19,7 @@ import { Skeleton } from '@shared/ui/Skeleton'
 import { Textarea } from '@shared/ui/Textarea'
 import { StatusBadge, type StatusTone } from '@shared/ui/StatusBadge'
 import { useToast } from '@shared/ui/toast'
+import { TripReturnDetails } from '@backoffice/shared/TripReturnDetails'
 import { PickupMissDialog } from './PickupMissDialog'
 import { HandoverChipForm } from './HandoverChipForm'
 import { HandoverPapersPanel } from './HandoverPapersPanel'
@@ -73,6 +74,7 @@ export default function TripRunPage() {
   if (!loaded) return <Skeleton variant="block" lines={4} />
   if (error || !data?.trip) return <ErrorState title={t('myTrips.run.loadError')} message={error?.message} onRetry={reload} />
   const trip = data.trip
+  const readyToComplete = canComplete(data)
   const tripBlocked = trip.status === 'IN_PROGRESS' && incidents.data?.some(incident => incident.blocksTrip)
   const canMove = incidents.data !== undefined && !incidents.error && !tripBlocked
   const stops = trip.stops ?? []
@@ -168,7 +170,8 @@ export default function TripRunPage() {
       <Link to="/my-trips">{t('myTrips.run.back')}</Link>
       <PageHeader title={`${trip.code} · ${t(`tripWords.type.${trip.tripType}`)}`}
         description={`${trip.licensePlate} · ${trip.startLocationName} → ${trip.endLocationName}`} />
-      <StatusBadge tone={trip.status === 'COMPLETED' ? 'success' : trip.status === 'IN_PROGRESS' ? 'info' : 'neutral'} label={t(`tripWords.status.${trip.status}`)} />
+      {!trip.returning && <StatusBadge tone={trip.status === 'COMPLETED' ? 'success' : trip.status === 'IN_PROGRESS' ? 'info' : 'neutral'} label={t(`tripWords.status.${trip.status}`)} />}
+      <TripReturnDetails trip={trip} />
       {tripBlocked && <p className={s.warning} role="status">{t('myTrips.run.incident.tripBlocked')}</p>}
       {canStart(data) && <TripStartForm busy={busy}
         onStart={reason => run(() => tripExecutionApi.start(tripId, reason), t('myTrips.run.done.started'))} />}
@@ -276,12 +279,16 @@ export default function TripRunPage() {
           void run(() => tripExecutionApi.refuse(refusing.handoverId, request, photo), t('myTrips.run.refusal.done'))
             .then(ok => { if (ok) setRefusing(undefined) })
         }} />}
-      {canComplete(data) && (
-        <Button variant="primary" size="lg" fullWidth disabled={busy} onClick={() => setCompleting(true)}>
-          {t('myTrips.run.complete')}
+      {(trip.returning || readyToComplete) && (
+        <Button variant="primary" size="lg" fullWidth disabled={busy || !readyToComplete} onClick={() => setCompleting(true)}>
+          {t('myTrips.run.backAtHub')}
         </Button>
       )}
-      {canComplete(data) && completing && <TripCompletionDialog onCancel={() => setCompleting(false)}
+      {readyToComplete && completing && <TripCompletionDialog trip={trip} onCancel={() => setCompleting(false)}
+        onUpload={async photo => {
+          const next = await tripExecutionApi.uploadReturnPhoto(tripId, photo)
+          updateData(() => next)
+        }}
         onConfirm={async (condition, note) => {
           const next = await tripExecutionApi.complete(tripId, condition, note)
           updateData(() => next)

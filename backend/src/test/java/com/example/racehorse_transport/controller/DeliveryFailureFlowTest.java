@@ -16,6 +16,7 @@ import com.example.racehorse_transport.security.JwtUtils;
 import com.example.racehorse_transport.service.DeliveryFailureService;
 import com.example.racehorse_transport.service.HorseStayService;
 import com.example.racehorse_transport.support.TestData;
+import com.example.racehorse_transport.support.TripReturnPhotoFixtures;
 import com.jayway.jsonpath.JsonPath;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
@@ -131,6 +132,7 @@ class DeliveryFailureFlowTest {
         assertThat(jdbc.queryForObject("SELECT round(extract(epoch FROM planned_end_at - actual_start_at) / 86400) FROM horse_stay WHERE id = ?", Integer.class, stay))
                 .isEqualTo(3);
         assertThat(customerNotices()).contains("Ngựa đang được giữ tại hub");
+        TripReturnPhotoFixtures.attach(jdbc, first.id);
         first.act("/vehicle-trips/" + first.id + "/complete").andExpect(status().isOk());
 
         // Quá hạn: mỗi sáng nhắc khách và quản lý, phí tạm tính vẫn chạy
@@ -223,6 +225,7 @@ class DeliveryFailureFlowTest {
         first.act("/trip-stops/" + first.stops.get(2) + "/depart").andExpect(status().isOk());
         first.act("/trip-stops/" + first.stops.get(3) + "/arrive").andExpect(status().isOk());
         first.scanAndComplete(first.openHandover(3, "HUB_IN"));
+        TripReturnPhotoFixtures.attach(jdbc, first.id);
         first.act("/vehicle-trips/" + first.id + "/complete").andExpect(status().isOk());
 
         Trip replacement = plan("DELIVERY", 24 * 60, stop("locationId", hcm, "HUB", 24 * 60),

@@ -22,6 +22,7 @@ import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.security.JwtUtils;
 import com.example.racehorse_transport.service.DocumentCompletenessService;
 import com.example.racehorse_transport.support.TestData;
+import com.example.racehorse_transport.support.TripReturnPhotoFixtures;
 import com.jayway.jsonpath.JsonPath;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
@@ -152,6 +153,7 @@ class BorderAgentFlowTest {
         assertThat(legStatus(legOnTrip(trip))).isEqualTo("COMPLETED");
         assertThat(legStatus(agentLeg)).isEqualTo("IN_PROGRESS");
         assertThat(customerNotices(booking)).contains("Đã qua cửa khẩu");
+        TripReturnPhotoFixtures.attach(jdbc, trip);
         act(driver, "/vehicle-trips/" + trip + "/complete").andExpect(status().isOk());
 
         // Trang theo dõi có chặng của đại lý để điều phối ghi đã giao

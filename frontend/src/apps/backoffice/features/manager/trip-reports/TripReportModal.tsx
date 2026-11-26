@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { dispatchApi } from '@shared/api/dispatch'
 import { CoordinatorAssignmentDialog } from '@backoffice/shared/CoordinatorAssignmentDialog'
+import { TripReturnDetails } from '@backoffice/shared/TripReturnDetails'
 import { Button } from '@shared/ui/Button'
 import { reportsApi, type TripReport } from '@shared/api/reports'
 import { useLoad } from '@shared/hooks/useLoad'
@@ -84,6 +85,7 @@ export function TripReportModal({ tripId, onClose }: { tripId: number; onClose: 
         {trip.data.coordinatorName ?? t('coordAssignment.unassigned')}{' '}
         <Button size="sm" onClick={() => setAssigning(true)}>{t('coordAssignment.assign')}</Button>
       </p>}
+      {trip.data && <TripReturnDetails trip={trip.data} />}
       {body()}
       {assigning && <CoordinatorAssignmentDialog resource="vehicle-trips" id={tripId} currentId={trip.data?.coordinatorId}
         onClose={() => setAssigning(false)} onSaved={() => { setAssigning(false); void trip.reload() }} />}

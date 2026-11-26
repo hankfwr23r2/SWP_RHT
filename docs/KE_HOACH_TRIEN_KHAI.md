@@ -654,7 +654,7 @@ Nguồn: [NGU_CANH_THIET_KE_LAI.md](NGU_CANH_THIET_KE_LAI.md) mục 4b, [NGHIEP_
 | M3 | **Xe riêng:** lựa chọn khi đặt đơn (H1); giá theo nguyên xe trong bảng giá; báo giá | A | M2 | Đơn xe riêng có báo giá theo xe; danh sách của điều phối đánh dấu xe riêng |
 | M4 | **Xếp xe trục nhiều xe:** gợi ý chia ngựa vào nhiều xe theo cụm điểm giao ở hub đích rồi vừa số chỗ; xe riêng không ghép; ngựa cùng đơn chung xe; kiểm tổng chỗ các xe ≥ số chỗ đã bán (H4); nhánh giao gom theo cụm gần nhau | B | M2 (đọc sức chứa), M3 (cờ xe riêng) | Chuyến 11 con được gợi ý 2 xe, mỗi xe một cụm điểm giao |
 | M5 | **Khám bắt buộc hai đầu hub:** thêm `BEFORE_DELIVERY`; tự tạo việc khám trước khi chạy và trước khi giao; chặn ra hub khi chưa khám (H5) | B | Không | HUB_OUT bị chặn khi con chưa khám, mở lại khi đã khám |
-| M6 | **Xe về theo thiết kế cũ:** trạng thái Đang về, giờ dự kiến, cờ trễ; tài xế xác nhận về hub gốc kèm ảnh tại chỗ và tình trạng xe (H6, H7) | B | Không (hub gốc bất kỳ ở M1 chỉ đổi dữ liệu) | Xe chưa xác nhận về thì không xếp được lượt mới |
+| M6 | **Xe về:** trạng thái Đang về, giờ dự kiến, cờ trễ; tài xế xác nhận về hub cuối của lượt kèm ảnh tại chỗ và tình trạng xe (H6, H7) | B | Không | Xe hoặc tổ lái còn lượt chưa kết thúc thì chưa xuất phát được lượt kế tiếp |
 | M7 | **Bỏ đại lý ở cửa khẩu:** gỡ chặng đại lý, bàn giao `AGENT`, nút "đại lý đã giao"; điểm dừng cửa khẩu kiểm giấy riêng rồi đi tiếp (H9); hub nước ngoài giao nhận như trong nước (H10) | B | M1 | Đơn xuất chạy trọn tới nơi giao ở Phnom Penh với đủ giao nhận có chip, ảnh, biên bản |
 | M8 | **Màn Các hub cho quản lý** (H8, chỉ xem) | B | Không | Quản lý xem được từng hub, kể cả hub nước ngoài sau M1 |
 | M10 | **Bắt buộc nghỉ trên chặng đón, giao, chạy thẳng:** ngựa ngồi xe đón, giao tối đa 8 giờ, chạy thẳng 10 giờ (cấu hình); con nào ngồi xe liên tục quá 4 giờ (cấu hình) thì lượt phải có trạm nghỉ, hệ thống gợi ý trạm nghỉ mạng lưới gần đường nhất, không có thì chặn lập lượt; ở trạm nghỉ giữ quy tắc cho ăn, uống, ghi sức khỏe, nghỉ 30 phút | B | M1 (trạm nghỉ nhánh, giới hạn 8 giờ) | Lượt đón Điện Biên → Hà Nội có trạm nghỉ Sơn La; không ghi ăn uống thì không rời trạm. **M1 và M10 gộp cùng lúc** hoặc M1 giữ 5 giờ tới khi M10 xong |
@@ -697,7 +697,7 @@ Nguồn: [NGU_CANH_THIET_KE_LAI.md](NGU_CANH_THIET_KE_LAI.md) mục 4b, [NGHIEP_
 | M3 | Xe riêng | A | 7 | Chưa làm | |
 | M4 | Xếp xe trục nhiều xe | A (nhận từ B 26/11) | 7 | Chưa làm | |
 | M5 | Khám bắt buộc hai đầu hub | B | 7 | Xong | #520 |
-| M6 | Xe về | B | 7 | Chưa làm | |
+| M6 | Xe về | B | 7 | Xong | #522 |
 | M7 | Bỏ đại lý ở cửa khẩu | A (nhận từ B 26/11) | 7 | Chưa làm | |
 | M8 | Màn Các hub | B | 7 | Chưa làm | |
 | M10 | Bắt buộc nghỉ trên chặng đón, giao | A (nhận từ B 26/11) | 7 | Chưa làm | |

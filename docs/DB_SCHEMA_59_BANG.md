@@ -644,6 +644,8 @@ EXCLUDE USING gist (country_code WITH =, direction WITH =,
 
 Giấy cấp **cho từng con ngựa** có `owner_type = HORSE` hoặc `BOOKING_HORSE`. Giấy cấp **cho cả đơn** có `owner_type = BOOKING`.
 
+`VEHICLE_RETURN_PHOTO` có `owner_type = VEHICLE_TRIP`, dùng cho ảnh xe tại hub cuối khi xác nhận kết thúc lượt (M6).
+
 Loại giấy thêm ngày 23/11/2026, cùng `owner_type = BOOKING_HORSE`:
 - `QUARANTINE_CLEARANCE`: xác nhận ngựa đạt điều kiện cách ly trước khi vận chuyển. Dùng cho EXPORT, `submitter_type = COMPANY` (chuyên viên tải bản do cơ quan thú y hoặc chủ ngựa cung cấp);
 - `ORIGIN_QUARANTINE_CERT`: giấy kiểm dịch của nước xuất, dùng cho IMPORT, `submitter_type = AGENT`;
@@ -860,6 +862,7 @@ Giao việc và ghi lịch sử trong cùng giao dịch. Chỉ giao cho chuyên 
 | `actual_end_at` | `timestamptz` | có | | |
 | `end_vehicle_condition` | `varchar(30)` | có | CK `NORMAL, NEEDS_MAINTENANCE` | Tình trạng xe do tổ lái báo khi hoàn tất lượt. Lượt đã hoàn tất trước khi áp dụng quy tắc có thể để trống |
 | `end_vehicle_note` | `varchar(1000)` | có | | Ghi chú của tổ lái, bắt buộc có nội dung khi báo cần bảo dưỡng |
+| `return_late_notified_at` | `timestamptz` | có | | `TripReturnService` ghi cùng giao dịch gửi thông báo trễ về hub lần đầu cho điều phối phụ trách |
 | `sealed_at` | `timestamptz` | có | | Thời điểm niêm phong xe. Chỉ ghi nhận, đợt này không có quy tắc kiểm tra |
 | `disinfected_at` | `timestamptz` | có | | Thời điểm khử trùng xe. Chỉ ghi nhận |
 | `status` | `varchar(30)` | | CK `PLANNED, DISPATCHED, IN_PROGRESS, COMPLETED, CANCELLED` | |
@@ -869,6 +872,8 @@ Ràng buộc bảng:
 - `CHECK (planned_end_at > planned_start_at)`
 - `CHECK (actual_end_at IS NULL OR actual_start_at IS NOT NULL)`
 - Chỉ lượt `COMPLETED` được lưu tình trạng xe cuối lượt. Chỉ lưu ghi chú khi có tình trạng xe, và `NEEDS_MAINTENANCE` yêu cầu ghi chú có ít nhất một ký tự khác khoảng trắng.
+
+Service chỉ kết thúc lượt sau khi điểm dừng cuối có giờ tới thực tế, xe đã bàn giao hết ngựa và có chứng từ `VEHICLE_RETURN_PHOTO` của lượt. Khi xuất phát, giữ khóa xe và các nhân viên tổ lái để kiểm xe, tài xế hoặc hộ tống còn lượt khác `IN_PROGRESS`.
 
 Index: `departure_id`, `vehicle_id`, `(status, planned_start_at)`.
 
@@ -1548,6 +1553,7 @@ Backend kiểm tra giới hạn khi cập nhật giá trị. Nếu hai cận đ�
 | `DEPARTURE_MIN_FILL_PERCENT` | 1 | 100 |
 | `DEPARTURE_RUN_REMINDER_HOURS`, `DEPARTURE_DELAY_RESCHEDULE_HOURS`, `DEPARTURE_DELAY_REFUND_HOURS` | 1 | 168 |
 | `DEPARTURE_DELAY_GRACE_MINUTES` | 1 | 240 |
+| `RETURN_LATE_MINUTES` | 1 | 240 |
 | `BALANCE_WAIT_MINUTES` | 5 | 240 |
 | `ADDRESS_MAX_KM_FROM_PROVINCE` | 50 | 500 |
 | `PICKUP_WINDOW_START_HOUR`, `DELIVERY_WINDOW_START_HOUR` | 0 | 23 |
@@ -1561,6 +1567,8 @@ Bỏ `BALANCE_DUE_DAYS_BEFORE_PICKUP`: số dư không còn trả trước ngày
 `ADDRESS_MAX_KM_FROM_PROVINCE` (mặc định 200, nhóm `ADDRESS`): khi lưu sổ địa chỉ, vị trí ghim cách trung tâm tỉnh đã chọn tối đa bao nhiêu km.
 
 Nhóm `SCHEDULE_WINDOW` (24/11/2026): khung giờ đón, giao 6–18, dừng 20 phút cộng 10 phút mỗi con, giờ dời quá 30 phút thì báo khách. `TripSchedulePolicy` tính giờ lượt xe từ các tham số này và đường thật (Valhalla).
+
+`RETURN_LATE_MINUTES` (mặc định 30, nhóm `SCHEDULE_WINDOW`): số phút ân hạn sau giờ dự kiến về hub cuối của lượt xe.
 
 Giá trị khởi đầu của các tham số chốt ngày 23/11/2026, thêm bằng migration ở A6b:
 
@@ -1661,6 +1669,7 @@ Phí bảo hiểm và lệ phí thu hộ được **thu đủ ngay khi đặt c�
 | Số còn nợ | `total_amount` của báo giá ACCEPTED + chi phí phát sinh khách phải trả − đã trả + đã hoàn | `SettlementPolicy` |
 | Ngựa đang trong tay ai | `handover` DONE mới nhất có `handover_horse` thuộc chặng của con ngựa đó. Xét cả `handover_type` (bảng ở mục 10.1): `to_party_id` NULL có thể là công ty, người nhận (DELIVERY) hoặc người gửi (RETURN) | Repository, `HandoverService` |
 | Đơn đã đủ giấy bắt buộc chưa | Xem cách tính bên dưới | `DocumentCompletenessPolicy` |
+| Lượt xe đang về, giờ về dự kiến, cờ trễ | Trạng thái lượt, các chặng ngựa, giờ kế hoạch và giờ thực tế ở điểm dừng, `RETURN_LATE_MINUTES` | `TripReturnPolicy` và `TripReturnService` |
 
 Mọi số tiền cộng với nhau phải cùng `currency_code` với báo giá (quy tắc #22).
 

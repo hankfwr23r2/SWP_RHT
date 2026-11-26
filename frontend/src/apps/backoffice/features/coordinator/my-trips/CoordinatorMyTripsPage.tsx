@@ -8,6 +8,7 @@ import { ErrorState } from '@shared/ui/ErrorState'
 import { PageHeader } from '@shared/ui/PageHeader'
 import { Skeleton } from '@shared/ui/Skeleton'
 import { Table } from '@shared/ui/Table'
+import { TripReturnDetails } from '@backoffice/shared/TripReturnDetails'
 import { CoordinatorTripHorses } from './CoordinatorTripHorses'
 import { useCoordinatorTrips } from './useCoordinatorTrips'
 import s from '@backoffice/shared/StaffPanels.module.css'
@@ -25,7 +26,10 @@ export default function CoordinatorMyTripsPage() {
           placeholder={t('listPanel.search')} aria-label={t('listPanel.search')} />}>{!shown ? error ? <ErrorState onRetry={reload} /> : <Skeleton lines={5} />
       : !shown.length ? <EmptyState compact title={t(term ? 'listPanel.noMatch' : 'coordAssignment.empty')} description={t(term ? 'listPanel.trySearch' : 'coordAssignment.emptyHint')} />
         : <Table caption={t('coordAssignment.mine')} rows={shown} rowKey={row => row.trip?.id ?? 0} columns={[
-          { key: 'vehicle', header: t('coordAssignment.vehicle'), render: row => [row.trip?.code, row.trip?.licensePlate].filter(Boolean).join(' · ') },
+          { key: 'vehicle', header: t('coordAssignment.vehicle'), render: row => row.trip && <>
+            {[row.trip.code, row.trip.licensePlate].filter(Boolean).join(' · ')}
+            <TripReturnDetails trip={row.trip} />
+          </> },
           { key: 'crew', header: t('coordAssignment.crew'), render: row =>
             row.trip?.crew?.filter(member => member.status !== 'RELEASED').map(member => member.fullName).join(', ') || '—' },
           { key: 'point', header: t('coordAssignment.point'), render: row => row.currentPoint },

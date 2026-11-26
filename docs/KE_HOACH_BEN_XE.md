@@ -70,5 +70,6 @@ Hiện trạng cần sửa:
 | M7 | Chưa làm | |
 | M10 | Chưa làm | |
 | M5 | Xong (bạn B) | #520 |
-| M6, M8 | Bạn B | |
+| M6 | Xong (bạn B) | #522 |
+| M8 | Bạn B | |
 | M9 | Chưa làm | |

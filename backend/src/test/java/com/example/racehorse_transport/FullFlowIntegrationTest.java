@@ -20,6 +20,7 @@ import com.example.racehorse_transport.service.DocumentCompletenessService;
 import com.example.racehorse_transport.support.HandoverEvidenceFixtures;
 import com.example.racehorse_transport.support.HubExitCheckFixtures;
 import com.example.racehorse_transport.support.TestData;
+import com.example.racehorse_transport.support.TripReturnPhotoFixtures;
 import com.jayway.jsonpath.JsonPath;
 import jakarta.persistence.EntityManager;
 import java.sql.Timestamp;
@@ -443,6 +444,7 @@ class FullFlowIntegrationTest {
         }
 
         void complete() throws Exception {
+            TripReturnPhotoFixtures.attach(jdbc, id);
             act(driver, "/vehicle-trips/" + id + "/complete").andExpect(status().isOk());
         }
     }

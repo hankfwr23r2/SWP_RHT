@@ -25,6 +25,18 @@ public interface VehicleTripRepository extends JpaRepository<VehicleTrip, Long> 
             """)
     List<Long> findHeldTripIds(VehicleTripStatus status, Collection<VehicleTripType> types);
 
+    @Query("""
+            SELECT t.id FROM VehicleTrip t
+            WHERE t.status = :status AND t.returnLateNotifiedAt IS NULL AND t.coordinator IS NOT NULL
+                AND EXISTS (SELECT s.id FROM TripStop s WHERE s.vehicleTrip = t AND s.actualArrivalAt IS NULL
+                    AND s.plannedArrivalAt < :before
+                    AND s.sequenceNumber = (SELECT MAX(p.sequenceNumber) FROM TripStop p WHERE p.vehicleTrip = t))
+            ORDER BY t.id
+            """)
+    List<Long> findReturnReminderCandidates(VehicleTripStatus status, Instant before);
+
+    Optional<VehicleTrip> findFirstByVehicle_IdAndStatusAndIdNotOrderById(Long vehicleId, VehicleTripStatus status, Long tripId);
+
     @Query("SELECT MIN(t.actualStartAt) FROM VehicleTrip t WHERE t.departure.id = :departureId")
     Optional<Instant> firstActualStartForDeparture(Long departureId);
     boolean existsByVehicle_IdAndStatusNotIn(Long vehicleId, Collection<VehicleTripStatus> statuses);

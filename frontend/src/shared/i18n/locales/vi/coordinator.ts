@@ -19,6 +19,9 @@ export const coordinator = {
       "DRIVER": "Tài xế",
       "ESCORT": "Hộ tống"
     },
-    choose: "Chọn"
+    choose: "Chọn",
+    returning: "Đang về",
+    returnExpectedAt: "Dự kiến về {{time}}",
+    returnLate: "Trễ"
   },
 } as const

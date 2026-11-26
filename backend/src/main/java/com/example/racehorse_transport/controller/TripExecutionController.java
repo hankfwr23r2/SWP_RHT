@@ -8,6 +8,7 @@ import com.example.racehorse_transport.dto.operation.HandoverRefusalRequestDto;
 import com.example.racehorse_transport.dto.operation.HandoverScanRequestDto;
 import com.example.racehorse_transport.dto.operation.StopDepartRequestDto;
 import com.example.racehorse_transport.dto.operation.TripCompleteRequestDto;
+import com.example.racehorse_transport.dto.operation.TripReturnPhotoRequestDto;
 import com.example.racehorse_transport.service.DeliveryFailureService;
 import com.example.racehorse_transport.service.HandoverService;
 import com.example.racehorse_transport.service.TripCompletionService;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -69,6 +71,12 @@ public class TripExecutionController {
     public ApiResponseDto<CrewTripResponseDto> complete(@PathVariable Long id, Authentication authentication,
             @Valid @RequestBody(required = false) TripCompleteRequestDto request) {
         return ApiResponseDto.success(completion.complete(id, request, authentication.getName()), "Đã kết thúc lượt xe");
+    }
+
+    @PostMapping(value = "/vehicle-trips/{id}/return-photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponseDto<CrewTripResponseDto> returnPhoto(@PathVariable Long id, Authentication authentication,
+            @Valid @ModelAttribute TripReturnPhotoRequestDto request) {
+        return ApiResponseDto.success(completion.attachReturnPhoto(id, request, authentication.getName()), "Đã lưu ảnh xe về hub");
     }
 
     @PostMapping("/trip-stops/{id}/handovers")
