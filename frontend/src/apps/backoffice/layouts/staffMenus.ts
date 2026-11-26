@@ -30,8 +30,9 @@ export const STAFF_MENUS: Record<StaffRole, [path: string, label: string, opt?: 
     ['/manager/trip-reports', 'Chuyến đi', { icon: 'fa-clipboard-check' }],
   ],
   specialist: [
-    ['/specialist/review', 'Thẩm định đơn', { icon: 'fa-file-circle-check' }],
-    ['/specialist/missing-documents', 'Đơn thiếu giấy', { icon: 'fa-file-medical' }],
+    ['/specialist/verification', 'Duyệt hồ sơ ngựa', { icon: 'fa-file-circle-check' }],
+    ['/specialist/legal', 'Giấy tờ chuyến đi', { icon: 'fa-file-medical' }],
+    ['/specialist/insurance', 'Bảo hiểm', { icon: 'fa-shield-halved' }],
   ],
   coordinator: [
     ['/coordinator/plans', 'Kế hoạch đơn', { icon: 'fa-calendar-check' }],
@@ -48,7 +49,7 @@ export const STAFF_MENUS: Record<StaffRole, [path: string, label: string, opt?: 
 export const HOME_OF: Record<StaffRole, string> = {
   admin: '/admin/accounts',
   manager: '/manager/orders',
-  specialist: '/specialist/review',
+  specialist: '/specialist/verification',
   coordinator: '/coordinator/dispatch',
   driver: '/my-trips',
   escort: '/my-trips',

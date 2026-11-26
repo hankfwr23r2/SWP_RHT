@@ -88,7 +88,7 @@ class BookingDeadlineReminderFlowTest {
         mine(specialist.getUser().getUsername(), "SPECIALIST")
                 .andExpect(jsonPath("$.data[0].title").value(REVIEW))
                 .andExpect(jsonPath("$.data[0].message").value(review.getCode()))
-                .andExpect(jsonPath("$.data[0].linkUrl").value("/specialist/review/" + review.getId()));
+                .andExpect(jsonPath("$.data[0].linkUrl").value("/specialist/verification/" + review.getId()));
         mine("specialist.dev", "SPECIALIST")
                 .andExpect(jsonPath("$.data[*].title").value(not(hasItems(REVIEW))));
         assertThat(jdbc.queryForObject("SELECT count(*) FROM notification_recipient WHERE user_id = ?",

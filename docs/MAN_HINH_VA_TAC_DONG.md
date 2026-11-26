@@ -225,3 +225,15 @@ Thay 6.3, 6.4 và bổ sung theo [NGU_CANH_THIET_KE_LAI.md](NGU_CANH_THIET_KE_LA
 | H8 | **Các hub** (quản lý, chỉ xem, `/manager/hubs`) | Xem từng hub: ngựa đang ở, ô chuồng trống, xe theo trạng thái, nhân viên, chuyến đến và đi, sự cố mở | | | |
 | H9 | Lượt xe trục, điểm dừng cửa khẩu (tài xế) | **Tới nơi**, kiểm giấy chung và giấy riêng của cửa khẩu, **Rời đi** sang nước bên kia | Thiếu giấy bắt buộc của bất kỳ đơn nào trên xe | Thiếu giấy thì mở sự cố loại Giấy tờ | "Đang làm thủ tục ở cửa khẩu", "Đã qua cửa khẩu" |
 | H10 | Hub nước ngoài (nhân viên hub đó) | Đón, vào hub, ra hub, giao như hub trong nước | Như trong nước | Như trong nước | Như trong nước |
+
+## Thông báo chuyên viên
+
+| Sự kiện | Người nhận | Trang mở từ chuông | Chống trùng |
+|---|---|---|---|
+| Quản lý tiếp nhận hoặc đổi người phụ trách | Chuyên viên được giao | `/specialist/verification/{id}` | Phân công theo giao dịch, từ chối giao lại cho cùng người |
+| Khách nộp hoặc nộp lại giấy của đơn hay hồ sơ ngựa | Chuyên viên phụ trách đơn có giấy vừa nộp | `/specialist/verification/{id}` | Một thông báo trên mỗi đơn cho phiên bản tệp đã lưu, yêu cầu tải bị từ chối không tạo thông báo |
+| Khách nộp lại hợp đồng bảo hiểm tự có | Chuyên viên phụ trách | `/specialist/insurance/{id}` | Chỉ gửi khi nhận thay thế và kết thúc trạng thái chờ bổ sung |
+| Giấy đã duyệt còn hạn hôm nay nhưng hết hạn trước ngày chạy | Chuyên viên phụ trách, qua lịch nhắc giấy hiện có | `/specialist/verification/{id}` cho giấy khách hoặc `/specialist/legal/{id}` cho giấy chuyến đi | Khóa đơn, kiểm theo người nhận và phiên bản giấy |
+| Đơn thiếu giấy do công ty hoặc bên nhận chuẩn bị trong cửa sổ nhắc | Chuyên viên phụ trách | `/specialist/legal/{id}` | Tối đa một lần mỗi ngày theo lịch nhắc hiện có |
+
+Chi tiết ba khu vực hiển thị người phụ trách và lý do thẩm định gần nhất. API hiện tại chưa trả danh sách lịch sử trạng thái cho chuyên viên.

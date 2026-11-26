@@ -135,7 +135,13 @@ public class DocumentReviewServiceImpl implements DocumentReviewService {
         }
         DocumentRequirementResponseDto requirement = requirement(booking, request.requirementId());
         DocumentReviewPolicy.requireCustomerUpload(booking.getStatus(), requirement);
-        return attach(bookingId, request, requirement, customer.getId(), DocumentCompletenessPolicy.requiredOn(booking, businessDate(clock.instant())));
+        var uploaded = attach(bookingId, request, requirement, customer.getId(),
+                DocumentCompletenessPolicy.requiredOn(booking, businessDate(clock.instant())));
+        if (booking.getSpecialist() != null) {
+            notifications.notify(List.of(booking.getSpecialist().getUserId()), bookingId, "Khách đã nộp giấy tờ",
+                    requirement.documentTypeName(), "/specialist/verification/" + bookingId);
+        }
+        return uploaded;
     }
 
     @Override
@@ -266,7 +272,8 @@ public class DocumentReviewServiceImpl implements DocumentReviewService {
         var recipients = customer ? List.of(booking.getCustomer().getUser().getId()) : assignments.recipients(booking);
         if (!recipients.isEmpty()) {
             notifications.notify(recipients, booking.getId(), "Giấy tờ cần bổ sung", note,
-                    customer ? "/orders/" + booking.getId() : assignments.reviewLink(booking));
+                    customer ? "/orders/" + booking.getId() : booking.getSpecialist() != null
+                            ? "/specialist/legal/" + booking.getId() : assignments.reviewLink(booking));
         }
     }
 

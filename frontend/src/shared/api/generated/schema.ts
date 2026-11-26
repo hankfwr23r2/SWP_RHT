@@ -363,7 +363,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["queue"];
+        get: operations["queue_1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3787,7 +3787,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["summary"];
+        get: operations["summary_1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3902,6 +3902,38 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["deactivate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/specialist/work-queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["queue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/specialist/work-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["summary"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4943,6 +4975,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListSpecialistWorkResponseDto: {
+            data?: components["schemas"]["SpecialistWorkResponseDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseListStablePartnerResponseDto: {
             data?: components["schemas"]["StablePartnerResponseDto"][];
             message?: string;
@@ -5124,6 +5161,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseSpecialistWorkSummaryResponseDto: {
+            data?: components["schemas"]["SpecialistWorkSummaryResponseDto"];
+            message?: string;
+            status?: string;
+        };
         ApiResponseStaffAccountResponseDto: {
             data?: components["schemas"]["StaffAccountResponseDto"];
             message?: string;
@@ -5269,6 +5311,8 @@ export interface components {
             deliveryChangeDisabledReason?: string;
             /** @enum {string} */
             deliveryMethod?: "COMPANY" | "SELF";
+            /** Format: date */
+            departureDate?: string;
             horses?: components["schemas"]["HorseDetail"][];
             intakeByName?: string;
             parties?: components["schemas"]["PartySnapshot"][];
@@ -5276,6 +5320,7 @@ export interface components {
             pickupMethod?: "COMPANY" | "SELF";
             rated?: boolean;
             reviewReason?: string;
+            routeName?: string;
         };
         BookingDocumentChecklistResponseDto: {
             documents?: components["schemas"]["BookingDocumentResponseDto"][];
@@ -6379,6 +6424,9 @@ export interface components {
         };
         HorseDetail: {
             addOns?: components["schemas"]["AddOn"][];
+            /** Format: int32 */
+            birthYear?: number;
+            color?: string;
             /** Format: int64 */
             deliveryAddressId?: number;
             dietNote?: string;
@@ -6388,9 +6436,13 @@ export interface components {
             /** Format: int64 */
             horseId?: number;
             horseName?: string;
+            horseTypeName?: string;
             /** Format: int64 */
             id?: number;
             insurance?: components["schemas"]["InsuranceDetail"];
+            microchip?: string;
+            /** @enum {string} */
+            sex?: "STALLION" | "MARE" | "GELDING";
             stallTypeCode?: string;
             /** @enum {string} */
             status?: "ACTIVE" | "EXCLUDED" | "CANCELLED" | "DELIVERED" | "RETURNED";
@@ -7853,6 +7905,34 @@ export interface components {
             /** @enum {string} */
             status?: "PENDING_INTAKE" | "UNDER_REVIEW" | "NEEDS_RESUBMISSION" | "QUOTING" | "AWAITING_DEPOSIT" | "QUOTE_EXPIRED" | "CONFIRMED" | "SCHEDULE_CHANGE_REQUIRED" | "IN_OPERATION" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED";
         };
+        SpecialistWorkResponseDto: {
+            /** Format: int64 */
+            arranged?: number;
+            booking?: components["schemas"]["BookingSummaryResponseDto"];
+            /** Format: date */
+            documentsDueOn?: string;
+            horseNames?: string[];
+            /** @enum {string} */
+            insurance?: "TO_PROCESS" | "WAITING_CUSTOMER" | "CONFIRMED";
+            /** @enum {string} */
+            legal?: "TO_PREPARE" | "IN_PROGRESS" | "COMPLETE";
+            /** Format: int64 */
+            personal?: number;
+            /** Format: int64 */
+            uninsured?: number;
+            /** @enum {string} */
+            verification?: "TO_REVIEW" | "WAITING_CUSTOMER" | "REVIEWED" | "AWAITING_INTAKE";
+        };
+        SpecialistWorkSummaryResponseDto: {
+            /** Format: int64 */
+            insurancePending?: number;
+            /** Format: int64 */
+            legalPending?: number;
+            /** Format: int64 */
+            verificationPending?: number;
+            /** Format: int64 */
+            waitingCustomer?: number;
+        };
         StablePartnerResponseDto: {
             address?: string;
             displayName?: string;
@@ -8966,7 +9046,7 @@ export interface operations {
             };
         };
     };
-    queue: {
+    queue_1: {
         parameters: {
             query?: {
                 mine?: boolean;
@@ -14879,7 +14959,7 @@ export interface operations {
             };
         };
     };
-    summary: {
+    summary_1: {
         parameters: {
             query: {
                 from: string;
@@ -15102,6 +15182,48 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseRouteResponse"];
+                };
+            };
+        };
+    };
+    queue: {
+        parameters: {
+            query?: {
+                all?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListSpecialistWorkResponseDto"];
+                };
+            };
+        };
+    };
+    summary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseSpecialistWorkSummaryResponseDto"];
                 };
             };
         };

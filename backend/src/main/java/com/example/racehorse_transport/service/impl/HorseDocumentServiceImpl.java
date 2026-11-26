@@ -10,6 +10,10 @@ import com.example.racehorse_transport.entity.Document;
 import com.example.racehorse_transport.entity.DocumentType;
 import com.example.racehorse_transport.entity.Horse;
 import com.example.racehorse_transport.entity.enums.DocumentSubject;
+import com.example.racehorse_transport.entity.enums.BookingStatus;
+import com.example.racehorse_transport.repository.BookingHorseRepository;
+import com.example.racehorse_transport.service.NotificationService;
+import java.util.Set;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.DocumentReviewPolicy;
 import com.example.racehorse_transport.repository.DocumentRepository;
@@ -35,6 +39,8 @@ public class HorseDocumentServiceImpl implements HorseDocumentService {
     private final DocumentRepository documents;
     private final DocumentService attachments;
     private final Clock clock;
+    private final BookingHorseRepository bookingHorses;
+    private final NotificationService notifications;
 
     @Override
     @Transactional(readOnly = true)
@@ -57,6 +63,13 @@ public class HorseDocumentServiceImpl implements HorseDocumentService {
                 horse.getOwner().getUserId(), null, businessDate(clock.instant()));
         Document document = documents.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy giấy tờ vừa tải."));
+        var reviewable = Set.of(BookingStatus.UNDER_REVIEW, BookingStatus.NEEDS_RESUBMISSION,
+                BookingStatus.QUOTING, BookingStatus.AWAITING_DEPOSIT, BookingStatus.CONFIRMED);
+        for (var booking : bookingHorses.findAssignedBookingsForHorse(horseId, reviewable)) {
+            notifications.notify(List.of(booking.getSpecialist().getUserId()), booking.getId(), "Khách đã nộp giấy tờ",
+                    horse.getName() + " · " + document.getDocumentType().getName(),
+                    "/specialist/verification/" + booking.getId());
+        }
         return HorseDocumentResponseDto.from(document.getDocumentType(), document, document.getStatus(), false);
     }
 

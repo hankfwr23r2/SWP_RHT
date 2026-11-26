@@ -28,6 +28,7 @@ import com.example.racehorse_transport.entity.enums.AddressRole;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.BookingType;
 import com.example.racehorse_transport.security.JwtUtils;
+import com.example.racehorse_transport.service.ScheduleChangeService;
 import com.example.racehorse_transport.support.TestData;
 import com.jayway.jsonpath.JsonPath;
 import jakarta.persistence.EntityManager;
@@ -58,7 +59,99 @@ class BookingDocumentReuseFlowTest {
     @Autowired private TestData data;
     @Autowired private JwtUtils jwt;
     @Autowired private Clock clock;
+    @Autowired private ScheduleChangeService scheduleChanges;
     @MockitoBean private CloudinaryClient cloudinary;
+
+    @Test
+    void intakeNotifiesOnlyTheAssignedSpecialistWithTheVerificationLink() throws Exception {
+        var customer = data.customer(data.unique("assigned-customer"));
+        var specialist = data.staff(data.unique("assigned-specialist"), "SPECIALIST");
+        var date = businessDate(clock.instant()).plusDays(2);
+        var booking = booking(customer, specialist, BookingType.INTERPROVINCE, data.departure("HCM-DN", date, 4));
+        booking.setStatus(BookingStatus.PENDING_INTAKE);
+        booking.setSpecialist(null);
+        entityManager.flush();
+
+        mvc.perform(post("/bookings/{id}/intake", booking.getId())
+                        .header(HttpHeaders.AUTHORIZATION, token("manager.dev", "MANAGER"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"specialistId\":" + specialist.getUserId() + "}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("UNDER_REVIEW"));
+
+        entityManager.flush();
+        assertThat(jdbc.queryForList("""
+                SELECT r.user_id FROM notification n JOIN notification_recipient r ON r.notification_id = n.id
+                WHERE n.booking_id = ? AND n.link_url = ? AND n.title = 'Bạn được giao phụ trách đơn'
+                """, Long.class, booking.getId(), "/specialist/verification/" + booking.getId()))
+                .containsExactly(specialist.getUserId());
+    }
+
+    @Test
+    void warnsTheAssignedSpecialistOnceWhenAPassportExpiresBeforeDeparture() throws Exception {
+        var customer = data.customer(data.unique("expiry-customer"));
+        var specialist = data.staff(data.unique("expiry-specialist"), "SPECIALIST");
+        var date = businessDate(clock.instant()).plusDays(2);
+        var booking = booking(customer, specialist, BookingType.INTERPROVINCE, data.departure("HCM-DN", date, 4));
+        long horse = profileHorse(customer);
+        addHorse(booking, horse);
+        when(cloudinary.uploadFile(any(), eq("documents/horse")))
+                .thenReturn("https://example.test/" + data.unique("expiring-passport") + ".pdf");
+        int document = uploadPassport(horse, token(customer.getUser().getUsername(), "CUSTOMER"), "passport.pdf");
+        mvc.perform(post("/bookings/{id}/documents/{documentId}/approve", booking.getId(), document)
+                        .header(HttpHeaders.AUTHORIZATION, token(specialist.getUser().getUsername(), "SPECIALIST")))
+                .andExpect(status().isOk());
+        booking.setStatus(BookingStatus.CONFIRMED);
+        entityManager.flush();
+        jdbc.update("UPDATE document SET expiry_date = ? WHERE id = ?", date.minusDays(1), document);
+        entityManager.clear();
+
+        scheduleChanges.remind(booking.getId());
+        scheduleChanges.remind(booking.getId());
+
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM notification n JOIN notification_recipient r ON r.notification_id = n.id
+                WHERE n.booking_id = ? AND r.user_id = ? AND n.link_url = ? AND n.title = 'Giấy tờ hết hạn trước ngày chạy'
+                """, Integer.class, booking.getId(), specialist.getUserId(),
+                "/specialist/verification/" + booking.getId())).isEqualTo(1);
+    }
+
+    @Test
+    void specialistWorkSummaryCountsOnlyAssignedOrdersAndRejectsOtherRoles() throws Exception {
+        var customer = data.customer(data.unique("work-customer"));
+        var specialist = data.staff(data.unique("work-specialist"), "SPECIALIST");
+        var other = data.staff(data.unique("work-other"), "SPECIALIST");
+        var date = businessDate(clock.instant()).plusWeeks(5);
+        var departure = data.departure("HCM-PNH", date, 8);
+        var underReview = booking(customer, specialist, BookingType.EXPORT, departure);
+        var resubmission = booking(customer, specialist, BookingType.EXPORT, departure);
+        var confirmed = booking(customer, specialist, BookingType.EXPORT, departure);
+        var unrelated = booking(customer, other, BookingType.EXPORT, departure);
+        resubmission.setStatus(BookingStatus.NEEDS_RESUBMISSION);
+        confirmed.setStatus(BookingStatus.CONFIRMED);
+        entityManager.flush();
+        addHorse(underReview, profileHorse(customer));
+        addHorse(confirmed, profileHorse(customer));
+        addHorse(unrelated, profileHorse(customer));
+
+        var summary = get("/specialist/work-summary");
+        mvc.perform(summary.header(HttpHeaders.AUTHORIZATION, token(specialist.getUser().getUsername(), "SPECIALIST")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.verificationPending").value(2))
+                .andExpect(jsonPath("$.data.waitingCustomer").value(1))
+                .andExpect(jsonPath("$.data.legalPending").value(1))
+                .andExpect(jsonPath("$.data.insurancePending").value(2));
+        mvc.perform(get("/specialist/work-queue")
+                        .header(HttpHeaders.AUTHORIZATION, token(specialist.getUser().getUsername(), "SPECIALIST")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[*].booking.id", containsInAnyOrder(
+                        underReview.getId().intValue(), resubmission.getId().intValue(), confirmed.getId().intValue())))
+                .andExpect(jsonPath("$.data[?(@.booking.id == " + underReview.getId() + ")].horseNames[0]",
+                        contains("Ngựa thử hồ sơ")));
+        mvc.perform(get("/specialist/work-summary").header(HttpHeaders.AUTHORIZATION,
+                        token(customer.getUser().getUsername(), "CUSTOMER")))
+                .andExpect(status().isForbidden());
+    }
 
     @Test
     void onlyTheOwnerCanUploadSupportedHorseDocumentsAndPendingCountsAsSubmitted() throws Exception {
@@ -142,6 +235,13 @@ class BookingDocumentReuseFlowTest {
                 .andExpect(jsonPath("$.data.missingDocumentTypes", containsInAnyOrder("HORSE_PASSPORT", "VACCINATION_RECORD")));
 
         int replacement = uploadPassport(horse, owner, "readable.pdf");
+        entityManager.flush();
+        profileUpload(horse, owner, "HORSE_PASSPORT", pdf("duplicate.pdf")).andExpect(status().isConflict());
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM notification n JOIN notification_recipient r ON r.notification_id = n.id
+                WHERE n.booking_id = ? AND r.user_id = ? AND n.link_url = ? AND n.title = 'Khách đã nộp giấy tờ'
+                """, Integer.class, domestic.getId(), specialist.getUserId(),
+                "/specialist/verification/" + domestic.getId())).isEqualTo(1);
         assertThat(replacement).isNotEqualTo(first);
         profileDocuments(horse, owner).andExpect(status().isOk())
                 .andExpect(jsonPath(passport + ".id", contains(replacement)));

@@ -55,7 +55,7 @@ public class BookingDeadlineReminderServiceImpl implements BookingDeadlineRemind
         for (Step step : Step.values()) {
             if (booking.getStatus() == step.status && isOverdue(booking, step, now)) {
                 boolean review = step == Step.REVIEW;
-                String path = review ? "/specialist/review/" : "/manager/orders/";
+                String path = review ? "/specialist/verification/" : "/manager/orders/";
                 send(booking, step.title, path + bookingId, review, now);
                 break;
             }

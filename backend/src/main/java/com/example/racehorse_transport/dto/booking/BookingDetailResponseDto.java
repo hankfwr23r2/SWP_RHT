@@ -10,7 +10,7 @@ import java.util.List;
 // intakeByName: nhân viên đã tiếp nhận đơn, chỉ trả cho nhân viên
 public record BookingDetailResponseDto(BookingResponseDto booking, List<PartySnapshot> parties,
         List<AddressSnapshot> addresses, List<HorseDetail> horses, String reviewReason,
-        TransferMethod pickupMethod, TransferMethod deliveryMethod, String intakeByName, boolean rated, Instant balanceHoldAt, boolean assignedToMe, boolean canChangeDelivery, String deliveryChangeDisabledReason) {
+        TransferMethod pickupMethod, TransferMethod deliveryMethod, String intakeByName, boolean rated, Instant balanceHoldAt, boolean assignedToMe, boolean canChangeDelivery, String deliveryChangeDisabledReason, String routeName, LocalDate departureDate) {
 
     public static BookingDetailResponseDto from(Booking booking, List<BookingParty> parties,
                                                  List<BookingAddress> addresses, List<HorseDetail> horses) {
@@ -28,12 +28,14 @@ public record BookingDetailResponseDto(BookingResponseDto booking, List<PartySna
         return new BookingDetailResponseDto(BookingResponseDto.from(booking),
                 parties.stream().map(PartySnapshot::from).toList(),
                 addresses.stream().map(AddressSnapshot::from).toList(), List.copyOf(horses), reviewReason,
-                booking.getPickupMethod(), booking.getDeliveryMethod(), intakeByName, rated, balanceHoldAt, assignedToMe, false, null);
+                booking.getPickupMethod(), booking.getDeliveryMethod(), intakeByName, rated, balanceHoldAt, assignedToMe, false, null,
+                booking.getDeparture() == null ? null : booking.getDeparture().getRoute().getName(),
+                booking.getDeparture() == null ? null : booking.getDeparture().getDepartureDate());
     }
 
     public BookingDetailResponseDto withDeliveryChange(String reason) {
         return new BookingDetailResponseDto(booking, parties, addresses, horses, reviewReason, pickupMethod,
-                deliveryMethod, intakeByName, rated, balanceHoldAt, assignedToMe, reason == null, reason);
+                deliveryMethod, intakeByName, rated, balanceHoldAt, assignedToMe, reason == null, reason, routeName, departureDate);
     }
 
     public record PartySnapshot(BookingPartyRole bookingRole, String fullName, String phone,
@@ -60,14 +62,15 @@ public record BookingDetailResponseDto(BookingResponseDto booking, List<PartySna
 
     public record HorseDetail(Long id, Long horseId, String horseName, String stallTypeCode, String dietNote,
             Short feedingsPerDay, Boolean feedSuppliedByOwner, BookingHorseStatus status,
-            List<AddOn> addOns, InsuranceDetail insurance, Long deliveryAddressId) {
+            List<AddOn> addOns, InsuranceDetail insurance, Long deliveryAddressId, String microchip, String horseTypeName, HorseGender sex, Short birthYear, String color) {
 
         public static HorseDetail from(BookingHorse row, List<BookingHorseAddOn> addOns, HorseInsurance insurance) {
             return new HorseDetail(row.getId(), row.getHorse().getId(), row.getHorse().getName(),
                     row.getStallType().getCode(), row.getDietNote(), row.getFeedingsPerDay(),
                     row.getFeedSuppliedByOwner(), row.getStatus(), addOns.stream().map(AddOn::from).toList(),
                     insurance == null ? null : InsuranceDetail.from(insurance),
-                    row.getDeliveryAddress() == null ? null : row.getDeliveryAddress().getId());
+                    row.getDeliveryAddress() == null ? null : row.getDeliveryAddress().getId(), row.getHorse().getMicrochip(),
+                    row.getHorse().getHorseType().getName(), row.getHorse().getSex(), row.getHorse().getBirthYear(), row.getHorse().getColor());
         }
     }
 

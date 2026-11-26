@@ -9,8 +9,10 @@ type Status = NonNullable<Schemas['BookingResponseDto']['status']>
 type Horse = Schemas['HorseDetail']
 
 const id = 8
-const detailPath = '/backoffice/specialist/review/8'
-const listPath = '/backoffice/specialist/review'
+const detailPath = '/backoffice/specialist/verification/8'
+const listPath = '/backoffice/specialist/verification'
+const legalPath = '/backoffice/specialist/legal/8'
+const insuranceDetailPath = '/backoffice/specialist/insurance/8'
 const documentPath = '/bookings/8/documents'
 const insurancePath = '/bookings/8/insurances'
 const order = { id, code: 'BK-TEST', requestedPickupDate: '2099-01-10', bookingType: 'EXPORT' } as const
@@ -30,7 +32,7 @@ const initialItems: Schemas['Item'][] = [
     submitterType: 'CUSTOMER', requiredForQuoting: true, requiredBeforePickup: true, satisfied: false },
 ]
 
-async function open(page: Page, path: string, initialStatus: Status = 'UNDER_REVIEW', role = 'specialist', ownsBooking = true) {
+async function open(page: Page, path: string, initialStatus: Status = 'UNDER_REVIEW', role = 'specialist', ownsBooking = true, ready = false) {
   let status = initialStatus
   let quoteBlocked = true
   let reviewReason = ''
@@ -41,7 +43,11 @@ async function open(page: Page, path: string, initialStatus: Status = 'UNDER_REV
     { id: 2, requirementId: 6, status: 'UPLOADED', fileName: 'vaccines.pdf', fileUrl: 'https://example.test/vaccines.pdf' },
   ]
   const calls: { path: string; body: unknown }[] = []
-  const summaries: { status: string | null; page: string | null }[] = []
+  if (ready) {
+    policies.forEach(horse => { if (horse.insurance) horse.insurance.status = 'CONFIRMED' })
+    items.forEach(item => { if (item.submitterType === 'CUSTOMER') item.satisfied = true })
+    documents.forEach(document => { document.status = 'APPROVED' })
+  }
 
   await page.addInitScript(role => {
     sessionStorage.setItem('SWP_SESSION_backoffice', JSON.stringify({ role, name: 'Nhân viên thử', username: role + '.test' }))
@@ -103,16 +109,12 @@ async function open(page: Page, path: string, initialStatus: Status = 'UNDER_REV
       { staffId: 100, staffName: 'Mai', assignedCount: 3 },
       { staffId: 101, staffName: 'An', assignedCount: 1 },
     ])
-    if (path === '/bookings/summaries') {
-      const group = url.searchParams.get('statuses')
-      const page = url.searchParams.get('page')
-      summaries.push({ status: group, page })
-      if (group === 'PENDING_INTAKE' && url.searchParams.get('mine') === 'true') return reply([])
-      if (group === 'PENDING_INTAKE' && page === '0') return reply(Array.from({ length: 50 }, (_, index) => ({ id: 100 + index, code: `BK-${index}`, status: group })))
-      if (group === 'PENDING_INTAKE') return reply([{ ...order, status: group, customerName: 'Đỗ Phương' }])
-      return reply([])
-    }
-    if (path === '/bookings/missing-documents') return reply([{ ...order, status: 'CONFIRMED' }])
+    if (path === '/specialist/work-summary') return reply({ verificationPending: 1, legalPending: 1, insurancePending: 1, waitingCustomer: 0 })
+    if (path === '/specialist/work-queue') return reply([
+      { booking: { ...order, customerName: 'Đỗ Phương' }, horseNames: ['Gió Nam'],
+        verification: 'TO_REVIEW', legal: 'TO_PREPARE', insurance: 'TO_PROCESS', arranged: 1, personal: 1, uninsured: 1 },
+      ...(url.searchParams.get('all') === 'true' ? [{ booking: { id: 9, code: 'BK-CHO' }, verification: 'AWAITING_INTAKE' }] : []),
+    ])
     if (path === '/bookings/8/review-detail') return reply({
       booking: { ...order, status, specialistId: status === 'PENDING_INTAKE' ? null : 101,
         specialistName: status === 'PENDING_INTAKE' ? null : 'An' },
@@ -129,7 +131,7 @@ async function open(page: Page, path: string, initialStatus: Status = 'UNDER_REV
   })
   await page.goto(path)
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
-  return { calls, summaries, unblockQuote: () => { quoteBlocked = false } }
+  return { calls, unblockQuote: () => { quoteBlocked = false } }
 }
 
 async function confirm(page: Page, label: string) {
@@ -141,51 +143,41 @@ async function confirm(page: Page, label: string) {
 
 async function sendReason(page: Page, label: string, reason: string) {
   await page.getByRole('button', { name: label, exact: true }).click()
-  const dialog = page.getByRole('dialog')
+  const dialog = page.getByRole(label === 'Từ chối đơn' ? 'alertdialog' : 'dialog')
   await dialog.getByRole('textbox', { name: 'Lý do' }).fill(reason)
   await dialog.getByRole('button', { name: label, exact: true }).click()
   await expect(dialog).toHaveCount(0)
 }
 
-test('phân trang và tìm không dấu, đổi tab, xem đơn thiếu giấy ở 360px', async ({ page }) => {
+test('tìm không dấu, đổi thẻ và mở giấy tờ chuyến đi ở 360px', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 740 })
-  const { summaries } = await open(page, listPath)
-  await page.getByRole('tab', { name: 'Tất cả' }).click()
-  await page.getByRole('tab', { name: 'Chờ tiếp nhận' }).click()
-  await page.getByRole('searchbox').fill('do phuong')
-  await page.getByRole('button', { name: 'Tìm kiếm', exact: true }).click()
-  await expect(page.getByText('Chưa tìm thấy đơn phù hợp')).toBeVisible()
-  await page.getByRole('button', { name: 'Tải thêm' }).click()
+  await open(page, '/backoffice/specialist/review')
+  await expect(page).toHaveURL(new RegExp(listPath + '$'))
+  await page.getByRole('searchbox').fill('gio nam do phuong')
   await expect(page.getByRole('link', { name: 'BK-TEST' })).toBeVisible()
-  expect(summaries).toContainEqual({ status: 'PENDING_INTAKE', page: '1' })
-  await page.getByRole('tab', { name: 'Đang thẩm định' }).click()
-  await expect(page.getByText('Chưa tìm thấy đơn phù hợp')).toBeVisible()
-  expect(summaries).toContainEqual({ status: 'UNDER_REVIEW', page: '0' })
-  // Ở 360px menu nằm trong nút ba gạch
+  await page.getByRole('searchbox').fill('')
+  await page.getByRole('combobox').click()
+  await page.getByRole('option', { name: 'Tất cả' }).click()
+  await page.getByRole('tab', { name: /Chờ tiếp nhận/ }).click()
+  await expect(page.getByRole('link', { name: 'BK-CHO' })).toBeVisible()
   await page.getByRole('button', { name: 'Mở menu' }).click()
-  await page.getByRole('link', { name: 'Đơn thiếu giấy', exact: true }).click()
+  await page.getByRole('link', { name: /Giấy tờ chuyến đi/ }).click()
+  await page.getByRole('link', { name: 'BK-TEST' }).click()
+  await expect(page).toHaveURL(new RegExp(legalPath + '$'))
   await expect(page.getByText('Giấy cách ly · Sao Mai')).toBeVisible()
-  await expect(page.getByText(/Người nhận nộp.*Cần trước khi đón ngựa/)).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0)
-  await page.getByRole('button', { name: 'Nộp giấy thay', exact: true }).click()
-  await expect(page.getByRole('dialog')).toBeVisible()
-  await page.keyboard.press('Escape')
-  await page.getByRole('button', { name: 'Mở đơn BK-TEST' }).click()
-  await expect(page).toHaveURL(new RegExp(detailPath + '$'))
 })
 
 test('duyệt giấy từng ngựa, từ chối kèm lý do và nộp giấy thay người nhận', async ({ page }) => {
   const { calls } = await open(page, detailPath)
-  const bar = page.getByRole('region', { name: 'Bước tiếp theo' })
-  await expect(bar).toBeInViewport()
-  await expect(page.getByRole('link', { name: 'passport.pdf' })).toHaveAttribute('href', 'https://example.test/passport.pdf')
-  await expect(bar).toContainText('Duyệt 2 giấy đang chờ.')
+  await expect(page.getByRole('link', { name: 'Xem passport.pdf' })).toHaveAttribute('href', 'https://example.test/passport.pdf')
   await confirm(page, 'Duyệt giấy')
-  await expect(bar).toContainText('Duyệt 1 giấy đang chờ.')
+  await page.getByRole('button', { name: 'Con sau' }).click()
+  await expect(page.getByRole('heading', { name: 'Sao Mai', exact: true })).toBeVisible()
   await expect(page.getByText('Đã đáp ứng', { exact: true })).toBeVisible()
 
   await page.getByRole('button', { name: 'Từ chối giấy', exact: true }).click()
-  const rejection = page.getByRole('dialog')
+  const rejection = page.getByRole('alertdialog')
   await rejection.getByRole('button', { name: 'Từ chối giấy' }).click()
   await expect(rejection.getByText('Vui lòng điền thông tin này.')).toBeVisible()
   await rejection.getByRole('textbox').fill('mờ')
@@ -196,6 +188,8 @@ test('duyệt giấy từng ngựa, từ chối kèm lý do và nộp giấy tha
   await rejection.getByRole('button', { name: 'Từ chối giấy' }).click()
   await expect(page.getByText('Ảnh mờ, vui lòng chụp lại.')).toBeVisible()
 
+  await page.getByRole('link', { name: /Giấy tờ chuyến đi/ }).click()
+  await page.getByRole('link', { name: 'BK-TEST' }).click()
   await page.getByRole('button', { name: 'Nộp giấy thay', exact: true }).click()
   const upload = page.getByRole('dialog')
   await upload.locator('input[type=file]').setInputFiles({ name: 'isolation.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4') })
@@ -225,8 +219,8 @@ test('chuyên viên thu hồi giấy đã duyệt và thấy yêu cầu giấy t
   expect(calls).toContainEqual({ path: `${documentPath}/1/revoke`, body: { reason: 'Hộ chiếu sai thông tin' } })
 })
 
-test('ghi báo giá và xác nhận bảo hiểm, mở lại, yêu cầu bổ sung và thử lại khi báo giá bị chặn', async ({ page }) => {
-  const { calls, unblockQuote } = await open(page, detailPath)
+test('ghi báo giá và xác nhận bảo hiểm, mở lại và yêu cầu bổ sung', async ({ page }) => {
+  const { calls } = await open(page, insuranceDetailPath)
   await expect(page.getByRole('link', { name: 'Xem policy.pdf' })).toHaveAttribute('href', 'https://example.test/policy.pdf')
   await page.getByRole('button', { name: 'Ghi báo giá bảo hiểm', exact: true }).click()
   const evidence = page.getByRole('dialog')
@@ -251,6 +245,11 @@ test('ghi báo giá và xác nhận bảo hiểm, mở lại, yêu cầu bổ su
   await uninsured.getByRole('button', { name: 'Xác nhận bảo hiểm', exact: true }).click()
   await page.getByRole('alertdialog').getByRole('button', { name: 'Xác nhận bảo hiểm', exact: true }).click()
   await expect(uninsured.getByText('Đã xác nhận', { exact: true })).toBeVisible()
+})
+
+test('xác nhận báo giá và thử lại khi backend chặn', async ({ page }) => {
+  const { unblockQuote } = await open(page, detailPath, 'UNDER_REVIEW', 'specialist', true, true)
+  await page.getByRole('button', { name: 'Đánh dấu tất cả' }).click()
   await page.getByRole('button', { name: 'Bắt đầu báo giá', exact: true }).click()
   const quote = page.getByRole('alertdialog')
   await quote.getByRole('button', { name: 'Bắt đầu báo giá', exact: true }).click()
@@ -260,14 +259,10 @@ test('ghi báo giá và xác nhận bảo hiểm, mở lại, yêu cầu bổ su
   await expect(quote).toHaveCount(0)
 })
 
-test('trả lại khách và từ chối đơn gửi lý do tới đúng endpoint', async ({ page }) => {
+test('từ chối đơn gửi lý do tới đúng endpoint', async ({ page }) => {
   const { calls } = await open(page, detailPath)
-  await sendReason(page, 'Trả lại để bổ sung', 'Thiếu hồ sơ')
-  await expect(page.getByText(/Lý do thẩm định gần nhất.*Thiếu hồ sơ/)).toBeVisible()
-  expect(calls[0]).toEqual({ path: '/bookings/8/return-for-resubmission', body: { reason: 'Thiếu hồ sơ' } })
-  const pending = await open(page, detailPath)
   await sendReason(page, 'Từ chối đơn', 'Đơn bị trùng')
-  expect(pending.calls[0]).toEqual({ path: '/bookings/8/reject', body: { reason: 'Đơn bị trùng' } })
+  expect(calls[0]).toEqual({ path: '/bookings/8/reject', body: { reason: 'Đơn bị trùng' } })
 })
 
 test('quản lý tiếp nhận với chuyên viên ít đơn nhất được chọn sẵn', async ({ page }) => {
@@ -285,15 +280,14 @@ test('chuyên viên khác chỉ xem đơn và người phụ trách', async ({ p
   expect(calls).toEqual([])
 })
 
-test('yêu cầu khách nộp giấy còn thiếu, lý do điền sẵn tên giấy', async ({ page }) => {
+test('yêu cầu khách nộp giấy còn thiếu cho đúng ngựa', async ({ page }) => {
   const { calls } = await open(page, detailPath)
-  await page.getByRole('button', { name: 'Từ chối giấy', exact: true }).nth(1).click()
-  await page.getByRole('dialog').getByRole('textbox').fill('Ảnh mờ')
-  await page.getByRole('dialog').getByRole('button', { name: 'Từ chối giấy' }).click()
-  await page.getByRole('button', { name: 'Yêu cầu khách nộp', exact: true }).click()
-  const dialog = page.getByRole('dialog')
-  await expect(dialog.getByRole('textbox')).toHaveValue('Cần nộp: Sổ tiêm')
-  await dialog.getByRole('button', { name: 'Yêu cầu khách nộp', exact: true }).click()
+  await page.getByRole('button', { name: 'Trả lại để bổ sung', exact: true }).click()
+  const dialog = page.getByRole('alertdialog')
+  await dialog.getByRole('checkbox', { name: 'Gió Nam · Hộ chiếu' }).check()
+  await dialog.getByRole('textbox').fill('Cần bản rõ')
+  await dialog.getByRole('button', { name: 'Trả lại để bổ sung', exact: true }).click()
   await expect(dialog).toHaveCount(0)
-  expect(calls.at(-1)).toEqual({ path: '/bookings/8/return-for-resubmission', body: { reason: 'Cần nộp: Sổ tiêm' } })
+  await expect(page.getByText(/Lý do thẩm định gần nhất.*Gió Nam/s)).toBeVisible()
+  expect(calls.at(-1)).toEqual({ path: '/bookings/8/return-for-resubmission', body: { reason: 'Gió Nam · Hộ chiếu\nCần bản rõ' } })
 })

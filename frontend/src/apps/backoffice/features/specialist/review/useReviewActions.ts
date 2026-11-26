@@ -13,8 +13,6 @@ export type ReviewAction = {
   danger?: boolean
   // Nút chính của bước này
   primary?: boolean
-  // Lý do gợi ý sẵn, người dùng sửa được
-  initialReason?: string
 }
 
 export function useReviewActions(id: number) {
@@ -55,19 +53,15 @@ export function useReviewActions(id: number) {
     returnForResubmission: (): ReviewAction => ({
       label: 'return', reason: true, run: reason => bookingReviewsApi.returnForResubmission(id, { reason }),
     }),
-    askDocument: (name: string): ReviewAction => ({
-      label: 'askDocument', reason: true, initialReason: t('staffReview.askReason', { name }),
-      run: reason => bookingReviewsApi.returnForResubmission(id, { reason }),
-    }),
     reject: (): ReviewAction => ({
-      label: 'rejectOrder', reason: true, danger: true, run: reason => bookingReviewsApi.reject(id, { reason }),
+      label: 'rejectOrder', reason: true, confirm: true, danger: true, run: reason => bookingReviewsApi.reject(id, { reason }),
     }),
     startQuoting: (): ReviewAction => ({ label: 'startQuoting', primary: true, run: () => bookingReviewsApi.startQuoting(id) }),
     approveDocument: (documentId: number): ReviewAction => ({
       label: 'approveDocument', primary: true, run: () => bookingDocumentsApi.approve(id, documentId),
     }),
     rejectDocument: (documentId: number): ReviewAction => ({
-      label: 'rejectDocument', reason: true, danger: true, run: reason => bookingDocumentsApi.reject(id, documentId, { reason }),
+      label: 'rejectDocument', reason: true, confirm: true, danger: true, run: reason => bookingDocumentsApi.reject(id, documentId, { reason }),
     }),
     revokeDocument: (documentId: number): ReviewAction => ({
       label: 'revokeDocument', reason: true, confirm: true, danger: true,

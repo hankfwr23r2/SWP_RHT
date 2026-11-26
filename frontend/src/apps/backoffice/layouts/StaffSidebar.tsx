@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import type { StaffRole } from '@shared/auth/role'
 import { countLabel, useManagerWork, type ManagerWork } from '../shared/useManagerWork'
+import { useSpecialistWork } from '@backoffice/shared/useSpecialistWork'
 import { STAFF_MENUS } from './staffMenus'
 import { Button } from '@shared/ui/Button'
 import { TranslateToggle } from '@shared/ui/TranslateToggle'
@@ -35,6 +36,12 @@ export function StaffSidebar({ mobileOpen, onNavigate }: { mobileOpen: boolean; 
   const activePath = STAFF_MENUS[role].filter(([to]) => pathname === to || pathname.startsWith(`${to}/`))
     .sort(([left], [right]) => right.length - left.length)[0]?.[0]
   const work = useManagerWork(role === 'manager')
+  const specialist = useSpecialistWork(role === 'specialist')
+  const specialistCounts: Record<string, number | undefined> = {
+    '/specialist/verification': specialist?.verificationPending,
+    '/specialist/legal': specialist?.legalPending,
+    '/specialist/insurance': specialist?.insurancePending,
+  }
   const toggle = () => setCollapsed(c => { try { localStorage.setItem(KEY, c ? '0' : '1') } catch { /* không lưu được thì thôi */ } return !c })
 
   return (
@@ -48,12 +55,12 @@ export function StaffSidebar({ mobileOpen, onNavigate }: { mobileOpen: boolean; 
       <nav id="staff-navigation" className={s.menu} aria-label={t('header.navigation')}>
         {STAFF_MENUS[role].map(([to, label, opt]) => {
           const itemLabel = t(`staffMenus.${to}`, label)
-          const pending = work?.[COUNT_OF[to]] ?? 0
+          const pending = specialistCounts[to] ?? work?.[COUNT_OF[to]] ?? 0
           return (
             <Link key={to} to={to} onClick={onNavigate} aria-current={to === activePath ? 'page' : undefined} title={itemLabel} onPointerEnter={() => prefetchManagerPage(to)} onFocus={() => prefetchManagerPage(to)} className={`${s.item} ${to === activePath ? s.on : ''}`}>
               <i className={`fa-solid ${opt?.icon}`} aria-hidden="true" />
               <span>{itemLabel}</span>
-              {pending > 0 && <b className={`${s.count} ${s.countHot}`} aria-label={t('managerWork.pending', { count: pending })}>{countLabel(pending)}</b>}
+              {pending > 0 && <b className={`${s.count} ${s.countHot}`} aria-label={t('managerWork.pending', { count: pending })}>{role === 'specialist' ? pending : countLabel(pending)}</b>}
             </Link>
           )
         })}

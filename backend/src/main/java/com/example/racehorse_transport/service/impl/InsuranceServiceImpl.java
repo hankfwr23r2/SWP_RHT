@@ -187,8 +187,9 @@ public class InsuranceServiceImpl implements InsuranceService {
         insurance.setStatus(HorseInsuranceStatus.DRAFT);
         var recipients = assignments.recipients(booking);
         if (!recipients.isEmpty()) {
+            String link = booking.getSpecialist() == null ? assignments.reviewLink(booking) : "/specialist/insurance/" + bookingId;
             notifications.notify(recipients, bookingId, "Hợp đồng bảo hiểm đã bổ sung",
-                    "Kiểm tra lại chứng từ bảo hiểm trong chi tiết đơn.", assignments.reviewLink(booking));
+                    "Kiểm tra lại chứng từ bảo hiểm trong chi tiết đơn.", link);
         }
     }
 

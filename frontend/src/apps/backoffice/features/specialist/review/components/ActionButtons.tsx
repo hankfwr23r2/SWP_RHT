@@ -49,7 +49,7 @@ export function ActionButtons({ options, actions }: { options: ReviewAction[]; a
         disabled={actions.busy} onClick={() => {
           actions.clear()
           setQuoteError('')
-          setReason(option.initialReason ?? '')
+          setReason('')
           setSubmitted(false)
           setSelected(option)
         }}>{t(`staffReview.action.${option.label}`)}</Button>)}

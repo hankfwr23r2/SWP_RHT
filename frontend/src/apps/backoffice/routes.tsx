@@ -86,25 +86,23 @@ export const routes: AppRoute[] = [
   { path: '/manager/trip-reports', lazyPage: () => import('./features/manager/trip-reports/TripReportsPage'), roles: M, title: 'Báo cáo vận hành', layout: 'staff', catalog: false },
   { path: '/manager/incidents', lazyPage: () => import('./features/incidents/IncidentsBoardPage'), roles: M, title: 'Sự cố', layout: 'staff', catalog: false },
 
-  {
-    path: '/specialist/review', roles: SP, layout: 'staff',
-    lazyPage: () => Promise.all([import('./features/specialist/review/ReviewListPage'), reviewTexts()]).then(([page]) => page),
-    loader: () => import('./features/specialist/review/loaders').then(m => m.reviewListLoader()),
-    title: 'Thẩm định đơn',
-  },
-  {
-    path: '/specialist/review/:id', roles: SP, layout: 'staff',
-    lazyPage: () => Promise.all([import('./features/specialist/review/ReviewDetailPage'), reviewTexts()]).then(([page]) => page),
-    loader: context => import('./features/specialist/review/loaders').then(m => m.reviewDetailLoader(context)),
-    title: 'Chi tiết thẩm định',
-  },
-  {
-    path: '/specialist/missing-documents', roles: SP, layout: 'staff',
-    lazyPage: () => Promise.all([import('./features/specialist/review/MissingDocumentsPage'), reviewTexts()]).then(([page]) => page),
-    loader: () => import('./features/specialist/review/loaders').then(m => m.missingDocumentsLoader()),
-    title: 'Đơn thiếu giấy',
-  },
-
+  ...(['verification', 'legal', 'insurance'] as const).flatMap((section): AppRoute[] => {
+    const path = `/specialist/${section}`
+    const title = () => i18n.t(`staffMenus.${path}`)
+    return [
+      { path, roles: SP, layout: 'staff', get title() { return title() },
+        lazyPage: () => Promise.all([import('./features/specialist/review/SpecialistQueuePage'), reviewTexts()])
+          .then(([{ SpecialistQueuePage }]) => ({ default: () => <SpecialistQueuePage section={section} /> })) },
+      { path: `${path}/:id`, roles: SP, layout: 'staff', get title() { return title() },
+        loader: context => import('./features/specialist/review/loaders').then(m => m.reviewDetailLoader(context)),
+        lazyPage: () => Promise.all([import('./features/specialist/review/SpecialistDetailPage'), reviewTexts()])
+          .then(([{ SpecialistDetailPage }]) => ({ default: () => <SpecialistDetailPage section={section} /> })) },
+    ]
+  }),
+  ...['/specialist/review', '/specialist/review/:id', '/specialist/missing-documents'].map((path): AppRoute => ({
+    path, roles: SP, layout: 'staff', catalog: false, title: '',
+    lazyPage: () => import('./features/specialist/review/SpecialistRedirectPage'),
+  })),
   { path: '/coordinator/dispatch', lazyPage: () => Promise.all([import('./features/coordinator/dispatch/DispatchPage'), dispatchTexts()]).then(([page]) => page), roles: CO, title: 'Điều độ', layout: 'staff', catalog: false },
   { path: '/coordinator/my-trips', lazyPage: () => import('./features/coordinator/my-trips/CoordinatorMyTripsPage'), roles: CO, title: 'Lượt của tôi', layout: 'staff', catalog: false },
   { path: '/coordinator/plans', lazyPage: () => Promise.all([import('./features/coordinator/plans/PlansPage'), dispatchTexts()]).then(([page]) => page), roles: CO, title: 'Kế hoạch đơn', layout: 'staff', catalog: false },
