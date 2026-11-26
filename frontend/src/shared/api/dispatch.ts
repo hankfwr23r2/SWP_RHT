@@ -34,6 +34,9 @@ export type TripType = NonNullable<VehicleTripCreate['tripType']>
 export type Partner = Schemas['PartyResponseDto']
 export type StallPlan = Schemas['StallPlanResponseDto']
 export type TripGroup = Schemas['TripGroupResponseDto']
+export type LinehaulTruck = Schemas['TruckDto']
+type LinehaulSuggestion = Schemas['LinehaulSuggestionResponseDto']
+type LinehaulApply = Schemas['LinehaulApplyRequestDto']
 export type StallAssignment = Schemas['StallAssignmentDto']
 
 const get = async <T>(url: string, params?: Record<string, string>) => (await apiClient.get<ApiResponse<T>>(url, { params })).data.data
@@ -69,6 +72,8 @@ export const dispatchApi = {
     post<TripHorse[]>(`/vehicle-trips/${tripId}/horse-legs`, { bookingHorseId, boardTripStopId, alightTripStopId }),
   cancelLeg: (legId: number) => post<TripHorse[]>(`/horse-legs/${legId}/cancel`),
   departures: (from: string, to: string) => get<Departure[]>('/departures', { from, to }),
+  linehaulSuggestion: (id: number) => get<LinehaulSuggestion>(`/departures/${id}/linehaul-suggestion`),
+  applyLinehaul: (id: number, body: LinehaulApply) => post<number[]>(`/departures/${id}/linehaul-trips`, body),
   locations: () => get<NetworkLocation[]>('/locations', { status: 'ACTIVE' }),
   myAssignments: () => get<MyCrewAssignment[]>('/crew-assignments/mine'),
   horseStays: (locationId: number) => get<HorseStay[]>('/horse-stays', { locationId: String(locationId) }),

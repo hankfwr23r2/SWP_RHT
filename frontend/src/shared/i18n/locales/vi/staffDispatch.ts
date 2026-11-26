@@ -1,5 +1,25 @@
 // Chữ các trang kế hoạch, điều độ, theo dõi, hub của điều phối viên; tải khi mở trang
 export const staffDispatch = {
+  "linehaul": {
+    "suggest": "Gợi ý chia xe",
+    "apply": "Lập lượt trục theo gợi ý",
+    "confirm": "Lập {{count}} lượt trục theo biển số đã chọn, gắn các ngựa trong danh sách và xếp khoang?",
+    "created": "Đã lập {{count}} lượt trục.",
+    "failed": "Chưa lập được các lượt trục.",
+    "noDepartures": "Chưa có chuyến xác nhận chạy",
+    "chooseWeek": "Chọn tuần khác trên màn Điều độ để tìm chuyến đã xác nhận chạy.",
+    "noTrucks": "Chưa có xe trục cần lập lượt",
+    "checkBookings": "Kiểm tra các đơn và xe đã giữ cho chuyến.",
+    "shortage": "Cần thêm {{count}} chỗ để xếp ngựa và đủ số chỗ đã bán.",
+    "plate": "Biển số xe {{number}}",
+    "noVehicles": "Không có xe đủ điều kiện cho lượt này.",
+    "truck": "Xe {{number}}",
+    "seats": "{{used}}/{{capacity}} chỗ",
+    "cluster": "Cụm điểm giao {{number}}",
+    "BASE": "Xe nền",
+    "SPARE": "Xe để sẵn",
+    "PRIVATE": "Xe riêng"
+  },
   "crewPositions": {
     "inVehicle": "Trên xe {{code}}",
     "positionUnknown": "Chưa rõ vị trí"

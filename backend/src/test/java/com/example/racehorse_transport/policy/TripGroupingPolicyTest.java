@@ -41,6 +41,15 @@ class TripGroupingPolicyTest {
     }
 
     @Test
+    void deliveryRadiusAndPrivateBookingsRestrictCompatibleRoutes() {
+        var first = at(1, 0.3, 0, 1);
+        var far = at(2, 0.9, 0, 1);
+        var privateBooking = new Candidate(3L, first.point(), 1, true);
+        assertThat(TripGroupingPolicy.group(HUB, List.of(first, far), 9, 4, 60)).hasSize(1);
+        assertThat(TripGroupingPolicy.group(HUB, List.of(first, far, privateBooking), 9, 4, 60, 60)).hasSize(3);
+    }
+
+    @Test
     void reportsDistanceAndHoursOfTheRoute() {
         Group alone = TripGroupingPolicy.group(HUB, List.of(at(1, 0.9, 0, 1)), 9, 4, 50).getFirst();
         assertThat(alone.routeKm()).isBetween(125.0, 135.0);

@@ -1716,6 +1716,8 @@ Mọi số tiền cộng với nhau phải cùng `currency_code` với báo giá
 
 M2: khóa chuyến rồi khóa hub xuất phát khi thiếu chỗ. Trừ xe SPARE đã gắn cùng hạng ở chuyến có khung bận giao nhau, tính từ giờ gốc tới hết hai lượt tuyến cộng `LINEHAUL_REST_HOURS` (12, 1–48). Gắn đủ xe hoặc không gắn xe nào. Chỉ bỏ xe trước khi chạy nếu còn dòng xe và đủ chỗ đã đặt. Ngưỡng `DEPARTURE_NEARLY_FULL_PERCENT` là 80 (50–100). `SPARE_VEHICLE_PERCENT` là 20 (0–100), dùng cho mẫu và báo cáo.
 
+M4: `LINEHAUL_CLUSTER_RADIUS_KM` (nhóm `SCHEDULE`, đơn vị km, mặc định 60, giới hạn 1–300) là khoảng cách đường chim bay tối đa giữa các điểm giao khi gom đơn trong gợi ý chia xe trục và gom lượt giao. Các điểm giao của một đơn giữ chung theo quy tắc cùng đơn.
+
 
 Các quy tắc dưới đây cần so dữ liệu ở nhiều bảng nên CHECK không làm được. Đặt chúng trong lớp policy hoặc service, theo `AGENTS.md`.
 

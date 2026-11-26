@@ -1,5 +1,25 @@
 // Coordinator planning, dispatch, tracking and hub pages; loaded with the page
 export const staffDispatch = {
+  "linehaul": {
+    "suggest": "Suggest truck allocation",
+    "apply": "Create suggested linehaul trips",
+    "confirm": "Create {{count}} linehaul trips with the selected plates and assign the listed horses and stalls?",
+    "created": "Created {{count}} linehaul trips.",
+    "failed": "Could not create the linehaul trips.",
+    "noDepartures": "No confirmed departures",
+    "chooseWeek": "Select another week in Dispatch to find confirmed departures.",
+    "noTrucks": "No linehaul trucks to plan",
+    "checkBookings": "Check the departure bookings and reserved trucks.",
+    "shortage": "{{count}} more seats are needed to place the horses and cover sold seats.",
+    "plate": "License plate for truck {{number}}",
+    "noVehicles": "No eligible vehicle is available for this truck.",
+    "truck": "Truck {{number}}",
+    "seats": "{{used}} of {{capacity}} seats",
+    "cluster": "Delivery cluster {{number}}",
+    "BASE": "Base",
+    "SPARE": "Spare",
+    "PRIVATE": "Private"
+  },
   "crewPositions": {
     "inVehicle": "On trip {{code}}",
     "positionUnknown": "Location unknown"

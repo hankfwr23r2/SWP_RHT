@@ -19,6 +19,14 @@ class MigrationTest {
     @Autowired
     private JdbcTemplate jdbc;
 
+    @Test
+    void seedsLinehaulDeliveryClusterRadiusWithEditableBounds() {
+        assertThat(jdbc.queryForObject("""
+                SELECT config_value = '60' AND unit = 'KM' AND min_value = 1 AND max_value = 300
+                FROM system_config WHERE config_key = 'LINEHAUL_CLUSTER_RADIUS_KM'
+                """, Boolean.class)).isTrue();
+    }
+
     private long id(String sql, Object... args) {
         Long value = jdbc.queryForObject(sql, Long.class, args);
         assertThat(value).isNotNull();

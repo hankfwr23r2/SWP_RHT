@@ -143,12 +143,12 @@ Từ lúc đơn đã cọc tới lúc mỗi con có đủ xe, tổ lái, vị tr
    - Số chỗ đã cọc dưới 30% số chỗ đang bán thì cảnh báo, quyết định vẫn là của quản lý.
    - Khi bấm Chạy, quản lý **bỏ bớt xe thừa** được nếu số chỗ đã bán vẫn đủ. Ví dụ đã bán 8 chỗ trên hai xe 9 và 4 chỗ thì bỏ xe 4 chỗ.
 4. **Nhánh đón:** xe của **hub phụ trách địa chỉ đón** đi đón. Hệ thống gợi ý gom các đơn cùng hướng vào một xe. Điều phối chọn xe, xem giờ theo đường xe tải thật và lập lượt. Ngựa phải về hub trước hạn có mặt.
-5. **Chia ngựa vào các xe trục ngày đi** [Mới]
+5. **Chia ngựa vào các xe trục ngày đi**
    - Dùng các xe đã giữ cho chuyến (xe nền và xe thêm). Điều phối đổi được loại xe, miễn tổng chỗ không ít hơn số chỗ đã bán.
    - Hệ thống gợi ý chia theo thứ tự: (1) ngựa **cùng đơn** luôn chung xe, vì giấy gốc chỉ có một bản; (2) ngựa **xe riêng** đi xe riêng của đơn đó, chọn hạng xe nhỏ nhất còn rảnh và đủ chỗ (2, 6 hoặc 9 chỗ); (3) ngựa xe ghép xếp theo **cụm điểm giao gần nhau ở hub đích**; (4) chọn xe **vừa số chỗ** nhất.
-   - Ví dụ chuyến TP.HCM → Hà Nội có 11 con xe ghép: 8 con giao trong nội thành Hà Nội, 3 con giao ở Hải Phòng. Gợi ý xe 9 chỗ chở 8 con nội thành, xe 4 chỗ chở 3 con Hải Phòng.
+   - Ví dụ chuyến TP.HCM → Hà Nội có 11 con xe ghép: 8 con giao trong nội thành Hà Nội, 3 con giao ở Hải Phòng. Gợi ý xe 9 chỗ chở 8 con nội thành, xe 6 chỗ chở 3 con Hải Phòng.
    - Tới hub đích ngựa vẫn dỡ xuống và khám trước khi giao (luồng 4). Chia theo cụm từ đầu để mỗi xe trục có thể dùng lại làm xe giao cho đúng cụm của nó.
-   - Hệ thống gợi ý, điều phối chỉnh.
+   - Với chuyến đã xác nhận chạy, điều phối xem gợi ý, chọn biển số theo hạng xe và lập đồng thời các lượt trục. Gợi ý chưa ghi dữ liệu. Nếu thiếu chỗ để xếp trọn đơn, hệ thống báo số chỗ chưa xếp được.
 6. **Phân tổ lái** từng xe: tài xế, hộ tống. Người được phân xác nhận nhận việc; chưa có tài xế và hộ tống nhận việc thì xe không xuất phát.
 7. **Sơ đồ khoang:** khách chỉ chọn loại khoang; hệ thống tự xếp vị trí, điều phối đổi được; xe chạy thì khóa.
 8. **Nhánh giao:** ở hub đích, ngựa có điểm giao gần nhau xếp chung xe; xe riêng không ghép. Ngoài khung 06:00–18:00 thì cả lượt dời sang 06:00 hôm sau.

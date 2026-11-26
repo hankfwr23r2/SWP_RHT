@@ -53,6 +53,13 @@ public interface BookingHorseRepository extends JpaRepository<BookingHorse, Long
             """)
     List<BookingHorse> findForDetail(Long bookingId);
 
+    @EntityGraph(attributePaths = {"booking", "horse", "stallType", "deliveryAddress"})
+    @Query("""
+            SELECT h FROM BookingHorse h WHERE h.booking.departure.id = :departureId
+            AND h.status = :status AND h.booking.status IN :bookingStatuses ORDER BY h.booking.id, h.id
+            """)
+    List<BookingHorse> findForLinehaul(Long departureId, BookingHorseStatus status, Collection<BookingStatus> bookingStatuses);
+
     // Bảng phụ trách
     @EntityGraph(attributePaths = {"horse", "booking"})
     List<BookingHorse> findByStatusAndBooking_StatusIn(BookingHorseStatus status, Collection<BookingStatus> bookingStatuses);
