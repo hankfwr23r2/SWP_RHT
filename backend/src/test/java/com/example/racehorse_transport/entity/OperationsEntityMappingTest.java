@@ -202,7 +202,6 @@ class OperationsEntityMappingTest {
         Staff manager = staff.findByStaffCode("MGR-001").orElseThrow();
         Location hcm = locations.findByCode("HUB-HCM").orElseThrow();
         Location danang = locations.findByCode("HUB-DN").orElseThrow();
-        Party agent = parties.findAll().stream().filter(p -> p.getDisplayName().startsWith("Đại lý")).findFirst().orElseThrow();
         List<RouteStop> routePlan = routeStops.findById_RouteIdOrderById_SequenceNumber(booking.getDeparture().getRoute().getId());
 
         // Lượt xe trục chính và điểm dừng: điểm chép từ tuyến, và điểm là địa chỉ của khách

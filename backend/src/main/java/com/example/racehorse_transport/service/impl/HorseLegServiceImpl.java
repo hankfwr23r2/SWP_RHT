@@ -328,9 +328,12 @@ public class HorseLegServiceImpl implements HorseLegService {
         var rests = java.util.stream.IntStream.range(1, ridden.size() - 1)
                 .filter(index -> {
                     var stop = ridden.get(index);
-                    return stop.getStopType() == com.example.racehorse_transport.entity.enums.TripStopType.REST
+                    // Trạm nghỉ hoặc điểm khám ở trạm nghỉ, hub của mạng lưới: tổ lái cho ăn, uống, ghi sức khỏe
+                    return (stop.getStopType() == com.example.racehorse_transport.entity.enums.TripStopType.REST
+                                || stop.getStopType() == com.example.racehorse_transport.entity.enums.TripStopType.VITAL_CHECK)
                             && stop.getLocation() != null
-                            && stop.getLocation().getLocationType() == com.example.racehorse_transport.entity.enums.LocationType.REST_STOP
+                            && (stop.getLocation().getLocationType() == com.example.racehorse_transport.entity.enums.LocationType.REST_STOP
+                                || stop.getLocation().getLocationType() == com.example.racehorse_transport.entity.enums.LocationType.HUB)
                             && stop.getLocation().getStatus() == com.example.racehorse_transport.entity.enums.ActiveStatus.ACTIVE
                             && java.time.Duration.between(stop.getPlannedArrivalAt(), stop.getPlannedDepartureAt()).toMinutes() >= rules.minRestMinutes();
                 }).boxed().collect(java.util.stream.Collectors.toSet());

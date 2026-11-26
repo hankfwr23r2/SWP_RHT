@@ -81,15 +81,18 @@ class HorseLegFlowTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"PICKUP, 5, 0", "PICKUP, 5, 1", "DIRECT, 10, 0", "DIRECT, 10, 1"})
+    @CsvSource({"PICKUP, 8, 0", "PICKUP, 8, 1", "DIRECT, 10, 0", "DIRECT, 10, 1"})
     void plannedRideIncludesTimeAtIntermediateStops(String type, int limitHours, int minutesOver) throws Exception {
         boolean direct = "DIRECT".equals(type);
         Seed seed = seed(direct ? "DEV-DIRECT-001" : "DEV-DOMESTIC-001");
         Seed other = seed(direct ? "DEV-DOMESTIC-001" : "DEV-DIRECT-001");
         Instant start = direct ? seed.pickupDate().atTime(1, 0).toInstant(java.time.ZoneOffset.UTC)
-                : seed.departureAt().minusSeconds(12 * 3600);
+                : seed.departureAt().minusSeconds(14 * 3600);
         int alightMinute = 90 + limitHours * 60 + minutesOver;
+        // Quy chế đội xe Q2: chặng đón tối đa 8 giờ, chạy thẳng 10 giờ, ngồi xe quá 4 giờ phải có trạm nghỉ
+        long rest = locations.findByCode("REST-PHANTHIET").orElseThrow().getId();
         var plan = new ArrayList<>(List.of(stop(hcm, "HUB", start, 0), address(seed.pickup(), "PICKUP", start, 60),
+                rest(rest, start, 300), rest(rest, start, 420),
                 address(other.pickup(), "PICKUP", start, alightMinute - 90),
                 direct ? address(seed.delivery(), "DELIVERY", start, alightMinute) : stop(hcm, "HUB", start, alightMinute)));
         if (direct) {
@@ -98,7 +101,7 @@ class HorseLegFlowTest {
         long trip = tripId(createTrip(testData.vehicle(4, 0), type, plan.toArray(String[]::new)));
         List<Long> stops = stopIds(trip);
 
-        var result = assign(trip, seed.horses().getFirst(), stops.get(1), stops.get(3));
+        var result = assign(trip, seed.horses().getFirst(), stops.get(1), stops.get(5));
         if (minutesOver == 0) {
             result.andExpect(status().isCreated());
         } else {
@@ -407,6 +410,11 @@ class HorseLegFlowTest {
     private static String stop(long locationId, String type, Instant base, int minutes) {
         String at = base.plusSeconds(60L * minutes).toString();
         return "{\"locationId\":%d,\"stopType\":\"%s\",\"plannedArrivalAt\":\"%s\",\"plannedDepartureAt\":\"%s\"}".formatted(locationId, type, at, at);
+    }
+
+    private static String rest(long locationId, Instant base, int minutes) {
+        return "{\"locationId\":%d,\"stopType\":\"REST\",\"plannedArrivalAt\":\"%s\",\"plannedDepartureAt\":\"%s\"}"
+                .formatted(locationId, base.plusSeconds(60L * minutes), base.plusSeconds(60L * (minutes + 30)));
     }
 
     private static String address(long addressId, String type, Instant base, int minutes) {

@@ -180,9 +180,10 @@ class TripPlanEditFlowTest {
     @Test
     void rejectsManualStopTimeThatKeepsTheHorseOnboardTooLong() throws Exception {
         Pickup pickup = pickupWithHorses();
-        Instant arrival = pickup.start().plus(7, ChronoUnit.HOURS);
+        // Quy chế đội xe Q2: ngồi xe quá 4 giờ phải có trạm nghỉ, nên giờ sửa tay để ngựa ngồi quá lâu bị chặn
+        Instant arrival = pickup.start().plus(9, ChronoUnit.HOURS);
         edit(pickup.trip(), stopEdit(pickup.alight(), arrival, arrival)).andExpect(status().isConflict())
-                .andExpect(jsonPath("$.data.alightTripStopId", containsString("quá 5 giờ")));
+                .andExpect(jsonPath("$.data.places", containsString("trạm nghỉ")));
     }
 
     @Test

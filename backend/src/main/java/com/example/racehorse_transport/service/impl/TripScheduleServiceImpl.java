@@ -191,7 +191,7 @@ public class TripScheduleServiceImpl implements TripScheduleService {
     }
 
     private static Set<Integer> restStops(TripInput input) {
-        return IntStream.range(0, input.places().size()).filter(index -> input.places().get(index).stopType() == TripStopType.REST)
+        return IntStream.range(0, input.places().size()).filter(index -> (input.places().get(index).stopType() == TripStopType.REST || input.places().get(index).stopType() == TripStopType.VITAL_CHECK))
                 .boxed().collect(Collectors.toSet());
     }
 

@@ -122,9 +122,9 @@ class TrackingFlowTest {
 
     private void addHandoverHorse(long handover, long horse, long location) {
         long leg = jdbc.queryForObject("""
-                INSERT INTO horse_leg (booking_horse_id, sequence_number, leg_type, from_location_id, to_location_id,
-                                       agent_party_id, planned_start_at, planned_end_at, status)
-                VALUES (?, 1, 'PICKUP', ?, ?, (SELECT min(id) FROM party), now(), now() + interval '1 hour', 'COMPLETED')
+                WITH test_trip AS (INSERT INTO vehicle_trip (code, vehicle_id, start_location_id, end_location_id, trip_type, status, planned_start_at, planned_end_at) SELECT 'TEST-' || left(md5(random()::text), 20), min(v.id), min(l.id), min(l.id), 'TRANSFER', 'COMPLETED', now(), now() + interval '1 hour' FROM vehicle v CROSS JOIN location l WHERE l.location_type = 'HUB' RETURNING id) INSERT INTO horse_leg (booking_horse_id, sequence_number, leg_type, from_location_id, to_location_id,
+                                       vehicle_trip_id, planned_start_at, planned_end_at, status)
+                VALUES (?, 1, 'PICKUP', ?, ?, (SELECT id FROM test_trip), now(), now() + interval '1 hour', 'COMPLETED')
                 RETURNING id
                 """, Long.class, horse, location, location);
         jdbc.update("INSERT INTO handover_horse (handover_id, horse_leg_id, is_microchip_matched) VALUES (?, ?, true)", handover, leg);
