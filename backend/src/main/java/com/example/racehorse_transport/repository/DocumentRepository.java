@@ -38,10 +38,19 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     @Query("""
             SELECT d FROM Document d JOIN FETCH d.documentType
             WHERE d.horse.id IN (SELECT h.horse.id FROM BookingHorse h WHERE h.booking.id = :bookingId AND h.status = ACTIVE)
-                AND d.documentRequirement IS NULL AND d.status = APPROVED
+                AND d.documentRequirement IS NULL AND d.documentType.ownerType = HORSE
             ORDER BY d.id
             """)
-    List<Document> findApprovedHorseDocumentsWithoutRequirement(Long bookingId);
+    List<Document> findProfileDocumentsForBooking(Long bookingId);
+
+    @Query("""
+            SELECT d FROM Document d JOIN FETCH d.documentType t JOIN FETCH d.horse h
+            WHERE h.id IN :horseIds AND t.ownerType = HORSE
+            ORDER BY d.uploadedAt DESC, d.id DESC
+            """)
+    List<Document> findForHorseProfiles(Collection<Long> horseIds);
+
+    List<Document> findByHorse_IdAndDocumentType_Code(Long horseId, String code);
 
     @Query("""
             SELECT d FROM Document d JOIN FETCH d.documentType

@@ -29,7 +29,7 @@ export default function Step2HorsesPage() {
   const horses = data.horses.filter(horse => horse.id != null && horse.status === 'ACTIVE')
   const term = query.trim().toLowerCase()
   const shown = horses.filter(horse => draft.horseIds.includes(horse.id!)
-    || [horse.name, horse.microchip, horse.breed].some(value => value?.toLowerCase().includes(term)))
+    || [horse.name, horse.microchip, horse.horseTypeName].some(value => value?.toLowerCase().includes(term)))
   // Ngựa đã chọn trong bản nháp nhưng vừa vào đơn khác
   const busy = horses.filter(horse => horse.activeBookingCode && draft.horseIds.includes(horse.id!))
 
@@ -95,7 +95,7 @@ export default function Step2HorsesPage() {
               <input type="checkbox" checked={on} disabled={!on && !!horse.activeBookingCode} onChange={() => toggle(id)} />
               <div>
                 <strong>{horse.name}</strong>
-                <span>{[...new Set([horse.microchip, horse.breed, horse.horseTypeName])].filter(Boolean).join(' · ')}</span>
+                <span>{[horse.microchip, horse.horseTypeName].filter(Boolean).join(' · ')}</span>
                 {horse.activeBookingCode && <em className={s.busy}>{t('bookingForm.horses.busy', { code: horse.activeBookingCode })}</em>}
               </div>
             </label>

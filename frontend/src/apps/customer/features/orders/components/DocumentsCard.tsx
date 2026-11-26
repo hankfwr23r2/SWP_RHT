@@ -41,9 +41,9 @@ export function DocumentsCard({ data }: { data: OrderData }) {
             const document = latestDocument(item, data.checklist?.documents)
             const key = item.satisfied ? 'APPROVED' : document?.status ?? 'MISSING'
             return (
-              <li key={`${item.requirement?.id}-${item.bookingHorseId ?? ''}`} className={s.item}>
+              <li key={`${item.requirement?.id ?? item.profileDocumentType?.code}-${item.bookingHorseId ?? ''}`} className={s.item}>
                 <div>
-                  <strong>{item.requirement?.documentTypeName}{horseName(item.bookingHorseId) && ` · ${horseName(item.bookingHorseId)}`}</strong>
+                  <strong>{item.requirement?.documentTypeName ?? item.profileDocumentType?.name}{horseName(item.bookingHorseId) && ` · ${horseName(item.bookingHorseId)}`}</strong>
                   {!item.requirement?.mandatory && <p className={s.hint}>{t('bookingForm.route.optional')}</p>}
                   {document?.expiryDate && <p className={s.hint}>{t('myOrders.documents.expiry', { date: showDate(document.expiryDate) })}</p>}
                   {document?.status === 'REJECTED' && document.reviewNote && <p className={s.error}>{document.reviewNote}</p>}

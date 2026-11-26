@@ -43,7 +43,9 @@ Từ lúc khách mở tài khoản tới lúc khách trả cọc và đơn **Đ�
 ## Nghiệp vụ chính
 
 1. Khách đăng ký bằng Gmail và số điện thoại, nhập mã xác thực (10 phút, sai tối đa 5 lần).
-2. Khách khai hồ sơ ngựa (chip 15 số, không đổi sau khi lưu) và sổ địa chỉ có ghim bản đồ.
+2. Khách khai tên, mã microchip ISO 15 chữ số, giống từ danh mục, giới tính, màu lông và năm sinh (từ 1990 tới năm hiện tại). Đặc điểm nhận dạng là tùy chọn. Mã chip cố định sau khi tạo hồ sơ. Khách có thể lưu sổ địa chỉ có ghim bản đồ.
+   - Khách nộp hộ chiếu ngựa và sổ tiêm phòng ngay trong hồ sơ. Giấy chờ duyệt được tính là đã nộp khi hiển thị hồ sơ sẵn sàng đặt. Giấy bị trả lại hiện kèm lý do và có thể nộp lại. Bản chờ duyệt hoặc đã duyệt còn hạn chặn việc nộp trùng.
+   - Giấy xét nghiệm và kiểm dịch theo từng con tiếp tục nộp trong đơn.
 3. **Đặt đơn:**
    - chọn điểm đón và điểm giao cụ thể; **mỗi con có thể giao một nơi**;
    - hệ thống tra hub của từng địa chỉ, ra tuyến (ví dụ TP.HCM – Phnom Penh) và loại đơn (liên tỉnh, xuất, nhập);
@@ -53,7 +55,7 @@ Từ lúc khách mở tài khoản tới lúc khách trả cọc và đơn **Đ�
    - chọn ngựa, loại khoang, chế độ ăn; bảo hiểm từng con (tự có, mua hộ, không mua); khai người gửi, người nhận, người trả tiền, liên hệ khẩn cấp, hạn mức chi khẩn cấp;
    - giá tạm tính luôn do máy chủ tính.
 4. Gửi đơn: **giữ chỗ ngay**, đơn **Chờ tiếp nhận**.
-5. Quản lý **tiếp nhận** và phân chuyên viên. Chuyên viên thẩm định giấy và bảo hiểm (luồng 2), xong bấm **Bắt đầu báo giá**.
+5. Quản lý **tiếp nhận** và phân chuyên viên. Chuyên viên duyệt hoặc trả lại giấy hồ sơ trong đơn có con ngựa đó, rồi thẩm định bảo hiểm (luồng 2). Đơn sau dùng lại giấy đã duyệt nếu còn hạn vào ngày chạy. Đơn nội tỉnh có thể hiển thị giấy hồ sơ đã nộp dưới dạng tùy chọn. Khi đủ điều kiện, chuyên viên bấm **Bắt đầu báo giá**.
 6. Quản lý lập báo giá theo bảng giá hiệu lực, chỉ thêm dòng điều chỉnh có lý do, bấm **Gửi khách**.
 7. Khách có **24 giờ** để vừa chấp nhận vừa trả cọc. **Cọc = 30% cước + toàn bộ thu hộ**. Trả qua VNPAY.
 8. Nhận đủ cọc: đơn **Đã xác nhận**, cấp số vận đơn.

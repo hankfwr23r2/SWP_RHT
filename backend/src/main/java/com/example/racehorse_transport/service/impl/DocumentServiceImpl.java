@@ -19,12 +19,18 @@ import com.example.racehorse_transport.entity.Vehicle;
 import com.example.racehorse_transport.entity.VehicleTrip;
 import com.example.racehorse_transport.entity.enums.DocumentStatus;
 import com.example.racehorse_transport.entity.enums.DocumentSubject;
+import com.example.racehorse_transport.exception.BookingRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
+import com.example.racehorse_transport.policy.DocumentReviewPolicy;
 import com.example.racehorse_transport.repository.AppUserRepository;
 import com.example.racehorse_transport.repository.DocumentRepository;
 import com.example.racehorse_transport.repository.DocumentTypeRepository;
 import com.example.racehorse_transport.service.DocumentService;
+import com.example.racehorse_transport.util.FileFormats;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
+import java.io.IOException;
+import java.time.LocalDate;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -47,6 +53,24 @@ public class DocumentServiceImpl implements DocumentService {
     private final AppUserRepository users;
     private final CloudinaryClient storage;
     private final EntityManager entityManager;
+
+    @Override
+    @Transactional
+    public Long attachForReview(MultipartFile file, String documentTypeCode, DocumentSubject ownerSubject, Long ownerId,
+            Long uploadedByUserId, Long requirementId, LocalDate requiredOn) {
+        if (ownerSubject == DocumentSubject.HORSE) {
+            // Cùng khóa một con ngựa cho cả hai đường nộp để hai lần tải đồng thời không tạo bản trùng.
+            if (entityManager.find(Horse.class, ownerId, LockModeType.PESSIMISTIC_WRITE) == null) {
+                throw new ResourceNotFoundException("Không tìm thấy hồ sơ ngựa.");
+            }
+            if (documents.findByHorse_IdAndDocumentType_Code(ownerId, documentTypeCode).stream()
+                    .anyMatch(document -> DocumentReviewPolicy.blocksReplacement(document, requirementId, requiredOn))) {
+                throw BookingRuleException.conflict("Giấy tờ của yêu cầu này đang chờ duyệt hoặc còn hiệu lực.");
+            }
+        }
+        requireSupportedFile(file);
+        return attach(file, documentTypeCode, ownerSubject, ownerId, uploadedByUserId);
+    }
 
     @Override
     @Transactional
@@ -77,6 +101,17 @@ public class DocumentServiceImpl implements DocumentService {
         deleteUploadOnRollback(url);
         document.setFileUrl(url);
         return documents.saveAndFlush(document).getId();
+    }
+
+    private static void requireSupportedFile(MultipartFile file) {
+        try (var input = file.getInputStream()) {
+            if (FileFormats.isPdfJpegOrPng(input)) {
+                return;
+            }
+        } catch (IOException failure) {
+            throw new BookingRuleException("file", "Không đọc được tệp giấy tờ.");
+        }
+        throw new BookingRuleException("file", "Giấy tờ phải là tệp PDF, JPG hoặc PNG.");
     }
 
     // Lỗi ghi DB sau khi đã tải lên thì xóa tệp, để Cloudinary không giữ tệp không thuộc document nào.

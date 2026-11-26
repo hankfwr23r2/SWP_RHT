@@ -36,3 +36,22 @@ it('hiện hộ chiếu đã duyệt từ quy định khác và chỉ nhắc con
   expect(missing.getByRole('button', { name: 'Nộp giấy' })).toBeTruthy()
   expect(missingDocuments(checklist).map(item => item.bookingHorseId)).toEqual([22])
 })
+
+it('hiện giấy hồ sơ đang chờ duyệt trong đơn và không yêu cầu nộp trùng', () => {
+  const checklist: DocumentChecklist = {
+    items: [{ requirement: { id: 5, documentTypeCode: 'HORSE_PASSPORT', documentTypeName: 'Hộ chiếu ngựa',
+      ownerType: 'HORSE', mandatory: true }, bookingHorseId: 21, submitterType: 'CUSTOMER', satisfied: false }],
+    documents: [{ id: 1, typeCode: 'HORSE_PASSPORT', horseId: 41, bookingHorseId: 21, status: 'UPLOADED',
+      fileName: 'passport.pdf', fileUrl: 'https://example.test/passport.pdf' }],
+  }
+  const router = createMemoryRouter([{ path: '/', element: <ToastProvider><DocumentsCard data={{
+    id: 8, errors: [], checklist, payments: undefined, quotations: undefined, stallTypes: undefined,
+    detail: { booking: { status: 'UNDER_REVIEW' }, horses: [{ id: 21, horseName: 'Sao Mai' }] },
+  }} /></ToastProvider> }])
+  render(<RouterProvider router={router} />)
+
+  expect(screen.getByText('Chờ duyệt')).toBeTruthy()
+  expect(screen.getByRole('link', { name: 'passport.pdf' }).getAttribute('href')).toBe('https://example.test/passport.pdf')
+  expect(screen.queryByRole('button', { name: 'Nộp giấy' })).toBeNull()
+  expect(missingDocuments(checklist)).toEqual([])
+})

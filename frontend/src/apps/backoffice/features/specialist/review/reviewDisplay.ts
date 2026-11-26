@@ -1,7 +1,7 @@
 import type { BookingDocument, ChecklistItem } from '@shared/api/bookingDocuments'
 import type { BookingSummary } from '@shared/api/bookingReviews'
 import type { BookingStatus } from '@shared/api/bookingOrders'
-import { isReusedHorseDocument } from '@shared/components/orderSteps'
+import { isProfileHorseDocument, isReusedHorseDocument } from '@shared/components/orderSteps'
 
 export const reviewStatuses = ['PENDING_INTAKE', 'UNDER_REVIEW', 'NEEDS_RESUBMISSION', 'QUOTING', 'CONFIRMED'] as const
 export const defaultReviewStatus = 'UNDER_REVIEW'
@@ -14,12 +14,12 @@ export function showsDocumentActions(status?: BookingStatus) {
 }
 
 export function itemKey(item: ChecklistItem) {
-  return `${item.requirement?.id}-${item.bookingHorseId ?? 'booking'}`
+  return `${item.requirement?.id ?? item.profileDocumentType?.code}-${item.bookingHorseId ?? 'booking'}`
 }
 
 export function documentsFor(item: ChecklistItem, documents: BookingDocument[], horseId?: number) {
   return documents.filter(document => {
-    if (isReusedHorseDocument(item, document)) return true
+    if (isProfileHorseDocument(item, document) || isReusedHorseDocument(item, document)) return true
     return item.requirement?.id != null && document.requirementId === item.requirement.id
       && (item.bookingHorseId == null
         ? document.bookingHorseId == null && document.horseId == null

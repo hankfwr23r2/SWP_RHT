@@ -5,7 +5,7 @@ export function ChecklistFacts({ item, horseName }: { item: ChecklistItem; horse
   const { t } = useTranslation()
   const submitter = item.submitterType ?? item.requirement?.submitterType
   return <div>
-    <strong>{item.requirement?.documentTypeName ?? t('staffReview.unknownDocument')}
+    <strong>{item.requirement?.documentTypeName ?? item.profileDocumentType?.name ?? t('staffReview.unknownDocument')}
       {horseName && ` · ${horseName}`}
     </strong>
     <p>{submitter && t(`staffReview.submitter.${submitter}`)}

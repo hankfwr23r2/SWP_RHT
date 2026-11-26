@@ -510,6 +510,20 @@
         },
         "type" : "object"
       },
+      "ApiResponseHorseDocumentResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/HorseDocumentResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseHorseResponseDto" : {
         "properties" : {
           "data" : {
@@ -1038,6 +1052,23 @@
           "data" : {
             "items" : {
               "$ref" : "#/components/schemas/HealthLogResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListHorseDocumentResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HorseDocumentResponseDto"
             },
             "type" : "array"
           },
@@ -5258,31 +5289,13 @@
           "birthYear" : {
             "format" : "int32",
             "maximum" : 2100,
-            "minimum" : 1980,
+            "minimum" : 1990,
             "type" : "integer"
-          },
-          "breed" : {
-            "maxLength" : 100,
-            "minLength" : 0,
-            "type" : "string"
           },
           "color" : {
             "maxLength" : 50,
             "minLength" : 0,
             "type" : "string"
-          },
-          "dam" : {
-            "maxLength" : 100,
-            "minLength" : 0,
-            "type" : "string"
-          },
-          "declaredCurrencyCode" : {
-            "pattern" : "[A-Z]{3}",
-            "type" : "string"
-          },
-          "declaredValue" : {
-            "minimum" : 0,
-            "type" : "number"
           },
           "horseTypeId" : {
             "format" : "int64",
@@ -5303,26 +5316,12 @@
             "minLength" : 0,
             "type" : "string"
           },
-          "passportNumber" : {
-            "maxLength" : 50,
-            "minLength" : 0,
-            "type" : "string"
-          },
           "sex" : {
             "enum" : [ "STALLION", "MARE", "GELDING" ],
             "type" : "string"
-          },
-          "sire" : {
-            "maxLength" : 100,
-            "minLength" : 0,
-            "type" : "string"
-          },
-          "weightKg" : {
-            "minimum" : 0.1,
-            "type" : "number"
           }
         },
-        "required" : [ "horseTypeId", "microchip", "name", "sex" ],
+        "required" : [ "birthYear", "color", "horseTypeId", "microchip", "name", "sex" ],
         "type" : "object"
       },
       "HorseDetail" : {
@@ -5369,6 +5368,75 @@
             "type" : "string"
           }
         },
+        "type" : "object"
+      },
+      "HorseDocumentResponseDto" : {
+        "properties" : {
+          "canUpload" : {
+            "type" : "boolean"
+          },
+          "documentTypeCode" : {
+            "type" : "string"
+          },
+          "documentTypeName" : {
+            "type" : "string"
+          },
+          "expiryDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "fileName" : {
+            "type" : "string"
+          },
+          "fileUrl" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "reviewNote" : {
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "UPLOADED", "APPROVED", "REJECTED", "EXPIRED" ],
+            "type" : "string"
+          },
+          "uploadedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "HorseDocumentStatusResponseDto" : {
+        "properties" : {
+          "documentTypeCode" : {
+            "type" : "string"
+          },
+          "documentTypeName" : {
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "UPLOADED", "APPROVED", "REJECTED", "EXPIRED" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "HorseDocumentUploadRequestDto" : {
+        "properties" : {
+          "documentTypeCode" : {
+            "maxLength" : 30,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "file" : {
+            "format" : "binary",
+            "type" : "string"
+          }
+        },
+        "required" : [ "documentTypeCode", "file" ],
         "type" : "object"
       },
       "HorseDto" : {
@@ -5594,9 +5662,6 @@
             "format" : "int32",
             "type" : "integer"
           },
-          "breed" : {
-            "type" : "string"
-          },
           "color" : {
             "type" : "string"
           },
@@ -5604,14 +5669,11 @@
             "format" : "date-time",
             "type" : "string"
           },
-          "dam" : {
-            "type" : "string"
-          },
-          "declaredCurrencyCode" : {
-            "type" : "string"
-          },
-          "declaredValue" : {
-            "type" : "number"
+          "documentStatuses" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HorseDocumentStatusResponseDto"
+            },
+            "type" : "array"
           },
           "horseTypeId" : {
             "format" : "int64",
@@ -5630,17 +5692,17 @@
           "microchip" : {
             "type" : "string"
           },
-          "name" : {
-            "type" : "string"
+          "missingDocumentTypes" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
           },
-          "passportNumber" : {
+          "name" : {
             "type" : "string"
           },
           "sex" : {
             "enum" : [ "STALLION", "MARE", "GELDING" ],
-            "type" : "string"
-          },
-          "sire" : {
             "type" : "string"
           },
           "status" : {
@@ -5650,9 +5712,6 @@
           "updatedAt" : {
             "format" : "date-time",
             "type" : "string"
-          },
-          "weightKg" : {
-            "type" : "number"
           }
         },
         "type" : "object"
@@ -5800,31 +5859,13 @@
           "birthYear" : {
             "format" : "int32",
             "maximum" : 2100,
-            "minimum" : 1980,
+            "minimum" : 1990,
             "type" : "integer"
-          },
-          "breed" : {
-            "maxLength" : 100,
-            "minLength" : 0,
-            "type" : "string"
           },
           "color" : {
             "maxLength" : 50,
             "minLength" : 0,
             "type" : "string"
-          },
-          "dam" : {
-            "maxLength" : 100,
-            "minLength" : 0,
-            "type" : "string"
-          },
-          "declaredCurrencyCode" : {
-            "pattern" : "[A-Z]{3}",
-            "type" : "string"
-          },
-          "declaredValue" : {
-            "minimum" : 0,
-            "type" : "number"
           },
           "horseTypeId" : {
             "format" : "int64",
@@ -5840,26 +5881,12 @@
             "minLength" : 0,
             "type" : "string"
           },
-          "passportNumber" : {
-            "maxLength" : 50,
-            "minLength" : 0,
-            "type" : "string"
-          },
           "sex" : {
             "enum" : [ "STALLION", "MARE", "GELDING" ],
             "type" : "string"
-          },
-          "sire" : {
-            "maxLength" : 100,
-            "minLength" : 0,
-            "type" : "string"
-          },
-          "weightKg" : {
-            "minimum" : 0.1,
-            "type" : "number"
           }
         },
-        "required" : [ "horseTypeId", "name", "sex" ],
+        "required" : [ "birthYear", "color", "horseTypeId", "name", "sex" ],
         "type" : "object"
       },
       "HubAppointmentRequestDto" : {
@@ -6658,6 +6685,9 @@
           "bookingHorseId" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "profileDocumentType" : {
+            "$ref" : "#/components/schemas/DocumentTypeResponseDto"
           },
           "requiredBeforePickup" : {
             "type" : "boolean"
@@ -16849,6 +16879,24 @@
         "tags" : [ "horse-controller" ]
       }
     },
+    "/horses/document-types" : {
+      "get" : {
+        "operationId" : "listHorseDocumentTypes",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListDocumentTypeResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "horse-document-controller" ]
+      }
+    },
     "/horses/{id}" : {
       "get" : {
         "operationId" : "getHorse",
@@ -16909,6 +16957,67 @@
           }
         },
         "tags" : [ "horse-controller" ]
+      }
+    },
+    "/horses/{id}/documents" : {
+      "get" : {
+        "operationId" : "listHorseDocuments",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListHorseDocumentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "horse-document-controller" ]
+      },
+      "post" : {
+        "operationId" : "uploadHorseDocument",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/HorseDocumentUploadRequestDto"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseHorseDocumentResponseDto"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "tags" : [ "horse-document-controller" ]
       }
     },
     "/hub-service-areas" : {

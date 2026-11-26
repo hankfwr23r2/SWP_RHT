@@ -2788,6 +2788,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/horses/document-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listHorseDocumentTypes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/horses/{id}": {
         parameters: {
             query?: never;
@@ -2798,6 +2814,22 @@ export interface paths {
         get: operations["getHorse"];
         put: operations["updateHorse"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horses/{id}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listHorseDocuments"];
+        put?: never;
+        post: operations["uploadHorseDocument"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4621,6 +4653,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseHorseDocumentResponseDto: {
+            data?: components["schemas"]["HorseDocumentResponseDto"];
+            message?: string;
+            status?: string;
+        };
         ApiResponseHorseResponseDto: {
             data?: components["schemas"]["HorseResponseDto"];
             message?: string;
@@ -4783,6 +4820,11 @@ export interface components {
         };
         ApiResponseListHealthLogResponseDto: {
             data?: components["schemas"]["HealthLogResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListHorseDocumentResponseDto: {
+            data?: components["schemas"]["HorseDocumentResponseDto"][];
             message?: string;
             status?: string;
         };
@@ -6325,22 +6367,15 @@ export interface components {
         };
         HorseCreateRequestDto: {
             /** Format: int32 */
-            birthYear?: number;
-            breed?: string;
-            color?: string;
-            dam?: string;
-            declaredCurrencyCode?: string;
-            declaredValue?: number;
+            birthYear: number;
+            color: string;
             /** Format: int64 */
             horseTypeId: number;
             identificationMarks?: string;
             microchip: string;
             name: string;
-            passportNumber?: string;
             /** @enum {string} */
             sex: "STALLION" | "MARE" | "GELDING";
-            sire?: string;
-            weightKg?: number;
         };
         HorseDetail: {
             addOns?: components["schemas"]["AddOn"][];
@@ -6359,6 +6394,33 @@ export interface components {
             stallTypeCode?: string;
             /** @enum {string} */
             status?: "ACTIVE" | "EXCLUDED" | "CANCELLED" | "DELIVERED" | "RETURNED";
+        };
+        HorseDocumentResponseDto: {
+            canUpload?: boolean;
+            documentTypeCode?: string;
+            documentTypeName?: string;
+            /** Format: date */
+            expiryDate?: string;
+            fileName?: string;
+            fileUrl?: string;
+            /** Format: int64 */
+            id?: number;
+            reviewNote?: string;
+            /** @enum {string} */
+            status?: "UPLOADED" | "APPROVED" | "REJECTED" | "EXPIRED";
+            /** Format: date-time */
+            uploadedAt?: string;
+        };
+        HorseDocumentStatusResponseDto: {
+            documentTypeCode?: string;
+            documentTypeName?: string;
+            /** @enum {string} */
+            status?: "UPLOADED" | "APPROVED" | "REJECTED" | "EXPIRED";
+        };
+        HorseDocumentUploadRequestDto: {
+            documentTypeCode: string;
+            /** Format: binary */
+            file: string;
         };
         HorseDto: {
             /** Format: int64 */
@@ -6443,13 +6505,10 @@ export interface components {
             activeBookingCode?: string;
             /** Format: int32 */
             birthYear?: number;
-            breed?: string;
             color?: string;
             /** Format: date-time */
             createdAt?: string;
-            dam?: string;
-            declaredCurrencyCode?: string;
-            declaredValue?: number;
+            documentStatuses?: components["schemas"]["HorseDocumentStatusResponseDto"][];
             /** Format: int64 */
             horseTypeId?: number;
             horseTypeName?: string;
@@ -6457,16 +6516,14 @@ export interface components {
             id?: number;
             identificationMarks?: string;
             microchip?: string;
+            missingDocumentTypes?: string[];
             name?: string;
-            passportNumber?: string;
             /** @enum {string} */
             sex?: "STALLION" | "MARE" | "GELDING";
-            sire?: string;
             /** @enum {string} */
             status?: "ACTIVE" | "RETIRED" | "DECEASED";
             /** Format: date-time */
             updatedAt?: string;
-            weightKg?: number;
         };
         HorseSelection: {
             addOnServiceIds: number[];
@@ -6525,21 +6582,14 @@ export interface components {
         };
         HorseUpdateRequestDto: {
             /** Format: int32 */
-            birthYear?: number;
-            breed?: string;
-            color?: string;
-            dam?: string;
-            declaredCurrencyCode?: string;
-            declaredValue?: number;
+            birthYear: number;
+            color: string;
             /** Format: int64 */
             horseTypeId: number;
             identificationMarks?: string;
             name: string;
-            passportNumber?: string;
             /** @enum {string} */
             sex: "STALLION" | "MARE" | "GELDING";
-            sire?: string;
-            weightKg?: number;
         };
         HubAppointmentRequestDto: {
             /** Format: date-time */
@@ -6845,6 +6895,7 @@ export interface components {
         Item: {
             /** Format: int64 */
             bookingHorseId?: number;
+            profileDocumentType?: components["schemas"]["DocumentTypeResponseDto"];
             requiredBeforePickup?: boolean;
             requiredForQuoting?: boolean;
             requirement?: components["schemas"]["DocumentRequirementResponseDto"];
@@ -12973,6 +13024,26 @@ export interface operations {
             };
         };
     };
+    listHorseDocumentTypes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListDocumentTypeResponseDto"];
+                };
+            };
+        };
+    };
     getHorse: {
         parameters: {
             query?: never;
@@ -13017,6 +13088,54 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseHorseResponseDto"];
+                };
+            };
+        };
+    };
+    listHorseDocuments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListHorseDocumentResponseDto"];
+                };
+            };
+        };
+    };
+    uploadHorseDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": components["schemas"]["HorseDocumentUploadRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHorseDocumentResponseDto"];
                 };
             };
         };

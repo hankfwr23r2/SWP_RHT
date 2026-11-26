@@ -240,13 +240,13 @@ Tiến độ vận hành (ngựa đang ở đâu, chặng nào, có sự cố kh
 |---|---|---|
 | 1 | Đăng ký, xác thực email bằng OTP | `app_user` (`role_code` = CUSTOMER), `customer` (customer_type PERSON), `otp` |
 | 2 | Đồng ý điều khoản dịch vụ khi đăng ký | `terms_acceptance` SERVICE_TERMS (`booking_id` NULL) |
-| 3 | Khai hồ sơ ngựa: tên, chip, hộ chiếu, giới tính, năm sinh, giá trị khai báo… | `horse` |
+| 3 | Khai tên, chip, giống từ danh mục, giới tính, màu lông, năm sinh và đặc điểm nhận dạng nếu có. Nộp hộ chiếu, sổ tiêm phòng trong hồ sơ ngựa | `horse`, `document` (UPLOADED, gắn `horse_id`) |
 | 4 | Lưu sổ địa chỉ (tùy chọn) | `customer_address` |
 | 5 | Chọn **loại đơn**, **điểm đón**, **điểm giao**, cách đưa và nhận ngựa, và **chuyến** muốn đi. Hệ thống gợi ý các `departure` OPEN phù hợp | Chỉ đọc `departure` (`stall_capacity − booked_stall_count`) |
 | 6 | Khai các bên: người trả tiền, người gửi, người nhận, người liên hệ khẩn cấp | `booking_party` × 4 |
 | 7 | Chọn ngựa, loại khoang, chế độ ăn và dịch vụ thêm | `booking_horse`, `booking_horse_service` |
 | 8 | Khai bảo hiểm cho từng con: tự có / nhờ công ty thu xếp / không mua | `horse_insurance` (DRAFT). Chọn NONE thì phải ký cam kết miễn trách: `terms_acceptance` LIABILITY_WAIVER |
-| 9 | Tải giấy tờ đang có | `document` (UPLOADED), có `horse_id` hoặc `booking_horse_id` và `document_requirement_id` |
+| 9 | Tải giấy tờ theo yêu cầu của đơn | `document` (UPLOADED), gắn chủ sở hữu theo loại giấy và `document_requirement_id` |
 | 10 | Gửi đơn | `booking` (PENDING_INTAKE), `booking_address` × 2 (snapshot), `terms_acceptance` SERVICE_TERMS gắn `booking_id`, `booking_status_history`, `notification` cho khách và chuyên viên |
 
 **Quy tắc:**

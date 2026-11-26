@@ -389,24 +389,16 @@ Ràng buộc bảng: `UNIQUE (email, purpose)`.
 | `id` | `bigint` | | PK, identity | |
 | `owner_customer_id` | `bigint` | | FK → customer(user_id) | Chủ ngựa |
 | `name` | `varchar(100)` | | | |
-| `microchip` | `varchar(30)` | có | UK | Dùng để quét chip khi giao nhận |
-| `passport_number` | `varchar(50)` | có | UK | |
+| `microchip` | `varchar(30)` | có | UK | API tạo hồ sơ yêu cầu 15 chữ số ISO. Mã không đổi sau khi tạo |
 | `sex` | `varchar(30)` | | CK `STALLION, MARE, GELDING` | |
-| `birth_year` | `smallint` | có | CK `1980..2100` | |
-| `color` | `varchar(50)` | có | | |
-| `breed` | `varchar(100)` | có | | |
-| `sire` | `varchar(100)` | có | | Tên ngựa bố |
-| `dam` | `varchar(100)` | có | | Tên ngựa mẹ |
-| `horse_type_id` | `bigint` | | FK → horse_type | |
+| `birth_year` | `smallint` | có | CK `1980..2100` | API tạo và sửa yêu cầu từ 1990 tới năm hiện tại. Cho phép NULL trong DB để đọc hồ sơ cũ |
+| `color` | `varchar(50)` | có | | API tạo và sửa yêu cầu màu lông. Cho phép NULL trong DB để đọc hồ sơ cũ |
+| `horse_type_id` | `bigint` | | FK → horse_type | Giống ngựa, chọn từ danh mục |
 | `identification_marks` | `text` | có | | Đặc điểm nhận dạng |
-| `weight_kg` | `numeric(6,1)` | có | CK `> 0` | |
-| `declared_value` | `numeric(15,2)` | có | CK `>= 0` | Giá trị khai báo, dùng cho bảo hiểm |
-| `declared_currency_code` | `char(3)` | có | | |
 | `status` | `varchar(30)` | | CK `ACTIVE, RETIRED, DECEASED` | Trạng thái của hồ sơ. Ngựa đang ở đâu tính từ `handover` mới nhất (mục 5) |
 | `created_at` | `timestamptz` | | default `now()` | |
 | `updated_at` | `timestamptz` | | | |
 
-Ràng buộc bảng: `CHECK ((declared_value IS NULL) = (declared_currency_code IS NULL))`.
 Index: `owner_customer_id`, `horse_type_id`.
 
 ---
@@ -665,6 +657,8 @@ EXCLUDE USING gist (country_code WITH =, direction WITH =,
 | `owner_type` | `varchar(30)` | | CK `HORSE, BOOKING, BOOKING_HORSE, HORSE_LEG, VEHICLE_TRIP, INSURANCE, INCIDENT, COST_ITEM, HANDOVER, VEHICLE, STAFF, PARTY, CUSTOMER` | Loại giấy này gắn với đối tượng nào. Mỗi giá trị ứng với đúng một cột chủ sở hữu trong `document` |
 
 Giấy cấp **cho từng con ngựa** có `owner_type = HORSE` hoặc `BOOKING_HORSE`. Giấy cấp **cho cả đơn** có `owner_type = BOOKING`.
+
+`HORSE_PASSPORT` (hộ chiếu ngựa) và `VACCINATION_RECORD` (sổ tiêm phòng) thuộc danh mục `HORSE`. Chủ ngựa có thể nộp tệp trong hồ sơ. Lần nộp này ghi `document.horse_id` và để `document_requirement_id` NULL. Chuyên viên thẩm định từ đơn có ngựa đó. Hồ sơ hiển thị bản nộp mới nhất của từng loại. Bản chờ duyệt được tính là đã nộp trên hồ sơ, còn checklist của đơn vẫn kiểm trạng thái duyệt và hạn theo ngày chạy.
 
 `VEHICLE_RETURN_PHOTO` có `owner_type = VEHICLE_TRIP`, dùng cho ảnh xe tại hub cuối khi xác nhận kết thúc lượt (M6).
 

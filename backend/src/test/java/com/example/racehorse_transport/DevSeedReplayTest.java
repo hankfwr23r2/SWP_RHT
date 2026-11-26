@@ -48,6 +48,11 @@ class DevSeedReplayTest {
         jdbc.execute(new ClassPathResource("db/seed-dev/R__dev_seed_bookings.sql").getContentAsString(StandardCharsets.UTF_8));
 
         assertThat(jdbc.queryForList("""
+                SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'horse'
+                """, String.class)).doesNotContain("sire", "dam", "declared_value", "declared_currency_code",
+                        "passport_number", "weight_kg", "breed");
+
+        assertThat(jdbc.queryForList("""
                 SELECT sd.day_of_week FROM departure_schedule_day sd
                 JOIN departure_schedule s ON s.id = sd.departure_schedule_id
                 JOIN route r ON r.id = s.route_id WHERE r.code = 'HCM-DN' AND s.status = 'ACTIVE'

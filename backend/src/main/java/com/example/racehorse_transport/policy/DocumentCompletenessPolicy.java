@@ -24,9 +24,13 @@ public final class DocumentCompletenessPolicy {
 
     public static boolean satisfies(Document document, DocumentRequirementResponseDto requirement,
             Long bookingId, BookingHorse horse, LocalDate on) {
-        return document.getStatus() == DocumentStatus.APPROVED
-                && (document.getExpiryDate() == null || !document.getExpiryDate().isBefore(on))
+        return isApprovedOn(document, on)
                 && matchesChecklist(document, requirement, bookingId, horse);
+    }
+
+    public static boolean isApprovedOn(Document document, LocalDate on) {
+        return document.getStatus() == DocumentStatus.APPROVED
+                && (document.getExpiryDate() == null || !document.getExpiryDate().isBefore(on));
     }
 
     public static boolean matchesChecklist(Document document, DocumentRequirementResponseDto requirement,

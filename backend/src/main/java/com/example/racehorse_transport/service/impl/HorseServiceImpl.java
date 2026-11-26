@@ -1,7 +1,11 @@
 package com.example.racehorse_transport.service.impl;
 
+import static com.example.racehorse_transport.policy.BookingSubmissionPolicy.businessDate;
+
 import com.example.racehorse_transport.dto.horse.HorseCreateRequestDto;
+import com.example.racehorse_transport.dto.horse.HorseDocumentResponseDto;
 import com.example.racehorse_transport.dto.horse.HorseResponseDto;
+import com.example.racehorse_transport.dto.horse.HorseResponseDto.HorseDocumentStatusResponseDto;
 import com.example.racehorse_transport.dto.horse.HorseTypeResponseDto;
 import com.example.racehorse_transport.dto.horse.HorseUpdateRequestDto;
 import com.example.racehorse_transport.entity.Horse;
@@ -17,14 +21,12 @@ import com.example.racehorse_transport.repository.BookingHorseRepository.HorseBo
 import com.example.racehorse_transport.repository.CustomerRepository;
 import com.example.racehorse_transport.repository.HorseRepository;
 import com.example.racehorse_transport.repository.HorseTypeRepository;
+import com.example.racehorse_transport.service.HorseDocumentService;
 import com.example.racehorse_transport.service.HorseService;
-import java.math.BigDecimal;
 import java.time.Clock;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.exception.ConstraintViolationException;
@@ -37,13 +39,11 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class HorseServiceImpl implements HorseService {
 
-    private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
-    private static final Set<String> UNIQUE_FIELDS = Set.of("uk_horse_microchip", "uk_horse_passport_number");
-
     private final HorseRepository horses;
     private final HorseTypeRepository horseTypes;
     private final CustomerRepository customers;
     private final BookingHorseRepository bookingHorses;
+    private final HorseDocumentService documents;
     private final Clock clock;
 
     @Override
@@ -56,40 +56,50 @@ public class HorseServiceImpl implements HorseService {
     @Transactional(readOnly = true)
     public List<HorseResponseDto> horses(String username) {
         List<Horse> owned = horses.findByOwner_User_UsernameOrderByNameAscIdAsc(username);
-        Map<Long, String> active = activeBookings(owned.stream().map(Horse::getId).toList());
-        return owned.stream().map(horse -> HorseResponseDto.from(horse, active.get(horse.getId()))).toList();
+        List<Long> ids = owned.stream().map(Horse::getId).toList();
+        Map<Long, String> active = activeBookings(ids);
+        var profiles = documents.documentsFor(ids);
+        return owned.stream().map(horse -> profile(horse, active.get(horse.getId()), profiles.get(horse.getId()))).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public HorseResponseDto horse(String username, Long id) {
-        return HorseResponseDto.from(ownedHorse(username, id), activeBookings(List.of(id)).get(id));
+        return profile(ownedHorse(username, id), activeBookings(List.of(id)).get(id));
     }
 
     @Override
     @Transactional
     public HorseResponseDto createHorse(String username, HorseCreateRequestDto request) {
         String microchip = HorsePolicy.requireMicrochip(request.microchip());
-        requireValid(request.birthYear(), request.declaredValue(), request.declaredCurrencyCode());
+        HorsePolicy.requireBirthYearNotAfter(request.birthYear(), businessDate(clock.instant()).getYear());
         Horse horse = request.toEntity(horseType(request.horseTypeId()));
         horse.setOwner(customers.findByUser_Username(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ khách.")));
         horse.setMicrochip(microchip);
         horse.setStatus(HorseStatus.ACTIVE);
-        setDeclared(horse, request.declaredValue(), request.declaredCurrencyCode());
-        return HorseResponseDto.from(saveUnique(horse), null);
+        return profile(saveUnique(horse), null);
     }
 
     @Override
     @Transactional
     public HorseResponseDto updateHorse(String username, Long id, HorseUpdateRequestDto request) {
-        requireValid(request.birthYear(), request.declaredValue(), request.declaredCurrencyCode());
+        HorsePolicy.requireBirthYearNotAfter(request.birthYear(), businessDate(clock.instant()).getYear());
         HorseType horseType = horseType(request.horseTypeId());
         Horse horse = ownedHorse(username, id);
         request.applyTo(horse, horseType);
-        setDeclared(horse, request.declaredValue(), request.declaredCurrencyCode());
         horse.setUpdatedAt(clock.instant().truncatedTo(ChronoUnit.MICROS));
-        return HorseResponseDto.from(saveUnique(horse), activeBookings(List.of(id)).get(id));
+        return profile(saveUnique(horse), activeBookings(List.of(id)).get(id));
+    }
+
+    private HorseResponseDto profile(Horse horse, String activeBookingCode) {
+        return profile(horse, activeBookingCode, documents.documentsFor(List.of(horse.getId())).get(horse.getId()));
+    }
+
+    private static HorseResponseDto profile(Horse horse, String activeBookingCode, List<HorseDocumentResponseDto> documents) {
+        var missing = documents.stream().filter(HorseDocumentResponseDto::canUpload)
+                .map(HorseDocumentResponseDto::documentTypeCode).toList();
+        return HorseResponseDto.from(horse, activeBookingCode, missing, documents.stream().map(HorseDocumentStatusResponseDto::from).toList());
     }
 
     private Map<Long, String> activeBookings(List<Long> horseIds) {
@@ -100,22 +110,12 @@ public class HorseServiceImpl implements HorseService {
                 .collect(Collectors.toMap(HorseBooking::getHorseId, HorseBooking::getBookingCode, (first, second) -> first));
     }
 
-    private void requireValid(Short birthYear, BigDecimal declaredValue, String declaredCurrencyCode) {
-        HorsePolicy.requireBirthYearNotAfter(birthYear, clock.instant().atZone(BUSINESS_ZONE).getYear());
-        HorsePolicy.requireDeclaredPair(declaredValue, declaredCurrencyCode);
-    }
-
-    private static void setDeclared(Horse horse, BigDecimal declaredValue, String declaredCurrencyCode) {
-        horse.setDeclaredValue(declaredValue);
-        horse.setDeclaredCurrencyCode(declaredCurrencyCode);
-    }
-
     private Horse saveUnique(Horse horse) {
         try {
             return horses.saveAndFlush(horse);
         } catch (DataIntegrityViolationException ex) {
             if (ex.getCause() instanceof ConstraintViolationException violation
-                    && violation.getConstraintName() != null && UNIQUE_FIELDS.contains(violation.getConstraintName())) {
+                    && "uk_horse_microchip".equals(violation.getConstraintName())) {
                 throw new HorseRuleException.DuplicateHorseException();
             }
             throw ex;
