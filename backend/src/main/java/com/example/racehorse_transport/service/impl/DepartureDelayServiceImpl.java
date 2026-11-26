@@ -106,7 +106,9 @@ public class DepartureDelayServiceImpl implements DepartureDelayService {
         boolean confirmed = departure.getRunConfirmedAt() != null;
         if (departure.getRunRemindedAt() == null && DepartureDelayPolicy.needsReminder(original, confirmed, now, limits)) {
             departure.setRunRemindedAt(now);
-            notifyStaff(departure, "Chuyến chưa xác nhận chạy", "Cần quyết định chạy cho chuyến ");
+            notifications.notifyManagers(null, "Chuyến chưa xác nhận chạy",
+                    "Cần quyết định chạy cho chuyến " + departure.getRoute().getName() + " ngày " + departure.getDepartureDate() + ".",
+                    "/manager/departures" + departureLink(departure));
         }
         boolean cancelDue = DepartureDelayPolicy.cancellationDue(original, departure.getRevisedDepartureAt(), now, limits);
         if (departure.getDelayedAt() == null && (cancelDue || DepartureDelayPolicy.isLate(original, confirmed, now, limits))) {
@@ -157,15 +159,17 @@ public class DepartureDelayServiceImpl implements DepartureDelayService {
 
     private void notifyStaff(Departure departure, String title, String action) {
         String message = action + departure.getRoute().getName() + " ngày " + departure.getDepartureDate() + ".";
-        notifyRole("MANAGER", title, message, "/manager/departures");
-        notifyRole("COORDINATOR", title, message, "/coordinator/dispatch");
+        notifications.notifyManagers(null, title, message, "/manager/departures" + departureLink(departure));
+        var coordinator = departure.getCoordinator();
+        var recipients = coordinator == null ? staff.findUserIdsByRoleAndStatus("COORDINATOR", AppUserStatus.ACTIVE)
+                : List.of(coordinator.getUserId());
+        if (!recipients.isEmpty()) {
+            notifications.notify(recipients, null, title, message, "/coordinator/dispatch?date=" + departure.getDepartureDate());
+        }
     }
 
-    private void notifyRole(String role, String title, String message, String path) {
-        var recipients = staff.findUserIdsByRoleAndStatus(role, AppUserStatus.ACTIVE);
-        if (!recipients.isEmpty()) {
-            notifications.notify(recipients, null, title, message, path);
-        }
+    private static String departureLink(Departure departure) {
+        return "?departureId=" + departure.getId() + "&date=" + departure.getDepartureDate();
     }
 
     private record LockedDeparture(Departure departure, List<Booking> bookings) {}

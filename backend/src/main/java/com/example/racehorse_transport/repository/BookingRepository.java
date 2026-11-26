@@ -79,7 +79,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             GROUP BY h.booking.id""")
     List<HorseCount> countActiveHorses(@Param("bookingIds") Collection<Long> bookingIds);
 
-    @EntityGraph(attributePaths = {"departure", "departure.route", "specialist", "specialist.user"})
+    @EntityGraph(attributePaths = {"departure", "departure.route", "customer", "specialist", "specialist.user"})
     Optional<Booking> findOneById(Long id);
 
     Optional<Booking> findByCode(String code);
@@ -139,6 +139,14 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             ORDER BY d.plannedDepartureAt, b.requestedPickupDate, b.id
             """)
     List<Booking> findForDocumentCheck(BookingStatus status, BookingType directType);
+
+    @Query("""
+            SELECT b.id FROM Booking b JOIN b.departure d
+            WHERE b.status = :status AND d.status IN :departureStatuses AND d.plannedDepartureAt <= :cutoff
+            ORDER BY d.plannedDepartureAt, b.id
+            """)
+    java.util.stream.Stream<Long> findOverdueDocumentCandidates(BookingStatus status,
+            Collection<DepartureStatus> departureStatuses, Instant cutoff);
 
     @Query("""
             SELECT b.id FROM Booking b LEFT JOIN b.departure d

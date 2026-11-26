@@ -34,6 +34,16 @@ public class NotificationServiceImpl implements NotificationService {
     private final NotificationRecipientRepository recipients;
     private final AppUserRepository users;
     private final BookingRepository bookings;
+    private final com.example.racehorse_transport.repository.StaffRepository staff;
+
+    @Override
+    @Transactional
+    public void notifyManagers(Long bookingId, String title, String message, String link) {
+        var managers = staff.findUserIdsByRoleAndStatus("MANAGER", com.example.racehorse_transport.entity.enums.AppUserStatus.ACTIVE);
+        if (!managers.isEmpty()) {
+            notify(managers, bookingId, title, message, link);
+        }
+    }
 
     @Override
     @Transactional

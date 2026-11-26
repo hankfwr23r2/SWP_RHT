@@ -4,8 +4,9 @@ import { Link, useLocation, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import type { StaffRole } from '@shared/auth/role'
-import { countLabel, useManagerWork, type ManagerWork } from '../shared/useManagerWork'
 import { useSpecialistWork } from '@backoffice/shared/useSpecialistWork'
+import { useStaffWork } from '@backoffice/shared/useStaffWork'
+import { Badge } from '@shared/ui/Badge'
 import { STAFF_MENUS } from './staffMenus'
 import { Button } from '@shared/ui/Button'
 import { TranslateToggle } from '@shared/ui/TranslateToggle'
@@ -22,8 +23,6 @@ const prefetchManagerPage = (path: string) => {
       : undefined
   if (load) void load().catch(() => {})
 }
-// Số việc đang chờ cạnh mục menu của quản lý
-const COUNT_OF: Record<string, keyof ManagerWork> = { '/manager/orders': 'quoting', '/manager/departures': 'decisions', '/manager/refunds': 'refunds' }
 
 export function StaffSidebar({ mobileOpen, onNavigate }: { mobileOpen: boolean; onNavigate: () => void }) {
   const { t } = useTranslation()
@@ -35,7 +34,7 @@ export function StaffSidebar({ mobileOpen, onNavigate }: { mobileOpen: boolean; 
   const { pathname } = useLocation()
   const activePath = STAFF_MENUS[role].filter(([to]) => pathname === to || pathname.startsWith(`${to}/`))
     .sort(([left], [right]) => right.length - left.length)[0]?.[0]
-  const work = useManagerWork(role === 'manager')
+  const work = useStaffWork()
   const specialist = useSpecialistWork(role === 'specialist')
   const specialistCounts: Record<string, number | undefined> = {
     '/specialist/verification': specialist?.verificationPending,
@@ -55,12 +54,13 @@ export function StaffSidebar({ mobileOpen, onNavigate }: { mobileOpen: boolean; 
       <nav id="staff-navigation" className={s.menu} aria-label={t('header.navigation')}>
         {STAFF_MENUS[role].map(([to, label, opt]) => {
           const itemLabel = t(`staffMenus.${to}`, label)
-          const pending = specialistCounts[to] ?? work?.[COUNT_OF[to]] ?? 0
+          const pending = role === 'specialist' ? specialistCounts[to]
+            : opt?.count ? work?.menuCounts?.[opt.count] : undefined
           return (
-            <Link key={to} to={to} onClick={onNavigate} aria-current={to === activePath ? 'page' : undefined} title={itemLabel} onPointerEnter={() => prefetchManagerPage(to)} onFocus={() => prefetchManagerPage(to)} className={`${s.item} ${to === activePath ? s.on : ''}`}>
+            <Link key={to} to={to} onClick={onNavigate} aria-current={to === activePath ? 'page' : undefined} title={itemLabel} aria-label={pending == null ? itemLabel : `${itemLabel} · ${pending}`} onPointerEnter={() => prefetchManagerPage(to)} onFocus={() => prefetchManagerPage(to)} className={`${s.item} ${to === activePath ? s.on : ''}`}>
               <i className={`fa-solid ${opt?.icon}`} aria-hidden="true" />
               <span>{itemLabel}</span>
-              {pending > 0 && <b className={`${s.count} ${s.countHot}`} aria-label={t('managerWork.pending', { count: pending })}>{role === 'specialist' ? pending : countLabel(pending)}</b>}
+              {pending != null && <Badge className={s.count} tone={pending > 0 ? "warning" : "neutral"}>{pending}</Badge>}
             </Link>
           )
         })}

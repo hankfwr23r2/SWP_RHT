@@ -150,6 +150,10 @@ class BookingDtoTest {
     void detailMapsPartyAddressHorseAddOnAndInsuranceSnapshots() {
         Booking booking = new Booking();
         booking.setId(3L);
+        Customer customer = new Customer();
+        customer.setFullName("Khách A");
+        customer.setPhone("0900000000");
+        booking.setCustomer(customer);
         var party = new PartyInput(BookingPartyRole.PAYER, "Payer", "0900000000", null, null, null, "Address")
                 .toEntity(booking);
         party.setId(new BookingPartyId(3L, BookingPartyRole.PAYER));
@@ -163,6 +167,7 @@ class BookingDtoTest {
 
         Horse horse = new Horse();
         horse.setId(6L);
+        horse.setMicrochip("12345");
         StallType stall = new StallType();
         stall.setCode("STANDARD");
         var row = new HorseInput(6L, "STANDARD", "hay", (short) 2, true, null, null).toEntity(booking, horse, stall);
@@ -176,6 +181,8 @@ class BookingDtoTest {
         var horseDetail = BookingDetailResponseDto.HorseDetail.from(row, List.of(addOn), insurance);
         var detail = BookingDetailResponseDto.from(booking, List.of(party),
                 List.of(address), List.of(horseDetail));
+        assertThat(detail.customerName()).isEqualTo("Khách A");
+        assertThat(detail.customerPhone()).isEqualTo("0900000000");
         assertThat(detail.parties()).singleElement().satisfies(value -> {
             assertThat(value.bookingRole()).isEqualTo(BookingPartyRole.PAYER);
             assertThat(value.fullName()).isEqualTo("Payer");
@@ -186,6 +193,7 @@ class BookingDtoTest {
         });
         assertThat(detail.horses()).singleElement().satisfies(value -> {
             assertThat(value.horseId()).isEqualTo(6L);
+            assertThat(value.microchip()).isEqualTo("12345");
             assertThat(value.stallTypeCode()).isEqualTo("STANDARD");
             assertThat(value.addOns()).containsExactly(new BookingDetailResponseDto.AddOn(8L, null, 2));
             assertThat(value.insurance().coverageOption()).isEqualTo(InsuranceCoverageOption.ARRANGED);

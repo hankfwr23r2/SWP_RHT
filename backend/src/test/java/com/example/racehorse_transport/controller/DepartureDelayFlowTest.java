@@ -72,12 +72,16 @@ class DepartureDelayFlowTest {
         assertThat(inProgress.getStatus()).isEqualTo(DepartureStatus.IN_PROGRESS);
         assertThat(inProgress.getDelayedAt()).isNull();
         assertThat(customerNotices(customer.getId(), "Chuyến bị chậm")).isEqualTo(1);
-        assertThat(staffNotices(manager, "Chuyến chưa xác nhận chạy")).isPositive();
-        assertThat(staffNotices(coordinator, "Chuyến chưa xác nhận chạy")).isPositive();
+        assertThat(jdbc.queryForList("""
+                SELECT n.link_url FROM notification n JOIN notification_recipient r ON r.notification_id = n.id
+                WHERE r.user_id = ? AND n.title = 'Chuyến chưa xác nhận chạy' AND n.link_url = ?
+                """, String.class, manager, "/manager/departures?departureId=" + near.getId() + "&date=" + near.getDepartureDate()))
+                .hasSize(1);
+        assertThat(staffNotices(coordinator, "Chuyến chưa xác nhận chạy")).isZero();
     }
 
     @Test
-    void reportsWholeTripDelayOnlyToCoordinatorsAndOrdersStillOnBoard() throws Exception {
+    void reportsWholeTripDelayToStaffAndOnlyOrdersStillOnBoard() throws Exception {
         var departure = departureAt(clock.instant().minus(Duration.ofHours(6)));
         departure.setStatus(DepartureStatus.IN_PROGRESS);
         var twoHorses = attach(departure);
@@ -113,7 +117,13 @@ class DepartureDelayFlowTest {
 
         entityManager.flush();
         assertThat(staffNotices(coordinator, "Sự cố mới")).isEqualTo(1);
-        assertThat(staffNotices(manager, "Sự cố mới")).isZero();
+        assertThat(staffNotices(manager, "Sự cố mới")).isEqualTo(1);
+        long incidentId = jdbc.queryForObject("SELECT id FROM incident WHERE vehicle_trip_id = ? AND incident_type = 'DELAY'",
+                Long.class, trip);
+        assertThat(jdbc.queryForList("""
+                SELECT n.link_url FROM notification n JOIN notification_recipient r ON r.notification_id = n.id
+                WHERE r.user_id = ? AND n.title = 'Sự cố mới'
+                """, String.class, manager)).containsExactly("/manager/incidents?incidentId=" + incidentId);
         assertTripDelayNotice(twoHorses);
         assertTripDelayNotice(oneHorse);
         assertThat(customerNotices(alreadyOff.getId(), "Xe đang chạy bị chậm")).isZero();
@@ -198,6 +208,11 @@ class DepartureDelayFlowTest {
                     return row.getString("payment_type");
                 }, booking.getId());
         assertThat(refundedTypes).containsExactlyElementsOf(balancePaid == 0 ? List.of("DEPOSIT") : List.of("DEPOSIT", "BALANCE"));
+        assertThat(jdbc.queryForList("""
+                SELECT n.link_url FROM notification n JOIN notification_recipient r ON r.notification_id = n.id
+                JOIN app_user u ON u.id = r.user_id
+                WHERE u.username = 'manager.dev' AND n.booking_id = ? AND n.title = 'Có khoản hoàn tiền chờ xử lý'
+                """, String.class, booking.getId())).containsExactly("/manager/refunds?bookingId=" + booking.getId());
     }
 
     @Test

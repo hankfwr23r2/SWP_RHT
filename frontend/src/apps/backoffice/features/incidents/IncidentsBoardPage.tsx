@@ -2,6 +2,8 @@ import { Input } from '@shared/ui/Input'
 import { ListPanel } from '@shared/ui/ListPanel'
 // Sự cố đang xử lý cho điều phối viên và quản lý (docs/MAN_HINH_VA_TAC_DONG.md mục 7.2, 7.3)
 import { useState } from 'react'
+import { useSearchParams } from 'react-router'
+import { invalidateStaffWork } from '@backoffice/shared/useStaffWork'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import { incidentsApi, type Incident } from '@shared/api/incidentOps'
@@ -23,7 +25,15 @@ export default function IncidentsBoardPage() {
   const { t } = useTranslation()
   const { session } = useAuth()
   const role = session?.role === 'manager' ? 'manager' : 'coordinator'
-  const [openId, setOpenId] = useState<number>()
+  const [params, setParams] = useSearchParams()
+  const [selectedId, setOpenId] = useState<number>()
+  const openId = selectedId ?? (Number(params.get('incidentId')) || undefined)
+  const closeIncident = () => {
+    setOpenId(undefined)
+    if (params.has('incidentId')) {
+      setParams(previous => { previous.delete('incidentId'); return previous }, { replace: true })
+    }
+  }
   const [amending, setAmending] = useState<Incident>()
   const { data, loaded, error, reload } = useLoad(incidentsApi.open, [], { toastOnError: false })
   const [query, setQuery] = useState('')
@@ -57,7 +67,7 @@ export default function IncidentsBoardPage() {
       <ListPanel count={!error ? shown?.length : undefined} toolbar={<Input type="search" value={query} onChange={event => setQuery(event.target.value)}
           placeholder={t('listPanel.search')} aria-label={t('listPanel.search')} />}>{content()}</ListPanel>
       {openId !== undefined && <IncidentDetailModal incidentId={openId} role={role} staffCode={session?.staffCode}
-        onClose={() => setOpenId(undefined)} onChanged={() => void reload()} />}
+        onClose={closeIncident} onChanged={() => { invalidateStaffWork(); void reload() }} />}
       {amending && <HandoverCauseDialog incident={amending} role={role} onClose={() => setAmending(undefined)} onChanged={reload} />}
     </div>
   )

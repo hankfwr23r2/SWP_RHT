@@ -356,6 +356,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/bookings/overdue-documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["overdueDocuments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/bookings/review-queue": {
         parameters: {
             query?: never;
@@ -4052,6 +4068,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/staff/work-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["workSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/stall-types": {
         parameters: {
             query?: never;
@@ -5171,6 +5203,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseStaffWorkSummaryResponseDto: {
+            data?: components["schemas"]["StaffWorkSummaryResponseDto"];
+            message?: string;
+            status?: string;
+        };
         ApiResponseStallPlanResponseDto: {
             data?: components["schemas"]["StallPlanResponseDto"];
             message?: string;
@@ -5308,6 +5345,8 @@ export interface components {
             balanceHoldAt?: string;
             booking?: components["schemas"]["BookingResponseDto"];
             canChangeDelivery?: boolean;
+            customerName?: string;
+            customerPhone?: string;
             deliveryChangeDisabledReason?: string;
             /** @enum {string} */
             deliveryMethod?: "COMPANY" | "SELF";
@@ -8025,6 +8064,14 @@ export interface components {
             phone: string;
             staffCode: string;
         };
+        StaffWorkSummaryResponseDto: {
+            filterCounts?: {
+                [key: string]: number;
+            };
+            menuCounts?: {
+                [key: string]: number;
+            };
+        };
         StaffWorkloadResponseDto: {
             /** Format: int64 */
             assignedCount?: number;
@@ -9027,6 +9074,26 @@ export interface operations {
         };
     };
     missingDocuments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListBookingResponseDto"];
+                };
+            };
+        };
+    };
+    overdueDocuments: {
         parameters: {
             query?: never;
             header?: never;
@@ -15432,6 +15499,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListBookingResponseDto"];
+                };
+            };
+        };
+    };
+    workSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseStaffWorkSummaryResponseDto"];
                 };
             };
         };

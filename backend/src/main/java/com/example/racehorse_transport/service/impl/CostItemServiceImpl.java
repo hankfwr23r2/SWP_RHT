@@ -36,6 +36,7 @@ public class CostItemServiceImpl implements CostItemService {
     private static final Set<CostPayerType> CUSTOMER_SIDE = Set.of(CostPayerType.CUSTOMER, CostPayerType.CONSIGNEE);
 
     private final CostItemRepository costs;
+    private final com.example.racehorse_transport.service.NotificationService notifications;
     private final IncidentRepository incidents;
     private final VehicleTripRepository trips;
     private final BookingRepository bookings;
@@ -86,7 +87,12 @@ public class CostItemServiceImpl implements CostItemService {
         CostItem cost = request.toEntity(incident, trip, booking);
         decisions.assignPayer(cost, incident == null ? null : CostPayerPolicy.effectiveCause(incident));
         cost.setRecordedBy(staff.findByUser_Username(username).orElseThrow(() -> new AccessDeniedException("Không tìm thấy hồ sơ nhân viên.")));
-        return CostItemResponseDto.from(costs.saveAndFlush(cost));
+        CostItem saved = costs.saveAndFlush(cost);
+        if (incident != null) {
+            notifications.notifyManagers(booking == null ? null : booking.getId(), "Chi phí sự cố chờ duyệt",
+                    incident.getTitle(), "/manager/incidents?incidentId=" + incident.getId());
+        }
+        return CostItemResponseDto.from(saved);
     }
 
     @Override

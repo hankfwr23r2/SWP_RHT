@@ -226,6 +226,41 @@ Thay 6.3, 6.4 và bổ sung theo [NGU_CANH_THIET_KE_LAI.md](NGU_CANH_THIET_KE_LA
 | H9 | Lượt xe trục, điểm dừng cửa khẩu (tài xế) | **Tới nơi**, kiểm giấy chung và giấy riêng của cửa khẩu, **Rời đi** sang nước bên kia | Thiếu giấy bắt buộc của bất kỳ đơn nào trên xe | Thiếu giấy thì mở sự cố loại Giấy tờ | "Đang làm thủ tục ở cửa khẩu", "Đã qua cửa khẩu" |
 | H10 | Hub nước ngoài (nhân viên hub đó) | Đón, vào hub, ra hub, giao như hub trong nước | Như trong nước | Như trong nước | Như trong nước |
 
+
+## Thông báo nhân viên
+
+Đối chiếu với các lời gọi `StaffNotificationService` và thông báo theo vai trên `main`. Quản lý nhận theo vai do đơn chỉ có trường phân công chuyên viên. Với điều phối, ưu tiên người phụ trách chuyến hoặc lượt xe nếu có, sau đó mới gửi cả vai. Đường dẫn dưới đây tương đối với ứng dụng backoffice.
+
+| Sự kiện | Ai nhận | Đường dẫn | Có ở `main` | Có ở bản mới |
+|---|---|---|---|---|
+| Đơn mới chờ tiếp nhận | Quản lý | `/manager/orders/{id}` | Có, `BookingServiceImpl` | Có sẵn trong luồng ghi trạng thái ban đầu |
+| Đơn sẵn sàng lập báo giá | Quản lý | `/manager/orders/{id}` | Có, `BookingServiceImpl`, `SpecialistServiceImpl` | Có, chuyển sang `QUOTING` |
+| Khách từ chối báo giá | Quản lý | `/manager/orders/{id}` | Có, thông báo hủy cũ | Có, đơn quay về báo giá |
+| Báo giá hết hạn | Quản lý | `/manager/orders/{id}` | Chưa thấy lời gọi gửi quản lý | Có, chuyển sang `QUOTE_EXPIRED` |
+| Khách đặt cọc | Quản lý | `/manager/orders/{id}` | Có, `BookingServiceImpl` | Có, chuyển từ chờ cọc sang xác nhận |
+| Khách tự hủy trước hoặc sau cọc | Quản lý | `/manager/orders/{id}` | Có, `PaymentServiceImpl` | Có, nội dung theo tình trạng đã cấp vận đơn |
+| Đơn hủy, cần bỏ kế hoạch vận chuyển | Điều phối | `/coordinator/dispatch?bookingId={id}` | Có, `bookingCancelled` | Có, trong chuyển trạng thái hủy |
+| Khách chọn lại lịch | Quản lý | `/manager/orders/{id}` | Có, `BookingScheduleServiceImpl` | Có, khi rời trạng thái cần chọn lại chuyến |
+| Quá lịch dự kiến, công ty đã nhận ngựa | Quản lý, điều phối | `/manager/departures?departureId={id}&date={date}`, lịch điều độ tuần | Có, `BookingScheduleServiceImpl` | Có, theo mốc chuyến trễ đã nhận ngựa |
+| Khách yêu cầu hỗ trợ đổi lịch hoặc hủy yêu cầu đổi lịch | Quản lý | — | Có, `BookingScheduleServiceImpl` | Luồng cũ đã thay bằng chọn lại chuyến hoặc hủy đơn |
+| Chuyến tới mốc phải quyết định | Quản lý | `/manager/departures?departureId={id}&date={date}` | Chưa thấy lời gọi tương đương | Có, tác vụ theo lịch đánh dấu đã nhắc |
+| Đơn xác nhận chờ xếp xe | Điều phối | `/coordinator/dispatch?bookingId={id}` | Có sự kiện chốt xe sớm hơn | Có, sau xác nhận đặt cọc |
+| Chuyến xác nhận chạy | Điều phối | `/coordinator/dispatch?departureId={id}&date={date}` | Chưa thấy lời gọi tương đương | Có, sau xác nhận chuyến |
+| Báo sự cố từ tổ xe | Điều phối, quản lý | `/{vai}/incidents?incidentId={id}` | Có, gửi điều phối được phân công | Có, gửi thêm quản lý |
+| Phương án sự cố chờ duyệt | Quản lý | `/manager/incidents?incidentId={id}` | Có, `IncidentServiceImpl` | Có, khi lưu phương án mới |
+| Duyệt hoặc từ chối phương án | Điều phối | `/coordinator/incidents?incidentId={id}` | Có, `IncidentServiceImpl` | Có, theo luồng quyết định phương án |
+| Chi phí sự cố chờ duyệt | Quản lý | `/manager/incidents?incidentId={id}` | Có sự kiện đối soát chi phí | Có, khi ghi chi phí sự cố |
+| Quá hạn bàn giao | Quản lý, điều phối | `/{vai}/incidents?incidentId={id}` | Có, `DeliveryServiceImpl` | Có, mỗi đơn một lần cho lần giao hụt |
+| Quá hạn trả số dư tại điểm đón hoặc giữ ngựa tại hub | Quản lý, điều phối | Chi tiết đơn hoặc `/coordinator/dispatch?bookingId={id}` | Chưa thấy lời gọi tương đương | Có, trong luồng nhắc số dư và giữ ngựa |
+| Đơn đã giao, chờ quyết toán | Quản lý | `/manager/orders/{id}` | Có, `TripProgressServiceImpl`, `SettlementServiceImpl` | Có, khi sang `DELIVERED` |
+| Khoản hoàn chờ xử lý | Quản lý | `/manager/refunds?bookingId={id}` | Có trong thông báo hủy sau cọc | Có, khi tạo khoản hoàn |
+| Giao dịch bất thường | Quản lý | `/manager/orders/{id}` | Có, `VnpayServiceImpl` | Có, đối soát VNPAY |
+| Xe về trễ | Điều phối phụ trách lượt | `/coordinator/dispatch?tripId={id}` | Chưa thấy lời gọi tương đương | Có, tác vụ theo lịch đánh dấu đã nhắc |
+| Giao chuyên viên, trả thẩm định và khách nộp bổ sung | Chuyên viên | Trang thẩm định | Có, `BookingServiceImpl` | Có, xem mục Thông báo chuyên viên |
+| Quản lý trả lại đơn cần chốt xe | Điều phối | — | Có, `BookingServiceImpl` | Bản mới giao việc xếp xe sau cọc, không có bước quản lý trả lại kế hoạch trước cọc |
+| Hủy chuyến khi cần tổ chức trả ngựa đã nhận | Điều phối | Điều độ và chi tiết sự cố | Có, `horsesToReturn` | Xử lý theo luồng sự cố khi đã nhận ngựa |
+| Giao lượt xe, thay đổi tiến độ tổ xe và nhắc giấy cửa khẩu | Tài xế, hộ tống | Lượt xe được giao | Có, thông báo tổ xe trên `main` | Các luồng tổ xe hiện hành ngoài phạm vi U3 |
+
 ## Thông báo chuyên viên
 
 | Sự kiện | Người nhận | Trang mở từ chuông | Chống trùng |

@@ -10,7 +10,8 @@ import java.util.List;
 // intakeByName: nhân viên đã tiếp nhận đơn, chỉ trả cho nhân viên
 public record BookingDetailResponseDto(BookingResponseDto booking, List<PartySnapshot> parties,
         List<AddressSnapshot> addresses, List<HorseDetail> horses, String reviewReason,
-        TransferMethod pickupMethod, TransferMethod deliveryMethod, String intakeByName, boolean rated, Instant balanceHoldAt, boolean assignedToMe, boolean canChangeDelivery, String deliveryChangeDisabledReason, String routeName, LocalDate departureDate) {
+        TransferMethod pickupMethod, TransferMethod deliveryMethod, String intakeByName, boolean rated, Instant balanceHoldAt, boolean assignedToMe, boolean canChangeDelivery, String deliveryChangeDisabledReason,
+        String customerName, String customerPhone, String routeName, LocalDate departureDate) {
 
     public static BookingDetailResponseDto from(Booking booking, List<BookingParty> parties,
                                                  List<BookingAddress> addresses, List<HorseDetail> horses) {
@@ -25,17 +26,19 @@ public record BookingDetailResponseDto(BookingResponseDto booking, List<PartySna
     public static BookingDetailResponseDto from(Booking booking, List<BookingParty> parties,
             List<BookingAddress> addresses, List<HorseDetail> horses, String reviewReason, String intakeByName, boolean rated,
             Instant balanceHoldAt, boolean assignedToMe) {
+        var departure = booking.getDeparture();
         return new BookingDetailResponseDto(BookingResponseDto.from(booking),
                 parties.stream().map(PartySnapshot::from).toList(),
                 addresses.stream().map(AddressSnapshot::from).toList(), List.copyOf(horses), reviewReason,
                 booking.getPickupMethod(), booking.getDeliveryMethod(), intakeByName, rated, balanceHoldAt, assignedToMe, false, null,
-                booking.getDeparture() == null ? null : booking.getDeparture().getRoute().getName(),
-                booking.getDeparture() == null ? null : booking.getDeparture().getDepartureDate());
+                booking.getCustomer().getFullName(), booking.getCustomer().getPhone(),
+                departure == null ? null : departure.getRoute().getName(),
+                departure == null ? null : departure.getDepartureDate());
     }
 
     public BookingDetailResponseDto withDeliveryChange(String reason) {
         return new BookingDetailResponseDto(booking, parties, addresses, horses, reviewReason, pickupMethod,
-                deliveryMethod, intakeByName, rated, balanceHoldAt, assignedToMe, reason == null, reason, routeName, departureDate);
+                deliveryMethod, intakeByName, rated, balanceHoldAt, assignedToMe, reason == null, reason, customerName, customerPhone, routeName, departureDate);
     }
 
     public record PartySnapshot(BookingPartyRole bookingRole, String fullName, String phone,
@@ -65,12 +68,13 @@ public record BookingDetailResponseDto(BookingResponseDto booking, List<PartySna
             List<AddOn> addOns, InsuranceDetail insurance, Long deliveryAddressId, String microchip, String horseTypeName, HorseGender sex, Short birthYear, String color) {
 
         public static HorseDetail from(BookingHorse row, List<BookingHorseAddOn> addOns, HorseInsurance insurance) {
-            return new HorseDetail(row.getId(), row.getHorse().getId(), row.getHorse().getName(),
+            var horse = row.getHorse();
+            return new HorseDetail(row.getId(), horse.getId(), horse.getName(),
                     row.getStallType().getCode(), row.getDietNote(), row.getFeedingsPerDay(),
                     row.getFeedSuppliedByOwner(), row.getStatus(), addOns.stream().map(AddOn::from).toList(),
                     insurance == null ? null : InsuranceDetail.from(insurance),
-                    row.getDeliveryAddress() == null ? null : row.getDeliveryAddress().getId(), row.getHorse().getMicrochip(),
-                    row.getHorse().getHorseType().getName(), row.getHorse().getSex(), row.getHorse().getBirthYear(), row.getHorse().getColor());
+                    row.getDeliveryAddress() == null ? null : row.getDeliveryAddress().getId(), horse.getMicrochip(),
+                    horse.getHorseType() == null ? null : horse.getHorseType().getName(), horse.getSex(), horse.getBirthYear(), horse.getColor());
         }
     }
 

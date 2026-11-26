@@ -112,7 +112,7 @@ public class TripReturnServiceImpl implements TripReturnService {
                 unfinishedTripIds(List.of(id)).contains(id), now, lateMinutes);
         if (progress.returning() && progress.late()) {
             notifications.notifyAt(List.of(trip.getCoordinator().getUserId()), null, "Xe về trễ",
-                    "Lượt " + trip.getCode() + " chưa về hub cuối theo giờ dự kiến.", "/coordinator/dispatch", now);
+                    "Lượt " + trip.getCode() + " chưa về hub cuối theo giờ dự kiến.", "/coordinator/dispatch?tripId=" + id, now);
             trip.setReturnLateNotifiedAt(now);
         }
     }

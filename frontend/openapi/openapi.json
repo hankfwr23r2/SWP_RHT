@@ -2057,6 +2057,20 @@
         },
         "type" : "object"
       },
+      "ApiResponseStaffWorkSummaryResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/StaffWorkSummaryResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseStallPlanResponseDto" : {
         "properties" : {
           "data" : {
@@ -2439,6 +2453,12 @@
           },
           "canChangeDelivery" : {
             "type" : "boolean"
+          },
+          "customerName" : {
+            "type" : "string"
+          },
+          "customerPhone" : {
+            "type" : "string"
           },
           "deliveryChangeDisabledReason" : {
             "type" : "string"
@@ -9641,6 +9661,25 @@
         "required" : [ "fullName", "hireDate", "homeHubLocationId", "phone", "staffCode" ],
         "type" : "object"
       },
+      "StaffWorkSummaryResponseDto" : {
+        "properties" : {
+          "filterCounts" : {
+            "additionalProperties" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "object"
+          },
+          "menuCounts" : {
+            "additionalProperties" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "object"
+          }
+        },
+        "type" : "object"
+      },
       "StaffWorkloadResponseDto" : {
         "properties" : {
           "assignedCount" : {
@@ -11560,6 +11599,24 @@
     "/bookings/missing-documents" : {
       "get" : {
         "operationId" : "missingDocuments",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListBookingResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-review-controller" ]
+      }
+    },
+    "/bookings/overdue-documents" : {
+      "get" : {
+        "operationId" : "overdueDocuments",
         "responses" : {
           "200" : {
             "content" : {
@@ -19935,6 +19992,24 @@
           }
         },
         "tags" : [ "booking-assignment-controller" ]
+      }
+    },
+    "/staff/work-summary" : {
+      "get" : {
+        "operationId" : "workSummary",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseStaffWorkSummaryResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "staff-work-controller" ]
       }
     },
     "/stall-types" : {

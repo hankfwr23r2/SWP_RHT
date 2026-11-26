@@ -65,6 +65,29 @@ public class ScheduleChangeServiceImpl implements ScheduleChangeService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<BookingResponseDto> overdueDocuments() {
+        try (var ids = overdueDocumentIds()) {
+            return ids.map(bookings::findById).flatMap(java.util.Optional::stream)
+                    .map(BookingResponseDto::from).toList();
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long countOverdueDocuments() {
+        try (var ids = overdueDocumentIds()) {
+            return ids.count();
+        }
+    }
+
+    private java.util.stream.Stream<Long> overdueDocumentIds() {
+        Instant cutoff = clock.instant().plus(config.getInt("DEPARTURE_DECISION_HOURS"), ChronoUnit.HOURS);
+        return bookings.findOverdueDocumentCandidates(BookingStatus.CONFIRMED, DepartureDecisionPolicy.NOT_STARTED, cutoff)
+                .filter(id -> !bookings.hasReceivedHorses(id) && !documents.isComplete(id));
+    }
+
+    @Override
     @Transactional
     public BookingResponseDto reportDocumentDelay(Long bookingId, String username, ReportDocumentDelayRequestDto request) {
         var booking = bookings.findForUpdate(bookingId)

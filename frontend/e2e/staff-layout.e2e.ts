@@ -31,6 +31,10 @@ test('thanh trên ở bề rộng 360px không tràn ngang, thấy chuông và �
 })
 
 test('menu điện thoại mở đủ mục và đóng khi điều hướng', async ({ page }) => {
+  let workSummaryCalls = 0
+  page.on('request', request => {
+    if (new URL(request.url()).pathname.endsWith('/staff/work-summary')) workSummaryCalls++
+  })
   await page.setViewportSize({ width: 360, height: 720 })
   await openAdminPage(page)
 
@@ -41,6 +45,7 @@ test('menu điện thoại mở đủ mục và đóng khi điều hướng', as
   await nav.getByRole('link', { name: 'Tài khoản nhân viên' }).click()
   await expect(page).toHaveURL(/\/admin\/accounts/)
   await expect(nav).toBeHidden()
+  expect(workSummaryCalls).toBe(0)
 })
 
 test('ở bề rộng 360px vẫn tìm được đơn từ thanh trên', async ({ page }) => {
