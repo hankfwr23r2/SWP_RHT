@@ -58,8 +58,8 @@ class DepartureServiceTest {
             departureService.generateFromSchedules();
             long generated = departures.findAll().stream()
                     .filter(d -> d.getDepartureSchedule() != null && d.getDepartureSchedule().getId().equals(departureScheduleId)).count();
-            // DEPARTURE_GENERATION_WEEKS = 8 trong dữ liệu nền: mỗi ngày một chuyến trong 56 ngày tới
-            assertThat(generated).isEqualTo(56);
+            // DEPARTURE_GENERATION_WEEKS = 6 trong dữ liệu nền: mỗi ngày một chuyến trong 42 ngày tới
+            assertThat(generated).isEqualTo(42);
             assertThat(departureService.generateFromSchedules()).isZero();
         } finally {
             routeService.endSchedule(departureScheduleId);

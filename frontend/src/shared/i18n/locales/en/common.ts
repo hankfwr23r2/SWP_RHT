@@ -1,6 +1,6 @@
 // Dùng chung mọi trang: thành phần giao diện, điều hướng, trạng thái, vai trò, đăng nhập
 export const common = {
-  listPanel: { freeStalls: 'Available stalls', search: 'Search this list', orderCode: 'Order code', route: 'Route', schedule: 'Schedule', status: 'Status', noMatch: 'No results', trySearch: 'Try another keyword or clear the search.', showing: 'Showing {{count}}', more: 'Load more', actions: 'More actions', seats: '{{committed}}/{{capacity}} stalls' },
+  listPanel: { destination: 'Delivers to {{place}}', freeStalls: 'Available stalls', search: 'Search this list', orderCode: 'Order code', route: 'Route', schedule: 'Schedule', status: 'Status', noMatch: 'No results', trySearch: 'Try another keyword or clear the search.', showing: 'Showing {{count}}', more: 'Load more', actions: 'More actions', seats: '{{committed}}/{{capacity}} stalls' },
   header: {
     language: 'Language',
     openMenu: 'Open menu',

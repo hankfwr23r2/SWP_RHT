@@ -1,4 +1,5 @@
 import { ListPanel } from '@shared/ui/ListPanel'
+import { OrderRoute } from '@shared/components/OrderRoute'
 import { Link, useRevalidator, useSearchParams } from 'react-router'
 import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -34,7 +35,7 @@ function ReviewQueue({ status, query, mine, initial, tabs, toolbar }: { status: 
         <dl className={s.reviewFacts}>
           {row.customerName && <div><dt>{t('staffReview.queueFields.customer')}</dt><dd>{row.customerName}{row.customerPhone && ` · ${row.customerPhone}`}</dd></div>}
           <div><dt>{t('staffReview.queueFields.specialist')}</dt><dd>{row.specialistName ?? t('staffReview.unassigned')}</dd></div>
-          {row.routeName && <div><dt>{t('listPanel.route')}</dt><dd>{row.routeName}</dd></div>}
+          {row.routeName && <div><dt>{t('listPanel.route')}</dt><dd><OrderRoute {...row} /></dd></div>}
           {row.requestedPickupDate && <div><dt>{t('staffReview.queueFields.pickup')}</dt><dd>{showDate(row.requestedPickupDate, i18n.language)}</dd></div>}
           {row.horseCount != null && <div><dt>{t('staffReview.queueFields.horses')}</dt><dd>{row.horseCount}</dd></div>}
         </dl>

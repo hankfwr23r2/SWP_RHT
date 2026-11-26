@@ -35,6 +35,7 @@ class DepartureFlowTest {
     @Autowired private TestData testData;
     @Autowired private JwtUtils jwtUtils;
     @Autowired private RouteRepository routes;
+    @Autowired private org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     private String customerToken;
     private String managerToken;
@@ -95,6 +96,17 @@ class DepartureFlowTest {
 
     @Test
     void saysWhichSideHasNoHubAndWhereTheCompanyServes() throws Exception {
+        // Dữ liệu mẫu phục vụ đủ 34 tỉnh: tạm bỏ Điện Biên khỏi vùng hub để có một tỉnh chưa phục vụ
+        Long hubId = jdbc.queryForObject("SELECT hub_location_id FROM hub_service_area WHERE province_code = 'VN-11'", Long.class);
+        jdbc.update("DELETE FROM hub_service_area WHERE province_code = 'VN-11'");
+        try {
+            unservedSides();
+        } finally {
+            jdbc.update("INSERT INTO hub_service_area (hub_location_id, province_code) VALUES (?, 'VN-11')", hubId);
+        }
+    }
+
+    private void unservedSides() throws Exception {
         mvc.perform(suggestions("INTERPROVINCE", "VN-11", "VN-48"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.unavailable").value("PICKUP_NOT_SERVED"))

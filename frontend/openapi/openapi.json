@@ -2602,6 +2602,12 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "destinationCountryName" : {
+            "type" : "string"
+          },
+          "destinationProvinceName" : {
+            "type" : "string"
+          },
           "horseCount" : {
             "format" : "int32",
             "type" : "integer"

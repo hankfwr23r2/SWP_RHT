@@ -8,6 +8,7 @@ import com.example.racehorse_transport.dto.booking.BookingDetailResponseDto.Hors
 import com.example.racehorse_transport.dto.booking.BookingResponseDto;
 import com.example.racehorse_transport.entity.AppUser;
 import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.entity.BookingAddress;
 import com.example.racehorse_transport.entity.BookingHorse;
 import com.example.racehorse_transport.entity.BookingHorseAddOn;
 import com.example.racehorse_transport.entity.HorseInsurance;
@@ -86,11 +87,15 @@ public class BookingQueryServiceImpl implements BookingQueryService {
         if (rows.isEmpty()) {
             return List.of();
         }
-        Map<Long, Integer> horseCounts = bookings.countActiveHorses(rows.stream().map(Booking::getId).toList()).stream()
+        List<Long> ids = rows.stream().map(Booking::getId).toList();
+        Map<Long, BookingAddress> deliveries = addresses.findDeliveriesOfBookings(ids).stream()
+                .collect(Collectors.toMap(address -> address.getBooking().getId(), Function.identity(), (first, later) -> first));
+        Map<Long, Integer> horseCounts = bookings.countActiveHorses(ids).stream()
                 .collect(Collectors.toMap(BookingRepository.HorseCount::getBookingId,
                         row -> Math.toIntExact(row.getHorseCount())));
         return rows.stream()
-                .map(row -> BookingSummaryResponseDto.from(row, horseCounts.getOrDefault(row.getId(), 0))).toList();
+                .map(row -> BookingSummaryResponseDto.from(row, horseCounts.getOrDefault(row.getId(), 0), deliveries.get(row.getId())))
+                .toList();
     }
 
     @Override

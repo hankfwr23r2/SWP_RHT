@@ -1,4 +1,5 @@
 import { ListPanel } from '@shared/ui/ListPanel'
+import { OrderRoute } from '@shared/components/OrderRoute'
 import { Suspense, useState } from 'react'
 import { Await, Link, useRevalidator } from 'react-router'
 import { useTranslation } from 'react-i18next'
@@ -60,8 +61,8 @@ function LoadedOrders({ groups, emptyTitle, emptyHint, orders, failed }: Props &
               <Link to={`/orders/${order.id}`}>{order.code}</Link>
               {order.waybillNumber && <p className={s.hint}>{t('myOrders.waybill', { code: order.waybillNumber })}</p>}
             </div> },
-            { key: 'route', header: t('listPanel.route'), render: order =>
-              [order.bookingType && t(`bookingForm.types.${order.bookingType}`), order.routeName].filter(Boolean).join(' · ') },
+            { key: 'route', header: t('listPanel.route'), render: order => <OrderRoute {...order}
+              routeName={[order.bookingType && t(`bookingForm.types.${order.bookingType}`), order.routeName].filter(Boolean).join(' · ')} /> },
             { key: 'schedule', header: t('listPanel.schedule'), render: order => <div className={s.meta}>
               {order.horseCount != null && <span>{t('myOrders.horseCount', { count: order.horseCount })}</span>}
               {order.departureDate && <span>{t('myOrders.departs', { date: showDate(order.departureDate) })}</span>}

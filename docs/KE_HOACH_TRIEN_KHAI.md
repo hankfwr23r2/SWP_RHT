@@ -282,7 +282,7 @@ Mục tiêu: dựng sẵn **mọi thứ cả hai luồng cùng cần**, để t�
 - Không ghi mã OTP ra log. Máy chưa cấu hình mail thì không gửi được mã; tài khoản trong seed dev đều đã xác thực email.
 - 10 interface gọi chéo ở mục 3.3 đã có trong `service/`, mỗi file ghi rõ luồng cài đặt và luồng gọi.
 - `TestData` (`support/TestData`, được `@PostgresIntegrationTest` nạp sẵn): tạo nhanh tài khoản, khách, nhân viên, đơn, chuyến đột xuất. Chỉ thêm method mới, không sửa method cũ.
-- `db/seed-dev/R__dev_seed_bookings.sql`: chuyến cho 8 tuần tới và 3 đơn CONFIRMED của `customer1.dev` (`DEV-DIRECT-001` chạy thẳng, `DEV-DOMESTIC-001` trục HCM-DN, `DEV-EXPORT-001` trục HCM-PNH), có ngựa, bảo hiểm đã xác nhận, báo giá ACCEPTED và đã trả đủ. Chuyến do seed sinh trùng lịch, nên test tạo chuyến riêng thì dùng chuyến đột xuất (`TestData.departure`).
+- `db/seed-dev/R__dev_seed_bookings.sql`: chuyến cho 6 tuần tới và 3 đơn CONFIRMED của `customer1.dev` (`DEV-DIRECT-001` chạy thẳng, `DEV-DOMESTIC-001` trục HCM-DN, `DEV-EXPORT-001` trục HCM-PNH), có ngựa, bảo hiểm đã xác nhận, báo giá ACCEPTED và đã trả đủ. Chuyến do seed sinh trùng lịch, nên test tạo chuyến riêng thì dùng chuyến đột xuất (`TestData.departure`).
 
 **Mốc M0** khi P0.1–P0.3 và P0-FE đã merge.
 

@@ -5271,6 +5271,8 @@ export interface components {
             departureDate?: string;
             /** Format: int64 */
             departureId?: number;
+            destinationCountryName?: string;
+            destinationProvinceName?: string;
             /** Format: int32 */
             horseCount?: number;
             /** Format: int64 */
