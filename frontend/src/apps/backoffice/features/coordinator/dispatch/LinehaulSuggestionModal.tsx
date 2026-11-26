@@ -16,15 +16,16 @@ import { truckKey, useLinehaulSuggestion } from './useLinehaulSuggestion'
 import s from './LinehaulSuggestion.module.css'
 
 interface Props {
+  initialDeparture?: string
   from: string
   to: string
   onClose: () => void
   onCreated: (tripId: number) => void
 }
 
-export function LinehaulSuggestionModal({ from, to, onClose, onCreated }: Props) {
+export function LinehaulSuggestionModal({ initialDeparture, from, to, onClose, onCreated }: Props) {
   const { t } = useTranslation()
-  const [departure, setDeparture] = useState('')
+  const [departure, setDeparture] = useState(initialDeparture ?? '')
   const [requested, setRequested] = useState('')
   const { data, loaded, error, reload } = useLoad(() => dispatchApi.departures(from, to), [from, to], { toastOnError: false })
   const departures = (data ?? []).filter(item => item.runConfirmed

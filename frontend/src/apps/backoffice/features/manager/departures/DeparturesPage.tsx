@@ -2,6 +2,7 @@ import { DateInput } from '@shared/ui/DateInput'
 import { ListPanel } from '@shared/ui/ListPanel'
 // Chuyến cần quyết định: xác nhận chạy, hủy chuyến, tạo chuyến đột xuất.
 import { useState } from 'react'
+import { useSearchParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { departuresApi, type DepartureDecision } from '@shared/api/departures'
 import { Button } from '@shared/ui/Button'
@@ -27,7 +28,10 @@ type Dialog = { kind: 'confirm' | 'cancel' | 'merge' | 'delay' | 'assign' | 'veh
 export default function DeparturesPage() {
   const { t } = useTranslation()
   const { routes } = useRoutesData()
-  const { from, to, setRange, data, loaded, error: loadError, reload } = useDecisions()
+  const { from, to, setRange, data: departures, loaded, error: loadError, reload } = useDecisions()
+  const [params] = useSearchParams()
+  const linkedDeparture = Number(params.get('departureId'))
+  const data = linkedDeparture ? departures?.filter(row => row.id === linkedDeparture) : departures
   const { run, busy, error, clearError } = useStaffAction()
   const [limit, setLimit] = useState(10)
   const [dialog, setDialog] = useState<Dialog>(null)

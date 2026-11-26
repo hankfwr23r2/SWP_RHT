@@ -1,6 +1,8 @@
 import { DateInput } from '@shared/ui/DateInput'
 // Điều độ (điều phối viên): đơn chờ xếp xe và lượt xe trong tuần (docs/MAN_HINH_VA_TAC_DONG.md mục 3.9)
 import { useState } from 'react'
+import { useSearchParams } from 'react-router'
+import { invalidateStaffWork } from '@backoffice/shared/useStaffWork'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import { PickupMissPanel } from '@shared/components/PickupMissPanel'
@@ -30,6 +32,16 @@ const today = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_
 export default function DispatchPage() {
   const { t } = useTranslation()
   const { session } = useAuth()
+  const [params, setParams] = useSearchParams()
+  const requestedDate = params.get('date')
+  const linkedDate = requestedDate && /^\d{4}-\d{2}-\d{2}$/.test(requestedDate) && Number.isFinite(Date.parse(requestedDate))
+    ? requestedDate : undefined
+  const linkedDeparture = params.get('departureId') ?? undefined
+  const linkedBooking = Number(params.get('bookingId')) || undefined
+  const linkedTrip = Number(params.get('tripId')) || undefined
+  const clearLink = (key: string) => {
+    if (params.has(key)) setParams(previous => { previous.delete(key); return previous }, { replace: true })
+  }
   const [onlyMine, setOnlyMine] = useState(false)
   const [weekStart, setWeekStart] = useState(() => mondayOf(today()))
   const [grouping, setGrouping] = useState(false)
@@ -39,7 +51,14 @@ export default function DispatchPage() {
   const [openTripId, setOpenTripId] = useState<number>()
   const [journeyOf, setJourneyOf] = useState<DispatchBooking>()
   const [hubOf, setHubOf] = useState<{ booking: DispatchBooking; horse: DispatchHorse }>()
-  const range = weekRange(weekStart)
+  const shownWeek = linkedDate ? mondayOf(linkedDate) : weekStart
+  const chooseWeek = (week: string) => {
+    setWeekStart(week)
+    clearLink('date')
+  }
+  const range = weekRange(shownWeek)
+  const journeyId = journeyOf?.id ?? linkedBooking
+  const tripId = openTripId ?? linkedTrip
   const { data, loaded, error, reload } = useLoad(async () => {
     const [bookings, trips, vehicles] = await Promise.all([
       dispatchApi.bookings(range.fromDate, range.toDate), dispatchApi.trips(range.from, range.to), dispatchApi.vehicles(),
@@ -48,17 +67,18 @@ export default function DispatchPage() {
     const next = bookings.some(booking => missingLegs(booking).length) ? undefined
       : nextWaitingWeek(await dispatchApi.bookings(addDays(range.toDate, 1), addDays(range.toDate, LOOKAHEAD_DAYS)))
     return { bookings, trips, vehicles, next }
-  }, [weekStart], { toastOnError: false })
+  }, [shownWeek], { toastOnError: false })
   useAutoRefresh(reload)
+  const changed = () => { invalidateStaffWork(); void reload() }
 
   const content = () => {
     if (!loaded) return <Skeleton variant="block" lines={4} />
     if (error || !data) return <ErrorState title={t('dispatch.loadError')} message={error?.message} onRetry={reload} />
     return (
       <div className={b.layout}>
-        <WaitingList bookings={data.bookings} next={data.next} onWeek={setWeekStart} onJourney={setJourneyOf}
+        <WaitingList bookings={data.bookings} next={data.next} onWeek={chooseWeek} onJourney={setJourneyOf}
           onHub={(booking, horse) => setHubOf({ booking, horse })} />
-        <WeekBoard weekStart={weekStart} vehicles={data.vehicles}
+        <WeekBoard weekStart={shownWeek} vehicles={data.vehicles}
           trips={onlyMine ? data.trips.filter(trip => trip.coordinatorStaffCode != null && trip.coordinatorStaffCode === session?.staffCode) : data.trips}
           onOpen={(trip: VehicleTrip) => setOpenTripId(trip.id)} onReturn={setCreating} />
       </div>
@@ -72,11 +92,11 @@ export default function DispatchPage() {
         description={t('dispatch.description')}
         actions={(
           <div className={s.toolbar}>
-            <Button aria-label={t('dispatch.board.previous')} icon={<i className="fa-solid fa-chevron-left" />} onClick={() => setWeekStart(addDays(weekStart, -7))} />
+            <Button aria-label={t('dispatch.board.previous')} icon={<i className="fa-solid fa-chevron-left" />} onClick={() => chooseWeek(addDays(shownWeek, -7))} />
             <Field label={t('dispatch.weekFrom')} className={s.week}>
-              {control => <DateInput {...control} value={weekStart} onValueChange={value => value && setWeekStart(mondayOf(value))} />}
+              {control => <DateInput {...control} value={shownWeek} onValueChange={value => value && chooseWeek(mondayOf(value))} />}
             </Field>
-            <Button aria-label={t('dispatch.board.next')} icon={<i className="fa-solid fa-chevron-right" />} onClick={() => setWeekStart(addDays(weekStart, 7))} />
+            <Button aria-label={t('dispatch.board.next')} icon={<i className="fa-solid fa-chevron-right" />} onClick={() => chooseWeek(addDays(shownWeek, 7))} />
             <Button aria-pressed={onlyMine} onClick={() => setOnlyMine(value => !value)}>{t('coordAssignment.mine')}</Button>
             <Button variant="primary" icon={<i className="fa-solid fa-route" />} onClick={() => setGrouping(true)}>{t('dispatch.board.group')}</Button>
             <Button onClick={() => setLinehaul(true)}>{t('linehaul.suggest')}</Button>
@@ -85,8 +105,9 @@ export default function DispatchPage() {
         )}
       />
       {content()}
-      {linehaul && <LinehaulSuggestionModal from={range.fromDate} to={range.toDate} onClose={() => setLinehaul(false)}
-        onCreated={tripId => { setLinehaul(false); void reload(); setOpenTripId(tripId) }} />}
+      {(linehaul || linkedDeparture) && <LinehaulSuggestionModal key={linkedDeparture} initialDeparture={linkedDeparture}
+        from={range.fromDate} to={range.toDate} onClose={() => { setLinehaul(false); clearLink('departureId') }}
+        onCreated={id => { setLinehaul(false); clearLink('departureId'); changed(); setOpenTripId(id) }} />}
       {creating && data && (
         <CreateTripModal
           bookings={data.bookings}
@@ -94,22 +115,24 @@ export default function DispatchPage() {
           weekTo={range.toDate}
           returning={typeof creating === 'object' ? creating : undefined}
           onClose={() => setCreating(false)}
-          onCreated={trip => { setCreating(false); void reload(); setOpenTripId(trip.id) }}
+          onCreated={trip => { setCreating(false); changed(); setOpenTripId(trip.id) }}
         />
       )}
       {grouping && (
         <Modal wide title={t('dispatch.board.group')} onClose={() => setGrouping(false)}>
-          <GroupingPanel defaultDate={weekStart} onCreated={trip => { setGrouping(false); void reload(); setOpenTripId(trip.id) }} />
+          <GroupingPanel defaultDate={shownWeek} onCreated={trip => { setGrouping(false); changed(); setOpenTripId(trip.id) }} />
         </Modal>
       )}
-      {openTripId !== undefined && data && (
-        <TripDetailModal tripId={openTripId} bookings={data.bookings} onClose={() => setOpenTripId(undefined)} onChanged={() => void reload()} />
+      {tripId !== undefined && (
+        <TripDetailModal tripId={tripId} bookings={data?.bookings ?? []}
+          onClose={() => { setOpenTripId(undefined); clearLink('tripId') }} onChanged={changed} />
       )}
       {hubOf && <HubAppointmentModal {...hubOf} onClose={() => setHubOf(undefined)} onDone={() => setHubOf(undefined)} />}
-      {journeyOf && (
-        <Modal title={t('dispatch.bookings.journeyTitle', { code: journeyOf.code })} onClose={() => setJourneyOf(undefined)}>
-          <BookingJourney bookingId={journeyOf.id!} />
-          <PickupMissPanel bookingId={journeyOf.id!} mode="coordinator" onChanged={() => void reload()} />
+      {journeyId !== undefined && (
+        <Modal title={t('dispatch.bookings.journeyTitle', { code: journeyOf?.code ?? journeyId })}
+          onClose={() => { setJourneyOf(undefined); clearLink('bookingId') }}>
+          <BookingJourney bookingId={journeyId} />
+          <PickupMissPanel bookingId={journeyId} mode="coordinator" onChanged={changed} />
         </Modal>
       )}
     </div>

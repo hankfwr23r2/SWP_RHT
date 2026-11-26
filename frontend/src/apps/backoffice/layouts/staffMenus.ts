@@ -1,7 +1,7 @@
 import type { StaffRole } from '@shared/auth/role'
 
 // Menu theo vai trò. Các màn cũ gọi API đã bỏ không có trong menu; danh sách chờ xóa ở docs/KE_HOACH_TRIEN_KHAI.md.
-export const STAFF_MENUS: Record<StaffRole, [path: string, label: string, opt?: { group?: string; icon?: string }][]> = {
+export const STAFF_MENUS: Record<StaffRole, [path: string, label: string, opt?: { group?: string; icon?: string; count?: string }][]> = {
   admin: [
     ['/admin/horse-types', 'Danh mục loại ngựa', { icon: 'fa-horse-head' }],
     ['/admin/vehicles', 'Đội xe', { icon: 'fa-truck' }],
@@ -20,11 +20,11 @@ export const STAFF_MENUS: Record<StaffRole, [path: string, label: string, opt?: 
   manager: [
     ['/manager', 'Tổng quan', { icon: 'fa-chart-pie' }],
     ['/manager/hubs', 'Các hub', { icon: 'fa-warehouse' }],
-    ['/manager/assignments', 'Phân công', { group: 'Việc cần làm', icon: 'fa-user-check' }],
-    ['/manager/orders', 'Đơn hàng', { group: 'Việc cần làm', icon: 'fa-inbox' }],
-    ['/manager/departures', 'Chuyến cần quyết định', { icon: 'fa-truck' }],
-    ['/manager/refunds', 'Hoàn tiền', { icon: 'fa-rotate-left' }],
-    ['/manager/incidents', 'Sự cố', { icon: 'fa-triangle-exclamation' }],
+    ['/manager/assignments', 'Phân công', { group: 'Việc cần làm', icon: 'fa-user-check', count: 'assignments' }],
+    ['/manager/orders', 'Đơn hàng', { group: 'Việc cần làm', icon: 'fa-inbox', count: 'orders' }],
+    ['/manager/departures', 'Chuyến cần quyết định', { icon: 'fa-truck', count: 'decisions' }],
+    ['/manager/refunds', 'Hoàn tiền', { icon: 'fa-rotate-left', count: 'refunds' }],
+    ['/manager/incidents', 'Sự cố', { icon: 'fa-triangle-exclamation', count: 'incidents' }],
     ['/admin/pricing', 'Bảng giá', { icon: 'fa-calculator' }],
     ['/manager/reports', 'Doanh thu', { group: 'Báo cáo', icon: 'fa-chart-line' }],
     ['/manager/trip-reports', 'Chuyến đi', { icon: 'fa-clipboard-check' }],
@@ -35,11 +35,11 @@ export const STAFF_MENUS: Record<StaffRole, [path: string, label: string, opt?: 
   ],
   coordinator: [
     ['/coordinator/plans', 'Kế hoạch đơn', { icon: 'fa-calendar-check' }],
-    ['/coordinator/dispatch', 'Điều độ', { icon: 'fa-diagram-project' }],
-    ['/coordinator/my-trips', 'Lượt của tôi', { icon: 'fa-truck' }],
-    ['/coordinator/tracking', 'Theo dõi', { icon: 'fa-location-dot' }],
+    ['/coordinator/dispatch', 'Điều độ', { icon: 'fa-diagram-project', count: 'waiting' }],
+    ['/coordinator/my-trips', 'Lượt của tôi', { icon: 'fa-truck', count: 'crew' }],
+    ['/coordinator/tracking', 'Theo dõi', { icon: 'fa-location-dot', count: 'late' }],
     ['/coordinator/hub', 'Hub', { icon: 'fa-warehouse' }],
-    ['/coordinator/incidents', 'Sự cố', { icon: 'fa-triangle-exclamation' }],
+    ['/coordinator/incidents', 'Sự cố', { icon: 'fa-triangle-exclamation', count: 'incidents' }],
   ],
   driver: [['/my-trips', 'Lượt xe của tôi']],
   escort: [['/my-trips', 'Lượt xe của tôi']],

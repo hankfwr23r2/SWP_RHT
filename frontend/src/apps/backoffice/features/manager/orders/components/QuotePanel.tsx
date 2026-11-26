@@ -9,7 +9,8 @@ import { Card } from '@shared/ui/Card'
 import { ConfirmDialog } from '@shared/ui/ConfirmDialog'
 import { EmptyState } from '@shared/ui/EmptyState'
 import { ErrorState } from '@shared/ui/ErrorState'
-import { money, moment, showDate } from '@backoffice/shared/staffFormat'
+import { formatDate, formatDateTime } from '@shared/lib/format'
+import { money } from '@backoffice/shared/staffFormat'
 import { useStaffAction } from '@backoffice/shared/useStaffAction'
 import type { OrderData } from '../loaders'
 import { AdjustDialog } from './AdjustDialog'
@@ -18,13 +19,15 @@ import s from '@backoffice/shared/StaffPanels.module.css'
 const TONE = { DRAFT: 'neutral', SENT: 'warning', ACCEPTED: 'success', REJECTED: 'danger', EXPIRED: 'neutral', SUPERSEDED: 'neutral' } as const
 
 // Lập, điều chỉnh, gửi báo giá. Mọi con số do backend tính.
-export function QuotePanel({ data }: { data: OrderData }) {
+export function QuotePanel({ data, actionsOnly = false }: { data: OrderData; actionsOnly?: boolean }) {
   const { t } = useTranslation()
   const { revalidate, state } = useRevalidator()
   const { run, busy, error, clearError } = useStaffAction()
   const [dialog, setDialog] = useState<'draft' | 'adjust' | 'send' | 'reopen' | null>(null)
   const quoting = data.detail?.booking?.status === 'QUOTING'
 
+  const expired = data.detail?.booking?.status === 'QUOTE_EXPIRED'
+  if (actionsOnly && !quoting && !expired) return null
   if (!data.quotations) return <Card title={t('mgr.quote.title')}><ErrorState onRetry={revalidate} retrying={state !== 'idle'} /></Card>
   if (!quoting && !data.quotations.length) return null
   const versions = [...data.quotations].sort((a, b) => (b.version ?? 0) - (a.version ?? 0))
@@ -41,19 +44,19 @@ export function QuotePanel({ data }: { data: OrderData }) {
   return (
     <Card title={t('mgr.quote.title')}>
       <div className={s.stack}>
-        {!latest && <EmptyState icon={<i className="fa-solid fa-file-invoice-dollar" />} title={t('mgr.quote.empty')} description={t('mgr.quote.emptyHint')} />}
-        {latest && <QuoteSheet quote={latest} />}
-        {data.detail?.booking?.status === 'QUOTE_EXPIRED' &&
+        {!actionsOnly && !latest && <EmptyState icon={<i className="fa-solid fa-file-invoice-dollar" />} title={t('mgr.quote.empty')} description={t('mgr.quote.emptyHint')} />}
+        {!actionsOnly && latest && <QuoteSheet quote={latest} />}
+        {actionsOnly && expired &&
           <Button loading={busy} onClick={() => open('reopen')}>{t('incidentDecisions.reopen')}</Button>}
         {error && dialog !== 'adjust' && <p className={s.error} role="alert">{error}</p>}
-        {quoting && (
+        {actionsOnly && quoting && (
           <div className={s.row}>
             {editable && <Button variant="primary" loading={busy} onClick={() => open('send')}>{t('mgr.quote.send')}</Button>}
             {editable && <Button disabled={busy} onClick={() => open('adjust')}>{t('mgr.quote.adjust')}</Button>}
             <Button variant={editable ? 'ghost' : 'primary'} disabled={busy} onClick={() => latest ? open('draft') : void draft()}>{t(latest ? 'mgr.quote.redraft' : 'mgr.quote.draft')}</Button>
           </div>
         )}
-        {versions.length > 1 && (
+        {!actionsOnly && versions.length > 1 && (
           <details>
             <summary>{t('mgr.quote.history')}</summary>
             <ul className={s.items}>
@@ -93,10 +96,10 @@ function QuoteSheet({ quote }: { quote: Quotation }) {
         {quote.status && <Badge tone={TONE[quote.status]}>{quote.status === 'SENT' ? t('mgr.quote.waitingCustomer') : t(`myOrders.quote.status.${quote.status}`)}</Badge>}
       </div>
       <dl className={s.facts}>
-        {quote.pickupDate && <div><dt>{t('myOrders.quote.pickup')}</dt><dd>{showDate(quote.pickupDate)}</dd></div>}
-        {quote.departureDate && <div><dt>{t('myOrders.quote.departure')}</dt><dd>{showDate(quote.departureDate)}</dd></div>}
-        {quote.estimatedDeliveryDate && <div><dt>{t('myOrders.quote.delivery')}</dt><dd>{showDate(quote.estimatedDeliveryDate)}</dd></div>}
-        {quote.expiresAt && <div><dt>{t('myOrders.quote.expires')}</dt><dd>{moment(quote.expiresAt)}</dd></div>}
+        {quote.pickupDate && <div><dt>{t('myOrders.quote.pickup')}</dt><dd>{formatDate(quote.pickupDate)}</dd></div>}
+        {quote.departureDate && <div><dt>{t('myOrders.quote.departure')}</dt><dd>{formatDate(quote.departureDate)}</dd></div>}
+        {quote.estimatedDeliveryDate && <div><dt>{t('myOrders.quote.delivery')}</dt><dd>{formatDate(quote.estimatedDeliveryDate)}</dd></div>}
+        {quote.expiresAt && <div><dt>{t('myOrders.quote.expires')}</dt><dd>{formatDateTime(quote.expiresAt)}</dd></div>}
       </dl>
       {quote.lines?.some(line => line.lineType === 'DIRECT') && <p>{t('incidentDecisions.directNote')}</p>}
       <table className={s.lines}>

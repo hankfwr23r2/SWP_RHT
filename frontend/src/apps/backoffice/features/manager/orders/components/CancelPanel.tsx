@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import { managerOrdersApi } from '@shared/api/managerOrders'
 import { useLoad } from '@shared/hooks/useLoad'
 import { Button } from '@shared/ui/Button'
-import { Card } from '@shared/ui/Card'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { Modal } from '@shared/ui/Modal'
 import { Skeleton } from '@shared/ui/Skeleton'
@@ -17,13 +16,16 @@ export function CancelPanel({ bookingId }: { bookingId: number }) {
   const { t } = useTranslation()
   const [mode, setMode] = useState<'customer' | 'company' | null>(null)
   return (
-    <Card title={t('mgr.cancel.title')}>
-      <div className={s.row}>
-        <Button onClick={() => setMode('customer')}>{t('mgr.cancel.customer')}</Button>
-        <Button variant="ghost" onClick={() => setMode('company')}>{t('mgr.cancel.company')}</Button>
-      </div>
+    <>
+      <details>
+        <summary aria-label={t('mgr.cancel.title')}>&hellip;</summary>
+        <div className={s.stack}>
+          <Button variant="secondary" onClick={() => setMode('customer')}>{t('mgr.cancel.customer')}</Button>
+          <Button variant="secondary" onClick={() => setMode('company')}>{t('mgr.cancel.company')}</Button>
+        </div>
+      </details>
       {mode && <CancelDialog key={mode} bookingId={bookingId} byCompany={mode === 'company'} onClose={() => setMode(null)} />}
-    </Card>
+    </>
   )
 }
 
