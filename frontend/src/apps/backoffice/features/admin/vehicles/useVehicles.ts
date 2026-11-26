@@ -6,6 +6,7 @@ export type VehicleAction = 'startMaintenance' | 'reactivate' | 'retire'
 
 export function useVehicleEditor(vehicle: Vehicle | undefined, reload: () => unknown, close: () => void) {
   const form = useCatalogForm({
+    serviceRole: vehicle?.serviceRole ?? 'BRANCH',
     licensePlate: vehicle?.licensePlate ?? '',
     vehicleClassId: String(vehicle?.vehicleClassId ?? ''),
     homeHubLocationId: String(vehicle?.homeHubLocationId ?? ''),
@@ -16,6 +17,7 @@ export function useVehicleEditor(vehicle: Vehicle | undefined, reload: () => unk
   async function save() {
     const { values } = form
     const body: VehicleCreate = {
+      serviceRole: values.serviceRole as VehicleCreate['serviceRole'],
       licensePlate: values.licensePlate.trim(),
       vehicleClassId: Number(values.vehicleClassId),
       homeHubLocationId: Number(values.homeHubLocationId),

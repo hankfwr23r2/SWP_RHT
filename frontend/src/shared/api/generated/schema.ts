@@ -1419,7 +1419,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["detail"];
+        get: operations["detail_1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1940,6 +1940,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/departures/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["detail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/departures/{id}/assign-coordinator": {
         parameters: {
             query?: never;
@@ -2030,6 +2046,22 @@ export interface paths {
         get: operations["mergeTargets"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/departures/{id}/vehicles/{allotmentId}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["removeVehicle"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4575,6 +4607,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseDepartureDetailResponseDto: {
+            data?: components["schemas"]["DepartureDetailResponseDto"];
+            message?: string;
+            status?: string;
+        };
         ApiResponseDepartureResponse: {
             data?: components["schemas"]["DepartureResponse"];
             message?: string;
@@ -5250,6 +5287,8 @@ export interface components {
             status?: "PENDING_INTAKE" | "UNDER_REVIEW" | "NEEDS_RESUBMISSION" | "QUOTING" | "AWAITING_DEPOSIT" | "QUOTE_EXPIRED" | "CONFIRMED" | "SCHEDULE_CHANGE_REQUIRED" | "IN_OPERATION" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED";
         };
         BookingMergeSuggestionResponseDto: {
+            /** @enum {string} */
+            availability?: "AVAILABLE" | "NEARLY_FULL" | "FULL";
             /** Format: date */
             departureDate?: string;
             /** Format: int64 */
@@ -5725,10 +5764,7 @@ export interface components {
         DepartureCancelRequest: {
             reason: string;
         };
-        DepartureConfirmRunRequestDto: {
-            /** Format: int32 */
-            stallCapacity?: number;
-        };
+        DepartureConfirmRunRequestDto: unknown;
         DepartureCreateRequest: {
             /** Format: int32 */
             bookingCutoffHours: number;
@@ -5737,8 +5773,10 @@ export interface components {
             departureTime: string;
             /** Format: int64 */
             routeId: number;
+            /** Format: int64 */
+            vehicleClassId: number;
             /** Format: int32 */
-            stallCapacity: number;
+            vehicleCount: number;
         };
         DepartureDecisionResponseDto: {
             /** Format: date-time */
@@ -5785,12 +5823,18 @@ export interface components {
             /** Format: date-time */
             revisedDepartureAt: string;
         };
+        DepartureDetailResponseDto: {
+            departure?: components["schemas"]["DepartureResponse"];
+            vehicles?: components["schemas"]["DepartureVehicleResponseDto"][];
+        };
         DepartureMergeRequestDto: {
             reason: string;
             /** Format: int64 */
             targetDepartureId: number;
         };
         DepartureResponse: {
+            /** @enum {string} */
+            availability?: "AVAILABLE" | "NEARLY_FULL" | "FULL";
             /** Format: int32 */
             availableStalls?: number;
             /** Format: int32 */
@@ -5826,20 +5870,26 @@ export interface components {
             status?: "OPEN" | "CLOSED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
         };
         DepartureScheduleRequest: {
+            /** Format: int64 */
+            baseVehicleClassId: number;
+            /** Format: int32 */
+            baseVehicleCount: number;
             /** Format: int32 */
             bookingCutoffHours: number;
             daysOfWeek: number[];
             departureTime: string;
             /** Format: int64 */
             routeId: number;
-            /** Format: int32 */
-            stallCapacity: number;
             /** Format: date */
             validFrom: string;
             /** Format: date */
             validTo?: string;
         };
         DepartureScheduleResponse: {
+            /** Format: int64 */
+            baseVehicleClassId?: number;
+            /** Format: int32 */
+            baseVehicleCount?: number;
             /** Format: int32 */
             bookingCutoffHours?: number;
             daysOfWeek?: number[];
@@ -5849,8 +5899,6 @@ export interface components {
             routeCode?: string;
             /** Format: int64 */
             routeId?: number;
-            /** Format: int32 */
-            stallCapacity?: number;
             /** @enum {string} */
             status?: "ACTIVE" | "PAUSED" | "ENDED";
             /** Format: date */
@@ -5889,6 +5937,21 @@ export interface components {
             tooLateDepartureIds?: number[];
             /** @enum {string} */
             unavailable?: "PICKUP_NOT_SERVED" | "DELIVERY_NOT_SERVED" | "NO_ROUTE";
+        };
+        DepartureVehicleRemoveRequestDto: {
+            reason: string;
+        };
+        DepartureVehicleResponseDto: {
+            /** @enum {string} */
+            allotmentType?: "BASE" | "SPARE";
+            /** Format: int64 */
+            id?: number;
+            reason?: string;
+            vehicleClassCode?: string;
+            /** Format: int64 */
+            vehicleClassId?: number;
+            /** Format: int32 */
+            vehicleCount?: number;
         };
         DispatchBookingResponseDto: {
             /** @enum {string} */
@@ -8098,6 +8161,8 @@ export interface components {
             /** Format: int64 */
             homeHubLocationId: number;
             licensePlate: string;
+            /** @enum {string} */
+            serviceRole?: "LINEHAUL" | "SPARE" | "BRANCH";
             /** Format: int32 */
             standardStallCount: number;
             /** Format: int64 */
@@ -8112,6 +8177,8 @@ export interface components {
             /** Format: int64 */
             id?: number;
             licensePlate?: string;
+            /** @enum {string} */
+            serviceRole?: "LINEHAUL" | "SPARE" | "BRANCH";
             /** Format: int32 */
             standardStallCount?: number;
             /** @enum {string} */
@@ -8201,6 +8268,8 @@ export interface components {
             /** Format: int64 */
             homeHubLocationId: number;
             licensePlate: string;
+            /** @enum {string} */
+            serviceRole?: "LINEHAUL" | "SPARE" | "BRANCH";
             /** Format: int32 */
             standardStallCount: number;
             /** Format: int64 */
@@ -10450,7 +10519,7 @@ export interface operations {
             };
         };
     };
-    detail: {
+    detail_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -11418,6 +11487,28 @@ export interface operations {
             };
         };
     };
+    detail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDepartureDetailResponseDto"];
+                };
+            };
+        };
+    };
     assignDeparture: {
         parameters: {
             query?: never;
@@ -11566,6 +11657,33 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListDepartureResponse"];
+                };
+            };
+        };
+    };
+    removeVehicle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                allotmentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DepartureVehicleRemoveRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDepartureDetailResponseDto"];
                 };
             };
         };

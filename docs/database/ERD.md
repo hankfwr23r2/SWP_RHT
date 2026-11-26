@@ -1,6 +1,6 @@
 # Sơ đồ cơ sở dữ liệu
 
-Sinh từ cơ sở dữ liệu thật bằng `sinh_erd.py`, **không sửa tay**. 63 bảng, 189 khóa ngoại.
+Sinh từ cơ sở dữ liệu thật bằng `sinh_erd.py`, **không sửa tay**. 64 bảng, 194 khóa ngoại.
 Mỗi nhóm vẽ đủ cột của bảng trong nhóm; bảng thuộc nhóm khác chỉ hiện tên. `PK` là khóa chính, `FK` là khóa ngoại.
 
 ## 1. Địa lý
@@ -204,10 +204,11 @@ erDiagram
         int8 route_id FK
         time departure_time
         int4 booking_cutoff_hours
-        int4 stall_capacity
         date valid_from
         date valid_to
         varchar status
+        int8 base_vehicle_class_id FK
+        int4 base_vehicle_count
     }
     departure_schedule_day {
         int8 departure_schedule_id PK, FK
@@ -233,13 +234,29 @@ erDiagram
         timestamptz auto_cancelled_at
         int8 coordinator_id FK
         date coordinator_reminded_on
+        int8 merged_into_departure_id FK
+    }
+    departure_vehicle {
+        int8 id PK
+        int8 departure_id FK
+        int8 vehicle_class_id FK
+        int4 vehicle_count
+        varchar allotment_type
+        varchar reason
+        int8 created_by FK
+        timestamptz created_at
     }
     staff |o--o{ departure : "coordinator_id"
     departure_schedule |o--o{ departure : "departure_schedule_id"
+    departure |o--o{ departure : "merged_into_departure_id"
     route ||--o{ departure : "route_id"
     app_user |o--o{ departure : "run_confirmed_by"
+    vehicle_class ||--o{ departure_schedule : "base_vehicle_class_id"
     route ||--o{ departure_schedule : "route_id"
     departure_schedule ||--o{ departure_schedule_day : "departure_schedule_id"
+    app_user |o--o{ departure_vehicle : "created_by"
+    departure ||--o{ departure_vehicle : "departure_id"
+    vehicle_class ||--o{ departure_vehicle : "vehicle_class_id"
     location ||--o{ route : "destination_location_id"
     location ||--o{ route : "origin_location_id"
     location ||--o{ route_stop : "location_id"
@@ -268,6 +285,7 @@ erDiagram
         int4 wide_stall_count
         int8 home_hub_location_id FK
         varchar status
+        varchar service_role
     }
     location ||--o{ vehicle : "home_hub_location_id"
     vehicle_class ||--o{ vehicle : "vehicle_class_id"
@@ -512,6 +530,7 @@ erDiagram
         varchar end_vehicle_condition
         varchar end_vehicle_note
         int8 coordinator_id FK
+        timestamptz return_late_notified_at
     }
     trip_stop {
         int8 id PK
@@ -708,6 +727,8 @@ erDiagram
         bool is_microchip_matched
         text condition_note
         varchar recipient_name
+        varchar microchip_entry_method
+        varchar manual_entry_reason
     }
     handover_document {
         int8 handover_id PK, FK

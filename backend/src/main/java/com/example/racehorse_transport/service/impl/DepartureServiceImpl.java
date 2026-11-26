@@ -1,5 +1,10 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.entity.enums.DepartureAvailability;
+import com.example.racehorse_transport.dto.departure.DepartureDetailResponseDto;
+import com.example.racehorse_transport.entity.enums.DepartureAllotmentType;
+import com.example.racehorse_transport.service.DepartureFleetService;
+import com.example.racehorse_transport.policy.DepartureFleetPolicy;
 import com.example.racehorse_transport.repository.VehicleTripRepository;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import com.example.racehorse_transport.entity.enums.VehicleTripType;
@@ -27,7 +32,6 @@ import com.example.racehorse_transport.policy.DepartureMergePolicy;
 import com.example.racehorse_transport.repository.AppUserRepository;
 import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.DepartureRepository;
-import com.example.racehorse_transport.repository.DepartureScheduleDayRepository;
 import com.example.racehorse_transport.repository.DepartureScheduleRepository;
 import com.example.racehorse_transport.repository.RouteRepository;
 import com.example.racehorse_transport.service.BookingStatusService;
@@ -57,7 +61,6 @@ public class DepartureServiceImpl implements DepartureService {
 
     private final DepartureRepository departures;
     private final DepartureScheduleRepository schedules;
-    private final DepartureScheduleDayRepository scheduleDays;
     private final RouteRepository routes;
     private final BookingRepository bookings;
     private final AppUserRepository users;
@@ -65,6 +68,7 @@ public class DepartureServiceImpl implements DepartureService {
     private final SystemConfigService config;
     private final Clock clock;
     private final VehicleTripRepository vehicleTrips;
+    private final DepartureFleetService fleet;
 
     @Override
     @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
@@ -96,11 +100,26 @@ public class DepartureServiceImpl implements DepartureService {
     public void reserve(Long departureId, int stalls) {
         Departure departure = departures.findForUpdate(departureId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chuyến " + departureId));
+        int shortage = stalls - DepartureCapacityPolicy.available(departure.getStallCapacity(), departure.getBookedStallCount());
+        var selected = shortage > 0 && departure.getStatus() == DepartureStatus.OPEN
+                && clock.instant().isBefore(departure.getBookingCutoffAt())
+                ? DepartureFleetPolicy.selectSpareVehicles(shortage, fleet.freeStock(departure, true))
+                : Map.<DepartureFleetPolicy.Stock, Integer>of();
+        int capacity = departure.getStallCapacity();
+        for (var entry : selected.entrySet()) {
+            capacity = Math.addExact(capacity, DepartureFleetPolicy.capacity(entry.getValue(), entry.getKey().stalls()));
+        }
         DepartureCapacityPolicy.reasonNotReservable(departure.getStatus(), departure.getBookingCutoffAt(), clock.instant(),
-                        departure.getStallCapacity(), departure.getBookedStallCount(), stalls)
+                        capacity, departure.getBookedStallCount(), stalls)
                 .ifPresent(reason -> {
                     throw new IllegalStateException(reason);
                 });
+        if (!selected.isEmpty()) {
+            selected.forEach((stock, count) -> fleet.attach(departure, fleet.vehicleClass(stock.vehicleClassId()),
+                    count, DepartureAllotmentType.SPARE, null));
+            departure.setStallCapacity(capacity);
+            fleet.notifyReinforcement(departure, selected.values().stream().mapToInt(Integer::intValue).sum());
+        }
         departure.setBookedStallCount(departure.getBookedStallCount() + stalls);
     }
 
@@ -117,7 +136,7 @@ public class DepartureServiceImpl implements DepartureService {
     public int generateFromSchedules() {
         LocalDate today = LocalDate.ofInstant(clock.instant(), BUSINESS_ZONE);
         int weeks = config.getInt("DEPARTURE_GENERATION_WEEKS");
-        Map<Long, Set<Short>> weekdaysBySchedule = scheduleDays.findAll().stream()
+        Map<Long, Set<Short>> weekdaysBySchedule = schedules.findScheduleDays().stream()
                 .collect(Collectors.groupingBy(day -> day.getId().getDepartureScheduleId(),
                         Collectors.mapping(day -> day.getId().getDayOfWeek(), Collectors.toSet())));
 
@@ -129,7 +148,8 @@ public class DepartureServiceImpl implements DepartureService {
                 Instant planned = DepartureGenerationPolicy.plannedDepartureAt(date, schedule.getDepartureTime(), BUSINESS_ZONE);
                 created += departures.insertIfAbsent(schedule.getId(), schedule.getRoute().getId(), date, planned,
                         DepartureGenerationPolicy.bookingCutoffAt(planned, schedule.getBookingCutoffHours()),
-                        schedule.getStallCapacity());
+                        DepartureFleetPolicy.capacity(schedule.getBaseVehicleCount(), schedule.getBaseVehicleClass().getMaxStallCount()),
+                        schedule.getBaseVehicleClass().getId(), schedule.getBaseVehicleCount(), clock.instant());
             }
         }
         if (created > 0) {
@@ -156,7 +176,7 @@ public class DepartureServiceImpl implements DepartureService {
 
     @Override
     @Transactional
-    public DepartureResponseDto createAdHoc(DepartureCreateRequestDto request) {
+    public DepartureResponseDto createAdHoc(DepartureCreateRequestDto request, String username) {
         Route route = routes.findWithEndpoints(request.getRouteId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tuyến " + request.getRouteId()));
         if (route.getStatus() != ActiveStatus.ACTIVE) {
@@ -170,7 +190,13 @@ public class DepartureServiceImpl implements DepartureService {
                 DepartureGenerationPolicy.bookingCutoffAt(planned, request.getBookingCutoffHours()));
         departure.setBookedStallCount(0);
         departure.setStatus(DepartureStatus.OPEN);
-        return toDto(departures.save(departure));
+        AppUser actor = users.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài khoản " + username));
+        var vehicleClass = fleet.vehicleClass(request.getVehicleClassId());
+        departure.setStallCapacity(DepartureFleetPolicy.capacity(request.getVehicleCount(), vehicleClass.getMaxStallCount()));
+        Departure saved = departures.save(departure);
+        fleet.attach(saved, vehicleClass, request.getVehicleCount(), DepartureAllotmentType.BASE, actor);
+        return toDto(saved);
     }
 
     @Override
@@ -190,7 +216,7 @@ public class DepartureServiceImpl implements DepartureService {
         LocalDate holdThrough = priceHoldThrough(source);
         Instant now = clock.instant();
         return departures.search(source.getRoute().getId(), null, source.getDepartureDate(), holdThrough).stream()
-                .filter(target -> DepartureMergePolicy.reasonNotMergeable(source, target, holdThrough, now).isEmpty())
+                .filter(target -> DepartureMergePolicy.reasonNotMergeable(source, target, holdThrough, now, fleet.sellableCapacity(target)).isEmpty())
                 .map(this::toDto).toList();
     }
 
@@ -237,7 +263,7 @@ public class DepartureServiceImpl implements DepartureService {
             if (target == null) {
                 target = departureId.equals(targetId) ? departure : lockDeparture(targetId);
             }
-            DepartureMergePolicy.reasonNotMergeable(departure, target, priceHoldThrough(departure), clock.instant())
+            DepartureMergePolicy.reasonNotMergeable(departure, target, priceHoldThrough(departure), clock.instant(), fleet.sellableCapacity(target))
                     .ifPresent(problem -> { throw BookingRuleException.conflict(problem); });
             merge.applyTo(departure, target);
             bookingReason = "Dồn sang chuyến ngày " + target.getDepartureDate() + ": " + reason.trim();
@@ -251,6 +277,42 @@ public class DepartureServiceImpl implements DepartureService {
                 bookingStatus.clearPlannedTransport(booking.getId());
             }
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long sellableCapacity(Departure departure) {
+        return fleet.sellableCapacity(departure);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DepartureAvailability availability(Departure departure, long spareCapacity) {
+        return fleet.availability(departure, spareCapacity);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DepartureDetailResponseDto detail(Long departureId) {
+        var departure = departures.findWithRoute(departureId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chuyến " + departureId));
+        return new DepartureDetailResponseDto(toDto(departure), fleet.vehicles(departureId));
+    }
+
+    @Override
+    @Transactional
+    public DepartureDetailResponseDto removeVehicle(Long departureId, Long allotmentId, String reason, String username) {
+        var actor = users.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài khoản " + username));
+        Departure departure = lockDeparture(departureId);
+        var allotments = fleet.allotments(departureId);
+        var removed = allotments.stream().filter(allotment -> allotment.getId().equals(allotmentId))
+                .findFirst().orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy xe đã gắn " + allotmentId));
+        int removedCapacity = DepartureFleetPolicy.capacity(removed.getVehicleCount(), removed.getVehicleClass().getMaxStallCount());
+        departure.setStallCapacity(DepartureFleetPolicy.capacityAfterRemoval(departure.getStatus(), allotments.size(),
+                departure.getStallCapacity(), removedCapacity, departure.getBookedStallCount()));
+        fleet.remove(removed, actor.getId(), reason);
+        return new DepartureDetailResponseDto(toDto(departure), fleet.vehicles(departureId));
     }
 
     private Departure lockDeparture(Long id) {

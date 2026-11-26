@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.entity;
 
 import com.example.racehorse_transport.entity.enums.VehicleStatus;
+import com.example.racehorse_transport.entity.enums.VehicleServiceRole;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -52,4 +53,8 @@ public class Vehicle {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 30, nullable = false)
     private VehicleStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "service_role", length = 30, nullable = false)
+    private VehicleServiceRole serviceRole = VehicleServiceRole.BRANCH;
 }

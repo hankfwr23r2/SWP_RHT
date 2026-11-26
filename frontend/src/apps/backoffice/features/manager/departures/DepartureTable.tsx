@@ -13,6 +13,7 @@ interface Props {
   busy: boolean
   onConfirm: (row: DepartureDecision) => void
   onCancel: (row: DepartureDecision) => void
+  onVehicles?: (row: DepartureDecision) => void
   onMerge?: (row: DepartureDecision) => void
   onDelay: (row: DepartureDecision) => void
   onAssign: (row: DepartureDecision) => void
@@ -20,7 +21,7 @@ interface Props {
 
 const TONE = { OPEN: 'info', CLOSED: 'neutral', IN_PROGRESS: 'info', COMPLETED: 'success', CANCELLED: 'danger' } as const
 
-export function DepartureTable({ rows, busy, onConfirm, onCancel, onMerge, onDelay, onAssign }: Props) {
+export function DepartureTable({ rows, busy, onConfirm, onCancel, onVehicles, onMerge, onDelay, onAssign }: Props) {
   const { t } = useTranslation()
   const columns: TableColumn<DepartureDecision>[] = [
     { key: 'route', header: t('mgr.departures.route'), render: row => <strong>{row.routeName}</strong> },
@@ -60,6 +61,7 @@ export function DepartureTable({ rows, busy, onConfirm, onCancel, onMerge, onDel
     { key: 'actions', header: t('mgr.departures.actions'), align: 'end', render: row => {
       const actions = [
         row.confirmable && { label: t('mgr.departures.confirm'), run: onConfirm },
+        onVehicles && { label: t('mgr.departures.fleet.title'), run: onVehicles },
         row.canRevise && { label: t('mgr.departures.delay.open'), run: onDelay },
         row.status !== 'COMPLETED' && row.status !== 'CANCELLED' && { label: t('coordAssignment.assign'), run: onAssign },
         row.canMerge && onMerge && !row.receivedBookings?.length && { label: t('mgr.departures.merge.open'), run: onMerge },

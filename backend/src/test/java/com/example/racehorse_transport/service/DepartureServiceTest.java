@@ -43,6 +43,7 @@ class DepartureServiceTest {
     @Autowired private BookingStatusHistoryRepository history;
     @Autowired private RouteRepository routes;
     @Autowired private TestData testData;
+    @Autowired private org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     @Test
     void generatingTwiceDoesNotDuplicateDepartures() {
@@ -50,7 +51,8 @@ class DepartureServiceTest {
         request.setRouteId(routes.findByCode("HCM-PNH").orElseThrow().getId());
         request.setDepartureTime(LocalTime.of(20, 30));
         request.setBookingCutoffHours(24);
-        request.setStallCapacity(6);
+        request.setBaseVehicleClassId(jdbc.queryForObject("SELECT id FROM vehicle_class WHERE code = 'MEDIUM'", Long.class));
+        request.setBaseVehicleCount(1);
         request.setValidFrom(TODAY);
         request.setDaysOfWeek(Set.of((short) 1, (short) 2, (short) 3, (short) 4, (short) 5, (short) 6, (short) 7));
         Long departureScheduleId = routeService.createSchedule(request).getId();
@@ -68,7 +70,7 @@ class DepartureServiceTest {
 
     @Test
     void onlyOneOfTwoConcurrentReservationsGetsTheLastStall() throws Exception {
-        Long departureId = testData.departure("HCM-DN", TODAY.plusDays(20), 1).getId();
+        Long departureId = testData.departure("PNH-HCM", TODAY.plusDays(20), 1).getId();
         ExecutorService pool = Executors.newFixedThreadPool(2);
         CyclicBarrier start = new CyclicBarrier(2);
         List<Future<Boolean>> attempts = new ArrayList<>();
@@ -142,6 +144,56 @@ class DepartureServiceTest {
 
         assertThat(bookings.findById(booking.getId()).orElseThrow().getStatus()).isEqualTo(BookingStatus.UNDER_REVIEW);
         assertThat(history.findByBooking_IdOrderByChangedAtAscIdAsc(booking.getId())).hasSize(1);
+    }
+
+    @Test
+    void concurrentDeparturesAtOneHubCannotBothTakeItsOnlySpareVehicle() throws Exception {
+        Long first = adHoc("HCM-PNH", 107);
+        Long second = adHoc("HCM-DN", 107);
+        try {
+            try (var pool = Executors.newFixedThreadPool(2)) {
+                var start = new CyclicBarrier(2);
+                var attempts = List.of(first, second).stream().map(id -> pool.submit(() -> {
+                    start.await();
+                    try {
+                        departureService.reserve(id, 10);
+                        return true;
+                    } catch (IllegalStateException full) {
+                        return false;
+                    }
+                })).toList();
+                assertThat(List.of(attempts.get(0).get(), attempts.get(1).get())).containsExactlyInAnyOrder(true, false);
+            }
+            Long reinforced = List.of(first, second).stream()
+                    .filter(id -> departures.findById(id).orElseThrow().getBookedStallCount() == 10).findFirst().orElseThrow();
+            Long full = first.equals(reinforced) ? second : first;
+            assertThat(departureService.detail(full).vehicles()).hasSize(1);
+            assertThat(departureService.detail(reinforced).departure().getStallCapacity()).isEqualTo(18);
+            var spare = departureService.detail(reinforced).vehicles().stream()
+                    .filter(vehicle -> vehicle.allotmentType().name().equals("SPARE")).findFirst().orElseThrow();
+            String manager = testData.unique("m2-manager");
+            testData.staff(manager, "MANAGER");
+            assertThatThrownBy(() -> departureService.removeVehicle(reinforced, spare.id(), "Over capacity", manager))
+                    .isInstanceOf(com.example.racehorse_transport.exception.BookingRuleException.class);
+            departureService.release(reinforced, 1);
+            assertThat(departureService.removeVehicle(reinforced, spare.id(), "No longer needed", manager)
+                    .departure().getStallCapacity()).isEqualTo(9);
+            departureService.reserve(full, 10);
+            assertThat(departureService.detail(full).vehicles()).hasSize(2);
+        } finally {
+            departures.deleteAllById(List.of(first, second));
+        }
+    }
+
+    private Long adHoc(String routeCode, int days) {
+        var request = new com.example.racehorse_transport.dto.departure.DepartureCreateRequestDto();
+        request.setRouteId(routes.findByCode(routeCode).orElseThrow().getId());
+        request.setDepartureDate(TODAY.plusDays(days));
+        request.setDepartureTime(LocalTime.of(9, 0));
+        request.setBookingCutoffHours(24);
+        request.setVehicleClassId(jdbc.queryForObject("SELECT id FROM vehicle_class WHERE code = 'HEAVY'", Long.class));
+        request.setVehicleCount(1);
+        return departureService.createAdHoc(request, "manager.dev").getId();
     }
 
     private Booking onDeparture(Booking booking, Departure departure) {

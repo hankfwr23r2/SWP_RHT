@@ -25,7 +25,8 @@ function openCard(suggestion: BookingMergeSuggestion | null) {
   vi.mocked(apiClient.get).mockImplementation(async url => ({ status: 200, data: { data:
     url === '/bookings/8/reschedule-suggestion' ? suggestion : { routing: 'LINEHAUL', departures: [
       { id: 7, departureDate: '2099-01-06', routeName: 'Chuyến cũ' },
-      { id: 9, departureDate: '2099-01-20', routeName: 'Chuyến khác', availableStalls: 9 },
+      { id: 9, departureDate: '2099-01-20', routeName: 'Chuyến khác', availability: 'AVAILABLE' },
+      { id: 10, departureDate: '2099-01-27', routeName: 'Chuyến hết chỗ', availability: 'FULL' },
     ] },
   } }))
   vi.mocked(apiClient.post).mockResolvedValue({ status: 200, data: { data: { status: 'CONFIRMED' } } })
@@ -49,6 +50,8 @@ it('lets the customer consent to the merge in one click through the existing res
 
 it('keeps the normal choice when the merged departure is unavailable', async () => {
   openCard(null)
+  expect((await screen.findByRole<HTMLInputElement>('radio', { name: /Chuyến hết chỗ/ })).disabled).toBe(true)
+  expect(screen.getByText('Hết chỗ')).toBeTruthy()
   fireEvent.click(await screen.findByText('Chuyến khác'))
   expect(screen.queryByRole('button', { name: 'Đồng ý chuyển chuyến' })).toBeNull()
   expect(screen.queryByText('Chuyến cũ')).toBeNull()

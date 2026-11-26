@@ -20,7 +20,8 @@ public class DepartureScheduleResponseDto {
     private String routeCode;
     private LocalTime departureTime;
     private Integer bookingCutoffHours;
-    private Integer stallCapacity;
+    private Long baseVehicleClassId;
+    private Integer baseVehicleCount;
     private LocalDate validFrom;
     private LocalDate validTo;
     private ScheduleStatus status;
@@ -34,7 +35,8 @@ public class DepartureScheduleResponseDto {
                 .routeCode(schedule.getRoute().getCode())
                 .departureTime(schedule.getDepartureTime())
                 .bookingCutoffHours(schedule.getBookingCutoffHours())
-                .stallCapacity(schedule.getStallCapacity())
+                .baseVehicleClassId(schedule.getBaseVehicleClass().getId())
+                .baseVehicleCount(schedule.getBaseVehicleCount())
                 .validFrom(schedule.getValidFrom())
                 .validTo(schedule.getValidTo())
                 .status(schedule.getStatus())

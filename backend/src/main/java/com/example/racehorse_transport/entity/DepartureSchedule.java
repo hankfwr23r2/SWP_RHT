@@ -44,8 +44,12 @@ public class DepartureSchedule {
     @Column(name = "booking_cutoff_hours", nullable = false)
     private Integer bookingCutoffHours;
 
-    @Column(name = "stall_capacity", nullable = false)
-    private Integer stallCapacity;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "base_vehicle_class_id", nullable = false)
+    private VehicleClass baseVehicleClass;
+
+    @Column(name = "base_vehicle_count", nullable = false)
+    private Integer baseVehicleCount;
 
     @Column(name = "valid_from", nullable = false)
     private LocalDate validFrom;

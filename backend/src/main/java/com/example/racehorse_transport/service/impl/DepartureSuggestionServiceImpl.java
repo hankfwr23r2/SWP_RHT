@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.service.DepartureFleetService;
 import com.example.racehorse_transport.dto.departure.DepartureResponseDto;
 import com.example.racehorse_transport.dto.departure.DepartureSuggestionQueryDto;
 import com.example.racehorse_transport.dto.departure.DepartureSuggestionResponseDto;
@@ -15,7 +16,6 @@ import com.example.racehorse_transport.entity.enums.BookingType;
 import com.example.racehorse_transport.entity.enums.DepartureStatus;
 import com.example.racehorse_transport.entity.enums.RuleDirection;
 import com.example.racehorse_transport.policy.DepartureRoutePolicy;
-import com.example.racehorse_transport.policy.DepartureCapacityPolicy;
 import com.example.racehorse_transport.policy.HubResolutionPolicy;
 import com.example.racehorse_transport.policy.HubResolutionPolicy.Routing;
 import com.example.racehorse_transport.policy.RegulationPolicy;
@@ -27,7 +27,6 @@ import com.example.racehorse_transport.repository.RouteRepository;
 import com.example.racehorse_transport.service.DepartureSuggestionService;
 import java.math.BigDecimal;
 import java.time.Clock;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.Map;
@@ -49,6 +48,7 @@ public class DepartureSuggestionServiceImpl implements DepartureSuggestionServic
     private final DepartureRepository departures;
     private final CountryRuleRepository countryRules;
     private final Clock clock;
+    private final DepartureFleetService fleet;
 
     @Override
     @Transactional(readOnly = true)
@@ -88,22 +88,29 @@ public class DepartureSuggestionServiceImpl implements DepartureSuggestionServic
             return response.departures(List.of()).unavailable(Unavailable.NO_ROUTE).build();
         }
 
-        List<Departure> found = departures.findBookable(routeIds, DepartureStatus.OPEN, clock.instant(),
-                        query.getFromDate(), query.getStalls()).stream()
-                .sorted(Comparator.comparing(Departure::getPlannedDepartureAt))
+        List<Candidate> found = departures.findOpenForBooking(routeIds, DepartureStatus.OPEN, clock.instant(),
+                        query.getFromDate()).stream()
+                .map(d -> new Candidate(d, fleet.sellableCapacity(d) - d.getStallCapacity()))
+                .filter(candidate -> candidate.sellableStalls() >= query.getStalls())
                 .limit(MAX_SUGGESTIONS)
                 .toList();
         List<CountryRule> rules = countryRules.findByCountry_CodeAndDirection(
                 RegulationPolicy.partnerCountry(query.getBookingType(), pickup.getCountry().getCode(), delivery.getCountry().getCode()),
                 RuleDirection.valueOf(query.getBookingType().name()));
         return response
-                .departures(found.stream().map(d -> DepartureResponseDto.from(d,
-                        DepartureCapacityPolicy.available(d.getStallCapacity(), d.getBookedStallCount()))).toList())
-                .leadDays(found.isEmpty() ? null : RegulationPolicy.leadDays(rules, found.get(0).getDepartureDate()))
-                .tooLateDepartureIds(found.stream().filter(d -> !RegulationPolicy.feasible(
+                .departures(found.stream().map(candidate -> DepartureResponseDto.forCustomer(candidate.departure(),
+                        fleet.availability(candidate.departure(), candidate.spareCapacity()))).toList())
+                .leadDays(found.isEmpty() ? null : RegulationPolicy.leadDays(rules, found.getFirst().departure().getDepartureDate()))
+                .tooLateDepartureIds(found.stream().map(Candidate::departure).filter(d -> !RegulationPolicy.feasible(
                         RegulationPolicy.leadDays(rules, d.getDepartureDate()), clock.instant(), d.getBookingCutoffAt()))
                         .map(Departure::getId).toList())
                 .build();
+    }
+
+    private record Candidate(Departure departure, long spareCapacity) {
+        private long sellableStalls() {
+            return departure.getStallCapacity() - (long) departure.getBookedStallCount() + spareCapacity;
+        }
     }
 
     private List<String> servedProvinces() {

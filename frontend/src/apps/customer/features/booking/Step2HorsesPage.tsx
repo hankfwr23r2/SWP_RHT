@@ -30,10 +30,6 @@ export default function Step2HorsesPage() {
   const term = query.trim().toLowerCase()
   const shown = horses.filter(horse => draft.horseIds.includes(horse.id!)
     || [horse.name, horse.microchip, horse.breed].some(value => value?.toLowerCase().includes(term)))
-  const seatsOf = (code: string) => data.stallTypes.find(stall => stall.code === code)?.seats ?? 1
-  const seats = draft.horseIds.reduce((sum, id) => sum + seatsOf(draft.horses[id]?.stallTypeCode ?? ''), 0)
-  const available = draft.departure?.availableStalls
-  const full = available != null && seats > available
   // Ngựa đã chọn trong bản nháp nhưng vừa vào đơn khác
   const busy = horses.filter(horse => horse.activeBookingCode && draft.horseIds.includes(horse.id!))
 
@@ -70,7 +66,7 @@ export default function Step2HorsesPage() {
 
   const next = () => {
     setSubmitted(true)
-    if (horsesReady(draft) && !full && !busy.length && contactsReady) navigate('/booking/services')
+    if (horsesReady(draft) && !busy.length && contactsReady) navigate('/booking/services')
   }
 
   return (
@@ -78,7 +74,6 @@ export default function Step2HorsesPage() {
       <div className={s.between}>
         <p className={s.hint}>
           {t('bookingForm.horses.selected', { count: draft.horseIds.length })}
-          {available != null && ` · ${t('bookingForm.horses.seats', { seats, available })}`}
         </p>
         <Link to="/horses" className={s.link}>{t('bookingForm.horses.manage')}</Link>
       </div>
@@ -127,7 +122,6 @@ export default function Step2HorsesPage() {
         )
       })}
       {busy.length > 0 && <p className={`${s.alert} ${s.danger}`} role="alert">{t('bookingForm.horses.removeBusy', { names: busy.map(horse => horse.name).join(', ') })}</p>}
-      {full && <p className={`${s.alert} ${s.danger}`} role="alert">{t('bookingForm.horses.full', { seats, available })}</p>}
       {submitted && !horsesReady(draft) && <p className={s.error} role="alert">{t('bookingForm.horses.required')}</p>}
       <StepActions back="/booking/route" backLabel={t('bookingForm.back')}>
         <Button variant="primary" size="lg" onClick={next}>{t('bookingForm.horses.next')}</Button>

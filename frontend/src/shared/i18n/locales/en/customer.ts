@@ -713,6 +713,7 @@ export const customer = {
       noDeparture: 'No matching departure',
       noDepartureHint: 'Try another date, or call us about an extra departure.',
       seats: 'Places left: {{count}}',
+      availability: { AVAILABLE: 'Available', NEARLY_FULL: 'Nearly full', FULL: 'Full' },
       cutoff: 'Book until {{at}}',
       departureRequired: 'Please choose a departure.',
       transfer: 'Pickup and delivery',

@@ -30,6 +30,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 @PostgresIntegrationTest
 @AutoConfigureMockMvc
 class NetworkAdminFlowTest {
+    @Autowired private com.example.racehorse_transport.repository.VehicleClassRepository vehicleClasses;
 
     @Autowired private MockMvc mvc;
     @Autowired private TestData testData;
@@ -188,8 +189,8 @@ class NetworkAdminFlowTest {
         call(post("/locations/" + rest + "/deactivate"), adminToken, null).andExpect(status().isConflict());
 
         String schedule = call(post("/departure-schedules"), adminToken, """
-                {"routeId":%d,"departureTime":"06:00","bookingCutoffHours":72,"stallCapacity":9,
-                 "validFrom":"2026-12-01","daysOfWeek":[5,2]}""".formatted(routeId))
+                {"routeId":%d,"departureTime":"06:00","bookingCutoffHours":72,"baseVehicleClassId":%d,"baseVehicleCount":1,
+                 "validFrom":"2026-12-01","daysOfWeek":[5,2]}""".formatted(routeId, vehicleClasses.findByCode("HEAVY").orElseThrow().getId()))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.status").value("ACTIVE"))
                 .andExpect(jsonPath("$.data.daysOfWeek[0]").value(2))

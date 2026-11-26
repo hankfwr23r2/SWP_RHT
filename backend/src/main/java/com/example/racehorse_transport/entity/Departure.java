@@ -82,6 +82,7 @@ public class Departure {
     private Instant bookingCutoffAt;
 
     // snapshot: chép từ lịch, sửa được cho từng chuyến
+    // derived: DepartureServiceImpl
     @Column(name = "stall_capacity", nullable = false)
     private Integer stallCapacity;
 

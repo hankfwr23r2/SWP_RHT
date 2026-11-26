@@ -64,7 +64,7 @@ Hiện trạng cần sửa:
 | Mã | Tình trạng | PR |
 |---|---|---|
 | M1 | PR mở | #521 |
-| M2 | Chưa làm | |
+| M2 | PR mở | |
 | M3 | Chưa làm | |
 | M4 | Chưa làm | |
 | M7 | Chưa làm | |

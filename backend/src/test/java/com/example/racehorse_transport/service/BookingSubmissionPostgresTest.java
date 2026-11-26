@@ -217,10 +217,26 @@ class BookingSubmissionPostgresTest {
                 .toList();
         var request = request(departure.getId(), date, wideHorses);
 
-        assertThatThrownBy(() -> bookings.submit(owner, "192.0.2.5", request))
-                .isInstanceOf(IllegalStateException.class).hasMessageContaining("9 chỗ");
+        withoutSpareTrucks(() -> assertThatThrownBy(() -> bookings.submit(owner, "192.0.2.5", request))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("9 chỗ"));
         assertThat(reserved(departure.getId())).isZero();
         assertThat(queries.list(owner)).isEmpty();
+    }
+
+    @Test
+    void baseTruckFullAttachesASpareTruckAutomatically() {
+        // Quy chế Q3: xe nền đầy thì hệ thống tự gắn xe để sẵn còn rảnh của hub rồi nhận đơn
+        String owner = customer();
+        LocalDate date = pickupDate();
+        var departure = data.departure("HCM-DN", date.plusDays(1), 9);
+        List<HorseInput> wideHorses = java.util.stream.IntStream.range(0, 9)
+                .mapToObj(index -> new HorseInput(horse(owner), "WIDE", null, null, false, List.of(),
+                        new InsuranceDeclarationRequestDto(InsuranceCoverageOption.NONE, null, null, null, null, true)))
+                .toList();
+        bookings.submit(owner, "192.0.2.6", request(departure.getId(), date, wideHorses));
+        assertThat(reserved(departure.getId())).isEqualTo(18);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM departure_vehicle WHERE departure_id = ? AND allotment_type = 'SPARE'",
+                Long.class, departure.getId())).isEqualTo(1L);
     }
 
     @Test
@@ -712,5 +728,17 @@ class BookingSubmissionPostgresTest {
 
     private String token(String username, String role) {
         return "Bearer " + jwt.generateToken(username, List.of(role));
+    }
+
+    // Cho xe để sẵn của hub TP.HCM tạm bảo dưỡng để kiểm ca hết chỗ thật (quy chế đội xe Q3)
+    private void withoutSpareTrucks(Runnable check) {
+        String hub = "(SELECT id FROM location WHERE code = 'HUB-HCM')";
+        java.util.List<Long> spare = jdbc.queryForList("SELECT id FROM vehicle WHERE status = 'ACTIVE' AND service_role = 'SPARE' AND home_hub_location_id = " + hub, Long.class);
+        spare.forEach(id -> jdbc.update("UPDATE vehicle SET status = 'MAINTENANCE' WHERE id = ?", id));
+        try {
+            check.run();
+        } finally {
+            spare.forEach(id -> jdbc.update("UPDATE vehicle SET status = 'ACTIVE' WHERE id = ?", id));
+        }
     }
 }

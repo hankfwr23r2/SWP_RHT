@@ -56,7 +56,8 @@ export function RescheduleCard({ data, excludeDepartureId, reschedule }: Props) 
         {offered && !merge.error && <div className={s.stack}>
           <strong>{t('myOrders.reschedule.mergeSuggestion', { date: showDate(offered.departureDate) })}</strong>
           <p>{t('myOrders.reschedule.mergePickup', { date: showDate(offered.requestedPickupDate) })}</p>
-          <div><Button variant="primary" loading={busy} onClick={() => void accept()}>{t('myOrders.reschedule.acceptMerge')}</Button></div>
+          {offered.availability && <span>{t(`bookingForm.route.availability.${offered.availability}`)}</span>}
+          <div><Button variant="primary" loading={busy} disabled={offered.availability === 'FULL'} onClick={() => void accept()}>{t('myOrders.reschedule.acceptMerge')}</Button></div>
         </div>}
         {loadError ? <ErrorState message={loadError.message} onRetry={reload} /> : !loaded ? <Skeleton lines={3} /> : !departures.length
           ? !offered && <EmptyState icon={<i className="fa-solid fa-truck" />} title={t('bookingForm.route.noDeparture')} description={t('myOrders.reschedule.none')} />
@@ -64,10 +65,10 @@ export function RescheduleCard({ data, excludeDepartureId, reschedule }: Props) 
             <fieldset className={s.options}>
               {departures.map(departure => (
                 <label key={departure.id} className={s.option}>
-                  <input type="radio" name="reschedule" checked={departure.id === departureId} onChange={() => choose(departure.id!, departure.departureDate)} />
+                  <input type="radio" name="reschedule" checked={departure.id === departureId} disabled={departure.availability === 'FULL'} onChange={() => choose(departure.id!, departure.departureDate)} />
                   <strong>{departure.plannedDepartureAt ? moment(departure.plannedDepartureAt) : showDate(departure.departureDate ?? '')}</strong>
                   <span>{departure.routeName}</span>
-                  <span>{t('bookingForm.route.seats', { count: departure.availableStalls ?? 0 })}</span>
+                  <span>{departure.availability && t(`bookingForm.route.availability.${departure.availability}`)}</span>
                 </label>
               ))}
             </fieldset>
@@ -78,7 +79,7 @@ export function RescheduleCard({ data, excludeDepartureId, reschedule }: Props) 
           </Field>
         )}
         {error && <p className={s.error} role="alert">{error}</p>}
-        <div><Button variant={offered ? 'secondary' : 'primary'} loading={busy} disabled={!selected || badDate}
+        <div><Button variant={offered ? 'secondary' : 'primary'} loading={busy} disabled={!selected || selected.availability === 'FULL' || badDate}
           onClick={() => setConfirming(true)}>{t('myOrders.reschedule.send')}</Button></div>
       </div>
       {confirming && selected && <ConfirmDialog title={t('myOrders.reschedule.confirmTitle')}

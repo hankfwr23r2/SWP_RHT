@@ -1,16 +1,17 @@
 package com.example.racehorse_transport.dto.vehicle;
 
+import com.example.racehorse_transport.entity.enums.VehicleServiceRole;
 import com.example.racehorse_transport.entity.Vehicle;
 import com.example.racehorse_transport.entity.enums.VehicleStatus;
 
 public record VehicleResponseDto(Long id, String licensePlate, Long vehicleClassId, String vehicleClassCode,
                                  Integer standardStallCount, Integer wideStallCount, Long homeHubLocationId,
-                                 String homeHubLocationCode, VehicleStatus status) {
+                                 String homeHubLocationCode, VehicleStatus status, VehicleServiceRole serviceRole) {
 
     public static VehicleResponseDto from(Vehicle vehicle) {
         return new VehicleResponseDto(vehicle.getId(), vehicle.getLicensePlate(), vehicle.getVehicleClass().getId(),
                 vehicle.getVehicleClass().getCode(), vehicle.getStandardStallCount(), vehicle.getWideStallCount(),
                 vehicle.getHomeHubLocation().getId(), vehicle.getHomeHubLocation().getCode(),
-                vehicle.getStatus());
+                vehicle.getStatus(), vehicle.getServiceRole());
     }
 }

@@ -200,16 +200,15 @@ test('không kịp làm giấy thì không cho sang bước chọn ngựa', asyn
   await expect(page).toHaveURL(/booking\/route/)
 })
 
-test('khoang rộng vượt chỗ còn lại của chuyến thì báo và không cho đi tiếp', async ({ page }) => {
+test('khách không thấy số chỗ; chọn khoang rộng vẫn đi tiếp, máy chủ kiểm chỗ khi gửi đơn', async ({ page }) => {
+  // Quy chế đội xe Q3: xe nền đầy thì hệ thống tự gắn xe để sẵn, khách chỉ thấy nhãn Còn chỗ, Sắp đầy, Hết chỗ
   await open(page)
   await chooseRoute(page)
   await page.getByRole('button', { name: /Tiếp tục/ }).click()
   await expect(page.getByText('Đã nghỉ')).toHaveCount(0)
   await page.getByRole('checkbox', { name: /Gió Nam/ }).check()
   await page.getByText('Khoang rộng').click()
-  await expect(page.getByRole('alert')).toContainText('chuyến chỉ còn 1 chỗ')
-  await page.getByRole('button', { name: /Tiếp tục/ }).click()
-  await expect(page).toHaveURL(/booking\/horses/)
+  await expect(page.getByText(/chuyến chỉ còn/)).toHaveCount(0)
 })
 
 test('ngựa đang trong đơn khác thì khóa ở bước 2; vừa bận sau khi chọn thì phải bỏ chọn', async ({ page }) => {

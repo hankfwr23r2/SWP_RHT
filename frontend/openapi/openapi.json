@@ -420,6 +420,20 @@
         },
         "type" : "object"
       },
+      "ApiResponseDepartureDetailResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/DepartureDetailResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseDepartureResponse" : {
         "properties" : {
           "data" : {
@@ -2481,6 +2495,10 @@
       },
       "BookingMergeSuggestionResponseDto" : {
         "properties" : {
+          "availability" : {
+            "enum" : [ "AVAILABLE", "NEARLY_FULL", "FULL" ],
+            "type" : "string"
+          },
           "departureDate" : {
             "format" : "date",
             "type" : "string"
@@ -3769,15 +3787,7 @@
         "required" : [ "reason" ],
         "type" : "object"
       },
-      "DepartureConfirmRunRequestDto" : {
-        "properties" : {
-          "stallCapacity" : {
-            "format" : "int32",
-            "type" : "integer"
-          }
-        },
-        "type" : "object"
-      },
+      "DepartureConfirmRunRequestDto" : { },
       "DepartureCreateRequest" : {
         "properties" : {
           "bookingCutoffHours" : {
@@ -3796,13 +3806,17 @@
             "format" : "int64",
             "type" : "integer"
           },
-          "stallCapacity" : {
+          "vehicleClassId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "vehicleCount" : {
             "format" : "int32",
             "minimum" : 1,
             "type" : "integer"
           }
         },
-        "required" : [ "bookingCutoffHours", "departureDate", "departureTime", "routeId", "stallCapacity" ],
+        "required" : [ "bookingCutoffHours", "departureDate", "departureTime", "routeId", "vehicleClassId", "vehicleCount" ],
         "type" : "object"
       },
       "DepartureDecisionResponseDto" : {
@@ -3914,6 +3928,20 @@
         "required" : [ "reason", "revisedDepartureAt" ],
         "type" : "object"
       },
+      "DepartureDetailResponseDto" : {
+        "properties" : {
+          "departure" : {
+            "$ref" : "#/components/schemas/DepartureResponse"
+          },
+          "vehicles" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DepartureVehicleResponseDto"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
       "DepartureMergeRequestDto" : {
         "properties" : {
           "reason" : {
@@ -3931,6 +3959,10 @@
       },
       "DepartureResponse" : {
         "properties" : {
+          "availability" : {
+            "enum" : [ "AVAILABLE", "NEARLY_FULL", "FULL" ],
+            "type" : "string"
+          },
           "availableStalls" : {
             "format" : "int32",
             "type" : "integer"
@@ -4009,6 +4041,15 @@
       },
       "DepartureScheduleRequest" : {
         "properties" : {
+          "baseVehicleClassId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "baseVehicleCount" : {
+            "format" : "int32",
+            "minimum" : 1,
+            "type" : "integer"
+          },
           "bookingCutoffHours" : {
             "format" : "int32",
             "minimum" : 1,
@@ -4032,11 +4073,6 @@
             "format" : "int64",
             "type" : "integer"
           },
-          "stallCapacity" : {
-            "format" : "int32",
-            "minimum" : 1,
-            "type" : "integer"
-          },
           "validFrom" : {
             "format" : "date",
             "type" : "string"
@@ -4046,11 +4082,19 @@
             "type" : "string"
           }
         },
-        "required" : [ "bookingCutoffHours", "daysOfWeek", "departureTime", "routeId", "stallCapacity", "validFrom" ],
+        "required" : [ "baseVehicleClassId", "baseVehicleCount", "bookingCutoffHours", "daysOfWeek", "departureTime", "routeId", "validFrom" ],
         "type" : "object"
       },
       "DepartureScheduleResponse" : {
         "properties" : {
+          "baseVehicleClassId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "baseVehicleCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
           "bookingCutoffHours" : {
             "format" : "int32",
             "type" : "integer"
@@ -4074,10 +4118,6 @@
           },
           "routeId" : {
             "format" : "int64",
-            "type" : "integer"
-          },
-          "stallCapacity" : {
-            "format" : "int32",
             "type" : "integer"
           },
           "status" : {
@@ -4188,6 +4228,44 @@
           "unavailable" : {
             "enum" : [ "PICKUP_NOT_SERVED", "DELIVERY_NOT_SERVED", "NO_ROUTE" ],
             "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "DepartureVehicleRemoveRequestDto" : {
+        "properties" : {
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
+        "type" : "object"
+      },
+      "DepartureVehicleResponseDto" : {
+        "properties" : {
+          "allotmentType" : {
+            "enum" : [ "BASE", "SPARE" ],
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "reason" : {
+            "type" : "string"
+          },
+          "vehicleClassCode" : {
+            "type" : "string"
+          },
+          "vehicleClassId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "vehicleCount" : {
+            "format" : "int32",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -10029,6 +10107,10 @@
             "minLength" : 0,
             "type" : "string"
           },
+          "serviceRole" : {
+            "enum" : [ "LINEHAUL", "SPARE", "BRANCH" ],
+            "type" : "string"
+          },
           "standardStallCount" : {
             "format" : "int32",
             "type" : "integer"
@@ -10059,6 +10141,10 @@
             "type" : "integer"
           },
           "licensePlate" : {
+            "type" : "string"
+          },
+          "serviceRole" : {
+            "enum" : [ "LINEHAUL", "SPARE", "BRANCH" ],
             "type" : "string"
           },
           "standardStallCount" : {
@@ -10291,6 +10377,10 @@
           "licensePlate" : {
             "maxLength" : 20,
             "minLength" : 0,
+            "type" : "string"
+          },
+          "serviceRole" : {
+            "enum" : [ "LINEHAUL", "SPARE", "BRANCH" ],
             "type" : "string"
           },
           "standardStallCount" : {
@@ -13436,7 +13526,7 @@
     },
     "/bookings/{id}/review-detail" : {
       "get" : {
-        "operationId" : "detail",
+        "operationId" : "detail_1",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -14627,6 +14717,33 @@
         "tags" : [ "departure-controller" ]
       }
     },
+    "/departures/{id}" : {
+      "get" : {
+        "operationId" : "detail",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseDepartureDetailResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "departure-controller" ]
+      }
+    },
     "/departures/{id}/assign-coordinator" : {
       "post" : {
         "operationId" : "assignDeparture",
@@ -14829,6 +14946,51 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseListDepartureResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "departure-controller" ]
+      }
+    },
+    "/departures/{id}/vehicles/{allotmentId}/remove" : {
+      "post" : {
+        "operationId" : "removeVehicle",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "path",
+          "name" : "allotmentId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DepartureVehicleRemoveRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseDepartureDetailResponseDto"
                 }
               }
             },

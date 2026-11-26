@@ -198,7 +198,7 @@ class EntityMappingTest {
         departure.setDepartureDate(LocalDate.of(2026, 12, 21));
         departure.setPlannedDepartureAt(Instant.parse("2026-12-20T23:00:00Z"));
         departure.setBookingCutoffAt(Instant.parse("2026-12-17T23:00:00Z"));
-        departure.setStallCapacity(schedule.getStallCapacity());
+        departure.setStallCapacity(schedule.getBaseVehicleCount() * schedule.getBaseVehicleClass().getMaxStallCount());
         departure.setStatus(DepartureStatus.OPEN);
         Long id = departures.saveAndFlush(departure).getId();
         em.clear();

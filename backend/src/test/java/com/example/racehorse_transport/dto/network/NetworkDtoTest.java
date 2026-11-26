@@ -147,17 +147,20 @@ class NetworkDtoTest {
         request.setRouteId(9L);
         request.setDepartureTime(LocalTime.of(6, 0));
         request.setBookingCutoffHours(72);
-        request.setStallCapacity(9);
+        request.setBaseVehicleClassId(1L);
+        request.setBaseVehicleCount(1);
+        var vehicleClass = new com.example.racehorse_transport.entity.VehicleClass();
         request.setValidFrom(LocalDate.of(2026, 12, 1));
         request.setDaysOfWeek(Set.of((short) 4, (short) 1));
         Route route = new Route();
         route.setId(9L);
         route.setCode("HCM-X");
 
-        DepartureSchedule schedule = request.toEntity(route);
+        DepartureSchedule schedule = request.toEntity(route, vehicleClass);
         assertThat(schedule.getId()).isNull();
         assertThat(schedule.getStatus()).isNull();
-        assertThat(schedule.getStallCapacity()).isEqualTo(9);
+        assertThat(schedule.getBaseVehicleCount()).isEqualTo(1);
+        assertThat(schedule.getBaseVehicleClass()).isSameAs(vehicleClass);
 
         schedule.setId(3L);
         schedule.setStatus(ScheduleStatus.ACTIVE);
