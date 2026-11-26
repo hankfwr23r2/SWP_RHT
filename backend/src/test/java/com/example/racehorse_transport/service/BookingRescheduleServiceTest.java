@@ -83,7 +83,8 @@ class BookingRescheduleServiceTest {
         Long booking = fixture.submit(owner, oldId, date, "WIDE");
         fixture.setStatus(booking, "SCHEDULE_CHANGE_REQUIRED");
         var request = new BookingRescheduleRequestDto(fullId, date.plusDays(6));
-        assertThatThrownBy(() -> reschedules.reschedule(booking, owner, request)).isInstanceOf(IllegalStateException.class);
+        withoutSpareTrucks(() -> assertThatThrownBy(() -> reschedules.reschedule(booking, owner, request))
+                .isInstanceOf(IllegalStateException.class));
         fixture.setWaybill(booking);
         assertThatThrownBy(() -> reschedules.reschedule(booking, owner, request)).isInstanceOf(BookingRuleException.class)
                 .hasMessageContaining("Thiếu lịch sử chuyến vừa lỡ");
@@ -169,5 +170,17 @@ class BookingRescheduleServiceTest {
         assertThat(fixture.reserved(a)).isZero();
         assertThat(fixture.reserved(b)).isEqualTo(1);
         assertThat(fixture.departureOf(booking)).isEqualTo(b);
+    }
+
+    // Cho xe để sẵn của hub TP.HCM tạm bảo dưỡng để kiểm ca hết chỗ thật (quy chế đội xe Q3)
+    private void withoutSpareTrucks(Runnable check) {
+        String hub = "(SELECT id FROM location WHERE code = 'HUB-HCM')";
+        java.util.List<Long> spare = jdbc.queryForList("SELECT id FROM vehicle WHERE status = 'ACTIVE' AND service_role = 'SPARE' AND home_hub_location_id = " + hub, Long.class);
+        spare.forEach(id -> jdbc.update("UPDATE vehicle SET status = 'MAINTENANCE' WHERE id = ?", id));
+        try {
+            check.run();
+        } finally {
+            spare.forEach(id -> jdbc.update("UPDATE vehicle SET status = 'ACTIVE' WHERE id = ?", id));
+        }
     }
 }
