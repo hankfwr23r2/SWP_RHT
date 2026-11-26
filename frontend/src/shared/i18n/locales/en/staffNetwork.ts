@@ -138,6 +138,7 @@ export const staffNetwork = {
       "mapStop": "Stop to choose on map",
       "distanceKm": "Distance (km)",
       "estimatedDurationMinutes": "Estimated duration (min)",
+      "fleetOutbound": "Outbound direction of the route pair (linehaul vehicles based at the origin hub)",
       "routeId": "Route",
       "daysOfWeek": "Days of the week",
       "departureTime": "Departure time (Vietnam time)",

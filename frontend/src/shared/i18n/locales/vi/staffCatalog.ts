@@ -327,8 +327,10 @@ export const staffCatalog = {
       "units": {
         "MINUTE": "phút",
         "HOUR": "giờ",
+        "HOURS": "giờ",
         "DAY": "ngày",
         "COUNT": "",
+        "PERCENT": "%",
         "VND": "₫"
       },
       "groups": {
@@ -347,6 +349,12 @@ export const staffCatalog = {
         "SCHEDULE": "Lịch chạy"
       },
       "keys": {
+        "CREW_PER_VEHICLE_PERCENT": "Tỷ lệ tài xế và hộ tống cho mỗi xe chạy",
+        "SMALL_BRANCH_VEHICLES_PER_HUB": "Số xe nhánh 2 chỗ mỗi hub",
+        "MIN_BRANCH_SPARE_PER_HUB": "Số xe dự phòng nhánh tối thiểu mỗi hub",
+        "BRANCH_SHARE_PERCENT": "Tỷ lệ ngựa do công ty đón, giao",
+        "BRANCH_VEHICLE_STALLS": "Số chỗ của xe nhánh",
+        "SPARE_HUB_MIN_PAIRS": "Số cặp tuyến tối thiểu để hub có xe để sẵn",
         "PICKUP_WINDOW_START_HOUR": "Giờ sớm nhất xe đến đón",
         "PICKUP_WINDOW_END_HOUR": "Giờ muộn nhất ngựa tới hub trong ngày đón",
         "DELIVERY_WINDOW_START_HOUR": "Giờ sớm nhất xe đến giao",

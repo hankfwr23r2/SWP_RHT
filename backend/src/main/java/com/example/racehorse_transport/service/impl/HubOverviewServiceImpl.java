@@ -28,6 +28,7 @@ import com.example.racehorse_transport.repository.HubOverviewRepository.StallCou
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.repository.TripStopRepository;
 import com.example.racehorse_transport.repository.VehicleRepository;
+import com.example.racehorse_transport.service.HubFleetRequirementService;
 import com.example.racehorse_transport.service.HubOverviewService;
 import com.example.racehorse_transport.service.TripReturnService;
 import java.time.Clock;
@@ -51,6 +52,7 @@ public class HubOverviewServiceImpl implements HubOverviewService {
     private final VehicleRepository vehicles;
     private final TripStopRepository stops;
     private final TripReturnService returns;
+    private final HubFleetRequirementService fleetRequirements;
     private final Clock clock;
 
     @Override
@@ -72,6 +74,7 @@ public class HubOverviewServiceImpl implements HubOverviewService {
         var incidents = groupByHub(overview.openIncidents(ids, IncidentStatus.CLOSED), HubIncident::getHubId,
                 row -> HubIncidentResponseDto.from(row.getIncident()));
         var fleet = fleetByHub();
+        var requirements = fleetRequirements.requirements(ids, now, staff);
 
         return hubs.stream().sorted(Comparator.comparing(Location::isHeadquarters).reversed()).map(hub -> {
             Long id = hub.getId();
@@ -79,7 +82,8 @@ public class HubOverviewServiceImpl implements HubOverviewService {
             var hubIncidents = incidents.getOrDefault(id, List.of());
             return HubOverviewResponseDto.from(hub, hubHorses.size(), hubHorses,
                     stalls.getOrDefault(id, new HubStallCountsResponseDto(0, 0)), fleet.at(id), staff.getOrDefault(id, List.of()),
-                    arrivals.getOrDefault(id, List.of()), departures.getOrDefault(id, List.of()), hubIncidents.size(), hubIncidents);
+                    arrivals.getOrDefault(id, List.of()), departures.getOrDefault(id, List.of()), hubIncidents.size(), hubIncidents,
+                    requirements.get(id));
         }).toList();
     }
 

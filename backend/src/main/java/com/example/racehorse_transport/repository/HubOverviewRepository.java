@@ -5,10 +5,16 @@ import com.example.racehorse_transport.entity.HorseStay;
 import com.example.racehorse_transport.entity.Incident;
 import com.example.racehorse_transport.entity.Location;
 import com.example.racehorse_transport.entity.VehicleTrip;
+import com.example.racehorse_transport.entity.enums.ActiveStatus;
 import com.example.racehorse_transport.entity.enums.EmploymentStatus;
 import com.example.racehorse_transport.entity.enums.IncidentStatus;
+import com.example.racehorse_transport.entity.enums.ScheduleStatus;
+import com.example.racehorse_transport.entity.enums.VehicleServiceRole;
+import com.example.racehorse_transport.entity.enums.VehicleStatus;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.Collection;
 import java.util.List;
 import org.springframework.data.jpa.repository.Query;
@@ -52,6 +58,41 @@ public interface HubOverviewRepository extends Repository<Location, Long> {
             ORDER BY s.user.role.code
             """)
     List<StaffCount> staffCounts(Collection<Long> hubIds, EmploymentStatus working);
+
+    interface FleetScheduleRun {
+        long getOriginHubId();
+        long getDestinationHubId();
+        boolean isOutbound();
+        int getDurationMinutes();
+        short getDayOfWeek();
+        LocalTime getDepartureTime();
+        int getVehicleCount();
+        int getMaxStallCount();
+    }
+
+    @Query("""
+            SELECT r.origin.id AS originHubId, r.destination.id AS destinationHubId, r.fleetOutbound AS outbound,
+                r.estimatedDurationMinutes AS durationMinutes, sd.id.dayOfWeek AS dayOfWeek,
+                s.departureTime AS departureTime, s.baseVehicleCount AS vehicleCount,
+                s.baseVehicleClass.maxStallCount AS maxStallCount
+            FROM DepartureScheduleDay sd JOIN sd.departureSchedule s JOIN s.route r
+            WHERE s.status = :scheduleStatus AND r.status = :routeStatus
+                AND s.validFrom <= :today AND (s.validTo IS NULL OR s.validTo >= :today)
+            """)
+    List<FleetScheduleRun> fleetScheduleRuns(LocalDate today, ScheduleStatus scheduleStatus, ActiveStatus routeStatus);
+
+    interface FleetVehicleCount {
+        Long getHubId();
+        VehicleServiceRole getServiceRole();
+        long getVehicleCount();
+    }
+
+    @Query("""
+            SELECT v.homeHubLocation.id AS hubId, v.serviceRole AS serviceRole, COUNT(v) AS vehicleCount
+            FROM Vehicle v WHERE v.homeHubLocation.id IN :hubIds AND v.status IN :statuses
+            GROUP BY v.homeHubLocation.id, v.serviceRole
+            """)
+    List<FleetVehicleCount> fleetVehicleCounts(Collection<Long> hubIds, Collection<VehicleStatus> statuses);
 
     // Chỉ lấy lượt đang chạy và lượt đã kết thúc gần nhất của mỗi xe.
     @Query("""

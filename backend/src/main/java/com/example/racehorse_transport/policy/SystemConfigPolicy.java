@@ -6,7 +6,7 @@ import java.util.regex.Pattern;
 
 public final class SystemConfigPolicy {
 
-    private static final Set<String> INTEGER_UNITS = Set.of("MINUTE", "HOUR", "DAY", "COUNT");
+    private static final Set<String> INTEGER_UNITS = Set.of("MINUTE", "HOUR", "HOURS", "DAY", "COUNT", "PERCENT");
 
     private static final String TEXT_UNIT = "TEXT";
     public static final String HOTLINE = "HOTLINE";

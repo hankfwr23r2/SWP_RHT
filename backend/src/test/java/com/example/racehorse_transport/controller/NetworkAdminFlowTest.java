@@ -205,6 +205,44 @@ class NetworkAdminFlowTest {
         call(get("/departure-schedules").param("routeId", String.valueOf(routeId)), customerToken, null).andExpect(status().isForbidden());
     }
 
+    @Test
+    void onlyOneDirectionOfARoutePairCanBeOutbound() throws Exception {
+        long origin = createLocation(uniqueCode("HUB"), "HUB", "VN-79");
+        long destination = createLocation(uniqueCode("HUB"), "HUB", "VN-80");
+        String outCode = uniqueCode("R");
+        String backCode = uniqueCode("R");
+        String created = call(post("/routes"), adminToken, fleetRouteBody(outCode, origin, destination, true))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.fleetOutbound").value(true))
+                .andReturn().getResponse().getContentAsString();
+        long outbound = ((Number) JsonPath.read(created, "$.data.id")).longValue();
+
+        String claim = fleetRouteBody(backCode, destination, origin, true);
+        call(post("/routes"), adminToken, claim).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Cặp tuyến chỉ có một chiều đi."));
+        String reverse = call(post("/routes"), adminToken, fleetRouteBody(backCode, destination, origin, false))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.fleetOutbound").value(false))
+                .andReturn().getResponse().getContentAsString();
+        long inbound = ((Number) JsonPath.read(reverse, "$.data.id")).longValue();
+
+        call(put("/routes/" + inbound), adminToken, claim).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Cặp tuyến chỉ có một chiều đi."));
+        call(put("/routes/" + outbound), adminToken, fleetRouteBody(outCode, origin, destination, false))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.fleetOutbound").value(false));
+        call(put("/routes/" + inbound), adminToken, claim)
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.fleetOutbound").value(true));
+    }
+
+    private static String fleetRouteBody(String code, long origin, long destination, boolean outbound) {
+        return """
+                {"code":"%s","name":"Tuyến thử","originLocationId":%d,"destinationLocationId":%d,
+                 "distanceKm":75.5,"estimatedDurationMinutes":120,"fleetOutbound":%b,
+                 "stops":[{"sequenceNumber":1,"locationId":%d,"stopType":"HUB","arrivalOffsetMinutes":0,"dwellMinutes":30},
+                          {"sequenceNumber":2,"locationId":%d,"stopType":"HUB","arrivalOffsetMinutes":120,"dwellMinutes":0}]}"""
+                .formatted(code, origin, destination, outbound, origin, destination);
+    }
+
     private static String routeBody(String code, long origin, long destination, String stops) {
         return """
                 {"code":"%s","name":"Tuyến thử","originLocationId":%d,"destinationLocationId":%d,

@@ -14,6 +14,9 @@ public interface RouteRepository extends JpaRepository<Route, Long> {
 
     Optional<Route> findByCode(String code);
 
+    @Query("SELECT r.id FROM Route r WHERE r.origin.id = :originId AND r.destination.id = :destinationId AND r.fleetOutbound = true")
+    List<Long> fleetOutboundIds(Long originId, Long destinationId);
+
     @Query("SELECT r FROM Route r JOIN FETCH r.origin JOIN FETCH r.destination ORDER BY r.code")
     List<Route> findAllWithEndpoints();
 

@@ -142,6 +142,28 @@ class NetworkDtoTest {
     }
 
     @Test
+    void routeFleetDirectionDefaultsToFalseAndCanBeUpdatedWithoutChangingIdentityOrStatus() {
+        var request = new RouteRequestDto();
+        request.setCode("hub-a-b");
+        request.setName("Tuyến thử");
+        request.setDistanceKm(new BigDecimal("100.00"));
+        request.setEstimatedDurationMinutes(120);
+        Location origin = location(1L, "HUB-A", LocationType.HUB);
+        Location destination = location(2L, "HUB-B", LocationType.HUB);
+
+        Route route = request.toEntity(origin, destination);
+        assertThat(RouteResponseDto.from(route, null).isFleetOutbound()).isFalse();
+
+        route.setId(9L);
+        route.setStatus(ActiveStatus.ACTIVE);
+        request.setFleetOutbound(true);
+        request.applyTo(route, origin, destination);
+        assertThat(RouteResponseDto.from(route, null).isFleetOutbound()).isTrue();
+        assertThat(route.getId()).isEqualTo(9L);
+        assertThat(route.getStatus()).isEqualTo(ActiveStatus.ACTIVE);
+    }
+
+    @Test
     void scheduleRequestLeavesStatusAndDaysToService() {
         DepartureScheduleRequestDto request = new DepartureScheduleRequestDto();
         request.setRouteId(9L);

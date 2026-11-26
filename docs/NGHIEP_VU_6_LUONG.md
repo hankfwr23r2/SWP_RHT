@@ -199,6 +199,9 @@ Từ lúc xe đầu tiên xuất phát tới lúc lượt cuối kết thúc. Gi
 11. **Theo dõi:**
     - điều phối: trang Theo dõi, con trễ khám tô đỏ;
     - **quản lý: màn Các hub** [Mới], mỗi hub có ngựa đang ở, ô chuồng trống, xe (rảnh, đang chạy, đang về, cần bảo dưỡng), nhân viên, chuyến đến và đi, sự cố mở;
+      - Thẻ hub báo đủ hoặc thiếu. Bảng **Theo quy chế đội xe** so sánh số cần với số đang có theo hub gốc, tính xe `ACTIVE` và `MAINTENANCE` theo vai trò và nhân viên `ACTIVE` theo vai trò.
+      - Dùng lịch và tuyến đang hoạt động, còn hiệu lực ở ngày xem. Xe trục tính theo số xe bận đồng thời lớn nhất khi đi, nghỉ, chờ chuyến về và nghỉ tiếp. Nếu chưa có lịch về, dùng thời gian chiều đi cho cả hai lượt. Hub đầu chiều đi giữ xe để sẵn khi sở hữu đủ số cặp tuyến theo tham số.
+      - Xe nhánh 6 chỗ tính theo ngày bận nhất, chỉ cộng các chuyến xuất phát từ hub. Xe 2 chỗ, dự phòng nhánh và số tài xế, hộ tống tính theo tham số quy chế.
     - khách: dòng thời gian **theo từng con** (chặng, lưu trú, giao nhận, sức khỏe);
     - người không có tài khoản: tra bằng mã đơn và 4 số cuối điện thoại người gửi.
 

@@ -9,6 +9,7 @@ import com.example.racehorse_transport.entity.enums.DepartureStatus;
 import com.example.racehorse_transport.entity.enums.HorseStayType;
 import com.example.racehorse_transport.entity.enums.IncidentSeverity;
 import com.example.racehorse_transport.entity.enums.IncidentStatus;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.Instant;
 import java.util.List;
 
@@ -16,16 +17,18 @@ public record HubOverviewResponseDto(Long id, String code, String name, String p
         String countryCode, String countryName, boolean headquarters, int horseCount, List<HubHorseResponseDto> horses,
         HubStallCountsResponseDto stalls, HubFleetResponseDto fleet, List<HubStaffRoleResponseDto> staff,
         List<HubDepartureResponseDto> arrivals, List<HubDepartureResponseDto> departures,
-        int openIncidentCount, List<HubIncidentResponseDto> incidents) {
+        int openIncidentCount, List<HubIncidentResponseDto> incidents,
+        List<HubFleetRequirementResponseDto> fleetRequirement) {
 
     public static HubOverviewResponseDto from(Location hub, int horseCount, List<HubHorseResponseDto> horses,
             HubStallCountsResponseDto stalls, HubFleetResponseDto fleet, List<HubStaffRoleResponseDto> staff,
             List<HubDepartureResponseDto> arrivals, List<HubDepartureResponseDto> departures,
-            int openIncidentCount, List<HubIncidentResponseDto> incidents) {
+            int openIncidentCount, List<HubIncidentResponseDto> incidents,
+            List<HubFleetRequirementResponseDto> fleetRequirement) {
         return new HubOverviewResponseDto(hub.getId(), hub.getCode(), hub.getName(),
                 hub.getProvince() == null ? null : hub.getProvince().getName(), hub.getCountry().getCode(),
                 hub.getCountry().getName(), hub.isHeadquarters(), horseCount, horses, stalls, fleet, staff,
-                arrivals, departures, openIncidentCount, incidents);
+                arrivals, departures, openIncidentCount, incidents, fleetRequirement);
     }
 
     public record HubHorseResponseDto(Long id, String horseName, String bookingCode, HorseStayType stayType,
@@ -49,6 +52,13 @@ public record HubOverviewResponseDto(Long id, String code, String name, String p
 
     public record HubFleetResponseDto(HubVehicleGroupResponseDto idle, HubVehicleGroupResponseDto running,
             HubVehicleGroupResponseDto returning, HubVehicleGroupResponseDto maintenance) {}
+
+    public record HubFleetRequirementResponseDto(Item item, long required, long actual,
+            @JsonInclude(JsonInclude.Include.NON_NULL) HubBranchBreakdownResponseDto breakdown) {
+        public enum Item { LINEHAUL, SPARE, BRANCH, DRIVER, ESCORT }
+    }
+
+    public record HubBranchBreakdownResponseDto(long sixSeat, long twoSeat, long spare) {}
 
     public record HubStaffRoleResponseDto(String roleCode, long count) {}
 

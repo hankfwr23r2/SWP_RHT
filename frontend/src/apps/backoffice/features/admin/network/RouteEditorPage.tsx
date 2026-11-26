@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import type { Location, Route } from '@shared/api/network'
 import { Button } from '@shared/ui/Button'
 import { Card } from '@shared/ui/Card'
+import { Input } from '@shared/ui/Input'
 import { NetworkData, NetworkEmpty, NetworkLayout } from './components/NetworkLayout'
 import { TextField } from './components/NetworkFields'
 import { RouteMapPanel } from './components/RouteMapPanel'
@@ -50,6 +51,7 @@ function RouteForm({ route, locations }: { route: Route | null; locations: Locat
       code: valueOf(form, 'code'), name: valueOf(form, 'name'),
       originLocationId: stops[0].locationId, destinationLocationId: stops[stops.length - 1].locationId,
       distanceKm: Number(valueOf(form, 'distanceKm')),
+      fleetOutbound: form.has('fleetOutbound'),
       estimatedDurationMinutes: Number(valueOf(form, 'estimatedDurationMinutes')), stops,
     }, route?.id)) await navigate(routesPath)
   }
@@ -61,6 +63,10 @@ function RouteForm({ route, locations }: { route: Route | null; locations: Locat
       <TextField name="name" defaultValue={route?.name} maxLength={200} required error={actions.fields.name} />
       <TextField name="distanceKm" type="number" step="0.01" min="0.01" required defaultValue={route?.distanceKm} error={actions.fields.distanceKm} />
       <TextField name="estimatedDurationMinutes" type="number" min={1} required defaultValue={route?.estimatedDurationMinutes} error={actions.fields.estimatedDurationMinutes} />
+      <label className={s.checkbox}>
+        <Input type="checkbox" name="fleetOutbound" defaultChecked={route?.fleetOutbound ?? false} />
+        {t('staffNetwork.fields.fleetOutbound')}
+      </label>
     </div></Card>
     <RouteStops rows={rows} options={locationOptions(locations)} errors={actions.fields} missing={missing}
       busy={actions.busy} change={change} move={move} remove={index => setRows(current => current.filter((_, position) => position !== index))}

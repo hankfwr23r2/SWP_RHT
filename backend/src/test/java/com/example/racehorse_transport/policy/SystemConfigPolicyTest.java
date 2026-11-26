@@ -43,4 +43,13 @@ class SystemConfigPolicyTest {
         assertThatThrownBy(() -> SystemConfigPolicy.requireValidUpdate("COUNT", 11, 1, 10))
                 .isInstanceOf(SystemConfigRuleException.class).hasMessageContaining("từ 1 đến 10");
     }
+
+    @Test
+    void fleetPercentagesAndRestHoursUseTheirConfiguredBounds() {
+        assertThatCode(() -> SystemConfigPolicy.requireValidUpdate("PERCENT", 120, 100, 1000)).doesNotThrowAnyException();
+        assertThatCode(() -> SystemConfigPolicy.requireValidUpdate("PERCENT", 0, 0, 100)).doesNotThrowAnyException();
+        assertThatCode(() -> SystemConfigPolicy.requireValidUpdate("HOURS", 12, 1, 48)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> SystemConfigPolicy.requireValidUpdate("PERCENT", 101, 0, 100))
+                .isInstanceOf(SystemConfigRuleException.class).hasMessageContaining("từ 0 đến 100");
+    }
 }

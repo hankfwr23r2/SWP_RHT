@@ -5839,6 +5839,23 @@
         "required" : [ "plannedStartAt" ],
         "type" : "object"
       },
+      "HubBranchBreakdownResponseDto" : {
+        "properties" : {
+          "sixSeat" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "spare" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "twoSeat" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "HubCollectionTimeRequestDto" : {
         "properties" : {
           "collectAt" : {
@@ -5871,6 +5888,26 @@
           "status" : {
             "enum" : [ "OPEN", "CLOSED", "IN_PROGRESS", "COMPLETED", "CANCELLED" ],
             "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "HubFleetRequirementResponseDto" : {
+        "properties" : {
+          "actual" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "breakdown" : {
+            "$ref" : "#/components/schemas/HubBranchBreakdownResponseDto"
+          },
+          "item" : {
+            "enum" : [ "LINEHAUL", "SPARE", "BRANCH", "DRIVER", "ESCORT" ],
+            "type" : "string"
+          },
+          "required" : {
+            "format" : "int64",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -5989,6 +6026,12 @@
           },
           "fleet" : {
             "$ref" : "#/components/schemas/HubFleetResponseDto"
+          },
+          "fleetRequirement" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HubFleetRequirementResponseDto"
+            },
+            "type" : "array"
           },
           "headquarters" : {
             "type" : "boolean"
@@ -8963,6 +9006,9 @@
             "minimum" : 1,
             "type" : "integer"
           },
+          "fleetOutbound" : {
+            "type" : "boolean"
+          },
           "name" : {
             "maxLength" : 200,
             "minLength" : 0,
@@ -9005,6 +9051,9 @@
           "estimatedDurationMinutes" : {
             "format" : "int32",
             "type" : "integer"
+          },
+          "fleetOutbound" : {
+            "type" : "boolean"
           },
           "id" : {
             "format" : "int64",
