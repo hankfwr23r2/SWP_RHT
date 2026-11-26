@@ -1,8 +1,12 @@
 # Giao bạn B: 30 điểm hở chưa có phương án
 
+> **26/11/2026 · Việc mới cho bạn B (ưu tiên trước các điểm cũ còn lại):** mô hình bến xe, task **M4, M5, M6, M7, M8** ở mục 11 của [KE_HOACH_TRIEN_KHAI.md](KE_HOACH_TRIEN_KHAI.md). Làm ngay **M5, M6, M8** (không phụ thuộc luồng A). M7 chờ A xong M1, M4 chờ A xong M2 và M3. Đọc trước [NGHIEP_VU_6_LUONG.md](NGHIEP_VU_6_LUONG.md) bản 26/11 và [NGU_CANH_THIET_KE_LAI.md](NGU_CANH_THIET_KE_LAI.md) mục 4b. Migration của B dùng `V202612012000`–`V202612012999`. Mỗi task trình phương án (gồm lược đồ nếu đổi) cho người dùng duyệt trước khi làm.
+>
+> Các điểm về đại lý ở dưới (chặng đại lý, bàn giao `AGENT`) **không làm nữa**, thay bằng M7.
+
 Ngày 25/11/2026. Người dùng giao 30 điểm này cho **bạn B** (khietnn). Luồng A tiếp tục 22 điểm đã có phương án duyệt.
 
-Mã điểm (ví dụ 4.F1) trỏ tới mục "Điểm còn hở" trong [NGHIEP_VU_6_LUONG.md](NGHIEP_VU_6_LUONG.md). Đọc điểm đó trước khi làm.
+Mã điểm (ví dụ 4.F1) trỏ tới mục "Điểm còn hở" trong bản lưu [luu-tru/NGHIEP_VU_6_LUONG_25-11-2026.md](luu-tru/NGHIEP_VU_6_LUONG_25-11-2026.md). Đọc điểm đó trước khi làm.
 
 ## 1. Đọc trước khi làm
 

@@ -95,8 +95,8 @@ Công ty không vận hành nơi cách ly. Điều kiện cách ly thể hiện 
 | 6.1 | Lượt xe trục (hộ tống) | Nhận ngựa từ hub | `handover` HUB_OUT, `horse_leg` | Chip sai, chưa xong dịch vụ trước chuyến | Danh sách ngựa của mọi khách kèm chỉ dẫn và số khoang từng con | "Đang đi trục" |
 | 6.1a | Lượt xe trục (tổ xe) | Rời điểm đầu, hoàn tất lượt | `departure.status` | Quản lý không thể hủy chuyến khi chuyến đã chạy hoặc đã hoàn tất | Xe đầu tiên rời điểm đầu thì chuyến đang chạy. Khi mọi lượt trục chưa hủy hoàn thành thì chuyến hoàn tất | |
 | 6.2 | Điểm dừng: trạm nghỉ (tài xế, hộ tống) | **Tới nơi**, cho nước và cỏ, đo và ghi ăn uống từng con, **Rời đi** | `trip_stop`, `horse_health_log` | Còn con chưa ghi; chưa nghỉ đủ 30 phút (rời sớm phải xác nhận kèm lý do) **[mới]** | Bỏ uống 2 trạm liền: `WATCH`, báo điều phối. Điều phối thấy giờ trễ | Trạm, ăn uống, chỉ số từng con |
-| 6.3 | Điểm dừng: cửa khẩu chiều xuất (tài xế) | Tải giấy, **Bàn giao đại lý** | `document`, `handover` AGENT | Thiếu giấy; không có đối tác ở ít nhất một bên | **Trách nhiệm sang đại lý**; chặng đại lý bắt đầu | "Đã qua cửa khẩu" |
-| 6.4 | Chặng đại lý (điều phối) | Nhập mốc và ảnh đại lý gửi | `horse_leg`, `document` | Mốc lùi thời gian | | Mốc, ghi rõ "theo đại lý" |
+| 6.3 **[Thay 26/11]** | Điểm dừng: cửa khẩu chiều xuất (tài xế) | Tải giấy, **Bàn giao đại lý** | `document`, `handover` AGENT | Thiếu giấy; không có đối tác ở ít nhất một bên | **Trách nhiệm sang đại lý**; chặng đại lý bắt đầu | "Đã qua cửa khẩu" |
+| 6.4 **[Thay 26/11]** | Chặng đại lý (điều phối) | Nhập mốc và ảnh đại lý gửi | `horse_leg`, `document` | Mốc lùi thời gian | | Mốc, ghi rõ "theo đại lý" |
 | 6.5 | Điểm dừng: giao (tài xế) | **Bắt đầu chờ**, quét chip, ký, trả giấy gốc, **Hoàn tất** | `handover` DELIVERY, `handover_document`, `booking_horse` DELIVERED | Chip sai, thiếu chữ ký | Con cuối cùng xong: `DELIVERED` | "Đã giao", biên bản |
 | 6.6 | Như trên | **Không gặp người nhận** | `handover` TIMEOUT, `incident`, `horse_stay` STABLING | Chưa hết giờ chờ miễn phí | Xe đi về hub. Báo sẵn sàng chốt phí giữ, lượt giao lại xác định cước giao. HUB_OUT kiểm đã trả hai khoản. Người nhận tự tới hub lấy được ngay. | Ngựa ở đâu, phí |
 | 6.7 | Quyết toán (quản lý) | Duyệt từng chi phí, lập khoản thu thêm | `cost_item`, `payment` EXTRA_CHARGE | Khoản khách hoặc người nhận chưa hỏi và vượt hạn mức, trừ phí biểu phí gắn STABLING | Đóng khi hết nợ, không còn chi phí khách chịu chưa duyệt và không còn sự cố mở. Đơn không phát sinh tự đóng sau 7 ngày | Bảng kê, hạn và nút VNPAY. Nhắc 08:00 và chặn gửi đơn mới khi có khoản quá hạn. |
@@ -213,3 +213,20 @@ Chi tiết đơn của quản lý hiển thị các con đã tới hạn ghi k�
 ## Giờ giao và xe trễ · mục 14 của phương án
 
 Chi tiết đơn hiện khung giao mới nhất. Màn sự cố hiện giờ báo, giờ tới thật, số phút lệch của lần giao hụt; quản lý sửa kết luận trong 24 giờ, điều phối chỉ ghi bất khả kháng.
+
+## Mô hình bến xe · quyết định 26/11/2026
+
+Thay 6.3, 6.4 và bổ sung theo [NGU_CANH_THIET_KE_LAI.md](NGU_CANH_THIET_KE_LAI.md) mục 4b. **Chưa làm.** Bảng và cột cụ thể chờ thiết kế lược đồ (mục cuối của `DB_SCHEMA_59_BANG.md`).
+
+| # | Màn hình (vai trò) | Thao tác | Chặn khi | Tác động | Khách thấy |
+|---|---|---|---|---|---|
+| H1 | Đặt đơn, màn 1 (khách) | Chọn **xe ghép** hoặc **xe riêng**; chuyến hiện Còn chỗ, Sắp đầy, Hết chỗ | Chuyến hết chỗ | Giữ chỗ theo sức chứa của chuyến; hết chỗ thì gợi ý chuyến sau | Giá tạm tính theo chỗ hoặc theo nguyên xe |
+| H2 | Chuyến cần quyết định (quản lý) | **Tăng cường xe**, **Bớt xe** | Hub hết xe dự phòng; bớt xe làm sức chứa nhỏ hơn số chỗ đã bán | Sức chứa bán của chuyến đổi ngay | Chuyến đổi từ Hết chỗ sang Còn chỗ |
+| H3 | Lịch chạy (quản trị) | Lưu lịch, tuyến | Lịch cần nhiều xe hơn hạn mức của hub (cảnh báo) | Tính lại số xe tối thiểu, hạn mức xe trục của hub | |
+| H4 | Điều độ, xếp xe trục (điều phối) | **Gợi ý xếp xe**: nhiều xe một chuyến, gom theo cụm điểm giao, vừa số chỗ; xe riêng không ghép | Tổng chỗ các xe nhỏ hơn số chỗ đã bán; ngựa cùng đơn khác xe | Lập lượt trục cho từng xe, gắn ngựa, xếp khoang | |
+| H5 | Hub (hộ tống, điều phối) | **Khám trước khi chạy**, **Khám trước khi giao** từng con | | Thiếu khám thì chặn ra hub | Nhật ký sức khỏe từng con |
+| H6 | Lượt xe của tôi (tài xế) | **Đã về hub gốc**: ảnh tại chỗ, tình trạng xe | Chưa tới mốc sớm nhất; thiếu ảnh | Xe và tổ lái rảnh; cần bảo dưỡng thì khóa xếp lượt | |
+| H7 | Lịch tuần theo xe (điều phối, quản lý) | Xem xe Đang về, giờ dự kiến, cờ trễ | | | |
+| H8 | **Các hub** (quản lý, chỉ xem) | Xem từng hub: ngựa đang ở, ô chuồng trống, xe theo trạng thái, nhân viên, chuyến đến và đi, sự cố mở | | | |
+| H9 | Lượt xe trục, điểm dừng cửa khẩu (tài xế) | **Tới nơi**, kiểm giấy riêng của cửa khẩu, **Rời đi** sang nước bên kia | Thiếu giấy riêng của cửa khẩu | Thiếu giấy thì mở sự cố loại Giấy tờ | "Đang làm thủ tục ở cửa khẩu", "Đã qua cửa khẩu" |
+| H10 | Hub nước ngoài (nhân viên hub đó) | Đón, vào hub, ra hub, giao như hub trong nước | Như trong nước | Như trong nước | Như trong nước |

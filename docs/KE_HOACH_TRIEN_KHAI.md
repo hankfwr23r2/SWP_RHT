@@ -639,6 +639,28 @@ Xong thì chạy Quality Gate và báo kết quả thật.
 
 ---
 
+## 11. Mô hình bến xe (quyết định 26/11/2026)
+
+Nguồn: [NGU_CANH_THIET_KE_LAI.md](NGU_CANH_THIET_KE_LAI.md) mục 4b, [NGHIEP_VU_6_LUONG.md](NGHIEP_VU_6_LUONG.md), phạm vi lược đồ ở mục cuối [DB_SCHEMA_59_BANG.md](DB_SCHEMA_59_BANG.md), màn H1–H10 ở [MAN_HINH_VA_TAC_DONG.md](MAN_HINH_VA_TAC_DONG.md).
+
+**Quy trình:** mỗi task bắt đầu bằng thiết kế lược đồ (nếu có), cập nhật `DB_SCHEMA_59_BANG.md` và **trình người dùng duyệt** trước khi viết migration và code (AGENTS.md mục 1.1, mục 4). Chủ sở hữu bảng giữ như mục 3: luồng A giữ mạng lưới, xe, đơn, giá, giấy tờ; luồng B giữ điều độ, giao nhận, lưu trú, sức khỏe, theo dõi.
+
+**Số migration:** A dùng `V202612011000`–`V202612011999`, B dùng `V202612012000`–`V202612012999`. Số phải lớn hơn migration mới nhất trên nhánh lúc gộp.
+
+| Mã | Việc | Luồng | Phụ thuộc | Xong khi |
+|---|---|---|---|---|
+| M1 | **Mạng lưới bến xe:** hub Lào, Campuchia và vùng phục vụ; tuyến hub ⇄ hub qua cửa khẩu (`route_stop` BORDER); hub gốc của xe, người là bất kỳ hub; giấy tờ lấy cửa khẩu từ điểm dừng tuyến, thêm giấy riêng theo cửa khẩu và các cửa khẩu của bản cũ; sắp lại lịch mẫu cho khớp vòng xe | A | Không | Đặt được đơn TP.HCM → Phnom Penh trên tuyến hub ⇄ hub; danh sách giấy có giấy riêng của Mộc Bài |
+| M2 | **Sức chứa theo đội xe:** xe nền theo lịch; policy tính số xe tối thiểu chạy lịch (nghỉ 12 giờ) và hạn mức trục của hub (dự phòng 20%, cấu hình); tăng cường, bớt xe (H2, H3); khách thấy Còn chỗ, Sắp đầy, Hết chỗ; khóa đặt chỗ theo đội xe | A | M1 | Hai khách đặt cùng lúc không vượt sức chứa; tăng cường mở thêm chỗ; lưu lịch quá hạn mức thì cảnh báo |
+| M3 | **Xe riêng:** lựa chọn khi đặt đơn (H1); giá theo nguyên xe trong bảng giá; báo giá | A | M2 | Đơn xe riêng có báo giá theo xe; danh sách của điều phối đánh dấu xe riêng |
+| M4 | **Xếp xe trục nhiều xe:** gợi ý chia ngựa vào nhiều xe theo cụm điểm giao ở hub đích rồi vừa số chỗ; xe riêng không ghép; ngựa cùng đơn chung xe; kiểm tổng chỗ các xe ≥ số chỗ đã bán (H4); nhánh giao gom theo cụm gần nhau | B | M2 (đọc sức chứa), M3 (cờ xe riêng) | Chuyến 11 con được gợi ý 2 xe, mỗi xe một cụm điểm giao |
+| M5 | **Khám bắt buộc hai đầu hub:** thêm `BEFORE_DELIVERY`; tự tạo việc khám trước khi chạy và trước khi giao; chặn ra hub khi chưa khám (H5) | B | Không | HUB_OUT bị chặn khi con chưa khám, mở lại khi đã khám |
+| M6 | **Xe về theo thiết kế cũ:** trạng thái Đang về, giờ dự kiến, cờ trễ; tài xế xác nhận về hub gốc kèm ảnh tại chỗ và tình trạng xe (H6, H7) | B | Không (hub gốc bất kỳ ở M1 chỉ đổi dữ liệu) | Xe chưa xác nhận về thì không xếp được lượt mới |
+| M7 | **Bỏ đại lý ở cửa khẩu:** gỡ chặng đại lý, bàn giao `AGENT`, nút "đại lý đã giao"; điểm dừng cửa khẩu kiểm giấy riêng rồi đi tiếp (H9); hub nước ngoài giao nhận như trong nước (H10) | B | M1 | Đơn xuất chạy trọn tới nơi giao ở Phnom Penh với đủ giao nhận có chip, ảnh, biên bản |
+| M8 | **Màn Các hub cho quản lý** (H8, chỉ xem) | B | Không | Quản lý xem được từng hub, kể cả hub nước ngoài sau M1 |
+| M9 | Cập nhật `FullFlowIntegrationTest`, `CommercialFlowIntegrationTest`, e2e và dữ liệu mẫu theo mô hình mới; ERD sinh lại | A + B | M1–M8 | CI xanh với ca xuất, nhập đi hub ⇄ hub |
+
+**Làm song song:** A làm M1 → M2 → M3. B làm ngay M5, M6, M8 (không chờ A), rồi M7 sau M1 và M4 sau M2, M3.
+
 ## 10. Bảng tiến độ
 
 > Mỗi người **chỉ sửa dòng của mình**, trong PR của task đó.
@@ -667,3 +689,12 @@ Xong thì chạy Quality Gate và báo kết quả thật.
 | A8 | Quyết toán, hủy, đánh giá | A | 5 | Xong backend | #396, #397 |
 | B6 | Theo dõi, thông báo, báo cáo | B | 5 | Xong phần chính (6 PR): chuông thông báo, hành trình ngựa và tra cứu công khai, báo cáo vận hành, nhật ký hệ thống. Báo khách khi nhận, giao ngựa và qua cửa khẩu (#430). Báo cáo doanh thu `/reports/revenue` (#434). Màn Tổng quan `/manager` (#444). B6 xong | #388, #389, #390, #391, #392, #393, #430, #434, #444 |
 | E | Tích hợp, dọn dẹp, ERD, merge | A + B | 6 | Đang làm. B: xóa FE cũ xong, ngoại lệ `check-style` rỗng (#458–#461). `FullFlowIntegrationTest` có phần vận hành của 3 ca M3 (#463); phần thương mại ở `CommercialFlowIntegrationTest`, sau giao ở `settle`; ERD ở `docs/database/` | #458, #459, #460, #461, #463 |
+| M1 | Mạng lưới bến xe | A | 7 | Chưa làm | |
+| M2 | Sức chứa theo đội xe | A | 7 | Chưa làm | |
+| M3 | Xe riêng | A | 7 | Chưa làm | |
+| M4 | Xếp xe trục nhiều xe | B | 7 | Chưa làm | |
+| M5 | Khám bắt buộc hai đầu hub | B | 7 | Chưa làm | |
+| M6 | Xe về | B | 7 | Chưa làm | |
+| M7 | Bỏ đại lý ở cửa khẩu | B | 7 | Chưa làm | |
+| M8 | Màn Các hub | B | 7 | Chưa làm | |
+| M9 | Tích hợp mô hình bến xe | A + B | 7 | Chưa làm | |

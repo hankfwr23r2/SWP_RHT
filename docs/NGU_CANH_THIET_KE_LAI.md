@@ -28,8 +28,8 @@ Kết luận: **cơ chế giao tiếp** (REST/JSON + JWT + refresh cookie) khôn
 
 1. **Gom hàng qua hub:** chặng đón → ngựa tập kết ở hub → **chuyến trục chính chạy định kỳ** → chặng giao. Không có khâu cách ly do công ty vận hành (quyết định 23/11/2026).
 2. **Mạng lưới hub và tuyến cố định.** Trên tuyến vẫn giữ quy trình chăm sóc hiện tại: trạm nghỉ, kiểm tra sức khỏe, cửa khẩu.
-   - Trục chính có cả **tuyến nội địa** (hub ⇄ hub, ví dụ HCM ⇄ Đà Nẵng) và tuyến quốc tế (hub → cửa khẩu).
-   - **Trụ sở và hub vệ tinh:** mọi xe và nhân viên thuộc trụ sở. Hub vệ tinh có vùng phục vụ và chỗ tập kết, không có xe hay nhân viên trực thuộc. Xe trục tới hub vệ tinh thì chạy luôn lượt giao ở đó, rồi về trụ sở bằng chuyến trục chiều ngược.
+   - Trục chính có cả **tuyến nội địa** (hub ⇄ hub, ví dụ HCM ⇄ Đà Nẵng) và tuyến quốc tế (hub → cửa khẩu). **Thay 26/11/2026:** tuyến quốc tế là hub ⇄ hub nước ngoài qua cửa khẩu (mục 4b).
+   - **Trụ sở và hub vệ tinh** (**thay 26/11/2026:** mỗi hub, kể cả hub nước ngoài, có xe và nhân viên; xem mục 4b): mọi xe và nhân viên thuộc trụ sở. Hub vệ tinh có vùng phục vụ và chỗ tập kết, không có xe hay nhân viên trực thuộc. Xe trục tới hub vệ tinh thì chạy luôn lượt giao ở đó, rồi về trụ sở bằng chuyến trục chiều ngược.
    - Cách chạy quyết định theo hub, không theo loại đơn: hub đón trùng hub giao thì chạy thẳng (`DIRECT`), khác hub thì đi trục. Mỗi đơn có tối đa một chặng trục.
 3. **Tách lịch thương mại khỏi lượt chạy thật:**
    - `departure_schedule` → `departure`: khách đặt chỗ vào chuyến theo ngày;
@@ -81,13 +81,13 @@ Kết luận: **cơ chế giao tiếp** (REST/JSON + JWT + refresh cookie) khôn
 | `CAN_CU_PHAP_LY_VA_IRT.md` là tài liệu tham khảo | Yêu cầu chi tiết lấy từ `DB_SCHEMA_59_BANG.md` và `NGHIEP_VU_THEO_59_BANG.md` |
 | Backend theo n-layer: Controller → Service → Repository, cộng Policy và Client | DTO có `from()`, `toEntity()`, `applyTo()`. Không dùng ModelMapper. Chi tiết: `AGENTS.md` |
 | Công ty không bán chỗ cách ly, chỉ chở ngựa đã đủ điều kiện; vẫn trọn gói vận chuyển và thủ tục (23/11/2026) | Người dùng chốt. Điều kiện thể hiện bằng giấy `QUARANTINE_CLEARANCE` nên bỏ `quarantine_days`. IRT **có** làm khâu cách ly, nên không nói điểm này giống IRT |
-| Đơn nhập làm ngược chiều đơn xuất: đại lý nước ngoài liên hệ cửa khẩu Việt Nam, giao ngựa cho công ty khi có giấy vận chuyển mẫu 14a (23/11/2026) | Thông tư 01/2026 Điều 11. Giả định: địa chỉ giao là nơi chủ ngựa cách ly. Ghé hub là đơn giản hóa, vì luật yêu cầu niêm phong xe về nơi cách ly. Chưa kiểm chứng Thông tư 22/2026 và việc đại lý nước ngoài đứng tên khai báo |
+| **[Thay 26/11, xem 4b]** Đơn nhập làm ngược chiều đơn xuất: đại lý nước ngoài liên hệ cửa khẩu Việt Nam, giao ngựa cho công ty khi có giấy vận chuyển mẫu 14a (23/11/2026) | Thông tư 01/2026 Điều 11. Giả định: địa chỉ giao là nơi chủ ngựa cách ly. Ghé hub là đơn giản hóa, vì luật yêu cầu niêm phong xe về nơi cách ly. Chưa kiểm chứng Thông tư 22/2026 và việc đại lý nước ngoài đứng tên khai báo |
 | Quản lý xe chỉ gồm thuộc tính và trạng thái, không có giấy tờ xe (23/11/2026) | Người dùng chốt giữ cách cũ |
 | Dịch vụ theo IRT: chăm sóc nằm trong cước, khách chọn khoang và bảo hiểm, xét nghiệm do công ty lo (23/11/2026) | IRT không bán gói chăm sóc. Dịch vụ khách mua không làm đổi việc của hộ tống, nên ghép nhiều khách vẫn đơn giản |
-| Ghép đơn: trục ghép theo `departure`; đón và giao hệ thống gợi ý, điều phối duyệt; giá từng khách không đổi; khoang rộng tính 2 chỗ; ngựa cùng đơn đi cùng xe trục (23/11/2026) | IRT Đức §7.4 giữ giá khi gom chung. Giấy chung của đơn chỉ có một bản gốc. Bản cũ tính khoang rộng 2 ngăn |
+| **[Thay 26/11, xem 4b]** Ghép đơn: trục ghép theo `departure`; đón và giao hệ thống gợi ý, điều phối duyệt; giá từng khách không đổi; khoang rộng tính 2 chỗ; ngựa cùng đơn đi cùng xe trục (23/11/2026) | IRT Đức §7.4 giữ giá khi gom chung. Giấy chung của đơn chỉ có một bản gốc. Bản cũ tính khoang rộng 2 ngăn |
 | Vị trí khoang do **hệ thống tự xếp, điều phối chỉnh**; khách chỉ chọn loại khoang. Thêm `horse_leg.stall_position`, không thêm bảng (24/11/2026) | Lúc đặt chuyến chưa gán xe nên chưa có sơ đồ. IRT lập "load plan" ([Horse & Hound](https://www.horseandhound.co.uk/?p=645450)); ngựa đực phía trước, cái phía sau ([VRC](https://cms.vrc.com.au/latest-news/precious-cargo)). Các nguồn chủ yếu nói về máy bay. Không bắt buộc theo giới tính, chỉ cảnh báo |
 | Xe dùng **vách di động**: hai vị trí liền nhau bất kỳ ghép thành khoang rộng; `standard_stall_count`, `wide_stall_count` chỉ để tính tổng chỗ (24/11/2026) | Khách đặt theo số chỗ trước khi gán xe, nên khoang rộng cố định sẽ bán được rồi không xếp nổi. Xe chở ngựa STX 4–9 con dùng vách điều chỉnh được ([STX](https://stephexhorsetrucks.com/vehicles/stx-scania-p-420-6-horses/)); xe van Mỹ chia theo hàng ([NHCA](https://ranunculus-cod-ej7y.squarespace.com/stall-sizes)). Chưa kiểm chứng: xe ở Việt Nam, cách ghép đúng hai khoang. Mở rộng: thuật toán nhận danh sách đoạn và số chỗ mỗi con cần, đợt này một đoạn mỗi xe; mua xe chia hàng thì thêm bảng mô tả đoạn và sửa cách bán chỗ |
-| Mỗi tuyến chạy **một chuyến mỗi tuần**, 6 tuyến một chiều: HCM ⇄ Mộc Bài, HCM ⇄ Đà Nẵng, Đà Nẵng ⇄ Lao Bảo. Quyết định chạy 48 giờ trước chuyến, ngưỡng cảnh báo 30% chỗ đã cọc (23/11/2026) | Người dùng chốt. IRT chỉ chạy chuyến khi đủ ngựa để có lãi; con số 30% và 48 giờ tự thiết kế. Vẫn giữ một chặng trục mỗi đơn, nên Đà Nẵng → Campuchia và TP.HCM → Lào phải đi chuyến đột xuất |
+| **[Thay 26/11, xem 4b]** Mỗi tuyến chạy **một chuyến mỗi tuần**, 6 tuyến một chiều: HCM ⇄ Mộc Bài, HCM ⇄ Đà Nẵng, Đà Nẵng ⇄ Lao Bảo. Quyết định chạy 48 giờ trước chuyến, ngưỡng cảnh báo 30% chỗ đã cọc (23/11/2026) | Người dùng chốt. IRT chỉ chạy chuyến khi đủ ngựa để có lãi; con số 30% và 48 giờ tự thiết kế. Vẫn giữ một chặng trục mỗi đơn, nên Đà Nẵng → Campuchia và TP.HCM → Lào phải đi chuyến đột xuất |
 | Mỗi đầu trong nước của đơn đi trục có thể chọn công ty chở hoặc tự đưa, nhận tại hub (23/11/2026) | [IRT](https://www.irt.com/) cho biết có thể thu xếp để chủ ngựa tự đưa tới trong một số trường hợp. Dự án giới hạn công ty chở 5 giờ mỗi chiều để xe có thể đi và về trong 10 giờ lái mỗi ngày |
 | Thanh toán theo bản `main`: cọc 30% trong 24 giờ; **70% sau khi nhận ngựa, trước khi xe rời nơi nhận**, chờ tối đa 30 phút (23/11/2026) | Người dùng chốt, biết rủi ro khách trả chậm làm các khách khác trên xe phải chờ. IRT thì trả đủ trước khi chở. `IN_OPERATION` bắt đầu khi xe rời nơi nhận, nên đơn không trả đủ vẫn chuyển được `CONFIRMED → CANCELLED` |
 | Nghỉ và cho ăn: tối đa 4 giờ một lần nghỉ ≥ 30 phút có nước và cỏ, bữa theo chỉ dẫn ở nơi nghỉ đêm và hub; thêm `water_intake`, `feed_intake` (23/11/2026, **thay** quyết định ghi ăn uống vào `note`) | EFSA: cho ăn uống cách nhau tối đa 4 giờ, mỗi lần 30 phút. USHJA: uống mỗi 4 giờ, nhiều cỏ, không ngũ cốc, không quá 12 giờ mỗi lần đi. Giờ lái và nghỉ đêm theo bản cũ |
@@ -98,6 +98,27 @@ Kết luận: **cơ chế giao tiếp** (REST/JSON + JWT + refresh cookie) khôn
 | Phân công (kế hoạch theo lượt xe) tách khỏi phụ trách (người ký nhận gần nhất của từng con); thêm `SHIFT` (23/11/2026) | Người dùng chốt. Hộ tống đổi liên tục nhưng chuỗi ký nhận không đứt nên luôn biết ai giữ con nào, không cần bảng phân công ngựa. IRT: mục tiêu 1 groom cho 6–9 ngựa, khám 2 lần mỗi ngày khi cách ly |
 | Phí giữ ngựa ở hub do khách: mỗi **24 giờ trọn vẹn** 1.000.000 đ, đồng hồ chỉ chạy khi khách làm ngựa ở lại, cộng dồn; thu thêm một lượt giao khi giao lại do khách; người nhận tự tới hub thì không chặn; đơn đóng được khi còn khoản thu thêm (25/11/2026, **thay** lẻ ngày tròn một ngày và "còn nợ 0 mới đóng"). Chi tiết [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md) mục 13. Code chưa sửa | Người dùng chốt. Tách công nợ khỏi trạng thái đơn để đơn không treo; IRT Đức §7.3, IRT Anh 5 |
 
+## 4b. Quyết định 26/11/2026: mô hình bến xe
+
+Người dùng chốt qua trao đổi ngày 26/11/2026. **Code chưa làm.** Nghiệp vụ viết lại ở [NGHIEP_VU_6_LUONG.md](NGHIEP_VU_6_LUONG.md). Các dòng ở mục 4 có nhãn **[Thay 26/11]** không còn hiệu lực ở phần bị thay.
+
+| Quyết định | Lý do và nguồn |
+|---|---|
+| **Mô hình bến xe:** trục chỉ nối hai hub cố định theo tuyến và lịch đã cài; nhánh đón, giao rẽ từ hub. Mọi đơn cùng hình nhánh đón → hub → trục → hub → nhánh giao | Người dùng chốt. Ba lớp thương mại, xe, con ngựa giữ nguyên |
+| **Mọi hub là của công ty, kể cả hub ở Lào, Campuchia.** Hub nước ngoài thiết kế như trong nước (vùng phục vụ, ô chuồng, xe, nhân viên, quy trình giao nhận). "Đại lý" chỉ là cách gọi chi nhánh nước ngoài | Bản trước hiểu sai "đại lý" thành đối tác không có tài khoản, khiến chặng nước ngoài không biết xe nào chở, không có nhật ký sức khỏe, giao nhận chỉ là một nút của điều phối |
+| **Xe công ty chạy thẳng qua cửa khẩu tới hub bên kia.** Cửa khẩu là điểm dừng làm thủ tục. Bỏ chặng đại lý và bàn giao đại lý ở cửa khẩu | Xe hàng qua cửa khẩu cần Giấy phép liên vận Việt Nam – Campuchia hoặc Lào theo NĐ 41/2024, 158/2024 ([VBHN 24/2022](https://vbpl.vn/FileData/TW/Lists/vbpq/Attachments/154887/tvVanBanGoc_VBHN.24.2022.BGTVT.pdf)). Điều kiện chi tiết **chưa kiểm chứng** |
+| **Một chuyến trục điều được nhiều xe**, ghép đơn, chọn loại xe theo số ngựa | IRT chỉ còn làm đường hàng không, đặt chỗ trên chuyến bay định kỳ ([Thoroughbred Racing](https://www.thoroughbredracing.com/articles/company-usually-has-horse-air-every-hour-every-day)). Vận tải gom hàng thêm hoặc bớt xe theo lượng hàng ([Georgia Tech](https://www.tlwarc.hg.gatech.edu/node/49747/xml)). Bến xe Việt Nam đăng ký trước xe tăng cường ([Sở GTVT Huế](https://sgtvt.thuathienhue.gov.vn/UploadFiles/TinTuc/2019/8/27/00.05.h571511sgtvtvt2019pl2_signed.pdf)) |
+| **Bỏ số chỗ cố định 9.** Mỗi hub có hạn mức xe trục = số xe tối thiểu chạy hết lịch (nghỉ ít nhất **12 giờ** sau mỗi chuyến) + dự phòng (khởi đầu 20%). Sức chứa bán = xe nền, tăng khi tăng cường từ dự phòng. Khách thấy Còn chỗ, Sắp đầy, Hết chỗ | Số xe = thời gian một vòng chia khoảng cách giữa hai chuyến ([TCRP](https://www.nap.edu/read/22409/chapter/5)); dự phòng 20% là hướng dẫn FTA cho xe buýt ([Spare ratio](https://en.wikipedia.org/wiki/Spare_ratio)). Mô phỏng lịch mẫu: cần 5 xe với nghỉ 12 giờ, dữ liệu mẫu chỉ có 3 |
+| **Sắp lại lịch trục mẫu** cho khớp vòng xe | Lịch mẫu để xe nằm chờ ở bến đầu kia, tỷ lệ chạy 18–32% |
+| **Xếp ngựa lên xe trục:** gần điểm giao trước (nhánh giao ở hub đích xong dưới 4 giờ), vừa số chỗ sau. Hệ thống gợi ý, điều phối chỉnh | Người dùng chốt thứ tự ưu tiên |
+| **Xe riêng:** ngựa của đơn không đi chung xe với đơn khác ở mọi chặng; đi đúng lịch trục; dùng được xe 2, 4 chỗ; giá theo nguyên xe | Bản `main` mỗi đơn có xe riêng nguyên chuyến; bản thiết kế lại chưa có lựa chọn này |
+| **Tới hub đích luôn dỡ ngựa** theo quy trình, rồi xếp xe giao theo cụm điểm giao gần nhau | Thay cách cũ "xe trục chạy luôn lượt giao ở hub vệ tinh" |
+| **Khám sức khỏe bắt buộc ở hai đầu hub:** trước khi chạy trục và trước khi giao. Chưa khám thì không cho ra hub | Người dùng chốt. Hiện đã có loại việc khám `BEFORE_DEPARTURE` nhưng chưa bắt buộc |
+| **Xe về** theo thiết kế cũ nhánh `main`: Đang về có giờ dự kiến, cờ trễ, tài xế xác nhận về hub gốc kèm ảnh tại chỗ và tình trạng xe; chưa về thì chưa nhận lượt mới. Hub gốc là bất kỳ hub nào | `HomeReturnPanel`, `FleetServiceImpl` trên nhánh `main` |
+| **Quản lý có màn Các hub** để xem tình hình từng hub | Người dùng chốt |
+| **Giấy tờ theo nghiệp vụ cũ:** giấy chung cộng giấy riêng theo cửa khẩu; cửa khẩu lấy từ điểm dừng cửa khẩu trên tuyến; bổ sung cửa khẩu như bản cũ (Mộc Bài, Tịnh Biên, Hà Tiên, Lao Bảo, Cầu Treo, Tây Trang) | Bản `main` (`ReferenceDataSeeder`, `ClearanceDocumentPolicy`). Bản hiện tại lấy cửa khẩu theo điểm đầu, cuối tuyến nên sẽ sai khi tuyến đi qua cửa khẩu |
+| Chuyến mở bán trước **6 tuần** thay 8 tuần; Điện Biên thuộc hub Hà Nội; tuyến quốc tế đổi tên theo nước | Đã làm ở PR #517 |
+
 ## 5. Câu hỏi còn mở
 
 - [ ] Bỏ `departure_schedule_day` (thành 58 bảng) hay giữ?
@@ -106,7 +127,12 @@ Kết luận: **cơ chế giao tiếp** (REST/JSON + JWT + refresh cookie) khôn
 - [x] Đã có `DocumentCompletenessPolicy` trong `backend/src/main/java/com/example/racehorse_transport/policy/` và `DocumentCompletenessPolicyTest`.
 - [x] ~~Một hub hay nhiều hub~~: đã chốt trụ sở + hub vệ tinh (mục 4). `AGENTS.md` đã ghi "xe về hub gốc".
 - [x] Seed dev có 10 tuyến một chiều, gồm hub Hà Nội.
-- [ ] Đơn xuất: giấy gốc có bàn giao cho đại lý ở cửa khẩu không? Hiện chỉ nhận từ khách và trả người nhận.
+- [x] ~~Đơn xuất: giấy gốc có bàn giao cho đại lý ở cửa khẩu không?~~ Hết ý nghĩa: không còn bàn giao đại lý (mục 4b).
+- [ ] Xe có thêm ô giấy phép liên vận (nước, hạn) để chỉ gán xe có phép cho chuyến quốc tế không?
+- [ ] Ai được tăng cường xe cho chuyến (quản lý hay điều phối), có ngưỡng tự báo không?
+- [ ] Bỏ chuyến đột xuất do quản lý tạo không (tăng cường và xe riêng đã thay được)?
+- [ ] Giá xe riêng theo nguyên xe tính thế nào cho từng chặng?
+- [ ] Gộp nguyên nhân sự cố Lỗi đại lý vào Lỗi công ty?
 - [ ] Danh sách chuồng gửi đêm có lọc theo nơi nghỉ không (phải thêm địa điểm cho đối tác)?
 - [ ] Bổ sung dữ liệu thật về điểm mạng lưới, vùng phục vụ của hub, tuyến, lịch chạy, bảng giá và quy định.
 
@@ -121,7 +147,8 @@ Kết luận: **cơ chế giao tiếp** (REST/JSON + JWT + refresh cookie) khôn
 | `docs/CAN_CU_PHAP_LY_VA_IRT.md` | Căn cứ pháp lý ba nước, đối chiếu IRT/Peden | Tham khảo |
 | `docs/MAN_HINH_VA_TAC_DONG.md` | Màn hình, thao tác, chặn, tác động | Mới nhất |
 | `docs/THONG_BAO_LUONG_B.md` | Thông báo của luồng A cho luồng B | Mới nhất |
-| `docs/NGHIEP_VU_6_LUONG.md` | Nghiệp vụ kể theo 6 luồng, điểm hở và trạng thái sửa | Mới nhất |
+| `docs/NGHIEP_VU_6_LUONG.md` | Nghiệp vụ chính và xử lý ngoại lệ theo 6 luồng, mô hình bến xe (26/11/2026) | Mới nhất |
+| `docs/luu-tru/NGHIEP_VU_6_LUONG_25-11-2026.md` | Bản chi tiết cũ, có mã điểm hở (4.F1, T35…) | Lưu trữ |
 | `docs/PHUONG_AN_6_LUONG.md` | Quy tắc đã chốt 25/11/2026 cho các điểm hở, mục 8–14 chi tiết | Mới nhất |
 | `docs/GIAO_VIEC_BAN_B.md`, `docs/KE_HOACH_GIAO_THANH_VIEN.md`, `docs/nghiem-thu/` | Việc giao cho bạn B và thành viên, mẫu nghiệm thu | Mới nhất |
 | `docs/CHAY_THU.md`, `docs/NGHIEM_THU.md` | Chạy thử một đơn; danh sách nghiệm thu theo màn | Mới nhất |

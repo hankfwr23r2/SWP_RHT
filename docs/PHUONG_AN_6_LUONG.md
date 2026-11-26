@@ -1,6 +1,8 @@
 # Phương án sửa các điểm hở của 6 luồng
 
-Ngày 25/11/2026, **bản 3** (sửa theo góp ý điểm 1, 2, 6; mục 12: mỗi con giao một nơi, cùng tuyến). **Đã duyệt 25/11/2026** (mục 7, 10, 12.8 theo cột Đề xuất), làm lần lượt theo đợt. Các điểm hở lấy từ [NGHIEP_VU_6_LUONG.md](NGHIEP_VU_6_LUONG.md).
+> **Lưu ý 26/11/2026:** các phần về đại lý ở cửa khẩu, chuyến số chỗ cố định và mọi xe thuộc trụ sở đã được thay bằng mô hình bến xe ([NGU_CANH_THIET_KE_LAI.md](NGU_CANH_THIET_KE_LAI.md) mục 4b). Phần còn lại giữ làm lịch sử.
+
+Ngày 25/11/2026, **bản 3** (sửa theo góp ý điểm 1, 2, 6; mục 12: mỗi con giao một nơi, cùng tuyến). **Đã duyệt 25/11/2026** (mục 7, 10, 12.8 theo cột Đề xuất), làm lần lượt theo đợt. Các điểm hở lấy từ bản lưu [luu-tru/NGHIEP_VU_6_LUONG_25-11-2026.md](luu-tru/NGHIEP_VU_6_LUONG_25-11-2026.md).
 
 **Thứ tự chọn quy trình:** IRT trước → nghiệp vụ ngoài (luật Việt Nam, hãng chở ngựa khác) → tự đề xuất. Chỗ nào quy trình của IRT trái với quyết định nhóm đã chốt thì **giữ quyết định đã chốt** và nói rõ.
 

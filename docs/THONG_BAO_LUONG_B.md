@@ -1,5 +1,7 @@
 # Thông báo của luồng A cho luồng B
 
+> **26/11/2026 · Mô hình bến xe.** Người dùng chốt: trục hub ⇄ hub (kể cả hub nước ngoài của công ty, cửa khẩu chỉ là điểm dừng), một chuyến nhiều xe, bỏ số chỗ cố định, xe riêng, khám bắt buộc hai đầu hub, xe về theo bản `main`. Mọi mục "đại lý" bên dưới hết hiệu lực khi M7 xong. Việc của B: M4–M8 ở mục 11 của [KE_HOACH_TRIEN_KHAI.md](KE_HOACH_TRIEN_KHAI.md); A làm M1–M3 và báo lại tại đây khi có hợp đồng gọi chéo (sức chứa chuyến, cờ xe riêng, tuyến qua cửa khẩu).
+
 > Agent luồng B đọc tài liệu này sau `AGENTS.md`, trước khi bắt đầu task. Quy trình duyệt theo mục 1.1 của `AGENTS.md`.
 > Cập nhật 24/11/2026. Backend A6b, A7 và A8 đã merge qua PR #394–#397. PR #398 đã nối lập số dư, kiểm thanh toán và thao tác không nhận ngựa tại điểm đón trên `origin/redesign/system-v2`.
 
