@@ -696,7 +696,7 @@ Nguồn: [NGU_CANH_THIET_KE_LAI.md](NGU_CANH_THIET_KE_LAI.md) mục 4b, [NGHIEP_
 | M2 | Sức chứa theo đội xe | A | 7 | Chưa làm | |
 | M3 | Xe riêng | A | 7 | Chưa làm | |
 | M4 | Xếp xe trục nhiều xe | A (nhận từ B 26/11) | 7 | Chưa làm | |
-| M5 | Khám bắt buộc hai đầu hub | B | 7 | Chưa làm | |
+| M5 | Khám bắt buộc hai đầu hub | B | 7 | Xong | #520 |
 | M6 | Xe về | B | 7 | Chưa làm | |
 | M7 | Bỏ đại lý ở cửa khẩu | A (nhận từ B 26/11) | 7 | Chưa làm | |
 | M8 | Màn Các hub | B | 7 | Chưa làm | |

@@ -9,8 +9,8 @@ public record HealthCheckTaskResponseDto(
         Long id, Long bookingHorseId, String horseName, Long vehicleTripId, Long horseStayId, String place,
         Long assignedTo, String assigneeName, HealthCheckType checkType, HealthCheckTaskStatus status,
         Instant dueAt, boolean overdue, String note, Instant acceptedAt, Instant doneAt,
-        Long healthLogId, String cancelReason, boolean canCancel) {
-    public static HealthCheckTaskResponseDto from(HealthCheckTask task, boolean overdue, boolean canCancel) {
+        Long healthLogId, String cancelReason, boolean canCancel, Long recordingHorseStayId) {
+    public static HealthCheckTaskResponseDto from(HealthCheckTask task, boolean overdue, boolean canCancel, Long recordingHorseStayId) {
         var trip = task.getVehicleTrip();
         var stay = task.getHorseStay();
         return new HealthCheckTaskResponseDto(task.getId(), task.getBookingHorse().getId(),
@@ -18,6 +18,6 @@ public record HealthCheckTaskResponseDto(
                 stay == null ? null : stay.getId(), trip == null ? stay.getLocation().getName() : trip.getCode(),
                 task.getAssignedTo().getUserId(), task.getAssignedTo().getFullName(), task.getCheckType(), task.getStatus(),
                 task.getDueAt(), overdue, task.getNote(), task.getAcceptedAt(), task.getDoneAt(),
-                task.getHealthLog() == null ? null : task.getHealthLog().getId(), task.getCancelReason(), canCancel);
+                task.getHealthLog() == null ? null : task.getHealthLog().getId(), task.getCancelReason(), canCancel, recordingHorseStayId);
     }
 }

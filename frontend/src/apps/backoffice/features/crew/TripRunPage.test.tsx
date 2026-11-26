@@ -5,6 +5,7 @@ import { afterEach, expect, it, vi } from 'vitest'
 import apiClient from '@shared/api/client'
 import type { Incident } from '@shared/api/incidentOps'
 import type { CrewTrip } from '@shared/api/tripExecution'
+import { ToastProvider } from '@shared/ui/toast'
 import TripRunPage from './TripRunPage'
 
 vi.mock('@shared/api/client', () => ({ default: { get: vi.fn(), post: vi.fn() } }))
@@ -38,7 +39,7 @@ function renderTrip(parked: boolean, list: Incident[], stop?: Stop, horses?: Cre
   const router = createMemoryRouter([{ path: '/my-trips/:id', element: <TripRunPage /> }], {
     initialEntries: ['/my-trips/5'],
   })
-  render(<RouterProvider router={router} />)
+  render(<ToastProvider><RouterProvider router={router} /></ToastProvider>)
   return trip
 }
 
@@ -82,6 +83,22 @@ const approvedStableIncident: Incident = {
   plans: [{ id: 77, status: 'APPROVED', resolutionType: 'STABLE_NEARBY', handlerPartyId: 88, handlerPartyName: 'Chuồng Bình An' }],
 }
 const horses: CrewTrip['horses'] = [{ horseName: 'Sao Mai', leg: { id: 31, status: 'IN_PROGRESS' } }]
+
+it('shows the horse named by a rejected HUB_OUT completion and lets the crew retry', async () => {
+  const handover: NonNullable<CrewTrip['handovers']>[number] = {
+    id: 40, tripStopId: 21, status: 'PENDING', handoverType: 'HUB_OUT',
+    horses: [{ horseLegId: 31, horseName: 'Sao Mai', microchipMatched: true }],
+  }
+  const trip = renderTrip(true, [], undefined, horses, [handover])
+  vi.mocked(apiClient.post)
+    .mockRejectedValueOnce(new Error('Chưa khám trước khi chạy: Sao Mai'))
+    .mockResolvedValueOnce({ data: { data: { ...trip, handovers: [{ ...handover, status: 'DONE' }] } } })
+  fireEvent.click(await screen.findByRole('button', { name: 'Hoàn tất giao nhận' }))
+  expect(await screen.findByText('Chưa khám trước khi chạy: Sao Mai')).toBeTruthy()
+  fireEvent.click(screen.getByRole('button', { name: 'Hoàn tất giao nhận' }))
+  await waitFor(() => expect(screen.queryByRole('button', { name: 'Hoàn tất giao nhận' })).toBeNull())
+  expect(apiClient.post).toHaveBeenNthCalledWith(2, '/handovers/40/complete', undefined)
+})
 
 it('opens an incident handover at the hub for the approved partner and offers collection afterward', async () => {
   const incidents = [approvedStableIncident]

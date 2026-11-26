@@ -4,7 +4,7 @@ import { healthCheckTasksApi, type HealthCheckTarget, type HealthCheckTaskDraft 
 import { useLoad } from '@shared/hooks/useLoad'
 import { useToast } from '@shared/ui/toast'
 
-export function useHealthCheckAssignment(target: HealthCheckTarget) {
+export function useHealthCheckAssignment(target: HealthCheckTarget, onChanged?: () => void) {
   const { bookingHorseId, vehicleTripId, horseStayId } = target
   const { t } = useTranslation()
   const toast = useToast()
@@ -17,6 +17,7 @@ export function useHealthCheckAssignment(target: HealthCheckTarget) {
     try {
       await healthCheckTasksApi.assign(draft)
       toast(t('healthCheckTasks.assigned'), 'success')
+      onChanged?.()
       await tasks.reload()
     } catch (error) {
       if (error instanceof Error && 'fields' in error) setErrors(error.fields as Record<string, string>)
@@ -30,6 +31,7 @@ export function useHealthCheckAssignment(target: HealthCheckTarget) {
     try {
       await healthCheckTasksApi.cancel(id, reason)
       toast(t('healthCheckTasks.cancelled'), 'success')
+      onChanged?.()
       await tasks.reload()
     } catch (error) {
       if (error instanceof Error && 'fields' in error) setErrors(error.fields as Record<string, string>)
