@@ -15,7 +15,6 @@ public final class DeliveryChangePolicy {
 
     public static String bookingReason(Booking booking) {
         if (booking.getStatus() != BookingStatus.CONFIRMED) return "NOT_CONFIRMED";
-        if (booking.getBookingType() == BookingType.EXPORT) return "EXPORT";
         if (booking.getDeliveryMethod() == TransferMethod.SELF) return "SELF";
         if (booking.getDeparture() == null) return "DIRECT";
         if (booking.getDeparture().getRoute().getDestination().getLocationType() != LocationType.HUB) return "NO_HUB";

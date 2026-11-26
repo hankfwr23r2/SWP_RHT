@@ -28,9 +28,10 @@ public final class VehiclePolicy {
         }
     }
 
-    public static void requireHeadquarters(LocationType locationType, boolean headquarters) {
-        if (locationType != LocationType.HUB || !headquarters) {
-            throw new VehicleRuleException("homeHubLocationId", "Hub gốc của xe phải là trụ sở.");
+    // Mô hình bến xe (26/11/2026): xe thuộc hub nào cũng được, kể cả hub nước ngoài
+    public static void requireHomeHub(LocationType locationType) {
+        if (locationType != LocationType.HUB) {
+            throw new VehicleRuleException("homeHubLocationId", "Hub gốc của xe phải là một hub.");
         }
     }
 }

@@ -153,8 +153,7 @@ public class BalanceHoldNoticeServiceImpl implements BalanceHoldNoticeService {
             remind(booking, "Liên hệ nhận ngựa tại hub", "Phí giữ tạm tính " + accrued.toPlainString()
                     + " đ. Điều phối cần liên hệ khách hôm nay.", morning, morning.plus(1, ChronoUnit.DAYS), true);
         }
-        if (isBalanceHold && !paid && !now.isBefore(cancelAt) && (booking.getStatus() == BookingStatus.SCHEDULE_CHANGE_REQUIRED
-                || booking.getStatus() == BookingStatus.CONFIRMED && booking.getBookingType() == BookingType.IMPORT)) {
+        if (isBalanceHold && !paid && !now.isBefore(cancelAt) && booking.getStatus() == BookingStatus.SCHEDULE_CHANGE_REQUIRED) {
             Instant custodySince = held.stream().map(HorseStay::getActualStartAt).min(Instant::compareTo).orElseThrow();
             long attempts = bookings.countBalanceHoldContactsSince(booking.getId(), BalanceHoldPolicy.CALL_ACTION_PREFIX, custodySince);
             if (attempts >= config.getInt("BALANCE_HOLD_MIN_CONTACTS")) {

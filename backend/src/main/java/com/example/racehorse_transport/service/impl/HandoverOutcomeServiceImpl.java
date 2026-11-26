@@ -51,11 +51,8 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
     @Transactional(propagation = Propagation.MANDATORY)
     public void prepareUnpaidHubReturn(com.example.racehorse_transport.entity.HorseStay stay, Instant at) {
         Booking booking = stay.getBookingHorse().getBooking();
-        Instant chargedFrom = booking.getDeparture() == null || booking.getBookingType()
-                == com.example.racehorse_transport.entity.enums.BookingType.IMPORT
-                ? at : booking.getDeparture().getPlannedDepartureAt();
-        horseStays.openBalanceHold(booking.getId(), chargedFrom,
-                booking.getBookingType() == com.example.racehorse_transport.entity.enums.BookingType.IMPORT ? null : booking.getDeparture());
+        Instant chargedFrom = booking.getDeparture() == null ? at : booking.getDeparture().getPlannedDepartureAt();
+        horseStays.openBalanceHold(booking.getId(), chargedFrom, booking.getDeparture());
         cancellations.releaseUnpaidAtHub(booking.getId());
     }
 

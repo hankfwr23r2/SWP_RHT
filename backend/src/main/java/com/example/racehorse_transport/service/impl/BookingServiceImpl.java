@@ -9,7 +9,6 @@ import com.example.racehorse_transport.entity.enums.*;
 import com.example.racehorse_transport.exception.BookingRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.BookingSubmissionPolicy;
-import com.example.racehorse_transport.policy.DepartureRoutePolicy;
 import com.example.racehorse_transport.policy.RegulationPolicy;
 import com.example.racehorse_transport.policy.StallSeatPolicy;
 import com.example.racehorse_transport.repository.BookingHorseRepository;
@@ -137,7 +136,7 @@ public class BookingServiceImpl implements BookingService {
 
     private void validateLeadTime(BookingCreateRequestDto request, AddressInput pickup, AddressInput delivery,
                                   Departure departure, Instant now) {
-        Long gate = departure == null ? null : DepartureRoutePolicy.gateId(departure.getRoute(), request.bookingType());
+        Long gate = departure == null ? null : regulation.gateOf(departure.getRoute(), request.bookingType());
         long days = regulation.resolve(request.bookingType(), pickup.countryCode(), delivery.countryCode(),
                 request.requestedPickupDate(), gate).leadDays();
         if (departure == null) {

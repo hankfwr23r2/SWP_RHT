@@ -65,7 +65,7 @@ public class AccountServiceImpl implements AccountService {
         StaffAccountPolicy.requirePasswordFitsBcrypt(request.password());
         var role = roles.findById(roleCode)
                 .orElseThrow(() -> new AccountRuleException("Vai trò nhân viên không hợp lệ."));
-        var hub = headquarters(request.homeHubLocationId());
+        var hub = homeHub(request.homeHubLocationId());
         var user = request.toAccount();
         user.setRole(role);
         user.setStatus(AppUserStatus.ACTIVE);
@@ -98,7 +98,7 @@ public class AccountServiceImpl implements AccountService {
             }
             profile.setEmploymentStatus(nextEmploymentStatus);
         }
-        request.applyTo(profile, headquarters(request.homeHubLocationId()));
+        request.applyTo(profile, homeHub(request.homeHubLocationId()));
         try {
             staff.flush();
         } catch (DataIntegrityViolationException ex) {
@@ -137,10 +137,10 @@ public class AccountServiceImpl implements AccountService {
         return StaffAccountResponseDto.from(profile);
     }
 
-    private Location headquarters(Long id) {
+    private Location homeHub(Long id) {
         Location hub = locations.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy địa điểm."));
-        StaffAccountPolicy.requireHeadquarters(hub.getLocationType(), hub.isHeadquarters());
+        StaffAccountPolicy.requireHomeHub(hub.getLocationType());
         return hub;
     }
 

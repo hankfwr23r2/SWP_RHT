@@ -195,11 +195,10 @@ public class PricingDataServiceImpl implements PricingDataService {
         }
         BookingSubmissionPolicy.validatePickupDate(type, LocalDate.ofInstant(request.pickupAt(), BUSINESS_ZONE),
                 departure.getDepartureDate());
-        String counterpart = DepartureRoutePolicy.counterpartCountryCode(type, pickup.getCountry().getCode(), delivery.getCountry().getCode());
-        if (!DepartureRoutePolicy.matches(route, type, hubId(originHub), hubId(destinationHub), counterpart)) {
+        if (!DepartureRoutePolicy.matches(route, type, hubId(originHub), hubId(destinationHub))) {
             throw new PricingRuleException("Chuyến trục không phù hợp với địa chỉ đã chọn.");
         }
-        return new RoutePlan(departure, DepartureRoutePolicy.gateId(route, type),
+        return new RoutePlan(departure, regulations.gateOf(route, type),
                 transferSegments(pickup, originHub, delivery, destinationHub, request.pickupMethod(), request.deliveryMethod()));
     }
 

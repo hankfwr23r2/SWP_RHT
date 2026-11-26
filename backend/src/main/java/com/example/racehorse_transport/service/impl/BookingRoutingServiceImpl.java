@@ -82,10 +82,9 @@ public class BookingRoutingServiceImpl implements BookingRoutingService {
         BookingSubmissionPolicy.validateDepartureSelection(
                 HubResolutionPolicy.routingOf(booking.getBookingType(), hubs.pickup(), hubs.delivery()), replacementId);
         Route route = routeForSubmission(replacementId);
-        BookingSubmissionPolicy.validateRoute(route, booking.getBookingType(), hubs.pickup(), hubs.delivery(),
-                DepartureRoutePolicy.counterpartCountryCode(booking.getBookingType(), pickup.getCountry().getCode(), delivery.getCountry().getCode()));
+        BookingSubmissionPolicy.validateRoute(route, booking.getBookingType(), hubs.pickup(), hubs.delivery());
         BookingSubmissionPolicy.validatePickupDate(booking.getBookingType(), booking.getRequestedPickupDate(), replacement.getDepartureDate());
-        Long gate = DepartureRoutePolicy.gateId(route, booking.getBookingType());
+        Long gate = regulations.gateOf(route, booking.getBookingType());
         var resolved = regulations.resolve(booking.getBookingType(), pickup.getCountry().getCode(),
                 delivery.getCountry().getCode(), booking.getRequestedPickupDate(), gate);
         // Đã cọc thì chỉ tính giấy phải làm lại; chưa cọc thì tính đủ như lúc đặt
@@ -175,8 +174,7 @@ public class BookingRoutingServiceImpl implements BookingRoutingService {
 
         if (request.departureId() != null) {
             Route route = routeForSubmission(request.departureId());
-            BookingSubmissionPolicy.validateRoute(route, type, pickupHub, deliveryHub,
-                    DepartureRoutePolicy.counterpartCountryCode(type, pickup.countryCode(), delivery.countryCode()));
+            BookingSubmissionPolicy.validateRoute(route, type, pickupHub, deliveryHub);
         }
         List<DeliveryPlace> places = request.addresses().stream()
                 .filter(address -> address.addressType() == AddressRole.DELIVERY)
@@ -210,8 +208,7 @@ public class BookingRoutingServiceImpl implements BookingRoutingService {
         // Khóa chuyến sau ngựa và trước khi INSERT booking lấy khóa FK của chuyến.
         Departure departure = departures.findForUpdate(request.departureId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chuyến."));
-        BookingSubmissionPolicy.validateRoute(departure.getRoute(), request.bookingType(), routing.pickupHub(), routing.deliveryHub(),
-                DepartureRoutePolicy.counterpartCountryCode(request.bookingType(), routing.pickup().countryCode(), routing.delivery().countryCode()));
+        BookingSubmissionPolicy.validateRoute(departure.getRoute(), request.bookingType(), routing.pickupHub(), routing.deliveryHub());
         BookingSubmissionPolicy.validatePickupDate(request.bookingType(), request.requestedPickupDate(), departure.getDepartureDate());
         return departure;
     }

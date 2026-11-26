@@ -7,7 +7,6 @@ import com.example.racehorse_transport.entity.enums.BookingHorseStatus;
 import com.example.racehorse_transport.entity.enums.BookingType;
 import com.example.racehorse_transport.entity.enums.DocumentSubmitter;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
-import com.example.racehorse_transport.policy.DepartureRoutePolicy;
 import com.example.racehorse_transport.policy.DocumentCompletenessPolicy;
 import com.example.racehorse_transport.repository.*;
 import com.example.racehorse_transport.service.DocumentCompletenessService;
@@ -74,7 +73,7 @@ public class DocumentCompletenessServiceImpl implements DocumentCompletenessServ
     public RegulationPreviewResponseDto resolve(Booking booking) {
         List<BookingAddress> rows = addresses.findAddressesForDetail(booking.getId());
         Departure departure = booking.getDeparture();
-        Long gate = departure == null ? null : DepartureRoutePolicy.gateId(departure.getRoute(), booking.getBookingType());
+        Long gate = departure == null ? null : regulations.gateOf(departure.getRoute(), booking.getBookingType());
         return regulations.resolve(booking.getBookingType(), countryOf(rows, AddressRole.PICKUP),
                 countryOf(rows, AddressRole.DELIVERY), booking.getRequestedPickupDate(), gate);
     }

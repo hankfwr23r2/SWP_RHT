@@ -23,6 +23,9 @@ public interface RegulationService {
     RegulationPreviewResponseDto resolve(BookingType bookingType, String pickupCountryCode,
             String deliveryCountryCode, LocalDate requestedPickupDate, Long gateLocationId);
 
+    /** Cửa khẩu đơn quốc tế đi qua trên tuyến; null với đơn trong nước hoặc tuyến không qua cửa khẩu. */
+    Long gateOf(com.example.racehorse_transport.entity.Route route, BookingType bookingType);
+
     List<CountryRuleResponseDto> listCountryRules();
 
     CountryRuleResponseDto getCountryRule(Long id);

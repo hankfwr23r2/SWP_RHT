@@ -657,9 +657,10 @@ Nguồn: [NGU_CANH_THIET_KE_LAI.md](NGU_CANH_THIET_KE_LAI.md) mục 4b, [NGHIEP_
 | M6 | **Xe về theo thiết kế cũ:** trạng thái Đang về, giờ dự kiến, cờ trễ; tài xế xác nhận về hub gốc kèm ảnh tại chỗ và tình trạng xe (H6, H7) | B | Không (hub gốc bất kỳ ở M1 chỉ đổi dữ liệu) | Xe chưa xác nhận về thì không xếp được lượt mới |
 | M7 | **Bỏ đại lý ở cửa khẩu:** gỡ chặng đại lý, bàn giao `AGENT`, nút "đại lý đã giao"; điểm dừng cửa khẩu kiểm giấy riêng rồi đi tiếp (H9); hub nước ngoài giao nhận như trong nước (H10) | B | M1 | Đơn xuất chạy trọn tới nơi giao ở Phnom Penh với đủ giao nhận có chip, ảnh, biên bản |
 | M8 | **Màn Các hub cho quản lý** (H8, chỉ xem) | B | Không | Quản lý xem được từng hub, kể cả hub nước ngoài sau M1 |
+| M10 | **Bắt buộc nghỉ trên chặng đón, giao, chạy thẳng:** ngựa ngồi xe đón, giao tối đa 8 giờ, chạy thẳng 10 giờ (cấu hình); con nào ngồi xe liên tục quá 4 giờ (cấu hình) thì lượt phải có trạm nghỉ, hệ thống gợi ý trạm nghỉ mạng lưới gần đường nhất, không có thì chặn lập lượt; ở trạm nghỉ giữ quy tắc cho ăn, uống, ghi sức khỏe, nghỉ 30 phút | B | M1 (trạm nghỉ nhánh, giới hạn 8 giờ) | Lượt đón Điện Biên → Hà Nội có trạm nghỉ Sơn La; không ghi ăn uống thì không rời trạm. **M1 và M10 gộp cùng lúc** hoặc M1 giữ 5 giờ tới khi M10 xong |
 | M9 | Cập nhật `FullFlowIntegrationTest`, `CommercialFlowIntegrationTest`, e2e và dữ liệu mẫu theo mô hình mới; ERD sinh lại | A + B | M1–M8 | CI xanh với ca xuất, nhập đi hub ⇄ hub |
 
-**Làm song song:** A làm M1 → M2 → M3. B làm ngay M5, M6, M8 (không chờ A), rồi M7 sau M1 và M4 sau M2, M3.
+**Làm song song:** A làm M1 → M2 → M3. B làm ngay M5, M6, M8 (không chờ A), rồi M7, M10 sau M1 và M4 sau M2, M3.
 
 ## 10. Bảng tiến độ
 
@@ -697,4 +698,5 @@ Nguồn: [NGU_CANH_THIET_KE_LAI.md](NGU_CANH_THIET_KE_LAI.md) mục 4b, [NGHIEP_
 | M6 | Xe về | B | 7 | Chưa làm | |
 | M7 | Bỏ đại lý ở cửa khẩu | B | 7 | Chưa làm | |
 | M8 | Màn Các hub | B | 7 | Chưa làm | |
+| M10 | Bắt buộc nghỉ trên chặng đón, giao | B | 7 | Chưa làm | |
 | M9 | Tích hợp mô hình bến xe | A + B | 7 | Chưa làm | |

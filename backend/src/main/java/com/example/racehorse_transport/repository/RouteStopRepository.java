@@ -27,6 +27,14 @@ public interface RouteStopRepository extends JpaRepository<RouteStop, RouteStopI
     List<RouteStop> findBetween(@Param("originId") Long originId, @Param("destinationId") Long destinationId,
                                 @Param("status") ActiveStatus status);
 
+    // Cửa khẩu tuyến đi qua, theo thứ tự trên tuyến
+    @Query("""
+            SELECT s.location.id FROM RouteStop s
+            WHERE s.id.routeId = :routeId AND s.stopType = com.example.racehorse_transport.entity.enums.RouteStopType.BORDER
+            ORDER BY s.id.sequenceNumber
+            """)
+    List<Long> findBorderLocationIds(@Param("routeId") Long routeId);
+
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("DELETE FROM RouteStop s WHERE s.id.routeId = :routeId")
     int deleteByRouteId(@Param("routeId") Long routeId);

@@ -78,8 +78,8 @@ public final class BookingSubmissionPolicy {
         }
     }
 
-    public static void validateRoute(Route route, BookingType type, Long pickupHubId, Long deliveryHubId, String counterpartCountryCode) {
-        if (route.getStatus() != ActiveStatus.ACTIVE || !DepartureRoutePolicy.matches(route, type, pickupHubId, deliveryHubId, counterpartCountryCode)) {
+    public static void validateRoute(Route route, BookingType type, Long pickupHubId, Long deliveryHubId) {
+        if (route.getStatus() != ActiveStatus.ACTIVE || !DepartureRoutePolicy.matches(route, type, pickupHubId, deliveryHubId)) {
             throw new BookingRuleException("Tuyến của chuyến không khớp điểm đón và điểm giao.");
         }
     }
@@ -109,16 +109,17 @@ public final class BookingSubmissionPolicy {
     }
 
     public static LocalDate latestPickupDate(BookingType type, LocalDate departureDate) {
-        return (type == BookingType.INTERPROVINCE || type == BookingType.EXPORT) ? departureDate.minusDays(1) : departureDate;
+        // Mọi đơn đi trục đón trước ngày chạy ít nhất một ngày để ngựa về hub nghỉ đêm, kể cả đơn nhập (mô hình bến xe)
+        return type == BookingType.LOCAL ? departureDate : departureDate.minusDays(1);
     }
 
     public static void validateTransfer(BookingType type, HubResolutionPolicy.Routing routing,
                                         TransferMethod pickupMethod, TransferMethod deliveryMethod) {
         boolean selfPickup = pickupMethod == TransferMethod.SELF;
         boolean selfDelivery = deliveryMethod == TransferMethod.SELF;
-        if ((routing == HubResolutionPolicy.Routing.DIRECT && (selfPickup || selfDelivery))
-                || (type == BookingType.IMPORT && selfPickup) || (type == BookingType.EXPORT && selfDelivery)) {
-            throw new BookingRuleException("Chỉ được tự chở ở đầu trong nước của đơn đi trục.");
+        // Hub nước ngoài như hub trong nước: mọi đầu của đơn đi trục được tự chở tới hoặc tự tới hub nhận
+        if (routing == HubResolutionPolicy.Routing.DIRECT && (selfPickup || selfDelivery)) {
+            throw new BookingRuleException("Chỉ được tự chở ở đơn đi trục.");
         }
     }
 

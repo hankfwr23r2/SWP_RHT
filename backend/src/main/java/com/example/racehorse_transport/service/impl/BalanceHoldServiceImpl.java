@@ -91,8 +91,7 @@ public class BalanceHoldServiceImpl implements BalanceHoldService {
                 .stream().findAny().isPresent()) return;
 
         var departure = booking.getDeparture();
-        boolean imported = booking.getBookingType() == BookingType.IMPORT;
-        boolean hasNextLinehaul = !imported && departure != null;
+        boolean hasNextLinehaul = departure != null;
         Instant base = !hasNextLinehaul
                 ? receiving.stream().map(HorseStay::getActualStartAt).max(Instant::compareTo).orElseThrow()
                         .plus(config.getInt("BALANCE_IMPORT_HUB_HOURS"), ChronoUnit.HOURS)
