@@ -1,5 +1,14 @@
 // Dùng chung mọi trang: thành phần giao diện, điều hướng, trạng thái, vai trò, đăng nhập
 export const common = {
+  header: {
+    language: 'Language',
+    openMenu: 'Open menu',
+    closeMenu: 'Close menu',
+    navigation: 'Main navigation',
+    account: 'Account',
+    profile: 'View profile',
+    backToTop: 'Back to top',
+  },
   stablingClock: {
     title: "Holding at the hub",
     readyReported: "Readiness reported at {{at}}. Redelivery is being scheduled.",

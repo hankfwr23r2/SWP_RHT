@@ -8,6 +8,7 @@ import { PickupMissPanel } from '@shared/components/PickupMissPanel'
 import { BookingJourney } from '@shared/components/HorseJourney'
 import { OrderStatusBadge } from '@shared/components/OrderStatusBadge'
 import { CANCELLABLE, HAS_JOURNEY, RATEABLE } from '@shared/components/orderSteps'
+import { PageTitle, PageTitleCode } from '@shared/ui/PageHeader'
 import { Card } from '@shared/ui/Card'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { formatDateTime } from '@shared/lib/format'
@@ -50,7 +51,7 @@ export default function OrderDetailPage() {
       <div className="breadcrumb"><Link to="/orders">{t('myOrders.title')}</Link> / <span>{booking.code}</span></div>
       <header className={s.heading}>
         <div>
-          <h1>{booking.code}</h1>
+          <PageTitle><PageTitleCode>{booking.code}</PageTitleCode></PageTitle>
           {booking.waybillNumber && <p>{t('myOrders.waybill', { code: booking.waybillNumber })}</p>}
         </div>
         <OrderStatusBadge status={status} />

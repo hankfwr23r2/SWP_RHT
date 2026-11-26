@@ -7,7 +7,6 @@ import { PageTransition } from '@shared/motion/motion'
 import { ROLE_LABEL, type StaffRole } from '@shared/auth/role'
 import { AppHeader, appHeaderStyles as h } from '@shared/ui/AppHeader'
 import { NoticeBell } from '@shared/components/NoticeBell'
-import { TranslateToggle } from '@shared/ui/TranslateToggle'
 import { HOME_OF, STAFF_MENUS } from './staffMenus'
 import s from './StaffLayout.module.css'
 import m from './StaffShell.module.css'
@@ -26,7 +25,8 @@ function Header() {
     <>
     <AppHeader
       homeHref={role ? HOME_OF[role] : '/login'} badge={role && t(`roles.${role}`, ROLE_LABEL[role])}
-      links={role ? STAFF_MENUS[role].map(([to, label]): [string, string] => [to, t(`staffMenus.${to}`, label)]) : []} userName={session?.name} onProfile={() => setShowProfile(true)}
+      links={role ? STAFF_MENUS[role].map(([to, label, option]): [string, string, string?] => [to, t(`staffMenus.${to}`, label), option?.icon]) : []} userName={session?.name} onProfile={() => setShowProfile(true)}
+      isActive={(to, path) => path === to || path.startsWith(`${to}/`)}
       onLogout={() => { logout(); navigate('/login') }}
       extra={role ? <NoticeBell /> : undefined}
     />
@@ -38,15 +38,15 @@ function Header() {
 export function StaffLayout({ children }: { children: ReactNode }) {
   const { t } = useTranslation()
   const { session } = useAuth()
+  const [menuOpen, setMenuOpen] = useState(false)
   if (session?.role === 'admin' || session?.role === 'manager' || session?.role === 'specialist' || session?.role === 'coordinator') {
     return (
       <div className={m.shell}>
-        <StaffTopbar />
+        <StaffTopbar menuOpen={menuOpen} onToggleMenu={() => setMenuOpen(open => !open)} />
         <div className={m.body}>
-          <StaffSidebar />
+          <StaffSidebar mobileOpen={menuOpen} onNavigate={() => setMenuOpen(false)} />
           <main className={m.main}>{session.role === 'manager' && <ManagerUrgentBanner />}<PageTransition>{children}</PageTransition></main>
         </div>
-        <TranslateToggle />
       </div>
     )
   }
@@ -55,7 +55,6 @@ export function StaffLayout({ children }: { children: ReactNode }) {
       <Header />
       <main><PageTransition>{children}</PageTransition></main>
       <footer className={h.footer}>{t('common.footerSub', 'Hệ thống vận chuyển ngựa đua chuyên nghiệp')}</footer>
-      <TranslateToggle />
     </>
   )
 }
@@ -65,7 +64,6 @@ export function MobileStaffLayout({ children }: { children: ReactNode }) {
     <>
       <Header />
       <main className={s.mobileMain}><PageTransition>{children}</PageTransition></main>
-      <TranslateToggle />
     </>
   )
 }

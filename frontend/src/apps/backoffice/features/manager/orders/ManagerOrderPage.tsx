@@ -7,6 +7,7 @@ import { ActionBar } from '@backoffice/shared/ActionBar'
 import { BackButton } from '@backoffice/shared/BackButton'
 import { OrderStatusBadge } from '@shared/components/OrderStatusBadge'
 import { Button } from '@shared/ui/Button'
+import { PageTitle, PageTitleCode } from '@shared/ui/PageHeader'
 import { Card } from '@shared/ui/Card'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { StaffBookingInfo } from '@backoffice/shared/StaffBookingInfo'
@@ -38,11 +39,14 @@ export default function ManagerOrderPage() {
       <header className={s.heading}>
         <div>
           <BackButton to="/manager/orders" label={t('mgr.orders.back')} />
-          <h1>{booking.code}</h1>
+          <PageTitle><PageTitleCode>{booking.code}</PageTitleCode></PageTitle>
           {booking.waybillNumber && <p>{t('mgr.orders.waybill', { code: booking.waybillNumber })}</p>}
         </div>
         <OrderStatusBadge status={status} />
       </header>
+      {status && <ActionBar next={t(`mgr.nextStep.${status}`)}>
+        {task && <Button variant="primary" onClick={jump}>{t(`mgr.orders.tasks.${task}`)}</Button>}
+      </ActionBar>}
       {data.detail.reviewReason && <p className={s.alert}>{t('mgr.orders.reviewReason')} {data.detail.reviewReason}</p>}
       <div className={s.layout}>
         <div className={s.stack}>
@@ -69,9 +73,6 @@ export default function ManagerOrderPage() {
         </div>
         <aside className={s.stack}><StaffBookingInfo detail={data.detail} /></aside>
       </div>
-      {status && <ActionBar next={t(`mgr.nextStep.${status}`)}>
-        {task && <Button variant="primary" onClick={jump}>{t(`mgr.orders.tasks.${task}`)}</Button>}
-      </ActionBar>}
     </div>
   )
 }

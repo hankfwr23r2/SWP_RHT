@@ -1,5 +1,14 @@
 // Dùng chung mọi trang: thành phần giao diện, điều hướng, trạng thái, vai trò, đăng nhập
 export const common = {
+  header: {
+    language: 'Ngôn ngữ',
+    openMenu: 'Mở menu',
+    closeMenu: 'Đóng menu',
+    navigation: 'Điều hướng chính',
+    account: 'Tài khoản',
+    profile: 'Xem hồ sơ cá nhân',
+    backToTop: 'Lên đầu trang',
+  },
   stablingClock: {
     title: "Giữ ngựa tại hub",
     readyReported: "Đã báo sẵn sàng nhận lúc {{at}}. Công ty đang xếp giờ giao lại.",

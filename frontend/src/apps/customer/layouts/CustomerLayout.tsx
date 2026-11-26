@@ -8,7 +8,6 @@ import { useAuth } from '@shared/auth/AuthContext'
 import { PageTransition } from '@shared/motion/motion'
 import { AppHeader, appHeaderStyles as h } from '@shared/ui/AppHeader'
 import { NoticeBell } from '@shared/components/NoticeBell'
-import { TranslateToggle } from '@shared/ui/TranslateToggle'
 
 const isActive = (to: string, path: string) =>
   path === to || (to === '/booking/route' && path.startsWith('/booking')) || (to === '/orders' && path.startsWith('/orders/'))
@@ -38,7 +37,6 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
       />
       <main><PageTransition>{children}</PageTransition></main>
       <footer className={h.footer}>{t('common.footerCopyright')} · {t('common.hotline')}: {contact.hotline}</footer>
-      <TranslateToggle />
     </>
   )
 }

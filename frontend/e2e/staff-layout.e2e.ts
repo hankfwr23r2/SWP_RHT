@@ -26,6 +26,19 @@ test('thanh trên ở bề rộng 360px không tràn ngang, vẫn thấy chuông
   }
 })
 
+test('menu điện thoại mở đủ mục và đóng khi điều hướng', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 720 })
+  await openAdminPage(page)
+
+  const nav = page.getByRole('navigation', { name: 'Điều hướng chính' })
+  await expect(nav).toBeHidden()
+  await page.getByRole('button', { name: 'Mở menu' }).click()
+  await expect(nav.getByRole('link', { name: 'Nhật ký hệ thống' })).toHaveAttribute('aria-current', 'page')
+  await nav.getByRole('link', { name: 'Tài khoản nhân viên' }).click()
+  await expect(page).toHaveURL(/\/admin\/accounts/)
+  await expect(nav).toBeHidden()
+})
+
 test('ở bề rộng 360px vẫn tìm được đơn từ thanh trên', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 720 })
   await openAdminPage(page)

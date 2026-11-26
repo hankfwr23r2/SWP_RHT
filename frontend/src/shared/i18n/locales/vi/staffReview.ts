@@ -34,7 +34,7 @@ export const staffReview = {
     "title": "Thẩm định đơn",
     "detailTitle": "Chi tiết thẩm định",
     "missingTitle": "Đơn thiếu giấy",
-    "order": "Đơn {{code}}",
+    "order": "Đơn <orderCode>{{code}}</orderCode>",
     "back": "Về danh sách thẩm định",
     "checkOrderLink": "Mở danh sách thẩm định để tìm lại đơn.",
     "checkReviewQueue": "Mở danh sách thẩm định để xem các đơn khác.",

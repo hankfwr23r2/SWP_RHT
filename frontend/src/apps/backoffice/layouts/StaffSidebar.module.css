@@ -23,10 +23,12 @@
 .collapsed .count { position: absolute; min-width: 18px; margin: -22px 0 0 20px; padding: 0 5px; background: var(--color-danger-strong); color: var(--color-on-primary); font-size: 0.66rem; line-height: 18px; }
 
 @media (max-width: 860px) {
-  .side { position: static; flex-direction: row; flex-wrap: wrap; align-items: center; width: auto; height: auto; padding: var(--space-2); border-right: 0; border-bottom: 1px solid var(--color-border); }
+  .side { display: none; position: static; width: auto; height: auto; overflow: visible; padding: var(--space-2) var(--space-4); border-right: 0; border-bottom: 1px solid var(--color-border); }
+  .side.open { display: block; }
   .head { display: none; }
-  .menu { display: flex; flex: 1 1 100%; overflow-x: auto; }
-  .item { flex: none; }
+  .side .item { justify-content: flex-start; height: auto; min-height: var(--touch-target); padding: var(--space-2) var(--space-3); }
+  .collapsed .item span { display: inline; }
+  .collapsed .count { position: static; margin: 0 0 0 auto; }
 }
 
 @media (prefers-reduced-motion: reduce) {

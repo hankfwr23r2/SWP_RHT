@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import s from './ActionBar.module.css'
 
-// Bước tiếp theo của đơn và nút thao tác, luôn thấy khi cuộn
+// Bước tiếp theo của đơn và nút thao tác
 export function ActionBar({ next, children }: { next: ReactNode; children?: ReactNode }) {
   const { t } = useTranslation()
   return (
