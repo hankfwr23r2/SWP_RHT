@@ -28,6 +28,8 @@ frontend/*.local
 !backend/scripts/migrations/*.sql
 # Keep the sequence repair script; database dumps remain ignored.
 !docker/postgres/repair_sequences.sql
+# Flyway migrations and dev seed are source code and must be committed.
+!backend/src/main/resources/db/**/*.sql
 
 # Database migration backups stay local and must not be committed.
 /.local-db-backups/

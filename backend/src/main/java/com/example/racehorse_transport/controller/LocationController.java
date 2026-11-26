@@ -1,97 +1,70 @@
 package com.example.racehorse_transport.controller;
 
-import com.example.racehorse_transport.dto.LocationChangeStatusRequestDto;
-import com.example.racehorse_transport.dto.LocationDto;
-import com.example.racehorse_transport.dto.LocationRequestDto;
-import com.example.racehorse_transport.entity.Location;
 import com.example.racehorse_transport.dto.common.ApiResponseDto;
+import com.example.racehorse_transport.dto.network.LocationRequestDto;
+import com.example.racehorse_transport.dto.network.LocationResponseDto;
+import com.example.racehorse_transport.entity.enums.ActiveStatus;
+import com.example.racehorse_transport.entity.enums.LocationType;
 import com.example.racehorse_transport.service.LocationService;
 import jakarta.validation.Valid;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
+// Điểm thuộc mạng lưới: hub, trại cách ly, trạm nghỉ, cửa khẩu, chuồng, trường đua.
 @RestController
 @RequestMapping("/locations")
 @RequiredArgsConstructor
 public class LocationController {
+
     private final LocationService locationService;
 
     @GetMapping
-    public ResponseEntity<ApiResponseDto<List<LocationDto>>> getLocationCatalog(
-            @RequestParam(required = false) String type,
-            @RequestParam(required = false) String country) {
-        return ResponseEntity.ok(ApiResponseDto.success(
-                locationService.findLocations(type, country, true).stream()
-                        .map(this::toDTO)
-                        .collect(Collectors.toList()),
-                "Lấy danh mục địa điểm thành công"));
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponseDto<List<LocationResponseDto>>> list(
+            @RequestParam(required = false) LocationType type,
+            @RequestParam(required = false) ActiveStatus status) {
+        return ResponseEntity.ok(ApiResponseDto.success(locationService.locations(type, status), "Danh sách địa điểm"));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping("/admin")
-    public ResponseEntity<ApiResponseDto<List<LocationDto>>> getAllLocationsForAdmin(
-            @RequestParam(required = false) String type,
-            @RequestParam(required = false) String country) {
-        return ResponseEntity.ok(ApiResponseDto.success(
-                locationService.findLocations(type, country, true).stream()
-                        .map(this::toDTO)
-                        .collect(Collectors.toList()),
-                "Lấy danh sách địa điểm thành công"));
+    @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponseDto<LocationResponseDto>> get(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponseDto.success(locationService.location(id), "Chi tiết địa điểm"));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<ApiResponseDto<LocationDto>> createLocation(
-            @Valid @RequestBody LocationRequestDto request,
-            Authentication authentication) {
-        Location created = locationService.createLocation(request, authentication.getName());
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponseDto<LocationResponseDto>> create(@Valid @RequestBody LocationRequestDto request) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponseDto.success(toDTO(created), "Tạo địa điểm thành công"));
+                .body(ApiResponseDto.success(locationService.createLocation(request), "Đã thêm địa điểm"));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponseDto<LocationDto>> updateLocation(
-            @PathVariable Integer id,
-            @Valid @RequestBody LocationRequestDto request,
-            Authentication authentication) {
-        Location updated = locationService.updateLocation(id, request, authentication.getName());
-        return ResponseEntity.ok(ApiResponseDto.success(toDTO(updated), "Cập nhật địa điểm thành công"));
-    }
-
     @PreAuthorize("hasRole('ADMIN')")
-    @PatchMapping("/{id}/status")
-    public ResponseEntity<ApiResponseDto<LocationDto>> changeStatus(
-            @PathVariable Integer id,
-            @Valid @RequestBody LocationChangeStatusRequestDto request,
-            Authentication authentication) {
-        Location updated = locationService.changeStatus(id, request.getStatus(), authentication.getName());
-        return ResponseEntity.ok(ApiResponseDto.success(toDTO(updated), "Cập nhật trạng thái địa điểm thành công"));
+    public ResponseEntity<ApiResponseDto<LocationResponseDto>> update(@PathVariable Long id, @Valid @RequestBody LocationRequestDto request) {
+        return ResponseEntity.ok(ApiResponseDto.success(locationService.updateLocation(id, request), "Đã cập nhật địa điểm"));
     }
 
-    private LocationDto toDTO(Location location) {
-        return LocationDto.builder()
-                .id(location.getId())
-                .locationCode(location.getLocationCode())
-                .locationType(location.getLocationType())
-                .locationName(location.getLocationName())
-                .address(location.getAddress())
-                .city(location.getCity())
-                .province(location.getProvince())
-                .country(location.getCountry())
-                .latitude(location.getLatitude())
-                .longitude(location.getLongitude())
-                .status(location.getStatus())
-                .openingMinutes(location.getOpeningMinutes())
-                .closingMinutes(location.getClosingMinutes())
-                .contactPhone(location.getContactPhone())
-                .destinationCountry(location.getDestinationCountry())
-                .build();
+    @PostMapping("/{id}/activate")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponseDto<LocationResponseDto>> activate(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponseDto.success(locationService.activateLocation(id), "Đã dùng lại địa điểm"));
+    }
+
+    @PostMapping("/{id}/deactivate")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponseDto<LocationResponseDto>> deactivate(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponseDto.success(locationService.deactivateLocation(id), "Đã ngừng dùng địa điểm"));
     }
 }

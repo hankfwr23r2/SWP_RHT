@@ -10,8 +10,9 @@ services:
       POSTGRES_PASSWORD: RaceHorse@2026
     ports:
       - "5432:5432"
+    # Volume mới cho lược đồ 59 bảng: Flyway không chạy trên DB cũ đã có bảng. Dữ liệu cũ vẫn nằm ở volume postgres_data.
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_v2:/var/lib/postgresql/data
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres -d horse_transport_db" ]
       interval: 5s
@@ -48,13 +49,14 @@ services:
       postgres:
         condition: service_healthy
     environment:
+      - SERVER_PORT=8080
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/horse_transport_db
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=RaceHorse@2026
-      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      # Lược đồ do Flyway tạo; máy dev nạp thêm dữ liệu mẫu ở db/seed-dev
+      - FLYWAY_LOCATIONS=classpath:db/migration,classpath:db/seed-dev
       - VNPAY_HASH_SECRET=${VNPAY_HASH_SECRET:-}
       - VNPAY_RETURN_URL=${VNPAY_RETURN_URL:-http://localhost:5173/payment/vnpay-return}
-      - APP_SEED_REFERENCE_DATA=${APP_SEED_REFERENCE_DATA:-true}
       - APP_BOOTSTRAP_ADMIN_USERNAME=${APP_BOOTSTRAP_ADMIN_USERNAME:-}
       - APP_BOOTSTRAP_ADMIN_EMAIL=${APP_BOOTSTRAP_ADMIN_EMAIL:-}
       - APP_BOOTSTRAP_ADMIN_PASSWORD=${APP_BOOTSTRAP_ADMIN_PASSWORD:-}
@@ -85,5 +87,5 @@ services:
       - "5173:80"
 
 volumes:
-  postgres_data:
+  postgres_data_v2:
   pgadmin_data:

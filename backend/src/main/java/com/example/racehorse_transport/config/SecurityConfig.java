@@ -55,33 +55,16 @@ public class SecurityConfig {
                 
                 // Cấu hình phân quyền truy cập URL
                 .authorizeHttpRequests(auth -> auth
-                        // Cho phép truy cập tự do vào API Auth, các endpoint public, Swagger UI, tra cứu đơn và health check
-                        .requestMatchers("/auth/**", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html", "/bookings/public-track", "/bookings/public-track/**", "/public/**", "/health", "/health/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/locations").permitAll()
+                        // Công khai: xác thực, tra cứu công khai, Swagger và health check
+                        .requestMatchers("/auth/**", "/public/**", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html", "/health", "/health/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        // Danh mục quốc gia, tỉnh cho các form (kể cả form đăng ký chưa đăng nhập)
+                        .requestMatchers(HttpMethod.GET, "/countries", "/provinces").permitAll()
 
                         // VNPAY gọi IPN server-to-server và trang kết quả gửi lại tham số: bảo vệ bằng chữ ký HMAC, không cần token
                         .requestMatchers(HttpMethod.GET, "/payments/vnpay/ipn", "/payments/vnpay/return").permitAll()
 
-                        // Phân quyền API Admin: Chỉ duy nhất tài khoản có ROLE_ADMIN
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
-
-                        // Phân quyền API Manager: Chỉ Quản lý và Admin
-                        .requestMatchers("/manager/**", "/trip-reports/**").hasAnyRole("MANAGER", "ADMIN")
-
-                        // Phân quyền API Điều phối viên: Coordinator, Manager, Admin
-                        .requestMatchers("/coordinator/**").hasAnyRole("COORDINATOR", "MANAGER", "ADMIN")
-
-                        // Phân quyền API Chuyên viên: Specialist, Inspector, Manager, Admin
-                        .requestMatchers("/specialist/**").hasAnyRole("SPECIALIST", "INSPECTOR", "MANAGER", "ADMIN")
-
-                        // Phân quyền API Khách hàng: Chỉ Khách hàng (ROLE_CUSTOMER)
-                        .requestMatchers("/customer/**").hasRole("CUSTOMER")
-
-                        // Thông báo nội bộ cho mọi tài khoản đã đăng nhập
-                        .requestMatchers("/notifications/**").authenticated()
-
-                        // Mọi endpoint còn lại đều bắt buộc phải đăng nhập (có token hợp lệ)
+                        // Mọi endpoint còn lại phải đăng nhập. Phân quyền theo vai trò đặt bằng @PreAuthorize trên controller (AGENTS.md mục 7.2)
                         .anyRequest().authenticated()
                 )
                 

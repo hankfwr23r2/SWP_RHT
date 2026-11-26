@@ -1,137 +1,184 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.dto.LocationRequestDto;
+import com.example.racehorse_transport.dto.network.CountryResponseDto;
+import com.example.racehorse_transport.dto.network.HubServiceAreaResponseDto;
+import com.example.racehorse_transport.dto.network.LocationRequestDto;
+import com.example.racehorse_transport.dto.network.LocationResponseDto;
+import com.example.racehorse_transport.dto.network.ProvinceResponseDto;
+import com.example.racehorse_transport.entity.Country;
+import com.example.racehorse_transport.entity.HubServiceArea;
+import com.example.racehorse_transport.entity.HubServiceAreaId;
 import com.example.racehorse_transport.entity.Location;
+import com.example.racehorse_transport.entity.Province;
+import com.example.racehorse_transport.entity.enums.ActiveStatus;
+import com.example.racehorse_transport.entity.enums.LocationType;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
+import com.example.racehorse_transport.exception.VehicleRuleException;
+import com.example.racehorse_transport.repository.CountryRepository;
+import com.example.racehorse_transport.repository.HubServiceAreaRepository;
 import com.example.racehorse_transport.repository.LocationRepository;
-import com.example.racehorse_transport.service.AdminAuditService;
+import com.example.racehorse_transport.repository.ProvinceRepository;
+import com.example.racehorse_transport.repository.RouteRepository;
 import com.example.racehorse_transport.service.LocationService;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class LocationServiceImpl implements LocationService {
-    private final AdminAuditService audit;
 
-    private static final String BORDER_GATE = "BorderGate";
-
-    private final LocationRepository locationRepository;
+    private final CountryRepository countries;
+    private final ProvinceRepository provinces;
+    private final LocationRepository locations;
+    private final HubServiceAreaRepository serviceAreas;
+    private final RouteRepository routes;
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(value = "locations", key = "(#type == null ? '' : #type) + '_' + (#country == null ? '' : #country) + '_' + #includeInactive")
-    public List<Location> findLocations(String type, String country, boolean includeInactive) {
-        return locationRepository.findAll().stream()
-                .filter(location -> includeInactive || "ACTIVE".equalsIgnoreCase(location.getStatus()))
-                .filter(location -> type == null || type.isBlank()
-                        || type.equalsIgnoreCase(location.getLocationType()))
-                .filter(location -> country == null || country.isBlank()
-                        || country.equalsIgnoreCase(location.getCountry()))
-                .toList();
+    public List<CountryResponseDto> countries() {
+        return countries.findAll(Sort.by("code")).stream().map(CountryResponseDto::from).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProvinceResponseDto> provinces(String countryCode) {
+        return provinces.findByCountry_CodeOrderByName(countryCode.trim().toUpperCase(Locale.ROOT)).stream()
+                .map(ProvinceResponseDto::from).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<LocationResponseDto> locations(LocationType type, ActiveStatus status) {
+        return locations.search(type, status).stream().map(LocationResponseDto::from).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public LocationResponseDto location(Long id) {
+        return LocationResponseDto.from(findLocation(id));
     }
 
     @Override
     @Transactional
-    @CacheEvict(value = "locations", allEntries = true)
-    public Location createLocation(LocationRequestDto request, String changedBy) {
-        validateRequest(request, changedBy);
-        Location location = request.toEntity();
-        location.setId(locationRepository.findMaxId() + 1);
-        location.setLocationCode("LOC-" + location.getId());
-        Location saved = locationRepository.save(location);
-        audit.record("CREATE_LOCATION", "LOCATION", saved.getId(), saved.getLocationName(), "Tạo địa điểm", null, values(saved));
-        return saved;
+    public LocationResponseDto createLocation(LocationRequestDto request) {
+        requireUniqueCode(request.getCode().trim().toUpperCase(Locale.ROOT), null);
+        Location location = request.toEntity(country(request.getCountryCode()), province(request.getProvinceCode(), request.getCountryCode()));
+        location.setStatus(ActiveStatus.ACTIVE);
+        return LocationResponseDto.from(locations.save(location));
     }
 
     @Override
     @Transactional
-    @CacheEvict(value = "locations", allEntries = true)
-    public Location updateLocation(Integer id, LocationRequestDto request, String changedBy) {
-        validateRequest(request, changedBy);
+    public LocationResponseDto updateLocation(Long id, LocationRequestDto request) {
         Location location = findLocation(id);
-        Map<String, String> oldValues = values(location);
-        request.applyTo(location);
-        Location saved = locationRepository.save(location);
-        audit.record("UPDATE_LOCATION", "LOCATION", id, saved.getLocationName(), "Cập nhật địa điểm", oldValues, values(saved));
-        return saved;
+        if (location.isHeadquarters() && request.getLocationType() != LocationType.HUB) {
+            throw new VehicleRuleException("locationType", "Địa điểm trụ sở phải là hub.");
+        }
+        // Kiểm mã trùng trước khi ghi đè, để lần flush tự động của truy vấn không vướng ràng buộc UNIQUE
+        requireUniqueCode(request.getCode().trim().toUpperCase(Locale.ROOT), id);
+        LocationType previousType = location.getLocationType();
+        request.applyTo(location, country(request.getCountryCode()), province(request.getProvinceCode(), request.getCountryCode()));
+        // Đổi loại địa điểm làm sai tuyến và vùng phục vụ đang dùng nó
+        if (previousType != location.getLocationType()
+                && (routes.isUsedByRoute(id, ActiveStatus.ACTIVE) || routes.isUsedByRoute(id, ActiveStatus.INACTIVE)
+                    || (previousType == LocationType.HUB && servesAnyProvince(id)))) {
+            throw new IllegalStateException("Không đổi được loại của địa điểm đang dùng trong tuyến hoặc vùng phục vụ.");
+        }
+        return LocationResponseDto.from(location);
     }
 
     @Override
     @Transactional
-    @CacheEvict(value = "locations", allEntries = true)
-    public Location changeStatus(Integer id, String status, String changedBy) {
-        if (!"ACTIVE".equals(status) && !"INACTIVE".equals(status)) {
-            throw new IllegalArgumentException("Trạng thái địa điểm không hợp lệ.");
-        }
-        if (changedBy == null || changedBy.isBlank()) {
-            throw new IllegalArgumentException("Không xác định được người thực hiện thay đổi.");
-        }
+    public LocationResponseDto activateLocation(Long id) {
         Location location = findLocation(id);
-        String oldStatus = location.getStatus();
-        location.setStatus(status);
-        Location saved = locationRepository.save(location);
-        if (!Objects.equals(oldStatus, status)) {
-            audit.record("CHANGE_LOCATION_STATUS", "LOCATION", id, saved.getLocationName(), "Đổi trạng thái địa điểm",
-                    AdminAuditService.values("status", oldStatus), AdminAuditService.values("status", status));
-        }
-        return saved;
+        location.setStatus(ActiveStatus.ACTIVE);
+        return LocationResponseDto.from(location);
     }
 
-    private Location findLocation(Integer id) {
-        return locationRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy địa điểm có ID: " + id));
+    @Override
+    @Transactional
+    public LocationResponseDto deactivateLocation(Long id) {
+        Location location = findLocation(id);
+        if (routes.isUsedByRoute(id, ActiveStatus.ACTIVE)) {
+            throw new IllegalStateException("Địa điểm đang thuộc một tuyến đang chạy. Ngừng tuyến trước.");
+        }
+        location.setStatus(ActiveStatus.INACTIVE);
+        return LocationResponseDto.from(location);
     }
 
-    private void validateRequest(LocationRequestDto request, String changedBy) {
-        if (request == null) {
-            throw new IllegalArgumentException("Thông tin địa điểm không được để trống.");
+    @Override
+    @Transactional(readOnly = true)
+    public List<HubServiceAreaResponseDto> serviceAreas() {
+        return serviceAreas.findAllWithHubAndProvince().stream().map(HubServiceAreaResponseDto::from).toList();
+    }
+
+    @Override
+    @Transactional
+    public HubServiceAreaResponseDto assignServiceArea(String provinceCode, Long hubLocationId) {
+        Province province = provinces.findById(provinceCode)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tỉnh " + provinceCode));
+        Location hub = findLocation(hubLocationId);
+        if (hub.getLocationType() != LocationType.HUB || hub.getStatus() != ActiveStatus.ACTIVE) {
+            throw new IllegalArgumentException("Chỉ giao tỉnh cho hub đang hoạt động.");
         }
-        if (changedBy == null || changedBy.isBlank()) {
-            throw new IllegalArgumentException("Không xác định được người thực hiện thay đổi.");
-        }
-        if (BORDER_GATE.equals(request.getLocationType())) {
-            if (request.getDestinationCountry() == null || request.getDestinationCountry().isBlank()) {
-                throw new IllegalArgumentException("Cửa khẩu phải có quốc gia đối tác.");
+        var current = serviceAreas.findById_ProvinceCode(provinceCode);
+        if (current.isPresent()) {
+            if (current.get().getHub().getId().equals(hubLocationId)) {
+                return HubServiceAreaResponseDto.from(current.get());
             }
-            if (request.getOpeningMinutes() == null || request.getClosingMinutes() == null) {
-                throw new IllegalArgumentException("Cửa khẩu phải có giờ mở và giờ đóng.");
-            }
-            if (request.getOpeningMinutes() >= request.getClosingMinutes()) {
-                throw new IllegalArgumentException("Giờ mở cửa phải sớm hơn giờ đóng cửa.");
-            }
+            // Khóa chính gồm cả hub, nên chuyển hub là xóa dòng cũ rồi thêm dòng mới
+            serviceAreas.delete(current.get());
+            serviceAreas.flush();
         }
+        HubServiceArea area = new HubServiceArea();
+        area.setId(new HubServiceAreaId(hubLocationId, provinceCode));
+        area.setHub(hub);
+        area.setProvince(province);
+        return HubServiceAreaResponseDto.from(serviceAreas.save(area));
     }
 
-
-    private Map<String, String> values(Location location) {
-        Map<String, String> values = new LinkedHashMap<>();
-        values.put("locationCode", location.getLocationCode());
-        values.put("locationType", location.getLocationType());
-        values.put("locationName", location.getLocationName());
-        values.put("address", location.getAddress());
-        values.put("city", location.getCity());
-        values.put("province", location.getProvince());
-        values.put("country", location.getCountry());
-        values.put("latitude", text(location.getLatitude()));
-        values.put("longitude", text(location.getLongitude()));
-        values.put("status", location.getStatus());
-        values.put("openingMinutes", text(location.getOpeningMinutes()));
-        values.put("closingMinutes", text(location.getClosingMinutes()));
-        values.put("contactPhone", location.getContactPhone());
-        values.put("destinationCountry", location.getDestinationCountry());
-        return values;
+    @Override
+    @Transactional
+    public void removeServiceArea(String provinceCode) {
+        HubServiceArea area = serviceAreas.findById_ProvinceCode(provinceCode)
+                .orElseThrow(() -> new ResourceNotFoundException("Tỉnh " + provinceCode + " chưa thuộc hub nào"));
+        serviceAreas.delete(area);
     }
 
-    private String text(Object value) {
-        return value == null ? null : value.toString();
+    private Location findLocation(Long id) {
+        return locations.findById(id).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy địa điểm " + id));
     }
 
+    private Country country(String code) {
+        return countries.findById(code).orElseThrow(() -> new IllegalArgumentException("Quốc gia không hợp lệ: " + code));
+    }
+
+    // Tỉnh có thể bỏ trống; nếu có thì phải thuộc đúng quốc gia đã chọn
+    private Province province(String provinceCode, String countryCode) {
+        if (provinceCode == null || provinceCode.isBlank()) {
+            return null;
+        }
+        Province province = provinces.findById(provinceCode.trim())
+                .orElseThrow(() -> new IllegalArgumentException("Tỉnh không hợp lệ: " + provinceCode));
+        if (!province.getCountry().getCode().equals(countryCode)) {
+            throw new IllegalArgumentException("Tỉnh " + provinceCode + " không thuộc quốc gia " + countryCode + ".");
+        }
+        return province;
+    }
+
+    private void requireUniqueCode(String code, Long selfId) {
+        locations.findByCode(code)
+                .filter(other -> !other.getId().equals(selfId))
+                .ifPresent(other -> {
+                    throw new IllegalStateException("Mã địa điểm " + code + " đã được dùng.");
+                });
+    }
+
+    private boolean servesAnyProvince(Long hubId) {
+        return serviceAreas.findAllWithHubAndProvince().stream().anyMatch(area -> area.getHub().getId().equals(hubId));
+    }
 }

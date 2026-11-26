@@ -11,28 +11,12 @@ import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.postgresql.PostgreSQLContainer;
+import com.example.racehorse_transport.PostgresIntegrationTest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 // Tuyến và phí đã lấy được lưu 30 ngày để không gọi lại dịch vụ ngoài và để lộ trình, báo giá dùng cùng số liệu.
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@PostgresIntegrationTest
 class RouteCacheServiceImplTest {
-
-    private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:16-alpine");
-
-    static {
-        POSTGRES.start();
-    }
-
-    @DynamicPropertySource
-    static void datasource(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-        registry.add("spring.datasource.username", POSTGRES::getUsername);
-        registry.add("spring.datasource.password", POSTGRES::getPassword);
-    }
 
     @Autowired
     private RouteCacheService cache;

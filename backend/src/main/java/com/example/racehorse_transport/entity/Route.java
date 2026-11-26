@@ -1,42 +1,61 @@
 package com.example.racehorse_transport.entity;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.Size;
+import com.example.racehorse_transport.entity.enums.ActiveStatus;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
 
+// Tuyến trục chính cố định (mỗi chiều là một tuyến).
 @Getter
 @Setter
+@NoArgsConstructor
 @Entity
-@Table(name = "ROUTE")
+@Table(name = "route")
 public class Route {
+
     @Id
-    @Column(name = "RouteID", nullable = false)
-    private Integer id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Long id;
 
-    @Size(max = 255)
-    @Nationalized
-    @Column(name = "RouteName")
-    private String routeName;
+    @Column(name = "code", length = 30, nullable = false)
+    private String code;
 
-    @Column(name = "description", columnDefinition = "TEXT")
-    private String description;
+    @Column(name = "name", length = 200, nullable = false)
+    private String name;
 
-    @Column(name = "estimatedTime")
-    private Integer estimatedTime;
+    // Điểm đầu: hub, hoặc cửa khẩu với tuyến chiều nhập
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "origin_location_id", nullable = false)
+    private Location origin;
 
-    @Column(name = "distance", precision = 10, scale = 2)
-    private BigDecimal distance;
+    // Điểm cuối: hub, trại cách ly hoặc cửa khẩu
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "destination_location_id", nullable = false)
+    private Location destination;
 
-    @Size(max = 50)
-    @Column(name = "status", length = 50)
-    private String status;
+    @Column(name = "distance_km", nullable = false, precision = 8, scale = 2)
+    private BigDecimal distanceKm;
 
-    @Column(name = "seedKey", unique = true, length = 50)
-    private String seedKey;
+    @Column(name = "estimated_duration_minutes", nullable = false)
+    private Integer estimatedDurationMinutes;
 
-
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", length = 30, nullable = false)
+    private ActiveStatus status;
 }
