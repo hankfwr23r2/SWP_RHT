@@ -121,7 +121,7 @@ test('điều phối xem lượt đang về trễ trên lịch xe và chi tiết
   await signIn(page, 'coordinator')
   await mockDispatch(page, { returning: true })
   await page.goto('/backoffice/coordinator/dispatch')
-  await page.getByLabel('Tuần bắt đầu từ').fill('2031-03-05')
+  await page.getByLabel('Tuần bắt đầu từ').fill('05/03/2031')
 
   const trip = page.getByRole('region', { name: 'Lượt xe trong tuần' }).getByRole('button', { name: /VT-AAAA0009/ })
   await expect(trip).toContainText('Đang về')
@@ -139,7 +139,7 @@ test('điều phối xếp ngựa vào lượt xe trục và phân công tài x�
   await page.goto('/backoffice/coordinator/dispatch')
 
   await expect(page.getByRole('heading', { level: 1, name: 'Điều độ' })).toBeVisible({ timeout: 15_000 })
-  await page.getByLabel('Tuần bắt đầu từ').fill('2031-03-05')
+  await page.getByLabel('Tuần bắt đầu từ').fill('05/03/2031')
   const bookings = page.getByRole('list', { name: 'Đơn chờ xếp xe' })
   await expect(bookings.getByRole('listitem').filter({ hasText: 'BK-AAAA0001' }).first()).toContainText('Cần Đón')
   await expect(page.getByRole('button', { name: /VT-AAAA0009/ })).toContainText('Thiếu tài xế')
@@ -186,7 +186,7 @@ test('điều phối phụ trách đổi xe lượt trục từ màn điều đ�
   await signIn(page, 'coordinator')
   const sent = await mockDispatch(page, { replacementAvailable: true })
   await page.goto('/backoffice/coordinator/dispatch')
-  await page.getByLabel('Tuần bắt đầu từ').fill('2031-03-05')
+  await page.getByLabel('Tuần bắt đầu từ').fill('05/03/2031')
   await page.getByRole('region', { name: 'Lượt xe trong tuần' }).getByRole('button', { name: /VT-AAAA0009/ }).click()
   const detail = page.getByRole('dialog', { name: /VT-AAAA0009/ })
   await detail.getByRole('button', { name: 'Sửa lượt' }).click()

@@ -7,6 +7,7 @@ it('hiện ngày dd/mm/yyyy theo giờ Việt Nam, không theo ngôn ngữ trìn
   expect(formatDate('2026-12-03T20:30:00Z')).toBe('04/12/2026')
   expect(formatDateTime('2026-12-03T20:30:00Z')).toBe('04/12/2026 03:30')
   expect(formatDateTime('2026-12-04')).toBe('04/12/2026')
+  expect(formatDateTime('2026-12-03T20:30:05Z', { seconds: true })).toBe('04/12/2026 03:30:05')
   expect(formatClock('2026-12-03T20:30:00Z')).toBe('03:30')
   expect(formatDate('không phải ngày')).toBe('')
 })

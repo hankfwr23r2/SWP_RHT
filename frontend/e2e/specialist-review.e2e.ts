@@ -199,7 +199,7 @@ test('duyệt giấy từng ngựa, từ chối kèm lý do và nộp giấy tha
   await page.getByRole('button', { name: 'Nộp giấy thay', exact: true }).click()
   const upload = page.getByRole('dialog')
   await upload.locator('input[type=file]').setInputFiles({ name: 'isolation.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4') })
-  await upload.getByLabel('Ngày hết hạn của giấy').fill('2099-02-01')
+  await upload.getByLabel('Ngày hết hạn của giấy').fill('01/02/2099')
   await upload.getByRole('button', { name: 'Nộp giấy thay' }).click()
   await expect(upload).toHaveCount(0)
   const submission = calls.find(call => call.path.endsWith('/upload-for-partner'))

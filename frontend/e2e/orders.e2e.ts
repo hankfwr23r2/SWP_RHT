@@ -139,7 +139,7 @@ test('đổi chuyến: không hiện chuyến cũ, ngày đón trước ngày xu
   const { calls } = await open(page, '/orders/8', { status: 'SCHEDULE_CHANGE_REQUIRED' })
   await expect(page.getByText('Chuyến cũ', { exact: true })).toHaveCount(0)
   await page.getByText('TP.HCM – Đà Nẵng').click()
-  await expect(page.getByLabel(/Ngày đón ngựa/)).toHaveValue('2099-01-19')
+  await expect(page.getByLabel(/Ngày đón ngựa/)).toHaveValue('19/01/2099')
   await page.getByRole('button', { name: 'Đổi sang chuyến này' }).click()
   await page.getByRole('alertdialog').getByRole('button', { name: 'Đổi sang chuyến này' }).click()
   await expect(page.getByText('Đã đổi chuyến.')).toBeVisible()

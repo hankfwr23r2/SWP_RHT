@@ -3,7 +3,7 @@ export type Time = string | number | Date
 const DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/
 const localDateTime = new Intl.DateTimeFormat('en-GB', {
   timeZone: 'Asia/Ho_Chi_Minh',
-  year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
 })
 
 function dateParts(value: Time) {
@@ -25,10 +25,12 @@ export function formatClock(value: Time) {
   return hour ? [hour, minute].join(':') : ''
 }
 
-export function formatDateTime(value: Time) {
+// Nhật ký và chứng từ cần giây: formatDateTime(at, { seconds: true })
+export function formatDateTime(value: Time, options: { seconds?: boolean } = {}) {
   if (typeof value === 'string' && DATE_ONLY.test(value)) return formatDate(value)
-  const { day, month, year, hour, minute } = dateParts(value)
-  return year ? [day, month, year].join('/') + ' ' + [hour, minute].join(':') : ''
+  const { day, month, year, hour, minute, second } = dateParts(value)
+  const clock = options.seconds ? [hour, minute, second] : [hour, minute]
+  return year ? [day, month, year].join('/') + ' ' + clock.join(':') : ''
 }
 
 export function parseDisplayDate(value: string): string | undefined {
