@@ -5,6 +5,8 @@
 > - Đặc tả cột và ràng buộc: [DB_SCHEMA_59_BANG.md](DB_SCHEMA_59_BANG.md). Khi có mâu thuẫn, file đó đúng.
 > - Tài liệu **tham khảo** (căn cứ pháp lý, cách làm của IRT/Peden), không phải yêu cầu: [CAN_CU_PHAP_LY_VA_IRT.md](CAN_CU_PHAP_LY_VA_IRT.md).
 > - Vì sao thiết kế như vậy: [NGU_CANH_THIET_KE_LAI.md](NGU_CANH_THIET_KE_LAI.md).
+>
+> **Lưu ý 26/11/2026:** người dùng chốt **mô hình bến xe** ([NGU_CANH_THIET_KE_LAI.md](NGU_CANH_THIET_KE_LAI.md) mục 4b, [NGHIEP_VU_6_LUONG.md](NGHIEP_VU_6_LUONG.md)). Các phần có nhãn **[Thay 26/11, chờ thiết kế lược đồ]** mô tả cách cũ (đại lý ở cửa khẩu, chuyến số chỗ cố định, mọi xe thuộc trụ sở) và sẽ được viết lại khi lược đồ mới được duyệt.
 
 ## Mục lục
 
@@ -27,9 +29,11 @@ Công ty là **đại lý tổ chức vận chuyển ngựa đua trọn gói** b
 - Công ty là đầu mối duy nhất với khách, được tự chọn tuyến và phương tiện.
 - Công ty được thuê lại bên khác thực hiện một phần dịch vụ: đại lý nước ngoài, thú y, chuồng gửi.
 - **Trọn gói vận chuyển và thủ tục, không gồm nơi cách ly.** Công ty lo hồ sơ kiểm dịch, giấy phép, hải quan và thú y lấy mẫu tại chuồng. Chủ ngựa hoặc bên nhận lo nơi cách ly. Công ty chỉ chở ngựa **đã đủ điều kiện**, thể hiện bằng giấy.
-- Đoạn trong Việt Nam do xe công ty chạy. Đoạn ở nước ngoài do đại lý chạy, ngựa được bàn giao tại cửa khẩu.
+- ~~Đoạn trong Việt Nam do xe công ty chạy. Đoạn ở nước ngoài do đại lý chạy, ngựa được bàn giao tại cửa khẩu.~~ **[Thay 26/11]** Xe công ty chạy trục qua cửa khẩu tới hub nước ngoài của công ty; hub đó đón, giao như hub trong nước.
 
 ### 1.2 Mô hình gom hàng qua hub
+
+> **[Thay 26/11, chờ thiết kế lược đồ]** Sơ đồ dưới còn nhánh đại lý ở cửa khẩu. Mô hình mới: [NGHIEP_VU_6_LUONG.md](NGHIEP_VU_6_LUONG.md), phần Bức tranh chung.
 
 Đơn đi trục có hai cách đưa và nhận ngựa tại mỗi đầu trong nước. Công ty có thể đón hoặc giao tận nơi nếu một chiều không quá nửa giới hạn lái mỗi ngày (5 giờ theo cấu hình 10 giờ). Khách cũng có thể đưa ngựa tới hub hoặc người nhận đến hub vào giờ đã hẹn. Ngựa phải có mặt trước giờ chuyến trục chạy theo `HUB_CHECKIN_HOURS` (mặc định 3 giờ). Quá hạn nhận, ngựa được gửi chuồng và người nhận trả phí. Trách nhiệm của công ty bắt đầu khi ký nhận ngựa tại hub và kết thúc khi bên nhận ký nhận. Đơn chạy thẳng và đầu nước ngoài dùng `COMPANY`. Cả hai địa chỉ gốc vẫn được khai để chọn hub và lập giấy tờ.
 
@@ -480,6 +484,8 @@ Việc chăm sóc suy ra từ nơi ngựa đang ở, nên đổi người thì v
 | Ghi nhận niêm phong, khử trùng xe nếu có. Đợt này không có quy tắc kiểm tra | `vehicle_trip.sealed_at`, `disinfected_at` |
 
 #### 7.4 Cửa khẩu và bàn giao cho đại lý
+
+> **[Thay 26/11, chờ thiết kế lược đồ]** Không còn bàn giao đại lý. Cửa khẩu là điểm dừng `BORDER` giữa tuyến hub ⇄ hub nước ngoài: kiểm giấy riêng của cửa khẩu rồi xe đi tiếp. Giao nhận ở hub nước ngoài theo mục giao ngựa thông thường.
 
 | Việc | Bảng |
 |---|---|

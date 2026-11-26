@@ -1,5 +1,7 @@
 # Kế hoạch giao việc cho thành viên
 
+> **Lưu ý 26/11/2026:** các phần về đại lý ở cửa khẩu, chuyến số chỗ cố định và mọi xe thuộc trụ sở đã được thay bằng mô hình bến xe ([NGU_CANH_THIET_KE_LAI.md](NGU_CANH_THIET_KE_LAI.md) mục 4b). Phần còn lại giữ làm lịch sử.
+
 Ngày 25/11/2026. Các gói dưới đây lấy từ [PHUONG_AN_6_LUONG.md](PHUONG_AN_6_LUONG.md), **nghiệp vụ đã được người dùng duyệt**. 30 điểm chưa có phương án nằm ở [GIAO_VIEC_BAN_B.md](GIAO_VIEC_BAN_B.md), không làm ở đây.
 
 ## 1. Ai làm gì
@@ -106,7 +108,7 @@ Mỗi gói một người. G1, G2, G3 làm song song được.
 
 ### G3. Xử lý chuyến trễ
 
-- **Điểm:** 1.F6, 3.G2, 4.F7, 5.G23. **Phương án:** bảng ở mục 3.F của [NGHIEP_VU_6_LUONG.md](NGHIEP_VU_6_LUONG.md).
+- **Điểm:** 1.F6, 3.G2, 4.F7, 5.G23. **Phương án:** bảng ở mục 3.F của bản lưu [luu-tru/NGHIEP_VU_6_LUONG_25-11-2026.md](luu-tru/NGHIEP_VU_6_LUONG_25-11-2026.md).
 
 **Quy tắc đã duyệt** (T là giờ chạy gốc của chuyến)
 

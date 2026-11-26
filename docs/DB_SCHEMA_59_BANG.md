@@ -1730,3 +1730,21 @@ Các phương án đã duyệt trước đợt 2 được chuyển tiếp bằng
 - `incident_plan.customer_agreed_by` (FK tới `app_user.id`) và `customer_agreed_at` (`timestamptz`) cùng có khi chủ đơn đồng ý với phiên bản phương án.
 - `CUSTOMER_COST_RESPONSE_MINUTES` mặc định 15 phút, cấu hình từ 5 đến 1440.
 - `booking_status_history.previous_departure_id` lưu chuyến đã nhả chỗ khi báo giá hết hạn, để giữ lại chỗ khi mở lại.
+
+## Thay đổi chờ thiết kế theo quyết định 26/11/2026
+
+Người dùng chốt **mô hình bến xe** ([NGU_CANH_THIET_KE_LAI.md](NGU_CANH_THIET_KE_LAI.md) mục 4b). Lược đồ **chưa đổi**: mỗi mục dưới đây phải được thiết kế, duyệt và có migration Flyway riêng (DB-first) trước khi code. Danh sách là phạm vi ảnh hưởng, chưa phải đặc tả.
+
+| Bảng, cột hoặc quy tắc | Hiện tại | Hướng thay đổi |
+|---|---|---|
+| `location` loại HUB, `hub_service_area` | Hub chỉ ở Việt Nam | Thêm hub ở Lào, Campuchia và vùng phục vụ là tỉnh bên đó |
+| Quy tắc #1: hub gốc của xe phải là trụ sở; `vehicle.home_hub_location_id`, `staff.home_hub_location_id` "đợt này thuộc trụ sở" | Mọi xe, người thuộc trụ sở | Hub gốc là bất kỳ hub nào |
+| `route.origin_location_id`, `destination_location_id`; quy tắc #19 | Tuyến quốc tế kết thúc hoặc bắt đầu ở cửa khẩu | Tuyến luôn nối hai hub; cửa khẩu là `route_stop` loại `BORDER` |
+| `departure.stall_capacity`, `booked_stall_count`, `CHECK (booked_stall_count BETWEEN 0 AND stall_capacity)` | Số chỗ cố định theo lịch | Sức chứa theo xe nền và xe tăng cường của chuyến; hạn mức xe trục của hub; khóa khi đặt chỗ theo đội xe |
+| `departure_schedule` | Số chỗ theo lịch | Xe nền theo loại xe; lịch được kiểm với hạn mức xe của hub |
+| `system_config` | | Thêm thời gian nghỉ tối thiểu sau chuyến trục (12 giờ), tỷ lệ dự phòng (20%) |
+| `booking` | Chỉ có xe ghép | Thêm lựa chọn xe riêng; báo giá xe riêng theo nguyên xe (`price_item`) |
+| `horse_leg.agent_party_id`, `handover` loại `AGENT`, quy tắc #26, #28, #35, `party_role` `DEST_AGENT`, `submitter_type` `AGENT`, `cost_item.payer_type` `AGENT`, `incident.cause_type` `AGENT_FAULT` | Chặng và bàn giao đại lý ở cửa khẩu | Bỏ hoặc ngừng dùng; giao nhận ở hub nước ngoài dùng loại giao nhận thông thường |
+| `health_check_task.check_type` | `ROUTINE, FOLLOW_UP, BEFORE_DEPARTURE`, không bắt buộc | Thêm `BEFORE_DELIVERY`; bắt buộc khám trước khi ra hub ở cả hai đầu |
+| Trạng thái xe về | Vị trí suy ra từ lượt cuối | Thêm ghi nhận "Đã về hub gốc" có ảnh và tình trạng xe, theo thiết kế cũ nhánh `main` |
+| `document_requirement.gate_location_id` | Cửa khẩu suy từ điểm đầu, cuối tuyến | Cửa khẩu lấy từ `route_stop` loại `BORDER`; bổ sung giấy riêng theo cửa khẩu và các cửa khẩu của bản cũ |
