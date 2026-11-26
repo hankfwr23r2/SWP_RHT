@@ -65,6 +65,30 @@ class MailClientTest {
     }
 
     @Test
+    void skipsAddressesOnDomainsReservedForTesting() {
+        MailClient brevoMail = brevoSender();
+        // smtp null: nếu có gửi qua SMTP thì test lỗi ngay
+        MailClient smtpMail = new MailClient(null, "", "", "smtp.gmail.com", "nhaxe@gmail.com");
+
+        for (String to : java.util.List.of("customer1.dev@racehorse.test", "a@shop.example", "b@x.invalid",
+                "c@localhost", "d@example.com", "e@mail.example.org", "F@EXAMPLE.NET")) {
+            brevoMail.send(to, "Mã xác thực", "Mã 123456");
+            brevoMail.sendHtml(to, "Hóa đơn", "<p>Hóa đơn</p>", "Hóa đơn");
+            smtpMail.send(to, "Mã xác thực", "Mã 123456");
+            smtpMail.sendHtml(to, "Hóa đơn", "<p>Hóa đơn</p>", "Hóa đơn");
+        }
+
+        assertThat(method.get()).isNull();
+    }
+
+    @Test
+    void stillSendsToRealDomainsThatMerelyContainReservedWords() {
+        brevoSender().send("khach@example-horse.vn", "Mã xác thực", "Mã 123456");
+
+        assertThat(body.get()).contains("\"to\":[{\"email\":\"khach@example-horse.vn\"}]");
+    }
+
+    @Test
     void reportsBrevoRejectionAsMailErrorWithReason() {
         status = 401;
         reply = "{\"code\":\"unauthorized\",\"message\":\"Key not found\"}";
