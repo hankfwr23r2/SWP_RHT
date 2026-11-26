@@ -156,18 +156,11 @@ erDiagram
         int8 id PK
         varchar name
         varchar microchip
-        varchar passport_number
         varchar sex
         int2 birth_year
         varchar color
-        varchar breed
-        varchar sire
-        varchar dam
         int8 horse_type_id FK
         text identification_marks
-        numeric weight_kg
-        numeric declared_value
-        bpchar declared_currency_code
         varchar status
         timestamptz created_at
         timestamptz updated_at
@@ -190,6 +183,7 @@ erDiagram
         numeric distance_km
         int4 estimated_duration_minutes
         varchar status
+        bool fleet_outbound
     }
     route_stop {
         int8 route_id PK, FK
