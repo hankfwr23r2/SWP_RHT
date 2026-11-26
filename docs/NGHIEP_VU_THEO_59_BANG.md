@@ -170,7 +170,7 @@ Một scheduler khác chuyển `departure` sang `CLOSED` khi đã qua `booking_c
 
 | Mốc trước giờ xuất phát | Việc |
 |---|---|
-| 8 tuần | Mở bán (`OPEN`) |
+| 6 tuần | Mở bán (`OPEN`) |
 | 72 giờ | Chốt nhận đơn (`CLOSED`) |
 | 48 giờ (`DEPARTURE_DECISION_HOURS`) | Đơn chưa gửi báo giá nhả chỗ và chuyển `SCHEDULE_CHANGE_REQUIRED`. Đơn `AWAITING_DEPOSIT` giữ chỗ đến khi báo giá hết hạn. Quản lý quyết định chạy |
 | 1 ngày | Ngày đưa ngựa tới hub chuẩn của đơn đi trục INTERPROVINCE, EXPORT. Dùng cho cả COMPANY và SELF. Lưu chuồng sớm hơn tính theo số ngựa và số ngày |

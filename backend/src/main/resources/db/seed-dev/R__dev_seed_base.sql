@@ -32,6 +32,14 @@ INSERT INTO location (code, name, location_type, country_code, province_code, ad
     ('GATE-LAOBAO', 'Cửa khẩu quốc tế Lao Bảo - Densavanh', 'BORDER_GATE', 'VN', 'VN-44', 'Xã Lao Bảo, Quảng Trị', 16.620000, 106.600000, TIME '07:00', TIME '22:00', NULL, 'ACTIVE')
 ON CONFLICT (code) DO NOTHING;
 
+-- Trường đua và câu lạc bộ ngựa làm nơi đón, giao quen thuộc. Tên và tọa độ là SỐ MẪU, chưa kiểm chứng
+INSERT INTO location (code, name, location_type, country_code, province_code, address, latitude, longitude, opening_time, closing_time, contact_phone, status) VALUES
+    ('TRACK-DAINAM', 'Trường đua Đại Nam (mẫu)', 'RACETRACK', 'VN', 'VN-79', 'Phường Hiệp An, TP.HCM', 11.050000, 106.630000, TIME '06:00', TIME '18:00', '0900000401', 'ACTIVE'),
+    ('TRACK-SAIGONRIDERS', 'CLB Cưỡi ngựa Sài Gòn (mẫu)', 'RACETRACK', 'VN', 'VN-79', 'Phường An Khánh, TP.HCM', 10.800000, 106.740000, TIME '06:00', TIME '18:00', '0900000402', 'ACTIVE'),
+    ('TRACK-SOCSON', 'Trường đua Sóc Sơn (mẫu)', 'RACETRACK', 'VN', 'VN-1', 'Xã Sóc Sơn, TP. Hà Nội', 21.250000, 105.850000, TIME '06:00', TIME '18:00', '0900000403', 'ACTIVE'),
+    ('TRACK-DALAT', 'CLB Ngựa Đà Lạt (mẫu)', 'RACETRACK', 'VN', 'VN-68', 'Phường Xuân Hương - Đà Lạt, Lâm Đồng', 11.940000, 108.440000, TIME '07:00', TIME '17:00', '0900000404', 'ACTIVE')
+ON CONFLICT (code) DO NOTHING;
+
 -- Kiểm thử migration cũ nạp dữ liệu mẫu khi chưa có bảng này
 DO $$
 BEGIN
@@ -63,7 +71,7 @@ FROM (VALUES
           ('HUB-HCM', 'VN-79'), ('HUB-HCM', 'VN-75'), ('HUB-HCM', 'VN-80'), ('HUB-HCM', 'VN-82'), ('HUB-HCM', 'VN-86'),
           ('HUB-HCM', 'VN-91'), ('HUB-HCM', 'VN-92'), ('HUB-HCM', 'VN-96'), ('HUB-HCM', 'VN-68'), ('HUB-HCM', 'VN-56'), ('HUB-HCM', 'VN-66'),
           ('HUB-DN', 'VN-48'), ('HUB-DN', 'VN-46'), ('HUB-DN', 'VN-51'), ('HUB-DN', 'VN-44'), ('HUB-DN', 'VN-52'),
-          ('HUB-HN', 'VN-1'), ('HUB-HN', 'VN-31'), ('HUB-HN', 'VN-24'), ('HUB-HN', 'VN-4'), ('HUB-HN', 'VN-33'), ('HUB-HN', 'VN-12'), ('HUB-HN', 'VN-20'), ('HUB-HN', 'VN-15'), ('HUB-HN', 'VN-40'), ('HUB-HN', 'VN-37'), ('HUB-HN', 'VN-25'), ('HUB-HN', 'VN-22'), ('HUB-HN', 'VN-14'), ('HUB-HN', 'VN-19'), ('HUB-HN', 'VN-38'), ('HUB-HN', 'VN-8'), ('HUB-HN', 'VN-42')
+          ('HUB-HN', 'VN-1'), ('HUB-HN', 'VN-31'), ('HUB-HN', 'VN-24'), ('HUB-HN', 'VN-4'), ('HUB-HN', 'VN-33'), ('HUB-HN', 'VN-12'), ('HUB-HN', 'VN-20'), ('HUB-HN', 'VN-15'), ('HUB-HN', 'VN-40'), ('HUB-HN', 'VN-37'), ('HUB-HN', 'VN-25'), ('HUB-HN', 'VN-22'), ('HUB-HN', 'VN-14'), ('HUB-HN', 'VN-19'), ('HUB-HN', 'VN-38'), ('HUB-HN', 'VN-8'), ('HUB-HN', 'VN-42'), ('HUB-HN', 'VN-11')
      ) AS v(hub_code, province_code)
 JOIN location l ON l.code = v.hub_code
 JOIN province p ON p.code = v.province_code
@@ -196,11 +204,11 @@ WHERE vehicle.license_plate = adjustment.plate AND vehicle.vehicle_class_id = vc
 INSERT INTO route (code, name, origin_location_id, destination_location_id, distance_km, estimated_duration_minutes, status)
 SELECT v.code, v.name, o.id, d.id, v.distance_km, v.minutes, 'ACTIVE'
 FROM (VALUES
-          ('HCM-PNH', 'TP.HCM – Cửa khẩu Mộc Bài (đi Phnom Penh)', 'HUB-HCM', 'GATE-MOCBAI', 89.00, 226),
-          ('MOCBAI-HCM', 'Cửa khẩu Mộc Bài – TP.HCM (từ Phnom Penh về)', 'GATE-MOCBAI', 'HUB-HCM', 103.00, 291),
+          ('HCM-PNH', 'TP.HCM – Cửa khẩu Mộc Bài (sang Campuchia)', 'HUB-HCM', 'GATE-MOCBAI', 89.00, 226),
+          ('MOCBAI-HCM', 'Cửa khẩu Mộc Bài – TP.HCM (từ Campuchia về)', 'GATE-MOCBAI', 'HUB-HCM', 103.00, 291),
           ('HCM-DN', 'TP.HCM – Đà Nẵng', 'HUB-HCM', 'HUB-DN', 975.00, 1781),
           ('DN-HCM', 'Đà Nẵng – TP.HCM', 'HUB-DN', 'HUB-HCM', 982.00, 1782),
-          ('DN-LAOBAO', 'Đà Nẵng – Cửa khẩu Lao Bảo (đi Lào)', 'HUB-DN', 'GATE-LAOBAO', 294.00, 383),
+          ('DN-LAOBAO', 'Đà Nẵng – Cửa khẩu Lao Bảo (sang Lào)', 'HUB-DN', 'GATE-LAOBAO', 294.00, 383),
           ('LAOBAO-DN', 'Cửa khẩu Lao Bảo – Đà Nẵng (từ Lào về)', 'GATE-LAOBAO', 'HUB-DN', 291.00, 411),
           ('DN-HN', 'Đà Nẵng – Hà Nội', 'HUB-DN', 'HUB-HN', 797.00, 1602),
           ('HN-DN', 'Hà Nội – Đà Nẵng', 'HUB-HN', 'HUB-DN', 798.00, 1603),

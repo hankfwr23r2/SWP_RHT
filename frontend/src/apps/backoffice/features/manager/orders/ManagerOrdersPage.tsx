@@ -1,4 +1,5 @@
 import { ListPanel } from '@shared/ui/ListPanel'
+import { OrderRoute } from '@shared/components/OrderRoute'
 // Đơn hàng của quản lý: theo từng nhóm việc, tìm theo mã đơn, khách, tuyến.
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
@@ -31,7 +32,7 @@ export default function ManagerOrdersPage() {
   const columns: TableColumn<OrderRow>[] = [
     { key: 'code', header: t('mgr.orders.code'), render: row => <Link to={`/manager/orders/${row.id}`} className={s.link}>{row.code}</Link> },
     { key: 'customer', header: t('mgr.orders.customer'), render: row => row.customerName ? <>{row.customerName}<br />{row.customerPhone}</> : '—' },
-    { key: 'route', header: t('mgr.orders.route'), render: row => row.routeName ?? (row.bookingType ? t(`bookingForm.types.${row.bookingType}`) : '—') },
+    { key: 'route', header: t('mgr.orders.route'), render: row => <OrderRoute {...row} fallback={row.bookingType ? t(`bookingForm.types.${row.bookingType}`) : undefined} /> },
     { key: 'departure', header: t('mgr.orders.departure'), render: row => row.departureDate ? showDate(row.departureDate) : row.requestedPickupDate ? showDate(row.requestedPickupDate) : '—' },
     { key: 'horses', header: t('mgr.orders.horses'), align: 'center', render: row => row.horseCount || '—' },
     { key: 'created', header: t('mgr.orders.created'), render: row => row.createdAt ? day(row.createdAt) : '—' },

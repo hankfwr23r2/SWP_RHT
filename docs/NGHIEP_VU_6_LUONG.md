@@ -119,7 +119,7 @@ Ví dụ chuyến TP.HCM – Đà Nẵng chạy **05:00 thứ Ba 08/12**, khách
 
 | Thời điểm | Còn bao lâu tới giờ chạy | Hạn của ai | Chuyện gì xảy ra |
 |---|---|---|---|
-| 13/10 | 8 tuần | Hệ thống | Chuyến được tạo và mở bán |
+| 27/10 | 6 tuần | Hệ thống | Chuyến được tạo và mở bán |
 | 23/11 | | Khách | Gửi đơn, **giữ chỗ từ lúc này** |
 | 23/11 → 25/11 | | Quản lý và chuyên viên | Tiếp nhận, thẩm định, gửi báo giá theo các hạn nội bộ ở mục 1.E. Báo giá phải gửi trước 05:00 06/12 |
 | 25/11 09:00 | | Quản lý | Gửi báo giá |
@@ -165,7 +165,7 @@ Vì báo giá phải gửi trước mốc quyết định và sống tối đa 2
 
 ### Chuyến và giữ chỗ (bước 2)
 
-- **1.12** Mỗi tuyến chạy **một chuyến mỗi tuần** theo lịch. Hệ thống tự tạo chuyến và mở bán trước giờ chạy **8 tuần** (cấu hình). Ngoài lịch, quản lý có thể tạo **chuyến đột xuất**.
+- **1.12** Mỗi tuyến chạy **một chuyến mỗi tuần** theo lịch. Hệ thống tự tạo chuyến và mở bán trước giờ chạy **6 tuần** (cấu hình). Ngoài lịch, quản lý có thể tạo **chuyến đột xuất**.
 - **1.13** **Hạn nhận đặt** của mỗi chuyến là **72 giờ trước giờ chạy** (đặt trong lịch chạy của tuyến). Sau hạn này không ai đặt mới hay đổi sang chuyến đó được; đơn đã giữ chỗ từ trước không ảnh hưởng.
 - **1.14** Khoang thường chiếm **1 chỗ**, khoang rộng chiếm **2 chỗ** trên chuyến. Chuyến mẫu có 9 chỗ. Khách tự chọn khoang, không bắt buộc theo giới tính ngựa.
 - **1.15** Chỗ được **giữ ngay khi gửi đơn**, chưa cần cọc. Chỗ chỉ được nhả khi: đơn bị từ chối, bị hủy, hết hạn báo giá, đổi sang chuyến khác, hoặc bị nhả ở mốc quyết định. Hai khách đặt cùng lúc thì người tới sau nhận thông báo hết chỗ; không bao giờ vượt sức chứa.
@@ -247,7 +247,7 @@ Vì báo giá phải gửi trước mốc quyết định và sống tối đa 2
 | Hạn | Của ai | Đếm từ | Dài bao lâu | Quá hạn thì | Sửa ở đâu |
 |---|---|---|---|---|---|
 | Nhập mã xác thực (bước 1) | Khách | Lúc gửi mã | 10 phút, 5 lần sai | Xin mã mới | Cấu hình |
-| Mở bán chuyến | Hệ thống | Lùi từ giờ chạy | 8 tuần | | Cấu hình |
+| Mở bán chuyến | Hệ thống | Lùi từ giờ chạy | 6 tuần | | Cấu hình |
 | Đặt kịp làm giấy (bước 2) | Khách | Hôm đặt tới hạn nhận đặt | 5 / 21 / 37 ngày | Chuyến bị khóa, chọn chuyến sau | Quy định từng nước |
 | Hạn nhận đặt (bước 2) | Khách | Lùi từ giờ chạy | 72 giờ | Không đặt, không đổi sang chuyến đó được | Lịch chạy |
 | Tiếp nhận (bước 3) | Quản lý | Lúc khách gửi đơn | 4 giờ mặc định | Nhắc tiếp nhận | `BOOKING_INTAKE_DUE_HOURS` |

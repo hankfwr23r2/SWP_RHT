@@ -1,9 +1,9 @@
--- Dữ liệu MẪU cho máy dev và test: chuyến trong 8 tuần tới và 3 đơn đã CONFIRMED để luồng vận hành (B1 trở đi) điều độ.
+-- Dữ liệu MẪU cho máy dev và test: chuyến trong 6 tuần tới và 3 đơn đã CONFIRMED để luồng vận hành (B1 trở đi) điều độ.
 -- KHÔNG chạy trên môi trường thật. Chạy sau R__dev_seed_base.sql (Flyway chạy file R__ theo thứ tự tên).
 -- Ngày tính theo ngày chạy seed lần đầu. Đơn giá chép từ "Bảng giá mẫu (dev)". Tổng và tiền cọc ở đây chỉ là dữ liệu mẫu;
 -- trong ứng dụng, QuotationService và DepositPolicy mới là nơi tính.
 
--- 1. Chuyến cho 8 tuần tới từ các lịch đang chạy (trong ứng dụng, việc này do scheduler của DepartureService làm)
+-- 1. Chuyến cho 6 tuần tới từ các lịch đang chạy (trong ứng dụng, việc này do scheduler của DepartureService làm)
 INSERT INTO departure (departure_schedule_id, route_id, departure_date, planned_departure_at, booking_cutoff_at, stall_capacity, booked_stall_count, status)
 SELECT s.id,
        s.route_id,
@@ -15,7 +15,7 @@ SELECT s.id,
        'OPEN'
 FROM departure_schedule s
 JOIN departure_schedule_day sd ON sd.departure_schedule_id = s.id
-CROSS JOIN generate_series(current_date + 1, current_date + 56, interval '1 day') AS d
+CROSS JOIN generate_series(current_date + 1, current_date + 42, interval '1 day') AS d
 WHERE s.status = 'ACTIVE'
   AND extract(isodow FROM d)::smallint = sd.day_of_week
 ON CONFLICT ON CONSTRAINT uk_departure_departure_schedule_id_departure_date DO NOTHING;

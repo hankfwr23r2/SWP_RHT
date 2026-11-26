@@ -31,6 +31,26 @@ class BookingDtoTest {
 
 
     @Test
+    void summaryShowsDeliveryProvinceAndCountryWhenLoaded() {
+        var customer = new Customer();
+        customer.setFullName("Khách");
+        var booking = new Booking();
+        booking.setCustomer(customer);
+        assertThat(BookingSummaryResponseDto.from(booking, 1, null).destinationProvinceName()).isNull();
+        var country = new Country();
+        country.setName("Campuchia");
+        var province = new Province();
+        province.setName("Phnom Penh");
+        var delivery = new BookingAddress();
+        delivery.setProvince(province);
+        delivery.setCountry(country);
+        var summary = BookingSummaryResponseDto.from(booking, 2, delivery);
+        assertThat(summary.destinationProvinceName()).isEqualTo("Phnom Penh");
+        assertThat(summary.destinationCountryName()).isEqualTo("Campuchia");
+        assertThat(summary.horseCount()).isEqualTo(2);
+    }
+
+    @Test
     void optionalNotesAcceptUpToTwoThousandCharacters() {
         try (var factory = Validation.buildDefaultValidatorFactory()) {
             var validator = factory.getValidator();

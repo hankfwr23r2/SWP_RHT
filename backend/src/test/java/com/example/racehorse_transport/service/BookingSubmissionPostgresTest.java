@@ -288,6 +288,9 @@ class BookingSubmissionPostgresTest {
                     .containsExactlyInAnyOrder(201, 409);
         }
         assertThat(queries.list(owner)).hasSize(1);
+        // Danh sách đơn kèm nơi giao để khách thấy ngựa đi tới đâu
+        assertThat(queries.list(owner).getFirst().destinationProvinceName()).isNotBlank();
+        assertThat(queries.list(owner).getFirst().destinationCountryName()).isNotBlank();
     }
 
     @Test

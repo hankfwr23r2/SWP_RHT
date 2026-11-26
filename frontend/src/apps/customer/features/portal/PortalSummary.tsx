@@ -1,4 +1,5 @@
 import { Link, useRevalidator } from 'react-router'
+import { OrderRoute } from '@shared/components/OrderRoute'
 import { useTranslation } from 'react-i18next'
 import { OrderStatusBadge } from '@shared/components/OrderStatusBadge'
 import { formatDate } from '@shared/lib/format'
@@ -69,7 +70,7 @@ export function PortalSummary({ data: { orders, actions } }: { data: PortalData 
         <ListPanel count={recent.length}>
           <Table caption={t('portal.recentTitle')} rows={recent} rowKey={order => order.id ?? 0} columns={[
             { key: 'code', header: t('listPanel.orderCode'), render: order => <Link className={s.code} to={`/orders/${order.id}`}>{order.code}</Link> },
-            { key: 'route', header: t('listPanel.route'), render: order => order.routeName || (order.bookingType ? t(`bookingForm.types.${order.bookingType}`) : '—') },
+            { key: 'route', header: t('listPanel.route'), render: order => <OrderRoute {...order} fallback={order.bookingType ? t(`bookingForm.types.${order.bookingType}`) : undefined} /> },
             { key: 'schedule', header: t('listPanel.schedule'), render: order => order.requestedPickupDate ? formatDate(new Date(`${order.requestedPickupDate}T00:00:00`)) : '—' },
             { key: 'status', header: t('listPanel.status'), render: order => <OrderStatusBadge status={order.status} /> },
           ]} />
