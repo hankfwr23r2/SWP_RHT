@@ -4,6 +4,8 @@ import com.example.racehorse_transport.entity.HorseLeg;
 import com.example.racehorse_transport.entity.enums.HandoverStatus;
 import com.example.racehorse_transport.entity.enums.HandoverType;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
+import com.example.racehorse_transport.entity.enums.VehicleTripType;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -14,6 +16,20 @@ import org.springframework.data.repository.query.Param;
 
 public interface HorseLegRepository extends JpaRepository<HorseLeg, Long> {
     List<HorseLeg> findByBookingHorse_IdOrderBySequenceNumber(Long bookingHorseId);
+
+    @Query("""
+            SELECT DISTINCT trip.id FROM HorseLeg l JOIN l.vehicleTrip trip JOIN l.boardTripStop stop
+            WHERE trip.tripType IN :tripTypes
+                AND trip.status NOT IN (com.example.racehorse_transport.entity.enums.VehicleTripStatus.COMPLETED,
+                                        com.example.racehorse_transport.entity.enums.VehicleTripStatus.CANCELLED)
+                AND l.status = com.example.racehorse_transport.entity.enums.HorseLegStatus.PLANNED
+                AND stop.stopType = com.example.racehorse_transport.entity.enums.TripStopType.HUB
+                AND stop.actualDepartureAt IS NULL AND stop.plannedDepartureAt <= :cutoff
+                AND EXISTS (SELECT s.id FROM HorseStay s WHERE s.bookingHorse = l.bookingHorse
+                       AND s.location = stop.location AND s.actualStartAt IS NOT NULL AND s.actualEndAt IS NULL)
+            ORDER BY trip.id
+            """)
+    List<Long> findTripsWithHubBoardingsDueBy(Instant cutoff, Collection<VehicleTripType> tripTypes);
 
     @Query("SELECT DISTINCT l.bookingHorse.id FROM HorseLeg l WHERE l.bookingHorse.id IN :horseIds "
             + "AND l.legType = :type AND l.status IN :statuses")
@@ -76,6 +92,15 @@ public interface HorseLegRepository extends JpaRepository<HorseLeg, Long> {
     long countFailedNotInHub(@Param("tripId") Long tripId, @Param("failed") HorseLegStatus failed,
                              @Param("hubIn") HandoverType hubIn,
                              @Param("done") HandoverStatus done);
+
+    @Query("""
+            SELECT DISTINCT l.vehicleTrip.id FROM HorseLeg l
+            WHERE l.vehicleTrip.id IN :tripIds AND (l.status IN :unfinished OR (l.status = :failed AND NOT EXISTS (
+                SELECT 1 FROM HandoverHorse hh WHERE hh.horseLeg = l AND hh.handover.handoverType = :hubIn
+                    AND hh.handover.status = :done)))
+            """)
+    java.util.Set<Long> findTripIdsWithUnfinishedLegs(Collection<Long> tripIds, Collection<HorseLegStatus> unfinished,
+            HorseLegStatus failed, HandoverType hubIn, HandoverStatus done);
 
     // Chặng trục của các ngựa cùng đơn (quy tắc #30)
     @Query("""

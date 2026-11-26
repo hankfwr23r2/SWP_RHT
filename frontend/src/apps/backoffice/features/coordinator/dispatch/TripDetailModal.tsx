@@ -14,6 +14,7 @@ import { Skeleton } from '@shared/ui/Skeleton'
 import { StatusBadge } from '@shared/ui/StatusBadge'
 import { Textarea } from '@shared/ui/Textarea'
 import { useToast } from '@shared/ui/toast'
+import { TripReturnDetails } from '@backoffice/shared/TripReturnDetails'
 import { TRIP_STATUS_TONE, eligibleHorses, peakSeats } from './dispatchModel'
 import { StallPlanSection } from './StallPlanSection'
 import { TripMap } from './TripMap'
@@ -89,7 +90,8 @@ export function TripDetailModal({ tripId, bookings, onClose, onChanged }: Props)
     >
       <div className={s.section}>
         <div className={s.sectionHead}>
-          <StatusBadge tone={TRIP_STATUS_TONE[trip.status ?? 'PLANNED']} label={t(`tripWords.status.${trip.status}`)} />
+          {!trip.returning && <StatusBadge tone={TRIP_STATUS_TONE[trip.status ?? 'PLANNED']} label={t(`tripWords.status.${trip.status}`)} />}
+          <TripReturnDetails trip={trip} />
           {!editable && <span className={s.muted}>{t('dispatch.detail.locked')}</span>}
           <span>{trip.coordinatorName ? t('coordAssignment.ownedBy', { name: trip.coordinatorName }) : t('coordAssignment.unassigned')}</span>
           {canTakeOver && <TripTakeOverButton tripId={tripId} onSaved={async () => { onChanged(); await reload() }} />}

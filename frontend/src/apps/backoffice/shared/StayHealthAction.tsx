@@ -8,14 +8,15 @@ interface Props {
   horseStayId: number
   horseName?: string
   reported?: boolean
+  label?: string
   onSaved: () => void
 }
 
-export function StayHealthAction({ onSaved, ...target }: Props) {
+export function StayHealthAction({ label, onSaved, ...target }: Props) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   return <>
-    <Button size={target.reported ? 'sm' : 'lg'} onClick={() => setOpen(true)}>{t('stayHealth.record')}</Button>
+    <Button size={target.reported ? 'sm' : 'lg'} onClick={() => setOpen(true)}>{label ?? t('stayHealth.record')}</Button>
     {open && <StayHealthDialog {...target} onClose={() => setOpen(false)} onSaved={() => {
       setOpen(false)
       onSaved()

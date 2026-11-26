@@ -390,6 +390,7 @@ export const staffCatalog = {
         "DEPARTURE_DECISION_HOURS": "Time to confirm a departure before it leaves",
         "DEPARTURE_MIN_FILL_PERCENT": "Minimum share of spaces with a deposit (%)",
         "HUB_CHECKIN_HOURS": "Time horses must arrive at the hub before departure",
+        "PRE_EXIT_CHECK_HOURS": "Lead time for scheduling hub exit checks",
         "BALANCE_WAIT_MINUTES": "Time to pay the balance after receiving the horse",
         "MAX_CONTINUOUS_HOURS": "Maximum continuous driving time",
         "MIN_REST_MINUTES": "Minimum rest time at a stop",

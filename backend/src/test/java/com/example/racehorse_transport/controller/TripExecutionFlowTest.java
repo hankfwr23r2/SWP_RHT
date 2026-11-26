@@ -14,6 +14,7 @@ import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.security.JwtUtils;
 import com.example.racehorse_transport.support.TestData;
+import com.example.racehorse_transport.support.TripReturnPhotoFixtures;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
 import jakarta.persistence.EntityManager;
@@ -110,6 +111,7 @@ class TripExecutionFlowTest {
                 .content("{\"staffId\":%d,\"crewRole\":\"DRIVER\"}".formatted(nextDriver.getUserId())))
                 .andExpect(status().isCreated());
         acknowledge(nextDriverToken);
+        TripReturnPhotoFixtures.attach(jdbc, trip);
 
         mvc.perform(post("/vehicle-trips/{id}/complete", trip).header(HttpHeaders.AUTHORIZATION, driver)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -146,6 +148,7 @@ class TripExecutionFlowTest {
     @Test
     void completionWithoutBodyDefaultsToNormal() throws Exception {
         long vehicle = readyToComplete();
+        TripReturnPhotoFixtures.attach(jdbc, trip);
 
         act(driver, "/vehicle-trips/" + trip + "/complete").andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.trip.status").value("COMPLETED"))
@@ -158,6 +161,7 @@ class TripExecutionFlowTest {
     @Test
     void driverCannotReportMaintenanceWithoutANote() throws Exception {
         long vehicle = readyToComplete();
+        TripReturnPhotoFixtures.attach(jdbc, trip);
 
         mvc.perform(post("/vehicle-trips/{id}/complete", trip).header(HttpHeaders.AUTHORIZATION, driver)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -216,6 +220,7 @@ class TripExecutionFlowTest {
 
         jdbc.update("UPDATE trip_stop SET actual_arrival_at = now() WHERE id = ?", linehaulStops.getLast());
         entityManager.clear();
+        TripReturnPhotoFixtures.attach(jdbc, first);
         act(assigned, "/vehicle-trips/" + first + "/complete").andExpect(status().isOk());
         assertThat(departureStatus(departure)).isEqualTo("IN_PROGRESS");
         mvc.perform(post("/vehicle-trips/{id}/cancel", second).header(HttpHeaders.AUTHORIZATION, coordinator)
@@ -422,7 +427,8 @@ class TripExecutionFlowTest {
         long delivery = handoverId(handover(escort, stops.get(2), "DELIVERY").andExpect(status().isCreated()));
         scan(escort, delivery, chip).andExpect(status().isOk());
         act(escort, "/handovers/" + delivery + "/complete").andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.horses[0].leg.status").value("COMPLETED"));
+                .andExpect(jsonPath("$.data.horses[0].leg.status").value("COMPLETED"))
+                .andExpect(jsonPath("$.data.trip.returning").value(true));
         assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE id = ?", String.class, leg)).isEqualTo("COMPLETED");
         assertThat(bookingStatus()).isEqualTo("DELIVERED");
         // B6: khách được báo khi ngựa được nhận và khi được giao
@@ -432,6 +438,7 @@ class TripExecutionFlowTest {
         act(driver, "/vehicle-trips/" + trip + "/complete").andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Chưa tới điểm dừng cuối."));
         act(driver, "/trip-stops/" + stops.get(3) + "/arrive").andExpect(status().isOk());
+        TripReturnPhotoFixtures.attach(jdbc, trip);
         act(driver, "/vehicle-trips/" + trip + "/complete").andExpect(status().isOk()).andExpect(jsonPath("$.data.trip.status").value("COMPLETED"));
     }
 

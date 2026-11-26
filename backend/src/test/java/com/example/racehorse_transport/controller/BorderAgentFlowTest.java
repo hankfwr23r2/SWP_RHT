@@ -13,13 +13,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.example.racehorse_transport.PostgresIntegrationTest;
 import com.example.racehorse_transport.support.HandoverEvidenceFixtures;
+import com.example.racehorse_transport.support.HubExitCheckFixtures;
 import com.example.racehorse_transport.entity.BookingHorse;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.enums.DocumentSubject;
+import com.example.racehorse_transport.entity.enums.HealthCheckType;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.security.JwtUtils;
 import com.example.racehorse_transport.service.DocumentCompletenessService;
 import com.example.racehorse_transport.support.TestData;
+import com.example.racehorse_transport.support.TripReturnPhotoFixtures;
 import com.jayway.jsonpath.JsonPath;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
@@ -150,6 +153,7 @@ class BorderAgentFlowTest {
         assertThat(legStatus(legOnTrip(trip))).isEqualTo("COMPLETED");
         assertThat(legStatus(agentLeg)).isEqualTo("IN_PROGRESS");
         assertThat(customerNotices(booking)).contains("Đã qua cửa khẩu");
+        TripReturnPhotoFixtures.attach(jdbc, trip);
         act(driver, "/vehicle-trips/" + trip + "/complete").andExpect(status().isOk());
 
         // Trang theo dõi có chặng của đại lý để điều phối ghi đã giao
@@ -360,6 +364,12 @@ class BorderAgentFlowTest {
         long hubOut = handoverId(mvc.perform(post("/trip-stops/{id}/handovers", stops.get(0)).header(HttpHeaders.AUTHORIZATION, escort)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"handoverType\":\"HUB_OUT\"}")).andExpect(status().isCreated()));
         scan(hubOut, legOnTrip(trip)).andExpect(status().isOk());
+        jdbc.update("""
+                INSERT INTO horse_stay (booking_horse_id, stay_type, location_id, planned_start_at, planned_end_at, actual_start_at)
+                SELECT ?, 'ASSEMBLY', location_id, now(), now() + interval '1 hour', now()
+                FROM trip_stop WHERE id = ?
+                """, line, stops.getFirst());
+        HubExitCheckFixtures.boardingDone(jdbc, trip, escortStaff.getUserId(), HealthCheckType.BEFORE_DEPARTURE);
         act(escort, "/handovers/" + hubOut + "/complete").andExpect(status().isOk());
         act(driver, "/trip-stops/" + stops.get(0) + "/depart").andExpect(status().isOk());
         act(driver, "/trip-stops/" + stops.get(1) + "/arrive").andExpect(status().isOk());

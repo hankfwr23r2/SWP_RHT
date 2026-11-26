@@ -149,6 +149,7 @@ public class HubHandoverServiceImpl implements HubHandoverService {
             throw new DispatchRuleException("horseStayId", "Con ngựa chưa tới hub này bằng chặng cuối.", true);
         }
         requireChip(stay, request);
+        handoverReadiness.requireHubCollectionCheck(stay);
         Instant now = clock.instant();
         Handover handover = record(stay, last, HandoverType.DELIVERY, request, photo, signedRecord, username, now);
         if (collectionAfterFailure) {

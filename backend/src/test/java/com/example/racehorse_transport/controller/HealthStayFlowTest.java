@@ -12,6 +12,7 @@ import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.security.JwtUtils;
 import com.example.racehorse_transport.support.TestData;
+import com.example.racehorse_transport.support.TripReturnPhotoFixtures;
 import com.jayway.jsonpath.JsonPath;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
@@ -220,7 +221,9 @@ class HealthStayFlowTest {
 
         log(null, stay, "NORMAL", "NORMAL", "NORMAL").andExpect(status().isCreated()).andExpect(jsonPath("$.data.horseStayId").value(stay));
         log(stops.get(2), stay, "NORMAL", "NORMAL", "NORMAL").andExpect(status().isBadRequest());
-        act("/vehicle-trips/" + jdbc.queryForObject("SELECT vehicle_trip_id FROM trip_stop WHERE id = ?", Long.class, stops.get(2)) + "/complete")
+        long trip = jdbc.queryForObject("SELECT vehicle_trip_id FROM trip_stop WHERE id = ?", Long.class, stops.get(2));
+        TripReturnPhotoFixtures.attach(jdbc, trip);
+        act("/vehicle-trips/" + trip + "/complete")
                 .andExpect(status().isOk());
     }
 

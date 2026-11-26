@@ -1,9 +1,10 @@
 // Báo cáo vận hành của quản lý (B6). from, to: ISO, lượt xe có giờ bắt đầu kế hoạch trong [from, to)
 import apiClient, { type ApiResponse } from './client'
+import type { TripReturnProgress } from './dispatch'
 import type { components } from './generated/schema'
 
 type Schemas = components['schemas']
-export type TripReportRow = Schemas['TripReportRowResponseDto']
+export type TripReportRow = Schemas['TripReportRowResponseDto'] & TripReturnProgress
 export type TripReport = Schemas['TripReportResponseDto']
 export type OperationsSummary = Schemas['OperationsSummaryResponseDto']
 export type RevenueReport = Schemas['RevenueReportResponseDto']

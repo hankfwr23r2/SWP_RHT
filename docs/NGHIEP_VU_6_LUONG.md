@@ -153,7 +153,11 @@ Từ lúc đơn đã cọc tới lúc mỗi con có đủ xe, tổ lái, vị tr
 7. **Sơ đồ khoang:** khách chỉ chọn loại khoang; hệ thống tự xếp vị trí, điều phối đổi được; xe chạy thì khóa.
 8. **Nhánh giao:** ở hub đích, ngựa có điểm giao gần nhau xếp chung xe; xe riêng không ghép. Ngoài khung 06:00–18:00 thì cả lượt dời sang 06:00 hôm sau.
 9. Khách được báo khung một giờ xe tới; giờ dời quá 30 phút thì báo lại.
-10. **Xe về** [Mới, theo thiết kế cũ nhánh `main`]: xong việc, xe và tổ lái ở trạng thái **Đang về** có giờ dự kiến; trễ thì có cờ cho điều phối và quản lý. Tài xế bấm **Đã về** tại hub gốc kèm **ảnh chụp tại chỗ** và **tình trạng xe**. Trước đó xe chưa nhận lượt mới. Xe chạy trục có thể về bằng **chuyến chiều ngược**.
+10. **Xe về** (M6)
+   - Lượt đang chạy hiện **Đang về** khi mọi chặng ngựa đã xử lý xong và xe chưa tới điểm dừng cuối. Ngựa giao hụt chưa được bàn giao vào hub vẫn tính là còn trên xe.
+   - Giờ về dự kiến lấy giờ đến kế hoạch của điểm dừng cuối, cộng độ trễ dương của giờ rời điểm gần nhất đã rời. Qua giờ dự kiến quá `RETURN_LATE_MINUTES` (mặc định 30 phút) thì hiện **Trễ**. Khi xe đã tới hub, giờ tới thực tế xác định cờ trễ trong lúc chờ xác nhận. Hệ thống kiểm tra mỗi 5 phút và báo điều phối phụ trách một lần nếu xe vẫn đang về.
+   - Tài xế bấm **Đã về hub** tại hub cuối của lượt, kèm **ảnh chụp tại chỗ** và **tình trạng xe**. Xe trục có thể chạy chuyến chiều ngược sau khi xác nhận ở hub cuối chuyến đi.
+   - Điều phối có thể lập lịch và phân tổ lái trước. Xe, tài xế và hộ tống còn lượt đang chạy thì chưa được xuất phát lượt kế tiếp.
 
 **Quy tắc giờ:** mỗi điểm dừng 20 phút + 10 phút mỗi con; lái 4 giờ nghỉ 30 phút; tài xế lái ≤ 10 giờ một ngày; ngựa ngồi xe đón, giao ≤ 5 giờ, chạy thẳng ≤ 10 giờ; trục chạy đủ 10 giờ thì nghỉ đêm 10 giờ. Lượt mới của xe và của người bắt đầu ở nơi lượt trước kết thúc.
 
@@ -170,7 +174,7 @@ Từ lúc đơn đã cọc tới lúc mỗi con có đủ xe, tổ lái, vị tr
 | Tài xế đã lái gần đủ giờ trong ngày | Từ chối, nói sẽ lái bao nhiêu giờ |
 | Hai con khoang rộng không còn hai vị trí liền nhau | Tự dồn; không được thì nêu con vướng |
 | Bỏ một lượt chưa chạy | Gỡ hết ngựa rồi hủy, bắt buộc lý do, báo tổ lái |
-| Xe về trễ so với giờ dự kiến | Cờ trễ cho điều phối và quản lý [Mới] |
+| Xe về trễ quá ngưỡng cấu hình | Cờ trễ cho tài xế, điều phối và quản lý. Báo điều phối phụ trách một lần khi xe còn đang về |
 
 **Chuyến trễ** (theo cách hàng không): 24 giờ trước chưa quyết thì báo đỏ; tới giờ chưa chạy thì ghi **Chậm** và báo khách; quản lý nhập giờ mới; trễ từ 2 giờ khách đổi chuyến miễn phí; từ 5 giờ được hoàn 100%; 5 giờ sau giờ gốc không có giờ mới thì tự hủy chuyến.
 
@@ -185,20 +189,20 @@ Từ lúc xe đầu tiên xuất phát tới lúc lượt cuối kết thúc. Gi
 1. **Xuất phát:** kiểm tổ lái đã nhận việc, mọi con có vị trí khoang, đủ giấy (nếu đón ở nhà khách).
 2. Tổ lái bấm **Tới nơi**, **Rời đi** theo từng điểm dừng, đúng thứ tự.
 3. **Ở hub xuất phát:** ngựa lưu trú, được cho ăn và **khám 2 lần mỗi ngày**.
-4. **Khám trước khi chạy:** mỗi con một lần khám ngay trước khi lên xe trục. **Chưa khám thì không cho ra hub** [Mới: bắt buộc và chặn].
+4. **Khám trước khi chạy:** mỗi con một lần khám ngay trước khi lên xe trục. **Chưa khám thì không cho ra hub**.
 5. **Chạy trục:** tới mỗi trạm nghỉ cho uống, ăn, ghi **từng con** (sức khỏe, uống, ăn, nhiệt độ nếu đo). Nghỉ ít nhất 30 phút. Nghỉ đêm có thể gửi chuồng đối tác rồi nhận lại sáng hôm sau.
 6. **Cửa khẩu** [Mới]: dừng làm thủ tục và kiểm dịch, kiểm giấy riêng của cửa khẩu, rồi **xe đi tiếp tới hub nước ngoài**.
 7. **Tới hub đích:** dỡ ngựa vào hub theo quy trình, lưu trú, cho ăn, khám 2 lần mỗi ngày.
-8. **Khám trước khi giao:** mỗi con một lần khám trước khi ra khỏi hub đích. **Chưa khám thì không cho ra hub** [Mới].
+8. **Khám trước khi giao:** mỗi con một lần khám trước khi lên xe giao hoặc được người nhận tới hub lấy. **Chưa khám thì không cho ra hub**.
 9. Thay hộ tống giữa đường: người mới tới điểm dừng, quét chip và ký nhận ca.
-10. **Kết thúc lượt** khi không còn ngựa trên xe; tổ xe báo tình trạng xe (Bình thường hoặc Cần bảo dưỡng). Sau đó xe ở **Đang về** (luồng 3).
+10. **Đã về hub** khi xe đã tới điểm dừng cuối và không còn ngựa trên xe. Tổ lái tải ảnh xe tại hub rồi xác nhận tình trạng xe (Bình thường hoặc Cần bảo dưỡng). Lượt chuyển sang hoàn thành sau khi xác nhận. Xe cần bảo dưỡng phải có ghi chú.
 11. **Theo dõi:**
     - điều phối: trang Theo dõi, con trễ khám tô đỏ;
     - **quản lý: màn Các hub** [Mới], mỗi hub có ngựa đang ở, ô chuồng trống, xe (rảnh, đang chạy, đang về, cần bảo dưỡng), nhân viên, chuyến đến và đi, sự cố mở;
     - khách: dòng thời gian **theo từng con** (chặng, lưu trú, giao nhận, sức khỏe);
     - người không có tài khoản: tra bằng mã đơn và 4 số cuối điện thoại người gửi.
 
-**Hạn khám:** trên xe 4 giờ, ở hub hoặc chuồng 12 giờ (cấu hình). Quá hạn thì tô đỏ Trễ khám.
+**Hạn khám:** trên xe 4 giờ, ở hub hoặc chuồng 12 giờ (cấu hình). Việc khám trước khi ra hub được tạo trước giờ rời dự kiến tối đa `PRE_EXIT_CHECK_HOURS` giờ (mặc định 12) và có hạn đúng giờ rời dự kiến. Quá hạn thì tô đỏ Trễ khám.
 
 ## Xử lý ngoại lệ
 
@@ -211,9 +215,11 @@ Từ lúc xe đầu tiên xuất phát tới lúc lượt cuối kết thúc. Gi
 | Ngựa bỏ uống hai lần liền | Tự nâng **Cần theo dõi**, báo điều phối |
 | Ghi Ốm hoặc Nguy cấp | Báo ngay điều phối |
 | Sáng ra quên nhận lại một con ở chuồng | Không cho rời trạm |
-| Chưa khám trước khi chạy hoặc trước khi giao | Không cho ra hub [Mới] |
+| Chưa khám trước khi chạy hoặc trước khi giao | Không cho ra hub |
 | Hộ tống ốm giữa đường | Điều phối thêm hộ tống mới, người mới nhận ca tại điểm dừng |
 | Kết thúc lượt khi còn ngựa trên xe | Từ chối |
+| Kết thúc lượt khi chưa có ảnh xe tại hub | Từ chối và yêu cầu chụp ảnh |
+| Xuất phát khi xe hoặc người trong tổ lái còn lượt đang chạy | Từ chối và nêu mã lượt chưa kết thúc |
 | Xuất phát sớm hơn giờ kế hoạch | Tài xế xác nhận, ghi lý do, báo điều phối |
 
 ---

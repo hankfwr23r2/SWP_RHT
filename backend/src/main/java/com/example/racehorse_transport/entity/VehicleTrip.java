@@ -36,6 +36,9 @@ public class VehicleTrip {
     @Column(name = "delivery_ride_warned_at")
     private Instant deliveryRideWarnedAt;
 
+    @Column(name = "return_late_notified_at")
+    private Instant returnLateNotifiedAt;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "coordinator_id")
     private Staff coordinator;

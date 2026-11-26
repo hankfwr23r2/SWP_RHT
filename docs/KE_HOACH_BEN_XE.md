@@ -63,11 +63,13 @@ Hiện trạng cần sửa:
 
 | Mã | Tình trạng | PR |
 |---|---|---|
-| M1 | Đang làm | |
+| M1 | PR mở | #521 |
 | M2 | Chưa làm | |
 | M3 | Chưa làm | |
 | M4 | Chưa làm | |
 | M7 | Chưa làm | |
 | M10 | Chưa làm | |
-| M5, M6, M8 | Bạn B | |
+| M5 | Xong (bạn B) | #520 |
+| M6 | Xong (bạn B) | #522 |
+| M8 | Xong (bạn B) | #523 |
 | M9 | Chưa làm | |

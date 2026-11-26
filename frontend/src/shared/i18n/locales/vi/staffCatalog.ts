@@ -390,6 +390,7 @@ export const staffCatalog = {
         "DEPARTURE_DECISION_HOURS": "Thời điểm chốt chuyến trước giờ xuất phát",
         "DEPARTURE_MIN_FILL_PERCENT": "Tỷ lệ tối thiểu số chỗ đã đặt cọc (%)",
         "HUB_CHECKIN_HOURS": "Thời gian ngựa cần đến hub trước chuyến",
+        "PRE_EXIT_CHECK_HOURS": "Thời gian tạo việc khám trước khi rời hub",
         "BALANCE_WAIT_MINUTES": "Thời gian chờ thanh toán số dư sau khi nhận ngựa",
         "MAX_CONTINUOUS_HOURS": "Thời gian lái liên tục tối đa",
         "MIN_REST_MINUTES": "Thời gian nghỉ tối thiểu tại trạm",

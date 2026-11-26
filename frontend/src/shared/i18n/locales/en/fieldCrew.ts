@@ -21,10 +21,16 @@ export const fieldCrew = {
     accept: "Accept check",
     accepted: "Check accepted",
     overdue: "Overdue",
+    record: "Record check",
+    hubExitTypes: {
+      BEFORE_DEPARTURE: "Pre-departure check",
+      BEFORE_DELIVERY: "Pre-delivery check",
+    },
     types: {
       ROUTINE: "Routine",
       FOLLOW_UP: "Follow-up",
       BEFORE_DEPARTURE: "Before departure",
+      BEFORE_DELIVERY: "Before delivery",
     },
     status: {
       ASSIGNED: "Awaiting acceptance",
@@ -179,8 +185,11 @@ export const fieldCrew = {
       "loadError": "Could not load the trip",
       "start": "Start trip",
       "complete": "Finish trip",
+      "backAtHub": "Back at hub",
       "completion": {
         "condition": "Vehicle condition",
+        "photo": "Vehicle photo at the hub",
+        "photoAttached": "Vehicle photo saved",
         "normal": "Normal",
         "needsMaintenance": "Needs maintenance",
         "note": "Vehicle condition note",

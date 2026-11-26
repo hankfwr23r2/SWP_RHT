@@ -5,6 +5,8 @@ import com.example.racehorse_transport.entity.enums.VehicleEndCondition;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import com.example.racehorse_transport.entity.enums.VehicleTripType;
 import com.example.racehorse_transport.policy.StallSeatPolicy;
+import com.example.racehorse_transport.policy.TripReturnPolicy;
+import com.example.racehorse_transport.policy.TripReturnPolicy.Progress;
 import java.time.Instant;
 import java.util.List;
 
@@ -17,14 +19,16 @@ public record VehicleTripResponseDto(
         Instant plannedStartAt, Instant plannedEndAt, Instant actualStartAt, Instant actualEndAt,
         VehicleEndCondition endVehicleCondition, String endVehicleNote,
         List<TripStopResponseDto> stops, List<CrewAssignmentResponseDto> crew, Long coordinatorId, String coordinatorName,
-        long openIncidentCount, String coordinatorStaffCode, boolean takeOverAllowed, boolean manualStopTimesEditable) {
+        long openIncidentCount, String coordinatorStaffCode, boolean takeOverAllowed, boolean manualStopTimesEditable,
+        boolean returning, Instant returnExpectedAt, boolean returnLate, boolean returnPhotoAttached) {
 
     public static VehicleTripResponseDto from(VehicleTrip trip, List<TripStopResponseDto> stops, List<CrewAssignmentResponseDto> crew) {
-        return from(trip, stops, crew, 0, false, false);
+        return from(trip, stops, crew, 0, false, false, TripReturnPolicy.NOT_RETURNING, false);
     }
 
     public static VehicleTripResponseDto from(VehicleTrip trip, List<TripStopResponseDto> stops,
-            List<CrewAssignmentResponseDto> crew, long openIncidentCount, boolean takeOverAllowed, boolean manualStopTimesEditable) {
+            List<CrewAssignmentResponseDto> crew, long openIncidentCount, boolean takeOverAllowed, boolean manualStopTimesEditable,
+            Progress returnProgress, boolean returnPhotoAttached) {
         var vehicle = trip.getVehicle();
         var departure = trip.getDeparture();
         return new VehicleTripResponseDto(trip.getId(), trip.getCode(), trip.getTripType(), trip.getStatus(),
@@ -37,7 +41,8 @@ public record VehicleTripResponseDto(
                 stops, crew,
                 trip.getCoordinator() == null ? null : trip.getCoordinator().getUserId(),
                 trip.getCoordinator() == null ? null : trip.getCoordinator().getFullName(), openIncidentCount,
-                trip.getCoordinator() == null ? null : trip.getCoordinator().getStaffCode(), takeOverAllowed, manualStopTimesEditable);
+                trip.getCoordinator() == null ? null : trip.getCoordinator().getStaffCode(), takeOverAllowed, manualStopTimesEditable,
+                returnProgress.returning(), returnProgress.expectedAt(), returnProgress.late(), returnPhotoAttached);
     }
 
     static int seatsOf(int standardStallCount, int wideStallCount) {

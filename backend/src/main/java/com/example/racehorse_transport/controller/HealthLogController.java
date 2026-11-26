@@ -48,7 +48,7 @@ public class HealthLogController {
 
     @GetMapping("/horse-stays")
     @PreAuthorize("hasAnyRole('COORDINATOR', 'MANAGER')")
-    public ApiResponseDto<List<HorseStayResponseDto>> activeStays(@RequestParam Long locationId) {
-        return ApiResponseDto.success(stays.activeAt(locationId), "Ngựa đang lưu trú");
+    public ApiResponseDto<List<HorseStayResponseDto>> activeStays(@RequestParam Long locationId, Authentication authentication) {
+        return ApiResponseDto.success(stays.activeAt(locationId, authentication.getName()), "Ngựa đang lưu trú");
     }
 }

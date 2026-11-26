@@ -2,6 +2,7 @@ package com.example.racehorse_transport.repository;
 
 import com.example.racehorse_transport.entity.CrewAssignment;
 import com.example.racehorse_transport.entity.enums.CrewAssignmentStatus;
+import com.example.racehorse_transport.entity.enums.CrewRole;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import java.util.Collection;
 import java.util.List;
@@ -15,6 +16,22 @@ public interface CrewAssignmentRepository extends JpaRepository<CrewAssignment, 
 
     @EntityGraph(attributePaths = {"staff", "staff.user", "staff.user.role"})
     List<CrewAssignment> findByVehicleTrip_IdInOrderById(Collection<Long> vehicleTripIds);
+
+    @Query("""
+            SELECT a.staff.userId FROM CrewAssignment a
+            WHERE a.vehicleTrip.id = :tripId AND a.status <> :released AND a.crewRole IN :roles
+            ORDER BY a.staff.userId
+            """)
+    List<Long> findAssignedStaffIds(Long tripId, CrewAssignmentStatus released, Collection<CrewRole> roles);
+
+    @Query("""
+            SELECT DISTINCT a.vehicleTrip.code FROM CrewAssignment a
+            WHERE a.staff.userId IN :staffIds AND a.status <> :released AND a.crewRole IN :roles
+                AND a.vehicleTrip.id <> :tripId AND a.vehicleTrip.status = :running
+            ORDER BY a.vehicleTrip.code
+            """)
+    List<String> findRunningTripCodes(Collection<Long> staffIds, Long tripId, CrewAssignmentStatus released,
+            Collection<CrewRole> roles, VehicleTripStatus running);
 
     // Phân công còn hiệu lực của một nhân viên trên các lượt chưa hủy: kiểm trùng giờ và nơi lượt trước kết thúc
     @EntityGraph(attributePaths = {"vehicleTrip", "vehicleTrip.startLocation", "vehicleTrip.endLocation"})

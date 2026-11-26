@@ -15,6 +15,7 @@ import com.example.racehorse_transport.entity.enums.VehicleStatus;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.exception.VehicleRuleException;
+import com.example.racehorse_transport.policy.DispatchPolicy;
 import com.example.racehorse_transport.policy.VehiclePolicy;
 import com.example.racehorse_transport.repository.AppUserRepository;
 import com.example.racehorse_transport.repository.LocationRepository;
@@ -125,10 +126,10 @@ public class VehicleServiceImpl implements VehicleService {
     }
 
     private DispatchVehicleResponseDto describeForDispatch(Vehicle vehicle) {
-        return trips.findByVehicle_IdAndStatusNot(vehicle.getId(), VehicleTripStatus.CANCELLED).stream()
-                .max(Comparator.comparing(VehicleTrip::getPlannedEndAt))
-                .map(last -> DispatchVehicleResponseDto.from(vehicle, last.getEndLocation(), last.getPlannedEndAt()))
-                .orElseGet(() -> DispatchVehicleResponseDto.from(vehicle, vehicle.getHomeHubLocation(), null));
+        VehicleTrip last = trips.findByVehicle_IdAndStatusNot(vehicle.getId(), VehicleTripStatus.CANCELLED).stream()
+                .max(Comparator.comparing(VehicleTrip::getPlannedEndAt)).orElse(null);
+        return DispatchVehicleResponseDto.from(vehicle, DispatchPolicy.endLocationOrHome(vehicle, last),
+                last == null ? null : last.getPlannedEndAt());
     }
 
     @Override

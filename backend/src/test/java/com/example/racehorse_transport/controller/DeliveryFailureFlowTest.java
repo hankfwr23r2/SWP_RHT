@@ -8,12 +8,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.example.racehorse_transport.PostgresIntegrationTest;
 import com.example.racehorse_transport.support.HandoverEvidenceFixtures;
+import com.example.racehorse_transport.support.HubExitCheckFixtures;
 import com.example.racehorse_transport.entity.Staff;
+import com.example.racehorse_transport.entity.enums.HealthCheckType;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.security.JwtUtils;
 import com.example.racehorse_transport.service.DeliveryFailureService;
 import com.example.racehorse_transport.service.HorseStayService;
 import com.example.racehorse_transport.support.TestData;
+import com.example.racehorse_transport.support.TripReturnPhotoFixtures;
 import com.jayway.jsonpath.JsonPath;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
@@ -129,6 +132,7 @@ class DeliveryFailureFlowTest {
         assertThat(jdbc.queryForObject("SELECT round(extract(epoch FROM planned_end_at - actual_start_at) / 86400) FROM horse_stay WHERE id = ?", Integer.class, stay))
                 .isEqualTo(3);
         assertThat(customerNotices()).contains("Ngựa đang được giữ tại hub");
+        TripReturnPhotoFixtures.attach(jdbc, first.id);
         first.act("/vehicle-trips/" + first.id + "/complete").andExpect(status().isOk());
 
         // Quá hạn: mỗi sáng nhắc khách và quản lý, phí tạm tính vẫn chạy
@@ -182,6 +186,11 @@ class DeliveryFailureFlowTest {
                     AND status = 'PENDING'
                 """, stay)).isEqualTo(1);
         entityManager.clear();
+        second.act("/handovers/" + hubOut + "/complete").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Chưa khám trước khi giao: Sao Mai"));
+        long escortId = jdbc.queryForObject("SELECT staff_id FROM crew_assignment WHERE vehicle_trip_id = ? AND crew_role = 'ESCORT'",
+                Long.class, second.id);
+        HubExitCheckFixtures.boardingDone(jdbc, second.id, escortId, HealthCheckType.BEFORE_DELIVERY);
         second.act("/handovers/" + hubOut + "/complete").andExpect(status().isOk());
         entityManager.flush();
         assertThat(jdbc.queryForList("SELECT stabling_days FROM cost_item WHERE horse_stay_id = ? ORDER BY id", Long.class, stay))
@@ -216,6 +225,7 @@ class DeliveryFailureFlowTest {
         first.act("/trip-stops/" + first.stops.get(2) + "/depart").andExpect(status().isOk());
         first.act("/trip-stops/" + first.stops.get(3) + "/arrive").andExpect(status().isOk());
         first.scanAndComplete(first.openHandover(3, "HUB_IN"));
+        TripReturnPhotoFixtures.attach(jdbc, first.id);
         first.act("/vehicle-trips/" + first.id + "/complete").andExpect(status().isOk());
 
         Trip replacement = plan("DELIVERY", 24 * 60, stop("locationId", hcm, "HUB", 24 * 60),
@@ -234,6 +244,7 @@ class DeliveryFailureFlowTest {
         HandoverEvidenceFixtures.confirm(mvc, jwtUtils, booking, owner);
         org.mockito.Mockito.when(cloudinary.uploadFile(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyString()))
                 .thenAnswer(call -> "https://example.test/" + java.util.UUID.randomUUID());
+        HubExitCheckFixtures.collectionDone(jdbc, stay, coordinatorStaff.getUserId());
         mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart("/horse-stays/{id}/deliveries", stay)
                 .file(new org.springframework.mock.web.MockMultipartFile("request", "", "application/json",
                         "{\"microchip\":\"%s\",\"conditionNote\":\"Khỏe\",\"papers\":[],\"recipient\":{\"recipientName\":\"Người nhận\"}}".formatted(chip)

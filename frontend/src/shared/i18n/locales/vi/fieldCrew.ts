@@ -21,10 +21,16 @@ export const fieldCrew = {
     accept: "Nhận việc khám",
     accepted: "Đã nhận việc khám",
     overdue: "Quá hạn",
+    record: "Ghi khám",
+    hubExitTypes: {
+      BEFORE_DEPARTURE: "Khám trước khi chạy",
+      BEFORE_DELIVERY: "Khám trước khi giao",
+    },
     types: {
       ROUTINE: "Định kỳ",
       FOLLOW_UP: "Tái khám",
       BEFORE_DEPARTURE: "Trước khi khởi hành",
+      BEFORE_DELIVERY: "Trước khi giao",
     },
     status: {
       ASSIGNED: "Chờ nhận",
@@ -179,8 +185,11 @@ export const fieldCrew = {
       "loadError": "Không tải được lượt xe",
       "start": "Xuất phát",
       "complete": "Kết thúc lượt",
+      "backAtHub": "Đã về hub",
       "completion": {
         "condition": "Tình trạng xe",
+        "photo": "Ảnh chụp xe tại hub",
+        "photoAttached": "Đã lưu ảnh xe",
         "normal": "Bình thường",
         "needsMaintenance": "Cần bảo dưỡng",
         "note": "Ghi chú tình trạng xe",

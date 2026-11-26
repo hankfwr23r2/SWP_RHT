@@ -82,6 +82,31 @@ public interface HorseStayRepository extends JpaRepository<HorseStay, Long> {
     List<HorseStay> findByReadyAtIsNotNullAndActualEndAtIsNull();
 
     @Query("""
+            SELECT s FROM HorseStay s WHERE s.bookingHorse.id IN :horseIds AND s.actualStartAt IS NOT NULL
+                AND s.actualEndAt IS NULL AND s.location.locationType = com.example.racehorse_transport.entity.enums.LocationType.HUB
+            ORDER BY s.id
+            """)
+    @EntityGraph(attributePaths = {"bookingHorse", "location"})
+    List<HorseStay> findOpenHubStays(Collection<Long> horseIds);
+
+    @Query("""
+            SELECT s.id FROM HorseStay s
+            WHERE s.actualStartAt IS NOT NULL AND s.actualEndAt IS NULL AND s.balanceHoldAt IS NULL
+                AND s.location.locationType = com.example.racehorse_transport.entity.enums.LocationType.HUB
+                AND s.bookingHorse.booking.status = com.example.racehorse_transport.entity.enums.BookingStatus.IN_OPERATION
+                AND s.bookingHorse.status = com.example.racehorse_transport.entity.enums.BookingHorseStatus.ACTIVE
+                AND ((s.stayType = com.example.racehorse_transport.entity.enums.HorseStayType.ASSEMBLY
+                    AND s.bookingHorse.booking.deliveryMethod = com.example.racehorse_transport.entity.enums.TransferMethod.SELF
+                    AND s.plannedEndAt <= :cutoff)
+                    OR (s.stayType = com.example.racehorse_transport.entity.enums.HorseStayType.STABLING
+                    AND (s.collectionExpectedAt <= :cutoff OR (s.collectionExpectedAt IS NULL
+                         AND s.bookingHorse.booking.deliveryMethod = com.example.racehorse_transport.entity.enums.TransferMethod.SELF
+                         AND s.plannedStartAt <= :cutoff))))
+            ORDER BY s.id
+            """)
+    List<Long> findHubCollectionsDueBy(Instant cutoff);
+
+    @Query("""
             SELECT s FROM HorseStay s WHERE s.balanceHoldAt IS NOT NULL
                 AND EXISTS (SELECT l.id FROM HorseLeg l WHERE l.bookingHorse = s.bookingHorse
                     AND l.boardTripStop.id = :tripStopId AND l.actualStartAt = s.actualEndAt
