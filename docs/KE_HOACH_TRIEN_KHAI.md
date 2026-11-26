@@ -694,7 +694,7 @@ Nguồn: [NGU_CANH_THIET_KE_LAI.md](NGU_CANH_THIET_KE_LAI.md) mục 4b, [NGHIEP_
 | M3 | Xe riêng | A | 7 | Chưa làm | |
 | M4 | Xếp xe trục nhiều xe | B | 7 | Chưa làm | |
 | M5 | Khám bắt buộc hai đầu hub | B | 7 | Xong | #520 |
-| M6 | Xe về | B | 7 | Xong | |
+| M6 | Xe về | B | 7 | Xong | #522 |
 | M7 | Bỏ đại lý ở cửa khẩu | B | 7 | Chưa làm | |
-| M8 | Màn Các hub | B | 7 | Xong | |
+| M8 | Màn Các hub | B | 7 | Xong | #523 |
 | M9 | Tích hợp mô hình bến xe | A + B | 7 | Chưa làm | |
