@@ -2820,6 +2820,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/hubs/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["hubOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/incident-plans/{id}/accept": {
         parameters: {
             query?: never;
@@ -4769,6 +4785,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListHubOverviewResponseDto: {
+            data?: components["schemas"]["HubOverviewResponseDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseListHubServiceAreaResponse: {
             data?: components["schemas"]["HubServiceAreaResponse"][];
             message?: string;
@@ -6467,11 +6488,70 @@ export interface components {
             /** Format: date-time */
             collectAt: string;
         };
+        HubDepartureResponseDto: {
+            /** Format: date-time */
+            departureAt?: string;
+            destinationName?: string;
+            /** Format: int64 */
+            id?: number;
+            originName?: string;
+            routeCode?: string;
+            /** @enum {string} */
+            status?: "OPEN" | "CLOSED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+        };
+        HubFleetResponseDto: {
+            idle?: components["schemas"]["HubVehicleGroupResponseDto"];
+            maintenance?: components["schemas"]["HubVehicleGroupResponseDto"];
+            returning?: components["schemas"]["HubVehicleGroupResponseDto"];
+            running?: components["schemas"]["HubVehicleGroupResponseDto"];
+        };
         HubHandoverRequestDto: {
             conditionNote: string;
             microchip: string;
             papers?: components["schemas"]["HandoverPaperRequestDto"][];
             recipient?: components["schemas"]["DeliveryRecipientRequestDto"];
+        };
+        HubHorseResponseDto: {
+            /** Format: date-time */
+            actualStartAt?: string;
+            bookingCode?: string;
+            horseName?: string;
+            /** Format: int64 */
+            id?: number;
+            /** @enum {string} */
+            stayType?: "ASSEMBLY" | "QUARANTINE" | "OVERNIGHT" | "STABLING";
+        };
+        HubIncidentResponseDto: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: date-time */
+            reportedAt?: string;
+            /** @enum {string} */
+            severity?: "LOW" | "MEDIUM" | "HIGH";
+            /** @enum {string} */
+            status?: "REPORTED" | "PLAN_PENDING" | "PLAN_ACTIVE" | "RESOLVED" | "CLOSED";
+            title?: string;
+        };
+        HubOverviewResponseDto: {
+            arrivals?: components["schemas"]["HubDepartureResponseDto"][];
+            code?: string;
+            countryCode?: string;
+            countryName?: string;
+            departures?: components["schemas"]["HubDepartureResponseDto"][];
+            fleet?: components["schemas"]["HubFleetResponseDto"];
+            headquarters?: boolean;
+            /** Format: int32 */
+            horseCount?: number;
+            horses?: components["schemas"]["HubHorseResponseDto"][];
+            /** Format: int64 */
+            id?: number;
+            incidents?: components["schemas"]["HubIncidentResponseDto"][];
+            name?: string;
+            /** Format: int32 */
+            openIncidentCount?: number;
+            provinceName?: string;
+            staff?: components["schemas"]["HubStaffRoleResponseDto"][];
+            stalls?: components["schemas"]["HubStallCountsResponseDto"];
         };
         HubRefusalRequestDto: {
             reason: string;
@@ -6491,9 +6571,20 @@ export interface components {
         HubStablingRequestDto: {
             note?: string;
         };
+        HubStaffRoleResponseDto: {
+            /** Format: int64 */
+            count?: number;
+            roleCode?: string;
+        };
         HubStallChangeRequestDto: {
             /** Format: int64 */
             hubStallId: number;
+        };
+        HubStallCountsResponseDto: {
+            /** Format: int64 */
+            available?: number;
+            /** Format: int64 */
+            total?: number;
         };
         HubStallCreateRequestDto: {
             code: string;
@@ -6515,6 +6606,17 @@ export interface components {
             occupied?: boolean;
             /** @enum {string} */
             stallKind?: "STANDARD" | "ISOLATION";
+        };
+        HubVehicleGroupResponseDto: {
+            /** Format: int32 */
+            count?: number;
+            vehicles?: components["schemas"]["HubVehicleResponseDto"][];
+        };
+        HubVehicleResponseDto: {
+            /** Format: int64 */
+            id?: number;
+            licensePlate?: string;
+            tripCode?: string;
         };
         IncidentPlanRequestDto: {
             estimatedCost?: number;
@@ -12825,6 +12927,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    hubOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListHubOverviewResponseDto"];
                 };
             };
         };

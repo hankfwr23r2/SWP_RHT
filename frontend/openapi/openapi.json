@@ -1092,6 +1092,23 @@
         },
         "type" : "object"
       },
+      "ApiResponseListHubOverviewResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HubOverviewResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListHubServiceAreaResponse" : {
         "properties" : {
           "data" : {
@@ -5745,6 +5762,49 @@
         "required" : [ "collectAt" ],
         "type" : "object"
       },
+      "HubDepartureResponseDto" : {
+        "properties" : {
+          "departureAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "destinationName" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "originName" : {
+            "type" : "string"
+          },
+          "routeCode" : {
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "OPEN", "CLOSED", "IN_PROGRESS", "COMPLETED", "CANCELLED" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "HubFleetResponseDto" : {
+        "properties" : {
+          "idle" : {
+            "$ref" : "#/components/schemas/HubVehicleGroupResponseDto"
+          },
+          "maintenance" : {
+            "$ref" : "#/components/schemas/HubVehicleGroupResponseDto"
+          },
+          "returning" : {
+            "$ref" : "#/components/schemas/HubVehicleGroupResponseDto"
+          },
+          "running" : {
+            "$ref" : "#/components/schemas/HubVehicleGroupResponseDto"
+          }
+        },
+        "type" : "object"
+      },
       "HubHandoverRequestDto" : {
         "properties" : {
           "conditionNote" : {
@@ -5768,6 +5828,124 @@
           }
         },
         "required" : [ "conditionNote", "microchip" ],
+        "type" : "object"
+      },
+      "HubHorseResponseDto" : {
+        "properties" : {
+          "actualStartAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "bookingCode" : {
+            "type" : "string"
+          },
+          "horseName" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "stayType" : {
+            "enum" : [ "ASSEMBLY", "QUARANTINE", "OVERNIGHT", "STABLING" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "HubIncidentResponseDto" : {
+        "properties" : {
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "reportedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "severity" : {
+            "enum" : [ "LOW", "MEDIUM", "HIGH" ],
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "REPORTED", "PLAN_PENDING", "PLAN_ACTIVE", "RESOLVED", "CLOSED" ],
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "HubOverviewResponseDto" : {
+        "properties" : {
+          "arrivals" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HubDepartureResponseDto"
+            },
+            "type" : "array"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "countryCode" : {
+            "type" : "string"
+          },
+          "countryName" : {
+            "type" : "string"
+          },
+          "departures" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HubDepartureResponseDto"
+            },
+            "type" : "array"
+          },
+          "fleet" : {
+            "$ref" : "#/components/schemas/HubFleetResponseDto"
+          },
+          "headquarters" : {
+            "type" : "boolean"
+          },
+          "horseCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "horses" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HubHorseResponseDto"
+            },
+            "type" : "array"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "incidents" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HubIncidentResponseDto"
+            },
+            "type" : "array"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "openIncidentCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "provinceName" : {
+            "type" : "string"
+          },
+          "staff" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HubStaffRoleResponseDto"
+            },
+            "type" : "array"
+          },
+          "stalls" : {
+            "$ref" : "#/components/schemas/HubStallCountsResponseDto"
+          }
+        },
         "type" : "object"
       },
       "HubRefusalRequestDto" : {
@@ -5822,6 +6000,18 @@
         },
         "type" : "object"
       },
+      "HubStaffRoleResponseDto" : {
+        "properties" : {
+          "count" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "roleCode" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "HubStallChangeRequestDto" : {
         "properties" : {
           "hubStallId" : {
@@ -5830,6 +6020,19 @@
           }
         },
         "required" : [ "hubStallId" ],
+        "type" : "object"
+      },
+      "HubStallCountsResponseDto" : {
+        "properties" : {
+          "available" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "total" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
         "type" : "object"
       },
       "HubStallCreateRequestDto" : {
@@ -5883,6 +6086,36 @@
           },
           "stallKind" : {
             "enum" : [ "STANDARD", "ISOLATION" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "HubVehicleGroupResponseDto" : {
+        "properties" : {
+          "count" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "vehicles" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HubVehicleResponseDto"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "HubVehicleResponseDto" : {
+        "properties" : {
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "licensePlate" : {
+            "type" : "string"
+          },
+          "tripCode" : {
             "type" : "string"
           }
         },
@@ -16399,6 +16632,24 @@
           }
         },
         "tags" : [ "hub-service-area-controller" ]
+      }
+    },
+    "/hubs/overview" : {
+      "get" : {
+        "operationId" : "hubOverview",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListHubOverviewResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "hub-overview-controller" ]
       }
     },
     "/incident-plans/{id}/accept" : {
