@@ -1,9 +1,11 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.dto.booking.BookingMergeSuggestionResponseDto;
 import com.example.racehorse_transport.dto.booking.BookingRescheduleRequestDto;
 import com.example.racehorse_transport.dto.booking.BookingResponseDto;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.BookingHorse;
+import com.example.racehorse_transport.entity.BookingStatusHistory;
 import com.example.racehorse_transport.entity.Departure;
 import com.example.racehorse_transport.entity.enums.BookingHorseStatus;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
@@ -14,7 +16,9 @@ import com.example.racehorse_transport.exception.BookingRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.BookingSubmissionPolicy;
 import com.example.racehorse_transport.policy.BalanceHoldPolicy;
+import com.example.racehorse_transport.policy.DepartureCapacityPolicy;
 import com.example.racehorse_transport.policy.DepartureDecisionPolicy;
+import com.example.racehorse_transport.policy.DepartureMergePolicy;
 import com.example.racehorse_transport.policy.InsuranceReviewPolicy;
 import com.example.racehorse_transport.policy.StallSeatPolicy;
 import com.example.racehorse_transport.repository.BookingHorseRepository;
@@ -31,6 +35,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,6 +57,33 @@ public class BookingRescheduleServiceImpl implements BookingRescheduleService {
     private final HorseInsuranceRepository insurance;
 
     @Override
+    @Transactional(readOnly = true)
+    public Optional<BookingMergeSuggestionResponseDto> mergeSuggestion(Long bookingId, String username) {
+        Booking booking = bookings.findByIdAndCustomer_User_Username(bookingId, username)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn."));
+        if (booking.getStatus() != BookingStatus.SCHEDULE_CHANGE_REQUIRED) {
+            return Optional.empty();
+        }
+        Departure source = history.findFirstByBooking_IdAndToStatusOrderByChangedAtDescIdDesc(bookingId, BookingStatus.SCHEDULE_CHANGE_REQUIRED)
+                .map(BookingStatusHistory::getPreviousDeparture)
+                .orElse(null);
+        Departure target = source == null ? null : source.getMergedIntoDeparture();
+        if (target == null) {
+            return Optional.empty();
+        }
+        Instant now = clock.instant();
+        LocalDate holdThrough = BookingSubmissionPolicy.priceHoldThrough(source.getDepartureDate(), config.getInt("PRICE_HOLD_DAYS"));
+        LocalDate pickupDate = BookingSubmissionPolicy.latestPickupDate(booking.getBookingType(), target.getDepartureDate());
+        if (!DepartureMergePolicy.withinPriceHold(source, target, holdThrough)
+                || pickupDate.isBefore(BookingSubmissionPolicy.businessDate(now))
+                || DepartureCapacityPolicy.reasonNotReservable(target.getStatus(), target.getBookingCutoffAt(), now,
+                        target.getStallCapacity(), target.getBookedStallCount(), seatsFor(activeHorses(bookingId))).isPresent()) {
+            return Optional.empty();
+        }
+        return Optional.of(BookingMergeSuggestionResponseDto.from(target, pickupDate));
+    }
+
+    @Override
     @Transactional
     public BookingResponseDto reschedule(Long bookingId, String username, BookingRescheduleRequestDto request) {
         Booking booking = bookings.findForUpdate(bookingId)
@@ -63,7 +95,7 @@ public class BookingRescheduleServiceImpl implements BookingRescheduleService {
         bookings.findReturnedBalanceHoldAt(bookingId).or(() ->
                 history.findFirstByBooking_IdOrderByChangedAtDescIdDesc(bookingId)
                 .filter(row -> BalanceHoldPolicy.RETURNED_AT_PICKUP.equals(row.getReason()))
-                .map(com.example.racehorse_transport.entity.BookingStatusHistory::getChangedAt))
+                .map(BookingStatusHistory::getChangedAt))
                 .ifPresent(returnedAt -> {
                     if (BalanceHoldPolicy.reached(clock.instant(), returnedAt, config.getInt("PRICE_HOLD_DAYS"),
                             java.time.temporal.ChronoUnit.DAYS)) {

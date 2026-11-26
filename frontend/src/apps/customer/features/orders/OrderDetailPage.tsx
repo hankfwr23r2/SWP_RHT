@@ -89,7 +89,7 @@ export default function OrderDetailPage() {
         )}
         {(status === 'SCHEDULE_CHANGE_REQUIRED' || delay.data?.canRescheduleFree) && (
           <section id="reschedule" className={s.section}>
-            <RescheduleCard data={data} excludeDepartureId={delay.data?.departureId}
+            <RescheduleCard key={data.id} data={data} excludeDepartureId={delay.data?.departureId}
               reschedule={delay.data?.canRescheduleFree ? async body => {
                 await delay.reschedule(body)
                 await delay.reload()

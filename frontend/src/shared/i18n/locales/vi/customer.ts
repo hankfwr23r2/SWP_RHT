@@ -559,6 +559,9 @@ export const customer = {
       done: 'Đã đổi chuyến.',
       confirmTitle: 'Đổi chuyến?',
       confirmMessage: 'Đơn sẽ đi chuyến ngày {{date}}.',
+      mergeSuggestion: 'Chuyến được dồn sang ngày {{date}}',
+      mergePickup: 'Ngày đón dự kiến {{date}}.',
+      acceptMerge: 'Đồng ý chuyển chuyến',
     },
     cancel: {
       open: 'Hủy đơn',

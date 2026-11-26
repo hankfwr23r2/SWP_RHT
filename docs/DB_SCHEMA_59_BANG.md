@@ -487,11 +487,13 @@ Index: `route_id`.
 | `delay_reason` | `varchar(500)` | có | | Lý do công ty ghi khi chuyến chậm hoặc dời giờ |
 | `delay_escalated_at` | `timestamptz` | có | | Lúc báo quản lý xử lý vì đã nhận ngựa và chưa có giờ mới |
 | `auto_cancelled_at` | `timestamptz` | có | CK chỉ khi CANCELLED | Lúc hệ thống hủy chuyến trễ do công ty |
+| `merged_into_departure_id` | `bigint` | có | FK → departure | Chuyến đích quản lý đề xuất khi dồn chuyến. Khách xác nhận thì đơn mới chuyển chuyến |
 
 Ràng buộc bảng:
 - `CHECK ((run_confirmed_at IS NULL) = (run_confirmed_by IS NULL))`.
 - `CHECK (revised_departure_at IS NULL OR revised_departure_at > planned_departure_at)`.
 - `delayed_at` và `delay_reason` cùng có giá trị. `auto_cancelled_at` chỉ có khi chuyến đã ghi chậm và có trạng thái `CANCELLED`.
+- `merged_into_departure_id` chỉ có trên chuyến theo lịch đã `CANCELLED`, và phải khác `id`. Service kiểm chuyến đích theo lịch, cùng tuyến, chưa chạy, còn đủ chỗ và nằm trong `PRICE_HOLD_DAYS` kể từ `departure_date` của chuyến nguồn.
 - `UNIQUE (departure_schedule_id, departure_date)`: mỗi lịch sinh tối đa một chuyến mỗi ngày. Chuyến đột xuất có `departure_schedule_id` NULL nên không bị giới hạn.
 - `CHECK (booking_cutoff_at < planned_departure_at)`.
 - `CHECK (booked_stall_count BETWEEN 0 AND stall_capacity)`: DB chặn bán quá chỗ.

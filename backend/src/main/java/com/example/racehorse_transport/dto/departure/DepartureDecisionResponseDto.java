@@ -15,7 +15,7 @@ public record DepartureDecisionResponseDto(Long id, String routeCode, String rou
                                            Instant runConfirmedAt, Instant revisedDepartureAt, Instant delayedAt,
                                            Instant autoCancelledAt, String delayReason, boolean warning,
                                            boolean canRevise, List<ReceivedBookingResponseDto> receivedBookings,
-                                           Long coordinatorId, String coordinatorName) {
+                                           Long coordinatorId, String coordinatorName, boolean canMerge) {
 
     public record ReceivedBookingResponseDto(Long id, String code) {
         public static ReceivedBookingResponseDto from(Booking booking) {
@@ -25,13 +25,14 @@ public record DepartureDecisionResponseDto(Long id, String routeCode, String rou
 
     public static DepartureDecisionResponseDto from(Departure departure, Instant decisionAt, int committedStallCount,
                                                     int uncommittedBookingCount, boolean belowMinimum, boolean confirmable,
-                                                    boolean warning, boolean canRevise, List<ReceivedBookingResponseDto> receivedBookings) {
+                                                    boolean warning, boolean canRevise, List<ReceivedBookingResponseDto> receivedBookings,
+                                                    boolean canMerge) {
         return new DepartureDecisionResponseDto(departure.getId(), departure.getRoute().getCode(), departure.getRoute().getName(),
                 departure.getDepartureDate(), departure.getPlannedDepartureAt(), decisionAt, departure.getStatus(),
                 departure.getStallCapacity(), departure.getBookedStallCount(), committedStallCount, uncommittedBookingCount,
                 belowMinimum, confirmable, departure.getRunConfirmedAt(), departure.getRevisedDepartureAt(),
                 departure.getDelayedAt(), departure.getAutoCancelledAt(), departure.getDelayReason(), warning, canRevise, receivedBookings,
                 departure.getCoordinator() == null ? null : departure.getCoordinator().getUserId(),
-                departure.getCoordinator() == null ? null : departure.getCoordinator().getFullName());
+                departure.getCoordinator() == null ? null : departure.getCoordinator().getFullName(), canMerge);
     }
 }

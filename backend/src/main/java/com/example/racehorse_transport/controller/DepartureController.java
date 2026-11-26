@@ -2,8 +2,10 @@ package com.example.racehorse_transport.controller;
 
 import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.dto.departure.DepartureCancelRequestDto;
+import com.example.racehorse_transport.dto.departure.DepartureConfirmRunRequestDto;
 import com.example.racehorse_transport.dto.departure.DepartureCreateRequestDto;
 import com.example.racehorse_transport.dto.departure.DepartureDecisionResponseDto;
+import com.example.racehorse_transport.dto.departure.DepartureMergeRequestDto;
 import com.example.racehorse_transport.dto.departure.DepartureResponseDto;
 import com.example.racehorse_transport.dto.departure.DepartureSuggestionQueryDto;
 import com.example.racehorse_transport.dto.departure.DepartureSuggestionResponseDto;
@@ -67,8 +69,10 @@ public class DepartureController {
 
     @PostMapping("/{id}/confirm-run")
     @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<ApiResponseDto<DepartureDecisionResponseDto>> confirmRun(@PathVariable Long id, Authentication authentication) {
-        return ResponseEntity.ok(ApiResponseDto.success(decisionService.confirmRun(id, authentication.getName()), "Đã xác nhận chạy"));
+    public ResponseEntity<ApiResponseDto<DepartureDecisionResponseDto>> confirmRun(@PathVariable Long id,
+            @Valid @RequestBody(required = false) DepartureConfirmRunRequestDto request, Authentication authentication) {
+        return ResponseEntity.ok(ApiResponseDto.success(
+                decisionService.confirmRun(id, authentication.getName(), request), "Đã xác nhận chạy"));
     }
 
     @PostMapping
@@ -85,5 +89,19 @@ public class DepartureController {
             @PathVariable Long id, @Valid @RequestBody DepartureCancelRequestDto request, Authentication authentication) {
         return ResponseEntity.ok(ApiResponseDto.success(
                 departureService.cancel(id, request.getReason(), authentication.getName()), "Đã hủy chuyến"));
+    }
+
+    @GetMapping("/{id}/merge-targets")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<ApiResponseDto<List<DepartureResponseDto>>> mergeTargets(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponseDto.success(departureService.mergeTargets(id), "Danh sách chuyến đích"));
+    }
+
+    @PostMapping("/{id}/merge")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<ApiResponseDto<DepartureResponseDto>> merge(@PathVariable Long id,
+            @Valid @RequestBody DepartureMergeRequestDto request, Authentication authentication) {
+        return ResponseEntity.ok(ApiResponseDto.success(
+                departureService.merge(id, request, authentication.getName()), "Đã dồn chuyến"));
     }
 }

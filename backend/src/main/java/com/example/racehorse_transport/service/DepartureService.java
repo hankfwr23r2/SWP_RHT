@@ -2,6 +2,7 @@ package com.example.racehorse_transport.service;
 
 import com.example.racehorse_transport.entity.Departure;
 import com.example.racehorse_transport.dto.departure.DepartureCreateRequestDto;
+import com.example.racehorse_transport.dto.departure.DepartureMergeRequestDto;
 import com.example.racehorse_transport.dto.departure.DepartureResponseDto;
 import com.example.racehorse_transport.entity.enums.DepartureStatus;
 import java.time.LocalDate;
@@ -36,6 +37,10 @@ public interface DepartureService {
 
     // Hủy chuyến chưa chạy; các đơn trên chuyến chuyển sang SCHEDULE_CHANGE_REQUIRED kèm lý do
     DepartureResponseDto cancel(Long departureId, String reason, String actorUsername);
+
+    List<DepartureResponseDto> mergeTargets(Long departureId);
+
+    DepartureResponseDto merge(Long departureId, DepartureMergeRequestDto request, String actorUsername);
 
     void cancelForDelay(Long departureId, String reason);
 }

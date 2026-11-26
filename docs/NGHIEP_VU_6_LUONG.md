@@ -532,9 +532,11 @@ Năm loại lượt xe:
 
 ### Bước 2. Quản lý quyết định chuyến có chạy không
 
-- Chuyến có lịch không có nghĩa là chắc chắn chạy. **Từ 48 giờ trước giờ chạy tới giờ chạy**, quản lý mở trang Chuyến cần quyết định và bấm **Chạy** hoặc **Hủy chuyến**. Trước mốc 48 giờ chỉ hủy được, chưa bấm Chạy được.
+- Chuyến có lịch không có nghĩa là chắc chắn chạy. **Từ 48 giờ trước giờ chạy tới giờ chạy**, quản lý mở trang Chuyến cần quyết định và có thể bấm **Chạy**. **Hủy chuyến** và **Dồn chuyến** dùng cùng điều kiện hủy, kể cả trước mốc xác nhận chạy.
 - Màn hình cho biết **đã cọc bao nhiêu chỗ trên sức chứa**. Dưới **30%** (cấu hình) thì cảnh báo "dưới mức tối thiểu", nhưng quyết định là của quản lý.
-- Bấm Chạy thì điều phối viên được báo để lập lượt trục. Bấm Hủy thì các đơn sang Cần chọn lại chuyến, nguyên nhân công ty (luồng 1).
+- Bấm **Chạy** thì có thể nhập **Số chỗ chạy** để dùng xe nhỏ hơn. Sức chứa mới phải ít nhất bằng số chỗ đang giữ và tối đa bằng sức chứa hiện tại. Điều phối nhận thông báo số chỗ để lập lượt trục. Ngày chạy và giá giữ nguyên.
+- Bấm **Hủy chuyến** thì các đơn sang **Cần chọn lại chuyến**, nguyên nhân công ty (luồng 1).
+- Bấm **Dồn chuyến**, quản lý chọn chuyến đích theo lịch cùng tuyến và nhập lý do. Chuyến đích phải chưa chạy (`OPEN` hoặc `CLOSED`), đủ chỗ cho các đơn đang giữ chỗ và có ngày chạy từ ngày chuyến nguồn đến hết hạn `PRICE_HOLD_DAYS`. Chuyến nguồn bị hủy và khách nhận thông báo. Khi chuyến đích còn nhận đặt và đủ chỗ cho đơn, khách có thể bấm **Đồng ý chuyển chuyến**. Đơn đã cọc giữ báo giá, đơn chưa cọc quay lại thẩm định. Khách cũng có thể chọn chuyến khác hoặc dùng luồng hoàn tiền. Chuyến đột xuất thuê riêng không tham gia dồn.
 
 ### Bước 3. Xếp lượt đón
 
@@ -720,7 +722,7 @@ Theo cách hàng không, đã trình bày và chờ duyệt cuối:
 6. **Đã sửa.** Lượt chở ngựa phải có hộ tống đã nhận việc mới xuất phát được.
 7. **Đã sửa.** Nhập giờ tay cũng kiểm thời gian ngồi xe theo kế hoạch: đón, giao tối đa 5 giờ, chạy thẳng tối đa 10 giờ.
 8. **Đã sửa.** Màn đặt hẹn khách tự chở hiện hạn có mặt ở hub và hệ thống từ chối giờ hẹn muộn hơn hạn.
-9. **Dồn chuyến, chạy xe nhỏ hơn, một khách thuê cả chuyến**: tài liệu có nêu, chưa có nút riêng. Hiện chỉ có Chạy, Hủy, Tạo chuyến đột xuất.
+9. **Đã sửa.** Quản lý có thể giảm sức chứa khi xác nhận chạy hoặc dồn sang chuyến theo lịch cùng tuyến trong hạn giữ giá. Khách tự đồng ý đổi lịch, chọn chuyến khác hoặc yêu cầu hoàn tiền.
 10. **Đã sửa.** Điều phối tự lập lượt `TRANSFER` rỗng về hub gốc, không gắn chuyến bán và không cần quản lý xác nhận chạy.
 11. **Giữ nguyên (chốt 26/11/2026).** Giờ lái mỗi ngày tính theo ngày lịch, không theo 24 giờ liên tục.
 

@@ -53,7 +53,7 @@ Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A
 | **3.G6** | **Đã sửa.** Lượt chở ngựa phải có hộ tống đã nhận việc mới xuất phát được; lượt chạy rỗng không cần | | `TripExecutionPolicy`, `TripExecutionServiceImpl` | |
 | **3.G7** | **Đã sửa.** Xếp ngựa vào lượt đón, giao nhập giờ tay cũng kiểm thời gian ngồi xe theo kế hoạch: tối đa nửa giới hạn lái mỗi ngày (5 giờ), chạy thẳng tối đa 10 giờ | | `HorseLegServiceImpl`, `TripSchedulePolicy` | |
 | **3.G8** | **Đã sửa.** Màn đặt hẹn hiện hạn có mặt ở hub. Giờ hẹn tự chở muộn hơn hạn bị từ chối | | `HorseStayServiceImpl` (`planSelfDropOff`) | 1b đã gộp, làm được |
-| **3.G9** | Chưa có nút dồn chuyến, chạy xe nhỏ hơn, một khách thuê cả chuyến | Chọn phần thật sự cần; tài liệu có nêu | `DepartureDecisionServiceImpl` | **Chờ** đợt 5 |
+| **3.G9** | **Đã sửa.** Khi xác nhận chạy có thể giảm sức chứa đến số chỗ đã giữ. Dồn chuyến theo lịch cùng tuyến thì khách được đề xuất đổi chuyến giữ giá và tự xác nhận. | | `DepartureDecisionServiceImpl`, `DepartureServiceImpl`, `RescheduleCard.tsx` | |
 | **3.G10** | **Đã sửa.** Điều phối lập lượt `TRANSFER` rỗng từ nơi xe đang ở về hub gốc, không cần chuyến bán hay quản lý xác nhận chạy. | | `TripScheduleServiceImpl`, `CreateTripModal.tsx` | |
 | **3.G11** | **Giữ nguyên.** Giờ lái mỗi ngày tính theo ngày lịch | | `DispatchPolicy`, `CrewAssignmentServiceImpl` | Người dùng chốt 26/11 |
 
@@ -100,7 +100,7 @@ Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A
 | 2.F10 | Kiểm bảo hiểm đã xác nhận khi nhận ngựa nhập từ đại lý ở cửa khẩu | Đã duyệt | #496 |
 | 2.F4 | Cập nhật và xác nhận bảo hiểm mua hộ khi đơn Đang báo giá | Đã duyệt | #479 |
 | 3.G4 | Đổi xe, dời đều cả lượt ngoài trục hoặc sửa từng điểm của lượt nhập tay. Chỉ điều phối phụ trách được sửa lượt `PLANNED`. Dùng lại các kiểm tra khi lập lượt và báo tổ lái, khách. | Đã duyệt | #508 |
-| 3.G9 | | | |
+| 3.G9 | Giảm sức chứa khi xác nhận chạy. Dồn hai chuyến theo lịch cùng tuyến trong hạn giữ giá, đủ chỗ và bắt buộc có lý do. Khách đồng ý qua luồng đổi chuyến hiện có hoặc chọn phương án khác. | Đã duyệt | |
 | 3.G11 | Giữ nguyên, tính theo ngày lịch | Đã duyệt | |
 | 3.G10 | Điều phối lập lượt `TRANSFER` về hub gốc, tính giờ theo tuyến chiều về hoặc theo bản đồ | Đã duyệt | #501 |
 | 3.G6, 3.G7 | Bắt buộc hộ tống đã nhận việc; kiểm giờ ngồi xe khi nhập giờ tay | Đã duyệt | #480 |
