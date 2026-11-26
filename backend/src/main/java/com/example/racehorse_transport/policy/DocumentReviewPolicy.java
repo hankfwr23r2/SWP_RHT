@@ -1,11 +1,13 @@
 package com.example.racehorse_transport.policy;
 
 import com.example.racehorse_transport.dto.regulation.DocumentRequirementResponseDto;
+import com.example.racehorse_transport.entity.Document;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.DocumentStatus;
 import com.example.racehorse_transport.entity.enums.DocumentSubmitter;
 import static com.example.racehorse_transport.entity.enums.BookingStatus.*;
 import com.example.racehorse_transport.exception.BookingRuleException;
+import java.time.LocalDate;
 
 public final class DocumentReviewPolicy {
     private DocumentReviewPolicy() {}
@@ -39,6 +41,18 @@ public final class DocumentReviewPolicy {
         if (status != DocumentStatus.UPLOADED) {
             throw BookingRuleException.conflict("Giấy tờ đã được kết luận.");
         }
+    }
+
+    public static boolean blocksReplacement(Document document, Long requirementId, LocalDate on) {
+        return DocumentCompletenessPolicy.isApprovedOn(document, on)
+                || (document.getStatus() == DocumentStatus.UPLOADED
+                    && (requirementId == null || document.getDocumentRequirement() == null
+                        || requirementId.equals(document.getDocumentRequirement().getId())));
+    }
+
+    public static DocumentStatus statusOn(Document document, LocalDate on) {
+        return document.getStatus() == DocumentStatus.APPROVED && !DocumentCompletenessPolicy.isApprovedOn(document, on)
+                ? DocumentStatus.EXPIRED : document.getStatus();
     }
 
     public static void requireRevocationBeforePickup(BookingStatus status, boolean received) {

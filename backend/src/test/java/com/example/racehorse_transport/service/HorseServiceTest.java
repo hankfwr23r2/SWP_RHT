@@ -20,7 +20,6 @@ import com.example.racehorse_transport.repository.CustomerRepository;
 import com.example.racehorse_transport.repository.HorseRepository;
 import com.example.racehorse_transport.repository.StallTypeRepository;
 import com.example.racehorse_transport.support.TestData;
-import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,43 +39,46 @@ class HorseServiceTest {
     void customerCreatesAndUpdatesOwnHorse() {
         String owner = customer();
         String chip = chip();
-        var created = horses.createHorse(owner, create(chip.substring(0, 3) + "-" + chip.substring(3), BigDecimal.TEN, "VND"));
+        var created = horses.createHorse(owner, create(chip.substring(0, 3) + "-" + chip.substring(3)));
         assertThat(created.microchip()).isEqualTo(chip);
         assertThat(created.status()).isEqualTo(HorseStatus.ACTIVE);
         assertThat(created.createdAt()).isNotNull();
 
-        var updated = horses.updateHorse(owner, created.id(), new HorseUpdateRequestDto("Đổi tên", null, HorseGender.MARE,
-                null, null, null, null, null, typeId(), null, null, null, null));
+        var updated = horses.updateHorse(owner, created.id(), new HorseUpdateRequestDto("Đổi tên", HorseGender.MARE,
+                (short) 2020, "Đen", typeId(), null));
         assertThat(updated.name()).isEqualTo("Đổi tên");
         assertThat(updated.microchip()).isEqualTo(chip);
-        assertThat(updated.declaredValue()).isNull();
+        assertThat(updated.color()).isEqualTo("Đen");
+        assertThat(updated.birthYear()).isEqualTo((short) 2020);
         assertThat(updated.updatedAt()).isNotNull();
         assertThat(horses.horses(owner)).singleElement().satisfies(h -> assertThat(h.name()).isEqualTo("Đổi tên"));
     }
 
     @Test
     void otherCustomersCannotSeeOrEditTheHorse() {
-        Long id = horses.createHorse(customer(), create(chip(), null, null)).id();
+        Long id = horses.createHorse(customer(), create(chip())).id();
         String other = customer();
         assertThat(horses.horses(other)).isEmpty();
         assertThatThrownBy(() -> horses.horse(other, id)).isInstanceOf(ResourceNotFoundException.class);
-        assertThatThrownBy(() -> horses.updateHorse(other, id, new HorseUpdateRequestDto("X", null, HorseGender.MARE,
-                null, null, null, null, null, typeId(), null, null, null, null))).isInstanceOf(ResourceNotFoundException.class);
+        assertThatThrownBy(() -> horses.updateHorse(other, id, new HorseUpdateRequestDto("X", HorseGender.MARE,
+                (short) 2019, "Nâu", typeId(), null))).isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
-    void rejectsWrongChipAndHalfDeclaredValue() {
+    void rejectsWrongChipAndFutureBirthYear() {
         String owner = customer();
-        assertThatThrownBy(() -> horses.createHorse(owner, create("123", null, null))).isInstanceOf(HorseRuleException.class);
-        assertThatThrownBy(() -> horses.createHorse(owner, create(chip(), BigDecimal.TEN, null))).isInstanceOf(HorseRuleException.class);
+        assertThatThrownBy(() -> horses.createHorse(owner, create("123"))).isInstanceOf(HorseRuleException.class);
+        var future = new HorseCreateRequestDto(chip(), "Sao Mai", HorseGender.MARE, Short.MAX_VALUE, "Nâu", typeId(), null);
+        assertThatThrownBy(() -> horses.createHorse(owner, future))
+                .isInstanceOf(HorseRuleException.class).hasMessage("Nhập năm sinh hợp lệ.");
         assertThat(horses.horses(owner)).isEmpty();
     }
 
     @Test
     void showsTheUnfinishedBookingHoldingTheHorse() {
         String owner = customer();
-        Long held = horses.createHorse(owner, create(chip(), null, null)).id();
-        Long free = horses.createHorse(owner, create(chip(), null, null)).id();
+        Long held = horses.createHorse(owner, create(chip())).id();
+        Long free = horses.createHorse(owner, create(chip())).id();
         Booking open = booking(owner, BookingStatus.PENDING_INTAKE, held, BookingHorseStatus.ACTIVE);
         booking(owner, BookingStatus.COMPLETED, free, BookingHorseStatus.ACTIVE);
         booking(owner, BookingStatus.CANCELLED, free, BookingHorseStatus.ACTIVE);
@@ -103,15 +105,14 @@ class HorseServiceTest {
     @Test
     void duplicateChipIsRejected() {
         String chip = chip();
-        horses.createHorse(customer(), create(chip, null, null));
+        horses.createHorse(customer(), create(chip));
         String other = customer();
-        assertThatThrownBy(() -> horses.createHorse(other, create(chip, null, null)))
+        assertThatThrownBy(() -> horses.createHorse(other, create(chip)))
                 .isInstanceOf(HorseRuleException.DuplicateHorseException.class);
     }
 
-    private HorseCreateRequestDto create(String microchip, BigDecimal value, String currency) {
-        return new HorseCreateRequestDto(microchip, "Sao Mai", null, HorseGender.MARE, (short) 2019, null, null, null, null,
-                typeId(), null, null, value, currency);
+    private HorseCreateRequestDto create(String microchip) {
+        return new HorseCreateRequestDto(microchip, "Sao Mai", HorseGender.MARE, (short) 2019, "Nâu", typeId(), null);
     }
 
     private Long typeId() {

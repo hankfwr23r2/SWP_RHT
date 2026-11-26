@@ -67,3 +67,35 @@ it('bắt buộc nhập lý do khi thu hồi giấy và gửi lý do đã bỏ k
   expect(post).toHaveBeenCalledExactlyOnceWith('/bookings/8/documents/3/revoke', { reason: 'Giấy sai nội dung' }, expect.any(Object))
   await waitFor(() => expect(screen.queryByRole('alertdialog', { name: 'Thu hồi' })).toBeNull())
 })
+
+it('cho duyệt giấy nộp từ hồ sơ ngựa dù chưa gắn với yêu cầu của đơn', () => {
+  const checklist: DocumentChecklist = {
+    items: [
+      { requirement: { id: 5, documentTypeCode: 'HORSE_PASSPORT', documentTypeName: 'Hộ chiếu ngựa', ownerType: 'HORSE' },
+        bookingHorseId: 21, satisfied: false, submitterType: 'CUSTOMER' },
+      { profileDocumentType: { code: 'VACCINATION_RECORD', name: 'Sổ tiêm phòng' },
+        bookingHorseId: 21, satisfied: false, submitterType: 'CUSTOMER' },
+    ],
+    documents: [
+      { id: 1, typeCode: 'HORSE_PASSPORT', horseId: 41, bookingHorseId: 21, status: 'UPLOADED',
+        fileName: 'passport.pdf', fileUrl: 'https://example.test/passport.pdf' },
+      { id: 2, typeCode: 'VACCINATION_RECORD', horseId: 41, bookingHorseId: 21, status: 'UPLOADED',
+        fileName: 'vaccines.pdf', fileUrl: 'https://example.test/vaccines.pdf' },
+    ],
+  }
+  function Page() {
+    const actions = useReviewActions(8)
+    return <DocumentsCard checklist={checklist} status="UNDER_REVIEW" actions={actions}
+      horses={[{ id: 21, horseId: 41, horseName: 'Sao Mai' }]} />
+  }
+  render(<RouterProvider router={createMemoryRouter([{ path: '/', Component: Page }])} />)
+
+  const passport = within(screen.getByText('Hộ chiếu ngựa · Sao Mai').closest('li')!)
+  expect(passport.getByRole('link', { name: 'Xem passport.pdf' })).toBeTruthy()
+  expect(passport.getByRole('button', { name: 'Duyệt giấy' })).toBeTruthy()
+  expect(passport.getByRole('button', { name: 'Từ chối giấy' })).toBeTruthy()
+  const vaccines = within(screen.getByText('Sổ tiêm phòng · Sao Mai').closest('li')!)
+  expect(vaccines.getByText('Chờ duyệt')).toBeTruthy()
+  expect(vaccines.getByRole('button', { name: 'Duyệt giấy' })).toBeTruthy()
+  expect(vaccines.queryByRole('button', { name: 'Yêu cầu khách nộp' })).toBeNull()
+})

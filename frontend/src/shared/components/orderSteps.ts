@@ -46,10 +46,17 @@ export function isReusedHorseDocument(item: ChecklistItem, document: BookingDocu
     && item.bookingHorseId != null && document.bookingHorseId === item.bookingHorseId
 }
 
+export function isProfileHorseDocument(item: ChecklistItem, document: BookingDocument) {
+  const code = item.requirement?.ownerType === 'HORSE' ? item.requirement.documentTypeCode : item.profileDocumentType?.code
+  return code != null && document.typeCode === code && document.requirementId == null && document.horseId != null
+    && item.bookingHorseId != null && document.bookingHorseId === item.bookingHorseId
+}
+
 export const latestDocument = (item: ChecklistItem, documents: BookingDocument[] = []) => {
   const reused = documents.filter(doc => isReusedHorseDocument(item, doc))
   const candidates = reused.length ? reused : documents.filter(doc =>
-    doc.requirementId === item.requirement?.id && (doc.bookingHorseId ?? undefined) === (item.bookingHorseId ?? undefined))
+    isProfileHorseDocument(item, doc) || (item.requirement?.id != null && doc.requirementId === item.requirement.id
+      && (doc.bookingHorseId ?? undefined) === (item.bookingHorseId ?? undefined)))
   return candidates.sort((a, b) => (b.id ?? 0) - (a.id ?? 0))[0]
 }
 
@@ -57,7 +64,7 @@ export const myItems = (checklist?: DocumentChecklist) => (checklist?.items ?? [
 
 // Ẩn nút nộp khi chắc chắn không nhận; backend vẫn kiểm lại
 export const canUpload = (status: BookingStatus | undefined, item: ChecklistItem, document?: BookingDocument) => {
-  if (!status || item.satisfied || document?.status === 'APPROVED' || document?.status === 'UPLOADED') return false
+  if (!status || item.requirement?.id == null || item.satisfied || document?.status === 'APPROVED' || document?.status === 'UPLOADED') return false
   return REVIEWING.includes(status) || (status === 'CONFIRMED' && !!item.requiredForQuoting)
 }
 

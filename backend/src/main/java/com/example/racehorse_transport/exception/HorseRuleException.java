@@ -8,7 +8,7 @@ public class HorseRuleException extends IllegalArgumentException {
 
     public static class DuplicateHorseException extends IllegalStateException {
         public DuplicateHorseException() {
-            super("Mã microchip hoặc số hộ chiếu ngựa đã được đăng ký.");
+            super("Mã microchip đã được đăng ký.");
         }
     }
 }

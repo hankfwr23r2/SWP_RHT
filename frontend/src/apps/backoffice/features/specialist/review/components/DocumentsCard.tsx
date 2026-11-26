@@ -69,12 +69,13 @@ export function DocumentsCard({ checklist, horses, status, actions }: {
             <div className={s.stack}>
               <div className={s.row}>
                 <ChecklistFacts item={item} horseName={horse?.horseName} />
-                {item.satisfied != null && <StatusBadge tone={item.satisfied ? 'success' : 'neutral'}
+                {item.requirement && item.satisfied != null && <StatusBadge tone={item.satisfied ? 'success' : 'neutral'}
                   label={t(item.satisfied ? 'staffReview.satisfied' : 'staffReview.unsatisfied')} />}
               </div>
               {!!documents.length && <ul className={s.list}>{documents.map(document =>
                 <DocumentRow key={document.id} document={document} editable={editable} actions={actions} />)}</ul>}
-              {status === 'UNDER_REVIEW' && submitter === 'CUSTOMER' && item.satisfied === false && !documents.some(document => document.status === 'UPLOADED')
+              {status === 'UNDER_REVIEW' && item.requirement && submitter === 'CUSTOMER' && item.satisfied === false
+                && !documents.some(document => document.status === 'UPLOADED')
                 && <ActionButtons options={[actions.askDocument([item.requirement?.documentTypeName, horse?.horseName].filter(Boolean).join(' · '))]} actions={actions} />}
               {canUpload && <div><Button size="sm" disabled={actions.busy} onClick={() => {
                 actions.clear()

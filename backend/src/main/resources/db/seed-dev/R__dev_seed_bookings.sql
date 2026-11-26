@@ -88,11 +88,11 @@ BEGIN
     END IF;
 
     -- Ngựa của khách
-    INSERT INTO horse (owner_customer_id, name, microchip, passport_number, sex, birth_year, color, breed, horse_type_id, weight_kg, status)
-    VALUES (v_user, 'Sao Mai', '985000000100001', 'VN-PP-0001', 'MARE', 2019, 'Nâu', 'Thoroughbred', v_horse_type, 480.0, 'ACTIVE'),
-           (v_user, 'Bạch Long', '985000000100002', 'VN-PP-0002', 'STALLION', 2018, 'Trắng', 'Arabian', v_horse_type, 450.0, 'ACTIVE'),
-           (v_user, 'Gió Nam', '985000000100003', 'VN-PP-0003', 'GELDING', 2020, 'Hồng', 'Thoroughbred', v_horse_type, 470.0, 'ACTIVE'),
-           (v_user, 'Hắc Mã', '985000000100004', 'VN-PP-0004', 'STALLION', 2017, 'Đen', 'Friesian', v_horse_type, 520.0, 'ACTIVE');
+    INSERT INTO horse (owner_customer_id, name, microchip, sex, birth_year, color, horse_type_id, status)
+    VALUES (v_user, 'Sao Mai', '985000000100001', 'MARE', 2019, 'Nâu', v_horse_type, 'ACTIVE'),
+           (v_user, 'Bạch Long', '985000000100002', 'STALLION', 2018, 'Trắng', v_horse_type, 'ACTIVE'),
+           (v_user, 'Gió Nam', '985000000100003', 'GELDING', 2020, 'Hồng', v_horse_type, 'ACTIVE'),
+           (v_user, 'Hắc Mã', '985000000100004', 'STALLION', 2017, 'Đen', v_horse_type, 'ACTIVE');
 
     -- ===================== Đơn 1: chạy thẳng Đồng Nai -> TP.HCM (cùng hub HUB-HCM) =====================
     v_pickup := current_date + 10;

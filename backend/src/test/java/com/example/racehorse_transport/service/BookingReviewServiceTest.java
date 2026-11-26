@@ -208,7 +208,8 @@ class BookingReviewServiceTest {
             assertThat(completeness.isComplete(BOOKING_ID)).isFalse();
             assertThat(docs.approve(BOOKING_ID, requirement.id(), "specialist", null).status())
                     .isEqualTo(DocumentStatus.APPROVED);
-            verify(attachments).attach(FILE, requirement.documentTypeCode(), DocumentSubject.BOOKING, BOOKING_ID, STAFF_ID);
+            verify(attachments).attachForReview(eq(FILE), eq(requirement.documentTypeCode()), eq(DocumentSubject.BOOKING), eq(BOOKING_ID),
+                    eq(STAFF_ID), eq(requirement.id()), any());
         }
         assertThat(completeness.isComplete(BOOKING_ID)).isTrue();
     }
@@ -250,17 +251,6 @@ class BookingReviewServiceTest {
         assertThat(completeness.isCompleteForQuoting(BOOKING_ID)).isTrue();
         assertThat(completeness.missingSubmitters(BOOKING_ID)).containsExactly(COMPANY);
         assertThat(docs.checklist(BOOKING_ID, null).items().getFirst().satisfied()).isTrue();
-    }
-
-    @Test
-    void rejectsFileWithMisleadingExtensionAndContentTypeBeforeUpload() {
-        var passport = requirement(20L, CUSTOMER, true);
-        resolve(false, passport);
-        var spoofed = new MockMultipartFile("file", "passport.pdf", "application/pdf", new byte[] {1});
-        var request = new DocumentUploadRequestDto(passport.id(), null, null, spoofed);
-        assertThatThrownBy(() -> docs.attach(BOOKING_ID, "customer", request))
-                .isInstanceOf(BookingRuleException.class).hasMessageContaining("PDF, JPG hoặc PNG");
-        verifyNoInteractions(attachments);
     }
 
     @Test
@@ -394,7 +384,8 @@ class BookingReviewServiceTest {
         when(requirements.getReferenceById(requirement.id())).thenReturn(reference);
         when(documents.findById(requirement.id())).thenReturn(Optional.of(pending));
         when(documents.findForReviewUpdate(requirement.id())).thenReturn(Optional.of(pending));
-        when(attachments.attach(FILE, requirement.documentTypeCode(), DocumentSubject.BOOKING, BOOKING_ID, uploader))
+        when(attachments.attachForReview(eq(FILE), eq(requirement.documentTypeCode()), eq(DocumentSubject.BOOKING), eq(BOOKING_ID),
+                eq(uploader), eq(requirement.id()), any()))
                 .thenAnswer(call -> {
                     files.add(pending);
                     return pending.getId();

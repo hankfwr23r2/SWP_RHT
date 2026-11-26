@@ -1,5 +1,4 @@
 import apiClient, { type ApiResponse } from './client'
-import { documentUploadError } from '../lib/documentUpload'
 import { formResponseOptions, readFormResponse } from './customerAddresses'
 import type { components } from './generated/schema'
 
@@ -8,6 +7,7 @@ export type Horse = Schemas['HorseResponseDto']
 export type HorseType = Schemas['HorseTypeResponseDto']
 export type HorseCreate = Schemas['HorseCreateRequestDto']
 export type HorseUpdate = Schemas['HorseUpdateRequestDto']
+export type HorseDocument = Schemas['HorseDocumentResponseDto']
 
 export const customerHorseApi = {
   list: async () => (await apiClient.get<ApiResponse<Horse[]>>('/horses')).data.data,
@@ -17,6 +17,17 @@ export const customerHorseApi = {
     readFormResponse<Horse>(await apiClient.post('/horses', body, formResponseOptions)),
   update: async (id: number, body: HorseUpdate) =>
     readFormResponse<Horse>(await apiClient.put(`/horses/${id}`, body, formResponseOptions)),
+  listDocumentTypes: async () =>
+    (await apiClient.get<ApiResponse<Schemas['DocumentTypeResponseDto'][]>>('/horses/document-types')).data.data,
+  listDocuments: async (id: number) =>
+    (await apiClient.get<ApiResponse<HorseDocument[]>>(`/horses/${id}/documents`)).data.data,
+  uploadDocument: async (id: number, documentTypeCode: Schemas['HorseDocumentUploadRequestDto']['documentTypeCode'], file: File) => {
+    const body = new FormData()
+    body.append('documentTypeCode', documentTypeCode)
+    body.append('file', file)
+    return readFormResponse<HorseDocument>(await apiClient.post(`/horses/${id}/documents`, body,
+      { ...formResponseOptions, headers: { 'Content-Type': 'multipart/form-data' } }))
+  },
 }
 
 export interface BackendHorseDto {
@@ -26,10 +37,8 @@ export interface BackendHorseDto {
   horseName: string
   microchipID: string
   gender?: string
-  breed?: string
   color?: string
   age?: number
-  weight?: number
   identificationMarks?: string
   completedTrips?: number
   createdAt?: string
@@ -63,27 +72,6 @@ export interface BackendHorseJourneyLogDto {
   createdAt: number
 }
 
-export interface BackendHorseDocResponse {
-  id: number
-  horseId: number
-  horseName: string
-  documentType: string
-  fileUrl?: string
-  documentUrl?: string
-  status: string
-  rejectionReason?: string
-  reviewerName?: string
-  reviewedAt?: string
-  uploadDate?: string
-  uploadedAt?: string
-}
-
-export const HORSE_DOC_BACKEND_TYPE = {
-  passport: 'PASSPORT',
-  vaccine: 'VACCINATION',
-  lab: 'BLOOD_TEST',
-} as const
-
 export interface CreateHorseTypePayload {
   typeName: string
   description?: string
@@ -97,25 +85,23 @@ function legacyHorse(horse: Horse): BackendHorseDto {
     horseName: horse.name ?? '',
     microchipID: horse.microchip ?? '',
     gender: horse.sex,
-    breed: horse.breed,
     color: horse.color,
     age: horse.birthYear == null ? undefined : new Date().getFullYear() - horse.birthYear,
-    weight: horse.weightKg,
     identificationMarks: horse.identificationMarks,
     createdAt: horse.createdAt,
     status: horse.status,
   }
 }
 
-function legacyHorseBody(payload: BackendHorseDto): HorseUpdate {
+type LegacyHorseWrite = BackendHorseDto & { color: string; age: number }
+
+function legacyHorseBody(payload: LegacyHorseWrite): HorseUpdate {
   return {
     name: payload.horseName,
     horseTypeId: payload.horseTypeID!,
     sex: payload.gender?.toUpperCase() as HorseUpdate['sex'],
-    breed: payload.breed,
     color: payload.color,
-    birthYear: payload.age == null ? undefined : new Date().getFullYear() - payload.age,
-    weightKg: payload.weight,
+    birthYear: new Date().getFullYear() - payload.age,
     identificationMarks: payload.identificationMarks,
   }
 }
@@ -150,67 +136,15 @@ export const backendHorseApi = {
 
   getById: async (id: number): Promise<BackendHorseDto> => legacyHorse(await customerHorseApi.getById(id)),
 
-  create: async (payload: BackendHorseDto): Promise<BackendHorseDto> =>
+  create: async (payload: LegacyHorseWrite): Promise<BackendHorseDto> =>
     legacyHorse(await customerHorseApi.create({ ...legacyHorseBody(payload), microchip: payload.microchipID })),
 
-  update: async (id: number, payload: BackendHorseDto): Promise<BackendHorseDto> => {
-    const current = await customerHorseApi.getById(id)
-    return legacyHorse(await customerHorseApi.update(id, {
-      ...legacyHorseBody(payload),
-      weightKg: payload.weight ?? current.weightKg,
-      passportNumber: current.passportNumber,
-      sire: current.sire,
-      dam: current.dam,
-      declaredValue: current.declaredValue,
-      declaredCurrencyCode: current.declaredCurrencyCode,
-    }))
-  },
+  update: async (id: number, payload: LegacyHorseWrite): Promise<BackendHorseDto> =>
+    legacyHorse(await customerHorseApi.update(id, legacyHorseBody(payload))),
 
   // Xóa ngựa
   remove: async (id: number): Promise<void> => {
     await apiClient.delete(`/horses/${id}`)
-  },
-
-  // Lấy danh sách tài liệu của một ngựa
-  getDocuments: async (horseId: number): Promise<BackendHorseDocResponse[]> => {
-    const res = await apiClient.get<ApiResponse<BackendHorseDocResponse[]>>(`/horse-documents/horse/${horseId}`)
-    return res.data.data
-  },
-
-  // Khách lấy tài liệu của mọi ngựa của mình
-  getMyDocuments: async (): Promise<BackendHorseDocResponse[]> => {
-    const res = await apiClient.get<ApiResponse<BackendHorseDocResponse[]>>('/horse-documents/mine')
-    return res.data.data
-  },
-
-  // Upload tài liệu ngựa
-  uploadDocument: async (horseId: number, documentType: string, file: File): Promise<BackendHorseDocResponse> => {
-    const message = documentUploadError(file)
-    if (message) throw new Error(message)
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('horseId', String(horseId))
-    formData.append('documentType', documentType)
-
-    const res = await apiClient.post<ApiResponse<BackendHorseDocResponse>>('/horse-documents/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
-    return res.data.data
-  },
-
-  // Specialist duyệt tài liệu ngựa
-  reviewDocument: async (docId: number, approved: boolean, note: string, reviewerName: string): Promise<BackendHorseDocResponse> => {
-    const res = await apiClient.put<ApiResponse<BackendHorseDocResponse>>(`/horse-documents/${docId}/review`, {
-      approved,
-      note,
-      reviewerName,
-    })
-    return res.data.data
-  },
-
-  // Xóa một giấy tờ ngựa theo ID tài liệu
-  deleteDocument: async (documentId: number): Promise<void> => {
-    await apiClient.delete(`/horse-documents/${documentId}`)
   },
 
   // Cập nhật vị trí chuồng hiện tại của ngựa (Dời chuồng ngoài hệ thống / cập nhật thủ công)

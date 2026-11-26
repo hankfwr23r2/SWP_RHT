@@ -1,7 +1,6 @@
 package com.example.racehorse_transport.policy;
 
 import com.example.racehorse_transport.exception.HorseRuleException;
-import java.math.BigDecimal;
 
 // Quy tắc hồ sơ ngựa. Mã chip bắt buộc, chuẩn ISO, không đổi sau khi lưu (nghiệp vụ cũ trên main).
 public final class HorsePolicy {
@@ -18,15 +17,9 @@ public final class HorsePolicy {
         return microchip;
     }
 
-    public static void requireDeclaredPair(BigDecimal declaredValue, String declaredCurrencyCode) {
-        if ((declaredValue == null) != (declaredCurrencyCode == null)) {
-            throw new HorseRuleException("Nhập cả giá trị khai báo và loại tiền, hoặc để trống cả hai.");
-        }
-    }
-
     public static void requireBirthYearNotAfter(Short birthYear, int currentYear) {
         if (birthYear != null && birthYear > currentYear) {
-            throw new HorseRuleException("Năm sinh không được sau năm hiện tại.");
+            throw new HorseRuleException("Nhập năm sinh hợp lệ.");
         }
     }
 }

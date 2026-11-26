@@ -102,7 +102,7 @@ public class DocumentCompletenessServiceImpl implements DocumentCompletenessServ
     @Override
     public List<Document> findCandidateDocuments(Long bookingId) {
         return Stream.concat(documents.findForBookingReview(bookingId).stream(),
-                documents.findApprovedHorseDocumentsWithoutRequirement(bookingId).stream()).toList();
+                documents.findProfileDocumentsForBooking(bookingId).stream()).toList();
     }
 
     @Override

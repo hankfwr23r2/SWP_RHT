@@ -1,0 +1,13 @@
+ALTER TABLE horse
+    DROP CONSTRAINT uk_horse_passport_number,
+    DROP CONSTRAINT ck_horse_declared,
+    DROP CONSTRAINT ck_horse_declared_value,
+    DROP CONSTRAINT ck_horse_declared_currency_code,
+    DROP CONSTRAINT ck_horse_weight_kg,
+    DROP COLUMN sire,
+    DROP COLUMN dam,
+    DROP COLUMN declared_value,
+    DROP COLUMN declared_currency_code,
+    DROP COLUMN passport_number,
+    DROP COLUMN weight_kg,
+    DROP COLUMN breed;
