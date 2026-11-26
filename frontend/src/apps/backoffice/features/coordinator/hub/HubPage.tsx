@@ -1,3 +1,5 @@
+import { ListPanel } from '@shared/ui/ListPanel'
+import { StatTile } from '@shared/ui/StatTile'
 // Ngựa ở một hub (điều phối viên): lịch hẹn khách tự chở tới, ngựa đang lưu trú (tập kết, nghỉ đêm, gửi chuồng).
 // Khách tự chở hoặc tự nhận (SELF): nhận và trả ngựa ngay tại hub (MAN_HINH 3.5c)
 import { useState } from 'react'
@@ -181,32 +183,35 @@ export default function HubPage() {
   const content = () => {
     if (!hubsLoaded) return <Skeleton variant="block" lines={3} />
     if (hubsError) return <ErrorState message={hubsError.message} onRetry={reloadHubs} />
-    if (!hubId) return <EmptyState title={t('hubStalls.noHubs')} description={t('hubStalls.noHubsHint')} />
+    if (!hubId) return <EmptyState compact title={t('hubStalls.noHubs')} description={t('hubStalls.noHubsHint')} />
     if (!loaded) return <Skeleton variant="block" lines={3} />
     if (error || !data) return <ErrorState message={error?.message} onRetry={reload} />
     return (
-      <>
-        {data.inventory && <p>{t('hubStalls.capacity', { available: data.inventory.available, total: data.inventory.total })}</p>}
+      <div className={h.section}>
+        {data.inventory?.available != null && data.inventory.total != null && <StatTile
+          icon={<i className="fa-solid fa-warehouse" />} label={t('listPanel.freeStalls')}
+          value={`${data.inventory.available}/${data.inventory.total}`} />}
         {data.appointments.length > 0 && (
           <Table caption={t('dispatch.stays.appointmentsCaption')} columns={appointmentColumns} rows={data.appointments} rowKey={stay => stay.id ?? 0} />
         )}
         {data.stays.length
           ? <Table caption={t('dispatch.stays.caption')} columns={columns} rows={data.stays} rowKey={stay => stay.id ?? 0} />
-          : <EmptyState icon={<i className="fa-solid fa-warehouse" />} title={t('dispatch.stays.emptyTitle')} description={t('dispatch.stays.emptyDescription')} />}
-      </>
+          : <EmptyState compact icon={<i className="fa-solid fa-warehouse" />} title={t('dispatch.stays.emptyTitle')} description={t('dispatch.stays.emptyDescription')} />}
+      </div>
     )
   }
 
   return (
     <div className={h.section}>
       <PageHeader title={t('dispatch.stays.tab')} description={t('dispatch.stays.subtitle')} />
-      <div className={h.form}>
+      <ListPanel count={data ? data.stays.length + data.appointments.length : undefined} toolbar={<div className={h.form}>
         <Field label={t('dispatch.stays.hub')}>
           {c => <Select {...c} value={hubId} onChange={value => { setMoving(undefined); setHubId(value) }} placeholder={t('tripWords.choose')} disabled={!hubs?.length}
             options={(hubs ?? []).map(hub => ({ value: `${hub.id}`, label: hub.name ?? '' }))} />}
         </Field>
-      </div>
-      {content()}
+      </div>}>
+        {content()}
+      </ListPanel>
       {moving?.id != null && data?.inventory && <HubStallMoveDialog stayId={moving.id} horseName={moving.horseName}
         stalls={data.inventory.stalls ?? []} onMoved={reload} onClose={() => setMoving(undefined)} />}
       {action && !confirmReturn && (

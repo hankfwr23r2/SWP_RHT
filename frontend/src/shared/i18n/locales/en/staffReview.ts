@@ -3,6 +3,7 @@ export const staffReview = {
     assignmentTabs: 'Booking assignment',
     mine: 'My bookings',
     all: 'All bookings',
+    queueFields: { customer: 'Customer', specialist: 'Specialist', pickup: 'Requested pickup', horses: 'Horses' },
     assigned: 'Assigned to {{name}}',
     unassigned: 'No specialist assigned',
     "recordPremiumRefund": "Record insurer refund",

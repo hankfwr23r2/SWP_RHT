@@ -1,3 +1,4 @@
+import { ListPanel } from '@shared/ui/ListPanel'
 // Đơn hàng của quản lý: theo từng nhóm việc, tìm theo mã đơn, khách, tuyến.
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
@@ -10,7 +11,6 @@ import { Input } from '@shared/ui/Input'
 import { PageHeader } from '@shared/ui/PageHeader'
 import { Skeleton } from '@shared/ui/Skeleton'
 import { Table, type TableColumn } from '@shared/ui/Table'
-import { Tabs } from '@shared/ui/Tabs'
 import { day, showDate } from '@backoffice/shared/staffFormat'
 import { GROUPS, groupOfParam, taskOf } from './orderGroups'
 import { useOrderList, type OrderRow } from './useOrderList'
@@ -45,24 +45,23 @@ export default function ManagerOrdersPage() {
   const content = () => {
     if (error) return <ErrorState message={error.message} onRetry={reload} />
     if (!loaded) return <Skeleton lines={6} />
-    if (!shown.length) return <EmptyState icon={<i className="fa-solid fa-box-open" />}
+    if (!shown.length) return <EmptyState compact icon={<i className="fa-solid fa-box-open" />}
       title={t(term ? 'mgr.orders.noMatch' : 'mgr.orders.empty')} description={t(term ? 'mgr.orders.noMatchHint' : `mgr.orders.emptyHint.${group}`)} />
-    return (
-      <div className={s.stack}>
-        <Table caption={t('mgr.orders.title')} columns={columns} rows={shown} rowKey={row => row.id ?? 0} />
-        {hasMore && <div><Button loading={loadingMore} onClick={loadMore}>{t('mgr.orders.more')}</Button></div>}
-      </div>
-    )
+    return <Table caption={t('mgr.orders.title')} columns={columns} rows={shown} rowKey={row => row.id ?? 0} />
   }
 
   return (
     <div className={s.page}>
       <PageHeader title={t('mgr.orders.title')} description={t('mgr.orders.subtitle')} />
-      <Input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={t('mgr.orders.search')} aria-label={t('mgr.orders.search')} />
-      <Tabs label={t('mgr.orders.filter')} value={group} onChange={value => setParams({ group: value }, { replace: true })}
-        items={GROUPS.map(value => ({ value, label: t(`mgr.orders.groups.${value}`) }))}>
+      <ListPanel count={loaded && !error ? shown.length : undefined}
+        more={hasMore && !error ? { onClick: loadMore, loading: loadingMore } : undefined}
+        tabs={{ label: t('mgr.orders.filter'), value: group,
+          onChange: value => setParams({ group: value }, { replace: true }),
+          items: GROUPS.map(value => ({ value, label: t(`mgr.orders.groups.${value}`) })) }}
+        toolbar={<Input type="search" value={query} onChange={event => setQuery(event.target.value)}
+          placeholder={t('mgr.orders.search')} aria-label={t('mgr.orders.search')} />}>
         {content()}
-      </Tabs>
+      </ListPanel>
     </div>
   )
 }

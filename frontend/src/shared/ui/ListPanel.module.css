@@ -1,0 +1,30 @@
+.panel {
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.toolbar, .content, .footer {
+  min-width: 0;
+  padding: var(--space-4);
+}
+
+.toolbar { border-bottom: 1px solid var(--color-border); }
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  border-top: 1px solid var(--color-border);
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+}
+
+@media (max-width: 640px) {
+  .toolbar, .content, .footer { padding: var(--space-3); }
+}
+
+.loading { display: grid; gap: var(--space-4); }

@@ -1,3 +1,5 @@
+import { Input } from '@shared/ui/Input'
+import { ListPanel } from '@shared/ui/ListPanel'
 // Sự cố đang xử lý cho điều phối viên và quản lý (docs/MAN_HINH_VA_TAC_DONG.md mục 7.2, 7.3)
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -24,6 +26,9 @@ export default function IncidentsBoardPage() {
   const [openId, setOpenId] = useState<number>()
   const [amending, setAmending] = useState<Incident>()
   const { data, loaded, error, reload } = useLoad(incidentsApi.open, [], { toastOnError: false })
+  const [query, setQuery] = useState('')
+  const term = query.trim().toLowerCase()
+  const shown = data?.filter(row => !term || [row.title, row.vehicleTripCode, row.horseName].some(value => value?.toLowerCase().includes(term)))
   const columns: TableColumn<Incident>[] = [
     { key: 'title', header: t('incidents.colTitle'), render: i => i.title },
     { key: 'type', header: t('incidents.colType'), render: i => t(`incidents.type.${i.incidentType}`) },
@@ -43,13 +48,14 @@ export default function IncidentsBoardPage() {
   const content = () => {
     if (!loaded) return <Skeleton variant="block" lines={4} />
     if (error || !data) return <ErrorState title={t('incidents.loadError')} message={error?.message} onRetry={reload} />
-    if (!data.length) return <EmptyState icon={<i className="fa-solid fa-triangle-exclamation" />} title={t('incidents.emptyTitle')} description={t('incidents.emptyDescription')} />
-    return <Table caption={t('incidents.caption')} columns={columns} rows={data} rowKey={i => i.id ?? 0} />
+    if (!shown?.length) return <EmptyState compact icon={<i className="fa-solid fa-triangle-exclamation" />} title={t(term ? 'listPanel.noMatch' : 'incidents.emptyTitle')} description={t(term ? 'listPanel.trySearch' : 'incidents.emptyDescription')} />
+    return <Table caption={t('incidents.caption')} columns={columns} rows={shown} rowKey={i => i.id ?? 0} />
   }
   return (
     <div className={s.page}>
       <PageHeader title={t('incidents.title')} description={t('incidents.description')} />
-      {content()}
+      <ListPanel count={!error ? shown?.length : undefined} toolbar={<Input type="search" value={query} onChange={event => setQuery(event.target.value)}
+          placeholder={t('listPanel.search')} aria-label={t('listPanel.search')} />}>{content()}</ListPanel>
       {openId !== undefined && <IncidentDetailModal incidentId={openId} role={role} staffCode={session?.staffCode}
         onClose={() => setOpenId(undefined)} onChanged={() => void reload()} />}
       {amending && <HandoverCauseDialog incident={amending} role={role} onClose={() => setAmending(undefined)} onChanged={reload} />}

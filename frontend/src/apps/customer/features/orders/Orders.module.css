@@ -65,3 +65,5 @@
   .facts > div { grid-template-columns: minmax(0, 1fr); gap: 0; }
   .options { grid-template-columns: minmax(0, 1fr); }
 }
+
+.orderCode a { white-space: nowrap; font-weight: var(--weight-bold); color: var(--color-primary); }

@@ -1,3 +1,4 @@
+import { ListPanel } from '@shared/ui/ListPanel'
 // Theo dõi (MAN_HINH 4.11): mọi con công ty hoặc đối tác đang giữ, con trễ khám đứng đầu; tự tải lại mỗi phút
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -52,7 +53,8 @@ export default function TrackingPage() {
   const content = () => {
     if (!loaded) return <Skeleton variant="block" lines={4} />
     if (error || !data) return <ErrorState message={error?.message} onRetry={reload} />
-    if (!data.length) return <EmptyState icon={<i className="fa-solid fa-horse-head" />} title={t('tracking.empty')} description={t('tracking.emptyHint')} />
+    if (!rows.length) return <EmptyState compact icon={<i className="fa-solid fa-horse-head" />} title={t(query ? 'listPanel.noMatch' : 'tracking.empty')} description={t(query ? 'listPanel.trySearch' : 'tracking.emptyHint')}
+      action={query ? <Button onClick={() => setQuery('')}>{t('horses.clearSearch')}</Button> : undefined} />
     return (
       <div className={s.layout}>
         <ul className={s.list} aria-label={t('tracking.list')}>
@@ -100,8 +102,9 @@ export default function TrackingPage() {
   return (
     <div className={s.page}>
       <PageHeader title={t('tracking.title')} description={t('tracking.subtitle')} />
-      <Input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={t('tracking.search')} aria-label={t('tracking.search')} />
-      {content()}
+      <ListPanel count={data ? rows.length : undefined} toolbar={<Input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={t('tracking.search')} aria-label={t('tracking.search')} />}>
+        {content()}
+      </ListPanel>
       {delivered && (
         <Modal title={t('dispatch.agent.complete')} onClose={() => setDelivered(undefined)}
           footer={<Button variant="primary" disabled={!proof} loading={savingProof} onClick={async () => {

@@ -37,20 +37,9 @@
   color: var(--color-primary);
 }
 
-.count {
-  padding: 1px 7px;
-  border-radius: var(--radius-full);
-  background: var(--color-neutral-soft);
-  color: var(--color-neutral-strong);
-  font-size: var(--text-xs);
-}
-
-.selected .count {
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
-}
-
 .panel:focus-visible {
   outline: none;
   box-shadow: var(--focus-ring);
 }
+
+.flush { margin-bottom: 0; }

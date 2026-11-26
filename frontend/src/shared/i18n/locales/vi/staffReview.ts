@@ -3,6 +3,7 @@ export const staffReview = {
     assignmentTabs: 'Phân công đơn',
     mine: 'Đơn của tôi',
     all: 'Tất cả',
+    queueFields: { customer: 'Khách hàng', specialist: 'Chuyên viên', pickup: 'Ngày đón dự kiến', horses: 'Số ngựa' },
     assigned: 'Phụ trách: {{name}}',
     unassigned: 'Chưa phân công chuyên viên',
     "recordPremiumRefund": "Ghi phí bảo hiểm được hoàn",

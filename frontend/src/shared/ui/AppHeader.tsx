@@ -47,9 +47,9 @@ function HeaderContent({ homeHref, badge, links, isActive, userName, profileHref
         {badge && <span className={s.badge}>{badge}</span>}
       </Link>
       <div className={s.right}>
-        <TranslateToggle />
+        <div className={s.desktopLanguage}><TranslateToggle /></div>
         {extra}
-        <Button variant="ghost" size="sm" className={s.control} aria-label={t('header.account')} title={userName}
+        <Button variant="ghost" size="sm" className={`${s.control} ${s.accountToggle}`} aria-label={t('header.account')} title={userName}
           aria-expanded={accountOpen} aria-controls={accountId} onClick={() => setPanel(accountOpen ? null : 'account')}>
           <span className={s.avatar} aria-hidden="true">{initialsOf(userName)}</span>
         </Button>
@@ -67,6 +67,12 @@ function HeaderContent({ homeHref, badge, links, isActive, userName, profileHref
             </Link>
           )
         })}
+        <div className={s.mobileAccount} hidden={!navOpen}>
+          <TranslateToggle />
+          {onProfile && <Button onClick={() => { setPanel(null); onProfile() }}>{t('header.profile')}</Button>}
+          {profileHref && <Link className={s.link} to={profileHref} onClick={() => setPanel(null)}>{t('header.profile')}</Link>}
+          <Button size="sm" onClick={onLogout}>{t('common.logout')}</Button>
+        </div>
       </nav>
       <div className={s.account} id={accountId} hidden={!accountOpen}>
         {userName && <strong>{userName}</strong>}

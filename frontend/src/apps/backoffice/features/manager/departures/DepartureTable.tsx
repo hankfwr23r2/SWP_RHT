@@ -1,3 +1,4 @@
+import local from './DepartureTable.module.css'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import type { DepartureDecision } from '@shared/api/departures'
@@ -30,10 +31,10 @@ export function DepartureTable({ rows, busy, onConfirm, onCancel, onDelay, onAss
       </>
     ) },
     { key: 'seats', header: t('mgr.departures.seats'), render: row => (
-      <>
-        {t('mgr.departures.seatCount', { committed: row.committedStallCount ?? 0, booked: row.bookedStallCount ?? 0, capacity: row.stallCapacity ?? 0 })}
-        {row.belowMinimum && <p className={s.error}>{t('mgr.departures.belowMinimum')}</p>}
-      </>
+      <div className={local.seats}>
+        <strong>{t('listPanel.seats', { committed: row.committedStallCount ?? 0, capacity: row.stallCapacity ?? 0 })}</strong>
+        {row.belowMinimum && <StatusBadge tone="warning" label={t('mgr.departures.belowMinimum')} />}
+      </div>
     ) },
     { key: 'decision', header: t('mgr.departures.decisionAt'), render: row => row.runConfirmedAt
       ? <StatusBadge tone="success" label={t('mgr.departures.runConfirmed')} />
@@ -55,16 +56,30 @@ export function DepartureTable({ rows, busy, onConfirm, onCancel, onDelay, onAss
     ) },
     { key: 'coordinator', header: t('coordAssignment.owner'), render: row => row.coordinatorName
       ?? <StatusBadge tone="danger" label={t('coordAssignment.unassigned')} /> },
-    { key: 'actions', header: t('mgr.departures.actions'), align: 'end', render: row => (
-      <div className={s.row}>
-        {row.status !== 'COMPLETED' && row.status !== 'CANCELLED'
-          && <Button size="sm" disabled={busy} onClick={() => onAssign(row)}>{t('coordAssignment.assign')}</Button>}
-        {row.confirmable && <Button size="sm" variant="primary" disabled={busy} onClick={() => onConfirm(row)}>{t('mgr.departures.confirm')}</Button>}
-        {row.canRevise && <Button size="sm" disabled={busy} onClick={() => onDelay(row)}>{t('mgr.departures.delay.open')}</Button>}
-        {(row.status === 'OPEN' || row.status === 'CLOSED') && !row.receivedBookings?.length
-          && <Button size="sm" variant="ghost" disabled={busy} onClick={() => onCancel(row)}>{t('mgr.departures.cancel')}</Button>}
+    { key: 'actions', header: t('mgr.departures.actions'), align: 'end', render: row => {
+      const actions = [
+        row.confirmable && { label: t('mgr.departures.confirm'), run: onConfirm },
+        row.canRevise && { label: t('mgr.departures.delay.open'), run: onDelay },
+        row.status !== 'COMPLETED' && row.status !== 'CANCELLED' && { label: t('coordAssignment.assign'), run: onAssign },
+        (row.status === 'OPEN' || row.status === 'CLOSED') && !row.receivedBookings?.length
+          && { label: t('mgr.departures.cancel'), run: onCancel },
+      ].filter(Boolean)
+      const [primary, ...other] = actions
+      if (!primary) return null
+      return <div className={local.actions}>
+        <Button size="sm" variant="primary" disabled={busy} onClick={() => primary.run(row)}>{primary.label}</Button>
+        {!!other.length && <details>
+          <summary className={local.more} aria-label={t('listPanel.actions')}>…</summary>
+          <div className={local.options}>
+            {other.map(action => action && <Button key={action.label} size="sm" disabled={busy}
+              onClick={event => {
+                event.currentTarget.closest('details')?.removeAttribute('open')
+                action.run(row)
+              }}>{action.label}</Button>)}
+          </div>
+        </details>}
       </div>
-    ) },
+    } },
   ]
   return <Table caption={t('mgr.departures.title')} columns={columns} rows={rows} rowKey={row => row.id ?? 0} />
 }

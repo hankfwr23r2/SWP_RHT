@@ -12,18 +12,22 @@ async function openAdminPage(page: Page) {
   await expect(page.getByRole('heading', { name: 'Nhật ký hệ thống' })).toBeVisible()
 }
 
-test('thanh trên ở bề rộng 360px không tràn ngang, vẫn thấy chuông và nút đăng xuất', async ({ page }) => {
+test('thanh trên ở bề rộng 360px không tràn ngang, thấy chuông và đăng xuất trong menu', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 720 })
   await openAdminPage(page)
 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
   expect(overflow).toBe(0)
 
-  for (const control of [page.getByRole('button', { name: 'Đăng xuất' }), page.getByRole('banner').getByRole('button', { name: /thông báo/i })]) {
-    const box = await control.boundingBox()
-    expect(box, 'nút phải hiện trên màn hình').not.toBeNull()
-    expect(box!.x + box!.width).toBeLessThanOrEqual(360)
-  }
+  const banner = page.getByRole('banner')
+  const bell = await banner.getByRole('button', { name: /thông báo/i }).boundingBox()
+  expect(bell).not.toBeNull()
+  expect(bell!.x + bell!.width).toBeLessThanOrEqual(360)
+  await expect(banner.getByRole('button', { name: 'Đăng xuất' })).toBeHidden()
+  await banner.getByRole('button', { name: 'Mở menu' }).click()
+  const nav = page.getByRole('navigation', { name: 'Điều hướng chính' })
+  await expect(nav.getByRole('button', { name: 'Đăng xuất' })).toBeVisible()
+  await expect(nav.getByRole('button', { name: 'EN', exact: true })).toBeVisible()
 })
 
 test('menu điện thoại mở đủ mục và đóng khi điều hướng', async ({ page }) => {

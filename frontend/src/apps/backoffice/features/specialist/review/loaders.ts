@@ -21,4 +21,4 @@ export function reviewDetailLoader({ params }: PageLoaderContext) {
   })
 }
 
-export const missingDocumentsLoader = () => loadAll({ rows: bookingReviewsApi.missingDocuments() })
+export const missingDocumentsLoader = async () => ({ errors: [] as string[], result: loadAll({ rows: bookingReviewsApi.missingDocuments() }) })

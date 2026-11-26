@@ -1,3 +1,5 @@
+import { Input } from '@shared/ui/Input'
+import { ListPanel } from '@shared/ui/ListPanel'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@shared/ui/Button'
@@ -14,11 +16,15 @@ export default function CoordinatorMyTripsPage() {
   const { t } = useTranslation()
   const { data, error, reload } = useCoordinatorTrips()
   const [open, setOpen] = useState<{ id: number; code?: string }>()
+  const [query, setQuery] = useState('')
+  const term = query.trim().toLowerCase()
+  const shown = data?.filter(row => !term || [row.trip?.code, row.trip?.licensePlate, row.currentPoint].some(value => value?.toLowerCase().includes(term)))
   return <div className={s.page}>
     <PageHeader title={t('coordAssignment.mine')} />
-    {!data ? error ? <ErrorState onRetry={reload} /> : <Skeleton lines={5} />
-      : !data.length ? <EmptyState title={t('coordAssignment.empty')} description={t('coordAssignment.emptyHint')} />
-        : <Table caption={t('coordAssignment.mine')} rows={data} rowKey={row => row.trip?.id ?? 0} columns={[
+    <ListPanel count={shown?.length} toolbar={<Input type="search" value={query} onChange={event => setQuery(event.target.value)}
+          placeholder={t('listPanel.search')} aria-label={t('listPanel.search')} />}>{!shown ? error ? <ErrorState onRetry={reload} /> : <Skeleton lines={5} />
+      : !shown.length ? <EmptyState compact title={t(term ? 'listPanel.noMatch' : 'coordAssignment.empty')} description={t(term ? 'listPanel.trySearch' : 'coordAssignment.emptyHint')} />
+        : <Table caption={t('coordAssignment.mine')} rows={shown} rowKey={row => row.trip?.id ?? 0} columns={[
           { key: 'vehicle', header: t('coordAssignment.vehicle'), render: row => [row.trip?.code, row.trip?.licensePlate].filter(Boolean).join(' · ') },
           { key: 'crew', header: t('coordAssignment.crew'), render: row =>
             row.trip?.crew?.filter(member => member.status !== 'RELEASED').map(member => member.fullName).join(', ') || '—' },
@@ -32,7 +38,7 @@ export default function CoordinatorMyTripsPage() {
               {t('coordAssignment.view')}
             </Button>
           } },
-        ]} />}
+        ]} />}</ListPanel>
     {open && <CoordinatorTripHorses tripId={open.id} code={open.code} onClose={() => setOpen(undefined)} />}
   </div>
 }

@@ -1,4 +1,5 @@
-import { useId, useRef, type KeyboardEvent, type ReactNode } from 'react'
+import { useEffect, useId, useRef, type KeyboardEvent, type ReactNode } from 'react'
+import { Badge } from './Badge'
 import s from './Tabs.module.css'
 
 export interface TabItem {
@@ -10,6 +11,7 @@ export interface TabItem {
 
 interface TabsProps {
   // Tên nhóm tab cho trình đọc màn hình
+  flush?: boolean
   label: string
   items: TabItem[]
   value: string
@@ -19,9 +21,19 @@ interface TabsProps {
 }
 
 // Bàn phím: ← → Home End chuyển tab, chỉ tab đang chọn nằm trong thứ tự Tab
-export function Tabs({ label, items, value, onChange, children }: TabsProps) {
+export function Tabs({ label, items, value, onChange, children, flush }: TabsProps) {
   const id = useId()
   const list = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!flush || !list.current) return
+    const selected = list.current.querySelector('[aria-selected="true"]')
+    if (!selected) return
+    const strip = list.current.getBoundingClientRect()
+    const active = selected.getBoundingClientRect()
+    if (active.right > strip.right) list.current.scrollLeft += active.right - strip.right
+    else if (active.left < strip.left) list.current.scrollLeft += active.left - strip.left
+  }, [flush, value])
 
   const onKeyDown = (e: KeyboardEvent) => {
     const i = items.findIndex(t => t.value === value)
@@ -35,7 +47,7 @@ export function Tabs({ label, items, value, onChange, children }: TabsProps) {
 
   return (
     <div>
-      <div ref={list} className={s.list} role="tablist" aria-label={label} onKeyDown={onKeyDown}>
+      <div ref={list} className={flush ? `${s.list} ${s.flush}` : s.list} role="tablist" aria-label={label} onKeyDown={onKeyDown}>
         {items.map(t => {
           const selected = t.value === value
           return (
@@ -51,7 +63,7 @@ export function Tabs({ label, items, value, onChange, children }: TabsProps) {
               onClick={() => onChange(t.value)}
             >
               {t.label}
-              {t.count !== undefined && <span className={s.count}>{t.count}</span>}
+              {t.count !== undefined && <Badge tone={selected ? 'primary' : 'neutral'}>{t.count}</Badge>}
             </button>
           )
         })}

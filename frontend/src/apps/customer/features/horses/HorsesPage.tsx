@@ -1,3 +1,5 @@
+import { ListPanel } from '@shared/ui/ListPanel'
+import { StatRow, StatTile } from '@shared/ui/StatTile'
 import { Suspense, useState } from 'react'
 import { Await, useLoaderData, useRevalidator } from 'react-router'
 import { useTranslation } from 'react-i18next'
@@ -25,13 +27,14 @@ export default function HorsesPage() {
         <Button variant="primary" onClick={() => setForm({})}
           icon={<i className="fa-solid fa-plus" />}>{t('horses.addBtn')}</Button>
       </div>
-      <Suspense fallback={<div className={s.grid}>{[1, 2, 3].map(item =>
+      <Suspense fallback={<div className={s.profileLists}><StatTile icon={<i className="fa-solid fa-horse-head" />} value={<Skeleton />} label={t('horses.totalHorses')} />
+        <ListPanel><div className={s.grid}>{[1, 2, 3].map(item =>
         <div key={item} className={s.horse}><Skeleton lines={3} /></div>,
-      )}</div>}>
+      )}</div></ListPanel></div>}>
         <Await resolve={result}>
           {({ horses, errors }) => errors.length || !horses
             ? <ErrorState onRetry={revalidate} retrying={state !== 'idle'} />
-            : <HorseList horses={horses} onEdit={id => setForm({ id })} />}
+            : <HorseList horses={horses} onAdd={() => setForm({})} onEdit={id => setForm({ id })} />}
         </Await>
       </Suspense>
       {form && <HorseProfileForm id={form.id} onClose={() => setForm(null)} onSaved={() => {
@@ -42,7 +45,7 @@ export default function HorsesPage() {
   )
 }
 
-function HorseList({ horses, onEdit }: { horses: Horse[]; onEdit: (id: number) => void }) {
+function HorseList({ horses, onAdd, onEdit }: { horses: Horse[]; onAdd: () => void; onEdit: (id: number) => void }) {
   const { t } = useTranslation()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -54,24 +57,21 @@ function HorseList({ horses, onEdit }: { horses: Horse[]; onEdit: (id: number) =
   const pageItems = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
   const updateSearch = (value: string) => { setSearch(value); setPage(1) }
 
-  if (!horses.length) return <EmptyState title={t('horses.emptyTitle')} description={t('horses.emptyHint')}
-    icon={<i className="fa-solid fa-horse-head" />} />
-
   return (
-    <>
-      <div className={s.summary}>
-        <div className={s.sumCard}>
-          <i className="fa-solid fa-horse-head" aria-hidden="true" />
-          <div><div className={s.num}>{horses.length}</div><div className={s.lbl}>{t('horses.totalHorses')}</div></div>
-        </div>
-      </div>
-      <div className={s.toolbar}>
+    <div className={s.profileLists}>
+      <StatRow>
+        <StatTile icon={<i className="fa-solid fa-horse-head" />} value={horses.length} label={t('horses.totalHorses')} />
+      </StatRow>
+      <ListPanel count={pageItems.length} toolbar={      <div className={s.toolbar}>
         <Field label={t('common.search')} className={s.searchBox}>
           {control => <Input {...control} type="search" value={search} onChange={e => updateSearch(e.target.value)}
             placeholder={t('horses.searchPlaceholder')} />}
         </Field>
-      </div>
-      {!filtered.length && <EmptyState title={t('horses.noMatch')} description={t('horses.noMatchHint')}
+      </div>}>
+      {!horses.length && <EmptyState compact title={t('horses.emptyTitle')} description={t('horses.emptyHint')}
+        icon={<i className="fa-solid fa-horse-head" />}
+        action={<Button onClick={onAdd}>{t('horses.addBtn')}</Button>} />}
+      {!!horses.length && !filtered.length && <EmptyState compact title={t('horses.noMatch')} description={t('horses.noMatchHint')}
         action={<Button onClick={() => updateSearch('')}>{t('horses.clearSearch')}</Button>} />}
       <div className={s.grid}>
         {pageItems.map(horse => (
@@ -99,6 +99,7 @@ function HorseList({ horses, onEdit }: { horses: Horse[]; onEdit: (id: number) =
         <span>{t('horses.pageCount', { current: currentPage, total: totalPages })}</span>
         <Button size="sm" disabled={currentPage === totalPages} onClick={() => setPage(currentPage + 1)}>{t('common.continue')}</Button>
       </div>}
-    </>
+      </ListPanel>
+    </div>
   )
 }

@@ -34,3 +34,14 @@
 @media (prefers-reduced-motion: reduce) {
   .side { transition: none; }
 }
+
+.mobileAccount { display: none; }
+@media (width < 640px) {
+  .mobileAccount:not([hidden]) {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    padding: var(--space-2);
+  }
+}
