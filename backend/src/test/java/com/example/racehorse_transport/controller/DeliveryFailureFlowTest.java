@@ -8,7 +8,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.example.racehorse_transport.PostgresIntegrationTest;
 import com.example.racehorse_transport.support.HandoverEvidenceFixtures;
+import com.example.racehorse_transport.support.HubExitCheckFixtures;
 import com.example.racehorse_transport.entity.Staff;
+import com.example.racehorse_transport.entity.enums.HealthCheckType;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.security.JwtUtils;
 import com.example.racehorse_transport.service.DeliveryFailureService;
@@ -182,6 +184,11 @@ class DeliveryFailureFlowTest {
                     AND status = 'PENDING'
                 """, stay)).isEqualTo(1);
         entityManager.clear();
+        second.act("/handovers/" + hubOut + "/complete").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Chưa khám trước khi giao: Sao Mai"));
+        long escortId = jdbc.queryForObject("SELECT staff_id FROM crew_assignment WHERE vehicle_trip_id = ? AND crew_role = 'ESCORT'",
+                Long.class, second.id);
+        HubExitCheckFixtures.boardingDone(jdbc, second.id, escortId, HealthCheckType.BEFORE_DELIVERY);
         second.act("/handovers/" + hubOut + "/complete").andExpect(status().isOk());
         entityManager.flush();
         assertThat(jdbc.queryForList("SELECT stabling_days FROM cost_item WHERE horse_stay_id = ? ORDER BY id", Long.class, stay))
@@ -234,6 +241,7 @@ class DeliveryFailureFlowTest {
         HandoverEvidenceFixtures.confirm(mvc, jwtUtils, booking, owner);
         org.mockito.Mockito.when(cloudinary.uploadFile(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyString()))
                 .thenAnswer(call -> "https://example.test/" + java.util.UUID.randomUUID());
+        HubExitCheckFixtures.collectionDone(jdbc, stay, coordinatorStaff.getUserId());
         mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart("/horse-stays/{id}/deliveries", stay)
                 .file(new org.springframework.mock.web.MockMultipartFile("request", "", "application/json",
                         "{\"microchip\":\"%s\",\"conditionNote\":\"Khỏe\",\"papers\":[],\"recipient\":{\"recipientName\":\"Người nhận\"}}".formatted(chip)

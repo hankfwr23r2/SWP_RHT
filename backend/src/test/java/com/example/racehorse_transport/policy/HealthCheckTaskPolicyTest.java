@@ -4,11 +4,22 @@ import static com.example.racehorse_transport.entity.enums.HealthCheckTaskStatus
 import static org.assertj.core.api.Assertions.*;
 
 import com.example.racehorse_transport.exception.DispatchRuleException;
+import com.example.racehorse_transport.entity.enums.HealthCheckType;
+import com.example.racehorse_transport.entity.enums.VehicleTripType;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 
 class HealthCheckTaskPolicyTest {
     private static final Instant NOW = Instant.parse("2026-11-29T12:00:00Z");
+
+    @Test
+    void onlyLinehaulAndDeliveryNeedHubExitChecks() {
+        assertThat(HealthCheckTaskPolicy.hubExitType(VehicleTripType.LINEHAUL)).contains(HealthCheckType.BEFORE_DEPARTURE);
+        assertThat(HealthCheckTaskPolicy.hubExitType(VehicleTripType.DELIVERY)).contains(HealthCheckType.BEFORE_DELIVERY);
+        assertThat(HealthCheckTaskPolicy.hubExitType(VehicleTripType.TRANSFER)).isEmpty();
+        assertThat(HealthCheckTaskPolicy.hubExitType(VehicleTripType.DIRECT)).isEmpty();
+        assertThat(HealthCheckTaskPolicy.hubExitType(VehicleTripType.PICKUP)).isEmpty();
+    }
 
     @Test
     void derivesOverdueOnlyForUnfinishedTasksPastTheirDeadline() {

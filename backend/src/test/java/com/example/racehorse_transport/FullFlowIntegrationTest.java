@@ -13,11 +13,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.example.racehorse_transport.client.CloudinaryClient;
 import com.example.racehorse_transport.dto.regulation.DocumentRequirementResponseDto;
 import com.example.racehorse_transport.entity.Staff;
+import com.example.racehorse_transport.entity.enums.HealthCheckType;
 import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.security.JwtUtils;
 import com.example.racehorse_transport.service.DocumentCompletenessService;
 import com.example.racehorse_transport.support.HandoverEvidenceFixtures;
+import com.example.racehorse_transport.support.HubExitCheckFixtures;
 import com.example.racehorse_transport.support.TestData;
 import com.jayway.jsonpath.JsonPath;
 import jakarta.persistence.EntityManager;
@@ -396,6 +398,11 @@ class FullFlowIntegrationTest {
                         .andExpect(status().isOk());
             }
             signedRecord(handover);
+            if ("HUB_OUT".equals(type)) {
+                String tripType = jdbc.queryForObject("SELECT trip_type FROM vehicle_trip WHERE id = ?", String.class, id);
+                HubExitCheckFixtures.boardingDone(jdbc, id, escortStaff.getUserId(),
+                        "LINEHAUL".equals(tripType) ? HealthCheckType.BEFORE_DEPARTURE : HealthCheckType.BEFORE_DELIVERY);
+            }
             act(escort, "/handovers/" + handover + "/complete").andExpect(status().isOk());
         }
 

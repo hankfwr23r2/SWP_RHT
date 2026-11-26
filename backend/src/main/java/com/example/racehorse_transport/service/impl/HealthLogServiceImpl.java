@@ -98,7 +98,7 @@ public class HealthLogServiceImpl implements HealthLogService {
 
         Instant recordedAt = clock.instant();
         if (stay != null && !coordinator
-                && !("ESCORT".equals(role) && healthTasks.mayRecordStay(recorder.getUserId(), line.getId(), stay.getId(), recordedAt))
+                && !("ESCORT".equals(role) && healthTasks.mayRecordStay(recorder.getUserId(), stay, recordedAt))
                 && !signedBy(healthTasks.latestCompanyHandovers(List.of(line.getId())).get(line.getId()), recorder)) {
             throw new AccessDeniedException("Bạn không phụ trách con ngựa này.");
         }

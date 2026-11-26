@@ -185,11 +185,11 @@ Từ lúc xe đầu tiên xuất phát tới lúc lượt cuối kết thúc. Gi
 1. **Xuất phát:** kiểm tổ lái đã nhận việc, mọi con có vị trí khoang, đủ giấy (nếu đón ở nhà khách).
 2. Tổ lái bấm **Tới nơi**, **Rời đi** theo từng điểm dừng, đúng thứ tự.
 3. **Ở hub xuất phát:** ngựa lưu trú, được cho ăn và **khám 2 lần mỗi ngày**.
-4. **Khám trước khi chạy:** mỗi con một lần khám ngay trước khi lên xe trục. **Chưa khám thì không cho ra hub** [Mới: bắt buộc và chặn].
+4. **Khám trước khi chạy:** mỗi con một lần khám ngay trước khi lên xe trục. **Chưa khám thì không cho ra hub**.
 5. **Chạy trục:** tới mỗi trạm nghỉ cho uống, ăn, ghi **từng con** (sức khỏe, uống, ăn, nhiệt độ nếu đo). Nghỉ ít nhất 30 phút. Nghỉ đêm có thể gửi chuồng đối tác rồi nhận lại sáng hôm sau.
 6. **Cửa khẩu** [Mới]: dừng làm thủ tục và kiểm dịch, kiểm giấy riêng của cửa khẩu, rồi **xe đi tiếp tới hub nước ngoài**.
 7. **Tới hub đích:** dỡ ngựa vào hub theo quy trình, lưu trú, cho ăn, khám 2 lần mỗi ngày.
-8. **Khám trước khi giao:** mỗi con một lần khám trước khi ra khỏi hub đích. **Chưa khám thì không cho ra hub** [Mới].
+8. **Khám trước khi giao:** mỗi con một lần khám trước khi lên xe giao hoặc được người nhận tới hub lấy. **Chưa khám thì không cho ra hub**.
 9. Thay hộ tống giữa đường: người mới tới điểm dừng, quét chip và ký nhận ca.
 10. **Kết thúc lượt** khi không còn ngựa trên xe; tổ xe báo tình trạng xe (Bình thường hoặc Cần bảo dưỡng). Sau đó xe ở **Đang về** (luồng 3).
 11. **Theo dõi:**
@@ -198,7 +198,7 @@ Từ lúc xe đầu tiên xuất phát tới lúc lượt cuối kết thúc. Gi
     - khách: dòng thời gian **theo từng con** (chặng, lưu trú, giao nhận, sức khỏe);
     - người không có tài khoản: tra bằng mã đơn và 4 số cuối điện thoại người gửi.
 
-**Hạn khám:** trên xe 4 giờ, ở hub hoặc chuồng 12 giờ (cấu hình). Quá hạn thì tô đỏ Trễ khám.
+**Hạn khám:** trên xe 4 giờ, ở hub hoặc chuồng 12 giờ (cấu hình). Việc khám trước khi ra hub được tạo trước giờ rời dự kiến tối đa `PRE_EXIT_CHECK_HOURS` giờ (mặc định 12) và có hạn đúng giờ rời dự kiến. Quá hạn thì tô đỏ Trễ khám.
 
 ## Xử lý ngoại lệ
 
@@ -211,7 +211,7 @@ Từ lúc xe đầu tiên xuất phát tới lúc lượt cuối kết thúc. Gi
 | Ngựa bỏ uống hai lần liền | Tự nâng **Cần theo dõi**, báo điều phối |
 | Ghi Ốm hoặc Nguy cấp | Báo ngay điều phối |
 | Sáng ra quên nhận lại một con ở chuồng | Không cho rời trạm |
-| Chưa khám trước khi chạy hoặc trước khi giao | Không cho ra hub [Mới] |
+| Chưa khám trước khi chạy hoặc trước khi giao | Không cho ra hub |
 | Hộ tống ốm giữa đường | Điều phối thêm hộ tống mới, người mới nhận ca tại điểm dừng |
 | Kết thúc lượt khi còn ngựa trên xe | Từ chối |
 | Xuất phát sớm hơn giờ kế hoạch | Tài xế xác nhận, ghi lý do, báo điều phối |

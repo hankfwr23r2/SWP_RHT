@@ -37,7 +37,9 @@ test('điều phối hẹn giờ khách tự chở ngựa tới hub', async ({ p
 test('tại hub điều phối nhận ngựa khách tự chở tới và trả ngựa cho người nhận', async ({ page }) => {
   await signIn(page)
   const appointments = [{ id: 6, bookingHorseId: 50, bookingCode: 'BK-AAAA0002', horseName: 'Sao Mai', stayType: 'ASSEMBLY', plannedStartAt: '2031-03-05T08:00:00Z', pickupMethod: 'SELF' }]
-  const stays = [{ id: 7, bookingHorseId: 51, bookingCode: 'BK-AAAA0005', horseName: 'Gió Bấc', stayType: 'ASSEMBLY', actualStartAt: '2031-03-05T05:00:00Z', deliveryMethod: 'SELF' }] as Record<string, unknown>[]
+  const exitCheck = { id: 52, checkType: 'BEFORE_DELIVERY', dueAt: '2031-03-05T08:00:00Z', status: 'ASSIGNED', recordingHorseStayId: 7 }
+  const stays = [{ id: 7, bookingHorseId: 51, bookingCode: 'BK-AAAA0005', horseName: 'Gió Bấc', stayType: 'ASSEMBLY',
+    actualStartAt: '2031-03-05T05:00:00Z', deliveryMethod: 'SELF', hubExitChecks: [exitCheck] }] as Record<string, unknown>[]
   const sent: Record<string, unknown>[] = []
   let documentsComplete = false
   const photo = { name: 'horse.jpg', mimeType: 'image/jpeg', buffer: Buffer.from([1, 2, 3]) }
@@ -67,7 +69,18 @@ test('tại hub điều phối nhận ngựa khách tự chở tới và trả n
       appointments.length = 0
       return ok(route, stays[1])
     }
-    if (path === '/horse-stays/7/deliveries') { sent.push({ delivery: await evidence(route) }); stays.splice(0, 1); return ok(route, {}) }
+    if (path === '/health-logs') {
+      sent.push({ health: request.postDataJSON() })
+      stays[0] = { ...stays[0], hubExitChecks: [{ ...exitCheck, status: 'DONE', recordingHorseStayId: null }] }
+      exitCheck.status = 'DONE'
+      return ok(route, {}, 201)
+    }
+    if (path === '/horse-stays/7/deliveries') {
+      sent.push({ delivery: await evidence(route) })
+      if (exitCheck.status !== 'DONE') return route.fulfill({ status: 409, json: { status: 'error', message: 'Chưa khám trước khi giao: Gió Bấc' } })
+      stays.splice(0, 1)
+      return ok(route, {})
+    }
     return ok(route, [])
   })
   await page.goto('/backoffice/coordinator/hub')
@@ -96,29 +109,44 @@ test('tại hub điều phối nhận ngựa khách tự chở tới và trả n
   await expect(present.getByRole('row', { name: /Sao Mai/ })).toBeVisible()
   // Chỉ con có người nhận tự tới hub mới có nút trả
   await expect(present.getByRole('row', { name: /Sao Mai/ }).getByRole('button', { name: 'Trả ngựa' })).toHaveCount(0)
-  await present.getByRole('row', { name: /Gió Bấc/ }).getByRole('button', { name: 'Trả ngựa' }).click()
+  const horse = present.getByRole('row', { name: /Gió Bấc/ })
+  await expect(horse.getByText('Khám trước khi giao')).toBeVisible()
+  await expect(horse.getByText('Chờ nhận')).toBeVisible()
   const deliver = page.getByRole('dialog', { name: 'Trả ngựa Gió Bấc · BK-AAAA0005' })
-  await deliver.getByLabel('Chip đọc được').fill('985000000100005')
-  await deliver.getByLabel('Tình trạng lúc giao nhận').fill('Khỏe')
-  await deliver.getByLabel('Ảnh tình trạng ngựa').setInputFiles(photo)
-  await deliver.getByLabel('Biên bản giao nhận đã ký').setInputFiles(record)
-  await deliver.getByRole('combobox', { name: 'Hộ chiếu ngựa · Gió Bấc' }).click()
-  await page.getByRole('option', { name: 'Đã trả bản gốc' }).click()
-  await deliver.getByLabel('Họ tên người nhận').fill('Nguyễn Văn An')
-  await deliver.getByLabel('Mã nhận ngựa 6 số').fill('123456')
-  await deliver.getByRole('button', { name: 'Trả ngựa' }).click()
+  const deliverHorse = async () => {
+    await horse.getByRole('button', { name: 'Trả ngựa' }).click()
+    await deliver.getByLabel('Chip đọc được').fill('985000000100005')
+    await deliver.getByLabel('Tình trạng lúc giao nhận').fill('Khỏe')
+    await deliver.getByLabel('Ảnh tình trạng ngựa').setInputFiles(photo)
+    await deliver.getByLabel('Biên bản giao nhận đã ký').setInputFiles(record)
+    await deliver.getByRole('combobox', { name: 'Hộ chiếu ngựa · Gió Bấc' }).click()
+    await page.getByRole('option', { name: 'Đã trả bản gốc' }).click()
+    await deliver.getByLabel('Họ tên người nhận').fill('Nguyễn Văn An')
+    await deliver.getByLabel('Mã nhận ngựa 6 số').fill('123456')
+    await deliver.getByRole('button', { name: 'Trả ngựa' }).click()
+  }
+  await deliverHorse()
+  await expect(page.getByText('Chưa khám trước khi giao: Gió Bấc')).toBeVisible()
+  await deliver.getByRole('button', { name: 'Hủy', exact: true }).click()
+  await horse.getByRole('button', { name: 'Ghi khám' }).click()
+  const health = page.getByRole('dialog', { name: 'Ghi sức khỏe' })
+  await health.getByLabel(/Người báo/).fill('Lan')
+  await health.getByLabel(/Kênh báo/).fill('Tại hub')
+  await health.getByRole('button', { name: /lưu|ghi nhận/i }).click()
+  await page.getByRole('alertdialog').getByRole('button', { name: /lưu|ghi nhận/i }).click()
+  await expect(horse.getByText('Xong', { exact: true })).toBeVisible()
+  await deliverHorse()
   await expect(present.getByRole('row', { name: /Gió Bấc/ })).toHaveCount(0)
   const files = { photo: photo.name, record: record.name }
   const papers = [{ documentId: 900, originalMissing: false }]
   const receipt = { ...files, request: { microchip: '985000000100002', conditionNote: 'Khỏe', papers } }
-  expect(sent).toEqual([
-    { receipt },
-    { receipt },
-    { delivery: { ...files, request: {
-      microchip: '985000000100005', conditionNote: 'Khỏe', papers,
-      recipient: { recipientName: 'Nguyễn Văn An', collectionCode: '123456' },
-    } } },
-  ])
+  const delivery = { ...files, request: {
+    microchip: '985000000100005', conditionNote: 'Khỏe', papers,
+    recipient: { recipientName: 'Nguyễn Văn An', collectionCode: '123456' },
+  } }
+  expect(sent).toEqual([{ receipt }, { receipt }, { delivery }, {
+    health: { bookingHorseId: 51, horseStayId: 7, healthStatus: 'NORMAL', reportedBy: 'Lan', reportChannel: 'Tại hub' },
+  }, { delivery }])
 })
 
 test('người nhận tới trễ hơn giờ hẹn thì điều phối gửi chuồng tại hub, phí do người nhận chịu', async ({ page }) => {
