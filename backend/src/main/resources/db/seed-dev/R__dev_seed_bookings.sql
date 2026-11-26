@@ -4,6 +4,10 @@
 -- trong ứng dụng, QuotationService và DepositPolicy mới là nơi tính.
 
 -- 1. Bổ sung chuyến còn thiếu cho 6 tuần tới theo lịch đội xe mới. Giữ nguyên chuyến đã sinh.
+DO $m2$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'departure_schedule' AND column_name = 'base_vehicle_class_id') THEN
+        EXECUTE $q$
 WITH inserted AS (
 INSERT INTO departure (departure_schedule_id, route_id, departure_date, planned_departure_at, booking_cutoff_at, stall_capacity, booked_stall_count, status)
 SELECT s.id,
@@ -25,7 +29,28 @@ RETURNING id, departure_schedule_id
 )
 INSERT INTO departure_vehicle (departure_id, vehicle_class_id, vehicle_count, allotment_type, created_at)
 SELECT i.id, s.base_vehicle_class_id, s.base_vehicle_count, 'BASE', CURRENT_TIMESTAMP
-FROM inserted i JOIN departure_schedule s ON s.id = i.departure_schedule_id;
+FROM inserted i JOIN departure_schedule s ON s.id = i.departure_schedule_id
+        $q$;
+    ELSE
+        EXECUTE $q$
+INSERT INTO departure (departure_schedule_id, route_id, departure_date, planned_departure_at, booking_cutoff_at, stall_capacity, booked_stall_count, status)
+SELECT s.id,
+       s.route_id,
+       d::date,
+       (d::date + s.departure_time) AT TIME ZONE 'Asia/Ho_Chi_Minh',
+       ((d::date + s.departure_time) AT TIME ZONE 'Asia/Ho_Chi_Minh') - make_interval(hours => s.booking_cutoff_hours),
+       s.stall_capacity,
+       0,
+       'OPEN'
+FROM departure_schedule s
+JOIN departure_schedule_day sd ON sd.departure_schedule_id = s.id
+CROSS JOIN generate_series(current_date + 1, current_date + 42, interval '1 day') AS d
+WHERE s.status = 'ACTIVE' AND d::date >= s.valid_from AND (s.valid_to IS NULL OR d::date <= s.valid_to)
+  AND extract(isodow FROM d)::smallint = sd.day_of_week
+ON CONFLICT ON CONSTRAINT uk_departure_departure_schedule_id_departure_date DO NOTHING
+        $q$;
+    END IF;
+END $m2$;
 
 -- 2. Ba đơn CONFIRMED của customer1.dev
 DO $$

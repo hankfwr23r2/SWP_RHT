@@ -414,6 +414,11 @@ FROM (VALUES
 JOIN vehicle_class vc ON vc.code = v.class_code
 JOIN location hub ON hub.code = v.hub_code
 ON CONFLICT (license_plate) DO UPDATE SET home_hub_location_id = EXCLUDED.home_hub_location_id;
+-- Vai trò xe có từ M2; test dừng lược đồ ở phiên bản cũ thì bỏ qua
+DO $m2$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'vehicle' AND column_name = 'service_role') THEN
+        EXECUTE $q$
 UPDATE vehicle
 SET service_role = CASE
     WHEN license_plate IN ('M1-3H-02', 'M1-1H-04', 'M1-7H-03') THEN 'SPARE'
@@ -421,7 +426,10 @@ SET service_role = CASE
 END
 WHERE license_plate IN ('51C-100.03', '51C-100.04', '51C-100.05', '51C-100.06',
     'M1-1H-01', 'M1-1H-02', 'M1-1H-03', 'M1-1H-04', 'M1-7H-01', 'M1-7H-02',
-    'M1-7H-03', 'M1-3H-01', 'M1-3H-02', 'M1-4H-01');
+    'M1-7H-03', 'M1-3H-01', 'M1-3H-02', 'M1-4H-01')
+        $q$;
+    END IF;
+END $m2$;
 
 
 -- ---------------------------------------------------------------------------
@@ -623,6 +631,11 @@ WHERE rs.route_id = r.id
 
 -- Lịch mẫu theo docs/QUY_CHE_DOI_XE.md, dùng số thứ tự ISO (thứ Hai = 1).
 -- Đổi ngày trên lịch hiện có để giữ liên kết của các chuyến đã sinh.
+-- Lịch có xe nền từ M2 (base_vehicle_*); lược đồ cũ còn stall_capacity
+DO $m2$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'departure_schedule' AND column_name = 'base_vehicle_class_id') THEN
+        EXECUTE $q$
 WITH timetable(route_code, departure_time, day_of_week, schedule_status) AS (
     VALUES
     ('HCM-NT', TIME '05:00', 6, 'ACTIVE'),
@@ -670,7 +683,60 @@ SELECT u.id, u.day_of_week FROM updated u WHERE u.day_of_week IS NOT NULL
 UNION ALL
 SELECT i.id, t.day_of_week FROM inserted i JOIN route r ON r.id = i.route_id JOIN timetable t ON t.route_code = r.code
 WHERE t.day_of_week IS NOT NULL
-ON CONFLICT DO NOTHING;
+ON CONFLICT DO NOTHING
+        $q$;
+    ELSE
+        EXECUTE $q$
+WITH timetable(route_code, departure_time, day_of_week, schedule_status) AS (
+    VALUES
+    ('HCM-NT', TIME '05:00', 6, 'ACTIVE'),
+    ('NT-HCM', TIME '05:00', 1, 'ACTIVE'),
+    ('NT-DN', TIME '05:00', 3, 'ACTIVE'),
+    ('DN-NT', TIME '05:00', 4, 'ACTIVE'),
+    ('HCM-DN', TIME '05:00', 6, 'ACTIVE'),
+    ('DN-HCM', TIME '05:00', 1, 'ACTIVE'),
+    ('DN-VINH', TIME '05:00', 6, 'ACTIVE'),
+    ('VINH-DN', TIME '05:00', 1, 'ACTIVE'),
+    ('VINH-HN', TIME '05:00', 3, 'ACTIVE'),
+    ('HN-VINH', TIME '05:00', 4, 'ACTIVE'),
+    ('DN-HN', TIME '05:00', 5, 'ACTIVE'),
+    ('HN-DN', TIME '05:00', 1, 'ACTIVE'),
+    ('HCM-HN', TIME '05:00', 3, 'ACTIVE'),
+    ('HN-HCM', TIME '05:00', 1, 'ACTIVE'),
+    ('HCM-PNH', TIME '06:00', 6, 'ACTIVE'),
+    ('PNH-HCM', TIME '06:00', 1, 'ACTIVE'),
+    ('DN-SVK', TIME '06:00', 5, 'ACTIVE'),
+    ('SVK-DN', TIME '06:00', 1, 'ACTIVE'),
+    ('VINH-VTE', TIME '06:00', 6, 'ACTIVE'),
+    ('VTE-VINH', TIME '06:00', 1, 'ACTIVE'),
+    ('MOCBAI-HCM', TIME '14:00', NULL, 'ENDED'),
+    ('DN-LAOBAO', TIME '05:00', NULL, 'ENDED'),
+    ('LAOBAO-DN', TIME '07:00', NULL, 'ENDED')
+), updated AS (
+    UPDATE departure_schedule s SET booking_cutoff_hours = 72, status = t.schedule_status
+    FROM route r JOIN timetable t ON t.route_code = r.code
+    WHERE s.route_id = r.id AND (t.schedule_status = 'ENDED'
+        OR (s.departure_time = t.departure_time AND s.valid_from = DATE '2026-11-01'))
+    RETURNING s.id, s.route_id, t.day_of_week
+), inserted AS (
+    INSERT INTO departure_schedule (route_id, departure_time, booking_cutoff_hours, stall_capacity, valid_from, status)
+    SELECT r.id, t.departure_time, 72, 9, DATE '2026-11-01', t.schedule_status
+    FROM timetable t JOIN route r ON r.code = t.route_code
+    WHERE NOT EXISTS (SELECT 1 FROM updated u WHERE u.route_id = r.id)
+    RETURNING id, route_id
+), removed AS (
+    DELETE FROM departure_schedule_day dd USING updated u
+    WHERE dd.departure_schedule_id = u.id AND dd.day_of_week IS DISTINCT FROM u.day_of_week
+)
+INSERT INTO departure_schedule_day (departure_schedule_id, day_of_week)
+SELECT u.id, u.day_of_week FROM updated u WHERE u.day_of_week IS NOT NULL
+UNION ALL
+SELECT i.id, t.day_of_week FROM inserted i JOIN route r ON r.id = i.route_id JOIN timetable t ON t.route_code = r.code
+WHERE t.day_of_week IS NOT NULL
+ON CONFLICT DO NOTHING
+        $q$;
+    END IF;
+END $m2$;
 
 -- ---------------------------------------------------------------------------
 -- 5. Bảng giá mẫu

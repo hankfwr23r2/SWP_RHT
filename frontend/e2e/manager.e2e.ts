@@ -41,6 +41,7 @@ async function open(page: Page, path: string, options: { status?: string; quotat
     if (api === '/bookings/8/settlement') return reply(state.settlement)
     if (api === '/bookings/8/manager-cancellation-preview') return reply(state.preview ?? { allowed: true })
     if (api === '/departures/decisions') return reply(state.decisions ?? [])
+    if (api === '/vehicle-classes') return reply([{ id: 3, code: 'HEAVY', name: 'Xe tải nặng', maxStallCount: 9 }])
     if (api === '/routes') return reply([{ id: 1, name: 'TP.HCM – Đà Nẵng', status: 'ACTIVE' }, { id: 2, name: 'Tuyến ngừng', status: 'INACTIVE' }])
     if (api === '/refunds') return reply(url.searchParams.get('status') === 'PENDING' ? state.refunds ?? [] : [])
     return reply([])
@@ -143,19 +144,21 @@ test('chuyến: xác nhận chạy, hủy phải có lý do, tạo chuyến đ�
   await expect(page.getByRole('dialog')).toHaveCount(0)
   await page.getByRole('button', { name: 'Tạo chuyến đột xuất' }).click()
   const dialog = page.getByRole('dialog')
-  await dialog.getByRole('combobox').click()
+  await dialog.getByRole('combobox').first().click()
   await expect(page.getByRole('option', { name: 'Tuyến ngừng' })).toHaveCount(0)
   await page.getByRole('option', { name: 'TP.HCM – Đà Nẵng' }).click()
   await dialog.getByLabel(/Ngày đi/).fill('2099-02-01')
   await dialog.getByLabel(/Giờ đi/).fill('05:30')
   await dialog.getByLabel(/Chốt sổ trước/).fill('72')
-  await dialog.getByLabel(/Số chỗ/).fill('9')
+  await dialog.getByRole('combobox').nth(1).click()
+  await page.getByRole('option', { name: 'Xe tải nặng' }).click()
+  await dialog.getByLabel(/Số xe/).fill('1')
   await dialog.getByRole('button', { name: 'Tạo chuyến đột xuất' }).click()
   await expect(dialog).toHaveCount(0)
   expect(state.calls).toEqual([
     { path: '/departures/3/confirm-run', body: {} },
     { path: '/departures/3/cancel', body: { reason: 'Xe hỏng' } },
-    { path: '/departures', body: { routeId: 1, departureDate: '2099-02-01', departureTime: '05:30', bookingCutoffHours: 72, stallCapacity: 9 } },
+    { path: '/departures', body: { routeId: 1, departureDate: '2099-02-01', departureTime: '05:30', bookingCutoffHours: 72, vehicleClassId: 3, vehicleCount: 1 } },
   ])
 })
 
