@@ -29,6 +29,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.Map;
 
 import java.util.stream.Collectors;
@@ -79,20 +80,17 @@ public class DepartureSuggestionServiceImpl implements DepartureSuggestionServic
             return response.departures(List.of()).build();
         }
 
-        // Tuyến phù hợp và khoảng cách từ cửa khẩu tới điểm ở nước ngoài (0 với tuyến nội địa) để xếp thứ tự
-        Map<Long, Double> routeDistance = routes.findByStatusWithEndpoints(ActiveStatus.ACTIVE).stream()
-                .filter(route -> DepartureRoutePolicy.matches(route, query.getBookingType(),
-                        pickupHubId, deliveryHubId,
-                        DepartureRoutePolicy.counterpartCountryCode(query.getBookingType(), pickup.getCountry().getCode(), delivery.getCountry().getCode())))
-                .collect(Collectors.toMap(Route::getId, route -> foreignLegKm(query, route)));
-        if (routeDistance.isEmpty()) {
+        // Tuyến nối đúng hub đón với hub giao (mô hình bến xe)
+        Set<Long> routeIds = routes.findByStatusWithEndpoints(ActiveStatus.ACTIVE).stream()
+                .filter(route -> DepartureRoutePolicy.matches(route, query.getBookingType(), pickupHubId, deliveryHubId))
+                .map(Route::getId).collect(Collectors.toSet());
+        if (routeIds.isEmpty()) {
             return response.departures(List.of()).unavailable(Unavailable.NO_ROUTE).build();
         }
 
-        List<Departure> found = departures.findBookable(routeDistance.keySet(), DepartureStatus.OPEN, clock.instant(),
+        List<Departure> found = departures.findBookable(routeIds, DepartureStatus.OPEN, clock.instant(),
                         query.getFromDate(), query.getStalls()).stream()
-                .sorted(Comparator.<Departure>comparingDouble(d -> routeDistance.get(d.getRoute().getId()))
-                        .thenComparing(Departure::getPlannedDepartureAt))
+                .sorted(Comparator.comparing(Departure::getPlannedDepartureAt))
                 .limit(MAX_SUGGESTIONS)
                 .toList();
         List<CountryRule> rules = countryRules.findByCountry_CodeAndDirection(
@@ -114,25 +112,6 @@ public class DepartureSuggestionServiceImpl implements DepartureSuggestionServic
                 .map(area -> area.getProvince().getName()).sorted().toList();
     }
 
-
-    // Quãng đường chim bay giữa cửa khẩu và điểm ở nước ngoài, chỉ dùng để xếp hạng; thiếu tọa độ thì coi như bằng nhau
-    private static double foreignLegKm(DepartureSuggestionQueryDto query, Route route) {
-        if (query.getBookingType() == BookingType.EXPORT) {
-            return distance(route.getDestination(), query.getDeliveryLatitude(), query.getDeliveryLongitude());
-        }
-        if (query.getBookingType() == BookingType.IMPORT) {
-            return distance(route.getOrigin(), query.getPickupLatitude(), query.getPickupLongitude());
-        }
-        return 0;
-    }
-
-    private static double distance(Location gate, BigDecimal latitude, BigDecimal longitude) {
-        if (gate.getLatitude() == null || latitude == null || longitude == null) {
-            return 0;
-        }
-        return GeoPointDto.distanceKm(new GeoPointDto(gate.getLatitude().doubleValue(), gate.getLongitude().doubleValue()),
-                new GeoPointDto(latitude.doubleValue(), longitude.doubleValue()));
-    }
 
     private Province province(String code) {
         return provinces.findById(code.trim())

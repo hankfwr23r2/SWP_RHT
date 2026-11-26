@@ -31,9 +31,11 @@ class LegNeedsPolicyTest {
     }
 
     @Test
-    void foreignSideAlwaysNeedsAnAgentLeg() {
-        assertThat(LegNeedsPolicy.missing(BookingHorseStatus.ACTIVE, BookingType.EXPORT, true, SELF, SELF, List.of())).containsExactly(LINEHAUL, DELIVERY);
-        assertThat(LegNeedsPolicy.missing(BookingHorseStatus.ACTIVE, BookingType.IMPORT, true, SELF, SELF, List.of())).containsExactly(PICKUP, LINEHAUL);
+    void foreignHubSideFollowsTheChosenMethodLikeDomestic() {
+        // Hub nước ngoài là của công ty: tự chở ở đầu nước ngoài thì không có chặng xe
+        assertThat(LegNeedsPolicy.missing(BookingHorseStatus.ACTIVE, BookingType.EXPORT, true, SELF, SELF, List.of())).containsExactly(LINEHAUL);
+        assertThat(LegNeedsPolicy.missing(BookingHorseStatus.ACTIVE, BookingType.IMPORT, true, COMPANY, COMPANY, List.of()))
+                .containsExactly(PICKUP, LINEHAUL, DELIVERY);
     }
 
     @Test

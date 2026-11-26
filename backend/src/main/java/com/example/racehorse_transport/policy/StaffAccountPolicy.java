@@ -28,9 +28,10 @@ public final class StaffAccountPolicy {
         }
     }
 
-    public static void requireHeadquarters(LocationType type, boolean headquarters) {
-        if (type != LocationType.HUB || !headquarters) {
-            throw new AccountRuleException("Hub của nhân viên phải là trụ sở.");
+    // Mô hình bến xe (26/11/2026): nhân viên thuộc hub nào cũng được, kể cả hub nước ngoài
+    public static void requireHomeHub(LocationType type) {
+        if (type != LocationType.HUB) {
+            throw new AccountRuleException("Hub của nhân viên phải là một hub.");
         }
     }
 

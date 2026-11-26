@@ -5,7 +5,6 @@ import com.example.racehorse_transport.entity.*;
 import com.example.racehorse_transport.entity.enums.*;
 import com.example.racehorse_transport.exception.BookingRuleException;
 import com.example.racehorse_transport.policy.BookingSubmissionPolicy;
-import com.example.racehorse_transport.policy.DepartureRoutePolicy;
 import com.example.racehorse_transport.policy.HubResolutionPolicy.Routing;
 import com.example.racehorse_transport.policy.InsuranceReviewPolicy;
 import com.example.racehorse_transport.policy.PricingPolicy;
@@ -124,7 +123,7 @@ public class QuotationDraftDataServiceImpl {
             }
         }
         var regulation = regulations.resolve(type, pickup.getCountry().getCode(), delivery.getCountry().getCode(),
-                pickupDate, route == null ? null : DepartureRoutePolicy.gateId(route, type));
+                pickupDate, regulations.gateOf(route, type));
 
         Map<Long, Set<Long>> selections = new HashMap<>();
         addOns.findAddOnsForDetail(active.stream().map(BookingHorse::getId).toList()).forEach(row ->
@@ -232,10 +231,10 @@ public class QuotationDraftDataServiceImpl {
             return List.of(new RoadSegment(ServiceLayer.DIRECT, point(pickup), point(delivery), limit));
         }
         List<RoadSegment> result = new ArrayList<>();
-        if (booking.getBookingType() != BookingType.IMPORT && booking.getPickupMethod() == TransferMethod.COMPANY) {
+        if (booking.getPickupMethod() == TransferMethod.COMPANY) {
             result.add(new RoadSegment(ServiceLayer.PICKUP, point(pickup), point(route.getOrigin()), limit));
         }
-        if (booking.getBookingType() != BookingType.EXPORT && booking.getDeliveryMethod() == TransferMethod.COMPANY) {
+        if (booking.getDeliveryMethod() == TransferMethod.COMPANY) {
             result.add(new RoadSegment(ServiceLayer.DELIVERY, point(route.getDestination()), point(delivery), limit));
         }
         return List.copyOf(result);

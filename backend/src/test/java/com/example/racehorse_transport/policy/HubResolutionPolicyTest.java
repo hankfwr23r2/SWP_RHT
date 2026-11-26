@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.example.racehorse_transport.entity.enums.BookingType;
 import com.example.racehorse_transport.policy.HubResolutionPolicy.Routing;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class HubResolutionPolicyTest {
@@ -31,9 +32,29 @@ class HubResolutionPolicyTest {
 
     @Test
     void internationalAlwaysUsesLinehaul() {
-        // Phía nước ngoài không có hub
-        assertThat(HubResolutionPolicy.routingOf(BookingType.EXPORT, HUB_HCM, null)).isEqualTo(Routing.LINEHAUL);
-        assertThat(HubResolutionPolicy.routingOf(BookingType.IMPORT, null, HUB_HCM)).isEqualTo(Routing.LINEHAUL);
+        assertThat(HubResolutionPolicy.routingOf(BookingType.EXPORT, HUB_HCM, 3L)).isEqualTo(Routing.LINEHAUL);
+        assertThat(HubResolutionPolicy.routingOf(BookingType.IMPORT, 3L, HUB_HCM)).isEqualTo(Routing.LINEHAUL);
+    }
+
+    @Test
+    void internationalBookingsRequireServingHubsAtBothEnds() {
+        for (BookingType type : List.of(BookingType.EXPORT, BookingType.IMPORT)) {
+            assertThatThrownBy(() -> HubResolutionPolicy.routingOf(type, null, HUB_HCM))
+                    .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("chưa có hub phục vụ");
+            assertThatThrownBy(() -> HubResolutionPolicy.routingOf(type, HUB_HCM, null))
+                    .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("chưa có hub phục vụ");
+        }
+    }
+
+    @Test
+    void reportsMissingHubsIncludingForeignEnds() {
+        for (BookingType type : BookingType.values()) {
+            assertThat(HubResolutionPolicy.missingPickupHub(type, null)).as("%s pickup", type).isTrue();
+            assertThat(HubResolutionPolicy.missingPickupHub(type, HUB_HCM)).isFalse();
+            assertThat(HubResolutionPolicy.missingDeliveryHub(type, HUB_HCM)).isFalse();
+            assertThat(HubResolutionPolicy.missingDeliveryHub(type, null)).as("%s delivery", type)
+                    .isEqualTo(type != BookingType.LOCAL);
+        }
     }
 
     @Test

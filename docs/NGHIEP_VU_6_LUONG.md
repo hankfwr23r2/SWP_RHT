@@ -67,7 +67,7 @@ Từ lúc khách mở tài khoản tới lúc khách trả cọc và đơn **Đ�
 | Lúc gửi, chuyến vừa hết chỗ hoặc qua hạn nhận đặt | Không tạo đơn, giữ bản nháp để chọn chuyến khác |
 | Ngựa đang nằm trong đơn khác | Khóa con đó, ghi mã đơn đang giữ |
 | Địa chỉ ở tỉnh chưa có hub | Nói đầu nào ngoài vùng phục vụ, liệt kê tỉnh đang phục vụ |
-| Hết chỗ trên chuyến | Gợi ý chuyến sau; quản lý được báo để **tăng cường xe** nếu còn xe dự phòng [Mới] |
+| Xe nền đầy | Tự gắn xe để sẵn còn rảnh của hub vào chuyến, báo quản lý; hết xe để sẵn thì chuyến Hết chỗ, gợi ý chuyến sau [Mới] |
 | Công ty không nhận đơn | Từ chối kèm lý do khi Chờ tiếp nhận hoặc Đang thẩm định, nhả chỗ |
 | Tới mốc quyết định mà chưa gửi báo giá | Tự nhả chỗ, đơn **Cần chọn lại chuyến**, khách đổi chuyến hoặc hủy miễn phí |
 | Hết 24 giờ chưa trả cọc | **Báo giá hết hạn**, nhả chỗ. Quản lý mở lại được nếu còn chỗ và kịp giấy |
@@ -136,9 +136,9 @@ Từ lúc đơn đã cọc tới lúc mỗi con có đủ xe, tổ lái, vị tr
    - Tổng hai phần là **số xe giữ cho trục** của hub. Quản trị lưu lịch mà hub không đủ xe thì hệ thống cảnh báo. Các xe còn lại của hub chạy nhánh đón và giao, không lấy xe giữ cho trục.
 2. **Mỗi chuyến bán bao nhiêu chỗ** [Mới]
    - Lịch ghi sẵn **xe nền** của mỗi chuyến, ví dụ "1 xe 9 chỗ". Chuyến mở bán đúng số chỗ của xe nền.
-   - Chuyến sắp đầy thì **thêm xe** lấy từ xe dự phòng của hub, nếu ngày đó còn xe dự phòng rảnh. Số chỗ bán tăng ngay. Ví dụ thêm một xe 4 chỗ thì chuyến từ 9 thành 13 chỗ.
-   - Hết xe dự phòng thì chuyến **Hết chỗ**, khách chọn chuyến khác.
-   - Khách không thấy con số chỗ, chỉ thấy **Còn chỗ**, **Sắp đầy** (đã đặt từ 80%, cấu hình) hoặc **Hết chỗ**.
+   - Khi khách gửi đơn mà xe nền đã đầy, hệ thống **tự gắn một xe để sẵn** còn rảnh của hub xuất phát vào chuyến rồi nhận đơn, báo quản lý và điều phối. Khách không phải chờ ai duyệt.
+   - Hết xe để sẵn thì chuyến **Hết chỗ**, khách chọn chuyến khác.
+   - Khách không thấy con số chỗ, chỉ thấy **Còn chỗ**, **Sắp đầy** (xe nền đã đặt từ 80% và hết xe để sẵn) hoặc **Hết chỗ**. Số xe, người và lịch theo [QUY_CHE_DOI_XE.md](QUY_CHE_DOI_XE.md).
 3. **Quản lý quyết định chuyến** trong 48 giờ cuối: **Chạy**, **Hủy** hoặc **Dồn** sang chuyến khác cùng tuyến.
    - Số chỗ đã cọc dưới 30% số chỗ đang bán thì cảnh báo, quyết định vẫn là của quản lý.
    - Khi bấm Chạy, quản lý **bỏ bớt xe thừa** được nếu số chỗ đã bán vẫn đủ. Ví dụ đã bán 8 chỗ trên hai xe 9 và 4 chỗ thì bỏ xe 4 chỗ.
@@ -166,7 +166,7 @@ Từ lúc đơn đã cọc tới lúc mỗi con có đủ xe, tổ lái, vị tr
 | Tình huống | Hệ thống |
 |---|---|
 | Lịch trục cần nhiều xe hơn hạn mức của hub | Báo quản trị khi lưu lịch hoặc tuyến [Mới] |
-| Chuyến đông hơn xe nền | Tăng cường từ xe dự phòng; hết dự phòng thì chuyến **Hết chỗ** [Mới] |
+| Chuyến đông hơn xe nền | Hệ thống tự gắn xe để sẵn lúc nhận đơn; hết thì chuyến **Hết chỗ** [Mới] |
 | Chuyến vắng | Bớt xe trước giờ chốt nếu số chỗ đã bán vẫn vừa [Mới]; hoặc quản lý dồn chuyến |
 | Ngựa ngồi xe quá 5 giờ, hoặc tới hub sau hạn có mặt | Chặn lập lượt, đề nghị tách lượt hoặc đi sớm hơn |
 | Xe đang ở hub khác | Từ chối lượt bắt đầu sai chỗ, báo xe đang ở đâu |
@@ -298,7 +298,7 @@ Từ lúc tổ lái đứng trước con ngựa ở nơi nhận tới lúc đơn
 # Còn mở, chờ chốt
 
 1. **Giấy phép liên vận của xe** qua Campuchia, Lào: có thêm ô "được chạy sang nước nào, hạn tới ngày" để chỉ gán xe có phép cho chuyến quốc tế không. Điều kiện cấp phép **chưa kiểm chứng**.
-2. **Ai tăng cường xe** cho chuyến (quản lý hay điều phối), có ngưỡng tự báo không.
+2. ~~Ai tăng cường xe~~: **đã chốt 26/11** hệ thống tự gắn xe để sẵn khi xe nền đầy, quản lý chỉ bỏ bớt xe thừa.
 3. **Chuyến đột xuất** do quản lý tạo: đề xuất bỏ, vì tăng cường và xe riêng đã thay được.
 4. **Giá xe riêng** theo nguyên xe: theo loại xe và quãng đường của từng chặng (đón, trục, giao).
 5. **Tỷ lệ dự phòng 20%** là mức tham khảo của ngành xe buýt (FTA), cần chỉnh khi có số liệu vận hành.

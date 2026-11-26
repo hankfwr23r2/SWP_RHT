@@ -63,7 +63,7 @@ public final class PricingPolicy {
     }
 
     public static long earlyPickupDays(BookingType type, LocalDate requestedPickupDate, LocalDate departureDate) {
-        if (departureDate == null || (type != BookingType.INTERPROVINCE && type != BookingType.EXPORT)) {
+        if (departureDate == null || type == BookingType.LOCAL) {
             return 0;
         }
         return earlyPickupDays(requestedPickupDate, departureDate);

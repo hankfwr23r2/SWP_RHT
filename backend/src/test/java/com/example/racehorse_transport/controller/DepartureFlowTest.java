@@ -81,9 +81,10 @@ class DepartureFlowTest {
     }
 
     @Test
-    void exportGoesToBorderGateAndImportComesFromIt() throws Exception {
+    void exportAndImportUseBothHubs() throws Exception {
         mvc.perform(suggestions("EXPORT", "VN-79", "KH-12").param("deliveryLatitude", "11.5564").param("deliveryLongitude", "104.9282"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.deliveryHubCode").value("HUB-PNH"))
                 .andExpect(jsonPath("$.data.departures.length()", greaterThan(0)))
                 .andExpect(jsonPath("$.data.departures[*].routeCode", everyItem(is("HCM-PNH"))));
 
@@ -91,7 +92,8 @@ class DepartureFlowTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.routing").value("LINEHAUL"))
                 .andExpect(jsonPath("$.data.departures.length()", greaterThan(0)))
-                .andExpect(jsonPath("$.data.departures[*].routeCode", everyItem(is("MOCBAI-HCM"))));
+                .andExpect(jsonPath("$.data.pickupHubCode").value("HUB-PNH"))
+                .andExpect(jsonPath("$.data.departures[*].routeCode", everyItem(is("PNH-HCM"))));
     }
 
     @Test
@@ -114,7 +116,11 @@ class DepartureFlowTest {
                 .andExpect(jsonPath("$.data.departures.length()").value(0));
         mvc.perform(suggestions("IMPORT", "KH-12", "VN-11"))
                 .andExpect(jsonPath("$.data.unavailable").value("DELIVERY_NOT_SERVED"));
-        // Hub Đà Nẵng chỉ có tuyến đi Lào
+        mvc.perform(suggestions("EXPORT", "VN-79", "KH-1"))
+                .andExpect(jsonPath("$.data.unavailable").value("DELIVERY_NOT_SERVED"));
+        mvc.perform(suggestions("IMPORT", "KH-1", "VN-79"))
+                .andExpect(jsonPath("$.data.unavailable").value("PICKUP_NOT_SERVED"));
+        // Hub Đà Nẵng chỉ có tuyến quốc tế đi Lào
         mvc.perform(suggestions("EXPORT", "VN-48", "KH-12"))
                 .andExpect(jsonPath("$.data.unavailable").value("NO_ROUTE"))
                 .andExpect(jsonPath("$.data.pickupHubName").isNotEmpty());

@@ -102,10 +102,11 @@ class EntityMappingTest {
 
         assertThat(route.getOrigin().getCode()).isEqualTo("HUB-HCM");
         assertThat(route.getDestination().getLocationType()).isEqualTo(LocationType.HUB);
-        assertThat(route.getDistanceKm()).isEqualByComparingTo("975.00");
+        assertThat(route.getDistanceKm()).isEqualByComparingTo("972.00");
         assertThat(stops).extracting(s -> s.getId().getSequenceNumber()).containsExactly(1, 2, 3, 4, 5, 6, 7, 8);
         assertThat(stops.get(0).getLocation().getCode()).isEqualTo("HUB-HCM");
-        assertThat(stops.get(3).getStopType()).isEqualTo(RouteStopType.VITAL_CHECK);
+        assertThat(stops.get(3).getStopType()).isEqualTo(RouteStopType.REST);
+        assertThat(stops.get(3).getLocation().getCode()).isEqualTo("HUB-NT");
         assertThat(stops.get(7).getLocation().getCode()).isEqualTo("HUB-DN");
     }
 
@@ -160,7 +161,7 @@ class EntityMappingTest {
             assertThat(item.getBillableService().getCode()).isEqualTo("LINEHAUL_STALL");
             assertThat(item.getRoute().getCode()).isEqualTo("HCM-PNH");
             assertThat(item.getStallType().getCode()).isEqualTo("STANDARD");
-            assertThat(item.getUnitPrice()).isEqualByComparingTo("6000000");
+            assertThat(item.getUnitPrice()).isEqualByComparingTo("3200000");
         });
         assertThat(items).anySatisfy(item -> {
             assertThat(item.getBillableService().getCode()).isEqualTo("PICKUP_KM");
@@ -176,7 +177,7 @@ class EntityMappingTest {
                 .findFirst().orElseThrow();
 
         List<DocumentRequirement> list = requirements.findByRule_Id(rule.getId());
-        assertThat(list).hasSize(7);
+        assertThat(list).hasSize(10);
         assertThat(list).anySatisfy(r -> {
             assertThat(r.getDocumentType().getCode()).isEqualTo("LAB_TEST");
             assertThat(r.getDocumentType().getOwnerType()).isEqualTo(DocumentSubject.BOOKING_HORSE);
@@ -189,7 +190,7 @@ class EntityMappingTest {
         DepartureSchedule schedule = schedules.findAll().stream()
                 .filter(s -> s.getRoute().getCode().equals("HCM-PNH")).findFirst().orElseThrow();
         assertThat(scheduleDays.findById_DepartureScheduleId(schedule.getId())).extracting(d -> d.getId().getDayOfWeek())
-                .containsExactly((short) 1);
+                .containsExactly((short) 6);
 
         // Chuyến đột xuất (không theo lịch) để không trùng các chuyến do seed sinh từ lịch
         Departure departure = new Departure();

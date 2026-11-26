@@ -34,12 +34,12 @@ export function RescheduleCard({ data, excludeDepartureId, reschedule }: Props) 
 
   const departures = (suggestion?.departures ?? []).filter(departure => departure.id !== (excludeDepartureId ?? booking?.departureId))
   const selected = departures.find(departure => departure.id === departureId)
-  const last = selected?.departureDate && (booking?.bookingType === 'IMPORT' ? selected.departureDate : dayBefore(selected.departureDate))
+  const last = selected?.departureDate && dayBefore(selected.departureDate)
   const badDate = !!selected && (!pickupDate || pickupDate < today || (!!last && pickupDate > last))
 
   const choose = (id: number, departureDate?: string) => {
     setDepartureId(id)
-    if (departureDate) setPickupDate(booking?.bookingType === 'IMPORT' ? departureDate : dayBefore(departureDate))
+    if (departureDate) setPickupDate(dayBefore(departureDate))
   }
   const send = async () => {
     setConfirming(false)

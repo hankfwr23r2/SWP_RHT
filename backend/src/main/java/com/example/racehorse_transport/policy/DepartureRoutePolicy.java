@@ -1,45 +1,27 @@
 package com.example.racehorse_transport.policy;
 
-import com.example.racehorse_transport.entity.Location;
 import com.example.racehorse_transport.entity.Route;
 import com.example.racehorse_transport.entity.enums.BookingType;
-import com.example.racehorse_transport.entity.enums.LocationType;
+import java.util.List;
 
+// Mô hình bến xe (quyết định 26/11/2026): tuyến trục luôn nối hai hub, kể cả hub nước ngoài.
+// Cửa khẩu là điểm dừng BORDER giữa tuyến. Hàm thuần.
 public final class DepartureRoutePolicy {
 
     private DepartureRoutePolicy() {}
 
-    public static boolean matches(Route route, BookingType type, Long pickupHubId, Long deliveryHubId, String counterpartCountryCode) {
-        return switch (type) {
-            case INTERPROVINCE -> route.getOrigin().getId().equals(pickupHubId)
-                    && route.getDestination().getId().equals(deliveryHubId);
-            case EXPORT -> route.getOrigin().getId().equals(pickupHubId)
-                    && matchesGate(route.getDestination(), counterpartCountryCode);
-            case IMPORT -> matchesGate(route.getOrigin(), counterpartCountryCode)
-                    && route.getDestination().getId().equals(deliveryHubId);
-            case LOCAL -> false;
-        };
+    // Đơn đi trục khớp tuyến khi hub đón là điểm đầu và hub giao là điểm cuối
+    public static boolean matches(Route route, BookingType type, Long pickupHubId, Long deliveryHubId) {
+        return type != BookingType.LOCAL
+                && route.getOrigin().getId().equals(pickupHubId)
+                && route.getDestination().getId().equals(deliveryHubId);
     }
 
-    private static boolean matchesGate(Location gate, String counterpartCountryCode) {
-        return gate.getLocationType() == LocationType.BORDER_GATE
-                && gate.getCounterpartCountry() != null
-                && gate.getCounterpartCountry().getCode().equals(counterpartCountryCode);
-    }
-
-    public static String counterpartCountryCode(BookingType type, String pickupCountryCode, String deliveryCountryCode) {
-        return switch (type) {
-            case EXPORT -> deliveryCountryCode;
-            case IMPORT -> pickupCountryCode;
-            case LOCAL, INTERPROVINCE -> null;
-        };
-    }
-
-    public static Long gateId(Route route, BookingType type) {
-        return switch (type) {
-            case EXPORT -> route.getDestination().getId();
-            case IMPORT -> route.getOrigin().getId();
-            case LOCAL, INTERPROVINCE -> null;
-        };
+    // Cửa khẩu đơn quốc tế đi qua: điểm dừng BORDER đầu tiên của tuyến. Đơn trong nước không có cửa khẩu
+    public static Long gateId(BookingType type, List<Long> borderLocationIds) {
+        if (type != BookingType.EXPORT && type != BookingType.IMPORT) {
+            return null;
+        }
+        return borderLocationIds == null || borderLocationIds.isEmpty() ? null : borderLocationIds.get(0);
     }
 }

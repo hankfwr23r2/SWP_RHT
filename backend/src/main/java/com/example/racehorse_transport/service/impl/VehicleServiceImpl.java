@@ -78,7 +78,7 @@ public class VehicleServiceImpl implements VehicleService {
         requireUniquePlate(request.normalizedLicensePlate(), null);
         VehicleClass vehicleClass = findClass(request.vehicleClassId());
         VehiclePolicy.requireCapacity(request.standardStallCount(), request.wideStallCount(), vehicleClass.getMaxStallCount());
-        Vehicle vehicle = request.toEntity(vehicleClass, findHeadquarters(request.homeHubLocationId()));
+        Vehicle vehicle = request.toEntity(vehicleClass, findHomeHub(request.homeHubLocationId()));
         vehicle.setStatus(VehicleStatus.ACTIVE);
         return persist(vehicle);
     }
@@ -90,7 +90,7 @@ public class VehicleServiceImpl implements VehicleService {
         requireUniquePlate(request.normalizedLicensePlate(), id);
         VehicleClass vehicleClass = findClass(request.vehicleClassId());
         VehiclePolicy.requireCapacity(request.standardStallCount(), request.wideStallCount(), vehicleClass.getMaxStallCount());
-        request.applyTo(vehicle, vehicleClass, findHeadquarters(request.homeHubLocationId()));
+        request.applyTo(vehicle, vehicleClass, findHomeHub(request.homeHubLocationId()));
         return persist(vehicle);
     }
 
@@ -188,10 +188,10 @@ public class VehicleServiceImpl implements VehicleService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hạng xe " + id));
     }
 
-    private Location findHeadquarters(Long id) {
+    private Location findHomeHub(Long id) {
         Location location = locations.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy địa điểm " + id));
-        VehiclePolicy.requireHeadquarters(location.getLocationType(), location.isHeadquarters());
+        VehiclePolicy.requireHomeHub(location.getLocationType());
         return location;
     }
 

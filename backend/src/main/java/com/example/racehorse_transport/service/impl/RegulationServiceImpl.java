@@ -27,6 +27,9 @@ import com.example.racehorse_transport.repository.DepartureRepository;
 import com.example.racehorse_transport.repository.DocumentRequirementRepository;
 import com.example.racehorse_transport.repository.DocumentTypeRepository;
 import com.example.racehorse_transport.repository.LocationRepository;
+import com.example.racehorse_transport.repository.RouteStopRepository;
+import com.example.racehorse_transport.policy.DepartureRoutePolicy;
+import com.example.racehorse_transport.entity.Route;
 import com.example.racehorse_transport.service.RegulationService;
 import java.time.Clock;
 import java.time.Instant;
@@ -51,6 +54,7 @@ public class RegulationServiceImpl implements RegulationService {
     private final CountryRepository countries;
     private final LocationRepository locations;
     private final DepartureRepository departures;
+    private final RouteStopRepository routeStops;
     private final Clock clock;
 
     @Override
@@ -72,6 +76,12 @@ public class RegulationServiceImpl implements RegulationService {
         return new RegulationPreviewResponseDto(resolved.rule(), resolved.leadDays(), resolved.requirements(),
                 resolved.requirementsDependOnGate(), cutoff,
                 RegulationPolicy.feasible(resolved.leadDays(), clock.instant(), cutoff));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Long gateOf(Route route, BookingType bookingType) {
+        return route == null ? null : DepartureRoutePolicy.gateId(bookingType, routeStops.findBorderLocationIds(route.getId()));
     }
 
     @Override

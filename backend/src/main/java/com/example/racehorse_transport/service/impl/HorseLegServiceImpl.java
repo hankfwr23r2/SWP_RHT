@@ -280,13 +280,6 @@ public class HorseLegServiceImpl implements HorseLegService {
     private HorseLeg requireAfterPredecessor(HorseLegType legType, Booking booking, List<HorseLeg> chain,
                                              TripStop board, Long pickupAddressId) {
         HorseLeg previous = chain.stream().filter(l -> !INACTIVE.contains(l.getStatus())).reduce((first, second) -> second).orElse(null);
-        if (legType == HorseLegType.DELIVERY && booking.getBookingType()
-                == com.example.racehorse_transport.entity.enums.BookingType.IMPORT
-                && booking.getStatus() == BookingStatus.CONFIRMED
-                && (previous == null || previous.getStatus() != HorseLegStatus.COMPLETED
-                    || dispatchBookings.hasPendingBalance(booking.getId()))) {
-            throw new DispatchRuleException("payment", "Chỉ xếp giao đơn nhập khi ngựa đã tới hub và khách đã trả số dư.", true);
-        }
         HorseLeg last = chain.stream().filter(existing -> existing.getStatus() != HorseLegStatus.CANCELLED)
                 .reduce((first, next) -> next).orElse(null);
         HorseLeg failed = last != null && last.getStatus() == HorseLegStatus.FAILED ? last : null;

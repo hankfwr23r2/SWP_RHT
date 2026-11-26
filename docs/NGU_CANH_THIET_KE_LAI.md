@@ -129,7 +129,7 @@ Người dùng chốt qua trao đổi ngày 26/11/2026. **Code chưa làm.** Ngh
 - [x] Seed dev có 10 tuyến một chiều, gồm hub Hà Nội.
 - [x] ~~Đơn xuất: giấy gốc có bàn giao cho đại lý ở cửa khẩu không?~~ Hết ý nghĩa: không còn bàn giao đại lý (mục 4b).
 - [ ] Xe có thêm ô giấy phép liên vận (nước, hạn) để chỉ gán xe có phép cho chuyến quốc tế không?
-- [ ] Ai được tăng cường xe cho chuyến (quản lý hay điều phối), có ngưỡng tự báo không?
+- [x] ~~Ai được tăng cường xe~~: hệ thống tự gắn xe để sẵn khi xe nền đầy (26/11/2026), quản lý bỏ bớt xe thừa. Xem `QUY_CHE_DOI_XE.md`.
 - [ ] Bỏ chuyến đột xuất do quản lý tạo không (tăng cường và xe riêng đã thay được)?
 - [ ] Giá xe riêng theo nguyên xe tính thế nào cho từng chặng?
 - [ ] Gộp nguyên nhân sự cố Lỗi đại lý vào Lỗi công ty?
@@ -148,6 +148,7 @@ Người dùng chốt qua trao đổi ngày 26/11/2026. **Code chưa làm.** Ngh
 | `docs/MAN_HINH_VA_TAC_DONG.md` | Màn hình, thao tác, chặn, tác động | Mới nhất |
 | `docs/THONG_BAO_LUONG_B.md` | Thông báo của luồng A cho luồng B | Mới nhất |
 | `docs/NGHIEP_VU_6_LUONG.md` | Nghiệp vụ chính và xử lý ngoại lệ theo 6 luồng, mô hình bến xe (26/11/2026) | Mới nhất |
+| `docs/QUY_CHE_DOI_XE.md` | Quy chế đội xe, giờ lái, chăm ngựa, xe để sẵn, dữ liệu mẫu đội xe (26/11/2026) | Mới nhất |
 | `docs/luu-tru/NGHIEP_VU_6_LUONG_25-11-2026.md` | Bản chi tiết cũ, có mã điểm hở (4.F1, T35…) | Lưu trữ |
 | `docs/PHUONG_AN_6_LUONG.md` | Quy tắc đã chốt 25/11/2026 cho các điểm hở, mục 8–14 chi tiết | Mới nhất |
 | `docs/GIAO_VIEC_BAN_B.md`, `docs/KE_HOACH_GIAO_THANH_VIEN.md`, `docs/nghiem-thu/` | Việc giao cho bạn B và thành viên, mẫu nghiệm thu | Mới nhất |

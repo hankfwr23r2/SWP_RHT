@@ -1,6 +1,10 @@
 # Thông báo của luồng A cho luồng B
 
 > **26/11/2026 · Mô hình bến xe.** Người dùng chốt: trục hub ⇄ hub (kể cả hub nước ngoài của công ty, cửa khẩu chỉ là điểm dừng), một chuyến nhiều xe, bỏ số chỗ cố định, xe riêng, khám bắt buộc hai đầu hub, xe về theo bản `main`. Mọi mục "đại lý" bên dưới hết hiệu lực khi M7 xong. Việc của B: M4–M8 ở mục 11 của [KE_HOACH_TRIEN_KHAI.md](KE_HOACH_TRIEN_KHAI.md); A làm M1–M3 và báo lại tại đây khi có hợp đồng gọi chéo (sức chứa chuyến, cờ xe riêng, tuyến qua cửa khẩu).
+>
+> **Phân công mới (26/11/2026):** luồng A nhận M4, M7, M10; B làm M5, M6, M8. Chi tiết [KE_HOACH_BEN_XE.md](KE_HOACH_BEN_XE.md).
+>
+> **M1 (đang làm, người dùng duyệt 26/11/2026):** thêm hub Nha Trang, Vinh, Phnom Penh, Viêng Chăn, Savannakhet; vùng hub theo tâm tỉnh trong 8 giờ lái; tuyến luôn hub ⇄ hub, cửa khẩu là điểm dừng `BORDER`; trạm nghỉ cho các nhánh dài; hub gốc của xe, người là hub bất kỳ. Theo người dùng duyệt, A sửa luôn phần xử lý riêng của đơn nhập trong `HorseLegServiceImpl`, `PickupMissServiceImpl`, `HandoverOutcomeServiceImpl` (đơn nhập nay đón ở nhà chủ ngựa bên kia như liên tỉnh). Code chặng đại lý và `BorderAgentFlowTest` để B gỡ ở M7. Giới hạn ngồi xe đón, giao giữ 5 giờ cho tới khi B xong M10.
 
 > Agent luồng B đọc tài liệu này sau `AGENTS.md`, trước khi bắt đầu task. Quy trình duyệt theo mục 1.1 của `AGENTS.md`.
 > Cập nhật 24/11/2026. Backend A6b, A7 và A8 đã merge qua PR #394–#397. PR #398 đã nối lập số dư, kiểm thanh toán và thao tác không nhận ngựa tại điểm đón trên `origin/redesign/system-v2`.

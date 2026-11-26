@@ -259,7 +259,7 @@ class PricingServiceTest {
     }
 
     @Test
-    void transferOptionsSkipDirectOrdersAndForeignAddresses() {
+    void transferOptionsSkipDirectOrdersAndCoverBothEndsOfInternationalOrders() {
         var direct = service.transferOptions(transferRequest(), "owner");
         assertThat(direct.pickup()).isNull();
         assertThat(direct.delivery()).isNull();
@@ -271,8 +271,9 @@ class PricingServiceTest {
         addresses.findById(2L).orElseThrow().setCountry(cambodia);
         when(routing.truckRoute(anyList(), eq(8.0), eq(70), any())).thenReturn(new RoadRouteDto(30, 600, List.of()));
         var export = service.transferOptions(transferRequest(), "owner");
+        // Mô hình bến xe: đầu nước ngoài do hub nước ngoài của công ty đón, giao nên cũng được kiểm
         assertThat(export.pickup().status()).isEqualTo(TransferStatus.AVAILABLE);
-        assertThat(export.delivery()).isNull();
+        assertThat(export.delivery().status()).isEqualTo(TransferStatus.AVAILABLE);
     }
 
     private void linehaulAddresses() {

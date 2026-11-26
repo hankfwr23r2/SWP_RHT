@@ -91,8 +91,7 @@ public class BalanceHoldServiceImpl implements BalanceHoldService {
                 .stream().findAny().isPresent()) return;
 
         var departure = booking.getDeparture();
-        boolean imported = booking.getBookingType() == BookingType.IMPORT;
-        boolean hasNextLinehaul = !imported && departure != null;
+        boolean hasNextLinehaul = departure != null;
         Instant base = !hasNextLinehaul
                 ? receiving.stream().map(HorseStay::getActualStartAt).max(Instant::compareTo).orElseThrow()
                         .plus(config.getInt("BALANCE_IMPORT_HUB_HOURS"), ChronoUnit.HOURS)
@@ -102,7 +101,7 @@ public class BalanceHoldServiceImpl implements BalanceHoldService {
         notices.remindBalance(booking, reminder, cutoff, now);
         if (now.isBefore(cutoff) || notices.waitingForGateway(bookingId, cutoff, now)) return;
 
-        if (!imported) notices.releaseForUnpaidHub(bookingId);
+        notices.releaseForUnpaidHub(bookingId);
         for (Handover row : pending) {
             if (row.getStatus() == HandoverStatus.PENDING
                     && legs.findByBoardTripStop_IdAndStatusIn(row.getTripStop().getId(), BOARDING).isEmpty()) {

@@ -13,10 +13,9 @@ import java.util.Set;
 // Kiểm một tuyến trục chính và các điểm dừng của nó trước khi lưu. Hàm thuần: trả về danh sách lỗi, rỗng là hợp lệ.
 public final class RouteStopsPolicy {
 
-    // Điểm đầu: hub, hoặc cửa khẩu với tuyến chiều nhập
-    static final Set<LocationType> ORIGIN_TYPES = Set.of(LocationType.HUB, LocationType.BORDER_GATE);
-    // Điểm cuối: hub hoặc cửa khẩu
-    static final Set<LocationType> DESTINATION_TYPES = Set.of(LocationType.HUB, LocationType.BORDER_GATE);
+    // Mô hình bến xe (26/11/2026): tuyến luôn nối hai hub; cửa khẩu chỉ là điểm dừng giữa tuyến
+    static final Set<LocationType> ORIGIN_TYPES = Set.of(LocationType.HUB);
+    static final Set<LocationType> DESTINATION_TYPES = Set.of(LocationType.HUB);
     // Loại điểm dừng nào phải đặt ở loại địa điểm nào. REST và VITAL_CHECK đặt ở đâu cũng được
     static final Map<RouteStopType, LocationType> REQUIRED_LOCATION = Map.of(
             RouteStopType.HUB, LocationType.HUB,
@@ -35,10 +34,10 @@ public final class RouteStopsPolicy {
                                           List<Stop> stops, Limits limits) {
         List<String> errors = new ArrayList<>();
         if (!ORIGIN_TYPES.contains(originType)) {
-            errors.add("Điểm đầu tuyến phải là hub hoặc cửa khẩu.");
+            errors.add("Điểm đầu tuyến phải là hub.");
         }
         if (!DESTINATION_TYPES.contains(destinationType)) {
-            errors.add("Điểm cuối tuyến phải là hub hoặc cửa khẩu.");
+            errors.add("Điểm cuối tuyến phải là hub.");
         }
         if (Objects.equals(originId, destinationId)) {
             errors.add("Điểm đầu và điểm cuối tuyến phải khác nhau.");

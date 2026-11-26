@@ -332,14 +332,11 @@ public class PickupMissServiceImpl implements PickupMissService {
         if (booking.getDeparture() == null) {
             if (entireBookingMissed && cancellations.isDirect(booking)) choices.add(PickupMissChoice.RESCHEDULE_PICKUP);
         } else {
-            if (booking.getBookingType() != BookingType.IMPORT) {
-                if (canRetry(horse)) choices.add(PickupMissChoice.RETRY_PICKUP);
-                choices.add(PickupMissChoice.SELF_DELIVERY);
-            }
+            if (canRetry(horse)) choices.add(PickupMissChoice.RETRY_PICKUP);
+            choices.add(PickupMissChoice.SELF_DELIVERY);
             if (entireBookingMissed) choices.add(PickupMissChoice.CHANGE_DEPARTURE);
         }
-        if (booking.getBookingType() != BookingType.IMPORT
-                && entireBookingMissed && horse.getPickupMissLiability() != null) {
+        if (entireBookingMissed && horse.getPickupMissLiability() != null) {
             choices.add(PickupMissChoice.CANCEL_BOOKING);
         }
         return choices;

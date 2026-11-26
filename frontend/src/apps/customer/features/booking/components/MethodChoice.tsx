@@ -15,7 +15,7 @@ interface Props {
   onChange: (method: TransferMethod) => void
 }
 
-// Xe công ty hoặc khách tự chở ở một đầu trong nước của đơn đi trục
+// Xe công ty hoặc khách tự chở ở một đầu của đơn đi trục
 export function MethodChoice({ name, legend, side, value, hub, blocked, onChange }: Props) {
   const { t, i18n } = useTranslation()
   const rules = useTransportRules()

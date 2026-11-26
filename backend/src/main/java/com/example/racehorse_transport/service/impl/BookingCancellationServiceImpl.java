@@ -122,10 +122,7 @@ public class BookingCancellationServiceImpl implements BookingCancellationServic
     @Transactional
     public void cancelUnansweredBalanceHold(Long bookingId) {
         var booking = lock(bookingId);
-        if (booking.getStatus() != BookingStatus.SCHEDULE_CHANGE_REQUIRED
-                && !(booking.getStatus() == BookingStatus.CONFIRMED
-                        && booking.getBookingType() == com.example.racehorse_transport.entity.enums.BookingType.IMPORT
-                        && bookings.findActiveBalanceHoldAt(bookingId).isPresent())) return;
+        if (booking.getStatus() != BookingStatus.SCHEDULE_CHANGE_REQUIRED) return;
         if (checkout.hasPendingBalanceConfirmation(bookingId)) return;
         var cancellation = evaluate(booking, false, true);
         if (cancellation.outcome() == Outcome.FORFEIT_DEPOSIT) {

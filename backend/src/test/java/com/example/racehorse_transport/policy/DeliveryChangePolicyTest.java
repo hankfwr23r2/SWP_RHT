@@ -11,6 +11,25 @@ import org.junit.jupiter.api.Test;
 
 class DeliveryChangePolicyTest {
     @Test
+    void allowsExportDeliveryChangesWhenTheDestinationIsAHubAndCompanyDelivers() {
+        var destination = new Location();
+        destination.setLocationType(LocationType.HUB);
+        var route = new Route();
+        route.setDestination(destination);
+        var departure = new Departure();
+        departure.setRoute(route);
+        var booking = new Booking();
+        booking.setBookingType(BookingType.EXPORT);
+        booking.setStatus(BookingStatus.CONFIRMED);
+        booking.setDeliveryMethod(TransferMethod.COMPANY);
+        booking.setDeparture(departure);
+
+        assertThat(DeliveryChangePolicy.bookingReason(booking)).isNull();
+        booking.setDeliveryMethod(TransferMethod.SELF);
+        assertThat(DeliveryChangePolicy.bookingReason(booking)).isEqualTo("SELF");
+    }
+
+    @Test
     void rejectsBalanceAlreadyPaidAndRequiresDeposit() {
         var deposit = new Payment();
         deposit.setPaymentType(PaymentType.DEPOSIT);

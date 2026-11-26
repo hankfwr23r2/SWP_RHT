@@ -325,7 +325,6 @@ export const customer = {
       "error": "Không thể đổi nơi giao. Vui lòng thử lại.",
       "conflict": "Đơn hoặc giá đã thay đổi. Vui lòng xem trước lại.",
       "reasons": {
-        "EXPORT": "Đơn xuất khẩu được bàn giao cho đại lý.",
         "DIRECT": "Đơn chạy thẳng không có hub giao để lập lại chặng giao.",
         "SELF": "Khách tự nhận ngựa tại hub.",
         "NOT_CONFIRMED": "Đơn phải ở trạng thái đã xác nhận.",
@@ -617,8 +616,8 @@ export const customer = {
     typeHints: {
       LOCAL: 'xe đón và chạy thẳng tới nơi giao.',
       INTERPROVINCE: 'ngựa được gom về hub, đi chuyến chính rồi giao tới nơi nhận.',
-      EXPORT: 'ngựa đi chuyến chính tới cửa khẩu rồi giao cho đại lý ở nước nhận.',
-      IMPORT: 'đại lý đón ngựa ở nước gửi, công ty nhận tại cửa khẩu và chở về.',
+      EXPORT: 'ngựa đi chuyến chính từ hub của công ty tại Việt Nam qua cửa khẩu tới hub của công ty ở nước nhận.',
+      IMPORT: 'ngựa đi chuyến chính từ hub của công ty ở nước gửi qua cửa khẩu tới hub của công ty tại Việt Nam.',
     },
     methods: {
       pickup: {
@@ -722,13 +721,12 @@ export const customer = {
       pickupDate: 'Ngày đón ngựa',
       hubDate: 'Ngày đưa ngựa tới hub',
       linehaulDateHint: 'Trước ngày xuất phát ít nhất một ngày. Đưa ngựa tới sớm hơn thì tính thêm ngày lưu chuồng.',
-      importDateHint: 'Trước hoặc cùng ngày xuất phát từ cửa khẩu.',
       directDateHint: 'Xe chạy thẳng trong ngày, không qua hub.',
       badDate: 'Ngày này không phù hợp với chuyến đã chọn.',
       documents: 'Giấy bạn cần nộp',
       optional: 'không bắt buộc',
       noDocuments: 'Bạn không phải nộp giấy nào cho tuyến này.',
-      documentsHint: 'Nộp sau khi gửi đơn, trong trang chi tiết đơn. Giấy khác do công ty và đại lý lo.',
+      documentsHint: 'Nộp sau khi gửi đơn, trong trang chi tiết đơn. Công ty chuẩn bị các giấy tờ còn lại.',
       directNotFeasible: 'Cần ít nhất {{days}} ngày làm giấy. Hãy chọn ngày đón muộn hơn.',
       notFeasible: 'Không kịp làm giấy cho chuyến này: cần ít nhất {{days}} ngày. Hãy chọn chuyến sau.',
       next: 'Tiếp tục: chọn ngựa',
