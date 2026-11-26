@@ -1,3 +1,4 @@
+import { ListPanel } from '@shared/ui/ListPanel'
 // Chuyến cần quyết định: xác nhận chạy, hủy chuyến, tạo chuyến đột xuất.
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -27,6 +28,7 @@ export default function DeparturesPage() {
   const { routes } = useRoutesData()
   const { from, to, setRange, data, loaded, error: loadError, reload } = useDecisions()
   const { run, busy, error, clearError } = useStaffAction()
+  const [limit, setLimit] = useState(10)
   const [dialog, setDialog] = useState<Dialog>(null)
   const [fields, setFields] = useState<Record<string, string>>({})
   const open = (next: Dialog) => { clearError(); setFields({}); setDialog(next) }
@@ -55,8 +57,8 @@ export default function DeparturesPage() {
   const content = () => {
     if (loadError) return <ErrorState message={loadError.message} onRetry={reload} />
     if (!loaded || !data) return <Skeleton lines={6} />
-    if (!data.length) return <EmptyState icon={<i className="fa-solid fa-truck" />} title={t('mgr.departures.empty')} description={t('mgr.departures.emptyHint')} />
-    return <DepartureTable rows={data} busy={busy} onConfirm={row => open({ kind: 'confirm', row })}
+    if (!data.length) return <EmptyState compact icon={<i className="fa-solid fa-truck" />} title={t('mgr.departures.empty')} description={t('mgr.departures.emptyHint')} />
+    return <DepartureTable rows={data.slice(0, limit)} busy={busy} onConfirm={row => open({ kind: 'confirm', row })}
       onCancel={row => open({ kind: 'cancel', row })} onDelay={row => open({ kind: 'delay', row })}
       onAssign={row => open({ kind: 'assign', row })} />
   }
@@ -65,12 +67,14 @@ export default function DeparturesPage() {
     <div className={s.page}>
       <PageHeader title={t('mgr.departures.title')} description={t('mgr.departures.subtitle')}
         actions={<Button variant="primary" icon={<i className="fa-solid fa-plus" />} onClick={() => open({ kind: 'create' })}>{t('mgr.departures.create')}</Button>} />
-      <div className={s.grid}>
-        <Field label={t('mgr.departures.from')}>{control => <Input {...control} type="date" value={from} max={to} onChange={event => setRange({ from: event.target.value })} />}</Field>
-        <Field label={t('mgr.departures.to')}>{control => <Input {...control} type="date" value={to} min={from} onChange={event => setRange({ to: event.target.value })} />}</Field>
-      </div>
-      {error && !dialog && <p className={s.error} role="alert">{error}</p>}
-      {content()}
+      <ListPanel count={data && Math.min(data.length, limit)}
+        more={data && data.length > limit ? { onClick: () => setLimit(limit + 10) } : undefined} toolbar={<div className={s.grid}>
+        <Field label={t('mgr.departures.from')}>{control => <Input {...control} type="date" value={from} max={to} onChange={event => { setLimit(10); setRange({ from: event.target.value }) }} />}</Field>
+        <Field label={t('mgr.departures.to')}>{control => <Input {...control} type="date" value={to} min={from} onChange={event => { setLimit(10); setRange({ to: event.target.value }) }} />}</Field>
+      </div>}>
+        {error && !dialog && <p className={s.error} role="alert">{error}</p>}
+        {content()}
+      </ListPanel>
 
       {dialog?.kind === 'assign' && dialog.row.id != null && <CoordinatorAssignmentDialog resource="departures"
         id={dialog.row.id} currentId={dialog.row.coordinatorId} onClose={() => setDialog(null)}

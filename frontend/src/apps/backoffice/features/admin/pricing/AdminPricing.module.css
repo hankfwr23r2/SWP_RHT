@@ -26,3 +26,5 @@
 .rates { margin: 0; }
 .rates dt { color: var(--color-muted); }
 .rates dd { margin: 0; }
+
+.header .listSearch { width: auto; min-width: 0; flex: 1 1 16rem; }

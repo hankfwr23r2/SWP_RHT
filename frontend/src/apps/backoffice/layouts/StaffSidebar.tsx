@@ -1,12 +1,14 @@
 // Thanh bên của nhân viên: menu theo vai trò, thu gọn được thành cột biểu tượng, số việc đang chờ của quản lý.
 import { useState } from 'react'
-import { Link, useLocation } from 'react-router'
+import { Link, useLocation, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import type { StaffRole } from '@shared/auth/role'
 import { countLabel, useManagerWork, type ManagerWork } from '../shared/useManagerWork'
 import { STAFF_MENUS } from './staffMenus'
 import { Button } from '@shared/ui/Button'
+import { TranslateToggle } from '@shared/ui/TranslateToggle'
+import { StaffProfileModal } from './StaffProfileModal'
 import s from './StaffSidebar.module.css'
 
 const KEY = 'SWP_MANAGER_SIDEBAR_COLLAPSED'
@@ -24,7 +26,9 @@ const COUNT_OF: Record<string, keyof ManagerWork> = { '/manager/orders': 'quotin
 
 export function StaffSidebar({ mobileOpen, onNavigate }: { mobileOpen: boolean; onNavigate: () => void }) {
   const { t } = useTranslation()
-  const { session } = useAuth()
+  const { session, logout } = useAuth()
+  const navigate = useNavigate()
+  const [showProfile, setShowProfile] = useState(false)
   const role = session!.role as StaffRole
   const [collapsed, setCollapsed] = useState(readCollapsed)
   const { pathname } = useLocation()
@@ -34,6 +38,7 @@ export function StaffSidebar({ mobileOpen, onNavigate }: { mobileOpen: boolean; 
   const toggle = () => setCollapsed(c => { try { localStorage.setItem(KEY, c ? '0' : '1') } catch { /* không lưu được thì thôi */ } return !c })
 
   return (
+    <>
     <aside className={`${s.side} ${collapsed ? s.collapsed : ''} ${mobileOpen ? s.open : ''}`} aria-label={t('staffSidebar.title', 'Menu')}>
       <div className={s.head}>
         <span>{t('staffSidebar.title', 'Menu')}</span>
@@ -52,7 +57,14 @@ export function StaffSidebar({ mobileOpen, onNavigate }: { mobileOpen: boolean; 
             </Link>
           )
         })}
+        <div className={s.mobileAccount} hidden={!mobileOpen}>
+          <TranslateToggle />
+          <Button size="sm" onClick={() => { onNavigate(); setShowProfile(true) }}>{t('header.profile')}</Button>
+          <Button size="sm" onClick={() => { logout(); navigate('/login') }}>{t('staffTopbar.logout')}</Button>
+        </div>
       </nav>
     </aside>
+    {showProfile && session && <StaffProfileModal session={session} onClose={() => setShowProfile(false)} />}
+    </>
   )
 }

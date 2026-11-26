@@ -1,12 +1,15 @@
+import { Input } from '@shared/ui/Input'
+import { EmptyState } from '@shared/ui/EmptyState'
+import { ListPanel } from '@shared/ui/ListPanel'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Location } from '@shared/api/network'
 import { Button } from '@shared/ui/Button'
-import { Card } from '@shared/ui/Card'
+import { Table } from '@shared/ui/Table'
 import { HubStallAdminDialog } from './components/HubStallAdminDialog'
 import { LocationForm } from './components/LocationForm'
 import { ChoiceField } from './components/NetworkFields'
-import { EditButton, NetworkConfirm, NetworkData, NetworkEmpty, NetworkLayout, NetworkStatus, type Confirmation } from './components/NetworkLayout'
+import { EditButton, NetworkConfirm, NetworkData, NetworkLayout, NetworkStatus, type Confirmation } from './components/NetworkLayout'
 import type { locationsLoader, NetworkResult } from './loaders'
 import { locationTypes } from './networkForm'
 import { useNetworkActions, useProvinces } from './useNetworkActions'
@@ -21,7 +24,10 @@ function Locations({ locations = [], countries = [] }: NetworkResult<typeof loca
   const [confirmation, confirm] = useState<Confirmation | null>(null)
   const provinces = useProvinces(country)
   const actions = useNetworkActions()
-  const visible = locations.filter(location => !type || location.locationType === type)
+  const [query, setQuery] = useState('')
+  const term = query.trim().toLowerCase()
+  const visible = locations.filter(location => (!type || location.locationType === type) &&
+    (!term || [location.name, location.code, location.address].some(value => value?.toLowerCase().includes(term))))
 
   function edit(location: Location | null) {
     actions.reset()
@@ -38,29 +44,34 @@ function Locations({ locations = [], countries = [] }: NetworkResult<typeof loca
   }
 
   return <>
-    <div className={s.header}>
+    <ListPanel count={visible.length} toolbar={<div className={s.header}>
+      <Input className={s.listSearch} type="search" value={query} onChange={event => setQuery(event.target.value)}
+          placeholder={t('listPanel.search')} aria-label={t('listPanel.search')} />
       <ChoiceField name="locationType" value={type} onChange={setType} options={[
         { value: '', label: t('staffNetwork.allTypes') },
         ...locationTypes.map(value => ({ value, label: t(`staffNetwork.locationType.${value}`) })),
       ]} />
-      <Button variant="primary" onClick={() => edit(null)}>{t('staffNetwork.addLocation')}</Button>
-    </div>
-    {visible.length ? <div className={s.list}>{visible.map(location => {
-      const id = location.id
-      const active = location.status === 'ACTIVE'
-      return <Card key={id} title={location.name ?? location.code} actions={<NetworkStatus status={location.status} />}>
-        <div className={s.details}>
-          <div>{[location.code, location.locationType && t(`staffNetwork.locationType.${location.locationType}`), location.address].filter(Boolean).join(' · ')}</div>
-          {id != null && <div className={s.actions}>
-            {location.locationType === 'HUB' && <Button size="sm" onClick={() => setStallHub(location)}>{t('hubStalls.title')}</Button>}
-            <EditButton disabled={actions.busy} onClick={() => edit(location)} />
-            {(active || location.status === 'INACTIVE') && <Button size="sm" disabled={actions.busy} onClick={() => change(id, !active)}>
-              {t(active ? 'staffNetwork.deactivate' : 'staffNetwork.activate')}
-            </Button>}
-          </div>}
+      {(!!locations.length || !!type) && <Button variant="primary" onClick={() => edit(null)}>{t('staffNetwork.addLocation')}</Button>}
+    </div>}>
+    {visible.length ? <Table caption={t('staffNetwork.locations')} rows={visible} rowKey={row => row.id ?? row.code ?? ''} columns={[
+      { key: 'name', header: t('staffNetwork.fields.name'), render: row => <><strong>{row.name}</strong><br />{row.code}</> },
+      { key: 'type', header: t('staffNetwork.fields.locationType'), render: row => row.locationType && t(`staffNetwork.locationType.${row.locationType}`) },
+      { key: 'address', header: t('staffNetwork.fields.address'), render: row => row.address },
+      { key: 'status', header: t('listPanel.status'), render: row => <NetworkStatus status={row.status} /> },
+      { key: 'actions', header: '', render: location => {
+        const id = location.id
+        const active = location.status === 'ACTIVE'
+        return id == null ? null : <div className={s.actions}>
+          {location.locationType === 'HUB' && <Button size="sm" onClick={() => setStallHub(location)}>{t('hubStalls.title')}</Button>}
+          <EditButton disabled={actions.busy} onClick={() => edit(location)} />
+          {(active || location.status === 'INACTIVE') && <Button size="sm" disabled={actions.busy} onClick={() => change(id, !active)}>
+            {t(active ? 'staffNetwork.deactivate' : 'staffNetwork.activate')}
+          </Button>}
         </div>
-      </Card>
-    })}</div> : <NetworkEmpty hint={t(type ? 'staffNetwork.emptyFilter' : 'staffNetwork.emptyLocations')} />}
+      } },
+    ]} /> : <EmptyState compact title={t('staffNetwork.empty')} description={t(term ? 'listPanel.trySearch' : type ? 'staffNetwork.emptyFilter' : 'staffNetwork.emptyLocations')}
+      action={!locations.length && !type && <Button variant="primary" onClick={() => edit(null)}>{t('staffNetwork.addLocation')}</Button>} />}
+    </ListPanel>
     {editing !== undefined && <LocationForm location={editing} countries={countries} provinces={provinces} fields={actions.fields} busy={actions.busy}
       onCountry={setCountry} onRetryProvinces={provinces.reload} onSave={body => actions.saveLocation(body, editing?.id)} close={() => setEditing(undefined)} />}
     {stallHub?.id != null && <HubStallAdminDialog hubId={stallHub.id} hubName={stallHub.name} onClose={() => setStallHub(undefined)} />}
@@ -71,6 +82,6 @@ function Locations({ locations = [], countries = [] }: NetworkResult<typeof loca
 export default function LocationsPage() {
   const { t } = useTranslation()
   return <NetworkLayout title={t('staffNetwork.locations')}>
-    <NetworkData<NetworkResult<typeof locationsLoader>>>{data => <Locations {...data} />}</NetworkData>
+    <NetworkData<NetworkResult<typeof locationsLoader>> panel>{data => <Locations {...data} />}</NetworkData>
   </NetworkLayout>
 }

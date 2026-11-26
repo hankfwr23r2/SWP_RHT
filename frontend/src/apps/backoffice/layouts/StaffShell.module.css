@@ -31,18 +31,18 @@
 }
 
 /* Điện thoại: ẩn chữ thương hiệu, ô tìm thu thành nút kính lúp và mở rộng hết thanh trên khi bấm vào */
-@media (max-width: 560px) {
+@media (width < 640px) {
   .topbar { gap: 0; padding: 0 var(--space-2); }
   .brandMark { width: var(--space-8); height: var(--space-8); }
-  .topbar .profileButton { min-width: var(--touch-target); min-height: var(--touch-target); }
+  .topbar .profileButton, .desktopControls, .right .logout { display: none; }
   .right { gap: 0; }
   .right > button { min-width: var(--touch-target); min-height: var(--touch-target); }
   .brand { padding-right: 0; border-right: 0; }
   .brandText { display: none; }
   .search { flex: none; width: var(--touch-target); }
-  .search .searchInput { min-height: var(--touch-target); padding-right: 0; color: transparent; cursor: pointer; }
+  .search .searchInput { padding-left: 0; min-height: var(--touch-target); padding-right: 0; color: transparent; cursor: pointer; }
   .search .searchInput::placeholder { color: transparent; }
   .search:focus-within { position: absolute; left: var(--space-3); right: var(--space-3); z-index: 1; width: auto; }
-  .search:focus-within .searchInput { padding-right: var(--space-3); color: var(--color-text); cursor: text; }
+  .search:focus-within .searchInput { padding-left: var(--space-10); padding-right: var(--space-3); color: var(--color-text); cursor: text; }
   .search:focus-within .searchInput::placeholder { color: var(--color-muted); }
 }

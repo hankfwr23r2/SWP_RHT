@@ -99,5 +99,5 @@ test('quản lý sửa dòng giá, chọn được hạng xe và xác nhận xó
   await dialog.getByLabel('Tỷ lệ đặt cọc').fill('0.2')
   await dialog.getByLabel('Hiệu lực từ').fill('2027-01-01')
   await dialog.getByRole('button', { name: 'Lưu', exact: true }).click()
-  await expect(page.getByRole('heading', { name: 'Bảng giá mới' })).toBeVisible()
+  await expect(page.getByRole('cell', { name: /Bảng giá mới/ })).toBeVisible()
 })

@@ -8,8 +8,7 @@ import { quotationsApi } from '@shared/api/quotations'
 import { loadAll, type PageLoaderContext } from '@shared/routing/pageData'
 
 export async function ordersLoader() {
-  const { orders, errors } = await loadAll({ orders: bookingOrdersApi.list() })
-  return { errors: [] as string[], orders, failed: errors.length > 0 }
+  return { errors: [] as string[], result: loadAll({ orders: bookingOrdersApi.list() }) }
 }
 
 export async function orderDetailLoader({ params }: PageLoaderContext) {

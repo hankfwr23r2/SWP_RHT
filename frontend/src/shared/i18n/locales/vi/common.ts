@@ -1,5 +1,6 @@
 // Dùng chung mọi trang: thành phần giao diện, điều hướng, trạng thái, vai trò, đăng nhập
 export const common = {
+  listPanel: { freeStalls: 'Ô chuồng còn trống', search: 'Tìm trong danh sách', orderCode: 'Mã đơn', route: 'Tuyến', schedule: 'Lịch trình', status: 'Trạng thái', noMatch: 'Không có kết quả', trySearch: 'Thử từ khóa khác hoặc xóa tìm kiếm.', showing: 'Hiển thị {{count}}', more: 'Tải thêm', actions: 'Thao tác khác', seats: '{{committed}}/{{capacity}} chỗ' },
   header: {
     language: 'Ngôn ngữ',
     openMenu: 'Mở menu',

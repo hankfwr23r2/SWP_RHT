@@ -36,3 +36,5 @@
 .action {
   margin-top: var(--space-3);
 }
+
+.compact { padding: var(--space-4); }

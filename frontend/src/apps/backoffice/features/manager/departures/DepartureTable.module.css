@@ -1,0 +1,31 @@
+.seats, .actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: var(--space-2);
+}
+.seats strong { white-space: nowrap; }
+.actions { justify-content: flex-end; }
+.more {
+  display: grid;
+  place-items: center;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.options {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.seats { white-space: nowrap; }
+.actions > button { white-space: nowrap; }
+@media (max-width: 640px) {
+  .actions { flex: 1; flex-wrap: wrap; }
+  .actions > button { flex: 1; }
+}
+
+.actions:has(details[open]) { align-items: flex-start; }

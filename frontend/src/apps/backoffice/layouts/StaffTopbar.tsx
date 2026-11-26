@@ -36,9 +36,7 @@ export function StaffTopbar({ menuOpen, onToggleMenu }: { menuOpen: boolean; onT
   return (
     <>
     <header className={s.topbar}>
-      <Link to={HOME_OF[role]} className={s.brand}><img src="/logo.png" alt="" className={s.brandMark} /><span className={s.brandText}>{t('staffTopbar.brand', 'Vận chuyển Ngựa')}</span></Link>
-      <Button variant="ghost" size="sm" className={s.menuToggle} aria-label={t(menuOpen ? 'header.closeMenu' : 'header.openMenu')}
-        aria-expanded={menuOpen} aria-controls="staff-navigation" onClick={onToggleMenu} icon={<i className={`fa-solid ${menuOpen ? 'fa-xmark' : 'fa-bars'}`} />} />
+      <Link to={HOME_OF[role]} className={s.brand} aria-label={t('staffTopbar.brand')}><img src="/logo.png" alt="" className={s.brandMark} /><span className={s.brandText}>{t('staffTopbar.brand', 'Vận chuyển Ngựa')}</span></Link>
       <Button variant="ghost" className={`${s.account} ${s.profileButton}`} onClick={() => setShowProfile(true)} title={t('staffProfile.modalTitle', 'Hồ sơ')} aria-haspopup="dialog">
         <span className={s.avatar}>{initials}</span>
         <span className={s.who}><b>{session?.name}</b><small>{session?.username.includes('@') ? session.username : t(`roles.${role}`, ROLE_LABEL[role])}</small></span>
@@ -54,9 +52,11 @@ export function StaffTopbar({ menuOpen, onToggleMenu }: { menuOpen: boolean; onT
         <Input className={s.searchInput} value={q} onChange={e => setQ(e.target.value)} placeholder={t('staffTopbar.searchPlaceholder', 'Tìm đơn hàng, khách hàng…')} aria-label={t('staffTopbar.searchAria', 'Tìm đơn hàng')} />
       </form>
       <div className={s.right}>
-        <TranslateToggle />
+        <div className={s.desktopControls}><TranslateToggle /></div>
         <NoticeBell resolveLink={role === 'specialist' ? reviewNoticeLink : undefined} />
-        <Button icon={<i className="fa-solid fa-arrow-right-from-bracket" />} onClick={() => { logout(); navigate('/login') }} aria-label={t('staffTopbar.logout', 'Đăng xuất')} title={t('staffTopbar.logout', 'Đăng xuất')} />
+        <Button className={s.logout} icon={<i className="fa-solid fa-arrow-right-from-bracket" />} onClick={() => { logout(); navigate('/login') }} aria-label={t('staffTopbar.logout', 'Đăng xuất')} title={t('staffTopbar.logout', 'Đăng xuất')} />
+      <Button variant="ghost" size="sm" className={s.menuToggle} aria-label={t(menuOpen ? 'header.closeMenu' : 'header.openMenu')}
+        aria-expanded={menuOpen} aria-controls="staff-navigation" onClick={onToggleMenu} icon={<i className={`fa-solid ${menuOpen ? 'fa-xmark' : 'fa-bars'}`} />} />
       </div>
     </header>
     {showProfile && session && <StaffProfileModal session={session} onClose={() => setShowProfile(false)} />}

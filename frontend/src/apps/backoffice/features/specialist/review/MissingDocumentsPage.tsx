@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { useNavigate, useRevalidator } from 'react-router'
+import { ListPanel } from '@shared/ui/ListPanel'
+import { Suspense, useState } from 'react'
+import { Await, useNavigate, useRevalidator } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import type { ChecklistItem } from '@shared/api/bookingDocuments'
 import type { BookingOrder } from '@shared/api/bookingOrders'
@@ -63,20 +64,30 @@ function MissingRow({ booking, id }: { booking: BookingOrder; id: number }) {
 
 export default function MissingDocumentsPage() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
-  const { rows, reload } = usePageData<typeof missingDocumentsLoader>()
-  const { state } = useRevalidator()
-  const [limit, setLimit] = useState(PAGE_SIZE)
-
+  const { result, reload } = usePageData<typeof missingDocumentsLoader>()
   return <div className={s.stack}>
     <h1>{t('staffReview.missingTitle')}</h1>
-    {!rows ? state === 'idle' ? <ErrorState onRetry={reload} /> : <Skeleton lines={4} />
-      : !rows.length ? <EmptyState title={t('staffReview.noMissingOrders')} description={t('staffReview.checkReviewQueue')} action={<Button onClick={() => navigate('/specialist/review')}>{t('staffReview.title')}</Button>} />
+    <Suspense fallback={<ListPanel loading />}>
+      <Await resolve={result}>{({ rows }) => <MissingList rows={rows} reload={reload} />}</Await>
+    </Suspense>
+  </div>
+}
+
+function MissingList({ rows, reload }: { rows?: BookingOrder[]; reload: () => void }) {
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+  const { state } = useRevalidator()
+  const [limit, setLimit] = useState(PAGE_SIZE)
+  const visible = rows?.filter(booking => booking.id != null)
+  return <ListPanel count={visible ? Math.min(visible.length, limit) : undefined}
+    more={visible && visible.length > limit ? { onClick: () => setLimit(limit + PAGE_SIZE) } : undefined}>
+    {!visible ? <ErrorState onRetry={reload} retrying={state !== 'idle'} />
+      : !visible.length ? <EmptyState compact title={t('staffReview.noMissingOrders')} description={t('staffReview.checkReviewQueue')}
+        action={<Button onClick={() => navigate('/specialist/review')}>{t('staffReview.title')}</Button>} />
       : <>
         <p>{t('staffReview.deadlineUnavailable')}</p>
-        <ul className={s.list}>{rows.slice(0, limit).map(booking => booking.id != null &&
+        <ul className={s.list}>{visible.slice(0, limit).map(booking => booking.id != null &&
           <li key={booking.id}><MissingRow booking={booking} id={booking.id} /></li>)}</ul>
-        {rows.length > limit && <Button onClick={() => setLimit(limit + PAGE_SIZE)}>{t('staffReview.loadMore')}</Button>}
       </>}
-  </div>
+  </ListPanel>
 }
