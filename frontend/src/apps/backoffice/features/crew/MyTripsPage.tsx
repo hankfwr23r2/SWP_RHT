@@ -7,13 +7,13 @@ import { Link } from 'react-router'
 import { dispatchApi, type MyCrewAssignment } from '@shared/api/dispatch'
 import { useLoad } from '@shared/hooks/useLoad'
 import { formatDateTime } from '@shared/lib/format'
+import { ListPanel } from '@shared/ui/ListPanel'
 import { Badge } from '@shared/ui/Badge'
 import { Button } from '@shared/ui/Button'
 import { Card } from '@shared/ui/Card'
 import { EmptyState } from '@shared/ui/EmptyState'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { PageHeader } from '@shared/ui/PageHeader'
-import { Skeleton } from '@shared/ui/Skeleton'
 import { StatusBadge } from '@shared/ui/StatusBadge'
 import { useToast } from '@shared/ui/toast'
 import { MyStayHealthPanel } from './MyStayHealthPanel'
@@ -40,32 +40,36 @@ export default function MyTripsPage() {
   }
 
   const content = () => {
-    if (!loaded) return <Skeleton variant="block" lines={3} />
+    if (!loaded) return <ListPanel loading />
     if (error || !data) return <ErrorState title={t('myTrips.loadError')} message={error?.message} onRetry={reload} />
     if (!data.length) return <EmptyState icon={<i className="fa-solid fa-truck" />} title={t('myTrips.emptyTitle')} description={t('myTrips.emptyDescription')} />
     return (
-      <ul className={s.list}>
+      <ul className={s.tripList}>
         {data.map(assignment => (
           <li key={assignment.id}>
-            <Card
+            <Card className={s.tripCard}
               title={`${assignment.tripCode} · ${t(`tripWords.type.${assignment.tripType}`)}`}
               actions={<Badge>{t(`tripWords.role.${assignment.crewRole}`)}</Badge>}
             >
               <div className={s.body}>
                 <p className={s.line}>{t('myTrips.journey', { from: assignment.startLocationName, to: assignment.endLocationName })}</p>
-                <p className={s.muted}>{t('myTrips.vehicle', { plate: assignment.licensePlate })}</p>
-                <p className={s.muted}>{t('myTrips.start', { time: assignment.plannedStartAt ? formatDateTime(new Date(assignment.plannedStartAt)) : '' })}</p>
-                <Link to={`/my-trips/${assignment.vehicleTripId}`}>{t('myTrips.run.open')}</Link>
-                {assignment.status === 'ACKNOWLEDGED'
-                  ? <StatusBadge tone="success" label={t('myTrips.acknowledged')} />
-                  : (
-                    <div className={s.actions}>
-                      <StatusBadge tone="warning" label={t('myTrips.waiting')} />
-                      <Button variant="primary" size="lg" fullWidth loading={busyId === assignment.id} onClick={() => acknowledge(assignment)}>
-                        {t('myTrips.acknowledge')}
-                      </Button>
-                    </div>
-                  )}
+                <div className={s.tripMeta}>
+                  <span>{t('myTrips.vehicle', { plate: assignment.licensePlate })}</span>
+                  {assignment.plannedStartAt && <time dateTime={assignment.plannedStartAt}>
+                    {t('myTrips.start', { time: formatDateTime(new Date(assignment.plannedStartAt)) })}
+                  </time>}
+                </div>
+                <div className={s.tripActions}>
+                  {assignment.status === 'ACKNOWLEDGED'
+                    ? <StatusBadge tone="success" label={t('myTrips.acknowledged')} />
+                    : <StatusBadge tone="warning" label={t('myTrips.waiting')} />}
+                  {assignment.status !== 'ACKNOWLEDGED' && <Button variant="primary" size="lg" loading={busyId === assignment.id}
+                    onClick={() => acknowledge(assignment)}>{t('myTrips.acknowledge')}</Button>}
+                  <Link to={`/my-trips/${assignment.vehicleTripId}`}
+                    className={`btn btn-lg ${assignment.status === 'ACKNOWLEDGED' ? 'btn-primary' : 'btn-outline'}`}>
+                    {t('myTrips.run.open')}
+                  </Link>
+                </div>
               </div>
             </Card>
           </li>

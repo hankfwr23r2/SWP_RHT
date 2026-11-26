@@ -1,11 +1,5 @@
 /* Hồ sơ khách */
 .page { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-5); max-width: 960px; }
-.hero { display: flex; align-items: center; gap: var(--space-5); padding: var(--space-6) var(--space-8); border-radius: var(--radius-lg); background: linear-gradient(135deg, var(--color-primary-hover), var(--color-primary)); color: var(--color-on-primary); }
-.hero > div:last-child { min-width: 0; }
-.hero h1 { margin: 0; font-size: var(--text-2xl); color: inherit; overflow-wrap: anywhere; }
-.hero p { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin: var(--space-1) 0 0; font-size: var(--text-sm); overflow-wrap: anywhere; }
-.avatar { display: grid; flex-shrink: 0; place-items: center; width: 72px; height: 72px; border-radius: var(--radius-full); background: var(--color-surface); color: var(--color-primary); font-size: var(--text-2xl); font-weight: var(--weight-bold); }
-.role { padding: 2px var(--space-3); border: 1px solid currentColor; border-radius: var(--radius-full); font-size: var(--text-xs); font-weight: var(--weight-semibold); }
 
 .form { display: grid; gap: var(--space-5); }
 .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4) var(--space-5); align-items: start; }
@@ -14,7 +8,6 @@
 .submit { display: flex; justify-content: flex-end; }
 
 @media (max-width: 700px) {
-  .hero { padding: var(--space-5); gap: var(--space-4); }
-  .avatar { width: 56px; height: 56px; font-size: var(--text-xl); }
+  .submit > button { width: 100%; }
   .grid { grid-template-columns: minmax(0, 1fr); }
 }

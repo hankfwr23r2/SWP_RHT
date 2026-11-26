@@ -30,6 +30,7 @@ async function open(page: Page, path: string, replies: Record<string, Reply> = {
     }
     const reply = (data: unknown) => route.fulfill({ json: { status: 'success', data } })
     if (url === '/bookings') return reply(ORDERS)
+    if (url.endsWith('/documents/my-checklist')) return reply({ items: [] })
     if (url === '/horses') return reply([{ id: 1, name: 'Gió Nam' }, { id: 2, name: 'Sao Mai' }])
     if (url === '/customers/me') return reply(method === 'PUT' ? { ...PROFILE, ...request.postDataJSON() } : PROFILE)
     if (url === '/countries') return reply([{ code: 'VN', name: 'Việt Nam' }, { code: 'LA', name: 'Lào' }])
@@ -45,13 +46,22 @@ const overflow = (page: Page) => page.evaluate(() => document.documentElement.sc
 test('trang chủ khách: số liệu nhanh, việc cần làm dẫn tới đơn, không gọi API cũ', async ({ page }) => {
   const { calls } = await open(page, '/portal')
   const stats = page.getByRole('navigation', { name: 'Số liệu nhanh' })
-  await expect(stats.getByRole('link')).toHaveText(['1Đơn cần bạn làm', '1Đơn đang xử lý', '1Đơn đang vận chuyển', '2Ngựa trong hồ sơ'])
-  const todo = page.getByRole('link', { name: /BK-COC/ })
+  await expect(stats.getByRole('link')).toHaveCount(4)
+  const metrics = [
+    ['Đơn cần bạn làm', '1'], ['Đơn đang xử lý', '1'],
+    ['Đơn đang vận chuyển', '1'], ['Ngựa thiếu giấy', '0'],
+  ]
+  for (const [label, value] of metrics) {
+    const tile = stats.getByText(label, { exact: true }).locator('..')
+    await expect(tile.getByText(value, { exact: true })).toBeVisible()
+  }
+  const todoSection = page.getByRole('region', { name: 'Việc cần làm' })
+  const todo = todoSection.getByRole('link', { name: /BK-COC/ })
   await expect(todo).toContainText('Xem và trả lời báo giá')
-  await expect(todo).toHaveAttribute('href', '/orders/8')
-  await expect(page.getByRole('link', { name: /BK-DUYET|BK-XONG/ })).toHaveCount(0)
-  await expect(page.getByText('Giao và đánh giá')).toBeVisible()
-  await expect(page.getByRole('link', { name: 'Chọn chuyến để xem giá' })).toHaveAttribute('href', '/booking/route')
+  await expect(todo).toHaveAttribute('href', '/orders/8#quote')
+  await expect(todoSection.getByRole('link', { name: /BK-DUYET|BK-XONG/ })).toHaveCount(0)
+  await expect(page.getByRole('region', { name: 'Đơn gần đây' }).getByRole('link', { name: 'BK-XONG' }))
+    .toHaveAttribute('href', '/orders/11')
   expect(calls.map(call => call.path).filter(path => /^\/customer\/|horse-documents|\/public\/services/.test(path))).toEqual([])
 })
 
@@ -59,7 +69,6 @@ test('trang chủ khách: lỗi thì thử lại được; chưa có đơn thì 
   const replies: Record<string, Reply> = { 'GET /bookings': { status: 500, message: 'lỗi' } }
   await open(page, '/portal', replies)
   await expect(page.getByRole('alert').filter({ hasText: 'Không tải được dữ liệu' })).toBeVisible()
-  await expect(page.getByRole('link', { name: /Ngựa trong hồ sơ/ })).toContainText('2')
   replies['GET /bookings'] = { data: [] }
   await page.getByRole('button', { name: 'Thử lại' }).click()
   await expect(page.getByRole('heading', { name: 'Bạn chưa có đơn nào' })).toBeVisible()
@@ -68,8 +77,8 @@ test('trang chủ khách: lỗi thì thử lại được; chưa có đơn thì 
 test('trang chủ khách và hồ sơ: điện thoại 360px không tràn ngang', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 740 })
   await open(page, '/portal')
-  await expect(page.getByRole('link', { name: /BK-COC/ })).toBeVisible()
-  await page.getByRole('heading', { name: 'Dịch vụ', exact: true }).scrollIntoViewIfNeeded()
+  await expect(page.getByRole('region', { name: 'Việc cần làm' }).getByRole('link', { name: /BK-COC/ })).toBeVisible()
+  await page.getByRole('heading', { name: 'Đơn gần đây', exact: true }).scrollIntoViewIfNeeded()
   expect(await overflow(page)).toBeLessThanOrEqual(0)
   await page.goto('/profile')
   await expect(page.getByLabel('Họ và tên')).toBeVisible()

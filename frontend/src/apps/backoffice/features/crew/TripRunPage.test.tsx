@@ -52,7 +52,8 @@ it.each([[false, 'Tới nơi'], [true, 'Rời đi']] as const)('uses the server 
 
   incident.blocksTrip = false
   fireEvent(window, new Event('focus'))
-  expect(await screen.findByRole('button', { name: label })).toBeTruthy()
+  const action = await screen.findByRole('button', { name: label })
+  expect(action.closest('li')?.getAttribute('aria-current')).toBe('step')
   expect(screen.queryByText(/Lượt xe đang có sự cố nặng chưa có phương án được duyệt/)).toBeNull()
 })
 

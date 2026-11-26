@@ -10,6 +10,7 @@ import { formatDateTime } from '@shared/lib/format'
 import { Button } from '@shared/ui/Button'
 import { Card } from '@shared/ui/Card'
 import { ConfirmDialog } from '@shared/ui/ConfirmDialog'
+import { EmptyState } from '@shared/ui/EmptyState'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { Field } from '@shared/ui/Field'
 import { Input } from '@shared/ui/Input'
@@ -74,6 +75,8 @@ export default function TripRunPage() {
   const trip = data.trip
   const tripBlocked = trip.status === 'IN_PROGRESS' && incidents.data?.some(incident => incident.blocksTrip)
   const canMove = incidents.data !== undefined && !incidents.error && !tripBlocked
+  const stops = trip.stops ?? []
+  const currentStop = stops.find(stop => stopState(stop) === 'here') ?? stops.find(stop => canArrive(data, stop))
 
   const stallOf = (legId: number) => (data.horses ?? []).find(h => h.leg?.id === legId)?.leg?.stallPosition
   const handoverPanel = (handover: Handover) => {
@@ -169,24 +172,25 @@ export default function TripRunPage() {
       {tripBlocked && <p className={s.warning} role="status">{t('myTrips.run.incident.tripBlocked')}</p>}
       {canStart(data) && <TripStartForm busy={busy}
         onStart={reason => run(() => tripExecutionApi.start(tripId, reason), t('myTrips.run.done.started'))} />}
-      <ol className={s.list} aria-label={t('myTrips.run.stops')}>
-        {(trip.stops ?? []).map(stop => {
+      {!stops.length && <EmptyState compact title={t('myTrips.run.emptyStops')} description={t('myTrips.run.emptyStopsHint')} />}
+      {!!stops.length && <ol className={s.list} aria-label={t('myTrips.run.stops')}>
+        {stops.map(stop => {
           const state = stopState(stop)
           const pending = pendingAt(data, stop.id)
           const stablePlans = stablePlansAt(data, stop, incidents.data ?? [])
           const types = handoverTypesAt(data, stop)
           return (
-            <li key={stop.id}>
-              <Card title={`${stop.sequenceNumber}. ${stop.locationName ?? `${stop.bookingCode}: ${stop.addressLine}`}`}
+            <li key={stop.id} aria-current={stop === currentStop ? 'step' : undefined}>
+              <Card className={stop === currentStop ? s.currentStop : s.stopCard} title={`${stop.sequenceNumber}. ${stop.locationName ?? `${stop.bookingCode}: ${stop.addressLine}`}`}
                 actions={<StatusBadge tone={STATE_TONE[state]} label={t(`myTrips.run.stopState.${state}`)} />}>
                 <div className={s.body}>
-                  <p className={s.muted}>{stop.plannedArrivalAt ? formatDateTime(new Date(stop.plannedArrivalAt)) : ''}</p>
+                  {stop.plannedArrivalAt && <time className={s.muted} dateTime={stop.plannedArrivalAt}>{formatDateTime(new Date(stop.plannedArrivalAt))}</time>}
                   {canMove && canArrive(data, stop) && (
                     <Button variant="primary" size="lg" fullWidth loading={busy}
                       onClick={() => run(() => tripExecutionApi.arrive(stop.id ?? 0), t('myTrips.run.done.arrived'))}>{t('myTrips.run.arrive')}</Button>
                   )}
                   {types.filter(type => (type !== 'SHIFT' || session?.role === 'escort') && (type !== 'STAY_IN' || !stablePlans.length)).map(type => (
-                    <Button key={type} size="lg" fullWidth loading={busy}
+                    <Button key={type} variant={types.length === 1 ? 'primary' : 'secondary'} size="lg" fullWidth loading={busy}
                       onClick={() => (type === 'STAY_IN' ? setStay({ stopId: stop.id ?? 0 })
                         : run(() => tripExecutionApi.openHandover(stop.id ?? 0, type), t('myTrips.run.done.opened')))}>
                       {t(`myTrips.run.handover.${type}`)}
@@ -209,7 +213,7 @@ export default function TripRunPage() {
                     </Field>
                   )}
                   {canMove && canDepart(data, stop) && (
-                    <Button size="lg" fullWidth loading={busy}
+                    <Button variant={types.length || stablePlans.length ? 'secondary' : 'primary'} size="lg" fullWidth loading={busy}
                       onClick={() => run(() => tripExecutionApi.depart(stop.id ?? 0, earlyReasons[stop.id ?? 0]?.trim() || undefined), t('myTrips.run.done.departed'))}>
                       {t('myTrips.run.depart')}
                     </Button>
@@ -219,7 +223,7 @@ export default function TripRunPage() {
             </li>
           )
         })}
-      </ol>
+      </ol>}
       {(trip.status === 'IN_PROGRESS' || trip.status === 'COMPLETED') && <TripIncidentPanel run={data} query={incidents} />}
       {failing !== undefined && (
         <ConfirmDialog

@@ -1,9 +1,9 @@
-﻿import type { ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import s from './StatTile.module.css'
 
-export function StatRow({ children }: { children: ReactNode }) {
-  return <div className={s.row}>{children}</div>
+export function StatRow({ children, compact = false }: { children: ReactNode; compact?: boolean }) {
+  return <div className={compact ? `${s.row} ${s.compact}` : s.row}>{children}</div>
 }
 
 export function StatTile({ icon, value, label, link }: {

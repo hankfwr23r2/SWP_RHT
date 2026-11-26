@@ -1,15 +1,19 @@
-// Số liệu nhanh và việc cần làm ở trang chủ khách, đọc từ danh sách đơn
-import type { BookingOrder } from '@shared/api/bookingOrders'
-import { groupOf, nextStepOf, type OrderGroup } from '@shared/components/orderSteps'
+import type { BookingSummary } from '@shared/api/bookingOrders'
+import { groupOf, nextStepOf } from '@shared/components/orderSteps'
 
-export function portalSummary(orders: BookingOrder[]) {
-  const inGroup = (group: OrderGroup) => orders.filter(order => groupOf(order) === group)
-  const action = inGroup('action')
+type OrderActions = { order: BookingSummary } & Omit<Parameters<typeof nextStepOf>[0], 'status'>
+
+export function portalSummary(orders: BookingSummary[], actions: OrderActions[] = []) {
+  const newest = [...orders].sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? '') || (b.id ?? 0) - (a.id ?? 0))
+  const byId = new Map(actions.map(entry => [entry.order.id, entry]))
+  const todo = newest.map(order => ({
+    order, next: nextStepOf({ ...byId.get(order.id), status: order.status }),
+  })).filter(({ next }) => next.action)
   return {
-    action: action.length,
-    processing: inGroup('processing').length,
-    moving: inGroup('moving').length,
-    // Đơn mới nhất lên đầu
-    todo: action.sort((a, b) => (b.id ?? 0) - (a.id ?? 0)).map(order => ({ order, next: nextStepOf(order) })),
+    action: todo.length,
+    processing: newest.filter(order => groupOf(order) === 'processing').length,
+    moving: newest.filter(order => order.status === 'IN_OPERATION').length,
+    todo,
+    recent: newest,
   }
 }
