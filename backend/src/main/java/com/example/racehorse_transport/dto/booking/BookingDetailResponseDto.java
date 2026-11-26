@@ -65,7 +65,7 @@ public record BookingDetailResponseDto(BookingResponseDto booking, List<PartySna
 
     public record HorseDetail(Long id, Long horseId, String horseName, String stallTypeCode, String dietNote,
             Short feedingsPerDay, Boolean feedSuppliedByOwner, BookingHorseStatus status,
-            List<AddOn> addOns, InsuranceDetail insurance, Long deliveryAddressId, String microchip, String horseTypeName) {
+            List<AddOn> addOns, InsuranceDetail insurance, Long deliveryAddressId, String microchip, String horseTypeName, HorseGender sex, Short birthYear, String color) {
 
         public static HorseDetail from(BookingHorse row, List<BookingHorseAddOn> addOns, HorseInsurance insurance) {
             var horse = row.getHorse();
@@ -74,7 +74,7 @@ public record BookingDetailResponseDto(BookingResponseDto booking, List<PartySna
                     row.getFeedSuppliedByOwner(), row.getStatus(), addOns.stream().map(AddOn::from).toList(),
                     insurance == null ? null : InsuranceDetail.from(insurance),
                     row.getDeliveryAddress() == null ? null : row.getDeliveryAddress().getId(), horse.getMicrochip(),
-                    horse.getHorseType() == null ? null : horse.getHorseType().getName());
+                    horse.getHorseType() == null ? null : horse.getHorseType().getName(), horse.getSex(), horse.getBirthYear(), horse.getColor());
         }
     }
 

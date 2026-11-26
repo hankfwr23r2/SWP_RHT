@@ -256,7 +256,19 @@ Thay 6.3, 6.4 và bổ sung theo [NGU_CANH_THIET_KE_LAI.md](NGU_CANH_THIET_KE_LA
 | Khoản hoàn chờ xử lý | Quản lý | `/manager/refunds?bookingId={id}` | Có trong thông báo hủy sau cọc | Có, khi tạo khoản hoàn |
 | Giao dịch bất thường | Quản lý | `/manager/orders/{id}` | Có, `VnpayServiceImpl` | Có, đối soát VNPAY |
 | Xe về trễ | Điều phối phụ trách lượt | `/coordinator/dispatch?tripId={id}` | Chưa thấy lời gọi tương đương | Có, tác vụ theo lịch đánh dấu đã nhắc |
-| Giao chuyên viên, trả thẩm định và khách nộp bổ sung | Chuyên viên | Trang thẩm định | Có, `BookingServiceImpl` | Giữ luồng hiện hành, ngoài phạm vi U3 |
+| Giao chuyên viên, trả thẩm định và khách nộp bổ sung | Chuyên viên | Trang thẩm định | Có, `BookingServiceImpl` | Có, xem mục Thông báo chuyên viên |
 | Quản lý trả lại đơn cần chốt xe | Điều phối | — | Có, `BookingServiceImpl` | Bản mới giao việc xếp xe sau cọc, không có bước quản lý trả lại kế hoạch trước cọc |
 | Hủy chuyến khi cần tổ chức trả ngựa đã nhận | Điều phối | Điều độ và chi tiết sự cố | Có, `horsesToReturn` | Xử lý theo luồng sự cố khi đã nhận ngựa |
 | Giao lượt xe, thay đổi tiến độ tổ xe và nhắc giấy cửa khẩu | Tài xế, hộ tống | Lượt xe được giao | Có, thông báo tổ xe trên `main` | Các luồng tổ xe hiện hành ngoài phạm vi U3 |
+
+## Thông báo chuyên viên
+
+| Sự kiện | Người nhận | Trang mở từ chuông | Chống trùng |
+|---|---|---|---|
+| Quản lý tiếp nhận hoặc đổi người phụ trách | Chuyên viên được giao | `/specialist/verification/{id}` | Phân công theo giao dịch, từ chối giao lại cho cùng người |
+| Khách nộp hoặc nộp lại giấy của đơn hay hồ sơ ngựa | Chuyên viên phụ trách đơn có giấy vừa nộp | `/specialist/verification/{id}` | Một thông báo trên mỗi đơn cho phiên bản tệp đã lưu, yêu cầu tải bị từ chối không tạo thông báo |
+| Khách nộp lại hợp đồng bảo hiểm tự có | Chuyên viên phụ trách | `/specialist/insurance/{id}` | Chỉ gửi khi nhận thay thế và kết thúc trạng thái chờ bổ sung |
+| Giấy đã duyệt còn hạn hôm nay nhưng hết hạn trước ngày chạy | Chuyên viên phụ trách, qua lịch nhắc giấy hiện có | `/specialist/verification/{id}` cho giấy khách hoặc `/specialist/legal/{id}` cho giấy chuyến đi | Khóa đơn, kiểm theo người nhận và phiên bản giấy |
+| Đơn thiếu giấy do công ty hoặc bên nhận chuẩn bị trong cửa sổ nhắc | Chuyên viên phụ trách | `/specialist/legal/{id}` | Tối đa một lần mỗi ngày theo lịch nhắc hiện có |
+
+Chi tiết ba khu vực hiển thị người phụ trách và lý do thẩm định gần nhất. API hiện tại chưa trả danh sách lịch sử trạng thái cho chuyên viên.

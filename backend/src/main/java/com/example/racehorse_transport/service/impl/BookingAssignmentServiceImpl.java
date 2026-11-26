@@ -84,7 +84,7 @@ public class BookingAssignmentServiceImpl implements BookingAssignmentService {
         change.setChangedAt(clock.instant());
         history.save(change);
         Long bookingId = booking.getId();
-        String link = "/specialist/review/" + bookingId;
+        String link = "/specialist/verification/" + bookingId;
         notifications.notify(List.of(specialistId), bookingId, "Bạn được giao phụ trách đơn",
                 reason == null ? "Kiểm tra hồ sơ trong chi tiết đơn." : reason, link);
         if (previous != null && !specialistId.equals(previous.getUserId())) {
@@ -95,7 +95,7 @@ public class BookingAssignmentServiceImpl implements BookingAssignmentService {
 
     @Override
     public String reviewLink(Booking booking) {
-        return (booking.getSpecialist() == null ? "/manager/orders/" : "/specialist/review/") + booking.getId();
+        return (booking.getSpecialist() == null ? "/manager/orders/" : "/specialist/verification/") + booking.getId();
     }
 
     @Override

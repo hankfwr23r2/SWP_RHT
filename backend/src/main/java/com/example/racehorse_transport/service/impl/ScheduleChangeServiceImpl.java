@@ -4,6 +4,7 @@ import com.example.racehorse_transport.entity.enums.TransportMode;
 import com.example.racehorse_transport.dto.booking.BookingResponseDto;
 import com.example.racehorse_transport.dto.booking.ReportDocumentDelayRequestDto;
 import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.policy.BookingAssignmentPolicy;
 import com.example.racehorse_transport.entity.enums.BookingType;
 import com.example.racehorse_transport.entity.enums.DocumentSubmitter;
 import com.example.racehorse_transport.policy.DocumentCompletenessPolicy;
@@ -170,10 +171,46 @@ public class ScheduleChangeServiceImpl implements ScheduleChangeService {
             notifications.notify(List.of(booking.getCustomer().getUser().getId()), bookingId, REMINDER_TITLE,
                     message, "/orders/" + bookingId);
         }
+        boolean expiring = remindExpiringDocuments(booking, today);
         if (!specialists.isEmpty()) {
-            notifications.notify(specialists, bookingId, SPECIALIST_REMINDER_TITLE, message, assignments.reviewLink(booking));
+            String link = booking.getSpecialist() == null ? assignments.reviewLink(booking) : "/specialist/legal/" + bookingId;
+            notifications.notify(specialists, bookingId, SPECIALIST_REMINDER_TITLE, message, link);
         }
-        return customerMissing || !specialists.isEmpty();
+        return customerMissing || !specialists.isEmpty() || expiring;
+    }
+
+    private boolean remindExpiringDocuments(Booking booking, java.time.LocalDate today) {
+        var specialist = booking.getSpecialist();
+        if (!BookingAssignmentPolicy.isAvailable(specialist)) return false;
+        var requiredOn = DocumentCompletenessPolicy.requiredOn(booking, today);
+        // Lọc giấy đã duyệt nhưng hết hạn trước ngày cần trước; chỉ khi có mới tính danh sách yêu cầu của đơn
+        var expiring = documents.findCandidateDocuments(booking.getId()).stream()
+                .filter(document -> document.getExpiryDate() != null && document.getExpiryDate().isBefore(requiredOn)
+                        && DocumentCompletenessPolicy.isApprovedOn(document, today))
+                .toList();
+        if (expiring.isEmpty()) return false;
+        var requirements = documents.resolve(booking).requirements();
+        var active = horses.findForDetail(booking.getId()).stream()
+                .filter(horse -> horse.getStatus() == BookingHorseStatus.ACTIVE).toList();
+        boolean sent = false;
+        for (var document : expiring) {
+            boolean applies = requirements.stream().anyMatch(requirement ->
+                    DocumentCompletenessPolicy.matchesChecklist(document, requirement, booking.getId(), null)
+                    || active.stream().anyMatch(horse ->
+                            DocumentCompletenessPolicy.matchesChecklist(document, requirement, booking.getId(), horse)));
+            if (!applies) continue;
+            var submitter = document.getDocumentRequirement() == null
+                    ? DocumentSubmitter.CUSTOMER : document.getDocumentRequirement().getSubmitterType();
+            String section = submitter == DocumentSubmitter.CUSTOMER ? "verification" : "legal";
+            String title = "Giấy tờ hết hạn trước ngày chạy";
+            String message = document.getDocumentType().getName() + " · #" + document.getId()
+                    + " · " + document.getExpiryDate() + " · " + booking.getCode();
+            if (bookings.hasSpecialistDocumentNotice(booking.getId(), specialist.getUserId(), title, message)) continue;
+            notifications.notify(List.of(specialist.getUserId()), booking.getId(), title, message,
+                    "/specialist/" + section + "/" + booking.getId());
+            sent = true;
+        }
+        return sent;
     }
 
     private boolean insideReminderWindow(Booking booking, Instant now) {

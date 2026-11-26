@@ -140,6 +140,10 @@ class PersonalInsuranceFlowTest {
                         .header(HttpHeaders.AUTHORIZATION, ownerToken))
                 .andExpect(status().isOk());
         files(bookingId, assignedToken).andExpect(jsonPath(policyNames(firstLine), contains("updated.pdf")));
+        mvc.perform(get("/notifications/mine").header(HttpHeaders.AUTHORIZATION, assignedToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[?(@.title == 'Hợp đồng bảo hiểm đã bổ sung')].linkUrl",
+                        contains("/specialist/insurance/" + bookingId)));
         var revisedEvidence = new InsuranceEvidenceRequestDto(
                 "Hãng bảo hiểm mới", BigDecimal.valueOf(1_000_000), null, "VND", null);
         insuranceAction(bookingId, firstInsurance, "record-evidence", assignedToken, revisedEvidence).andExpect(status().isOk());

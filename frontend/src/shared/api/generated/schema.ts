@@ -3940,6 +3940,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/specialist/work-queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["specialistWorkQueue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/specialist/work-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["specialistWorkSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/stable-partners": {
         parameters: {
             query?: never;
@@ -4991,6 +5023,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListSpecialistWorkResponseDto: {
+            data?: components["schemas"]["SpecialistWorkResponseDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseListStablePartnerResponseDto: {
             data?: components["schemas"]["StablePartnerResponseDto"][];
             message?: string;
@@ -5169,6 +5206,11 @@ export interface components {
         };
         ApiResponseSettlementResponseDto: {
             data?: components["schemas"]["SettlementResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseSpecialistWorkSummaryResponseDto: {
+            data?: components["schemas"]["SpecialistWorkSummaryResponseDto"];
             message?: string;
             status?: string;
         };
@@ -6443,6 +6485,9 @@ export interface components {
         };
         HorseDetail: {
             addOns?: components["schemas"]["AddOn"][];
+            /** Format: int32 */
+            birthYear?: number;
+            color?: string;
             /** Format: int64 */
             deliveryAddressId?: number;
             dietNote?: string;
@@ -6457,6 +6502,8 @@ export interface components {
             id?: number;
             insurance?: components["schemas"]["InsuranceDetail"];
             microchip?: string;
+            /** @enum {string} */
+            sex?: "STALLION" | "MARE" | "GELDING";
             stallTypeCode?: string;
             /** @enum {string} */
             status?: "ACTIVE" | "EXCLUDED" | "CANCELLED" | "DELIVERED" | "RETURNED";
@@ -7918,6 +7965,34 @@ export interface components {
             quotationTotal?: number;
             /** @enum {string} */
             status?: "PENDING_INTAKE" | "UNDER_REVIEW" | "NEEDS_RESUBMISSION" | "QUOTING" | "AWAITING_DEPOSIT" | "QUOTE_EXPIRED" | "CONFIRMED" | "SCHEDULE_CHANGE_REQUIRED" | "IN_OPERATION" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED";
+        };
+        SpecialistWorkResponseDto: {
+            /** Format: int64 */
+            arranged?: number;
+            booking?: components["schemas"]["BookingSummaryResponseDto"];
+            /** Format: date */
+            documentsDueOn?: string;
+            horseNames?: string[];
+            /** @enum {string} */
+            insurance?: "TO_PROCESS" | "WAITING_CUSTOMER" | "CONFIRMED";
+            /** @enum {string} */
+            legal?: "TO_PREPARE" | "IN_PROGRESS" | "COMPLETE";
+            /** Format: int64 */
+            personal?: number;
+            /** Format: int64 */
+            uninsured?: number;
+            /** @enum {string} */
+            verification?: "TO_REVIEW" | "WAITING_CUSTOMER" | "REVIEWED" | "AWAITING_INTAKE";
+        };
+        SpecialistWorkSummaryResponseDto: {
+            /** Format: int64 */
+            insurancePending?: number;
+            /** Format: int64 */
+            legalPending?: number;
+            /** Format: int64 */
+            verificationPending?: number;
+            /** Format: int64 */
+            waitingCustomer?: number;
         };
         StablePartnerResponseDto: {
             address?: string;
@@ -15223,6 +15298,48 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseRouteResponse"];
+                };
+            };
+        };
+    };
+    specialistWorkQueue: {
+        parameters: {
+            query?: {
+                all?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListSpecialistWorkResponseDto"];
+                };
+            };
+        };
+    };
+    specialistWorkSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseSpecialistWorkSummaryResponseDto"];
                 };
             };
         };

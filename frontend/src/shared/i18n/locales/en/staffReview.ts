@@ -1,5 +1,51 @@
 export const staffReview = {
-  "staffReview": {
+  staffReview: {
+    workspace: {
+      back: 'Back to list',
+      horseNames: 'Horses',
+      border: 'Border-specific document',
+      "orderCode": "Order code",
+      "search": "Search by order code, customer or horse",
+      "due": "Documents due",
+      "coverage": "{{arranged}} arranged · {{personal}} personal · {{uninsured}} uninsured",
+      "horseReview": "Check documents for {{count}} horses",
+      "horseNavigation": "Select a horse to check",
+      "previous": "Previous horse",
+      "next": "Next horse",
+      "chip": "Microchip",
+      "breed": "Breed",
+      "sex": "Sex",
+      "year": "Birth year",
+      "color": "Coat colour",
+      "checked": "Checked",
+      "checkAll": "Mark all checked",
+      "preview": "Preview file",
+      openTab: 'Open in new tab',
+      "requestedDocuments": "Documents to resubmit",
+      "selectDocument": "Select at least one document.",
+      "orderDocuments": "Order documents",
+      "nextStep": "Next step",
+      "submitted": "Submitted {{submitted}}/{{total}}",
+      "horseBatch": "Horses in this shipment",
+      "departure": "Departure #{{id}}",
+      "stages": {
+        "TO_REVIEW": "To review",
+        "WAITING_CUSTOMER": "Waiting for customer",
+        "REVIEWED": "Reviewed",
+        "AWAITING_INTAKE": "Awaiting intake",
+        "TO_PREPARE": "To prepare",
+        "IN_PROGRESS": "In progress",
+        "COMPLETE": "Complete",
+        "TO_PROCESS": "Insurer quote / verification needed",
+        "CONFIRMED": "Confirmed"
+      },
+      "sexes": {
+        "STALLION": "Stallion",
+        "MARE": "Mare",
+        "GELDING": "Gelding"
+      },
+      "filter": "{{label}} ({{count}})"
+    },
     assignmentTabs: 'Booking assignment',
     mine: 'My bookings',
     all: 'All bookings',

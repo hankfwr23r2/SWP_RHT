@@ -221,9 +221,9 @@ export const staff = {
     '/manager/reports': 'Revenue Reports',
     '/manager/trip-reports': 'Trip Reports',
     '/manager/cancelled-orders': 'Cancelled Orders',
-    '/specialist/review': 'Order review',
-    '/specialist/missing-documents': 'Orders missing documents',
-    '/specialist/insurance': 'Insurance Review',
+    '/specialist/verification': 'Horse document review',
+    '/specialist/legal': 'Travel documents',
+    '/specialist/insurance': 'Insurance',
     '/coordinator/incidents': 'Fleet Incidents',
   },
   staffTopbar: {

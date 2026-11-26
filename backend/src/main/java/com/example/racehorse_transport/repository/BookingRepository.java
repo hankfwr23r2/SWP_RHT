@@ -24,6 +24,28 @@ import java.util.Optional;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
+    @Query("SELECT count(b) FROM Booking b WHERE b.specialist.user.username = :username AND b.id IN :ids")
+    long countSpecialistWork(String username, Collection<Long> ids);
+
+    @Query("""
+            SELECT count(r) > 0 FROM NotificationRecipient r JOIN r.notification n
+            WHERE n.booking.id = :bookingId AND r.user.id = :userId
+                AND n.title = :title AND n.message = :message
+            """)
+    boolean hasSpecialistDocumentNotice(Long bookingId, Long userId, String title, String message);
+
+    long countBySpecialist_User_UsernameAndStatus(String username, BookingStatus status);
+
+    @Query("""
+            SELECT count(b) FROM Booking b
+            WHERE b.specialist.user.username = :username AND b.status IN :statuses
+              AND EXISTS (
+                SELECT h.id FROM BookingHorse h LEFT JOIN HorseInsurance i ON i.bookingHorse = h
+                WHERE h.booking = b AND h.status = ACTIVE AND (i.id IS NULL OR i.status = DRAFT)
+              )
+            """)
+    long countSpecialistInsuranceWork(String username, Collection<BookingStatus> statuses);
+
     long countBySpecialist_UserIdAndStatusNotIn(Long staffId, Collection<BookingStatus> statuses);
 
     @EntityGraph(attributePaths = {"departure", "specialist"})
@@ -71,7 +93,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @EntityGraph(attributePaths = {"departure", "specialist"})
     List<Booking> findByCustomer_User_UsernameOrderByCreatedAtDescIdDesc(String username);
 
-    @EntityGraph(attributePaths = {"departure", "specialist"})
+    @EntityGraph(attributePaths = {"departure", "departure.route", "specialist"})
     Optional<Booking> findByIdAndCustomer_User_Username(Long id, String username);
 
     @Query("""

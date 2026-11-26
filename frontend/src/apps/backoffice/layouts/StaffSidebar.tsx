@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import type { StaffRole } from '@shared/auth/role'
+import { useSpecialistWork } from '@backoffice/shared/useSpecialistWork'
 import { useStaffWork } from '@backoffice/shared/useStaffWork'
 import { Badge } from '@shared/ui/Badge'
 import { STAFF_MENUS } from './staffMenus'
@@ -34,6 +35,12 @@ export function StaffSidebar({ mobileOpen, onNavigate }: { mobileOpen: boolean; 
   const activePath = STAFF_MENUS[role].filter(([to]) => pathname === to || pathname.startsWith(`${to}/`))
     .sort(([left], [right]) => right.length - left.length)[0]?.[0]
   const work = useStaffWork()
+  const specialist = useSpecialistWork(role === 'specialist')
+  const specialistCounts: Record<string, number | undefined> = {
+    '/specialist/verification': specialist?.verificationPending,
+    '/specialist/legal': specialist?.legalPending,
+    '/specialist/insurance': specialist?.insurancePending,
+  }
   const toggle = () => setCollapsed(c => { try { localStorage.setItem(KEY, c ? '0' : '1') } catch { /* không lưu được thì thôi */ } return !c })
 
   return (
@@ -47,7 +54,8 @@ export function StaffSidebar({ mobileOpen, onNavigate }: { mobileOpen: boolean; 
       <nav id="staff-navigation" className={s.menu} aria-label={t('header.navigation')}>
         {STAFF_MENUS[role].map(([to, label, opt]) => {
           const itemLabel = t(`staffMenus.${to}`, label)
-          const pending = opt?.count ? work?.menuCounts?.[opt.count] : undefined
+          const pending = role === 'specialist' ? specialistCounts[to]
+            : opt?.count ? work?.menuCounts?.[opt.count] : undefined
           return (
             <Link key={to} to={to} onClick={onNavigate} aria-current={to === activePath ? 'page' : undefined} title={itemLabel} aria-label={pending == null ? itemLabel : `${itemLabel} · ${pending}`} onPointerEnter={() => prefetchManagerPage(to)} onFocus={() => prefetchManagerPage(to)} className={`${s.item} ${to === activePath ? s.on : ''}`}>
               <i className={`fa-solid ${opt?.icon}`} aria-hidden="true" />

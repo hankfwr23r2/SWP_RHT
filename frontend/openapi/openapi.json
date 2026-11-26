@@ -1473,6 +1473,23 @@
         },
         "type" : "object"
       },
+      "ApiResponseListSpecialistWorkResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SpecialistWorkResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListStablePartnerResponseDto" : {
         "properties" : {
           "data" : {
@@ -2002,6 +2019,20 @@
         "properties" : {
           "data" : {
             "$ref" : "#/components/schemas/SettlementResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseSpecialistWorkSummaryResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/SpecialistWorkSummaryResponseDto"
           },
           "message" : {
             "type" : "string"
@@ -5380,6 +5411,13 @@
             },
             "type" : "array"
           },
+          "birthYear" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "color" : {
+            "type" : "string"
+          },
           "deliveryAddressId" : {
             "format" : "int64",
             "type" : "integer"
@@ -5412,6 +5450,10 @@
             "$ref" : "#/components/schemas/InsuranceDetail"
           },
           "microchip" : {
+            "type" : "string"
+          },
+          "sex" : {
+            "enum" : [ "STALLION", "MARE", "GELDING" ],
             "type" : "string"
           },
           "stallTypeCode" : {
@@ -9314,6 +9356,69 @@
           "status" : {
             "enum" : [ "PENDING_INTAKE", "UNDER_REVIEW", "NEEDS_RESUBMISSION", "QUOTING", "AWAITING_DEPOSIT", "QUOTE_EXPIRED", "CONFIRMED", "SCHEDULE_CHANGE_REQUIRED", "IN_OPERATION", "DELIVERED", "COMPLETED", "CANCELLED", "REJECTED" ],
             "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "SpecialistWorkResponseDto" : {
+        "properties" : {
+          "arranged" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "booking" : {
+            "$ref" : "#/components/schemas/BookingSummaryResponseDto"
+          },
+          "documentsDueOn" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "horseNames" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "insurance" : {
+            "enum" : [ "TO_PROCESS", "WAITING_CUSTOMER", "CONFIRMED" ],
+            "type" : "string"
+          },
+          "legal" : {
+            "enum" : [ "TO_PREPARE", "IN_PROGRESS", "COMPLETE" ],
+            "type" : "string"
+          },
+          "personal" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "uninsured" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "verification" : {
+            "enum" : [ "TO_REVIEW", "WAITING_CUSTOMER", "REVIEWED", "AWAITING_INTAKE" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "SpecialistWorkSummaryResponseDto" : {
+        "properties" : {
+          "insurancePending" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "legalPending" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "verificationPending" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "waitingCustomer" : {
+            "format" : "int64",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -19651,6 +19756,51 @@
           }
         },
         "tags" : [ "route-controller" ]
+      }
+    },
+    "/specialist/work-queue" : {
+      "get" : {
+        "operationId" : "specialistWorkQueue",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "all",
+          "required" : false,
+          "schema" : {
+            "default" : false,
+            "type" : "boolean"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListSpecialistWorkResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "specialist-work-controller" ]
+      }
+    },
+    "/specialist/work-summary" : {
+      "get" : {
+        "operationId" : "specialistWorkSummary",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSpecialistWorkSummaryResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "specialist-work-controller" ]
       }
     },
     "/stable-partners" : {
