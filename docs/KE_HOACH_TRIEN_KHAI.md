@@ -660,7 +660,9 @@ Nguồn: [NGU_CANH_THIET_KE_LAI.md](NGU_CANH_THIET_KE_LAI.md) mục 4b, [NGHIEP_
 | M10 | **Bắt buộc nghỉ trên chặng đón, giao, chạy thẳng:** ngựa ngồi xe đón, giao tối đa 8 giờ, chạy thẳng 10 giờ (cấu hình); con nào ngồi xe liên tục quá 4 giờ (cấu hình) thì lượt phải có trạm nghỉ, hệ thống gợi ý trạm nghỉ mạng lưới gần đường nhất, không có thì chặn lập lượt; ở trạm nghỉ giữ quy tắc cho ăn, uống, ghi sức khỏe, nghỉ 30 phút | B | M1 (trạm nghỉ nhánh, giới hạn 8 giờ) | Lượt đón Điện Biên → Hà Nội có trạm nghỉ Sơn La; không ghi ăn uống thì không rời trạm. **M1 và M10 gộp cùng lúc** hoặc M1 giữ 5 giờ tới khi M10 xong |
 | M9 | Cập nhật `FullFlowIntegrationTest`, `CommercialFlowIntegrationTest`, e2e và dữ liệu mẫu theo mô hình mới; ERD sinh lại | A + B | M1–M8 | CI xanh với ca xuất, nhập đi hub ⇄ hub |
 
-**Làm song song:** A làm M1 → M2 → M3. B làm ngay M5, M6, M8 (không chờ A), rồi M7, M10 sau M1 và M4 sau M2, M3.
+**Kế hoạch chi tiết và phân công mới (26/11/2026):** [KE_HOACH_BEN_XE.md](KE_HOACH_BEN_XE.md). A nhận thêm M4, M7, M10.
+
+**Làm song song (bản đầu):** A làm M1 → M2 → M3. B làm ngay M5, M6, M8 (không chờ A), rồi M7, M10 sau M1 và M4 sau M2, M3.
 
 ## 10. Bảng tiến độ
 
@@ -693,10 +695,10 @@ Nguồn: [NGU_CANH_THIET_KE_LAI.md](NGU_CANH_THIET_KE_LAI.md) mục 4b, [NGHIEP_
 | M1 | Mạng lưới bến xe | A | 7 | Chưa làm | |
 | M2 | Sức chứa theo đội xe | A | 7 | Chưa làm | |
 | M3 | Xe riêng | A | 7 | Chưa làm | |
-| M4 | Xếp xe trục nhiều xe | B | 7 | Chưa làm | |
+| M4 | Xếp xe trục nhiều xe | A (nhận từ B 26/11) | 7 | Chưa làm | |
 | M5 | Khám bắt buộc hai đầu hub | B | 7 | Chưa làm | |
 | M6 | Xe về | B | 7 | Chưa làm | |
-| M7 | Bỏ đại lý ở cửa khẩu | B | 7 | Chưa làm | |
+| M7 | Bỏ đại lý ở cửa khẩu | A (nhận từ B 26/11) | 7 | Chưa làm | |
 | M8 | Màn Các hub | B | 7 | Chưa làm | |
-| M10 | Bắt buộc nghỉ trên chặng đón, giao | B | 7 | Chưa làm | |
+| M10 | Bắt buộc nghỉ trên chặng đón, giao | A (nhận từ B 26/11) | 7 | Chưa làm | |
 | M9 | Tích hợp mô hình bến xe | A + B | 7 | Chưa làm | |

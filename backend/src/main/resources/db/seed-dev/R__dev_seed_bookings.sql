@@ -3,7 +3,7 @@
 -- Ngày tính theo ngày chạy seed lần đầu. Đơn giá chép từ "Bảng giá mẫu (dev)". Tổng và tiền cọc ở đây chỉ là dữ liệu mẫu;
 -- trong ứng dụng, QuotationService và DepositPolicy mới là nơi tính.
 
--- 1. Chuyến cho 6 tuần tới từ các lịch đang chạy (trong ứng dụng, việc này do scheduler của DepartureService làm)
+-- 1. Bổ sung chuyến còn thiếu cho 6 tuần tới theo lịch đội xe mới. Giữ nguyên chuyến đã sinh.
 INSERT INTO departure (departure_schedule_id, route_id, departure_date, planned_departure_at, booking_cutoff_at, stall_capacity, booked_stall_count, status)
 SELECT s.id,
        s.route_id,

@@ -9,6 +9,7 @@ import com.example.racehorse_transport.service.SystemConfigService;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -34,7 +35,7 @@ class DevSeedRoutesTest {
         assertThat(jdbc.queryForList("""
                 WITH timetable AS (
                     SELECT r.code, r.origin_location_id AS origin, r.destination_location_id AS destination,
-                           o.country_code <> d.country_code AS international, r.estimated_duration_minutes AS duration,
+                           o.country_code <> d.country_code AS international, last_stop.arrival_offset_minutes AS duration,
                            s.departure_time, (dd.day_of_week - 1) * 1440
                                + extract(epoch FROM s.departure_time)::int / 60 AS minute_of_week
                     FROM route r
@@ -42,11 +43,15 @@ class DevSeedRoutesTest {
                     JOIN location d ON d.id = r.destination_location_id
                     JOIN departure_schedule s ON s.route_id = r.id AND s.status = 'ACTIVE'
                     JOIN departure_schedule_day dd ON dd.departure_schedule_id = s.id
+                    LEFT JOIN LATERAL (
+                        SELECT rs.arrival_offset_minutes FROM route_stop rs
+                        WHERE rs.route_id = r.id ORDER BY rs.sequence_number DESC LIMIT 1
+                    ) last_stop ON true
                     WHERE r.status = 'ACTIVE' AND s.valid_from = DATE '2026-11-01'
                 )
                 SELECT outbound.code FROM timetable outbound
                 LEFT JOIN timetable inbound ON inbound.origin = outbound.destination AND inbound.destination = outbound.origin
-                WHERE inbound.code IS NULL OR outbound.departure_time <>
+                WHERE inbound.code IS NULL OR outbound.duration IS NULL OR outbound.departure_time <>
                     CASE WHEN outbound.international THEN TIME '06:00' ELSE TIME '05:00' END
                     OR (inbound.minute_of_week - outbound.minute_of_week + 10080) % 10080
                         + CASE WHEN outbound.code = 'HN-HCM' THEN 10080 ELSE 0 END < outbound.duration + 720
@@ -95,14 +100,61 @@ class DevSeedRoutesTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"HCM-NT", "NT-HCM", "NT-DN", "DN-NT", "HCM-DN", "DN-HCM", "DN-VINH", "VINH-DN",
-            "VINH-HN", "HN-VINH", "DN-HN", "HN-DN", "HCM-HN", "HN-HCM", "HCM-PNH", "PNH-HCM",
-            "DN-SVK", "SVK-DN", "VINH-VTE", "VTE-VINH"})
-    void seedRouteRunsOnceAWeek(String code) {
-        assertThat(jdbc.queryForObject("""
-                SELECT count(*) FROM departure_schedule_day dd JOIN departure_schedule s ON s.id = dd.departure_schedule_id
+    @CsvSource({
+            "HCM-NT,6", "NT-HCM,1", "NT-DN,3", "DN-NT,4", "HCM-DN,6", "DN-HCM,1",
+            "DN-VINH,6", "VINH-DN,1", "VINH-HN,3", "HN-VINH,4", "DN-HN,5", "HN-DN,1",
+            "HCM-HN,3", "HN-HCM,1", "HCM-PNH,6", "PNH-HCM,1", "DN-SVK,5", "SVK-DN,1",
+            "VINH-VTE,6", "VTE-VINH,1"
+    })
+    void seedRouteRunsOnceAWeekOnTheApprovedDay(String code, int day) {
+        assertThat(jdbc.queryForList("""
+                SELECT dd.day_of_week FROM departure_schedule_day dd
+                JOIN departure_schedule s ON s.id = dd.departure_schedule_id
                 JOIN route r ON r.id = s.route_id
-                WHERE r.code = ? AND s.status = 'ACTIVE' AND s.valid_from = DATE '2026-11-01' AND s.booking_cutoff_hours = 72 AND s.stall_capacity = 9
-                """, Integer.class, code)).isEqualTo(1);
+                WHERE r.code = ? AND s.status = 'ACTIVE'
+                  AND s.valid_from = DATE '2026-11-01' AND s.booking_cutoff_hours = 72 AND s.stall_capacity = 9
+                """, Integer.class, code)).containsExactly(day);
+    }
+
+    @Test
+    void noSeedScheduleRunsOnSunday() {
+        assertThat(jdbc.queryForList("""
+                SELECT r.code FROM departure_schedule_day dd
+                JOIN departure_schedule s ON s.id = dd.departure_schedule_id
+                JOIN route r ON r.id = s.route_id
+                WHERE s.status = 'ACTIVE' AND dd.day_of_week = 7
+                """, String.class)).isEmpty();
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "HUB-HCM,6,4,1,11", "HUB-NT,1,2,1,4", "HUB-DN,4,3,1,8", "HUB-VINH,3,2,1,5",
+            "HUB-HN,0,3,1,4", "HUB-PNH,0,2,1,3", "HUB-VTE,0,2,1,3", "HUB-SVK,0,2,1,3"
+    })
+    void fleetAndStaffMatchApprovedCounts(String hub, int heavy, int medium, int light, int perRole) {
+        assertThat(jdbc.queryForMap("""
+                SELECT count(*) FILTER (WHERE vc.code = 'HEAVY') AS heavy,
+                       count(*) FILTER (WHERE vc.code = 'MEDIUM') AS medium,
+                       count(*) FILTER (WHERE vc.code = 'LIGHT') AS light
+                FROM vehicle v JOIN vehicle_class vc ON vc.id = v.vehicle_class_id
+                JOIN location l ON l.id = v.home_hub_location_id WHERE l.code = ?
+                """, hub)).containsEntry("heavy", (long) heavy)
+                .containsEntry("medium", (long) medium).containsEntry("light", (long) light);
+        assertThat(jdbc.queryForMap("""
+                SELECT count(*) FILTER (WHERE u.role_code = 'DRIVER') AS drivers,
+                       count(*) FILTER (WHERE u.role_code = 'ESCORT') AS escorts
+                FROM staff s JOIN app_user u ON u.id = s.user_id
+                JOIN location l ON l.id = s.home_hub_location_id WHERE l.code = ?
+                """, hub)).containsEntry("drivers", (long) perRole).containsEntry("escorts", (long) perRole);
+    }
+
+    @Test
+    void seedVehiclesProvideTheApprovedCapacity() {
+        assertThat(jdbc.queryForList("""
+                SELECT v.license_plate FROM vehicle v JOIN vehicle_class vc ON vc.id = v.vehicle_class_id
+                WHERE v.standard_stall_count + 2 * v.wide_stall_count
+                    <> CASE vc.code WHEN 'HEAVY' THEN 9 WHEN 'MEDIUM' THEN 6 WHEN 'LIGHT' THEN 2 END
+                   OR v.standard_stall_count + 2 * v.wide_stall_count > vc.max_stall_count
+                """, String.class)).isEmpty();
     }
 }

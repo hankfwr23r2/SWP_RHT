@@ -19,6 +19,11 @@ class DevSeedReplayTest {
 
     @Test
     void seedCanRunAgainAfterALinehaulTripUsedTheRoute() throws Exception {
+        jdbc.update("""
+                INSERT INTO departure_schedule_day (departure_schedule_id, day_of_week)
+                SELECT s.id, 7 FROM departure_schedule s JOIN route r ON r.id = s.route_id
+                WHERE r.code = 'HCM-DN' AND s.status = 'ACTIVE'
+                """);
         Timestamp at = Timestamp.valueOf("2099-01-01 05:00:00");
         Long trip = jdbc.queryForObject("""
                 INSERT INTO vehicle_trip (code, trip_type, departure_id, vehicle_id, start_location_id, end_location_id, planned_start_at, planned_end_at, status)
@@ -35,6 +40,14 @@ class DevSeedReplayTest {
 
         jdbc.execute(new ClassPathResource("db/seed-dev/R__dev_seed_bookings.sql").getContentAsString(StandardCharsets.UTF_8));
 
+        assertThat(jdbc.queryForList("""
+                SELECT sd.day_of_week FROM departure_schedule_day sd
+                JOIN departure_schedule s ON s.id = sd.departure_schedule_id
+                JOIN route r ON r.id = s.route_id WHERE r.code = 'HCM-DN' AND s.status = 'ACTIVE'
+                """, Integer.class)).containsExactly(6);
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM vehicle_trip vt JOIN departure d ON d.id = vt.departure_id WHERE vt.id = ?
+                """, Integer.class, trip)).isEqualTo(1);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM trip_stop WHERE vehicle_trip_id = ?", Integer.class, trip)).isEqualTo(8);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM route_stop rs JOIN route r ON r.id = rs.route_id WHERE r.code = 'HCM-DN'", Integer.class)).isEqualTo(8);
         assertThat(jdbc.queryForObject("""

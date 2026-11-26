@@ -7,7 +7,7 @@
 -- Dữ liệu nền đầy đủ sẽ bổ sung riêng (xem docs/NGU_CANH_THIET_KE_LAI.md, câu hỏi còn mở).
 --
 -- Tài khoản thử: mọi tài khoản dưới đây dùng chung mật khẩu thử DevSeed@2026 (chỉ dùng cho dev/test).
---   admin.dev, manager.dev, coordinator.dev, specialist.dev, driver1.dev … driver16.dev, escort1.dev … escort14.dev, customer1.dev
+--   admin.dev, manager.dev, coordinator.dev, specialist.dev, driver1.dev … driver41.dev, escort1.dev … escort41.dev, customer1.dev
 
 -- ---------------------------------------------------------------------------
 -- 1. Điểm mạng lưới và vùng phục vụ
@@ -253,6 +253,49 @@ JOIN app_user u ON u.username = v.username
 JOIN location hub ON hub.code = v.hub_code
 ON CONFLICT (user_id) DO UPDATE SET home_hub_location_id = EXCLUDED.home_hub_location_id;
 
+-- Bổ sung số người còn thiếu ở từng hub theo quy chế đội xe.
+WITH staffing(hub_code, first_driver, last_driver, first_escort, last_escort) AS (
+    VALUES
+    ('HUB-HCM', 17, 21, 15, 21),
+    ('HUB-NT', 22, 23, 22, 23),
+    ('HUB-DN', 24, 31, 24, 31),
+    ('HUB-VINH', 32, 34, 32, 34),
+    ('HUB-HN', 35, 38, 35, 38),
+    ('HUB-PNH', 39, 39, 39, 39),
+    ('HUB-VTE', 40, 40, 40, 40),
+    ('HUB-SVK', 41, 41, 41, 41)
+), personnel AS (
+    SELECT hub_code, number, 'driver' AS prefix, 'DRIVER' AS role_code, 'DRV-' AS code_prefix,
+           'Tài xế' AS display_role, 'C' AS license_class
+    FROM staffing CROSS JOIN LATERAL generate_series(first_driver, last_driver) AS number
+    UNION ALL
+    SELECT hub_code, number, 'escort', 'ESCORT', 'ESC-', 'Hộ tống', NULL
+    FROM staffing CROSS JOIN LATERAL generate_series(first_escort, last_escort) AS number
+), accounts AS (
+    SELECT *, prefix || number || '.dev' AS username FROM personnel
+), inserted AS (
+    INSERT INTO app_user (username, email, password_hash, is_email_verified, preferred_language, status, role_code)
+    SELECT a.username, a.username || '@racehorse.test',
+           '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE', a.role_code
+    FROM accounts a
+    ON CONFLICT (username) DO NOTHING
+    RETURNING id, username
+), users AS (
+    SELECT id, username FROM inserted
+    UNION ALL
+    SELECT u.id, u.username FROM app_user u JOIN accounts a ON a.username = u.username
+)
+INSERT INTO staff (user_id, staff_code, full_name, phone, hire_date, employment_status, home_hub_location_id,
+                   driver_license_class, driver_license_expiry_date)
+SELECT u.id, a.code_prefix || lpad(a.number::text, 3, '0'),
+       a.display_role || ' ' || a.number || ' (mẫu)',
+       '090000' || ((CASE WHEN a.role_code = 'DRIVER' THEN 2000 ELSE 3000 END) + a.number),
+       DATE '2026-01-01', 'ACTIVE', hub.id, a.license_class,
+       CASE WHEN a.license_class IS NOT NULL THEN DATE '2030-12-31' END
+FROM accounts a JOIN users u ON u.username = a.username
+JOIN location hub ON hub.code = a.hub_code
+ON CONFLICT (user_id) DO NOTHING;
+
 INSERT INTO customer (user_id, customer_type, full_name, phone, address, country_code)
 SELECT u.id, 'PERSON', 'Nguyễn Văn Khách (mẫu)', '0909000001', 'Phường Thủ Dầu Một, TP.HCM', 'VN'
 FROM app_user u
@@ -304,6 +347,7 @@ UPDATE party SET status = 'INACTIVE' WHERE display_name = 'Trại cách ly Củ 
 -- ---------------------------------------------------------------------------
 -- 3. Xe tại hub gốc
 -- ---------------------------------------------------------------------------
+-- Theo docs/QUY_CHE_DOI_XE.md
 INSERT INTO vehicle (license_plate, vehicle_class_id, standard_stall_count, wide_stall_count, home_hub_location_id, status)
 SELECT v.plate, vc.id, v.std, v.wide, hub.id, 'ACTIVE'
 FROM (VALUES
@@ -315,7 +359,7 @@ FROM (VALUES
           ('51C-100.06', 'HEAVY', 9, 0)
      ) AS v(plate, class_code, std, wide)
 JOIN vehicle_class vc ON vc.code = v.class_code
-JOIN location hub ON hub.is_headquarters
+JOIN location hub ON hub.code = 'HUB-HCM'
 ON CONFLICT (license_plate) DO NOTHING;
 
 UPDATE vehicle
@@ -344,7 +388,28 @@ FROM (VALUES
     ('M1-7L-01', 'LIGHT', 2, 0, 'HUB-VINH'),
     ('M1-7M-01', 'MEDIUM', 2, 2, 'HUB-VINH'),
     ('M1-8L-01', 'LIGHT', 2, 0, 'HUB-VTE'),
-    ('M1-8M-01', 'MEDIUM', 2, 2, 'HUB-VTE')
+    ('M1-8M-01', 'MEDIUM', 2, 2, 'HUB-VTE'),
+    ('M1-3H-01', 'HEAVY', 9, 0, 'HUB-HCM'),
+    ('M1-3H-02', 'HEAVY', 9, 0, 'HUB-HCM'),
+    ('M1-3M-01', 'MEDIUM', 2, 2, 'HUB-HCM'),
+    ('M1-3M-02', 'MEDIUM', 2, 2, 'HUB-HCM'),
+    ('M1-3M-03', 'MEDIUM', 2, 2, 'HUB-HCM'),
+    ('M1-4H-01', 'HEAVY', 9, 0, 'HUB-NT'),
+    ('M1-4M-02', 'MEDIUM', 2, 2, 'HUB-NT'),
+    ('M1-1H-04', 'HEAVY', 9, 0, 'HUB-DN'),
+    ('M1-1M-01', 'MEDIUM', 2, 2, 'HUB-DN'),
+    ('M1-1M-02', 'MEDIUM', 2, 2, 'HUB-DN'),
+    ('M1-1M-03', 'MEDIUM', 2, 2, 'HUB-DN'),
+    ('M1-1L-01', 'LIGHT', 2, 0, 'HUB-DN'),
+    ('M1-7H-03', 'HEAVY', 9, 0, 'HUB-VINH'),
+    ('M1-7M-02', 'MEDIUM', 2, 2, 'HUB-VINH'),
+    ('M1-2M-01', 'MEDIUM', 2, 2, 'HUB-HN'),
+    ('M1-2M-02', 'MEDIUM', 2, 2, 'HUB-HN'),
+    ('M1-2M-03', 'MEDIUM', 2, 2, 'HUB-HN'),
+    ('M1-2L-01', 'LIGHT', 2, 0, 'HUB-HN'),
+    ('M1-5M-02', 'MEDIUM', 2, 2, 'HUB-PNH'),
+    ('M1-8M-02', 'MEDIUM', 2, 2, 'HUB-VTE'),
+    ('M1-6M-02', 'MEDIUM', 2, 2, 'HUB-SVK')
 ) AS v(plate, class_code, std, wide, hub_code)
 JOIN vehicle_class vc ON vc.code = v.class_code
 JOIN location hub ON hub.code = v.hub_code
@@ -547,32 +612,30 @@ WHERE rs.route_id = r.id
       ELSE 2147483647 END
   AND NOT EXISTS (SELECT 1 FROM trip_stop ts WHERE ts.route_id = rs.route_id AND ts.route_stop_sequence_number = rs.sequence_number);
 
--- Tối thiểu 5 xe trục theo mô phỏng: 32 ngày-xe/tuần trở lên với giờ chạy 05:00/06:00 và nghỉ >= 12 giờ.
--- HCM 2, DN 2, VINH 1; NT, HN, PNH, SVK và VTE 0 vì đón xe từ hub đối diện.
--- Hai xe HCM luân phiên vòng NT, HN và PNH qua hai tuần; hai xe DN luân phiên vòng NT, HCM, HN và SVK.
--- Một xe VINH chạy vòng DN, HN và VTE hằng tuần.
+-- Lịch mẫu theo docs/QUY_CHE_DOI_XE.md, dùng số thứ tự ISO (thứ Hai = 1).
+-- Đổi ngày trên lịch hiện có để giữ liên kết của các chuyến đã sinh.
 WITH timetable(route_code, departure_time, day_of_week, schedule_status) AS (
     VALUES
-    ('HCM-NT', TIME '05:00', 5, 'ACTIVE'),
-    ('NT-HCM', TIME '05:00', 6, 'ACTIVE'),
-    ('NT-DN', TIME '05:00', 6, 'ACTIVE'),
-    ('DN-NT', TIME '05:00', 5, 'ACTIVE'),
-    ('HCM-DN', TIME '05:00', 2, 'ACTIVE'),
-    ('DN-HCM', TIME '05:00', 7, 'ACTIVE'),
-    ('DN-VINH', TIME '05:00', 2, 'ACTIVE'),
+    ('HCM-NT', TIME '05:00', 6, 'ACTIVE'),
+    ('NT-HCM', TIME '05:00', 1, 'ACTIVE'),
+    ('NT-DN', TIME '05:00', 3, 'ACTIVE'),
+    ('DN-NT', TIME '05:00', 4, 'ACTIVE'),
+    ('HCM-DN', TIME '05:00', 6, 'ACTIVE'),
+    ('DN-HCM', TIME '05:00', 1, 'ACTIVE'),
+    ('DN-VINH', TIME '05:00', 6, 'ACTIVE'),
     ('VINH-DN', TIME '05:00', 1, 'ACTIVE'),
     ('VINH-HN', TIME '05:00', 3, 'ACTIVE'),
     ('HN-VINH', TIME '05:00', 4, 'ACTIVE'),
-    ('DN-HN', TIME '05:00', 4, 'ACTIVE'),
-    ('HN-DN', TIME '05:00', 6, 'ACTIVE'),
-    ('HCM-HN', TIME '05:00', 7, 'ACTIVE'),
-    ('HN-HCM', TIME '05:00', 4, 'ACTIVE'),
-    ('HCM-PNH', TIME '06:00', 1, 'ACTIVE'),
-    ('PNH-HCM', TIME '06:00', 2, 'ACTIVE'),
-    ('DN-SVK', TIME '06:00', 1, 'ACTIVE'),
-    ('SVK-DN', TIME '06:00', 3, 'ACTIVE'),
-    ('VINH-VTE', TIME '06:00', 5, 'ACTIVE'),
-    ('VTE-VINH', TIME '06:00', 6, 'ACTIVE'),
+    ('DN-HN', TIME '05:00', 5, 'ACTIVE'),
+    ('HN-DN', TIME '05:00', 1, 'ACTIVE'),
+    ('HCM-HN', TIME '05:00', 3, 'ACTIVE'),
+    ('HN-HCM', TIME '05:00', 1, 'ACTIVE'),
+    ('HCM-PNH', TIME '06:00', 6, 'ACTIVE'),
+    ('PNH-HCM', TIME '06:00', 1, 'ACTIVE'),
+    ('DN-SVK', TIME '06:00', 5, 'ACTIVE'),
+    ('SVK-DN', TIME '06:00', 1, 'ACTIVE'),
+    ('VINH-VTE', TIME '06:00', 6, 'ACTIVE'),
+    ('VTE-VINH', TIME '06:00', 1, 'ACTIVE'),
     ('MOCBAI-HCM', TIME '14:00', NULL, 'ENDED'),
     ('DN-LAOBAO', TIME '05:00', NULL, 'ENDED'),
     ('LAOBAO-DN', TIME '07:00', NULL, 'ENDED')
