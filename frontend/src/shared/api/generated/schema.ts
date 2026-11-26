@@ -1876,6 +1876,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/departures/{departureId}/linehaul-suggestion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["suggestLinehaul"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/departures/{departureId}/linehaul-trips": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["applyLinehaul"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/departures/{id}": {
         parameters: {
             query?: never;
@@ -4603,6 +4635,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseLinehaulSuggestionResponseDto: {
+            data?: components["schemas"]["LinehaulSuggestionResponseDto"];
+            message?: string;
+            status?: string;
+        };
         ApiResponseListBillableServiceResponseDto: {
             data?: components["schemas"]["BillableServiceResponseDto"][];
             message?: string;
@@ -4765,6 +4802,11 @@ export interface components {
         };
         ApiResponseListLocationResponse: {
             data?: components["schemas"]["LocationResponse"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListLong: {
+            data?: number[];
             message?: string;
             status?: string;
         };
@@ -6849,6 +6891,23 @@ export interface components {
             /** Format: int64 */
             vehicleClassId?: number;
         };
+        LinehaulApplyRequestDto: {
+            trucks: components["schemas"]["TruckChoiceDto"][];
+        };
+        LinehaulHorseDto: {
+            bookingCode?: string;
+            /** Format: int64 */
+            bookingHorseId?: number;
+            /** Format: int32 */
+            cluster?: number;
+            deliveryAddress?: string;
+            horseName?: string;
+        };
+        LinehaulSuggestionResponseDto: {
+            /** Format: int32 */
+            missingSeats?: number;
+            trucks?: components["schemas"]["TruckDto"][];
+        };
         LocationRequest: {
             address: string;
             closingTime?: string;
@@ -7244,6 +7303,11 @@ export interface components {
             startAt?: string;
             stops?: components["schemas"]["PlannedStopDto"][];
             warnings?: ("RIDE_TOO_LONG" | "LATE_FOR_HUB" | "DRIVER_DAY_LIMIT" | "OUTSIDE_WINDOW")[];
+        };
+        PlateDto: {
+            /** Format: int64 */
+            id?: number;
+            licensePlate?: string;
         };
         PriceItemCreateRequestDto: {
             /** Format: int64 */
@@ -8075,6 +8139,30 @@ export interface components {
         };
         TripUnlockRequestDto: {
             reason: string;
+        };
+        TruckChoiceDto: {
+            /** Format: int64 */
+            allotmentId: number;
+            bookingHorseIds: number[];
+            /** Format: int32 */
+            number?: number;
+            /** Format: int64 */
+            vehicleId: number;
+        };
+        TruckDto: {
+            /** Format: int64 */
+            allotmentId?: number;
+            /** @enum {string} */
+            allotmentType?: "BASE" | "SPARE" | "PRIVATE";
+            /** Format: int32 */
+            capacity?: number;
+            horses?: components["schemas"]["LinehaulHorseDto"][];
+            /** Format: int32 */
+            number?: number;
+            /** Format: int32 */
+            usedSeats?: number;
+            vehicleClassName?: string;
+            vehicles?: components["schemas"]["PlateDto"][];
         };
         UnclaimedHorseResolutionRequestDto: {
             /** @enum {string} */
@@ -11316,6 +11404,54 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseDepartureSuggestionResponse"];
+                };
+            };
+        };
+    };
+    suggestLinehaul: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                departureId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseLinehaulSuggestionResponseDto"];
+                };
+            };
+        };
+    };
+    applyLinehaul: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                departureId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinehaulApplyRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListLong"];
                 };
             };
         };

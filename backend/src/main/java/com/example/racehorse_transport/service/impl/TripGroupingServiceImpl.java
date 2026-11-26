@@ -149,7 +149,8 @@ public class TripGroupingServiceImpl implements TripGroupingService {
         Window window = new Window(configs.getInt(side + "_WINDOW_START_HOUR"), configs.getInt(side + "_WINDOW_END_HOUR"));
         double maxHours = TripSchedulePolicy.rideLimitSeconds(false, rules) / 3600.0;
         Point hubPoint = point(hub.getLatitude().doubleValue(), hub.getLongitude().doubleValue());
-        List<Group> groups = TripGroupingPolicy.group(hubPoint, candidates, capacity, maxHours, speed);
+        double clusterRadius = pickup ? Double.POSITIVE_INFINITY : configs.getInt("LINEHAUL_CLUSTER_RADIUS_KM");
+        List<Group> groups = TripGroupingPolicy.group(hubPoint, candidates, capacity, maxHours, speed, clusterRadius);
         List<TripGroupResponseDto> result = new ArrayList<>();
         for (Group group : groups) {
             result.add(describe(group, entries, hub, hubPoint, pickup, speed, date, rules, window, maxHours));

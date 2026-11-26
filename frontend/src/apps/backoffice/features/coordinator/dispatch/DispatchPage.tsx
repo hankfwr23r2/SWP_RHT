@@ -14,6 +14,7 @@ import { Modal } from '@shared/ui/Modal'
 import { PageHeader } from '@shared/ui/PageHeader'
 import { Skeleton } from '@shared/ui/Skeleton'
 import { GroupingPanel } from './GroupingPanel'
+import { LinehaulSuggestionModal } from './LinehaulSuggestionModal'
 import { HubAppointmentModal } from './HubAppointmentModal'
 import { CreateTripModal } from './CreateTripModal'
 import { TripDetailModal } from './TripDetailModal'
@@ -32,6 +33,7 @@ export default function DispatchPage() {
   const [onlyMine, setOnlyMine] = useState(false)
   const [weekStart, setWeekStart] = useState(() => mondayOf(today()))
   const [grouping, setGrouping] = useState(false)
+  const [linehaul, setLinehaul] = useState(false)
   // true: lập lượt mới; một xe: lập lượt đưa xe đó về
   const [creating, setCreating] = useState<boolean | DispatchVehicle>(false)
   const [openTripId, setOpenTripId] = useState<number>()
@@ -77,11 +79,14 @@ export default function DispatchPage() {
             <Button aria-label={t('dispatch.board.next')} icon={<i className="fa-solid fa-chevron-right" />} onClick={() => setWeekStart(addDays(weekStart, 7))} />
             <Button aria-pressed={onlyMine} onClick={() => setOnlyMine(value => !value)}>{t('coordAssignment.mine')}</Button>
             <Button variant="primary" icon={<i className="fa-solid fa-route" />} onClick={() => setGrouping(true)}>{t('dispatch.board.group')}</Button>
+            <Button onClick={() => setLinehaul(true)}>{t('linehaul.suggest')}</Button>
             <Button icon={<i className="fa-solid fa-plus" />} onClick={() => setCreating(true)}>{t('dispatch.newTrip')}</Button>
           </div>
         )}
       />
       {content()}
+      {linehaul && <LinehaulSuggestionModal from={range.fromDate} to={range.toDate} onClose={() => setLinehaul(false)}
+        onCreated={tripId => { setLinehaul(false); void reload(); setOpenTripId(tripId) }} />}
       {creating && data && (
         <CreateTripModal
           bookings={data.bookings}

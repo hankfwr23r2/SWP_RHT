@@ -218,7 +218,7 @@ Thay 6.3, 6.4 và bổ sung theo [NGU_CANH_THIET_KE_LAI.md](NGU_CANH_THIET_KE_LA
 | H1 | Đặt đơn, màn 1 (khách) | Chọn **xe ghép** hoặc **xe riêng**; chuyến hiện Còn chỗ, Sắp đầy, Hết chỗ | Chuyến hết chỗ | Giữ chỗ theo sức chứa của chuyến; hết chỗ thì gợi ý chuyến sau | Giá tạm tính theo chỗ hoặc theo nguyên xe |
 | H2 | Chuyến cần quyết định (quản lý) | **Tăng cường xe**, **Bớt xe** | Hub hết xe dự phòng; bớt xe làm sức chứa nhỏ hơn số chỗ đã bán | Sức chứa bán của chuyến đổi ngay | Chuyến đổi từ Hết chỗ sang Còn chỗ |
 | H3 | Lịch chạy (quản trị) | Lưu lịch, tuyến | Lịch cần nhiều xe hơn hạn mức của hub (cảnh báo) | Tính lại số xe tối thiểu, hạn mức xe trục của hub | |
-| H4 | Điều độ, xếp xe trục (điều phối) | **Gợi ý xếp xe**: nhiều xe một chuyến, gom theo cụm điểm giao, vừa số chỗ; xe riêng không ghép | Tổng chỗ các xe nhỏ hơn số chỗ đã bán; ngựa cùng đơn khác xe | Lập lượt trục cho từng xe, gắn ngựa, xếp khoang | |
+| H4 | Điều độ, xếp xe trục (điều phối) | **Gợi ý chia xe** cho chuyến đã xác nhận chạy. Xem hạng xe, sức chứa, đơn, ngựa, cụm điểm giao và nhãn Xe riêng. | Cảnh báo thiếu chỗ. Kiểm lại ngựa cùng đơn, xe riêng, tổng chỗ đã bán và biển số. | Chọn biển số, xác nhận lập lượt trục, gắn ngựa và xếp khoang trong cùng giao dịch. | |
 | H5 | Hub (hộ tống, điều phối) | **Khám trước khi chạy**, **Khám trước khi giao** từng con | | Thiếu khám thì chặn ra hub | Nhật ký sức khỏe từng con |
 | H6 | Lượt xe của tôi (tài xế) | **Đã về hub gốc**: ảnh tại chỗ, tình trạng xe | Chưa tới mốc sớm nhất; thiếu ảnh | Xe và tổ lái rảnh; cần bảo dưỡng thì khóa xếp lượt | |
 | H7 | Lịch tuần theo xe (điều phối, quản lý) | Xem xe Đang về, giờ dự kiến, cờ trễ | | | |

@@ -65,8 +65,8 @@ Hiện trạng cần sửa:
 |---|---|---|
 | M1 | Xong | #521 |
 | M2 | Xong | #525 |
-| M3 | Đã triển khai | Giữ một xe theo hạng cho mỗi đơn đi trục, tính cước cả xe, nhãn chuyến theo chế độ và tách dịch vụ theo đơn / theo ngựa. |
-| M4 | Chưa làm | |
+| M3 | Xong | #527 |
+| M4 | Xong | #528 |
 | M7 | Xong | #526 |
 | M10 | Xong | #526 |
 | M5 | Xong (bạn B) | #520 |

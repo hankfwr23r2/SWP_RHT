@@ -29,16 +29,24 @@ public final class TripGroupingPolicy {
     public record Group(List<Candidate> order, double routeKm, double hours) {}
 
     public static double km(Point a, Point b) {
+        return straightKm(a, b) * ROAD_FACTOR;
+    }
+
+    public static double straightKm(Point a, Point b) {
         double dLat = Math.toRadians(b.lat() - a.lat());
         double dLng = Math.toRadians(b.lng() - a.lng());
         double h = Math.pow(Math.sin(dLat / 2), 2)
                 + Math.cos(Math.toRadians(a.lat())) * Math.cos(Math.toRadians(b.lat())) * Math.pow(Math.sin(dLng / 2), 2);
-        return 2 * EARTH_RADIUS_KM * Math.asin(Math.sqrt(h)) * ROAD_FACTOR;
+        return 2 * EARTH_RADIUS_KM * Math.asin(Math.sqrt(Math.min(1, h)));
     }
 
     // Đơn xa hub nhất làm gốc, chèn thêm đơn gần nó vào chỗ tốn ít đường nhất nếu nhóm vẫn hợp lệ.
     // Đơn đi một mình luôn là một nhóm (kể cả khi tự nó đã quá maxHours: điều phối thấy số giờ và tự xử lý)
     public static List<Group> group(Point hub, List<Candidate> candidates, int capacity, double maxHours, double speedKmh) {
+        return group(hub, candidates, capacity, maxHours, speedKmh, Double.POSITIVE_INFINITY);
+    }
+
+    public static List<Group> group(Point hub, List<Candidate> candidates, int capacity, double maxHours, double speedKmh, double radiusKm) {
         List<Candidate> remaining = new ArrayList<>(candidates.stream()
                 .sorted(Comparator.comparingDouble((Candidate c) -> km(c.point(), hub)).reversed().thenComparing(Candidate::bookingId)).toList());
         List<Group> groups = new ArrayList<>();
@@ -50,6 +58,7 @@ public final class TripGroupingPolicy {
                 added = false;
                 List<Candidate> nearby = remaining.stream().sorted(Comparator.comparingDouble(c -> km(c.point(), seed.point()))).toList();
                 for (Candidate candidate : nearby) {
+                    if (route.stream().anyMatch(stop -> straightKm(stop.point(), candidate.point()) > radiusKm)) continue;
                     List<Candidate> best = bestInsertion(hub, route, candidate, capacity, maxHours, speedKmh);
                     if (best != null) {
                         route = best;
