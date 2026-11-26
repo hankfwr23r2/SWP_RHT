@@ -108,6 +108,8 @@ class BookingRoutingServiceTest {
                 storedAddress(AddressRole.PICKUP, "VN-79"), storedAddress(AddressRole.DELIVERY, "VN-48")));
         when(serviceAreas.findHubId("VN-79", ActiveStatus.ACTIVE)).thenReturn(Optional.of(1L));
         when(serviceAreas.findHubId("VN-48", ActiveStatus.ACTIVE)).thenReturn(Optional.of(2L));
+        // Tuyến trong nước không qua cửa khẩu
+        when(regulations.gateOf(replacement.getRoute(), BookingType.INTERPROVINCE)).thenReturn(null);
         when(regulations.resolve(BookingType.INTERPROVINCE, "VN", "VN", pickupDate, null))
                 .thenReturn(new RegulationPreviewResponseDto(null, 5, List.of(), false, null, null));
         when(clock.instant()).thenReturn(Instant.parse("2026-12-28T01:00:00Z"));
