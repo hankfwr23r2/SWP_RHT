@@ -67,13 +67,14 @@ class BookingDtoTest {
     @Test
     void bookingMappingLeavesFieldsOwnedByServiceUnset() throws Exception {
         BookingCreateRequestDto input = new ObjectMapper().readValue("""
-                {"bookingType":"LOCAL","id":99,"code":"fake","status":"COMPLETED","createdBy":99,
+                {"bookingType":"LOCAL","transportMode":"PRIVATE","id":99,"code":"fake","status":"COMPLETED","createdBy":99,
                  "createdAt":"2027-01-01T00:00:00Z","price":100,"emergencySpendingLimit":42}
                 """, BookingCreateRequestDto.class);
         Customer owner = new Customer();
         Booking booking = input.toEntity(owner, null);
         assertThat(booking.getCustomer()).isSameAs(owner);
         assertThat(booking.getBookingType()).isEqualTo(BookingType.LOCAL);
+        assertThat(BookingResponseDto.from(booking).transportMode()).isEqualTo(TransportMode.PRIVATE);
         assertThat(booking.getPickupMethod()).isEqualTo(TransferMethod.COMPANY);
         assertThat(booking.getDeliveryMethod()).isEqualTo(TransferMethod.COMPANY);
         assertThat(booking.getId()).isNull();

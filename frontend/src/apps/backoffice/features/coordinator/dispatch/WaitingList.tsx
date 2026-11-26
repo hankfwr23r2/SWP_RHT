@@ -1,4 +1,5 @@
 // Đơn của tuần dạng thẻ: chặng còn thiếu, ngựa, nơi đón và giao. Mặc định chỉ hiện đơn còn chặng phải xếp
+import { PrivateVehicleBadge } from '@shared/components/PrivateVehicleBadge'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { DispatchBooking, DispatchHorse } from '@shared/api/dispatch'
@@ -36,7 +37,7 @@ export function WaitingList({ bookings, onJourney, onHub, next, onWeek }: Props)
         {shown.map(booking => (
           <li key={booking.id} className={s.card}>
             <div className={s.cardHead}>
-              <strong>{booking.code}</strong>
+              <strong>{booking.code}</strong> <PrivateVehicleBadge mode={booking.transportMode} />
               <Badge>{booking.routeCode ?? t('dispatch.bookings.direct')}</Badge>
             </div>
             <p className={s.line}><i className="fa-solid fa-location-dot" aria-hidden="true" /> {booking.pickupAddress?.addressLine ?? '—'}</p>

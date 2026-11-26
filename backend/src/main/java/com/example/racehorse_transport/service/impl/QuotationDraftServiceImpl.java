@@ -68,11 +68,14 @@ public class QuotationDraftServiceImpl implements QuotationDraftService {
             roads.add(new RoadLeg(data.roads().get(i).layer(), data.vehicleClassId(), estimates.get(i).km()));
         }
         var delivery = data.destinations().isEmpty() ? null : pricing.deliveryPricing(data.deliveryHubId(), data.destinations());
-        if (delivery != null) roads.add(delivery.loop());
         var loaded = data.input();
+        if (delivery != null) {
+            roads.add(loaded.privateVehicle() == null ? delivery.loop()
+                    : new RoadLeg(ServiceLayer.DELIVERY, loaded.privateVehicle().classId(), delivery.loop().km()));
+        }
         var input = new PricingInput(loaded.currencyCode(), loaded.quotationDate(), loaded.bookingType(), loaded.routeId(),
                 loaded.linehaulKm(), roads, loaded.stallsByType(), loaded.horseCount(), loaded.addOns(), loaded.earlyPickupDays(),
-                delivery == null ? List.of() : delivery.separate());
+                delivery == null || loaded.privateVehicle() != null ? List.of() : delivery.separate(), loaded.privateVehicle());
         long deliverySeconds = delivery == null ? 0 : delivery.deliverySeconds();
         for (int i = 0; i < data.roads().size(); i++) {
             if (data.roads().get(i).layer() != ServiceLayer.PICKUP) {
@@ -123,7 +126,9 @@ public class QuotationDraftServiceImpl implements QuotationDraftService {
             var service = item.getBillableService();
             var type = lineType(service.getLayer());
             var billedHorses = data.horses().stream().filter(horse -> switch (type) {
-                case LINEHAUL, STALL -> Objects.equals(price.stallTypeCode(), horse.stallType());
+                case LINEHAUL -> quotation.getBooking().getTransportMode() != TransportMode.PRIVATE
+                        && Objects.equals(price.stallTypeCode(), horse.stallType());
+                case STALL -> Objects.equals(price.stallTypeCode(), horse.stallType());
                 case QUARANTINE -> true;
                 case SERVICE -> price.billingUnit() != BillingUnit.PER_BOOKING && price.billingUnit() != BillingUnit.PER_KM
                         && horse.services().contains(service.getId());

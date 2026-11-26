@@ -69,11 +69,20 @@ public class PricingDataServiceImpl implements PricingDataService {
         var regulation = regulations.resolve(type, pickup.getCountry().getCode(), delivery.getCountry().getCode(),
                 pickupTime.toLocalDate(), plan.gateId());
 
+        PrivateVehicle privateVehicle = null;
+        if (request.transportMode() == TransportMode.PRIVATE) {
+            VehicleClass selected = plan.departure() == null
+                    ? PricingPolicy.smallestVehicleClass(fleet.vehicleClasses(), seats)
+                    : fleet.vehicleClass(fleet.privateStock(plan.departure(), seats, false)
+                            .orElseThrow(() -> new PricingRuleException("Chuyến này không còn xe riêng", true)).vehicleClassId());
+            privateVehicle = PrivateVehicle.from(selected);
+        }
         Long vehicleClassId = null;
         int weightTons = 0;
         int topSpeedKmh = 0;
         if (!plan.roadLegs().isEmpty()) {
-            vehicleClassId = PricingPolicy.smallestVehicleClass(fleet.vehicleClasses(), seats).getId();
+            vehicleClassId = privateVehicle == null ? PricingPolicy.smallestVehicleClass(fleet.vehicleClasses(), seats).getId()
+                    : privateVehicle.classId();
             weightTons = config.getInt("TRUCK_WEIGHT_TONS");
             topSpeedKmh = config.getInt("TRUCK_TOP_SPEED_KMH");
         }
@@ -86,7 +95,7 @@ public class PricingDataServiceImpl implements PricingDataService {
                 plan.departure() == null ? null : plan.departure().getDepartureDate());
         PricingInput input = new PricingInput(PREVIEW_CURRENCY, LocalDate.ofInstant(now, BUSINESS_ZONE),
                 type, route == null ? null : route.getId(), route == null ? null : route.getDistanceKm(),
-                List.of(), selection.stalls(), selection.horseCount(), List.copyOf(addOns.values()), earlyPickupDays);
+                List.of(), selection.stalls(), selection.horseCount(), List.copyOf(addOns.values()), earlyPickupDays, List.of(), privateVehicle);
         List<RoadSegment> segments = plan.roadLegs();
         Long deliveryHubId = null;
         List<Destination> destinations = List.of();
@@ -193,7 +202,8 @@ public class PricingDataServiceImpl implements PricingDataService {
         if (departure.getStatus() != DepartureStatus.OPEN || route.getStatus() != ActiveStatus.ACTIVE
                 || !now.isBefore(departure.getBookingCutoffAt())
                 || !request.pickupAt().isBefore(departure.getPlannedDepartureAt())
-                || fleet.sellableCapacity(departure) - departure.getBookedStallCount() < stalls) {
+                || (request.transportMode() == TransportMode.SHARED
+                && fleet.sellableCapacity(departure) - departure.getBookedStallCount() < stalls)) {
             throw new PricingRuleException("Chuyến trục không đủ điều kiện để đặt.", true);
         }
         BookingSubmissionPolicy.validatePickupDate(type, LocalDate.ofInstant(request.pickupAt(), BUSINESS_ZONE),

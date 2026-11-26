@@ -14,6 +14,14 @@ public interface DepartureFleetService {
     VehicleClass vehicleClass(Long id);
     List<VehicleClass> vehicleClasses();
     long sellableCapacity(Departure departure);
+    java.util.Optional<Stock> privateStock(Departure departure, int stalls, boolean lockHub);
+
+    void reservePrivate(Departure departure, com.example.racehorse_transport.entity.Booking booking, int stalls);
+
+    VehicleClass privateVehicleClass(Long bookingId);
+
+    void releasePrivate(Departure departure, Long bookingId);
+
     List<Stock> freeStock(Departure departure, boolean lockHub);
     DepartureAvailability availability(Departure departure, long spareCapacity);
     void attach(Departure departure, VehicleClass vehicleClass, int count, DepartureAllotmentType type, AppUser actor);

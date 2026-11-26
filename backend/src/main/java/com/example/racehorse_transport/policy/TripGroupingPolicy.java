@@ -19,7 +19,11 @@ public final class TripGroupingPolicy {
 
     public record Point(double lat, double lng) {}
 
-    public record Candidate(Long bookingId, Point point, int seats) {}
+    public record Candidate(Long bookingId, Point point, int seats, boolean privateVehicle) {
+        public Candidate(Long bookingId, Point point, int seats) {
+            this(bookingId, point, seats, false);
+        }
+    }
 
     // order: thứ tự đón (lượt giao thì nơi gọi đảo ngược). routeKm: từ địa chỉ đầu tới hub. hours: thời gian ngựa đầu tiên ở trên xe
     public record Group(List<Candidate> order, double routeKm, double hours) {}
@@ -74,6 +78,7 @@ public final class TripGroupingPolicy {
     }
 
     private static List<Candidate> bestInsertion(Point hub, List<Candidate> route, Candidate candidate, int capacity, double maxHours, double speedKmh) {
+        if (candidate.privateVehicle() || route.getFirst().privateVehicle()) return null;
         if (route.stream().mapToInt(Candidate::seats).sum() + candidate.seats() > capacity) return null;
         List<Candidate> best = null;
         double bestKm = Double.MAX_VALUE;

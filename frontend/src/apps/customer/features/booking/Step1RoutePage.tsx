@@ -1,5 +1,5 @@
 // Bước 1: nơi đón, nơi giao, cách đưa và nhận ngựa, chuyến trong tuần, giấy phải nộp.
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { bookingOrdersApi } from '@shared/api/bookingOrders'
@@ -32,28 +32,36 @@ export default function Step1RoutePage() {
   const type = bookingTypeOf(pickup, delivery)
   const fromDate = draft.fromDate || addDays(today, 1)
   const selected = draft.departure
+  const stalls = Math.max(1, draft.horseIds.reduce((total, id) =>
+    total + (data.stallTypes.find(stall => stall.code === draft.horses[id]?.stallTypeCode)?.seats ?? 1), 0))
+  const mode = draft.transportMode
 
   const suggestions = useLoad(async () => {
     if (!type || !pickup || !delivery) return undefined
-    const result = await bookingOrdersApi.suggestions({
+    return bookingOrdersApi.suggestions({
       bookingType: type,
       pickupProvinceCode: pickup.provinceCode!,
       deliveryProvinceCode: delivery.provinceCode!,
       pickupLatitude: pickup.latitude, pickupLongitude: pickup.longitude,
       deliveryLatitude: delivery.latitude, deliveryLongitude: delivery.longitude,
-      fromDate, stalls: 1,
+      fromDate, stalls, transportMode: mode,
     })
+  }, [type, pickup?.id, delivery?.id, fromDate, stalls, mode], { toastOnError: false })
+
+  useEffect(() => {
+    const result = suggestions.data
+    if (!suggestions.loaded || suggestions.error || !result) return
     const direct = result.routing === 'DIRECT'
     // Chuyến đã chọn nhưng hết chỗ hoặc qua hạn chốt thì bỏ chọn; còn thì cập nhật chỗ trống
-    const current = selected && result.departures?.find(departure => departure.id === selected.id)
+    const current = selected && result.departures?.find(departure => departure.id === selected.id
+      && departure.availability !== 'FULL' && !result.tooLateDepartureIds?.includes(departure.id!))
     save({
       routing: result.routing ?? '',
       departure: current ?? null,
       ...(selected && !current && { pickupDate: '' }),
       ...(direct && { pickupMethod: 'COMPANY', deliveryMethod: 'COMPANY' }),
     })
-    return result
-  }, [type, pickup?.id, delivery?.id, fromDate], { toastOnError: false })
+  }, [suggestions.data, suggestions.loaded, suggestions.error, selected, save])
 
   const needRules = type != null && type !== 'LOCAL' && routeReady(draft)
   const regulations = useLoad(async () => needRules
@@ -96,7 +104,7 @@ export default function Step1RoutePage() {
   const next = (event: FormEvent) => {
     event.preventDefault()
     setSubmitted(true)
-    if (!type || !routeReady(draft) || badDate || infeasible) {
+    if (!type || !routeReady(draft) || badDate || infeasible || (linehaul && (!suggestions.loaded || !!suggestions.error))) {
       requestAnimationFrame(() => document.querySelector('[role="alert"]')?.scrollIntoView({ block: 'center', behavior: 'smooth' }))
       return
     }
@@ -122,8 +130,21 @@ export default function Step1RoutePage() {
           </div>
         </Card>
 
+        {type && <fieldset className={s.group}>
+          <legend>{t('bookingForm.transportMode.label')}</legend>
+          <div className={s.options}>
+            {(['SHARED', 'PRIVATE'] as const).map(transportMode => (
+              <label key={transportMode} className={s.option}>
+                <Input type="radio" name="transportMode" checked={mode === transportMode}
+                  onChange={() => save({ transportMode })} />
+                <strong>{t(`common.transportMode.${transportMode}`)}</strong>
+                {transportMode === 'PRIVATE' && <span>{t('bookingForm.transportMode.description')}</span>}
+              </label>
+            ))}
+          </div>
+        </fieldset>}
         {type && !direct && (
-          <DeparturePicker suggestion={suggestions.data} loaded={suggestions.loaded} error={suggestions.error} onRetry={suggestions.reload}
+          <DeparturePicker privateMode={mode === 'PRIVATE'} suggestion={suggestions.data} loaded={suggestions.loaded} error={suggestions.error} onRetry={suggestions.reload}
             fromDate={fromDate} minDate={today} onFromDate={date => save({ fromDate: date, departure: null, pickupDate: '' })}
             selectedId={selected?.id} onSelect={chooseDeparture}
             invalid={infeasible ? t('bookingForm.route.notFeasible', { days: regulations.data?.leadDays ?? 0 })

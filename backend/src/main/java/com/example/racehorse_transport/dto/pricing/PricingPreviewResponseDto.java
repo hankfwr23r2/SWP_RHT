@@ -10,7 +10,8 @@ import java.util.List;
 
 public record PricingPreviewResponseDto(Long priceListId, String currencyCode, BookingType bookingType,
                                         BigDecimal depositRate, List<LegDistance> legs,
-                                        List<PriceLineResponseDto> lines, BigDecimal total, List<DeliveryEstimate> deliveryEstimates) {
+                                        List<PriceLineResponseDto> lines, BigDecimal total, List<DeliveryEstimate> deliveryEstimates,
+                                        String privateVehicleClassCode, Integer privateVehicleBillableStalls) {
     public record DeliveryEstimate(Long customerAddressId, java.time.Instant arrivalAt) {}
     public record LegDistance(ServiceLayer layer, BigDecimal km, Long vehicleClassId) {}
 
@@ -28,6 +29,7 @@ public record PricingPreviewResponseDto(Long priceListId, String currencyCode, B
         }
         return new PricingPreviewResponseDto(result.priceListId(), result.currencyCode(), input.bookingType(),
                 result.depositRate(), List.copyOf(legs), result.lines().stream().map(PriceLineResponseDto::from).toList(),
-                result.total(), deliveryEstimates);
+                result.total(), deliveryEstimates, input.privateVehicle() == null ? null : input.privateVehicle().classCode(),
+                input.privateVehicle() == null ? null : input.privateVehicle().billableStalls());
     }
 }

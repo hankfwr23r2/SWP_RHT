@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.entity.enums.TransportMode;
 import com.example.racehorse_transport.dto.booking.BookingCancellationResponseDto;
 import com.example.racehorse_transport.dto.booking.CancelBookingRequestDto;
 import com.example.racehorse_transport.dto.booking.CompanyCancelBookingRequestDto;
@@ -307,7 +308,11 @@ public class BookingCancellationServiceImpl implements BookingCancellationServic
         var active = horses.findForDetail(booking.getId()).stream().filter(horse -> horse.getStatus() == BookingHorseStatus.ACTIVE)
                 .map(horse -> horse.getStallType().getCode()).toList();
         if (!active.isEmpty()) {
-            departures.release(booking.getDeparture().getId(), StallSeatPolicy.total(active));
+            if (booking.getTransportMode() == TransportMode.PRIVATE) {
+                departures.releasePrivate(booking.getDeparture().getId(), booking.getId());
+            } else {
+                departures.release(booking.getDeparture().getId(), StallSeatPolicy.total(active));
+            }
         }
         booking.setDeparture(null);
     }

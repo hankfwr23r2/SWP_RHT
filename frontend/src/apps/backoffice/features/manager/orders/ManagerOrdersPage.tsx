@@ -1,3 +1,4 @@
+import { PrivateVehicleBadge } from '@shared/components/PrivateVehicleBadge'
 import { ListPanel } from '@shared/ui/ListPanel'
 import { OrderRoute } from '@shared/components/OrderRoute'
 // Đơn hàng của quản lý: theo từng nhóm việc, tìm theo mã đơn, khách, tuyến.
@@ -36,7 +37,7 @@ export default function ManagerOrdersPage() {
     { key: 'departure', header: t('mgr.orders.departure'), render: row => row.departureDate ? showDate(row.departureDate) : row.requestedPickupDate ? showDate(row.requestedPickupDate) : '—' },
     { key: 'horses', header: t('mgr.orders.horses'), align: 'center', render: row => row.horseCount || '—' },
     { key: 'created', header: t('mgr.orders.created'), render: row => row.createdAt ? day(row.createdAt) : '—' },
-    { key: 'status', header: t('mgr.orders.status'), render: row => <OrderStatusBadge status={row.status} /> },
+    { key: 'status', header: t('mgr.orders.status'), render: row => <><OrderStatusBadge status={row.status} /> <PrivateVehicleBadge mode={row.transportMode} /></> },
     { key: 'action', header: t('mgr.orders.action'), align: 'end', render: row => {
       const task = taskOf(row.status, group)
       return <Button size="sm" variant={task ? 'primary' : 'secondary'} onClick={() => navigate(`/manager/orders/${row.id}`)}>{t(`mgr.orders.tasks.${task ?? 'view'}`)}</Button>

@@ -6,6 +6,7 @@ import com.example.racehorse_transport.entity.BookingHorse;
 import com.example.racehorse_transport.entity.enums.BookingHorseStatus;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.BookingType;
+import com.example.racehorse_transport.entity.enums.TransportMode;
 import com.example.racehorse_transport.entity.enums.TransferMethod;
 import com.example.racehorse_transport.entity.enums.HorseLegType;
 import com.example.racehorse_transport.policy.StallSeatPolicy;
@@ -15,7 +16,7 @@ import java.util.List;
 
 // Đơn chờ xếp xe ở bảng điều độ: địa chỉ đón và giao, chuyến trục, từng con ngựa với các chặng đã lập
 public record DispatchBookingResponseDto(
-        Long id, String code, BookingType bookingType, BookingStatus status, LocalDate requestedPickupDate,
+        Long id, String code, BookingType bookingType, TransportMode transportMode, BookingStatus status, LocalDate requestedPickupDate,
         Long departureId, String routeCode, Instant plannedDepartureAt, Instant hubCheckinDeadlineAt,
         AddressDto pickupAddress, AddressDto deliveryAddress, List<HorseDto> horses,
         TransferMethod pickupMethod, TransferMethod deliveryMethod) {
@@ -44,7 +45,7 @@ public record DispatchBookingResponseDto(
     public static DispatchBookingResponseDto from(Booking booking, BookingAddress pickup, BookingAddress delivery,
                                                    List<HorseDto> horses, Instant departureAt, Instant hubCheckinDeadlineAt) {
         var departure = booking.getDeparture();
-        return new DispatchBookingResponseDto(booking.getId(), booking.getCode(), booking.getBookingType(), booking.getStatus(),
+        return new DispatchBookingResponseDto(booking.getId(), booking.getCode(), booking.getBookingType(), booking.getTransportMode(), booking.getStatus(),
                 booking.getRequestedPickupDate(),
                 departure == null ? null : departure.getId(), departure == null ? null : departure.getRoute().getCode(),
                 departureAt, hubCheckinDeadlineAt,

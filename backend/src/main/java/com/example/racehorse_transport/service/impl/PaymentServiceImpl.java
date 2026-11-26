@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.entity.enums.TransportMode;
 import com.example.racehorse_transport.client.VnpayClient;
 import com.example.racehorse_transport.dto.payment.PaymentResponseDto;
 import com.example.racehorse_transport.entity.Booking;
@@ -133,7 +134,11 @@ public class PaymentServiceImpl implements PaymentService {
                     .filter(horse -> horse.getStatus() == BookingHorseStatus.ACTIVE)
                     .map(horse -> horse.getStallType().getCode()).toList();
             if (!types.isEmpty()) {
-                departures.release(booking.getDeparture().getId(), StallSeatPolicy.total(types));
+                if (booking.getTransportMode() == TransportMode.PRIVATE) {
+                    departures.releasePrivate(booking.getDeparture().getId(), booking.getId());
+                } else {
+                    departures.release(booking.getDeparture().getId(), StallSeatPolicy.total(types));
+                }
             }
             // Không còn giữ chỗ thì không còn chuyến, để lần hủy sau không nhả chỗ lần nữa
             booking.setDeparture(null);

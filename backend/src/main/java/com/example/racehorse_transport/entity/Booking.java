@@ -2,6 +2,7 @@ package com.example.racehorse_transport.entity;
 
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.BookingType;
+import com.example.racehorse_transport.entity.enums.TransportMode;
 import com.example.racehorse_transport.entity.enums.TransferMethod;
 
 import jakarta.persistence.Column;
@@ -64,6 +65,10 @@ public class Booking {
     @Enumerated(EnumType.STRING)
     @Column(name = "booking_type", length = 30, nullable = false)
     private BookingType bookingType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "transport_mode", length = 30, nullable = false)
+    private TransportMode transportMode = TransportMode.SHARED;
 
     // Chuyến trục chính. NULL khi chưa gán chuyến hoặc khi đơn chạy thẳng
     @ManyToOne(fetch = FetchType.LAZY, optional = true)

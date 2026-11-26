@@ -3,6 +3,8 @@
 -- Ngày tính theo ngày chạy seed lần đầu. Đơn giá chép từ "Bảng giá mẫu (dev)". Tổng và tiền cọc ở đây chỉ là dữ liệu mẫu;
 -- trong ứng dụng, QuotationService và DepositPolicy mới là nơi tính.
 
+-- Các đơn mẫu dùng xe ghép. Bỏ qua transport_mode và booking_id của departure_vehicle để dùng được cả trước M3.
+
 -- 1. Bổ sung chuyến còn thiếu cho 6 tuần tới theo lịch đội xe mới. Giữ nguyên chuyến đã sinh.
 DO $m2$
 BEGIN

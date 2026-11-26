@@ -337,6 +337,7 @@ export const staffManager = {
         emptyHint: 'Tải lại chi tiết chuyến để kiểm tra lại đội xe.',
         vehicle: '{{count}} xe {{vehicleClass}} · {{type}}',
         BASE: 'Xe nền',
+        PRIVATE: 'Xe riêng',
         SPARE: 'Xe để sẵn',
       },
       uncommitted: '{{count}} đơn chưa cọc sẽ bị nhả chỗ hoặc tự hết hạn.',

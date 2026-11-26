@@ -22,6 +22,7 @@ export function useReschedule(data: OrderData, reschedule?: (body: BookingResche
       .reduce((sum, horse) => sum + (data.stallTypes?.find(stall => stall.code === horse.stallTypeCode)?.seats ?? 1), 0)
     return bookingOrdersApi.suggestions({
       bookingType: booking!.bookingType!, fromDate: dayAfter(today), stalls: Math.max(1, seats),
+      transportMode: booking?.transportMode,
       pickupProvinceCode: pickup?.provinceCode ?? '', deliveryProvinceCode: delivery?.provinceCode ?? '',
       pickupLatitude: pickup?.latitude, pickupLongitude: pickup?.longitude,
       deliveryLatitude: delivery?.latitude, deliveryLongitude: delivery?.longitude,

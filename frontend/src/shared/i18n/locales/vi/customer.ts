@@ -596,6 +596,7 @@ export const customer = {
     },
   },
   bookingForm: {
+    transportMode: { label: 'Hình thức vận chuyển', description: 'Xe riêng không ghép đơn khác và tính tiền cả xe.', full: 'Không còn xe riêng cho chuyến này', price: 'Xe riêng ({{vehicle}}, {{count}} chỗ tính tiền)' },
     required: 'Vui lòng điền mục này.',
     cancel: 'Về trang chủ',
     back: 'Quay lại',
@@ -755,6 +756,7 @@ export const customer = {
       next: 'Tiếp tục: dịch vụ và bảo hiểm',
     },
     services: {
+      bookingAddOns: 'Dịch vụ cho cả đơn', horseAddOns: 'Dịch vụ cho từng con', noSelectedAddOns: 'Chưa chọn dịch vụ thêm cho cả đơn.',
       title: 'Dịch vụ và bảo hiểm',
       subtitle: 'Chọn thêm dịch vụ nếu cần và cho biết bảo hiểm của từng con.',
       addOns: 'Dịch vụ thêm',

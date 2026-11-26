@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.entity.enums.TransportMode;
 import com.example.racehorse_transport.dto.booking.BookingCreateRequestDto.AddressInput;
 import com.example.racehorse_transport.dto.booking.BookingCreateRequestDto.HorseInput;
 import com.example.racehorse_transport.dto.booking.BookingCreateRequestDto;
@@ -24,6 +25,7 @@ import com.example.racehorse_transport.service.DepartureService;
 import com.example.racehorse_transport.service.RegulationService;
 import com.example.racehorse_transport.util.BookingCodes;
 
+import com.example.racehorse_transport.entity.enums.TransportMode;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -84,6 +86,10 @@ public class BookingServiceImpl implements BookingService {
         }
 
         Booking booking = insertBooking(request, customer, departure, now);
+        boolean privateMode = booking.getTransportMode() == TransportMode.PRIVATE;
+        if (departure != null && privateMode) {
+            departureService.reservePrivate(departure.getId(), booking, requestedStalls(request));
+        }
         details.saveParties(request, booking);
         details.saveAddress(resolved.pickup(), resolved.pickupProvince(), booking);
         List<BookingAddress> deliveryPlaces = resolved.deliveryPlaces().stream()
@@ -104,12 +110,15 @@ public class BookingServiceImpl implements BookingService {
             }
         }
         details.acceptServiceTerms(booking, ipAddress);
-        if (departure != null) {
-            int seats = StallSeatPolicy.total(request.horses().stream().map(HorseInput::stallTypeCode).toList());
-            departureService.reserve(departure.getId(), seats);
+        if (departure != null && !privateMode) {
+            departureService.reserve(departure.getId(), requestedStalls(request));
         }
         statusHistory.recordInitialStatus(booking);
         return BookingResponseDto.from(booking);
+    }
+
+    private static int requestedStalls(BookingCreateRequestDto request) {
+        return StallSeatPolicy.total(request.horses().stream().map(HorseInput::stallTypeCode).toList());
     }
 
     private static boolean hasPersonalInsurance(HorseInput horse) {
@@ -159,7 +168,7 @@ public class BookingServiceImpl implements BookingService {
             if (bookings.insertIfCodeAvailable(code, customer.getUserId(), candidate.getBookingType().name(),
                     departureId, candidate.getRequestedPickupDate(), candidate.getEmergencySpendingLimit(),
                     candidate.getStatus().name(), candidate.getCreatedBy().getId(), now,
-                    candidate.getPickupMethod().name(), candidate.getDeliveryMethod().name()) == 1) {
+                    candidate.getPickupMethod().name(), candidate.getDeliveryMethod().name(), candidate.getTransportMode().name()) == 1) {
                 return bookings.findByCode(code).orElseThrow();
             }
         }

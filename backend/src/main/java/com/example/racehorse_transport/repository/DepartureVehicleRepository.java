@@ -13,6 +13,8 @@ public interface DepartureVehicleRepository extends JpaRepository<DepartureVehic
             """)
     List<DepartureVehicle> findAllotments(Long departureId);
 
+    java.util.Optional<DepartureVehicle> findByBooking_Id(Long bookingId);
+
     interface SpareStock {
         Long getVehicleClassId();
         int getStalls();
@@ -21,14 +23,18 @@ public interface DepartureVehicleRepository extends JpaRepository<DepartureVehic
 
     @Query(value = """
             SELECT vc.id AS "vehicleClassId", vc.max_stall_count AS stalls,
-                   CAST(count(*) - coalesce(busy.vehicle_count, 0) AS int) AS "vehicleCount"
+                   CAST(CASE WHEN :privateMode THEN count(*) - coalesce(busy.vehicle_count, 0)
+                       ELSE least(count(*) - coalesce(busy.vehicle_count, 0),
+                           count(*) FILTER (WHERE v.service_role = 'SPARE') - coalesce(busy.spare_count, 0))
+                   END AS int) AS "vehicleCount"
             FROM vehicle v JOIN vehicle_class vc ON vc.id = v.vehicle_class_id
             LEFT JOIN (
-                SELECT a.vehicle_class_id, sum(a.vehicle_count) AS vehicle_count
+                SELECT a.vehicle_class_id, sum(a.vehicle_count) AS vehicle_count,
+                       sum(a.vehicle_count) FILTER (WHERE a.allotment_type = 'SPARE') AS spare_count
                 FROM departure_vehicle a
                 JOIN departure d ON d.id = a.departure_id
                 JOIN route r ON r.id = d.route_id
-                WHERE a.allotment_type = 'SPARE' AND d.status <> 'CANCELLED'
+                WHERE a.allotment_type IN ('SPARE', 'PRIVATE') AND d.status <> 'CANCELLED'
                   AND r.origin_location_id = :hubId
                   AND d.planned_departure_at <= :busyUntil
                   AND d.planned_departure_at
@@ -36,9 +42,8 @@ public interface DepartureVehicleRepository extends JpaRepository<DepartureVehic
                       + :restHours * interval '1 hour' >= :startsAt
                 GROUP BY a.vehicle_class_id
             ) busy ON busy.vehicle_class_id = vc.id
-            WHERE v.home_hub_location_id = :hubId AND v.status = 'ACTIVE' AND v.service_role = 'SPARE'
-            GROUP BY vc.id, busy.vehicle_count
-            HAVING count(*) > coalesce(busy.vehicle_count, 0)
+            WHERE v.home_hub_location_id = :hubId AND v.status = 'ACTIVE' AND v.service_role IN ('SPARE', 'BRANCH')
+            GROUP BY vc.id, busy.vehicle_count, busy.spare_count
             """, nativeQuery = true)
-    List<SpareStock> findSpareStock(Long hubId, Instant startsAt, Instant busyUntil, int restHours);
+    List<SpareStock> findSpareStock(Long hubId, Instant startsAt, Instant busyUntil, int restHours, boolean privateMode);
 }

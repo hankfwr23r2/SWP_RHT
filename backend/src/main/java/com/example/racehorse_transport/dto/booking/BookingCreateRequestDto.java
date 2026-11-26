@@ -4,6 +4,7 @@ import com.example.racehorse_transport.entity.*;
 import com.example.racehorse_transport.entity.enums.AddressRole;
 import com.example.racehorse_transport.entity.enums.BookingPartyRole;
 import com.example.racehorse_transport.entity.enums.BookingType;
+import com.example.racehorse_transport.entity.enums.TransportMode;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.example.racehorse_transport.entity.enums.TransferMethod;
 import jakarta.validation.Valid;
@@ -23,9 +24,18 @@ public record BookingCreateRequestDto(
         @NotEmpty List<@NotNull @Valid HorseInput> horses,
         @NotNull Boolean acceptedServiceTerms,
         TransferMethod pickupMethod,
-        TransferMethod deliveryMethod) {
+        TransferMethod deliveryMethod,
+        TransportMode transportMode) {
+
+    public BookingCreateRequestDto(BookingType bookingType, Long departureId, LocalDate requestedPickupDate,
+            BigDecimal emergencySpendingLimit, List<PartyInput> parties, List<AddressInput> addresses,
+            List<HorseInput> horses, Boolean acceptedServiceTerms, TransferMethod pickupMethod, TransferMethod deliveryMethod) {
+        this(bookingType, departureId, requestedPickupDate, emergencySpendingLimit, parties, addresses, horses,
+                acceptedServiceTerms, pickupMethod, deliveryMethod, TransportMode.SHARED);
+    }
 
     public BookingCreateRequestDto {
+        transportMode = transportMode == null ? TransportMode.SHARED : transportMode;
         pickupMethod = pickupMethod == null ? TransferMethod.COMPANY : pickupMethod;
         deliveryMethod = deliveryMethod == null ? TransferMethod.COMPANY : deliveryMethod;
     }
@@ -41,6 +51,7 @@ public record BookingCreateRequestDto(
         booking.setCustomer(customer);
         booking.setDeparture(departure);
         booking.setBookingType(bookingType);
+        booking.setTransportMode(transportMode);
         booking.setRequestedPickupDate(requestedPickupDate);
         booking.setPickupMethod(pickupMethod);
         booking.setDeliveryMethod(deliveryMethod);

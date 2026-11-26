@@ -596,6 +596,7 @@ export const customer = {
     },
   },
   bookingForm: {
+    transportMode: { label: 'Transport mode', description: 'A private vehicle carries only your booking and is charged in full.', full: 'No private vehicle available for this departure', price: 'Private vehicle ({{vehicle}}, {{count}} billed stalls)' },
     required: 'Please fill this in.',
     cancel: 'Home',
     back: 'Back',
@@ -755,6 +756,7 @@ export const customer = {
       next: 'Continue: services and insurance',
     },
     services: {
+      bookingAddOns: 'Services for the booking', horseAddOns: 'Services per horse', noSelectedAddOns: 'No booking-level add-ons selected.',
       title: 'Services and insurance',
       subtitle: 'Add services if needed and tell us the insurance of each horse.',
       addOns: 'Extra services',

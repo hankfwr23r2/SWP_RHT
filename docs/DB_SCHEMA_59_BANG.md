@@ -478,8 +478,8 @@ Index: `route_id`.
 | `departure_date` | `date` | | | |
 | `planned_departure_at` | `timestamptz` | | | Giờ gốc của chuyến, giữ nguyên khi dời lịch |
 | `booking_cutoff_at` | `timestamptz` | | | |
-| `stall_capacity` | `int` | | CK `> 0` | Tổng sức chứa các xe đã gắn cho chuyến |
-| `booked_stall_count` | `int` | | default `0` | Dẫn xuất: số **chỗ** đã đặt (khoang thường 1, khoang rộng 2). Chỉ `DepartureService` ghi, khi đang giữ `FOR UPDATE` |
+| `stall_capacity` | `int` | | CK `> 0` | Tổng sức chứa các xe BASE và SPARE đã gắn cho chuyến |
+| `booked_stall_count` | `int` | | default `0` | Dẫn xuất: số **chỗ xe ghép** đã đặt (khoang thường 1, khoang rộng 2). Chỉ `DepartureService` ghi, khi đang giữ `FOR UPDATE` |
 | `status` | `varchar(30)` | | CK `OPEN, CLOSED, IN_PROGRESS, COMPLETED, CANCELLED` | |
 | `run_confirmed_at` | `timestamptz` | có | | Lúc quản lý xác nhận chạy. NULL = chưa xác nhận, điều phối chưa được lập lượt trục |
 | `run_confirmed_by` | `bigint` | có | FK → app_user | Quản lý xác nhận |
@@ -511,12 +511,13 @@ Index: `route_id`, `(status, planned_departure_at)`, `run_confirmed_by`.
 | `departure_id` | `bigint` | | FK → departure, CASCADE | |
 | `vehicle_class_id` | `bigint` | | FK → vehicle_class | |
 | `vehicle_count` | `int` | | CK `> 0` | |
-| `allotment_type` | `varchar(30)` | | CK `BASE, SPARE` | |
+| `allotment_type` | `varchar(30)` | | CK `BASE, SPARE, PRIVATE` | PRIVATE giữ một xe cho đơn |
+| `booking_id` | `bigint` | có | FK → booking, UNIQUE khi có giá trị | Chỉ có giá trị khi PRIVATE |
 | `reason` | `varchar(500)` | có | | |
 | `created_by` | `bigint` | có | FK → app_user | NULL = hệ thống |
 | `created_at` | `timestamptz` | | | |
 
-Index: `departure_id`.
+Index: `departure_id`, `booking_id`.
 
 ---
 
@@ -703,6 +704,7 @@ Index: `document_type_id`, `gate_location_id`.
 | `customer_id` | `bigint` | | FK → customer(user_id) | Người đặt đơn |
 | `specialist_id` | `bigint` | có | FK → staff(user_id), có index | Chuyên viên phụ trách. Đơn cũ để trống đến khi quản lý giao |
 | `booking_type` | `varchar(30)` | | CK `LOCAL, INTERPROVINCE, EXPORT, IMPORT` | |
+| `transport_mode` | `varchar(30)` | | CK `SHARED, PRIVATE`, default `SHARED` | Chế độ vận chuyển của cả đơn |
 | `departure_id` | `bigint` | có | FK → departure | Chuyến trục chính. NULL khi chưa gán chuyến, hoặc khi đơn chạy thẳng (hub đón trùng hub giao). Mỗi đơn có tối đa một chặng trục |
 | `requested_pickup_date` | `date` | | | Ngày khách muốn đón |
 | `pickup_method` | `varchar(30)` | | default `COMPANY`, CK `COMPANY, SELF` | Đầu đón: công ty tới đón, hoặc khách tự chở ngựa tới hub |
@@ -1658,7 +1660,7 @@ Có hai cách xử lý giá trị dẫn xuất:
 
 ### Cột dẫn xuất được lưu
 
-`departure.stall_capacity` = tổng `departure_vehicle.vehicle_count × vehicle_class.max_stall_count`. Chỉ `DepartureServiceImpl` ghi trong transaction gắn hoặc bỏ xe, giữ khóa dòng chuyến.
+`departure.stall_capacity` = tổng `departure_vehicle.vehicle_count × vehicle_class.max_stall_count` của xe BASE và SPARE. Chỉ `DepartureServiceImpl` ghi trong transaction gắn hoặc bỏ xe, giữ khóa dòng chuyến.
 
 
 | Cột | Ý nghĩa | Ai ghi, khi nào | Ràng buộc ở DB |
@@ -1668,7 +1670,7 @@ Có hai cách xử lý giá trị dẫn xuất:
 | `quotation.deposit_amount` | Tiền cọc, gồm **toàn bộ** phần thu hộ | Như trên, tính bằng `DepositPolicy` | `CHECK (deposit_amount BETWEEN pass_through_amount AND total_amount)` |
 | `cost_item.stabling_days` | Snapshot số lần đủ 24 giờ của từng dòng phí giữ đã tính | `StablingChargeService`, khi tạo dòng phí theo biểu | Dương, chỉ áp dụng với khoản STABLING có `horse_stay_id` |
 | `cost_item.stabling_deposit_credit` | Snapshot phần phí đã cấn vào tiền cọc | `StablingChargeService`, khi chốt phí trên đơn đã hủy dưới khóa đơn | Tổng phần đã cấn của đơn không vượt tiền cọc thực nhận |
-| `departure.booked_stall_count` | Số chỗ đã được đặt (khoang rộng 2 chỗ) | `DepartureService`, cộng khi đặt chỗ, trừ khi nhả chỗ (hủy, từ chối, báo giá hết hạn, loại ngựa). Luôn giữ `SELECT … FOR UPDATE` trên dòng `departure` | `CHECK (booked_stall_count BETWEEN 0 AND stall_capacity)`: DB chặn bán quá chỗ |
+| `departure.booked_stall_count` | Số chỗ xe ghép đã được đặt (khoang rộng 2 chỗ) | `DepartureService`, cộng khi đặt chỗ, trừ khi nhả chỗ (hủy, từ chối, báo giá hết hạn, loại ngựa). Luôn giữ `SELECT … FOR UPDATE` trên dòng `departure` | `CHECK (booked_stall_count BETWEEN 0 AND stall_capacity)`: DB chặn bán quá chỗ |
 
 Công thức:
 
@@ -1721,7 +1723,7 @@ Các quy tắc dưới đây cần so dữ liệu ở nhiều bảng nên CHECK 
 |---|---|---|
 | 1 | `location` được tham chiếu phải đúng `location_type`: `hub_service_area`, `staff.home_hub_location_id`, `vehicle.home_hub_location_id` là HUB (hub bất kỳ, kể cả hub nước ngoài, từ 26/11/2026). `route.origin_location_id` và `route.destination_location_id` là HUB; cửa khẩu chỉ là `route_stop` loại `BORDER`. `document_requirement.gate_location_id` là BORDER_GATE | location |
 | 2 | `departure.route_id` phải bằng `departure_schedule.route_id` khi có `departure_schedule_id` | departure |
-| 3 | Chỉ nhận đặt chỗ khi `departure.status = OPEN`, `now() < booking_cutoff_at` và còn đủ chỗ (`booked_stall_count + số chỗ của đơn ≤ stall_capacity`; khoang thường 1 chỗ, khoang rộng 2 chỗ) | booking, departure |
+| 3 | Chỉ nhận đặt chỗ khi `departure.status = OPEN`, `now() < booking_cutoff_at` và xe ghép còn đủ chỗ (`booked_stall_count + số chỗ của đơn ≤ stall_capacity`; khoang thường 1 chỗ, khoang rộng 2 chỗ). Với xe riêng, khóa dòng hub xuất phát và giữ một xe ACTIVE thuộc nhóm SPARE hoặc BRANCH đủ chỗ và rảnh trong khung bận của chuyến | booking, departure, departure_vehicle |
 | 4 | `booking_cutoff_at` phải đủ xa: lấy `permit_lead_days` và `certificate_lead_days` từ `country_rule` | departure, country_rule |
 | 5 | Tổng chỗ của xe (`standard_stall_count + 2 × wide_stall_count`) ≤ `vehicle_class.max_stall_count` | vehicle |
 | 6 | Các `trip_stop` của một lượt LINEHAUL phải chép từ `route_stop` của đúng tuyến của `departure` | trip_stop |
@@ -1743,7 +1745,7 @@ Các quy tắc dưới đây cần so dữ liệu ở nhiều bảng nên CHECK 
 | 22 | Mọi khoản `payment` và `cost_item` của một đơn dùng cùng `currency_code` với báo giá. Chi phí phát sinh ở nước ngoài quy đổi lúc ghi; hóa đơn gốc lưu ở `document` | payment, cost_item, quotation |
 | 23 | `quotation.total_amount`, `pass_through_amount`, `deposit_amount` chỉ được ghi khi báo giá còn DRAFT, và phải khớp tổng các dòng. Tổng dòng ADJUSTMENT không được làm tổng báo giá âm. Báo giá có tổng hoặc tiền cọc bằng 0 thì không gửi được. Báo giá thay thế khi loại ngựa chỉ tính khoản giảm tới mức tiền còn lại ngoài thu hộ | quotation, quotation_line |
 | 24 | Thay báo giá đã ACCEPTED (ví dụ khi loại ngựa): chuyển bản cũ sang SUPERSEDED và bản mới sang ACCEPTED trong cùng một transaction | quotation |
-| 25 | Mọi thao tác làm đổi số chỗ đã đặt (đặt chỗ, đổi chuyến, hủy, từ chối, báo giá hết hạn, loại ngựa) phải cập nhật `departure.booked_stall_count` trong cùng transaction, khi đang giữ `FOR UPDATE` | departure, booking, booking_horse |
+| 25 | Mọi thao tác làm đổi số chỗ xe ghép đã đặt (đặt chỗ, đổi chuyến, hủy, từ chối, báo giá hết hạn, loại ngựa) phải cập nhật `departure.booked_stall_count` trong cùng transaction, khi đang giữ `FOR UPDATE` | departure, booking, booking_horse |
 | 26 | Bên được tham chiếu phải có `party_role` còn hiệu lực đúng loại: `horse_stay.operator_party_id` là `QUARANTINE_FARM` hoặc `STABLE`; `horse_insurance.insurer_party_id` là `INSURER`. `incident_plan.handler_party_id` theo quy tắc #13 | party_role, horse_stay, horse_insurance |
 | 27 | Vai trò khớp hồ sơ: tài khoản `CUSTOMER` có đúng một dòng `customer` và không có `staff`; vai trò khác có đúng một dòng `staff` và không có `customer`. Ghi trong cùng transaction | app_user, customer, staff |
 | 29 | Đơn EXPORT, IMPORT chỉ đi tuyến có cửa khẩu mà `counterpart_country_code` bằng nước đối tác của đơn | booking, route, location |

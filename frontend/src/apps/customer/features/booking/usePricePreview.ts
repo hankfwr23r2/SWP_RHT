@@ -1,10 +1,12 @@
 // Giá tạm tính do backend tính. Đổi lựa chọn thì chờ khách ngừng thao tác rồi mới hỏi lại; giữ giá cũ trong lúc chờ.
-import { useEffect, useState } from 'react'
+import { createContext, useEffect, useState } from 'react'
 import { bookingOrdersApi, type PricingPreview } from '@shared/api/bookingOrders'
 import type { BookingDraft } from './draft'
 import { pricingRequest } from './model'
 
 const DELAY_MS = 350
+
+export const BookingPriceContext = createContext<ReturnType<typeof usePricePreview> | null>(null)
 
 interface Result { key: string; price?: PricingPreview; error?: string }
 

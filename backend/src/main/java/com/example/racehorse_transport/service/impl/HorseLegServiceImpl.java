@@ -131,7 +131,12 @@ public class HorseLegServiceImpl implements HorseLegService {
             throw new DispatchRuleException("bookingHorseId", "Ngựa đã có trên lượt xe này.", true);
         }
         HorseLeg failed = requireAfterPredecessor(legType, booking, chain, board, pickupAddressId);
-        List<Occupancy> occupancies = new ArrayList<>(legs.findActiveOnTrip(trip.getId(), INACTIVE).stream()
+        List<HorseLeg> assigned = legs.findActiveOnTrip(trip.getId(), INACTIVE);
+        if (assigned.stream().map(leg -> leg.getBookingHorse().getBooking())
+                .anyMatch(other -> DispatchPolicy.conflictsWithPrivateBooking(booking, other))) {
+            throw new DispatchRuleException("bookingHorseId", "Lượt xe riêng không nhận ngựa của đơn khác.", true);
+        }
+        List<Occupancy> occupancies = new ArrayList<>(assigned.stream()
                 .map(HorseLegServiceImpl::occupancy).toList());
         occupancies.add(occupancy(board, alight, line));
         requireCapacity(trip, occupancies);

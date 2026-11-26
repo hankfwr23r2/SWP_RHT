@@ -117,6 +117,7 @@ export const common = {
     stepDone: 'Đã xong',
   },
   common: {
+    transportMode: { SHARED: 'Xe ghép', PRIVATE: 'Xe riêng' },
     pageNotFound: 'Không tìm thấy trang',
     backHome: 'Về trang chủ',
     hotline: 'Hotline',

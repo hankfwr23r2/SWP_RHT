@@ -6,6 +6,7 @@ import { catalogApi } from '@shared/api/catalog'
 import { useLoad } from '@shared/hooks/useLoad'
 import { Button } from '@shared/ui/Button'
 import { Card } from '@shared/ui/Card'
+import { Input } from '@shared/ui/Input'
 import { BookingShell, StepActions } from './BookingShell'
 import { InsuranceChoice } from './components/InsuranceChoice'
 import { useBookingDraft } from './draft'
@@ -28,6 +29,22 @@ export default function Step3ServicesPage() {
 
   const addOns = data.services.filter(service => service.layer === 'ADD_ON' && service.status === 'ACTIVE' && !service.autoApplied)
 
+  const bookingAddOns = addOns.filter(service => service.billingUnit === 'PER_BOOKING')
+  const horseAddOns = addOns.filter(service => service.billingUnit !== 'PER_BOOKING')
+  const bookingIds = bookingAddOns.map(service => service.id!)
+  // Bản nháp cũ có thể đã chọn dịch vụ theo đơn ở thẻ ngựa.
+  const selectedBookingAddOns = [...new Set([
+    ...draft.bookingAddOnServiceIds,
+    ...draft.horseIds.flatMap(id => draft.horses[id].addOnServiceIds.filter(serviceId => bookingIds.includes(serviceId))),
+  ])]
+  const toggleBooking = (serviceId: number) => save({
+    bookingAddOnServiceIds: selectedBookingAddOns.includes(serviceId)
+      ? selectedBookingAddOns.filter(id => id !== serviceId) : [...selectedBookingAddOns, serviceId],
+    horses: Object.fromEntries(draft.horseIds.map(id => [id, {
+      ...draft.horses[id], addOnServiceIds: draft.horses[id].addOnServiceIds.filter(value => !bookingIds.includes(value)),
+    }])),
+  })
+
   const toggle = (horseId: number, serviceId: number) => {
     const chosen = draft.horses[horseId].addOnServiceIds
     setHorse(horseId, {
@@ -40,7 +57,10 @@ export default function Step3ServicesPage() {
     const { addOnServiceIds, coverage, insurerPartyId } = draft.horses[horseId]
     save({
       horses: Object.fromEntries(draft.horseIds.map(id => [id, {
-        ...draft.horses[id], addOnServiceIds, coverage, insurerPartyId,
+        ...draft.horses[id],
+        addOnServiceIds: [...addOnServiceIds.filter(value => !bookingIds.includes(value)),
+          ...draft.horses[id].addOnServiceIds.filter(value => bookingIds.includes(value))],
+        coverage, insurerPartyId,
         policyFile: coverage === 'PERSONAL' ? draft.horses[id].policyFile : undefined,
       }])),
     })
@@ -49,6 +69,12 @@ export default function Step3ServicesPage() {
   const next = () => {
     setSubmitted(true)
     if (servicesReady(draft)) {
+      save({
+        bookingAddOnServiceIds: selectedBookingAddOns,
+        horses: Object.fromEntries(draft.horseIds.map(id => [id, {
+          ...draft.horses[id], addOnServiceIds: draft.horses[id].addOnServiceIds.filter(value => !bookingIds.includes(value)),
+        }])),
+      })
       navigate('/booking/review')
       return
     }
@@ -57,6 +83,20 @@ export default function Step3ServicesPage() {
 
   return (
     <BookingShell step={3} title={t('bookingForm.services.title')} subtitle={t('bookingForm.services.subtitle')}>
+      <Card title={t('bookingForm.services.bookingAddOns')}>
+        {!bookingAddOns.length && <p className={s.hint}>{t('bookingForm.services.noAddOns')}</p>}
+        <div className={s.options}>
+          {bookingAddOns.map(service => (
+            <label key={service.id} className={`${s.option} ${s.optionCheck}`}>
+              <Input type="checkbox" checked={selectedBookingAddOns.includes(service.id!)}
+                onChange={() => toggleBooking(service.id!)} />
+              <strong>{service.name}</strong>
+            </label>
+          ))}
+        </div>
+      </Card>
+      <section className={s.stack} aria-label={t('bookingForm.services.horseAddOns')}>
+      <h2>{t('bookingForm.services.horseAddOns')}</h2>
       {draft.horseIds.map((id, index) => {
         const horse = data.horses.find(item => item.id === id)
         const choice = draft.horses[id]
@@ -68,11 +108,11 @@ export default function Step3ServicesPage() {
             <div className={s.stack}>
               <fieldset className={s.group}>
                 <legend>{t('bookingForm.services.addOns')}</legend>
-                {!addOns.length && <p className={s.hint}>{t('bookingForm.services.noAddOns')}</p>}
+                {!horseAddOns.length && <p className={s.hint}>{t('bookingForm.services.noAddOns')}</p>}
                 <div className={s.options}>
-                  {addOns.map(service => (
+                  {horseAddOns.map(service => (
                     <label key={service.id} className={`${s.option} ${s.optionCheck}`}>
-                      <input type="checkbox" checked={choice.addOnServiceIds.includes(service.id!)} onChange={() => toggle(id, service.id!)} />
+                      <Input type="checkbox" checked={choice.addOnServiceIds.includes(service.id!)} onChange={() => toggle(id, service.id!)} />
                       <strong>{service.name}</strong>
                     </label>
                   ))}
@@ -93,6 +133,7 @@ export default function Step3ServicesPage() {
           </Card>
         )
       })}
+      </section>
       <StepActions back="/booking/horses" backLabel={t('bookingForm.back')}>
         <Button variant="primary" size="lg" onClick={next}>{t('bookingForm.services.next')}</Button>
       </StepActions>

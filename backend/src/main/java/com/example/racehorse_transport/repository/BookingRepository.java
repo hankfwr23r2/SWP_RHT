@@ -84,14 +84,14 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Modifying
     @Query(value = """
             INSERT INTO booking (code, customer_id, booking_type, departure_id, requested_pickup_date,
-                                 emergency_spending_limit, status, created_by, created_at, pickup_method, delivery_method)
+                                 emergency_spending_limit, status, created_by, created_at, pickup_method, delivery_method, transport_mode)
             VALUES (:code, :customerId, :type, :departureId, :pickupDate, :spendingLimit, :status, :actorId, :now,
-                    :pickupMethod, :deliveryMethod)
+                    :pickupMethod, :deliveryMethod, :transportMode)
             ON CONFLICT ON CONSTRAINT uk_booking_code DO NOTHING
             """, nativeQuery = true)
     int insertIfCodeAvailable(String code, Long customerId, String type, Long departureId,
             LocalDate pickupDate, BigDecimal spendingLimit, String status, Long actorId, Instant now,
-            String pickupMethod, String deliveryMethod);
+            String pickupMethod, String deliveryMethod, String transportMode);
 
     // SELECT ... FOR UPDATE: hai thao tác đổi trạng thái cùng một đơn chạy lần lượt
     @Lock(LockModeType.PESSIMISTIC_WRITE)

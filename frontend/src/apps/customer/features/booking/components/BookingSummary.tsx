@@ -4,22 +4,22 @@ import { Skeleton } from '@shared/ui/Skeleton'
 import { useBookingDraft } from '../draft'
 import { findAddress, useBookingData, type BookingData } from '../loaders'
 import { selectedDeliveryAddress, showDate, showDateTime } from '../model'
-import { usePricePreview } from '../usePricePreview'
+import type { usePricePreview } from '../usePricePreview'
 import s from './BookingSummary.module.css'
 
 type Preview = ReturnType<typeof usePricePreview>
 type Line = NonNullable<NonNullable<Preview['price']>['lines']>[number]
-type Group = 'transport' | 'required' | 'chosen'
+type Group = 'transport' | 'required' | 'bookingAddOns' | 'horseAddOns'
 
 const TRANSPORT_LAYERS = ['LINEHAUL', 'PICKUP', 'DELIVERY', 'DIRECT', 'FUEL', 'STALL']
 
 // Chia dòng giá thành ba nhóm; dịch vụ tuyến bắt buộc mà khách không tự chọn thì nằm ở nhóm bắt buộc
 function groupLines(lines: Line[], data: BookingData, chosenIds: Set<number>) {
-  const groups: Record<Group, { name: string; line: Line }[]> = { transport: [], required: [], chosen: [] }
+  const groups: Record<Group, { name: string; line: Line }[]> = { transport: [], required: [], bookingAddOns: [], horseAddOns: [] }
   for (const line of lines) {
     const service = data.services.find(item => item.code === line.serviceCode)
     const stall = data.stallTypes.find(item => item.code === line.stallTypeCode)
-    const group: Group = service?.id != null && chosenIds.has(service.id) ? 'chosen'
+    const group: Group = service?.id != null && chosenIds.has(service.id) ? (service.billingUnit === 'PER_BOOKING' ? 'bookingAddOns' : 'horseAddOns')
       : TRANSPORT_LAYERS.includes(service?.layer ?? '') ? 'transport' : 'required'
     groups[group].push({ name: [service?.name ?? line.serviceCode, stall?.name].filter(Boolean).join(' · '), line })
   }
@@ -34,13 +34,17 @@ function PriceLines({ preview }: { preview: Preview }) {
   if (preview.error != null) return <p className={s.error} role="alert">{preview.error || t('bookingForm.price.error')}</p>
   if (!preview.price) return <Skeleton lines={4} />
   const groups = groupLines(preview.price.lines ?? [], data,
-    new Set(draft.horseIds.flatMap(id => draft.horses[id]?.addOnServiceIds ?? [])))
+    new Set([...draft.bookingAddOnServiceIds, ...draft.horseIds.flatMap(id => draft.horses[id]?.addOnServiceIds ?? [])]))
   const depositPercent = preview.price.depositRate == null ? null : Math.round(preview.price.depositRate * 100)
   return (
     <div className={s.lines} aria-busy={preview.loading}>
-      {(['transport', 'required', 'chosen'] as const).map(group => groups[group].length > 0 && (
+      {draft.transportMode === 'PRIVATE' && preview.price.privateVehicleClassCode && <p>{t('bookingForm.transportMode.price', {
+        vehicle: preview.price.privateVehicleClassCode, count: preview.price.privateVehicleBillableStalls,
+      })}</p>}
+      {(['transport', 'required', 'bookingAddOns', 'horseAddOns'] as const).map(group => groups[group].length > 0 && (
         <section key={group}>
-          <h3>{t(`bookingForm.price.${group}`)}</h3>
+          <h3>{t(group === 'bookingAddOns' || group === 'horseAddOns'
+            ? `bookingForm.services.${group}` : `bookingForm.price.${group}`)}</h3>
           <dl>
             {groups[group].map(({ name, line }, index) => (
               <div key={`${line.priceItemId}-${index}`}>
@@ -69,11 +73,10 @@ function PriceLines({ preview }: { preview: Preview }) {
   )
 }
 
-export function BookingSummary() {
+export function BookingSummary({ preview }: { preview: Preview }) {
   const { t } = useTranslation()
   const { draft } = useBookingDraft()
   const data = useBookingData()
-  const preview = usePricePreview(draft)
   const pickup = findAddress(data, draft.pickupAddressId)
   const placeIds = new Set([draft.deliveryAddressId, ...draft.horseIds.map(id => selectedDeliveryAddress(draft, id) ?? draft.deliveryAddressId)])
   const deliveries = [...placeIds].map(id => findAddress(data, id)?.label).filter(Boolean).join(' · ')

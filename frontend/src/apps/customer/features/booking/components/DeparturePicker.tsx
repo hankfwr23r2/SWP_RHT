@@ -12,6 +12,7 @@ import { showDate, showDateTime } from '../model'
 import s from '../Booking.module.css'
 
 interface Props {
+  privateMode?: boolean
   suggestion?: DepartureSuggestion
   loaded: boolean
   error?: Error
@@ -24,7 +25,7 @@ interface Props {
   onSelect: (departure: Departure) => void
 }
 
-export function DeparturePicker({ suggestion, loaded, error, onRetry, fromDate, minDate, onFromDate, selectedId, invalid, onSelect }: Props) {
+export function DeparturePicker({ privateMode, suggestion, loaded, error, onRetry, fromDate, minDate, onFromDate, selectedId, invalid, onSelect }: Props) {
   const { t } = useTranslation()
   const departures = suggestion?.departures ?? []
   const late = new Set(suggestion?.tooLateDepartureIds)
@@ -48,7 +49,8 @@ export function DeparturePicker({ suggestion, loaded, error, onRetry, fromDate, 
               <input type="radio" name="departure" checked={departure.id === selectedId} disabled={departure.availability === 'FULL' || late.has(departure.id!)} onChange={() => onSelect(departure)} />
               <strong>{departure.plannedDepartureAt ? showDateTime(departure.plannedDepartureAt) : showDate(departure.departureDate ?? '')}</strong>
               <span>{departure.routeName}</span>
-              <span>{departure.availability && t(`bookingForm.route.availability.${departure.availability}`)}</span>
+              <span>{departure.availability && t(privateMode && departure.availability === 'FULL'
+                ? 'bookingForm.transportMode.full' : `bookingForm.route.availability.${departure.availability}`)}</span>
               {departure.bookingCutoffAt && <span>{t('bookingForm.route.cutoff', { at: showDateTime(departure.bookingCutoffAt) })}</span>}
               {late.has(departure.id!) && <span className={s.rule}>{t('bookingForm.route.tooLate', { days: suggestion?.leadDays })}</span>}
             </label>

@@ -53,12 +53,15 @@ public class PricingServiceImpl implements PricingService {
                 })
                 .toList());
         var delivery = preview.destinations().isEmpty() ? null : deliveryPricing(preview.deliveryHubId(), preview.destinations());
-        if (delivery != null) roadLegs.add(delivery.loop());
-        PricingInput loaded = preview.input();
+        var loaded = preview.input();
+        if (delivery != null) {
+            roadLegs.add(loaded.privateVehicle() == null ? delivery.loop()
+                    : new RoadLeg(ServiceLayer.DELIVERY, loaded.privateVehicle().classId(), delivery.loop().km()));
+        }
         PricingInput input = new PricingInput(loaded.currencyCode(), loaded.quotationDate(), loaded.bookingType(),
                 loaded.routeId(), loaded.linehaulKm(), roadLegs, loaded.stallsByType(), loaded.horseCount(),
                 loaded.addOns(), loaded.earlyPickupDays(),
-                delivery == null ? List.of() : delivery.separate());
+                delivery == null || loaded.privateVehicle() != null ? List.of() : delivery.separate(), loaded.privateVehicle());
         var estimates = new ArrayList<PricingPreviewResponseDto.DeliveryEstimate>();
         if (delivery != null) {
             var times = deliveryRoutes.arrivalTimes(delivery.plan(), preview.destinations(), preview.deliveryReadyAt());

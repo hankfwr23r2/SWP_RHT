@@ -62,6 +62,18 @@ class MigrationTest {
     }
 
     @Test
+    void privateVehicleRequiresABookingAndDefaultsExistingBookingsToShared() {
+        long booking = newBooking();
+        assertThat(jdbc.queryForObject("SELECT transport_mode FROM booking WHERE id = ?", String.class, booking))
+                .isEqualTo("SHARED");
+        assertThatThrownBy(() -> jdbc.update("""
+                INSERT INTO departure_vehicle (departure_id, vehicle_class_id, vehicle_count, allotment_type, created_at)
+                SELECT min(d.id), (SELECT min(id) FROM vehicle_class), 1, 'PRIVATE', now() FROM departure d
+                """)).isInstanceOf(DataAccessException.class)
+                .hasMessageContaining("departure_vehicle_private_booking_check");
+    }
+
+    @Test
     void createsAllTables() {
         Integer tables = jdbc.queryForObject("""
                 SELECT count(*) FROM information_schema.tables

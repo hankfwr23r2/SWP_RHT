@@ -99,6 +99,17 @@ class TripGroupingFlowTest {
     }
 
     @Test
+    void separatesPrivateBookingEvenWhenThePickupIsOnTheSameRoute() throws Exception {
+        jdbc.update("UPDATE booking SET transport_mode = 'PRIVATE' WHERE id = ?", export);
+        jdbc.update("UPDATE booking_address SET latitude = 10.790000, longitude = 106.890000 WHERE booking_id = ? AND address_type = 'PICKUP'", export);
+        entityManager.clear();
+        suggest(pickupDate, hcm, "PICKUP").andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data[0].bookings.length()").value(1))
+                .andExpect(jsonPath("$.data[1].bookings.length()").value(1));
+    }
+
+    @Test
     void deliveriesStartAfterTheLinehaulReachesTheDestinationHub() throws Exception {
         long danang = locations.findByCode("HUB-DN").orElseThrow().getId();
         Instant arrival = jdbc.queryForObject("""

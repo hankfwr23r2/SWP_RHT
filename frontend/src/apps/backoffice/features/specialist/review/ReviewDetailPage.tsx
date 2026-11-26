@@ -1,3 +1,4 @@
+import { PrivateVehicleBadge } from '@shared/components/PrivateVehicleBadge'
 import { useRevalidator } from 'react-router'
 import { Trans, useTranslation } from 'react-i18next'
 import type { BookingDetail } from '@shared/api/bookingOrders'
@@ -43,6 +44,7 @@ function ReviewDetail({ id, detail, data }: {
     <div className={s.detailHeading}>
       <PageTitle><Trans i18nKey="staffReview.order" values={{ code: booking?.code }} components={{ orderCode: <PageTitleCode /> }} /></PageTitle>
       <OrderStatusBadge status={status} />
+      <PrivateVehicleBadge mode={booking?.transportMode} />
     </div>
     <DetailColumns info={<OrderFacts detail={detail} stallTypes={data.stallTypes} />} actions={<>
       {detail.assignedToMe && <ActionBar next={next}>{options.length > 0 && <ActionButtons options={options} actions={actions} />}</ActionBar>}

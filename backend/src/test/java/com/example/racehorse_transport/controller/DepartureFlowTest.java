@@ -82,6 +82,20 @@ class DepartureFlowTest {
     }
 
     @Test
+    void privateSuggestionsKeepSoldOutDeparturesWithFullLabel() throws Exception {
+        mvc.perform(suggestions("INTERPROVINCE", "VN-75", "VN-46")
+                        .param("transportMode", "PRIVATE").param("stalls", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.departures.length()", greaterThan(0)))
+                .andExpect(jsonPath("$.data.departures[*].availability", everyItem(is("FULL"))));
+        mvc.perform(suggestions("INTERPROVINCE", "VN-75", "VN-46")
+                        .param("transportMode", "PRIVATE").param("stalls", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.departures[*].availability",
+                        org.hamcrest.Matchers.hasItem("AVAILABLE")));
+    }
+
+    @Test
     void exportAndImportUseBothHubs() throws Exception {
         mvc.perform(suggestions("EXPORT", "VN-79", "KH-12").param("deliveryLatitude", "11.5564").param("deliveryLongitude", "104.9282"))
                 .andExpect(status().isOk())

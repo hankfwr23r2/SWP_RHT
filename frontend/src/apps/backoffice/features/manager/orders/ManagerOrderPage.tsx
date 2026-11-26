@@ -1,4 +1,5 @@
 // Chi tiết đơn của quản lý: báo giá, thanh toán, giấy không kịp, hủy, quyết toán.
+import { PrivateVehicleBadge } from '@shared/components/PrivateVehicleBadge'
 import { useRevalidator } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { PickupMissPanel } from '@shared/components/PickupMissPanel'
@@ -42,7 +43,7 @@ export default function ManagerOrderPage() {
       <header className={s.heading}>
         <div>
           <BackButton to="/manager/orders" label={t('mgr.orders.back')} />
-          <div className={s.row}><PageTitle><PageTitleCode>{booking.code}</PageTitleCode></PageTitle><OrderStatusBadge status={status} /></div>
+          <div className={s.row}><PageTitle><PageTitleCode>{booking.code}</PageTitleCode></PageTitle><OrderStatusBadge status={status} /><PrivateVehicleBadge mode={booking.transportMode} /></div>
           {booking.waybillNumber && <p>{t('mgr.orders.waybill', { code: booking.waybillNumber })}</p>}
         </div>
       </header>

@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.policy;
 
+import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Location;
 import com.example.racehorse_transport.entity.Vehicle;
 import com.example.racehorse_transport.entity.VehicleTrip;
@@ -8,6 +9,7 @@ import com.example.racehorse_transport.entity.enums.DepartureStatus;
 import com.example.racehorse_transport.entity.enums.EmploymentStatus;
 import com.example.racehorse_transport.entity.enums.LocationType;
 import com.example.racehorse_transport.entity.enums.TripStopType;
+import com.example.racehorse_transport.entity.enums.TransportMode;
 import com.example.racehorse_transport.entity.enums.VehicleStatus;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import com.example.racehorse_transport.entity.enums.VehicleTripType;
@@ -25,6 +27,12 @@ import java.util.Set;
 // Quy tắc điều độ, hàm thuần (docs/DB_SCHEMA_59_BANG.md mục "Ràng buộc phải kiểm ở service").
 // Service đọc dữ liệu rồi truyền vào; policy không đọc DB.
 public final class DispatchPolicy {
+    public static boolean conflictsWithPrivateBooking(Booking booking, Booking other) {
+        return !Objects.equals(booking.getId(), other.getId())
+                && (booking.getTransportMode() == TransportMode.PRIVATE
+                || other.getTransportMode() == TransportMode.PRIVATE);
+    }
+
 
     private static final Set<DepartureStatus> RUNNABLE_DEPARTURES = Set.of(DepartureStatus.OPEN, DepartureStatus.CLOSED, DepartureStatus.IN_PROGRESS);
 
