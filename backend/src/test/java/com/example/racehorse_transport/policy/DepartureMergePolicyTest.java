@@ -75,14 +75,6 @@ class DepartureMergePolicyTest {
         assertThat(problem()).isPresent();
     }
 
-    @Test
-    void runCapacityUsesHeldStallsAndOriginalCapacityAsBounds() {
-        DepartureDecisionPolicy.validateRunCapacity(2, 2, 9);
-        DepartureDecisionPolicy.validateRunCapacity(9, 2, 9);
-        assertThatThrownBy(() -> DepartureDecisionPolicy.validateRunCapacity(1, 2, 9)).isInstanceOf(BookingRuleException.class);
-        assertThatThrownBy(() -> DepartureDecisionPolicy.validateRunCapacity(10, 2, 9)).isInstanceOf(BookingRuleException.class);
-        assertThatThrownBy(() -> DepartureDecisionPolicy.validateRunCapacity(0, 0, 9)).isInstanceOf(BookingRuleException.class);
-    }
 
     private java.util.Optional<String> problem() {
         return DepartureMergePolicy.reasonNotMergeable(source, target, HOLD_THROUGH, NOW);

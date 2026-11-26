@@ -693,7 +693,7 @@ Nguồn: [NGU_CANH_THIET_KE_LAI.md](NGU_CANH_THIET_KE_LAI.md) mục 4b, [NGHIEP_
 | B6 | Theo dõi, thông báo, báo cáo | B | 5 | Xong phần chính (6 PR): chuông thông báo, hành trình ngựa và tra cứu công khai, báo cáo vận hành, nhật ký hệ thống. Báo khách khi nhận, giao ngựa và qua cửa khẩu (#430). Báo cáo doanh thu `/reports/revenue` (#434). Màn Tổng quan `/manager` (#444). B6 xong | #388, #389, #390, #391, #392, #393, #430, #434, #444 |
 | E | Tích hợp, dọn dẹp, ERD, merge | A + B | 6 | Đang làm. B: xóa FE cũ xong, ngoại lệ `check-style` rỗng (#458–#461). `FullFlowIntegrationTest` có phần vận hành của 3 ca M3 (#463); phần thương mại ở `CommercialFlowIntegrationTest`, sau giao ở `settle`; ERD ở `docs/database/` | #458, #459, #460, #461, #463 |
 | M1 | Mạng lưới bến xe | A | 7 | Chưa làm | |
-| M2 | Sức chứa theo đội xe | A | 7 | Chưa làm | |
+| M2 | Sức chứa theo đội xe | A | 7 | Đang kiểm tra | Xe nền, xe để sẵn và hợp đồng chi tiết chuyến cho M4 |
 | M3 | Xe riêng | A | 7 | Chưa làm | |
 | M4 | Xếp xe trục nhiều xe | A (nhận từ B 26/11) | 7 | Chưa làm | |
 | M5 | Khám bắt buộc hai đầu hub | B | 7 | Chưa làm | |

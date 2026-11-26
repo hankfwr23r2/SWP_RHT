@@ -17,11 +17,12 @@ import { useStaffAction } from '@backoffice/shared/useStaffAction'
 import { AdHocDialog } from './AdHocDialog'
 import { DelayDialog } from './DelayDialog'
 import { ConfirmRunDialog, MergeDepartureDialog } from './DepartureDecisionDialogs'
+import { DepartureVehiclesDialog } from './DepartureVehiclesDialog'
 import { DepartureTable } from './DepartureTable'
 import { useDecisions, useRoutesData } from './loaders'
 import s from '@backoffice/shared/StaffPanels.module.css'
 
-type Dialog = { kind: 'confirm' | 'cancel' | 'merge' | 'delay' | 'assign'; row: DepartureDecision } | { kind: 'create' } | null
+type Dialog = { kind: 'confirm' | 'cancel' | 'merge' | 'delay' | 'assign' | 'vehicles'; row: DepartureDecision } | { kind: 'create' } | null
 
 export default function DeparturesPage() {
   const { t } = useTranslation()
@@ -56,7 +57,7 @@ export default function DeparturesPage() {
     if (!data.length) return <EmptyState compact icon={<i className="fa-solid fa-truck" />} title={t('mgr.departures.empty')} description={t('mgr.departures.emptyHint')} />
     return <DepartureTable rows={data.slice(0, limit)} busy={busy} onConfirm={row => open({ kind: 'confirm', row })}
       onCancel={row => open({ kind: 'cancel', row })} onDelay={row => open({ kind: 'delay', row })}
-      onMerge={row => open({ kind: 'merge', row })} onAssign={row => open({ kind: 'assign', row })} />
+      onVehicles={row => open({ kind: 'vehicles', row })} onMerge={row => open({ kind: 'merge', row })} onAssign={row => open({ kind: 'assign', row })} />
   }
 
   return (
@@ -76,7 +77,7 @@ export default function DeparturesPage() {
         id={dialog.row.id} currentId={dialog.row.coordinatorId} onClose={() => setDialog(null)}
         onSaved={() => { setDialog(null); void reload() }} />}
       {dialog?.kind === 'confirm' && <ConfirmRunDialog row={dialog.row} name={name(dialog.row)} busy={busy} error={error} fields={fields}
-        onConfirm={capacity => submit(() => departuresApi.confirmRun(dialog.row.id!, capacity), t('mgr.departures.confirmed'))}
+        onConfirm={() => submit(() => departuresApi.confirmRun(dialog.row.id!), t('mgr.departures.confirmed'))}
         onClose={() => setDialog(null)} />}
       {dialog?.kind === 'merge' && <MergeDepartureDialog row={dialog.row} name={name(dialog.row)} busy={busy} error={error} fields={fields}
         onConfirm={body => submit(() => departuresApi.merge(dialog.row.id!, body), t('mgr.departures.merge.done'))}
@@ -88,6 +89,8 @@ export default function DeparturesPage() {
           <p className={s.alert}>{t('mgr.departures.cancelHint', { booked: dialog.row.bookedStallCount })}</p>
         </ReasonDialog>
       )}
+      {dialog?.kind === 'vehicles' && <DepartureVehiclesDialog id={dialog.row.id!} name={name(dialog.row)}
+        onChanged={() => { void reload() }} onClose={() => setDialog(null)} />}
       {dialog?.kind === 'create' && <AdHocDialog routes={routes} onClose={() => setDialog(null)} onCreated={() => { setDialog(null); void reload() }} />}
       {dialog?.kind === 'delay' && <DelayDialog row={dialog.row} busy={busy} error={error} fields={fields}
         onConfirm={body => { void submit(() => departuresApi.delay(dialog.row.id!, body), t('mgr.departures.delay.saved')) }}

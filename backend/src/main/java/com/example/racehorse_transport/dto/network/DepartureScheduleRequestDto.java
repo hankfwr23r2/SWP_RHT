@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.dto.network;
 
+import com.example.racehorse_transport.entity.VehicleClass;
 import com.example.racehorse_transport.entity.DepartureSchedule;
 import com.example.racehorse_transport.entity.Route;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -29,9 +30,12 @@ public class DepartureScheduleRequestDto {
     @Min(value = 1, message = "Giờ chốt nhận đơn phải lớn hơn 0")
     private Integer bookingCutoffHours;
 
-    @NotNull(message = "Nhập số khoang tối đa mỗi chuyến")
-    @Min(value = 1, message = "Số khoang phải lớn hơn 0")
-    private Integer stallCapacity;
+    @NotNull
+    private Long baseVehicleClassId;
+
+    @NotNull
+    @Min(1)
+    private Integer baseVehicleCount;
 
     @NotNull(message = "Nhập ngày bắt đầu hiệu lực")
     private LocalDate validFrom;
@@ -43,17 +47,18 @@ public class DepartureScheduleRequestDto {
     private Set<@NotNull @Min(value = 1, message = "Thứ trong tuần từ 1 đến 7") @Max(value = 7, message = "Thứ trong tuần từ 1 đến 7") Short> daysOfWeek;
 
     // Lịch mới, chưa lưu. Tuyến do service nạp; trạng thái do service đặt. Các ngày chạy do service ghi riêng.
-    public DepartureSchedule toEntity(Route route) {
+    public DepartureSchedule toEntity(Route route, VehicleClass baseVehicleClass) {
         DepartureSchedule schedule = new DepartureSchedule();
-        applyTo(schedule, route);
+        applyTo(schedule, route, baseVehicleClass);
         return schedule;
     }
 
-    public void applyTo(DepartureSchedule schedule, Route route) {
+    public void applyTo(DepartureSchedule schedule, Route route, VehicleClass baseVehicleClass) {
         schedule.setRoute(route);
         schedule.setDepartureTime(departureTime);
         schedule.setBookingCutoffHours(bookingCutoffHours);
-        schedule.setStallCapacity(stallCapacity);
+        schedule.setBaseVehicleClass(baseVehicleClass);
+        schedule.setBaseVehicleCount(baseVehicleCount);
         schedule.setValidFrom(validFrom);
         schedule.setValidTo(validTo);
     }

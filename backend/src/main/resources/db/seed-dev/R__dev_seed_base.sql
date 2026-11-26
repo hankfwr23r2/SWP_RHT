@@ -414,6 +414,15 @@ FROM (VALUES
 JOIN vehicle_class vc ON vc.code = v.class_code
 JOIN location hub ON hub.code = v.hub_code
 ON CONFLICT (license_plate) DO UPDATE SET home_hub_location_id = EXCLUDED.home_hub_location_id;
+UPDATE vehicle
+SET service_role = CASE
+    WHEN license_plate IN ('M1-3H-02', 'M1-1H-04', 'M1-7H-03') THEN 'SPARE'
+    ELSE 'LINEHAUL'
+END
+WHERE license_plate IN ('51C-100.03', '51C-100.04', '51C-100.05', '51C-100.06',
+    'M1-1H-01', 'M1-1H-02', 'M1-1H-03', 'M1-1H-04', 'M1-7H-01', 'M1-7H-02',
+    'M1-7H-03', 'M1-3H-01', 'M1-3H-02', 'M1-4H-01');
+
 
 -- ---------------------------------------------------------------------------
 -- 4. Tuyến trục chính, điểm dừng, lịch chạy
@@ -640,14 +649,15 @@ WITH timetable(route_code, departure_time, day_of_week, schedule_status) AS (
     ('DN-LAOBAO', TIME '05:00', NULL, 'ENDED'),
     ('LAOBAO-DN', TIME '07:00', NULL, 'ENDED')
 ), updated AS (
-    UPDATE departure_schedule s SET booking_cutoff_hours = 72, status = t.schedule_status
+    UPDATE departure_schedule s SET booking_cutoff_hours = 72, status = t.schedule_status,
+        base_vehicle_class_id = (SELECT id FROM vehicle_class WHERE code = 'HEAVY'), base_vehicle_count = 1
     FROM route r JOIN timetable t ON t.route_code = r.code
     WHERE s.route_id = r.id AND (t.schedule_status = 'ENDED'
         OR (s.departure_time = t.departure_time AND s.valid_from = DATE '2026-11-01'))
     RETURNING s.id, s.route_id, t.day_of_week
 ), inserted AS (
-    INSERT INTO departure_schedule (route_id, departure_time, booking_cutoff_hours, stall_capacity, valid_from, status)
-    SELECT r.id, t.departure_time, 72, 9, DATE '2026-11-01', t.schedule_status
+    INSERT INTO departure_schedule (route_id, departure_time, booking_cutoff_hours, base_vehicle_class_id, base_vehicle_count, valid_from, status)
+    SELECT r.id, t.departure_time, 72, (SELECT id FROM vehicle_class WHERE code = 'HEAVY'), 1, DATE '2026-11-01', t.schedule_status
     FROM timetable t JOIN route r ON r.code = t.route_code
     WHERE NOT EXISTS (SELECT 1 FROM updated u WHERE u.route_id = r.id)
     RETURNING id, route_id

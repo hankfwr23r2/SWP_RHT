@@ -5,7 +5,6 @@ import { ConfirmDialog } from '@shared/ui/ConfirmDialog'
 import { EmptyState } from '@shared/ui/EmptyState'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { Field } from '@shared/ui/Field'
-import { Input } from '@shared/ui/Input'
 import { Select } from '@shared/ui/Select'
 import { Skeleton } from '@shared/ui/Skeleton'
 import { Textarea } from '@shared/ui/Textarea'
@@ -22,26 +21,15 @@ interface DialogProps {
   onClose: () => void
 }
 
-export function ConfirmRunDialog({ row, name, busy, error, fields, onClose, onConfirm }:
-  DialogProps & { onConfirm: (capacity?: number) => Promise<void> }) {
+export function ConfirmRunDialog({ row, name, busy, error, onClose, onConfirm }:
+  DialogProps & { onConfirm: () => Promise<void> }) {
   const { t } = useTranslation()
-  const maximum = row.stallCapacity ?? 1
-  const minimum = Math.max(1, row.bookedStallCount ?? 0)
-  const [value, setValue] = useState(String(maximum))
-  const capacity = value === '' ? undefined : Number(value)
-  const invalid = capacity !== undefined && (!Number.isInteger(capacity) || capacity < minimum || capacity > maximum)
-
   return <ConfirmDialog title={t('mgr.departures.confirmTitle')} confirmLabel={t('mgr.departures.confirm')}
-    confirmDisabled={invalid} onConfirm={() => onConfirm(capacity === maximum ? undefined : capacity)} onCancel={onClose}
+    confirmDisabled={busy} onConfirm={onConfirm} onCancel={onClose}
     message={<div className={s.stack}>
       <p>{name}<br />{t('mgr.departures.confirmHint', { committed: row.committedStallCount, capacity: row.stallCapacity })}
         {!!row.uncommittedBookingCount && <><br />{t('mgr.departures.uncommitted', { count: row.uncommittedBookingCount })}</>}</p>
-      <Field label={t('mgr.departures.runCapacity')} hint={t('mgr.departures.runCapacityHint')}
-        error={invalid ? t('mgr.departures.runCapacityRange', { minimum, maximum }) : fields.stallCapacity}>
-        {control => <Input {...control} type="number" min={minimum} max={maximum} value={value} disabled={busy}
-          onChange={event => setValue(event.target.value)} />}
-      </Field>
-      {error && !fields.stallCapacity && <p className={s.error} role="alert">{error}</p>}
+      {error && <p className={s.error} role="alert">{error}</p>}
     </div>} />
 }
 

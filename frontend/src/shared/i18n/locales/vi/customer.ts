@@ -713,6 +713,7 @@ export const customer = {
       noDeparture: 'Chưa có chuyến phù hợp',
       noDepartureHint: 'Hãy chọn ngày khác, hoặc gọi tổng đài để hỏi về chuyến đột xuất.',
       seats: 'Còn {{count}} chỗ',
+      availability: { AVAILABLE: 'Còn chỗ', NEARLY_FULL: 'Sắp đầy', FULL: 'Hết chỗ' },
       cutoff: 'Nhận đặt tới {{at}}',
       departureRequired: 'Vui lòng chọn một chuyến.',
       transfer: 'Đón và giao',

@@ -187,6 +187,7 @@ export const staffCatalog = {
       "validFrom": "Hiệu lực từ",
       "validTo": "Hiệu lực đến",
       "licensePlate": "Biển số",
+      "serviceRole": "Vai trò xe",
       "vehicleClassId": "Hạng xe",
       "standardStallCount": "Khoang thường",
       "wideStallCount": "Khoang rộng",
@@ -245,6 +246,7 @@ export const staffCatalog = {
       "INSURER": "Bảo hiểm"
     },
     "vehicles": {
+      "serviceRoles": {"LINEHAUL": "Chạy lịch trục", "SPARE": "Để sẵn", "BRANCH": "Đón giao"},
       "title": "Đội xe",
       "add": "Thêm xe",
       "edit": "Sửa xe",

@@ -19,6 +19,9 @@ export function VehicleForm({ vehicle, classes, hubs, reload, close }: {
   return <CatalogForm {...editor} errors={editor.fields} close={close} title={t(vehicle ? 'staffCatalog.vehicles.edit' : 'staffCatalog.vehicles.add')}
     fields={[
       field('licensePlate', { maxLength: 20 }),
+      field('serviceRole', {
+        options: ['LINEHAUL', 'SPARE', 'BRANCH'].map(value => ({ value, label: t(`staffCatalog.vehicles.serviceRoles.${value}`) })),
+      }),
       field('vehicleClassId', {
         options: classes.flatMap(item => item.id == null ? [] : [{ value: String(item.id), label: item.name }]),
         hint: vehicleClass?.maxStallCount != null ? t('staffCatalog.vehicles.classLimit', { count: vehicleClass.maxStallCount }) : undefined,

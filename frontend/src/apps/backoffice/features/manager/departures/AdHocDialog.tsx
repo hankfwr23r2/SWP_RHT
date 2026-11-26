@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { departuresApi, type RouteOption } from '@shared/api/departures'
+import { vehiclesApi } from '@shared/api/vehicles'
+import { useLoad } from '@shared/hooks/useLoad'
 import { Button } from '@shared/ui/Button'
 import { Field } from '@shared/ui/Field'
 import { Input } from '@shared/ui/Input'
@@ -16,12 +18,13 @@ interface Props {
   onCreated: () => void
 }
 
-const EMPTY = { routeId: '', departureDate: '', departureTime: '', bookingCutoffHours: '', stallCapacity: '' }
+const EMPTY = { routeId: '', departureDate: '', departureTime: '', bookingCutoffHours: '', vehicleClassId: '', vehicleCount: '1' }
 
 // Chuyến đột xuất ngoài lịch
 export function AdHocDialog({ routes, onClose, onCreated }: Props) {
   const { t } = useTranslation()
   const toast = useToast()
+  const classes = useLoad(vehiclesApi.classes, [])
   const [form, setForm] = useState(EMPTY)
   const [fields, setFields] = useState<Record<string, string>>({})
   const [error, setError] = useState('')
@@ -37,7 +40,7 @@ export function AdHocDialog({ routes, onClose, onCreated }: Props) {
     try {
       await departuresApi.create({
         routeId: Number(form.routeId), departureDate: form.departureDate, departureTime: form.departureTime,
-        bookingCutoffHours: Number(form.bookingCutoffHours), stallCapacity: Number(form.stallCapacity),
+        bookingCutoffHours: Number(form.bookingCutoffHours), vehicleClassId: Number(form.vehicleClassId), vehicleCount: Number(form.vehicleCount),
       })
       toast(t('mgr.departures.created'))
       onCreated()
@@ -72,8 +75,12 @@ export function AdHocDialog({ routes, onClose, onCreated }: Props) {
           <Field label={t('mgr.departures.cutoff')} required error={fields.bookingCutoffHours}>
             {control => <Input {...control} type="number" inputMode="numeric" min={0} value={form.bookingCutoffHours} onChange={event => set({ bookingCutoffHours: event.target.value })} />}
           </Field>
-          <Field label={t('mgr.departures.capacity')} required error={fields.stallCapacity}>
-            {control => <Input {...control} type="number" inputMode="numeric" min={1} value={form.stallCapacity} onChange={event => set({ stallCapacity: event.target.value })} />}
+          <Field label={t('staffNetwork.fields.baseVehicleClassId')} required error={fields.vehicleClassId ?? classes.error?.message}>
+            {control => <Select {...control} value={form.vehicleClassId} onChange={vehicleClassId => set({ vehicleClassId })}
+              options={(classes.data ?? []).flatMap(item => item.id == null ? [] : [{ value: String(item.id), label: item.name ?? item.code }])} />}
+          </Field>
+          <Field label={t('staffNetwork.fields.baseVehicleCount')} required error={fields.vehicleCount}>
+            {control => <Input {...control} type="number" inputMode="numeric" min={1} value={form.vehicleCount} onChange={event => set({ vehicleCount: event.target.value })} />}
           </Field>
         </div>
         {error && <p className={s.error} role="alert">{error}</p>}

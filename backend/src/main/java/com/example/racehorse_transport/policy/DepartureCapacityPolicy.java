@@ -21,7 +21,7 @@ public final class DepartureCapacityPolicy {
 
     // Lý do không đặt được chỗ; rỗng nghĩa là đặt được
     public static Optional<String> reasonNotReservable(DepartureStatus status, Instant bookingCutoffAt, Instant now,
-                                                       int stallCapacity, int bookedStallCount, int stalls) {
+                                                       long stallCapacity, int bookedStallCount, int stalls) {
         if (stalls <= 0) {
             return Optional.of("Số chỗ cần đặt phải lớn hơn 0.");
         }
@@ -31,8 +31,8 @@ public final class DepartureCapacityPolicy {
         if (!now.isBefore(bookingCutoffAt)) {
             return Optional.of("Chuyến đã qua giờ chốt nhận đơn.");
         }
-        if (bookedStallCount + stalls > stallCapacity) {
-            return Optional.of("Chuyến chỉ còn " + available(stallCapacity, bookedStallCount) + " chỗ.");
+        if ((long) bookedStallCount + stalls > stallCapacity) {
+            return Optional.of("Chuyến chỉ còn " + Math.max(0, stallCapacity - bookedStallCount) + " chỗ.");
         }
         return Optional.empty();
     }

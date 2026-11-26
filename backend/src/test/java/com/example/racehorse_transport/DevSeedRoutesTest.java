@@ -112,7 +112,7 @@ class DevSeedRoutesTest {
                 JOIN departure_schedule s ON s.id = dd.departure_schedule_id
                 JOIN route r ON r.id = s.route_id
                 WHERE r.code = ? AND s.status = 'ACTIVE'
-                  AND s.valid_from = DATE '2026-11-01' AND s.booking_cutoff_hours = 72 AND s.stall_capacity = 9
+                  AND s.valid_from = DATE '2026-11-01' AND s.booking_cutoff_hours = 72 AND s.base_vehicle_count = 1 AND s.base_vehicle_class_id = (SELECT id FROM vehicle_class WHERE code = 'HEAVY')
                 """, Integer.class, code)).containsExactly(day);
     }
 

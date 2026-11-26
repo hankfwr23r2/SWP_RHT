@@ -2,7 +2,6 @@ package com.example.racehorse_transport.policy;
 
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.DepartureStatus;
-import com.example.racehorse_transport.exception.BookingRuleException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
@@ -31,13 +30,6 @@ public final class DepartureDecisionPolicy {
 
     public static boolean belowMinimum(int committedSeats, int stallCapacity, int minFillPercent) {
         return (long) committedSeats * 100 < (long) stallCapacity * minFillPercent;
-    }
-
-    public static void validateRunCapacity(int requested, int booked, int current) {
-        int minimum = Math.max(1, booked);
-        if (requested < minimum || requested > current) {
-            throw new BookingRuleException("stallCapacity", "Số chỗ chạy phải từ " + minimum + " đến " + current + ".");
-        }
     }
 
     // Lý do chưa xác nhận chạy được; rỗng nghĩa là xác nhận được

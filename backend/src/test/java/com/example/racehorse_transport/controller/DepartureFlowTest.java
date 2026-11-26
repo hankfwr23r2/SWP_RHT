@@ -28,6 +28,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 @PostgresIntegrationTest
 @AutoConfigureMockMvc
 class DepartureFlowTest {
+    @Autowired private com.example.racehorse_transport.repository.VehicleClassRepository vehicleClasses;
 
     private static final String TODAY = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh")).toString();
 
@@ -131,8 +132,8 @@ class DepartureFlowTest {
         long routeId = routes.findByCode("HCM-DN").orElseThrow().getId();
         String body = mvc.perform(post("/departures").header(HttpHeaders.AUTHORIZATION, "Bearer " + managerToken)
                         .contentType(MediaType.APPLICATION_JSON).content("""
-                                {"routeId":%d,"departureDate":"%s","departureTime":"07:00","bookingCutoffHours":24,"stallCapacity":6}"""
-                                .formatted(routeId, LocalDate.now().plusDays(4))))
+                                {"routeId":%d,"departureDate":"%s","departureTime":"07:00","bookingCutoffHours":24,"vehicleClassId":%d,"vehicleCount":1}"""
+                                .formatted(routeId, LocalDate.now().plusDays(4), vehicleClasses.findByCode("MEDIUM").orElseThrow().getId())))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         int id = com.jayway.jsonpath.JsonPath.read(body, "$.data.id");
         mvc.perform(suggestions("INTERPROVINCE", "VN-75", "VN-46"))
@@ -149,8 +150,8 @@ class DepartureFlowTest {
     void managerCreatesAdHocDepartureAndCustomerCannot() throws Exception {
         long routeId = routes.findByCode("HCM-DN").orElseThrow().getId();
         String body = """
-                {"routeId":%d,"departureDate":"%s","departureTime":"07:00","bookingCutoffHours":48,"stallCapacity":6}"""
-                .formatted(routeId, LocalDate.now().plusDays(40));
+                {"routeId":%d,"departureDate":"%s","departureTime":"07:00","bookingCutoffHours":48,"vehicleClassId":%d,"vehicleCount":1}"""
+                .formatted(routeId, LocalDate.now().plusDays(40), vehicleClasses.findByCode("MEDIUM").orElseThrow().getId());
 
         mvc.perform(post("/departures").header(HttpHeaders.AUTHORIZATION, "Bearer " + customerToken)
                         .contentType(MediaType.APPLICATION_JSON).content(body))
