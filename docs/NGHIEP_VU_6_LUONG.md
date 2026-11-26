@@ -271,7 +271,7 @@ Tìm thấy khi đối chiếu code để viết luồng này:
 3. **Đã sửa.** Khi đặt đơn liên tỉnh chạy thẳng, hệ thống kiểm số ngày làm giấy theo quy định đến ngày đón.
 4. **Đã sửa.** Nút Từ chối đơn chỉ hiện ở Chờ tiếp nhận và Đang thẩm định, theo điều kiện của máy chủ.
 5. **Đã sửa.** Tiếp nhận, thẩm định, gửi báo giá có hạn nội bộ theo giờ; hạn chuyển khoản hoàn dùng `REFUND_DUE_DAYS` sẵn có. Hệ thống quét mỗi giờ và nhắc đúng vai trò một lần mỗi ngày cho từng đơn và từng bước. Chuyên viên nhận nhắc khi đã được phân công và còn hoạt động.
-6. **Xử lý chuyến trễ** theo cách hàng không: đã có đề xuất, chờ duyệt, chưa làm. Sẽ viết ở luồng 3 và 5.
+6. **Đã sửa.** Xử lý chuyến trễ theo cách hàng không (mục 3.F): nhắc xác nhận chạy, ghi Chậm, quản lý nhập giờ mới, khách đổi chuyến hoặc hoàn tiền, quá hạn thì tự hủy.
 7. **Đã sửa.** Chi tiết đơn của khách ẩn ô đánh giá khi đơn đã có đánh giá.
 
 ---
@@ -699,9 +699,9 @@ Cùng chuyến 05:00 ngày 08/12:
 | T33 | 8 | Hai con khoang rộng không còn hai vị trí liền nhau | Tự dồn; không được thì từ chối, nêu con vướng |
 | T34 | Bất kỳ | Cần bỏ một lượt xe chưa chạy | Gỡ hết ngựa rồi mới hủy được, bắt buộc có lý do; tổ lái được gỡ khỏi lượt |
 
-## 3.F. Đã ghi nhận, chưa làm: xử lý chuyến trễ
+## 3.F. Xử lý chuyến trễ
 
-Theo cách hàng không, đã trình bày và chờ duyệt cuối:
+Theo cách hàng không (`DepartureDelayServiceImpl`, `BookingDelayServiceImpl`):
 
 | Mốc | Hệ thống sẽ | Khách được |
 |---|---|---|
@@ -715,10 +715,10 @@ Theo cách hàng không, đã trình bày và chờ duyệt cuối:
 ## 3.G. Điểm còn hở, cần nhóm quyết
 
 1. **Đã sửa** · Đơn rời chuyến được gỡ chặng chưa chạy, vị trí khoang và lịch hẹn hub.
-2. **Quên xác nhận chạy thì đơn đứng yên** (T25). Đã có đề xuất ở 3.F.
+2. **Đã sửa.** Quên xác nhận chạy (T25): hệ thống nhắc quản lý trước giờ chạy, quá giờ ghi Chậm và báo khách, quá hạn thì tự hủy chuyến theo mục 3.F.
 3. **Đã sửa** · Chuyến cập nhật khi xe trục đầu tiên rời điểm đầu và khi các lượt trục hoàn tất.
 4. **Đã sửa.** Điều phối phụ trách sửa xe và giờ của lượt `PLANNED`, kiểm lại quy tắc khi lập và báo tổ lái, khách của các đơn có ngựa trên lượt. Lượt trục chỉ đổi xe.
-5. **Hủy lượt xe hoặc gỡ người thì tổ lái không được báo.**
+5. **Đã sửa.** Hủy lượt xe hoặc gỡ người khỏi lượt đều báo nhân viên liên quan.
 6. **Đã sửa.** Lượt chở ngựa phải có hộ tống đã nhận việc mới xuất phát được.
 7. **Đã sửa.** Nhập giờ tay cũng kiểm thời gian ngồi xe theo kế hoạch: đón, giao tối đa 5 giờ, chạy thẳng tối đa 10 giờ.
 8. **Đã sửa.** Màn đặt hẹn khách tự chở hiện hạn có mặt ở hub và hệ thống từ chối giờ hẹn muộn hơn hạn.
@@ -895,13 +895,13 @@ Ba lớp trạng thái không trộn vào nhau:
 
 1. **Đã sửa 25/11/2026 (4.F1).** **Không có chỗ ghi sức khỏe khi ngựa ở hub hoặc chuồng.** Máy chủ nhận, màn hình chưa có; ngựa ở hub vì thế luôn bị tô Trễ khám sau 12 giờ.
 2. **Đã sửa 25/11/2026 (4.F2).** **Chỉ dẫn ăn uống của khách không tới tay tổ lái.** Khách ghi chỉ dẫn và số bữa lúc đặt đơn, màn của tài xế và hộ tống không hiện.
-3. **Khách không xem được nhật ký sức khỏe.** Dòng thời gian của khách chỉ có chặng, lưu trú, giao nhận.
-4. **Ghi Ốm hoặc Nguy cấp không báo ai và không mở sự cố.** Chỉ "bỏ uống hai lần" mới báo điều phối. Đề xuất: Ốm và Nguy cấp báo ngay điều phối và gợi ý mở sự cố.
-5. **Không ghi sức khỏe lúc nhận ngựa**, dù tài liệu yêu cầu khám khi nhận. Lúc quét chip chỉ có ô tình trạng, màn hình chưa hiện ô này. Nhịp tim, nhịp thở có ở máy chủ nhưng chưa có ô nhập.
+3. **Đã sửa (4.F3).** Chủ đơn xem nhật ký sức khỏe từng con trong dòng thời gian.
+4. **Đã sửa phần báo.** Ghi Ốm hoặc Nguy cấp báo ngay điều phối. **Còn:** chưa gợi ý mở sự cố.
+5. **Đã sửa phần ô tình trạng.** Lúc quét chip nhận ngựa, tổ xe ghi tình trạng con ngựa. **Còn:** chưa có ô nhịp tim, nhịp thở lúc nhận.
 6. **Đã sửa.** Điểm nghỉ đêm phải nghỉ đủ OVERNIGHT_REST_HOURS (10 giờ); rời sớm phải ghi lý do và hệ thống báo điều phối.
-7. **Xuất phát không kiểm giờ kế hoạch**: có thể xuất phát trước hoặc sau nhiều giờ. Đi trễ không báo điều phối hay khách, chỉ thấy trong báo cáo.
-8. **Chuyến không chuyển sang Đang chạy hay Đã xong** khi xe trục chạy (cũng nêu ở luồng 3).
-9. **Khách không được báo** khi ngựa tới hub, khi xe trục chạy, khi tới hub đích; chỉ báo lúc nhận, qua cửa khẩu và giao.
+7. **Đã sửa phần xuất phát sớm.** Xuất phát sớm hơn `EARLY_START_MINUTES` phải do tài xế xác nhận, ghi lý do và báo điều phối. **Còn:** xuất phát trễ chưa báo điều phối hay khách.
+8. **Đã sửa (3.G3).** Chuyến cập nhật khi xe trục đầu tiên rời điểm đầu và khi các lượt trục hoàn tất.
+9. **Đã sửa.** Khách được báo khi ngựa vào hub và khi xe trục rời điểm đầu, ngoài các lần nhận, qua cửa khẩu và giao.
 10. **Đã sửa** · Tổ xe báo tình trạng khi kết thúc lượt. Xe cần bảo dưỡng được khóa xếp lượt mới và xuất phát, đồng thời hệ thống báo các lượt cần bố trí xe khác.
 11. **Ngoài phạm vi (chốt 26/11/2026).** Không làm vị trí xe theo thời gian thực; vị trí là điểm dừng gần nhất đã bấm Tới nơi.
 12. **Đã sửa.** Chỉ hoàn tất bàn giao ngựa cho đại lý ở cửa khẩu khi đơn xuất đủ giấy bắt buộc (2.F7).
@@ -1138,8 +1138,8 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 
 **Thiếu thông báo:**
 
-7. **Báo sự cố, lập, duyệt, từ chối phương án đều không báo ai.** Điều phối, quản lý phải tự mở trang; tổ lái phải tự tải lại.
-8. **Khách không biết ngựa gặp sự cố.** Ứng dụng khách không hiện sự cố; chỉ có thông báo khi ngựa vào hub giữ có phí.
+7. **Đã sửa.** Báo sự cố báo điều phối phụ trách; phương án chờ duyệt, được duyệt, bị từ chối đều báo người liên quan.
+8. **Đã sửa.** Khách được báo khi ngựa của đơn gặp sự cố và khi xe đang chở ngựa bị chậm; phương án cần khách quyết định hiện ở trang đơn.
 
 **Tiền và trách nhiệm:**
 
@@ -1156,9 +1156,9 @@ Sự cố ở trạng thái **Mới báo** và hiện trên trang **Sự cố** 
 16. **Đã sửa theo phương án (a)** · Tổ xe tải ảnh biên bản đổi xe đã ký trước khi điều phối đổi xe. Xe cũ chuyển sang bảo dưỡng và hệ thống báo các lượt cần bố trí xe khác.
 17. **Đã sửa.** Chỉ hộ tống của lượt xác nhận đủ sức và phải tải ảnh con ngựa; điều phối xác nhận thay vẫn cần kết quả thú y.
 18. **Đã sửa.** 30 phút đếm từ lúc hộ tống bấm Bắt đầu cho ngựa nghỉ.
-19. **Ghi sức khỏe Ốm hoặc Nguy cấp không mở sự cố** (đã nêu ở luồng 4).
-20. **Máy chủ không kiểm lượt đang chạy khi báo sự cố**; hiện chỉ màn hình chặn.
-21. **Quá 3 ngày giữ ngựa chỉ nhắc**, không có bước kết thúc (trả về người gửi, thanh lý hợp đồng…).
+19. **Đã sửa phần báo** (luồng 4, điểm 4): Ốm hoặc Nguy cấp báo ngay điều phối. **Còn:** chưa gợi ý mở sự cố.
+20. **Đã sửa.** Máy chủ kiểm trạng thái lượt xe khi báo sự cố.
+21. **Đã sửa (#472).** Ngựa không người nhận có bước thông báo nhận lại, trả ngựa và kết thúc đơn.
 22. **Đã sửa.** Sự cố có mức Nhẹ, Vừa, Nặng; danh sách xếp Nặng lên đầu.
 23. **Loại Chậm trễ chưa nối với cách xử lý chuyến trễ** (mục 3.F đã ghi nhận, chưa làm).
 
@@ -1393,13 +1393,13 @@ Dòng hai: loại một con thì bỏ cước trục, dịch vụ và phí bảo
 
 **Tiền và đóng đơn:**
 
-16. **Lập khoản thu thêm không báo khách**, không có hạn trả.
-17. **Đơn sang Đã giao không báo quản lý** để quyết toán.
-18. **Chưa có khiếu nại.** Tài liệu ghi hạn 7 ngày từ lúc giao, hệ thống không có màn và quản lý đóng đơn được ngay. Đề xuất: 7 ngày đầu chỉ đóng khi khách xác nhận nhận ngựa ổn.
+16. **Đã sửa.** Lập khoản thu thêm báo khách; quá hạn trả thì nhắc.
+17. **Đã sửa.** Đơn sang Đã giao báo quản lý để quyết toán.
+18. **Đã sửa (#472).** Có khiếu nại sau giao.
 19. **Đã sửa** · Nút trả ngựa chỉ hiện ở điểm đón khi máy chủ xác nhận các đơn trên xe tại điểm đó đã quá hạn trả số dư và không còn giao dịch đang xác nhận.
 20. **Đã sửa** · Mỗi lần ghi đón hụt gửi một thông báo cho khách, nêu tên ngựa, lý do, hạn chọn và mở chi tiết đơn.
 21. **Đã sửa** · Xe thứ hai vẫn có thể ghi đón hụt khi đơn đã Đang vận chuyển. Đơn giữ chuyến hiện tại, khách xử lý con hụt bằng A, B hoặc C theo điều kiện của lượt xe.
-22. **Ô đánh giá hiện lại sau khi đã đánh giá** (tải lại trang), bấm thì bị từ chối.
+22. **Đã sửa** (luồng 1, điểm 7). Chi tiết đơn ẩn ô đánh giá khi đơn đã có đánh giá.
 23. **Đã sửa.** Báo giá chạy thẳng ghi rõ bớt ngựa không làm giảm cước xe.
 24. **Không có bước "người nhận nghiệm thu" riêng.** Nghiệm thu hiện là ảnh biên bản và việc giao xong. Nếu hội đồng hỏi "nghiệm thu ở đâu" thì chỉ vào bước 7 và bước 10.
 
