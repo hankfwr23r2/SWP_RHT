@@ -41,7 +41,7 @@ Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A
 | **2.F4** | **Đã sửa.** Chuyên viên cập nhật và xác nhận bảo hiểm mua hộ khi đơn Đang báo giá. Quản lý lập lại bản nháp theo phí mới | | `InsuranceServiceImpl`, `InsurancesCard.tsx` | |
 | **2.F5** | **Đã sửa.** Chuyên viên thu hồi giấy đã duyệt trước khi nhận ngựa, ghi lý do, lưu kiểm toán và báo bên nộp. Thiếu giấy thì chặn xe. | | `DocumentReviewServiceImpl`, `DocumentReviewPolicy` | Đã nhận ngựa thì xử lý qua sự cố giấy tờ |
 | **2.F7** | **Đã sửa.** Đơn xuất phải đủ giấy bắt buộc khi bàn giao cho đại lý ở cửa khẩu. Thiếu giấy thì ngựa vẫn trên xe. | | `HandoverOutcomeServiceImpl` | Trùng 4.F12 |
-| **2.F8** | Xuất Lào thiếu sổ tiêm, nhập Lào thiếu xét nghiệm so với Campuchia | Hỏi nhóm cố ý hay thiếu; tra [CAN_CU_PHAP_LY_VA_IRT.md](CAN_CU_PHAP_LY_VA_IRT.md) | `db/seed-dev/R__dev_seed_base.sql` (`document_requirement`) | Pháp lý Lào **chưa kiểm chứng** |
+| **2.F8** | **Giữ nguyên.** Giấy cấu hình riêng theo nước và chiều; dữ liệu mẫu của Lào giữ như hiện có, quản trị sửa được khi cần | | `db/seed-dev/R__dev_seed_base.sql` (`document_requirement`) | Người dùng chốt 26/11 |
 | **2.F9** | **Đã sửa.** Giấy theo ngựa đã duyệt, còn hạn được dùng cho mọi quy định yêu cầu cùng loại giấy. | | `DocumentCompletenessPolicy` | Giấy theo đơn hoặc theo ngựa trong đơn chỉ dùng cho đơn đó |
 | **2.F10** | **Đã sửa.** Chỉ nhận ngựa nhập từ đại lý ở cửa khẩu khi bảo hiểm từng con đã được xác nhận. | | `HandoverOutcomeServiceImpl` | |
 
@@ -55,7 +55,7 @@ Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A
 | **3.G8** | **Đã sửa.** Màn đặt hẹn hiện hạn có mặt ở hub. Giờ hẹn tự chở muộn hơn hạn bị từ chối | | `HorseStayServiceImpl` (`planSelfDropOff`) | 1b đã gộp, làm được |
 | **3.G9** | Chưa có nút dồn chuyến, chạy xe nhỏ hơn, một khách thuê cả chuyến | Chọn phần thật sự cần; tài liệu có nêu | `DepartureDecisionServiceImpl` | **Chờ** đợt 5 |
 | **3.G10** | **Đã sửa.** Điều phối lập lượt `TRANSFER` rỗng từ nơi xe đang ở về hub gốc, không cần chuyến bán hay quản lý xác nhận chạy. | | `TripScheduleServiceImpl`, `CreateTripModal.tsx` | |
-| **3.G11** | Giờ lái tính theo ngày lịch, không theo 24 giờ liên tục | Cửa sổ trượt 24 giờ | `DispatchPolicy`, `CrewAssignmentServiceImpl` | Tra luật giao thông, hiện **chưa kiểm chứng** |
+| **3.G11** | **Giữ nguyên.** Giờ lái mỗi ngày tính theo ngày lịch | | `DispatchPolicy`, `CrewAssignmentServiceImpl` | Người dùng chốt 26/11 |
 
 ### Luồng 4 (7 điểm)
 
@@ -93,14 +93,15 @@ Mọi phần của luồng A **đã gộp** (#457 đến #474). Hiện luồng A
 |---|---|---|---|
 | 1.F5 | Đặt hạn theo giờ cho tiếp nhận, thẩm định, gửi báo giá. Quét mỗi giờ, nhắc theo vai trò và giữ trạng thái đơn | Đã duyệt | #504 |
 | 2.F2 | Bắt buộc tệp `INSURANCE_POLICY` cho từng bảo hiểm tự có khi khai báo hoặc bổ sung. Chuyên viên được giao đơn xác nhận sau khi kiểm hợp đồng. | Đã duyệt | #507 |
-| 2.F8 | | | |
+| 2.F8 | Giữ nguyên dữ liệu mẫu | Đã duyệt | |
 | 2.F5 | Thu hồi giấy đã duyệt trước khi nhận ngựa, chuyển sang từ chối kèm lý do, ghi kiểm toán và báo bên nộp | Đã duyệt | #506 |
 | 2.F9 | Dùng lại giấy theo ngựa đã duyệt và còn hạn khi yêu cầu cùng loại giấy | Đã duyệt | #503 |
 | 2.F7 | Kiểm đủ giấy bắt buộc khi bàn giao đơn xuất cho đại lý ở cửa khẩu | Đã duyệt | #496 |
 | 2.F10 | Kiểm bảo hiểm đã xác nhận khi nhận ngựa nhập từ đại lý ở cửa khẩu | Đã duyệt | #496 |
 | 2.F4 | Cập nhật và xác nhận bảo hiểm mua hộ khi đơn Đang báo giá | Đã duyệt | #479 |
 | 3.G4 | Đổi xe, dời đều cả lượt ngoài trục hoặc sửa từng điểm của lượt nhập tay. Chỉ điều phối phụ trách được sửa lượt `PLANNED`. Dùng lại các kiểm tra khi lập lượt và báo tổ lái, khách. | Đã duyệt | #508 |
-| 3.G9, 3.G11 | | | |
+| 3.G9 | | | |
+| 3.G11 | Giữ nguyên, tính theo ngày lịch | Đã duyệt | |
 | 3.G10 | Điều phối lập lượt `TRANSFER` về hub gốc, tính giờ theo tuyến chiều về hoặc theo bản đồ | Đã duyệt | #501 |
 | 3.G6, 3.G7 | Bắt buộc hộ tống đã nhận việc; kiểm giờ ngồi xe khi nhập giờ tay | Đã duyệt | #480 |
 | 3.G8 | Hiện hạn có mặt ở hub bằng giờ xuất phát hiệu lực trừ `HUB_CHECKIN_HOURS` và từ chối giờ hẹn muộn hơn hạn | Đã duyệt | #500 |
