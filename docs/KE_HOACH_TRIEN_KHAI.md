@@ -696,5 +696,5 @@ Nguồn: [NGU_CANH_THIET_KE_LAI.md](NGU_CANH_THIET_KE_LAI.md) mục 4b, [NGHIEP_
 | M5 | Khám bắt buộc hai đầu hub | B | 7 | Xong | #520 |
 | M6 | Xe về | B | 7 | Xong | |
 | M7 | Bỏ đại lý ở cửa khẩu | B | 7 | Chưa làm | |
-| M8 | Màn Các hub | B | 7 | Chưa làm | |
+| M8 | Màn Các hub | B | 7 | Xong | |
 | M9 | Tích hợp mô hình bến xe | A + B | 7 | Chưa làm | |
