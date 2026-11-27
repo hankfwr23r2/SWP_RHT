@@ -2,6 +2,7 @@ package com.example.racehorse_transport.service;
 
 import com.example.racehorse_transport.dto.dispatch.VehicleTripCreateRequestDto;
 import com.example.racehorse_transport.dto.dispatch.TripStopRequestDto;
+import com.example.racehorse_transport.entity.Departure;
 import com.example.racehorse_transport.entity.TripStop;
 import com.example.racehorse_transport.entity.Vehicle;
 import com.example.racehorse_transport.entity.VehicleTrip;
@@ -19,4 +20,6 @@ public interface TripPlanningService {
     TripStop planRestStop(VehicleTrip trip, int sequence, TripStopRequestDto request);
 
     void requireVehicleSchedule(Vehicle vehicle, VehicleTrip trip, Interval window);
+
+    List<Vehicle> vehiclesFreeForLinehaul(Departure departure, List<Vehicle> candidates);
 }

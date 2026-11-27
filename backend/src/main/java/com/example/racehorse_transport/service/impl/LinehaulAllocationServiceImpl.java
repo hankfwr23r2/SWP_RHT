@@ -157,8 +157,9 @@ public class LinehaulAllocationServiceImpl implements LinehaulAllocationService 
         var plan = LinehaulAllocationPolicy.suggest(loads, slots, departure.getBookedStallCount(),
                 config.getInt("LINEHAUL_CLUSTER_RADIUS_KM"));
         var byAllotment = fleet.stream().collect(Collectors.toMap(DepartureVehicle::getId, row -> row));
-        var stock = vehicles.findAllByOrderByLicensePlateAsc().stream().filter(vehicle -> vehicle.getStatus() == VehicleStatus.ACTIVE
-                && vehicle.getHomeHubLocation().getId().equals(departure.getRoute().getOrigin().getId())).toList();
+        var stock = tripPlanning.vehiclesFreeForLinehaul(departure, vehicles.findAllByOrderByLicensePlateAsc().stream()
+                .filter(vehicle -> vehicle.getStatus() == VehicleStatus.ACTIVE
+                        && vehicle.getHomeHubLocation().getId().equals(departure.getRoute().getOrigin().getId())).toList());
         var result = plan.allocations().stream().map(allocation -> {
             var row = byAllotment.get(allocation.slot().allotmentId());
             var assigned = allocation.loads().stream().flatMap(load -> byBooking.get(load.booking().bookingId()).stream().map(horse -> {

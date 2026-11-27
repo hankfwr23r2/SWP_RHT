@@ -89,6 +89,12 @@ public class TripPlanningServiceImpl implements TripPlanningService {
         }
         Departure departure = departures.lockForLinehaulPlanning(request.departureId());
         DispatchPolicy.requireRunnableDeparture(departure.getStatus(), departure.getRunConfirmedAt() != null);
+        Interval window = linehaulWindow(departure);
+        return request.toEntity(vehicle, departure, departure.getRoute().getOrigin(), departure.getRoute().getDestination(),
+                window.start(), window.end());
+    }
+
+    private Interval linehaulWindow(Departure departure) {
         List<RouteStop> route = routeStops.findWithLocation(departure.getRoute().getId());
         if (route.size() < 2) {
             throw new DispatchRuleException("departureId", "Tuyến của chuyến chưa có đủ điểm dừng.");
@@ -97,7 +103,7 @@ public class TripPlanningServiceImpl implements TripPlanningService {
         RouteStop last = route.getLast();
         Instant end = DispatchPolicy.routeStopWindow(start, last.getArrivalOffsetMinutes(), last.getDwellMinutes()).end();
         DispatchPolicy.requirePlannedWindow(start, end);
-        return request.toEntity(vehicle, departure, departure.getRoute().getOrigin(), departure.getRoute().getDestination(), start, end);
+        return new Interval(start, end);
     }
 
     private List<TripStop> linehaulStops(VehicleTrip trip) {
@@ -224,13 +230,30 @@ public class TripPlanningServiceImpl implements TripPlanningService {
         }
     }
 
+    // Cùng quy tắc với requireVehicleSchedule cho lượt trục mới: không trùng giờ, lượt trước kết thúc ở
+    // điểm đầu tuyến, lượt sau (nếu có) bắt đầu ở điểm cuối tuyến.
+    @Override
+    @Transactional(readOnly = true)
+    public List<Vehicle> vehiclesFreeForLinehaul(Departure departure, List<Vehicle> candidates) {
+        Interval window = linehaulWindow(departure);
+        Long origin = departure.getRoute().getOrigin().getId();
+        Long destination = departure.getRoute().getDestination().getId();
+        return candidates.stream().filter(vehicle -> {
+            var others = trips.findByVehicle_IdAndStatusNot(vehicle.getId(), VehicleTripStatus.CANCELLED);
+            if (others.stream().map(TripPlanningServiceImpl::interval).anyMatch(window::overlaps)) return false;
+            var around = DispatchPolicy.neighbors(others, window);
+            return DispatchPolicy.endLocationOrHome(vehicle, around.previous()).getId().equals(origin)
+                    && (around.next() == null || around.next().getStartLocation().getId().equals(destination));
+        }).toList();
+    }
+
     private List<VehicleTrip> otherTrips(Vehicle vehicle, VehicleTrip trip) {
         return trips.findByVehicle_IdAndStatusNot(vehicle.getId(), VehicleTripStatus.CANCELLED).stream()
                 .filter(other -> !Objects.equals(other.getId(), trip.getId())).toList();
     }
 
     private static void requireAtStart(Vehicle vehicle, VehicleTrip trip, VehicleTrip previous, String subject) {
-        Location expected = previous == null ? vehicle.getHomeHubLocation() : previous.getEndLocation();
+        Location expected = DispatchPolicy.endLocationOrHome(vehicle, previous);
         DispatchPolicy.requireStartsWherePreviousEnded("vehicleId", subject, trip.getStartLocation().getId(),
                 expected.getId(), expected.getName());
     }

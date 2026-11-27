@@ -66,6 +66,23 @@ class LinehaulAllocationFlowTest {
     }
 
     @Test
+    void leavesOutPlateWhosePreviousTripEndsAwayFromOrigin() throws Exception {
+        var scenario = scenario();
+        jdbc.update("""
+                INSERT INTO vehicle_trip (code, trip_type, vehicle_id, start_location_id, end_location_id,
+                                          planned_start_at, planned_end_at, status)
+                SELECT 'A1-AWAY-TRIP', 'TRANSFER', ?, r.origin_location_id, r.destination_location_id,
+                       timestamptz '2031-03-10 08:00+07', timestamptz '2031-03-10 20:00+07', 'PLANNED'
+                FROM departure d JOIN route r ON r.id = d.route_id WHERE d.id = ?
+                """, scenario.heavy(), scenario.departure());
+
+        mvc.perform(get(scenario.path() + "-suggestion").header(HttpHeaders.AUTHORIZATION, scenario.token()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.trucks[0].vehicles[?(@.id == %d)]".formatted(scenario.medium())).exists())
+                .andExpect(jsonPath("$.data.trucks[1].vehicles[?(@.id == %d)]".formatted(scenario.heavy())).doesNotExist());
+    }
+
+    @Test
     void rejectsPreviewThatWouldLeaveOutAHorseFromOneBooking() throws Exception {
         var scenario = scenario();
         mvc.perform(post(scenario.path() + "-trips").header(HttpHeaders.AUTHORIZATION, scenario.token())
