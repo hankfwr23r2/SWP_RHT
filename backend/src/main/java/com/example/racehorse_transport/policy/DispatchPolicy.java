@@ -193,6 +193,15 @@ public final class DispatchPolicy {
         }
     }
 
+    // NGHIEP_VU_6_LUONG luồng 3: đơn có đón tận nơi phải xếp đón trước rồi mới xếp trục
+    // Gọi khi chặng trục sẽ là chặng đầu tiên còn hiệu lực của con ngựa
+    public static void requirePickupBeforeLinehaul(boolean companyPickup, String bookingCode) {
+        if (companyPickup) {
+            throw new DispatchRuleException("bookingHorseId",
+                    "Đơn " + bookingCode + " chưa xếp lượt đón. Thứ tự xếp xe là đón → trục → giao.", true);
+        }
+    }
+
     // Quy tắc #21: ngựa chỉ lên xe trục ở điểm đầu tuyến và xuống ở điểm cuối tuyến
     public static void requireLinehaulEnds(int boardSequence, int alightSequence, int firstSequence, int lastSequence) {
         if (boardSequence != firstSequence || alightSequence != lastSequence) {

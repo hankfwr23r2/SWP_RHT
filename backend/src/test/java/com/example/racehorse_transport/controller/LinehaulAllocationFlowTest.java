@@ -12,6 +12,7 @@ import com.example.racehorse_transport.entity.Departure;
 import com.example.racehorse_transport.entity.enums.AddressRole;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.BookingType;
+import com.example.racehorse_transport.entity.enums.TransferMethod;
 import com.example.racehorse_transport.repository.VehicleClassRepository;
 import com.example.racehorse_transport.security.JwtUtils;
 import com.example.racehorse_transport.support.TestData;
@@ -83,6 +84,21 @@ class LinehaulAllocationFlowTest {
     }
 
     @Test
+    void refusesLinehaulBeforePickupWhenCompanyCollectsTheHorse() throws Exception {
+        var scenario = scenario();
+        jdbc.update("""
+                UPDATE booking SET pickup_method = 'COMPANY'
+                WHERE id = (SELECT booking_id FROM booking_horse WHERE id = ?)
+                """, scenario.far().getFirst());
+        entities.clear();
+
+        mvc.perform(post(scenario.path() + "-trips").header(HttpHeaders.AUTHORIZATION, scenario.token())
+                .contentType(MediaType.APPLICATION_JSON).content(body(scenario, scenario.near())))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("đón → trục → giao")));
+    }
+
+    @Test
     void rejectsPreviewThatWouldLeaveOutAHorseFromOneBooking() throws Exception {
         var scenario = scenario();
         mvc.perform(post(scenario.path() + "-trips").header(HttpHeaders.AUTHORIZATION, scenario.token())
@@ -115,6 +131,8 @@ class LinehaulAllocationFlowTest {
     private List<Long> booking(Customer customer, Departure departure, int count, String latitude, String longitude) {
         var booking = data.booking(customer, BookingType.INTERPROVINCE, BookingStatus.CONFIRMED);
         booking.setDeparture(departure);
+        // Khách tự đưa ngựa tới hub: chặng trục là chặng đầu
+        booking.setPickupMethod(TransferMethod.SELF);
         var address = data.bookingAddress(booking, AddressRole.DELIVERY);
         address.setLatitude(new BigDecimal(latitude));
         address.setLongitude(new BigDecimal(longitude));

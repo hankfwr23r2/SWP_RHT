@@ -169,6 +169,13 @@ class DispatchPolicyTest {
     }
 
     @Test
+    void linehaulAsFirstLegNeedsPickupOnlyWhenCompanyCollectsTheHorse() {
+        assertThatCode(() -> DispatchPolicy.requirePickupBeforeLinehaul(false, "BK-1")).doesNotThrowAnyException();
+        assertThatThrownBy(() -> DispatchPolicy.requirePickupBeforeLinehaul(true, "BK-1"))
+                .hasMessageContaining("Đơn BK-1 chưa xếp lượt đón");
+    }
+
+    @Test
     void onlyActiveStaffWithMatchingAccountRoleIsAssigned() {
         assertThatCode(() -> DispatchPolicy.requireActiveStaff(EmploymentStatus.ACTIVE)).doesNotThrowAnyException();
         assertThatThrownBy(() -> DispatchPolicy.requireActiveStaff(EmploymentStatus.ON_LEAVE)).hasMessageContaining("ON_LEAVE");

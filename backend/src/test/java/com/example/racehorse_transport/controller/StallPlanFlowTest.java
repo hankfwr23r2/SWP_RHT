@@ -56,6 +56,8 @@ class StallPlanFlowTest {
         // Con thứ hai đi khoang rộng: chiếm hai vị trí liền nhau
         entityManager.flush();
         jdbc.update("UPDATE booking_horse SET stall_type_code = 'WIDE' WHERE id = ?", lines.get(1));
+        // Khách tự đưa ngựa tới hub: chặng trục là chặng đầu, không cần lượt đón
+        jdbc.update("UPDATE booking SET pickup_method = 'SELF' WHERE id = ?", booking);
         entityManager.clear();
         confirmRun(departure);
         trip = ((Number) JsonPath.read(mvc.perform(post("/vehicle-trips").header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
