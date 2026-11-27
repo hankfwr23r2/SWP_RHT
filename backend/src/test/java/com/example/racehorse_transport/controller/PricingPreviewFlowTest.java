@@ -52,11 +52,11 @@ class PricingPreviewFlowTest {
         String manager = data.unique("preview-manager");
         data.staff(manager, "MANAGER");
         mvc.perform(post("/pricing/preview")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwt.generateToken(customer, List.of("CUSTOMER")))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwt.generateToken(customer, List.of("CUSTOMER"), 0))
                         .contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isBadRequest());
         mvc.perform(post("/pricing/preview")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwt.generateToken(manager, List.of("MANAGER")))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwt.generateToken(manager, List.of("MANAGER"), 0))
                         .contentType(MediaType.APPLICATION_JSON).content("""
                                 {"pickupAddressId":1,"deliveryAddressId":2,"pickupAt":"2090-01-01T00:00:00Z",
                                  "horses":[{"horseId":1,"stallTypeCode":"STANDARD","addOnServiceIds":[]}]}
@@ -79,7 +79,7 @@ class PricingPreviewFlowTest {
             }
             return new RoadRouteDto(35, 600, List.of());
         });
-        String token = "Bearer " + jwt.generateToken(customer, List.of("CUSTOMER"));
+        String token = "Bearer " + jwt.generateToken(customer, List.of("CUSTOMER"), 0);
         String payload = """
                 {"pickupAddressId":%d,"deliveryAddressId":%d,"pickupAt":"2090-01-01T00:00:00Z",
                  "horses":[{"horseId":%d,"stallTypeCode":"WIDE","addOnServiceIds":[%s]}]}
@@ -109,7 +109,7 @@ class PricingPreviewFlowTest {
         var departure = data.departure("HCM-DN", pickupDate.plusDays(2), 4);
         Long pickup = insertAddress(owner, "VN-79", "10.70");
         Long delivery = insertAddress(owner, "VN-48", "16.90");
-        String token = "Bearer " + jwt.generateToken(customer, List.of("CUSTOMER"));
+        String token = "Bearer " + jwt.generateToken(customer, List.of("CUSTOMER"), 0);
         String payload = """
                 {"pickupAddressId":%d,"deliveryAddressId":%d,"departureId":%d,"pickupAt":"%s",
                  "pickupMethod":"%s","deliveryMethod":"SELF",
@@ -180,7 +180,7 @@ class PricingPreviewFlowTest {
     }
 
     private ResultActions transferOptions(String username, String role, String payload) throws Exception {
-        return mvc.perform(post("/pricing/transfer-options").header(HttpHeaders.AUTHORIZATION, "Bearer " + jwt.generateToken(username, List.of(role)))
+        return mvc.perform(post("/pricing/transfer-options").header(HttpHeaders.AUTHORIZATION, "Bearer " + jwt.generateToken(username, List.of(role), 0))
                 .contentType(MediaType.APPLICATION_JSON).content(payload));
     }
 

@@ -61,7 +61,7 @@ class TripScheduleFlowTest {
     @BeforeEach
     void setUp() {
         var staff = testData.staff(testData.unique("plan.coordinator"), "COORDINATOR");
-        coordinator = "Bearer " + jwt.generateToken(staff.getUser().getUsername(), List.of("COORDINATOR"));
+        coordinator = "Bearer " + jwt.generateToken(staff.getUser().getUsername(), List.of("COORDINATOR"), 0);
         long booking = jdbc.queryForObject("SELECT id FROM booking WHERE code = 'DEV-DOMESTIC-001'", Long.class);
         hub = locations.findByCode("HUB-HCM").orElseThrow().getId();
         address = jdbc.queryForObject("SELECT id FROM booking_address WHERE booking_id = ? AND address_type = 'PICKUP'", Long.class, booking);
@@ -159,7 +159,7 @@ class TripScheduleFlowTest {
         when(routing.truckRoute(anyList(), anyDouble(), anyInt(), any())).thenThrow(new RoutingUnavailableException());
         plan("null").andExpect(status().isServiceUnavailable());
         var manager = testData.staff(testData.unique("plan.manager"), "MANAGER");
-        coordinator = "Bearer " + jwt.generateToken(manager.getUser().getUsername(), List.of("MANAGER"));
+        coordinator = "Bearer " + jwt.generateToken(manager.getUser().getUsername(), List.of("MANAGER"), 0);
         plan("null").andExpect(status().isForbidden());
     }
 

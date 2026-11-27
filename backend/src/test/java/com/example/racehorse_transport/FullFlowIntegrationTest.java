@@ -281,7 +281,7 @@ class FullFlowIntegrationTest {
     private void settle(Case order) throws Exception {
         entityManager.flush();
         String owner = jdbc.queryForObject("SELECT u.username FROM booking b JOIN app_user u ON u.id = b.customer_id WHERE b.id = ?", String.class, order.id());
-        String customer = "Bearer " + jwtUtils.generateToken(owner, List.of("CUSTOMER"));
+        String customer = "Bearer " + jwtUtils.generateToken(owner, List.of("CUSTOMER"), 0);
         String manager = token(testData.staff(testData.unique("m3.manager"), "MANAGER"), "MANAGER");
         mvc.perform(post("/bookings/{id}/settlement/complete", order.id()).header(HttpHeaders.AUTHORIZATION, manager)).andExpect(status().isConflict());
         mvc.perform(post("/bookings/{id}/delivery-complaints/confirm", order.id()).header(HttpHeaders.AUTHORIZATION, customer)
@@ -511,6 +511,6 @@ class FullFlowIntegrationTest {
     }
 
     private String token(Staff staff, String role) {
-        return "Bearer " + jwtUtils.generateToken(staff.getUser().getUsername(), List.of(role));
+        return "Bearer " + jwtUtils.generateToken(staff.getUser().getUsername(), List.of(role), 0);
     }
 }

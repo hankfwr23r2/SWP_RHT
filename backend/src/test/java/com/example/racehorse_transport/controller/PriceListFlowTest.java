@@ -43,10 +43,10 @@ class PriceListFlowTest {
         String customer = data.unique("pricing-customer");
         data.customer(customer);
         mvc.perform(get("/price-lists").header(HttpHeaders.AUTHORIZATION,
-                        "Bearer " + jwt.generateToken(customer, List.of("CUSTOMER"))))
+                        "Bearer " + jwt.generateToken(customer, List.of("CUSTOMER"), 0)))
                 .andExpect(status().isForbidden());
         mvc.perform(post("/price-lists").header(HttpHeaders.AUTHORIZATION,
-                        "Bearer " + jwt.generateToken(admin, List.of("ADMIN")))
+                        "Bearer " + jwt.generateToken(admin, List.of("ADMIN"), 0))
                         .contentType(MediaType.APPLICATION_JSON).content("""
                                 {"name":"A3 test","currencyCode":"VND","marginRate":0.1,"fuelBufferRate":0.05,
                                  "depositRate":0.30,"validFrom":"2090-01-01"}
@@ -60,7 +60,7 @@ class PriceListFlowTest {
     void customerCanListBillableServicesButCannotListPriceLists() throws Exception {
         String customer = data.unique("catalog-customer");
         data.customer(customer);
-        String authorization = "Bearer " + jwt.generateToken(customer, List.of("CUSTOMER"));
+        String authorization = "Bearer " + jwt.generateToken(customer, List.of("CUSTOMER"), 0);
         mvc.perform(get("/billable-services").header(HttpHeaders.AUTHORIZATION, authorization))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray());
@@ -77,7 +77,7 @@ class PriceListFlowTest {
                 BigDecimal.ZERO, BigDecimal.ZERO, LocalDate.of(2090, 1, 1), null)).id();
         Long directId = billableServices.findByCode("DIRECT_KM").orElseThrow().getId();
         mvc.perform(post("/price-lists/{id}/items", listId)
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwt.generateToken(admin, List.of("ADMIN")))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwt.generateToken(admin, List.of("ADMIN"), 0))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"billableServiceId":%d,"kmFrom":200,"unitPrice":20000}

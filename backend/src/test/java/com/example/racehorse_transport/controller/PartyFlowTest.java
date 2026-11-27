@@ -61,7 +61,7 @@ class PartyFlowTest {
     void customerCannotManagePartners() throws Exception {
         String customer = testData.unique("party.customer");
         testData.customer(customer);
-        String token = "Bearer " + jwtUtils.generateToken(customer, List.of("CUSTOMER"));
+        String token = "Bearer " + jwtUtils.generateToken(customer, List.of("CUSTOMER"), 0);
         mvc.perform(get("/parties").header(HttpHeaders.AUTHORIZATION, token)).andExpect(status().isForbidden());
         mvc.perform(post("/parties").header(HttpHeaders.AUTHORIZATION, token)
                         .contentType(MediaType.APPLICATION_JSON).content(PARTY))
@@ -99,6 +99,6 @@ class PartyFlowTest {
     private String staffToken(String role) {
         String username = testData.unique("party.staff");
         testData.staff(username, role);
-        return "Bearer " + jwtUtils.generateToken(username, List.of(role));
+        return "Bearer " + jwtUtils.generateToken(username, List.of(role), 0);
     }
 }

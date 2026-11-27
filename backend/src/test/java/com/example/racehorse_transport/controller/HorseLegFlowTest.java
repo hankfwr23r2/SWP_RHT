@@ -54,7 +54,7 @@ class HorseLegFlowTest {
     void setUp() {
         String username = testData.unique("legs.coordinator");
         testData.staff(username, "COORDINATOR");
-        coordinator = "Bearer " + jwtUtils.generateToken(username, List.of("COORDINATOR"));
+        coordinator = "Bearer " + jwtUtils.generateToken(username, List.of("COORDINATOR"), 0);
         hcm = locations.findByCode("HUB-HCM").orElseThrow().getId();
     }
 

@@ -148,7 +148,7 @@ class DepartureDecisionServiceTest {
     }
 
     private String token(String username, String role) {
-        return "Bearer " + jwt.generateToken(username, List.of(role));
+        return "Bearer " + jwt.generateToken(username, List.of(role), 0);
     }
 
     // Dữ liệu đơn và chuyến cho test của quyết định chạy và đổi chuyến

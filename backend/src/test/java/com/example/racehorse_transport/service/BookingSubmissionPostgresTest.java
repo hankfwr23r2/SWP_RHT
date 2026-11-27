@@ -758,7 +758,7 @@ class BookingSubmissionPostgresTest {
     }
 
     private String token(String username, String role) {
-        return "Bearer " + jwt.generateToken(username, List.of(role));
+        return "Bearer " + jwt.generateToken(username, List.of(role), 0);
     }
 
     // Cho xe để sẵn của hub TP.HCM tạm bảo dưỡng để kiểm ca hết chỗ thật (quy chế đội xe Q3)

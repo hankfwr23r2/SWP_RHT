@@ -249,6 +249,9 @@ Hub đón của đơn là hub phục vụ tỉnh của `booking_address` PICKUP.
 | `role_code` | `varchar(30)` | | FK → role | Mỗi tài khoản đúng một vai trò |
 | `preferred_language` | `varchar(5)` | | default `'vi'`, CK `vi, en` | |
 | `status` | `varchar(30)` | | CK `ACTIVE, LOCKED, DISABLED` | |
+| `token_version` | `int` | | default `0`, CK `>= 0` | Phiên bản phiên đăng nhập. Access và refresh token mang số này; tăng khi đăng xuất, đổi hoặc đặt lại mật khẩu, bị khóa, thì mọi token cũ hết hiệu lực trên mọi máy |
+| `failed_login_count` | `int` | | default `0`, CK `>= 0` | Số lần nhập sai mật khẩu liên tiếp. Đăng nhập đúng hoặc bị khóa tạm thì về 0 |
+| `locked_until` | `timestamptz` | có | | Khóa tạm tới thời điểm này sau `LOGIN_MAX_FAILED_ATTEMPTS` lần sai (`LOGIN_LOCK_MINUTES` phút). Khác `status = LOCKED` do quản trị khóa |
 | `created_at` | `timestamptz` | | default `now()` | |
 
 Index: `role_code`.
@@ -1551,6 +1554,8 @@ Chỉ chứa tham số **không phải giá tiền**, ví dụ thời gian chờ
 
 `HOTLINE` và `OFFICE_ADDRESS` (nhóm `CONTACT`, đơn vị `TEXT`) hiện cho khách qua `GET /public/contact`; `HOTLINE` phải là số điện thoại.
 
+`LOGIN_MAX_FAILED_ATTEMPTS` (mặc định 5, nhóm `SECURITY`, đơn vị `COUNT`) và `LOGIN_LOCK_MINUTES` (mặc định 15, đơn vị `MINUTE`): nhập sai mật khẩu đủ số lần liên tiếp thì tài khoản bị khóa tạm, kể cả khi lần sau nhập đúng.
+
 `PRE_EXIT_CHECK_HOURS` (mặc định 12, nhóm `HANDOVER`, đơn vị `HOUR`) là số giờ báo trước để tạo việc khám trước khi ra hub.
 
 Backend kiểm tra giới hạn khi cập nhật giá trị. Nếu hai cận đều NULL, quy tắc cập nhật số nguyên dương cho đơn vị được hỗ trợ vẫn áp dụng.
@@ -1560,6 +1565,8 @@ Backend kiểm tra giới hạn khi cập nhật giá trị. Nếu hai cận đ�
 | `DEPARTURE_GENERATION_WEEKS` | 1 | 52 |
 | `OTP_EXPIRY_MINUTES` | 1 | 30 |
 | `OTP_MAX_ATTEMPTS` | 1 | 10 |
+| `LOGIN_MAX_FAILED_ATTEMPTS` | 3 | 20 |
+| `LOGIN_LOCK_MINUTES` | 1 | 1440 |
 | `QUOTATION_VALID_HOURS` | 1 | 720 |
 | `DEPARTURE_DECISION_HOURS` | 1 | 168 |
 | `DEPARTURE_MIN_FILL_PERCENT` | 1 | 100 |

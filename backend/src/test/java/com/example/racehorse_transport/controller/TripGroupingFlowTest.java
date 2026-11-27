@@ -50,7 +50,7 @@ class TripGroupingFlowTest {
     @BeforeEach
     void setUp() {
         var staff = testData.staff(testData.unique("group.coordinator"), "COORDINATOR");
-        coordinator = "Bearer " + jwtUtils.generateToken(staff.getUser().getUsername(), List.of("COORDINATOR"));
+        coordinator = "Bearer " + jwtUtils.generateToken(staff.getUser().getUsername(), List.of("COORDINATOR"), 0);
         domestic = jdbc.queryForObject("SELECT id FROM booking WHERE code = 'DEV-DOMESTIC-001'", Long.class);
         export = jdbc.queryForObject("SELECT id FROM booking WHERE code = 'DEV-EXPORT-001'", Long.class);
         pickupDate = jdbc.queryForObject("SELECT requested_pickup_date FROM booking WHERE id = ?", java.sql.Date.class, domestic).toLocalDate();

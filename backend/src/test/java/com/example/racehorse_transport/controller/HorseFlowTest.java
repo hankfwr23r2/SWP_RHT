@@ -93,13 +93,13 @@ class HorseFlowTest {
                 .content(body("123", horseType(token)))).andExpect(status().isBadRequest());
         String staff = data.unique("horse-staff");
         data.staff(staff, "MANAGER");
-        mvc.perform(get("/horses").header(HttpHeaders.AUTHORIZATION, "Bearer " + jwt.generateToken(staff, List.of("MANAGER"))))
+        mvc.perform(get("/horses").header(HttpHeaders.AUTHORIZATION, "Bearer " + jwt.generateToken(staff, List.of("MANAGER"), 0)))
                 .andExpect(status().isForbidden());
-        mvc.perform(get("/horse-types").header(HttpHeaders.AUTHORIZATION, "Bearer " + jwt.generateToken(staff, List.of("MANAGER"))))
+        mvc.perform(get("/horse-types").header(HttpHeaders.AUTHORIZATION, "Bearer " + jwt.generateToken(staff, List.of("MANAGER"), 0)))
                 .andExpect(status().isForbidden());
         String admin = data.unique("horse-admin");
         data.staff(admin, "ADMIN");
-        mvc.perform(get("/horse-types").header(HttpHeaders.AUTHORIZATION, "Bearer " + jwt.generateToken(admin, List.of("ADMIN"))))
+        mvc.perform(get("/horse-types").header(HttpHeaders.AUTHORIZATION, "Bearer " + jwt.generateToken(admin, List.of("ADMIN"), 0)))
                 .andExpect(status().isOk());
         mvc.perform(get("/horses")).andExpect(status().isUnauthorized());
     }
@@ -129,7 +129,7 @@ class HorseFlowTest {
     private String customerToken() {
         String username = data.unique("horse-a5");
         data.customer(username);
-        return "Bearer " + jwt.generateToken(username, List.of("CUSTOMER"));
+        return "Bearer " + jwt.generateToken(username, List.of("CUSTOMER"), 0);
     }
 
     private String chip() {

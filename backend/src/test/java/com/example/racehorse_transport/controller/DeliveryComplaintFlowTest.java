@@ -263,7 +263,7 @@ class DeliveryComplaintFlowTest {
                 SELECT u.username FROM booking b JOIN customer c ON c.user_id = b.customer_id
                 JOIN app_user u ON u.id = c.user_id WHERE b.id = ?
                 """, String.class, expiredBookingId);
-        var expiredToken = "Bearer " + jwtUtils.generateToken(expiredOwner, List.of("CUSTOMER"));
+        var expiredToken = "Bearer " + jwtUtils.generateToken(expiredOwner, List.of("CUSTOMER"), 0);
         mvc.perform(multipart(PATH, expiredBookingId).file(photo()).param("description", "Too late")
                 .header(HttpHeaders.AUTHORIZATION, expiredToken))
                 .andExpect(status().isConflict());
@@ -324,6 +324,6 @@ class DeliveryComplaintFlowTest {
     }
 
     private String token(AppUser user, String role) {
-        return "Bearer " + jwtUtils.generateToken(user.getUsername(), List.of(role));
+        return "Bearer " + jwtUtils.generateToken(user.getUsername(), List.of(role), 0);
     }
 }

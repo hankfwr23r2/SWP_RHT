@@ -305,7 +305,7 @@ class TripPlanEditFlowTest {
     }
 
     private String bearer(Staff staff, String role) {
-        return "Bearer " + jwt.generateToken(staff.getUser().getUsername(), List.of(role));
+        return "Bearer " + jwt.generateToken(staff.getUser().getUsername(), List.of(role), 0);
     }
 
     private static String shift(Instant at) {

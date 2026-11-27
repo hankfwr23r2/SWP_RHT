@@ -58,6 +58,17 @@ public class AppUser {
     @Column(name = "status", length = 30, nullable = false)
     private AppUserStatus status;
 
+    // Phiên bản phiên đăng nhập: token mang số khác số này thì hết hiệu lực. AuthService và PasswordResetService tăng
+    @Column(name = "token_version", nullable = false)
+    private Integer tokenVersion = 0;
+
+    // Số lần nhập sai mật khẩu liên tiếp và hạn khóa tạm, do AuthService ghi theo LoginAttemptPolicy
+    @Column(name = "failed_login_count", nullable = false)
+    private Integer failedLoginCount = 0;
+
+    @Column(name = "locked_until")
+    private Instant lockedUntil;
+
     // DB đặt giá trị mặc định now() lúc thêm dòng
     @Generated
     @Column(name = "created_at", nullable = false, insertable = false, updatable = false)

@@ -97,10 +97,10 @@ class AccountFlowTest {
     void adminLocksAndUnlocksStaffWithAuditAndLockedTokenStopsWorking() throws Exception {
         String admin = data.unique("lock-admin");
         long adminId = data.staff(admin, "ADMIN").getUserId();
-        String token = "Bearer " + jwt.generateToken(admin, List.of("ADMIN"));
+        String token = "Bearer " + jwt.generateToken(admin, List.of("ADMIN"), 0);
         String worker = data.unique("lock-worker");
         long id = data.staff(worker, "COORDINATOR").getUserId();
-        String workerToken = "Bearer " + jwt.generateToken(worker, List.of("COORDINATOR"));
+        String workerToken = "Bearer " + jwt.generateToken(worker, List.of("COORDINATOR"), 0);
         String reason = "{\"reason\":\"Nghỉ việc\"}";
 
         mvc.perform(post("/staff-accounts/{id}/lock", id).header(HttpHeaders.AUTHORIZATION, token)
@@ -134,6 +134,6 @@ class AccountFlowTest {
     private String staffToken(String role) {
         String username = data.unique("account-a2");
         data.staff(username, role);
-        return "Bearer " + jwt.generateToken(username, List.of(role));
+        return "Bearer " + jwt.generateToken(username, List.of(role), 0);
     }
 }

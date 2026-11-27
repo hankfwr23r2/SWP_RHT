@@ -175,12 +175,12 @@ class StaffReadApiTest {
     }
 
     private String customer(String username) {
-        return "Bearer " + jwt.generateToken(username, List.of("CUSTOMER"));
+        return "Bearer " + jwt.generateToken(username, List.of("CUSTOMER"), 0);
     }
 
     private String staff(String role) {
         String username = data.unique("read-staff");
         data.staff(username, role);
-        return "Bearer " + jwt.generateToken(username, List.of(role));
+        return "Bearer " + jwt.generateToken(username, List.of(role), 0);
     }
 }

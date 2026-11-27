@@ -67,7 +67,7 @@ class RegulationControllerTest {
     void authenticatedCustomerCanPreviewButCannotReadTheAdminCatalog() throws Exception {
         String username = data.unique("regulation-customer");
         data.customer(username);
-        String token = "Bearer " + jwt.generateToken(username, List.of("CUSTOMER"));
+        String token = "Bearer " + jwt.generateToken(username, List.of("CUSTOMER"), 0);
         mvc.perform(get("/country-rules").header(HttpHeaders.AUTHORIZATION, token))
                 .andExpect(status().isForbidden());
         mvc.perform(post("/country-rules/preview").header(HttpHeaders.AUTHORIZATION, token)
@@ -85,7 +85,7 @@ class RegulationControllerTest {
     void mocBaiRequirementsReplaceGeneralRequirementsWithTheSameDocumentType() throws Exception {
         String username = data.unique("regulation-export");
         data.customer(username);
-        String token = "Bearer " + jwt.generateToken(username, List.of("CUSTOMER"));
+        String token = "Bearer " + jwt.generateToken(username, List.of("CUSTOMER"), 0);
         Long gate = jdbc.queryForObject("SELECT id FROM location WHERE code = 'GATE-MOCBAI'", Long.class);
 
         mvc.perform(post("/country-rules/preview").header(HttpHeaders.AUTHORIZATION, token)
@@ -117,6 +117,6 @@ class RegulationControllerTest {
     private String staffToken(String role) {
         String username = data.unique("regulation-a4");
         data.staff(username, role);
-        return "Bearer " + jwt.generateToken(username, List.of(role));
+        return "Bearer " + jwt.generateToken(username, List.of(role), 0);
     }
 }

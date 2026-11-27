@@ -25,8 +25,8 @@ class JwtUtilsTest {
 
     @Test
     void accessAndRefreshTokensAreNotInterchangeable() {
-        String access = jwt.generateToken("an", List.of("CUSTOMER"));
-        String refresh = jwt.generateRefreshToken("an");
+        String access = jwt.generateToken("an", List.of("CUSTOMER"), 3);
+        String refresh = jwt.generateRefreshToken("an", 3);
 
         assertThat(jwt.validateAccessToken(access)).isTrue();
         assertThat(jwt.validateRefreshToken(access)).isFalse();
@@ -38,14 +38,13 @@ class JwtUtilsTest {
     void tokenSignedWithAnotherKeyIsRejected() {
         JwtUtils other = new JwtUtils(new JwtProperties("x".repeat(48), "jdbc:postgresql://db.example.com/db", new MockEnvironment()));
         ReflectionTestUtils.setField(other, "accessTokenExpirationMs", 900_000L);
-        assertThat(jwt.validateAccessToken(other.generateToken("an", List.of("ADMIN")))).isFalse();
+        assertThat(jwt.validateAccessToken(other.generateToken("an", List.of("ADMIN"), 0))).isFalse();
     }
 
     @Test
-    void revokedTokenIsRejected() {
-        String refresh = jwt.generateRefreshToken("an");
-        jwt.blacklistToken(refresh);
-        assertThat(jwt.validateRefreshToken(refresh)).isFalse();
+    void tokensCarryTheSessionVersion() {
+        assertThat(jwt.getVersionFromToken(jwt.generateRefreshToken("an", 3))).isEqualTo(3);
+        assertThat(jwt.getVersionFromToken(jwt.generateToken("an", List.of("CUSTOMER"), 7))).isEqualTo(7);
     }
 
     @Test
@@ -55,8 +54,10 @@ class JwtUtilsTest {
 
         assertThat(jwt.getRefreshTokenFromCookies(request, ClientApp.CUSTOMER)).isEqualTo("khach");
         assertThat(jwt.getRefreshTokenFromCookies(request, ClientApp.BACKOFFICE)).isEqualTo("noibo");
-        assertThat(jwt.generateRefreshCookie("an", ClientApp.BACKOFFICE).getName()).isEqualTo("rt_staff");
-        assertThat(jwt.generateRefreshCookie("an", ClientApp.BACKOFFICE).isHttpOnly()).isTrue();
+        assertThat(jwt.generateRefreshCookie("token", ClientApp.BACKOFFICE).getName()).isEqualTo("rt_staff");
+        assertThat(jwt.generateRefreshCookie("token", ClientApp.BACKOFFICE).isHttpOnly()).isTrue();
+        assertThat(ClientApp.forRole("CUSTOMER")).isEqualTo(ClientApp.CUSTOMER);
+        assertThat(ClientApp.forRole("COORDINATOR")).isEqualTo(ClientApp.BACKOFFICE);
     }
 
     @Test
