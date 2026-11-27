@@ -8,10 +8,12 @@ import com.example.racehorse_transport.entity.Customer;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.enums.AppUserStatus;
 import com.example.racehorse_transport.entity.enums.EmploymentStatus;
+import com.example.racehorse_transport.exception.InvalidTokenException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.AppUserRepository;
 import com.example.racehorse_transport.repository.CustomerRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
+import com.example.racehorse_transport.security.ClientApp;
 import com.example.racehorse_transport.security.JwtUtils;
 import com.example.racehorse_transport.service.AuthService;
 import com.example.racehorse_transport.service.EmailVerificationService;
@@ -96,14 +98,18 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional(readOnly = true)
-    public AuthResponseDto refreshToken(String refreshToken) {
-        if (!jwtUtils.validateToken(refreshToken)) {
-            throw new IllegalArgumentException("Refresh token không hợp lệ hoặc đã hết hạn!");
+    public AuthResponseDto refreshToken(String refreshToken, ClientApp app) {
+        if (!jwtUtils.validateRefreshToken(refreshToken)) {
+            throw new InvalidTokenException("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
         }
         AppUser user = users.findByUsername(jwtUtils.getUsernameFromToken(refreshToken))
-                .orElseThrow(() -> new IllegalArgumentException("Người dùng không tồn tại!"));
+                .orElseThrow(() -> new InvalidTokenException("Người dùng không tồn tại!"));
         if (!isActive(user)) {
-            throw new IllegalArgumentException("Tài khoản đã bị khóa hoặc vô hiệu hóa!");
+            throw new InvalidTokenException("Tài khoản đã bị khóa hoặc vô hiệu hóa!");
+        }
+        // Cookie của trang khách chỉ cấp token cho khách, cookie của backoffice chỉ cấp cho nhân viên
+        if (isCustomer(user) != (app == ClientApp.CUSTOMER)) {
+            throw new InvalidTokenException("Phiên đăng nhập không thuộc ứng dụng này.");
         }
         return isCustomer(user) ? customerAuth(user) : staffAuth(user, staffProfileOf(user));
     }

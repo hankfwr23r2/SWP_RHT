@@ -100,6 +100,12 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(ApiResponseDto.error(ex.getMessage()), HttpStatus.TOO_MANY_REQUESTS);
     }
 
+    // Refresh token thiếu, hết hạn, đã thu hồi hoặc không đúng ứng dụng
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<ApiResponseDto<Object>> handleInvalidToken(InvalidTokenException ex) {
+        return new ResponseEntity<>(ApiResponseDto.error(ex.getMessage()), HttpStatus.UNAUTHORIZED);
+    }
+
     // Tài nguyên theo đường dẫn (đơn, sự cố, ngựa...) không tồn tại
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiResponseDto<Object>> handleResourceNotFound(ResourceNotFoundException ex) {

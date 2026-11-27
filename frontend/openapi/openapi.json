@@ -11158,6 +11158,13 @@
           "schema" : {
             "type" : "string"
           }
+        }, {
+          "in" : "header",
+          "name" : "X-Client-App",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
         } ],
         "responses" : {
           "200" : {
@@ -11249,6 +11256,14 @@
     "/auth/refresh-token" : {
       "post" : {
         "operationId" : "refreshToken",
+        "parameters" : [ {
+          "in" : "header",
+          "name" : "X-Client-App",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
         "responses" : {
           "200" : {
             "content" : {

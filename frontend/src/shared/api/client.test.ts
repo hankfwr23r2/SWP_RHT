@@ -55,6 +55,23 @@ describe('tokenStorage proactive refresh', () => {
     await vi.advanceTimersByTimeAsync(1)
 
     expect(refreshRequest).toHaveBeenCalledOnce()
+    expect(refreshRequest.mock.calls[0][2]?.headers).toMatchObject({ 'X-Client-App': 'customer' })
     expect(values.get('SWP_ACCESS_TOKEN_customer')).toBe(renewedToken)
+  })
+})
+
+describe('client app header', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('tells the backend which app cookie to use', async () => {
+    vi.stubGlobal('window', { location: { pathname: '/backoffice/coordinator/dispatch' } })
+    let sent: unknown
+    await apiClient.get('/header-test', { adapter: async config => {
+      sent = config.headers['X-Client-App']
+      return { data: {}, status: 200, statusText: 'OK', headers: new AxiosHeaders(), config }
+    } })
+    expect(sent).toBe('backoffice')
   })
 })

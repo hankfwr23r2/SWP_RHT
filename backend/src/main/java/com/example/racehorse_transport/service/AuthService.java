@@ -3,8 +3,9 @@ package com.example.racehorse_transport.service;
 import com.example.racehorse_transport.dto.auth.AuthResponseDto;
 import com.example.racehorse_transport.dto.auth.ChangePasswordRequestDto;
 import com.example.racehorse_transport.dto.auth.LoginRequestDto;
+import com.example.racehorse_transport.security.ClientApp;
 
-// Đăng nhập, làm mới token, đổi mật khẩu. Vai trò lấy từ bảng user_role. Đăng ký nằm ở CustomerRegistrationService.
+// Đăng nhập, làm mới token, đổi mật khẩu. Vai trò lấy từ app_user.role_code. Đăng ký nằm ở CustomerRegistrationService.
 public interface AuthService {
 
     AuthResponseDto loginCustomer(LoginRequestDto request);
@@ -15,7 +16,8 @@ public interface AuthService {
 
     AuthResponseDto confirmEmail(String email, String otp);
 
-    AuthResponseDto refreshToken(String refreshToken);
+    // Refresh token lấy từ cookie của ứng dụng app; sai loại, hết hạn hay không đúng ứng dụng thì ném InvalidTokenException
+    AuthResponseDto refreshToken(String refreshToken, ClientApp app);
 
     void changePassword(String username, ChangePasswordRequestDto request);
 

@@ -105,10 +105,10 @@ class AuthFlowTest {
                 .andExpect(jsonPath("$.data.fullName").value("Nguyễn Văn An"))
                 .andReturn();
         String accessToken = JsonPath.read(confirmed.getResponse().getContentAsString(), "$.data.accessToken");
-        Cookie refreshCookie = confirmed.getResponse().getCookie("refreshToken");
+        Cookie refreshCookie = confirmed.getResponse().getCookie("rt_customer");
         assertThat(refreshCookie).isNotNull();
 
-        mvc.perform(post("/auth/refresh-token").cookie(refreshCookie))
+        mvc.perform(post("/auth/refresh-token").header("X-Client-App", "customer").cookie(refreshCookie))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.accessToken").isNotEmpty())
                 .andExpect(jsonPath("$.data.roles[0]").value("CUSTOMER"));
@@ -209,6 +209,84 @@ class AuthFlowTest {
         mvc.perform(post("/auth/change-password").header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON).content(wrongCurrentPassword))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void eachAppKeepsItsOwnRefreshCookie() throws Exception {
+        String customerName = testData.unique("khachcookie");
+        testData.customer(customerName);
+        String staffName = testData.unique("nvcookie");
+        testData.staff(staffName, "MANAGER");
+
+        Cookie customerCookie = login("/auth/customer/login", customerName).getResponse().getCookie("rt_customer");
+        MvcResult staffLogin = login("/auth/staff/login", staffName);
+        Cookie staffCookie = staffLogin.getResponse().getCookie("rt_staff");
+        assertThat(customerCookie).isNotNull();
+        assertThat(staffCookie).isNotNull();
+        assertThat(staffLogin.getResponse().getCookie("rt_customer")).isNull();
+
+        // Cùng trình duyệt giữ cả hai cookie: mỗi app nhận đúng tài khoản của mình
+        mvc.perform(post("/auth/refresh-token").header("X-Client-App", "backoffice").cookie(customerCookie, staffCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.username").value(staffName));
+        mvc.perform(post("/auth/refresh-token").header("X-Client-App", "customer").cookie(customerCookie, staffCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.username").value(customerName));
+
+        // Cookie đặt nhầm tên không đổi được phiên của app kia
+        Cookie staffTokenAsCustomer = new Cookie("rt_customer", staffCookie.getValue());
+        mvc.perform(post("/auth/refresh-token").header("X-Client-App", "customer").cookie(staffTokenAsCustomer))
+                .andExpect(status().isUnauthorized());
+        // Thiếu header ứng dụng hoặc thiếu cookie: 401 để frontend đưa về trang đăng nhập
+        mvc.perform(post("/auth/refresh-token").cookie(customerCookie))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(post("/auth/refresh-token").header("X-Client-App", "customer"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void refreshTokenIsNotAcceptedAsAccessTokenAndViceVersa() throws Exception {
+        String username = testData.unique("khachloai");
+        testData.customer(username);
+        MvcResult login = login("/auth/customer/login", username);
+        String accessToken = JsonPath.read(login.getResponse().getContentAsString(), "$.data.accessToken");
+        String refreshToken = login.getResponse().getCookie("rt_customer").getValue();
+        String wrongCurrentPassword = "{\"currentPassword\":\"Sai@1234\",\"newPassword\":\"Matkhau@9\",\"confirmPassword\":\"Matkhau@9\"}";
+
+        mvc.perform(post("/auth/change-password").header(HttpHeaders.AUTHORIZATION, "Bearer " + refreshToken)
+                        .contentType(MediaType.APPLICATION_JSON).content(wrongCurrentPassword))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(post("/auth/refresh-token").header("X-Client-App", "customer").cookie(new Cookie("rt_customer", accessToken)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void logoutRevokesOnlyTheCurrentAppSession() throws Exception {
+        String customerName = testData.unique("khachra");
+        testData.customer(customerName);
+        String staffName = testData.unique("nvra");
+        testData.staff(staffName, "COORDINATOR");
+        Cookie customerCookie = login("/auth/customer/login", customerName).getResponse().getCookie("rt_customer");
+        Cookie staffCookie = login("/auth/staff/login", staffName).getResponse().getCookie("rt_staff");
+
+        MvcResult logout = mvc.perform(post("/auth/logout").header("X-Client-App", "backoffice").cookie(customerCookie, staffCookie))
+                .andExpect(status().isOk())
+                .andReturn();
+        assertThat(logout.getResponse().getHeaders(HttpHeaders.SET_COOKIE))
+                .hasSize(1)
+                .allSatisfy(header -> assertThat(header).startsWith("rt_staff=").contains("Max-Age=0"));
+
+        mvc.perform(post("/auth/refresh-token").header("X-Client-App", "backoffice").cookie(staffCookie))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(post("/auth/refresh-token").header("X-Client-App", "customer").cookie(customerCookie))
+                .andExpect(status().isOk());
+    }
+
+    private MvcResult login(String path, String username) throws Exception {
+        return mvc.perform(post(path).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"%s\",\"password\":\"%s\"}".formatted(username, TestData.PASSWORD)))
+                .andExpect(status().isOk())
+                .andReturn();
     }
 
     @Test
