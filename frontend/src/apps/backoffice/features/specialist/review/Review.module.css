@@ -66,13 +66,12 @@
   overflow-wrap: anywhere;
 }
 
-.fileName {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-.previewButton {
+.previewTrigger {
+  flex: 0 1 auto;
+  max-width: 100%;
   margin-left: auto;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .error {

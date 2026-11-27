@@ -31,10 +31,11 @@ function DocumentRow({ document, editable, actions }: { document: BookingDocumen
   return <li className={s.item} data-pending={pending || undefined}>
     <div className={s.stack}>
       <div className={s.row}>
-        {fileName && <span className={s.fileName}>{fileName}</span>}
         {status && <StatusBadge tone={documentTone[status]} label={t(`staffReview.documentStatus.${status}`)} />}
-        {fileUrl && <Button size="sm" className={s.previewButton}
-          onClick={() => setPreview(true)}>{t('staffReview.workspace.preview')}</Button>}
+        {fileUrl && <Button size="sm" className={s.previewTrigger}
+          aria-label={t('staffReview.viewFile', { name: fileName ?? '' })}
+          icon={<i className="fa-solid fa-eye" aria-hidden="true" />}
+          onClick={() => setPreview(true)}>{fileName ?? t('staffReview.workspace.preview')}</Button>}
       </div>
       {preview && fileUrl && <Modal wide title={fileName ?? t('staffReview.workspace.preview')} onClose={() => setPreview(false)}
         footer={<a className={s.file} href={fileUrl} target="_blank" rel="noopener noreferrer">

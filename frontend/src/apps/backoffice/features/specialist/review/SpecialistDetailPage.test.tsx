@@ -30,7 +30,8 @@ function open(section: 'verification' | 'legal', pending = true) {
         submitterType: 'CUSTOMER', satisfied: false },
     ],
     documents: pending ? [
-      { id: 101, requirementId: 1, bookingHorseId: 21, status: 'UPLOADED', fileUrl: 'https://example.test/passport.pdf' },
+      { id: 101, requirementId: 1, bookingHorseId: 21, status: 'UPLOADED',
+        fileName: 'passport.pdf', fileUrl: 'https://example.test/passport.pdf' },
       { id: 102, requirementId: 2, bookingHorseId: 22, status: 'UPLOADED' },
     ] : [],
   }
@@ -46,7 +47,7 @@ function open(section: 'verification' | 'legal', pending = true) {
 it('chuyển ngựa, duyệt và từ chối từng giấy, chọn đúng ngựa và giấy để yêu cầu bổ sung', async () => {
   const post = open('verification')
   expect(await screen.findByText('123')).toBeTruthy()
-  fireEvent.click(screen.getByRole('button', { name: 'Xem trước tệp' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Xem passport.pdf' }))
   const preview = screen.getByRole('dialog')
   expect(within(preview).getByRole('link', { name: 'Mở trong tab mới' }).getAttribute('target')).toBe('_blank')
   fireEvent.keyDown(preview, { key: 'Escape' })
