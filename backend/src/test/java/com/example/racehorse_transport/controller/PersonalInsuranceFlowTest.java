@@ -109,7 +109,7 @@ class PersonalInsuranceFlowTest {
 
         // Bảo hiểm tự có không ghi báo giá: chuyên viên chỉ xem hợp đồng rồi xác nhận
         insuranceAction(bookingId, lastInsurance, "record-evidence", assignedToken,
-                java.util.Map.of("insurerName", insurerName, "coverageAmount", 1_000_000)).andExpect(status().isConflict());
+                java.util.Map.of("insurerName", insurerName, "premiumAmount", 1_000_000)).andExpect(status().isConflict());
         // Mô phỏng bảo hiểm khai trước khi hệ thống bắt buộc tệp.
         jdbc.update("DELETE FROM document WHERE horse_insurance_id = ?", lastInsurance);
         insuranceAction(bookingId, lastInsurance, "confirm", assignedToken, null)

@@ -6649,9 +6649,6 @@
       },
       "InsuranceDetail" : {
         "properties" : {
-          "coverageAmount" : {
-            "type" : "number"
-          },
           "coverageOption" : {
             "enum" : [ "PERSONAL", "ARRANGED", "NONE" ],
             "type" : "string"
@@ -6703,9 +6700,6 @@
       },
       "InsuranceEvidenceRequestDto" : {
         "properties" : {
-          "coverageAmount" : {
-            "type" : "number"
-          },
           "insurerName" : {
             "maxLength" : 200,
             "minLength" : 0,
@@ -6719,7 +6713,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "coverageAmount" ],
+        "required" : [ "premiumAmount" ],
         "type" : "object"
       },
       "InsurancePremiumRefundRequestDto" : {

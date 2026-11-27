@@ -25,7 +25,7 @@ function HorseInsurance({ horse, editable, canEdit, documents, actions }: {
   const [refunding, setRefunding] = useState(false)
   const insurance = horse.insurance
   const { id, status, coverageOption, insurerName, policyNumber, validFrom, validTo, revisionReason,
-    coverageAmount, premiumAmount, currencyCode, quoteExpiresAt, waiverTermsAcceptanceId } = insurance ?? {}
+    premiumAmount, currencyCode, quoteExpiresAt, waiverTermsAcceptanceId } = insurance ?? {}
   const policyFile = documents?.find(row => row.bookingHorseId === horse.id && row.typeCode === 'INSURANCE_POLICY')
   const options: ReviewAction[] = []
   const draft = editable && status === 'DRAFT' && id != null && coverageOption != null
@@ -59,7 +59,6 @@ function HorseInsurance({ horse, editable, canEdit, documents, actions }: {
         </div>}
         {validFrom && <div><dt>{t('staffReview.validFrom')}</dt><dd>{date(validFrom)}</dd></div>}
         {validTo && <div><dt>{t('staffReview.validTo')}</dt><dd>{date(validTo)}</dd></div>}
-        {coverageAmount != null && <div><dt>{t('staffReview.coverageAmount')}</dt><dd>{money(coverageAmount)}</dd></div>}
         {premiumAmount != null && <div><dt>{t('staffReview.premiumAmount')}</dt><dd>{money(premiumAmount)}</dd></div>}
         {insurance.refundedPremiumAmount != null && <div><dt>{t('staffReview.refundedPremiumAmount')}</dt><dd>{money(insurance.refundedPremiumAmount)}</dd></div>}
         {quoteExpiresAt && <div><dt>{t('staffReview.quoteExpiry')}</dt><dd>{date(quoteExpiresAt)}</dd></div>}

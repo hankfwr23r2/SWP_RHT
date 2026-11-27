@@ -161,7 +161,6 @@ export const staffReview = {
     "coverage": "Insurance option",
     "insurer": "Insurer",
     "insurerPlaceholder": "Enter the insurer name from the quote",
-    "coverageAmount": "Coverage amount",
     "premiumAmount": "Insurance premium",
     "quoteExpiry": "Insurance quote expiry (Vietnam time)",
     "recordEvidence": "Record insurance quote",

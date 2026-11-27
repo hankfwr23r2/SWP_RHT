@@ -51,9 +51,6 @@ public class HorseInsurance {
     @Column(name = "insurer_name", length = 200)
     private String insurerName;
 
-    @Column(name = "coverage_amount", precision = 15, scale = 2)
-    private BigDecimal coverageAmount;
-
     @Column(name = "premium_amount", precision = 15, scale = 2)
     private BigDecimal premiumAmount;
 

@@ -14,22 +14,21 @@ import org.junit.jupiter.api.Test;
 
 class InsuranceReviewPolicyTest {
     private static final Instant NOW = Instant.parse("2026-11-23T00:00:00Z");
-    private static final BigDecimal COVERAGE = new BigDecimal("1500000.00");
     private static final BigDecimal PREMIUM = new BigDecimal("2500");
 
     @Test
-    void arrangedRequiresPositiveWholeVndAndAnUnexpiredQuote() {
-        assertThatCode(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, "Hãng A", COVERAGE, PREMIUM,
+    void arrangedRequiresAnInsurerPositiveWholePremiumAndAnUnexpiredQuote() {
+        assertThatCode(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, "Hãng A", PREMIUM,
                 NOW.plusSeconds(1), NOW)).doesNotThrowAnyException();
-        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, "Hãng A", COVERAGE, new BigDecimal("2.5"),
+        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, "Hãng A", new BigDecimal("2.5"),
                 NOW.plusSeconds(1), NOW)).isInstanceOf(BookingRuleException.class);
-        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, "Hãng A", COVERAGE, PREMIUM,
+        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, "Hãng A", PREMIUM,
                 NOW, NOW)).isInstanceOf(BookingRuleException.class);
-        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(PERSONAL, "Hãng A", COVERAGE, null,
+        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(PERSONAL, "Hãng A", PREMIUM,
                 null, NOW)).isInstanceOf(BookingRuleException.class);
-        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, " ", COVERAGE, PREMIUM,
+        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, " ", PREMIUM,
                 NOW.plusSeconds(1), NOW)).isInstanceOf(BookingRuleException.class);
-        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, "A".repeat(201), COVERAGE, PREMIUM,
+        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, "A".repeat(201), PREMIUM,
                 NOW.plusSeconds(1), NOW)).isInstanceOf(BookingRuleException.class);
     }
 

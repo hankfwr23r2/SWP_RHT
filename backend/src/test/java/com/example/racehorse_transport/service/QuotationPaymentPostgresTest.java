@@ -118,9 +118,9 @@ class QuotationPaymentPostgresTest {
         long horse = attachHorse(fixture, "STANDARD");
         Instant insuranceDeadline = START.plusSeconds(120);
         jdbc.update("""
-                insert into horse_insurance (booking_horse_id, coverage_option, insurer_name, coverage_amount,
+                insert into horse_insurance (booking_horse_id, coverage_option, insurer_name,
                     premium_amount, currency_code, quote_expires_at, status, confirmed_by, confirmed_at)
-                values (?, 'ARRANGED', 'Công ty bảo hiểm (mẫu)', 100000, 2500, 'VND', ?, 'CONFIRMED', ?, now())
+                values (?, 'ARRANGED', 'Công ty bảo hiểm (mẫu)', 2500, 'VND', ?, 'CONFIRMED', ?, now())
                 """, horse, java.sql.Timestamp.from(insuranceDeadline), fixture.managerId());
         when(maps.routeOrEstimate(any(), any(), anyInt(), anyInt())).thenAnswer(invocation -> maps.route(
                 invocation.getArgument(0), invocation.getArgument(1), invocation.getArgument(2), invocation.getArgument(3)));
@@ -153,9 +153,9 @@ class QuotationPaymentPostgresTest {
         String managerAuth = auth(fixture.manager(), "MANAGER");
         Instant oldDeadline = START.plusSeconds(120);
         long insurance = jdbc.queryForObject("""
-                INSERT INTO horse_insurance (booking_horse_id, coverage_option, insurer_name, coverage_amount,
+                INSERT INTO horse_insurance (booking_horse_id, coverage_option, insurer_name,
                     premium_amount, currency_code, quote_expires_at, status, confirmed_by, confirmed_at)
-                VALUES (?, 'ARRANGED', 'Công ty bảo hiểm (mẫu)', 100000, 2500, 'VND', ?, 'CONFIRMED', ?, ?) RETURNING id
+                VALUES (?, 'ARRANGED', 'Công ty bảo hiểm (mẫu)', 2500, 'VND', ?, 'CONFIRMED', ?, ?) RETURNING id
                 """, Long.class, horse, java.sql.Timestamp.from(oldDeadline), specialist.getUserId(),
                 java.sql.Timestamp.from(START));
         when(maps.routeOrEstimate(any(), any(), anyInt(), anyInt())).thenAnswer(invocation -> maps.route(
@@ -180,7 +180,7 @@ class QuotationPaymentPostgresTest {
                 """, String.class, insurance, specialist.getUserId())).isEqualTo("Báo giá của hãng đã hết hạn.");
         Instant newDeadline = START.plusSeconds(3600);
         insuranceAction(booking, insurance, specialistAuth, "record-evidence", """
-                {"insurerName":"Công ty bảo hiểm (mẫu)","coverageAmount":100000,"premiumAmount":4200,"quoteExpiresAt":"%s"}
+                {"insurerName":"Công ty bảo hiểm (mẫu)","premiumAmount":4200,"quoteExpiresAt":"%s"}
                 """.formatted(newDeadline)).andExpect(status().isOk());
         insuranceAction(booking, insurance, specialistAuth, "confirm", "{}").andExpect(status().isOk());
         assertThat(bookingStatus(fixture)).isEqualTo("QUOTING");
@@ -211,8 +211,8 @@ class QuotationPaymentPostgresTest {
         String specialistAuth = auth(specialist.getUser().getUsername(), "SPECIALIST");
         long insurance = jdbc.queryForObject("""
                 INSERT INTO horse_insurance (booking_horse_id, coverage_option, insurer_name, policy_number,
-                    valid_from, valid_to, coverage_amount, currency_code, status, confirmed_by, confirmed_at)
-                VALUES (?, 'PERSONAL', 'Công ty bảo hiểm cá nhân', 'HD-01', '2027-01-01', '2027-02-01', 100000, 'VND', 'CONFIRMED', ?, ?)
+                    valid_from, valid_to, currency_code, status, confirmed_by, confirmed_at)
+                VALUES (?, 'PERSONAL', 'Công ty bảo hiểm cá nhân', 'HD-01', '2027-01-01', '2027-02-01', 'VND', 'CONFIRMED', ?, ?)
                 RETURNING id
                 """, Long.class, horse, specialist.getUserId(), java.sql.Timestamp.from(START));
 
@@ -222,7 +222,7 @@ class QuotationPaymentPostgresTest {
         jdbc.update("UPDATE horse_insurance SET status = 'DRAFT', confirmed_by = NULL, confirmed_at = NULL WHERE id = ?",
                 insurance);
         insuranceAction(booking, insurance, specialistAuth, "record-evidence", """
-                {"insurerName":"Công ty bảo hiểm cá nhân","coverageAmount":200000}
+                {"insurerName":"Công ty bảo hiểm cá nhân","premiumAmount":200000}
                 """).andExpect(status().isConflict());
         insuranceAction(booking, insurance, specialistAuth, "confirm", "{}").andExpect(status().isConflict());
     }
