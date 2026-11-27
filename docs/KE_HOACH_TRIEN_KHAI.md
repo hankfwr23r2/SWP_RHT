@@ -389,7 +389,7 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
 - **Xong khi:** test completeness với nhiều trường hợp (giấy theo con, giấy theo đơn, hết hạn, sai loại). Đủ điều kiện mới cho sang `QUOTING`.
 - **API:** nhân viên đọc `GET /bookings/review-queue`, `GET /bookings/{id}/review-detail` và `GET /bookings/{id}/documents/checklist`. Khách xem yêu cầu và kết quả của đơn mình qua `GET /bookings/{id}/documents/my-checklist`.
 - Thao tác đơn dùng `POST /bookings/{id}/intake`, `return-for-resubmission`, `resubmit`, `reject`, `change-departure`, `start-quoting`. Tải giấy qua `POST /bookings/{id}/documents/upload` (multipart) cho khách hoặc `POST /bookings/{id}/documents/upload-for-partner` (multipart) cho chuyên viên, duyệt qua `POST /bookings/{id}/documents/{documentId}/approve` hoặc `reject`.
-- Thao tác bảo hiểm dùng `POST /bookings/{id}/insurances/{insuranceId}/record-evidence`, `confirm`, `reopen`, `request-revision`, `revise`. Chuyên viên nhập phí và số tiền bảo hiểm theo chứng từ. Khoản VND dùng số nguyên đồng. Khách sửa thông tin hợp đồng PERSONAL sau yêu cầu bổ sung, giữ lý do gần nhất trên bảo hiểm và nhật ký yêu cầu trong `audit_log`.
+- Thao tác bảo hiểm dùng `POST /bookings/{id}/insurances/{insuranceId}/record-evidence`, `confirm`, `reopen`, `request-revision`, `revise`. Chuyên viên nhập phí bảo hiểm theo báo giá của hãng. Khoản VND dùng số nguyên đồng. Khách sửa thông tin hợp đồng PERSONAL sau yêu cầu bổ sung, giữ lý do gần nhất trên bảo hiểm và nhật ký yêu cầu trong `audit_log`.
 
 ### A6b. Đồng bộ quyết định ngày 23/11/2026 (đợt 4, làm trước A7)
 

@@ -15,7 +15,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class CorsConfig {
 
     // Cho trình duyệt nhớ kết quả kiểm tra CORS (preflight) 2 giờ; không đặt thì trình duyệt chỉ nhớ ~5 giây
-    // và gửi thêm một request OPTIONS trước gần như mọi lần gọi API (thêm ~200 ms mỗi lần khi chạy Vercel + Render)
+    // và gửi thêm một request OPTIONS trước gần như mọi lần gọi API
     private static final long PREFLIGHT_CACHE_SECONDS = 7200;
 
     @Bean

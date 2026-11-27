@@ -179,11 +179,14 @@ test('điều phối thêm ảnh hiện trường và biên lai; quản lý xem 
   await page.goto('/backoffice/coordinator/incidents')
   await page.getByRole('table', { name: 'Sự cố cần theo dõi' }).getByRole('row', { name: /Ngựa bỏ ăn/ }).getByRole('button', { name: 'Xem' }).click({ timeout: 15_000 })
   const dialog = page.getByRole('dialog', { name: 'Ngựa bỏ ăn' })
-  await expect(dialog.getByRole('list', { name: 'Biên lai, hóa đơn' }).getByRole('link', { name: 'hoa-don-thu-y.jpg' })).toHaveAttribute('href', 'https://cdn.example/hoa-don.jpg')
+  await dialog.getByRole('list', { name: 'Biên lai, hóa đơn' }).getByRole('button', { name: 'Xem hoa-don-thu-y.jpg' }).click()
+  const receipt = page.getByRole('dialog', { name: 'Xem tài liệu hoa-don-thu-y.jpg' })
+  await expect(receipt.getByRole('link', { name: 'Mở tab mới' })).toHaveAttribute('href', 'https://cdn.example/hoa-don.jpg')
+  await receipt.getByRole('button', { name: 'Đóng' }).click()
   await expect(dialog.getByText('Chưa có tệp nào.')).toBeVisible()
   await dialog.getByLabel('Chọn tệp').first().setInputFiles({ name: 'hien-truong.jpg', mimeType: 'image/jpeg', buffer: Buffer.from([1, 2, 3]) })
   await dialog.getByRole('button', { name: 'Tải lên' }).first().click()
-  await expect(dialog.getByRole('list', { name: 'Tệp chứng cứ' }).getByRole('link', { name: 'hien-truong.jpg' })).toBeVisible()
+  await expect(dialog.getByRole('list', { name: 'Tệp chứng cứ' }).getByRole('button', { name: 'Xem hien-truong.jpg' })).toBeVisible()
   expect(uploads).toBe(1)
 })
 
@@ -219,7 +222,7 @@ test('điều phối cần ảnh biên bản trước khi đổi xe', async ({ p
 
   evidence = [...evidence, { id: 82, documentTypeCode: 'VEHICLE_SWAP_RECORD', fileName: 'bien-ban-doi-xe.jpg', fileUrl: 'https://cdn.example/bien-ban.jpg' }]
   await page.evaluate(() => window.dispatchEvent(new Event('focus')))
-  await expect(dialog.getByRole('link', { name: 'bien-ban-doi-xe.jpg' })).toBeVisible()
+  await expect(dialog.getByRole('button', { name: 'Xem bien-ban-doi-xe.jpg' })).toBeVisible()
   await dialog.getByRole('button', { name: 'Đổi xe' }).click()
   await page.getByRole('alertdialog', { name: 'Đổi xe' }).getByRole('button', { name: 'Đổi xe' }).click()
   await expect(page.getByText('Đã đổi xe')).toBeVisible()
@@ -253,6 +256,6 @@ test('tổ xe tải ảnh biên bản của phương án đổi xe đã duyệt'
     name: 'bien-ban-doi-xe.jpg', mimeType: 'image/jpeg', buffer: Buffer.from([1, 2, 3]),
   })
   await page.getByRole('button', { name: 'Tải biên bản đổi xe' }).click()
-  await expect(page.getByRole('link', { name: 'bien-ban-doi-xe.jpg' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Xem bien-ban-doi-xe.jpg' })).toBeVisible()
   expect(submittedType).toBe('VEHICLE_SWAP_RECORD')
 })

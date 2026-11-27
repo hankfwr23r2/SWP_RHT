@@ -73,7 +73,7 @@ function clearDefaultAuthorization(): void {
 
 // 3. Khởi tạo Axios Instance
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' ? '/api/v1' : 'http://localhost:8080/api/v1'),
+  baseURL: typeof window !== 'undefined' ? '/api/v1' : 'http://localhost:8080/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },

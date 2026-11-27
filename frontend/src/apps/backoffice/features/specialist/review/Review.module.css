@@ -119,6 +119,23 @@
   padding: 0;
 }
 
+.choiceRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--touch-target);
+  cursor: pointer;
+}
+
+.choiceRow input[type='checkbox'] {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  min-height: 20px;
+  padding: 0;
+  accent-color: var(--color-primary);
+}
+
 .preview {
   width: 100%;
   min-height: 60vh;

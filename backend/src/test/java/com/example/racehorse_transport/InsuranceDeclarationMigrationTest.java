@@ -13,7 +13,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 class InsuranceDeclarationMigrationTest {
 
     @Test
-    void upgradesExistingDataAndRequiresInsurerAndCoverageOnlyOnConfirmation() {
+    void upgradesExistingDataAndConfirmsArrangedInsuranceWithoutCoverageAmount() {
         try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16-alpine")) {
             postgres.start();
             var source = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
@@ -33,6 +33,10 @@ class InsuranceDeclarationMigrationTest {
                     """, existing.get("id"))).isEqualTo(existing);
             assertThat(jdbc.queryForObject("SELECT insurer_name FROM horse_insurance WHERE id = ?",
                     String.class, existing.get("id"))).isEqualTo("Insurer");
+            assertThat(jdbc.queryForObject("""
+                    SELECT count(*) FROM information_schema.columns
+                    WHERE table_schema = 'public' AND table_name = 'horse_insurance' AND column_name = 'coverage_amount'
+                    """, Integer.class)).isZero();
             jdbc.update("DELETE FROM horse_insurance WHERE id = ?", existing.get("id"));
             Long draft = jdbc.queryForObject("""
                     INSERT INTO horse_insurance (booking_horse_id, coverage_option, status)
@@ -42,18 +46,18 @@ class InsuranceDeclarationMigrationTest {
 
             assertThatThrownBy(() -> jdbc.update("""
                     UPDATE horse_insurance SET status = 'CONFIRMED', confirmed_by = ?, confirmed_at = ?,
-                        coverage_amount = 100, currency_code = 'VND' WHERE id = ?
+                        currency_code = 'VND' WHERE id = ?
                     """, existing.get("confirmed_by"), existing.get("confirmed_at"), draft))
                     .isInstanceOf(DataIntegrityViolationException.class).hasMessageContaining("ck_horse_insurance_arranged");
 
             assertThatThrownBy(() -> jdbc.update("""
                     UPDATE horse_insurance SET status = 'CONFIRMED', confirmed_by = ?, confirmed_at = ?,
-                        coverage_amount = 100, currency_code = 'VND' WHERE id = ?
+                        insurer_name = 'Insurer' WHERE id = ?
                     """, existing.get("confirmed_by"), existing.get("confirmed_at"), draft))
-                    .isInstanceOf(DataIntegrityViolationException.class).hasMessageContaining("ck_horse_insurance_arranged");
+                    .isInstanceOf(DataIntegrityViolationException.class).hasMessageContaining("ck_horse_insurance_coverage");
             jdbc.update("""
                     UPDATE horse_insurance SET status = 'CONFIRMED', confirmed_by = ?, confirmed_at = ?,
-                        insurer_name = 'Insurer', coverage_amount = 100, currency_code = 'VND' WHERE id = ?
+                        insurer_name = 'Insurer', currency_code = 'VND' WHERE id = ?
                     """, existing.get("confirmed_by"), existing.get("confirmed_at"), draft);
         }
     }

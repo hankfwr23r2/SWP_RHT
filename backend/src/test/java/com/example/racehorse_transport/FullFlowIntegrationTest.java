@@ -403,10 +403,10 @@ class FullFlowIntegrationTest {
                         .andExpect(status().isOk());
             }
             signedRecord(handover);
-            if ("HUB_OUT".equals(type)) {
-                String tripType = jdbc.queryForObject("SELECT trip_type FROM vehicle_trip WHERE id = ?", String.class, id);
-                HubExitCheckFixtures.boardingDone(jdbc, id, escortStaff.getUserId(),
-                        "LINEHAUL".equals(tripType) ? HealthCheckType.BEFORE_DEPARTURE : HealthCheckType.BEFORE_DELIVERY);
+            // Lượt trục đã khám trước khi khởi hành (runLinehaul); lượt giao khám trước khi rời hub
+            if ("HUB_OUT".equals(type)
+                    && !"LINEHAUL".equals(jdbc.queryForObject("SELECT trip_type FROM vehicle_trip WHERE id = ?", String.class, id))) {
+                HubExitCheckFixtures.boardingDone(jdbc, id, escortStaff.getUserId(), HealthCheckType.BEFORE_DELIVERY);
             }
             act(escort, "/handovers/" + handover + "/complete").andExpect(status().isOk());
         }
@@ -427,6 +427,8 @@ class FullFlowIntegrationTest {
 
         // Nhận ngựa ở hub đầu tuyến, đi qua các trạm, giao vào hub cuối tuyến, kết thúc lượt
         void runLinehaul(Case order) throws Exception {
+            // Lượt trục rời hub chỉ xuất phát khi từng con đã khám trước khi khởi hành
+            HubExitCheckFixtures.boardingDone(jdbc, id, escortStaff.getUserId(), HealthCheckType.BEFORE_DEPARTURE);
             start();
             arrive(0);
             handOver(0, "HUB_OUT", order);

@@ -309,7 +309,7 @@ class BookingSubmissionPostgresTest {
         assertThat(count("""
                 SELECT count(*) FROM horse_insurance i JOIN booking_horse h ON h.id = i.booking_horse_id
                 WHERE h.booking_id = ? AND i.coverage_option = 'ARRANGED' AND i.status = 'DRAFT'
-                AND i.insurer_name IS NULL AND i.coverage_amount IS NULL AND i.policy_number IS NULL
+                AND i.insurer_name IS NULL AND i.premium_amount IS NULL AND i.policy_number IS NULL
                 """, result.id())).isEqualTo(1);
         assertThatThrownBy(() -> bookings.submit(owner, null, request))
                 .isInstanceOfSatisfying(BookingRuleException.class, ex -> {
@@ -388,7 +388,7 @@ class BookingSubmissionPostgresTest {
         object.put("status", "COMPLETED");
         object.put("price", 42);
         var insurance = (com.fasterxml.jackson.databind.node.ObjectNode) object.at("/horses/0/insurance");
-        insurance.put("coverageAmount", 1234);
+        insurance.put("premiumAmount", 1234);
         insurance.put("status", "CONFIRMED");
         String payload = mapper.writeValueAsString(object);
 
@@ -405,7 +405,7 @@ class BookingSubmissionPostgresTest {
         Long id = queries.list(owner).getFirst().id();
         assertThat(count("""
                 SELECT count(*) FROM horse_insurance i JOIN booking_horse h ON h.id = i.booking_horse_id
-                WHERE h.booking_id = ? AND i.coverage_amount IS NULL
+                WHERE h.booking_id = ? AND i.premium_amount IS NULL
                 """, id)).isEqualTo(1);
         mvc.perform(get("/bookings").header(HttpHeaders.AUTHORIZATION, token(owner, "CUSTOMER")))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data[0].id").value(id.intValue()));
@@ -625,7 +625,7 @@ class BookingSubmissionPostgresTest {
         review.intake(id, "manager.dev", specialistId);
         Long insuranceId = queries.get(owner, id).horses().getFirst().insurance().id();
         var evidence = new com.example.racehorse_transport.dto.booking.InsuranceEvidenceRequestDto("Hãng mua hộ",
-                new BigDecimal("8000000"), new BigDecimal("2500"), "VND", clock.instant().plusSeconds(3600));
+                new BigDecimal("2500"), clock.instant().plusSeconds(3600));
         insurance.recordEvidence(id, insuranceId, evidence, specialist);
 
         try (var executor = Executors.newFixedThreadPool(2)) {
@@ -655,7 +655,6 @@ class BookingSubmissionPostgresTest {
         var confirmed = queries.get(owner, id).horses().getFirst().insurance();
         assertThat(confirmed.status()).isEqualTo(HorseInsuranceStatus.CONFIRMED);
         assertThat(confirmed.premiumAmount()).isEqualByComparingTo("2500");
-        assertThat(confirmed.coverageAmount()).isEqualByComparingTo("8000000");
     }
 
     @Test

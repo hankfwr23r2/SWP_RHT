@@ -1,12 +1,57 @@
-import { useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { components } from '@shared/api/generated/schema'
 import { Button } from '@shared/ui/Button'
 import { Field } from '@shared/ui/Field'
-import { Input } from '@shared/ui/Input'
+import { Input, type InputProps } from '@shared/ui/Input'
 import { Modal } from '@shared/ui/Modal'
 import type { ReviewActions } from '../useReviewActions'
 import s from '../Review.module.css'
+
+function formatAmount(value: string) {
+  return value.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+}
+
+function caretAfterDigits(value: string, digits: number) {
+  if (digits === 0) return 0
+  let count = 0
+  for (let index = 0; index < value.length; index++) {
+    if (/\d/.test(value[index]) && ++count === digits) return index + 1
+  }
+  return value.length
+}
+
+function GroupedAmountInput({ value, onValueChange, ...props }: Omit<InputProps, 'value' | 'onChange'> & {
+  value: string
+  onValueChange: (value: string) => void
+}) {
+  const input = useRef<HTMLInputElement>(null)
+  const pendingCaret = useRef<number | null>(null)
+  const displayValue = formatAmount(value)
+
+  useLayoutEffect(() => {
+    const element = input.current
+    const digits = pendingCaret.current
+    if (element && digits !== null && document.activeElement === element) {
+      const position = caretAfterDigits(displayValue, digits)
+      element.setSelectionRange(position, position)
+    }
+    pendingCaret.current = null
+  }, [displayValue])
+
+  return <Input {...props} ref={input} type="text" inputMode="numeric" value={displayValue} onChange={event => {
+    const rawValue = event.currentTarget.value.replace(/\D/g, '')
+    const cursor = event.currentTarget.selectionStart ?? event.currentTarget.value.length
+    const digitsBeforeCursor = event.currentTarget.value.slice(0, cursor).replace(/\D/g, '').length
+    if (rawValue === value) {
+      const position = caretAfterDigits(displayValue, digitsBeforeCursor)
+      event.currentTarget.setSelectionRange(position, position)
+      return
+    }
+    pendingCaret.current = digitsBeforeCursor
+    onValueChange(rawValue)
+  }} />
+}
 
 function vietnamLocalTime(value?: string) {
   if (!value) return ''
@@ -22,16 +67,13 @@ function vietnamLocalTime(value?: string) {
 
 export function InsuranceEvidenceDialog({ insurance, id, actions, onClose }: {
   insurance: components['schemas']['InsuranceDetail']; id: number
-  actions: ReviewActions; onClose: () => void
+  actions: Pick<ReviewActions, 'busy' | 'clear' | 'error' | 'fields' | 'recordEvidence'>; onClose: () => void
 }) {
   const { t } = useTranslation()
-  const arranged = insurance.coverageOption === 'ARRANGED'
-  const actionLabel = t(arranged ? 'staffReview.recordEvidence' : 'staffReview.recordPolicy')
+  const actionLabel = t('staffReview.recordEvidence')
   const [submitted, setSubmitted] = useState(false)
   const [insurerName, setInsurerName] = useState(insurance.insurerName ?? '')
-  const [coverage, setCoverage] = useState(String(insurance.coverageAmount ?? ''))
   const [premium, setPremium] = useState(String(insurance.premiumAmount ?? ''))
-  const [currency, setCurrency] = useState(insurance.currencyCode ?? '')
   const [expires, setExpires] = useState(vietnamLocalTime(insurance.quoteExpiresAt))
   const close = () => { if (!actions.busy) { actions.clear(); onClose() } }
 
@@ -39,35 +81,25 @@ export function InsuranceEvidenceDialog({ insurance, id, actions, onClose }: {
     <form className={s.stack} onSubmit={async event => {
       event.preventDefault()
       setSubmitted(true)
-      if (arranged && !insurerName.trim()) return
+      if (!insurerName.trim()) return
       if (await actions.recordEvidence(id, {
-        insurerName: arranged ? insurerName.trim() : insurance.insurerName,
-        coverageAmount: Number(coverage), premiumAmount: arranged ? Number(premium) : undefined,
-        currencyCode: currency, quoteExpiresAt: arranged ? new Date(`${expires}+07:00`).toISOString() : undefined,
+        insurerName: insurerName.trim(), premiumAmount: Number(premium),
+        quoteExpiresAt: new Date(`${expires}+07:00`).toISOString(),
       })) onClose()
     }}>
       <fieldset className={s.controls} disabled={actions.busy} onChange={actions.clear}>
-        {arranged && <Field label={t('staffReview.insurer')} required
+        <Field label={t('staffReview.insurer')} required
           error={actions.fields.insurerName || (submitted && !insurerName.trim() ? t('staffReview.required') : undefined)}>
           {control => <Input {...control} maxLength={200} value={insurerName}
             placeholder={t('staffReview.insurerPlaceholder')}
             onChange={event => { setInsurerName(event.target.value); actions.clear() }} />}
-        </Field>}
-        <Field label={t('staffReview.coverageAmount')} required error={actions.fields.coverageAmount}>
-          {control => <Input {...control} type="number" step="0.01" value={coverage}
-            onChange={event => setCoverage(event.target.value)} />}
         </Field>
-        {arranged && <Field label={t('staffReview.premiumAmount')} required error={actions.fields.premiumAmount}>
-          {control => <Input {...control} type="number" step="0.01" value={premium}
-            onChange={event => setPremium(event.target.value)} />}
-        </Field>}
-        <Field label={t('staffReview.currency')} hint={t('staffReview.currencyHint')} required error={actions.fields.currencyCode}>
-          {control => <Input {...control} maxLength={3} pattern="[A-Z]{3}" value={currency}
-            onChange={event => setCurrency(event.target.value.toUpperCase())} />}
+        <Field label={t('staffReview.premiumAmount')} required error={actions.fields.premiumAmount}>
+          {control => <GroupedAmountInput {...control} value={premium} onValueChange={setPremium} />}
         </Field>
-        {arranged && <Field label={t('staffReview.quoteExpiry')} required error={actions.fields.quoteExpiresAt}>
+        <Field label={t('staffReview.quoteExpiry')} required error={actions.fields.quoteExpiresAt}>
           {control => <Input {...control} type="datetime-local" value={expires} onChange={event => setExpires(event.target.value)} />}
-        </Field>}
+        </Field>
       </fieldset>
       {actions.error && !Object.keys(actions.fields).length && <p role="alert" className={s.error}>{actions.error}</p>}
       <div className={s.actions}>
