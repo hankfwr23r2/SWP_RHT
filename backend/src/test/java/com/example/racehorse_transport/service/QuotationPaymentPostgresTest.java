@@ -180,7 +180,7 @@ class QuotationPaymentPostgresTest {
                 """, String.class, insurance, specialist.getUserId())).isEqualTo("Báo giá của hãng đã hết hạn.");
         Instant newDeadline = START.plusSeconds(3600);
         insuranceAction(booking, insurance, specialistAuth, "record-evidence", """
-                {"insurerName":"Công ty bảo hiểm (mẫu)","coverageAmount":100000,"premiumAmount":4200,"currencyCode":"VND","quoteExpiresAt":"%s"}
+                {"insurerName":"Công ty bảo hiểm (mẫu)","coverageAmount":100000,"premiumAmount":4200,"quoteExpiresAt":"%s"}
                 """.formatted(newDeadline)).andExpect(status().isOk());
         insuranceAction(booking, insurance, specialistAuth, "confirm", "{}").andExpect(status().isOk());
         assertThat(bookingStatus(fixture)).isEqualTo("QUOTING");
@@ -222,7 +222,7 @@ class QuotationPaymentPostgresTest {
         jdbc.update("UPDATE horse_insurance SET status = 'DRAFT', confirmed_by = NULL, confirmed_at = NULL WHERE id = ?",
                 insurance);
         insuranceAction(booking, insurance, specialistAuth, "record-evidence", """
-                {"insurerName":"Công ty bảo hiểm cá nhân","coverageAmount":200000,"currencyCode":"VND"}
+                {"insurerName":"Công ty bảo hiểm cá nhân","coverageAmount":200000}
                 """).andExpect(status().isConflict());
         insuranceAction(booking, insurance, specialistAuth, "confirm", "{}").andExpect(status().isConflict());
     }

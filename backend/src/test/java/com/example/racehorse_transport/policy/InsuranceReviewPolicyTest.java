@@ -19,18 +19,18 @@ class InsuranceReviewPolicyTest {
 
     @Test
     void arrangedRequiresPositiveWholeVndAndAnUnexpiredQuote() {
-        assertThatCode(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, "Hãng A", COVERAGE, PREMIUM, "VND",
+        assertThatCode(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, "Hãng A", COVERAGE, PREMIUM,
                 NOW.plusSeconds(1), NOW)).doesNotThrowAnyException();
         assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, "Hãng A", COVERAGE, new BigDecimal("2.5"),
-                "VND", NOW.plusSeconds(1), NOW)).isInstanceOf(BookingRuleException.class);
-        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, "Hãng A", COVERAGE, PREMIUM, "VND",
-                NOW, NOW)).isInstanceOf(BookingRuleException.class);
-        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, "Hãng A", COVERAGE, PREMIUM, "USD",
                 NOW.plusSeconds(1), NOW)).isInstanceOf(BookingRuleException.class);
-        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, " ", COVERAGE, PREMIUM, "VND",
+        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, "Hãng A", COVERAGE, PREMIUM,
+                NOW, NOW)).isInstanceOf(BookingRuleException.class);
+        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(PERSONAL, "Hãng A", COVERAGE, null,
+                null, NOW)).isInstanceOf(BookingRuleException.class);
+        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, " ", COVERAGE, PREMIUM,
                 NOW.plusSeconds(1), NOW)).isInstanceOf(BookingRuleException.class);
         assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, "A".repeat(201), COVERAGE, PREMIUM,
-                "VND", NOW.plusSeconds(1), NOW)).isInstanceOf(BookingRuleException.class);
+                NOW.plusSeconds(1), NOW)).isInstanceOf(BookingRuleException.class);
     }
 
     @Test
@@ -44,13 +44,11 @@ class InsuranceReviewPolicyTest {
     }
 
     @Test
-    void personalInsuranceNeedsAFileEvenWhenDatesAndEvidenceAreValid() {
+    void personalInsuranceNeedsOnlyAFileAndAValidPeriod() {
         LocalDate pickup = LocalDate.of(2026, 11, 23);
         HorseInsurance insurance = new HorseInsurance();
         insurance.setCoverageOption(PERSONAL);
         insurance.setStatus(HorseInsuranceStatus.DRAFT);
-        insurance.setCoverageAmount(COVERAGE);
-        insurance.setCurrencyCode("VND");
         insurance.setValidFrom(pickup);
         insurance.setValidTo(pickup.plusDays(1));
 

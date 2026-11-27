@@ -18,7 +18,7 @@ class BookingReviewDtoTest {
         row.setPremiumAmount(BigDecimal.ONE);
         row.setStatus(HorseInsuranceStatus.DRAFT);
         Instant expires = Instant.parse("2026-12-01T00:00:00Z");
-        new InsuranceEvidenceRequestDto("Hãng A", BigDecimal.ONE, BigDecimal.TEN, "VND", expires).applyTo(row);
+        new InsuranceEvidenceRequestDto("Hãng A", BigDecimal.ONE, BigDecimal.TEN, expires).applyTo(row);
         assertThat(row.getId()).isEqualTo(1L);
         assertThat(row.getCoverageAmount()).isEqualByComparingTo(BigDecimal.TEN);
         assertThat(row.getPremiumAmount()).isEqualByComparingTo(BigDecimal.ONE);
@@ -27,8 +27,9 @@ class BookingReviewDtoTest {
         assertThat(row.getConfirmedAt()).isNull();
         assertThat(row.getQuoteExpiresAt()).isEqualTo(expires);
         assertThat(row.getInsurerName()).isEqualTo("Hãng A");
+        assertThat(row.getCurrencyCode()).isEqualTo("VND");
 
-        new InsuranceEvidenceRequestDto(null, BigDecimal.ONE, BigDecimal.TEN, "VND", expires).applyTo(row);
+        new InsuranceEvidenceRequestDto(null, BigDecimal.ONE, BigDecimal.TEN, expires).applyTo(row);
         assertThat(row.getInsurerName()).isEqualTo("Hãng A");
     }
 

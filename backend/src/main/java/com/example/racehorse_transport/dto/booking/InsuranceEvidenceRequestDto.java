@@ -6,14 +6,13 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 public record InsuranceEvidenceRequestDto(@Size(max = 200) String insurerName,
-        @NotNull BigDecimal coverageAmount, BigDecimal premiumAmount,
-        @NotBlank @Pattern(regexp = "[A-Z]{3}") String currencyCode, Instant quoteExpiresAt) {
+        @NotNull BigDecimal coverageAmount, BigDecimal premiumAmount, Instant quoteExpiresAt) {
 
     public void applyTo(HorseInsurance insurance) {
         if (insurerName != null) {
             insurance.setInsurerName(insurerName.isBlank() ? null : insurerName.trim());
         }
-        insurance.setCurrencyCode(currencyCode);
+        insurance.setCurrencyCode("VND");
         insurance.setQuoteExpiresAt(quoteExpiresAt);
     }
 }

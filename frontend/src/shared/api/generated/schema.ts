@@ -6980,7 +6980,6 @@ export interface components {
         };
         InsuranceEvidenceRequestDto: {
             coverageAmount: number;
-            currencyCode: string;
             insurerName?: string;
             premiumAmount?: number;
             /** Format: date-time */

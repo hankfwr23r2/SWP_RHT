@@ -6706,11 +6706,6 @@
           "coverageAmount" : {
             "type" : "number"
           },
-          "currencyCode" : {
-            "minLength" : 1,
-            "pattern" : "[A-Z]{3}",
-            "type" : "string"
-          },
           "insurerName" : {
             "maxLength" : 200,
             "minLength" : 0,
@@ -6724,7 +6719,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "coverageAmount", "currencyCode" ],
+        "required" : [ "coverageAmount" ],
         "type" : "object"
       },
       "InsurancePremiumRefundRequestDto" : {

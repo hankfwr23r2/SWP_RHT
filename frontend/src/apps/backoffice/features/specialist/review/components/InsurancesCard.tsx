@@ -67,10 +67,10 @@ function HorseInsurance({ horse, editable, canEdit, documents, actions }: {
         {revisionReason && <div><dt>{t('staffReview.reason')}</dt><dd>{revisionReason}</dd></div>}
       </dl>}
       <div className={s.actions}>
-        {draft && coverageOption !== 'NONE' ? <Button size="sm" disabled={actions.busy} onClick={() => {
+        {draft && coverageOption === 'ARRANGED' ? <Button size="sm" disabled={actions.busy} onClick={() => {
           actions.clear()
           setRecording(true)
-        }}>{t(coverageOption === 'PERSONAL' ? 'staffReview.recordPolicy' : 'staffReview.recordEvidence')}</Button> : null}
+        }}>{t('staffReview.recordEvidence')}</Button> : null}
         <ActionButtons options={options} actions={actions} />
         {canEdit && horse.status === 'EXCLUDED' && status === 'CONFIRMED' && coverageOption === 'ARRANGED' && id != null &&
           <Button size="sm" disabled={actions.busy} onClick={() => setRefunding(true)}>{t('staffReview.recordPremiumRefund')}</Button>}
