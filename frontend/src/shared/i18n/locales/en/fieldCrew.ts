@@ -223,7 +223,7 @@ export const fieldCrew = {
         "FAILED": "Failed"
       },
       "chip": "Chip of {{name}}",
-      "scan": "Scan",
+      "scan": "Verify chip code",
       "matched": "Chip matches",
       "mismatched": "Wrong chip",
       "notScanned": "Not scanned",
