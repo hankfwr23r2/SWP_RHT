@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "lint": "oxlint && node scripts/check-imports.mjs && node scripts/check-style.mjs",
+    "lint": "oxlint && node scripts/check-imports.mjs && node scripts/check-style.mjs && node scripts/check-api-paths.mjs",
     "test": "vitest run",
     "build": "npm run lint && tsc -b && vite build && node scripts/check-bundle.mjs",
     "preview": "vite preview",

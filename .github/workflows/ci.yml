@@ -26,6 +26,13 @@ jobs:
       # OpenApiExportTest vừa ghi lại hợp đồng API; lệch với bản đã commit nghĩa là API đổi mà chưa commit openapi.json
       - name: API contract is committed
         run: git diff --exit-code -- ../frontend/openapi/openapi.json
+      # Báo cáo độ phủ test của JaCoCo, tải về ở trang của lượt chạy CI
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jacoco-report
+          path: backend/target/site/jacoco
+          if-no-files-found: ignore
 
   frontend:
     runs-on: ubuntu-latest
