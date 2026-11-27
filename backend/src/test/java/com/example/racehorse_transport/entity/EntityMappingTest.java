@@ -280,6 +280,7 @@ class EntityMappingTest {
         history.setBooking(booking);
         history.setToStatus(BookingStatus.PENDING_INTAKE);
         history.setChangedBy(customerUser);
+        history.setChangedAt(java.time.Instant.parse("2027-01-10T08:00:00Z"));
         statusHistory.save(history);
 
         TermsAcceptance terms = new TermsAcceptance();

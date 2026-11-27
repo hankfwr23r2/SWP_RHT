@@ -226,13 +226,6 @@ final class BenXeJourneyOperations {
         ok(act(crew.driver(), "/vehicle-trips/" + trip + "/complete", "{\"endVehicleCondition\":\"NORMAL\"}"));
     }
 
-    void useDatabaseDeliveryTime(long booking) {
-        // PostgreSQL đặt changed_at bằng now(), độc lập với Clock của ứng dụng trong test.
-        now.set(jdbc.queryForObject("""
-                SELECT changed_at FROM booking_status_history WHERE booking_id = ? AND to_status = 'DELIVERED'
-                """, java.sql.Timestamp.class, booking).toInstant().plusSeconds(1));
-    }
-
     void returnToHome(long linehaul, Crew crew, Instant start) throws Exception {
         var trip = jdbc.queryForMap("""
                 SELECT vehicle_id, start_location_id, end_location_id FROM vehicle_trip WHERE id = ?
