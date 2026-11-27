@@ -127,7 +127,7 @@ function NewTripModal({ bookings, weekFrom, weekTo, onClose, onCreated }: Omit<P
             <div><Button variant="ghost" size="sm" onClick={() => setManual(true)}>{t('dispatch.plan.manual')}</Button></div>
           </fieldset>
         )}
-        {request && !byHand && <TripPlanPreview request={request} onPlan={setPlan} onStart={setStartAt} restStations={data.locations} onPlaces={places => { setPlan(undefined); setRestPlaces(places) }} onManual={() => setManual(true)} />}
+        {request && !byHand && <TripPlanPreview request={request} onPlan={setPlan} onStart={setStartAt} restStations={data.locations} onPlaces={places => { setPlan(undefined); setRestPlaces(places) }} />}
         {tripType !== 'LINEHAUL' && byHand && (
           <ManualStops stops={stops} onChange={setStops} bookings={bookings} locations={data.locations}
             finalPlaceError={invalidFinalPlace ? t('dispatch.create.finalPlaceHub') : undefined} />

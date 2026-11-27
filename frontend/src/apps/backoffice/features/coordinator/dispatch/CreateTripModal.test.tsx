@@ -59,6 +59,54 @@ it('blocks a manual delivery ending at a rest stop until the final stop is a hub
   expect(screen.queryByRole('alert')).toBeNull()
 })
 
+it.each([
+  { type: 'PICKUP' as const, label: 'Đón' },
+  { type: 'DELIVERY' as const, label: 'Giao' },
+  { type: 'DIRECT' as const, label: 'Chạy thẳng' },
+])('shows one manual-time action for a failed $label route plan', async ({ type, label }) => {
+  const data: Record<string, unknown> = {
+    '/dispatch/vehicles': [{ id: 1, licensePlate: 'TV01', status: 'ACTIVE', currentLocationName: 'Trụ sở' }],
+    '/departures': [],
+    '/locations': [{ id: 1, name: 'Trụ sở', locationType: 'HUB' }],
+  }
+  vi.mocked(apiClient.get).mockImplementation(async url => ({ data: { data: data[url] } }))
+  vi.mocked(apiClient.post).mockRejectedValue(new Error('Không tìm được đường.'))
+  render(<CreateTripModal bookings={[{
+    id: 20, code: 'BK-20',
+    pickupAddress: { id: 31, addressLine: 'Trại đón' },
+    deliveryAddress: { id: 32, addressLine: 'Trại nhận' },
+    horses: [{ bookingHorseId: 21, horseName: 'Mambo', missingLegs: [type],
+      deliveryAddress: { id: 32, addressLine: 'Trại nhận' } }],
+  }]} weekFrom="2031-03-10" weekTo="2031-03-16" onClose={vi.fn()} onCreated={vi.fn()} />)
+
+  await screen.findByRole('combobox', { name: 'Loại lượt' })
+  choose('Loại lượt', label)
+  choose('Xe', 'TV01 · ở Trụ sở')
+  fireEvent.click(screen.getByRole('checkbox'))
+  await screen.findByText('Chưa tính được giờ')
+
+  expect(screen.getAllByRole('button', { name: 'Nhập giờ tay' })).toHaveLength(1)
+})
+
+it.each([
+  { type: 'LINEHAUL' as const, label: 'Trục' },
+  { type: 'TRANSFER' as const, label: 'Chuyển xe' },
+])('does not show a manual-time switch for $label trips', async ({ label }) => {
+  const data: Record<string, unknown> = {
+    '/dispatch/vehicles': [{ id: 1, licensePlate: 'TV01', status: 'ACTIVE', currentLocationName: 'Trụ sở' }],
+    '/departures': [],
+    '/locations': [{ id: 1, name: 'Trụ sở', locationType: 'HUB' }],
+  }
+  vi.mocked(apiClient.get).mockImplementation(async url => ({ data: { data: data[url] } }))
+  render(<CreateTripModal bookings={[]} weekFrom="2031-03-10" weekTo="2031-03-16"
+    onClose={vi.fn()} onCreated={vi.fn()} />)
+
+  await screen.findByRole('combobox', { name: 'Loại lượt' })
+  choose('Loại lượt', label)
+
+  expect(screen.queryByRole('button', { name: 'Nhập giờ tay' })).toBeNull()
+})
+
 it('plans and saves an empty return from the current location to the home hub', async () => {
   const startAt = '2031-03-10T06:00:00Z'
   const endAt = '2031-03-11T09:00:00Z'
@@ -83,6 +131,7 @@ it('plans and saves an empty return from the current location to the home hub', 
   const save = screen.getByRole<HTMLButtonElement>('button', { name: 'Lập lượt về' })
   expect(save.disabled).toBe(true)
   await screen.findByRole('list', { name: 'Giờ từng điểm' })
+  expect(screen.queryByRole('button', { name: 'Nhập giờ tay' })).toBeNull()
   expect(screen.getByLabelText('Giờ bắt đầu lượt về')).toBeTruthy()
   expect(screen.queryByRole('combobox', { name: 'Chuyến trục' })).toBeNull()
   expect(apiClient.get).not.toHaveBeenCalled()

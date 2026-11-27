@@ -17,11 +17,10 @@ import s from './Board.module.css'
 const BLOCKING = new Set(['RIDE_TOO_LONG', 'LATE_FOR_HUB', 'DRIVER_DAY_LIMIT'])
 
 // onPlan: kế hoạch mới nhất, hoặc undefined khi đang tính hay lỗi
-export function TripPlanPreview({ request, onPlan, onStart, onManual, restStations, onPlaces }: {
+export function TripPlanPreview({ request, onPlan, onStart, restStations, onPlaces }: {
   request: PlannedTripCreate
   onPlan: (plan: PlannedTrip | undefined) => void
   onStart: (startAt: string | undefined) => void
-  onManual?: () => void
   restStations?: NetworkLocation[]
   onPlaces?: (places: PlannedTripCreate['places']) => void
 }) {
@@ -41,7 +40,6 @@ export function TripPlanPreview({ request, onPlan, onStart, onManual, restStatio
   if (error) {
     return <div className={s.waiting}>
       <ErrorState title={t('dispatch.plan.failed')} message={error.message} onRetry={reload} />
-      {onManual && <div><Button onClick={onManual}>{t('dispatch.plan.manual')}</Button></div>}
     </div>
   }
   if (!loaded || !plan) return <Skeleton variant="block" lines={4} />
