@@ -55,7 +55,7 @@ export function InsuranceChoice({ horseId, choice, missing, fileError, onChange 
             hint={choice.policyFile?.name ?? t('bookingForm.services.policyFileHint')}
             error={fileError ?? (invalidFile ? t('bookingForm.services.policyFileInvalid') : required(choice.policyFile?.name ?? ''))}>
             {control => <>
-              <Input {...control} type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={event => {
+              <Input {...control} className={s.fileInput} type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={event => {
                 onChange({ policyFile: event.target.files?.[0] })
                 event.target.value = ''
               }} />
