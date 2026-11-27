@@ -925,7 +925,7 @@ class QuotationPaymentPostgresTest {
     }
 
     private String auth(String username, String role) {
-        return "Bearer " + jwt.generateToken(username, List.of(role));
+        return "Bearer " + jwt.generateToken(username, List.of(role), 0);
     }
 
     private ResultActions insuranceAction(long booking, long insurance, String auth, String action, String body)

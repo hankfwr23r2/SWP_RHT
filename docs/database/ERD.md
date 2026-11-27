@@ -62,6 +62,9 @@ erDiagram
         varchar status
         timestamptz created_at
         varchar role_code FK
+        int4 token_version
+        int4 failed_login_count
+        timestamptz locked_until
     }
     role {
         varchar code PK

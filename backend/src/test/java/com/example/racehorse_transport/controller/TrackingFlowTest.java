@@ -193,7 +193,7 @@ class TrackingFlowTest {
 
     private ResultActions journey(String username, String role) throws Exception {
         return mvc.perform(get("/bookings/{id}/journey", booking)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwtUtils.generateToken(username, List.of(role))));
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwtUtils.generateToken(username, List.of(role), 0)));
     }
 
     private ResultActions track(String codes, String phone) throws Exception {

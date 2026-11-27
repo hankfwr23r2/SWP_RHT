@@ -174,6 +174,6 @@ class BookingDeadlineReminderFlowTest {
 
     private ResultActions mine(String username, String role) throws Exception {
         return mvc.perform(get("/notifications/mine").header(HttpHeaders.AUTHORIZATION,
-                "Bearer " + jwt.generateToken(username, List.of(role)))).andExpect(status().isOk());
+                "Bearer " + jwt.generateToken(username, List.of(role), 0))).andExpect(status().isOk());
     }
 }

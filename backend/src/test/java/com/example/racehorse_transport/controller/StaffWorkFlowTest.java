@@ -134,7 +134,7 @@ class StaffWorkFlowTest {
     }
 
     private String token(String username, String role) {
-        return "Bearer " + jwt.generateToken(username, List.of(role));
+        return "Bearer " + jwt.generateToken(username, List.of(role), 0);
     }
 
     private ResultActions summary(String token) throws Exception {

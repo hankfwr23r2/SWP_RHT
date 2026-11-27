@@ -42,8 +42,8 @@ class NotificationInboxFlowTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        customer = "Bearer " + jwtUtils.generateToken("customer1.dev", List.of("CUSTOMER"));
-        manager = "Bearer " + jwtUtils.generateToken("manager.dev", List.of("MANAGER"));
+        customer = "Bearer " + jwtUtils.generateToken("customer1.dev", List.of("CUSTOMER"), 0);
+        manager = "Bearer " + jwtUtils.generateToken("manager.dev", List.of("MANAGER"), 0);
         Long customerId = users.findByUsername("customer1.dev").orElseThrow().getId();
         Long managerId = users.findByUsername("manager.dev").orElseThrow().getId();
         notifications.notify(List.of(customerId, managerId), null, "Tin thử chuông", "Nội dung tin thử", "/orders/1");

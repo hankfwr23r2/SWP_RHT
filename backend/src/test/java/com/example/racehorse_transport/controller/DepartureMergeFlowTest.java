@@ -224,11 +224,11 @@ class DepartureMergeFlowTest {
     private String staffToken(String role) {
         String username = data.unique("g9-staff");
         data.staff(username, role);
-        return "Bearer " + jwt.generateToken(username, List.of(role));
+        return "Bearer " + jwt.generateToken(username, List.of(role), 0);
     }
 
     private String ownerToken(Booking booking) {
-        return "Bearer " + jwt.generateToken(booking.getCustomer().getUser().getUsername(), List.of("CUSTOMER"));
+        return "Bearer " + jwt.generateToken(booking.getCustomer().getUser().getUsername(), List.of("CUSTOMER"), 0);
     }
 
     private ResultActions merge(long source, long target, String reason, String token) throws Exception {

@@ -24,6 +24,11 @@ public enum ClientApp {
         return cookieName;
     }
 
+    // Ứng dụng của tài khoản theo vai trò: khách dùng trang khách, mọi vai trò khác dùng backoffice
+    public static ClientApp forRole(String role) {
+        return "CUSTOMER".equals(role) ? CUSTOMER : BACKOFFICE;
+    }
+
     public static Optional<ClientApp> fromHeader(String value) {
         if (value == null) {
             return Optional.empty();

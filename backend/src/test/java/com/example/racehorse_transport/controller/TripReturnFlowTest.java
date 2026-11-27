@@ -216,7 +216,7 @@ class TripReturnFlowTest {
     }
 
     private String token(Staff member, String role) {
-        return "Bearer " + jwt.generateToken(member.getUser().getUsername(), List.of(role));
+        return "Bearer " + jwt.generateToken(member.getUser().getUsername(), List.of(role), 0);
     }
 
     private String code(long trip) {

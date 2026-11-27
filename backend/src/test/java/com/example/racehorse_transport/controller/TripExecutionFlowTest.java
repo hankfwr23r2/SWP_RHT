@@ -567,7 +567,7 @@ class TripExecutionFlowTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath(event + ".entryMethod").value("MANUAL"))
                 .andExpect(jsonPath(event + ".manualReason").value(reason));
-        String customer = "Bearer " + jwtUtils.generateToken("customer1.dev", List.of("CUSTOMER"));
+        String customer = "Bearer " + jwtUtils.generateToken("customer1.dev", List.of("CUSTOMER"), 0);
         mvc.perform(get("/bookings/{id}/journey", booking).header(HttpHeaders.AUTHORIZATION, customer))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath(event + ".microchipMatched").value(true))
@@ -759,7 +759,7 @@ class TripExecutionFlowTest {
         String specialistToken = token(specialist, "SPECIALIST");
         long passport = approveRequiredDocuments("HORSE_PASSPORT");
         jdbc.update("UPDATE document SET document_requirement_id = NULL WHERE id = ?", passport);
-        String customer = "Bearer " + jwtUtils.generateToken("customer1.dev", List.of("CUSTOMER"));
+        String customer = "Bearer " + jwtUtils.generateToken("customer1.dev", List.of("CUSTOMER"), 0);
         String item = "$.data.items[?(@.requirement.documentTypeCode == 'HORSE_PASSPORT')].satisfied";
         mvc.perform(get("/bookings/{id}/documents/my-checklist", booking).header(HttpHeaders.AUTHORIZATION, customer))
                 .andExpect(status().isOk()).andExpect(jsonPath(item, contains(true)));
@@ -1115,7 +1115,7 @@ class TripExecutionFlowTest {
     }
 
     private String token(Staff staff, String role) {
-        return "Bearer " + jwtUtils.generateToken(staff.getUser().getUsername(), List.of(role));
+        return "Bearer " + jwtUtils.generateToken(staff.getUser().getUsername(), List.of(role), 0);
     }
 
     // Biên bản đã ký (giả lập ảnh đã tải lên): bắt buộc trước khi hoàn tất nhận hoặc giao ngựa

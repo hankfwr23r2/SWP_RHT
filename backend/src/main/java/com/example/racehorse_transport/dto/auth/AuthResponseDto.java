@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.dto.auth;
 
 import com.example.racehorse_transport.entity.AppUser;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 import lombok.Builder;
@@ -23,11 +24,17 @@ public class AuthResponseDto {
     private String staffCode;
     // Khách chưa xác thực email: không có token, đã gửi OTP về email
     private boolean emailVerificationRequired;
+    // Refresh token mới, controller đặt vào cookie HttpOnly. Không bao giờ trả trong body
+    @JsonIgnore
+    @Schema(hidden = true)
+    private String refreshToken;
 
     // Đăng nhập thành công. roles đã sắp theo thứ tự ưu tiên, phần tử đầu là vai trò chính.
-    public static AuthResponseDto from(AppUser user, String accessToken, List<String> roles, String fullName, String staffCode) {
+    public static AuthResponseDto from(AppUser user, String accessToken, String refreshToken, List<String> roles,
+                                       String fullName, String staffCode) {
         return AuthResponseDto.builder()
                 .accessToken(accessToken)
+                .refreshToken(refreshToken)
                 .tokenType("Bearer")
                 .userId(user.getId())
                 .username(user.getUsername())
