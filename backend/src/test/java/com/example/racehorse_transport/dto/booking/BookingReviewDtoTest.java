@@ -14,21 +14,20 @@ class BookingReviewDtoTest {
     void insuranceEvidenceConversionLeavesMoneyAndWorkflowFieldsForService() {
         HorseInsurance row = new HorseInsurance();
         row.setId(1L);
-        row.setCoverageAmount(BigDecimal.TEN);
         row.setPremiumAmount(BigDecimal.ONE);
         row.setStatus(HorseInsuranceStatus.DRAFT);
         Instant expires = Instant.parse("2026-12-01T00:00:00Z");
-        new InsuranceEvidenceRequestDto("Hãng A", BigDecimal.ONE, BigDecimal.TEN, "VND", expires).applyTo(row);
+        new InsuranceEvidenceRequestDto("Hãng A", BigDecimal.ONE, expires).applyTo(row);
         assertThat(row.getId()).isEqualTo(1L);
-        assertThat(row.getCoverageAmount()).isEqualByComparingTo(BigDecimal.TEN);
         assertThat(row.getPremiumAmount()).isEqualByComparingTo(BigDecimal.ONE);
         assertThat(row.getStatus()).isEqualTo(HorseInsuranceStatus.DRAFT);
         assertThat(row.getConfirmedBy()).isNull();
         assertThat(row.getConfirmedAt()).isNull();
         assertThat(row.getQuoteExpiresAt()).isEqualTo(expires);
         assertThat(row.getInsurerName()).isEqualTo("Hãng A");
+        assertThat(row.getCurrencyCode()).isEqualTo("VND");
 
-        new InsuranceEvidenceRequestDto(null, BigDecimal.ONE, BigDecimal.TEN, "VND", expires).applyTo(row);
+        new InsuranceEvidenceRequestDto(null, BigDecimal.ONE, expires).applyTo(row);
         assertThat(row.getInsurerName()).isEqualTo("Hãng A");
     }
 
@@ -38,14 +37,14 @@ class BookingReviewDtoTest {
         row.setId(1L);
         row.setRevisionReason("Bổ sung hợp đồng");
         row.setStatus(HorseInsuranceStatus.REVISION_REQUESTED);
-        row.setCoverageAmount(BigDecimal.TEN);
+        row.setPremiumAmount(BigDecimal.TEN);
         LocalDate date = LocalDate.of(2026, 12, 1);
         new PersonalInsuranceRevisionRequestDto(" Hãng A ", " HĐ01 ", date, date.plusMonths(1)).applyTo(row);
         assertThat(row.getId()).isEqualTo(1L);
         assertThat(row.getPolicyNumber()).isEqualTo("HĐ01");
         assertThat(row.getInsurerName()).isEqualTo("Hãng A");
         assertThat(row.getStatus()).isEqualTo(HorseInsuranceStatus.REVISION_REQUESTED);
-        assertThat(row.getCoverageAmount()).isEqualByComparingTo(BigDecimal.TEN);
+        assertThat(row.getPremiumAmount()).isEqualByComparingTo(BigDecimal.TEN);
         assertThat(row.getRevisionReason()).isEqualTo("Bổ sung hợp đồng");
     }
 

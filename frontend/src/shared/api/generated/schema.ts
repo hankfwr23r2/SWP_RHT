@@ -6956,7 +6956,6 @@ export interface components {
             validTo?: string;
         };
         InsuranceDetail: {
-            coverageAmount?: number;
             /** @enum {string} */
             coverageOption?: "PERSONAL" | "ARRANGED" | "NONE";
             currencyCode?: string;
@@ -6979,10 +6978,8 @@ export interface components {
             waiverTermsAcceptanceId?: number;
         };
         InsuranceEvidenceRequestDto: {
-            coverageAmount: number;
-            currencyCode: string;
             insurerName?: string;
-            premiumAmount?: number;
+            premiumAmount: number;
             /** Format: date-time */
             quoteExpiresAt?: string;
         };

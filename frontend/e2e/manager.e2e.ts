@@ -111,7 +111,6 @@ test('giấy không kịp phải chọn nguyên nhân và ghi lý do', async ({ 
 
 test('hủy theo yêu cầu khách: thấy tiền mất và tiền hoàn, khoản thu hộ không chọn để hoàn', async ({ page }) => {
   const state = await open(page, '/manager/orders/8', { status: 'CONFIRMED', preview: { allowed: true, forfeited: 3_000_000, refundable: 0, currencyCode: 'VND' } })
-  await page.getByLabel('Hủy đơn', { exact: true }).click()
   await page.getByRole('button', { name: 'Hủy theo yêu cầu khách' }).click()
   const dialog = page.getByRole('dialog')
   await expect(dialog).toContainText('3,000,000 ₫')

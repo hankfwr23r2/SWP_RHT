@@ -38,7 +38,7 @@ export function ResubmissionDialog({ items, horses, actions, onClose }: {
       <p>{t('staffReview.consequence.return')}</p>
       {!!choices.length && <fieldset className={s.choices}>
         <legend>{t('staffReview.workspace.requestedDocuments')}</legend>
-        {choices.map(choice => <label key={choice.id} className={s.row}>
+        {choices.map(choice => <label key={choice.id} className={s.choiceRow}>
           <Input type="checkbox" checked={selected.includes(choice.id)} disabled={actions.busy}
             onChange={event => setSelected(current => event.target.checked ? [...current, choice.id] : current.filter(id => id !== choice.id))} />
           {choice.label}

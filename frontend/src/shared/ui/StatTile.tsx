@@ -10,14 +10,14 @@ export function StatTile({ icon, value, label, link }: {
   icon: ReactNode
   value: ReactNode
   label: ReactNode
-  link?: { to: string; label: string }
+  link?: { to: string; label: string; ariaLabel?: string }
 }) {
   return <div className={s.tile}>
     <span className={s.icon} aria-hidden="true">{icon}</span>
     <div>
       <div className={s.value}>{value}</div>
       <div className={s.label}>{label}</div>
-      {link && <Link to={link.to}>{link.label}</Link>}
+      {link && <Link to={link.to} aria-label={link.ariaLabel}>{link.label}</Link>}
     </div>
   </div>
 }

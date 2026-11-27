@@ -36,7 +36,7 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
         extra={<NoticeBell />}
       />
       <main><PageTransition>{children}</PageTransition></main>
-      <footer className={h.footer}>{t('common.footerCopyright')} · {t('common.hotline')}: {contact.hotline}</footer>
+      <footer className={h.footer}>{t('common.footerCopyright')}{contact.hotline && <> · {t('common.hotline')}: {contact.hotline}</>}</footer>
     </>
   )
 }

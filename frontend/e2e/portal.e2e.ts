@@ -59,10 +59,17 @@ test('trang chủ khách: số liệu nhanh, việc cần làm dẫn tới đơn
   const todo = todoSection.getByRole('link', { name: /BK-COC/ })
   await expect(todo).toContainText('Xem và trả lời báo giá')
   await expect(todo).toHaveAttribute('href', '/orders/8#quote')
+  await expect(todo).toContainText('BK-COC · Vận chuyển liên tỉnh · 10/01/2099')
   await expect(todoSection.getByRole('link', { name: /BK-DUYET|BK-XONG/ })).toHaveCount(0)
   await expect(page.getByRole('region', { name: 'Đơn gần đây' }).getByRole('link', { name: 'BK-XONG' }))
     .toHaveAttribute('href', '/orders/11')
   expect(calls.map(call => call.path).filter(path => /^\/customer\/|horse-documents|\/public\/services/.test(path))).toEqual([])
+  // Ô số liệu mở danh sách đơn ở đúng nhóm
+  await stats.getByRole('link', { name: 'Xem đơn đang vận chuyển' }).click()
+  await expect(page).toHaveURL(/\/orders\?tab=moving$/)
+  await expect(page.getByRole('tab', { name: /Đang vận chuyển/ })).toHaveAttribute('aria-selected', 'true')
+  await expect(page.getByRole('link', { name: 'BK-CHAY' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'BK-COC' })).toHaveCount(0)
 })
 
 test('trang chủ khách: lỗi thì thử lại được; chưa có đơn thì mời đặt chuyến', async ({ page }) => {

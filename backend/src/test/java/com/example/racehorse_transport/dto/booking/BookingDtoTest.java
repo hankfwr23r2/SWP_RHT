@@ -126,7 +126,7 @@ class BookingDtoTest {
         assertThat(selection.getId()).isNull();
         assertThat(selection.getQuantity()).isEqualTo(2);
         var arranged = new ObjectMapper().readValue("""
-                {"coverageOption":"ARRANGED","id":99,"status":"CONFIRMED","coverageAmount":200,
+                {"coverageOption":"ARRANGED","id":99,"status":"CONFIRMED",
                  "currencyCode":"VND","premiumAmount":100,"policyNumber":"ignore","insurerName":"ignore"}
                 """, InsuranceDeclarationRequestDto.class);
         var insurance = arranged.toEntity(row, null);
@@ -135,7 +135,6 @@ class BookingDtoTest {
         assertThat(insurance.getStatus()).isNull();
         assertThat(insurance.getConfirmedBy()).isNull();
         assertThat(insurance.getPolicyNumber()).isNull();
-        assertThat(insurance.getCoverageAmount()).isNull();
         assertThat(insurance.getCurrencyCode()).isNull();
         assertThat(insurance.getPremiumAmount()).isNull();
 
