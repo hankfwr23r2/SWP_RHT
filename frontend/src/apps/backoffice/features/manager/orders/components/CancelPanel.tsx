@@ -17,13 +17,10 @@ export function CancelPanel({ bookingId }: { bookingId: number }) {
   const [mode, setMode] = useState<'customer' | 'company' | null>(null)
   return (
     <>
-      <details>
-        <summary aria-label={t('mgr.cancel.title')}>&hellip;</summary>
-        <div className={s.stack}>
-          <Button variant="secondary" onClick={() => setMode('customer')}>{t('mgr.cancel.customer')}</Button>
-          <Button variant="secondary" onClick={() => setMode('company')}>{t('mgr.cancel.company')}</Button>
-        </div>
-      </details>
+      <div className={s.stack}>
+        <Button variant="secondary" onClick={() => setMode('customer')}>{t('mgr.cancel.customer')}</Button>
+        <Button variant="secondary" onClick={() => setMode('company')}>{t('mgr.cancel.company')}</Button>
+      </div>
       {mode && <CancelDialog key={mode} bookingId={bookingId} byCompany={mode === 'company'} onClose={() => setMode(null)} />}
     </>
   )

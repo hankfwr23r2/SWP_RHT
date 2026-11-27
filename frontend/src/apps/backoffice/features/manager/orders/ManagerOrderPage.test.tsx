@@ -26,6 +26,8 @@ it('keeps order information in the main column during intake and has one intake 
   render(<RouterProvider router={router} />)
 
   const horse = await screen.findByText('Gió Nam')
+  expect(screen.getByRole('button', { name: 'Hủy theo yêu cầu khách' })).toBeTruthy()
+  expect(screen.getByRole('button', { name: 'Công ty hủy' })).toBeTruthy()
   const infoColumn = horse.closest('article, section')?.parentElement
   expect(infoColumn?.textContent).toContain('Trại A')
   expect(infoColumn?.textContent).toContain('Nguyễn Văn A')
