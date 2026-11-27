@@ -35,9 +35,10 @@ export function Network() {
         <div className={cx(s.networkDetail, s.reveal)}>
           <h3>{active === 'VN' ? t('home.network.domesticRoute') : t('home.network.intlRoute', { country: t(`home.network.countryNames.${active}`) })}</h3>
           <div className={s.networkCols} key={active}>
+            <div><h4>{t('home.network.hubsTitle')}</h4><p><i className="fa-solid fa-warehouse" aria-hidden="true" /> {t(`home.network.hubs.${active}`)}</p></div>
             {active === 'VN'
               ? <div><h4>{t('home.network.pickupDrop')}</h4><p><i className="fa-solid fa-location-dot" aria-hidden="true" /> {t('home.network.pickupDesc')}</p></div>
-              : <div><h4>{t('home.network.borderGate')}</h4><p><i className="fa-solid fa-flag" aria-hidden="true" /> {t('home.network.borderDesc')}</p></div>}
+              : <div><h4>{t('home.network.borderGate')}</h4><p><i className="fa-solid fa-flag" aria-hidden="true" /> {t(`home.network.gates.${active}`)}</p></div>}
           </div>
         </div>
       </div>
