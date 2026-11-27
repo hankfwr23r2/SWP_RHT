@@ -48,7 +48,10 @@ function scheduleTokenRefresh(token: string): void {
 
 // 2. Quản lý lưu trữ Access Token (ưu tiên an toàn và tiện lợi khi gọi API)
 // App khách và app nội bộ chạy chung một trình duyệt: mỗi app giữ token riêng, nếu không đăng nhập Manager sẽ ghi đè token của khách
-const tokenKey = () => `SWP_ACCESS_TOKEN_${typeof window !== 'undefined' && window.location.pathname.startsWith('/backoffice') ? 'backoffice' : 'customer'}`
+const clientApp = () => (typeof window !== 'undefined' && window.location.pathname.startsWith('/backoffice') ? 'backoffice' : 'customer')
+const tokenKey = () => `SWP_ACCESS_TOKEN_${clientApp()}`
+// Backend giữ refresh token trong cookie riêng của từng app, header này cho biết lấy cookie nào
+const clientAppHeader = 'X-Client-App'
 
 export const tokenStorage = {
   get: (): string | null => (typeof localStorage !== 'undefined' ? localStorage.getItem(tokenKey()) : null),
@@ -86,6 +89,7 @@ apiClient.interceptors.request.use(
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`
     }
+    if (config.headers) config.headers[clientAppHeader] = clientApp()
     return config
   },
   (error: AxiosError) => {
@@ -98,7 +102,7 @@ function refreshAccessToken(): Promise<string> {
     refreshPromise = axios.post<ApiResponse<{ accessToken: string }>>(
       `${apiClient.defaults.baseURL}/auth/refresh-token`,
       {},
-      { withCredentials: true }
+      { withCredentials: true, headers: { [clientAppHeader]: clientApp() } }
     ).then(refreshRes => {
       const newAccessToken = refreshRes.data?.data?.accessToken
       if (!newAccessToken) {

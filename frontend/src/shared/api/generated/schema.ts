@@ -8743,6 +8743,7 @@ export interface operations {
             query?: never;
             header?: {
                 Authorization?: string;
+                "X-Client-App"?: string;
             };
             path?: never;
             cookie?: never;
@@ -8815,7 +8816,9 @@ export interface operations {
     refreshToken: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Client-App"?: string;
+            };
             path?: never;
             cookie?: never;
         };
