@@ -20,6 +20,7 @@ import com.example.racehorse_transport.service.NotificationService;
 import com.example.racehorse_transport.service.CollectionCodeService;
 import com.example.racehorse_transport.service.HorseLegService;
 import org.springframework.beans.factory.ObjectProvider;
+import java.time.Clock;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -40,6 +41,7 @@ public class BookingStatusServiceImpl implements BookingStatusService {
     private final CollectionCodeService collectionCodes;
     private final ExtraChargeService extraCharges;
     private final ObjectProvider<HorseLegService> horseLegs;
+    private final Clock clock;
 
     @Override
     @Transactional(readOnly = true)
@@ -200,6 +202,7 @@ public class BookingStatusServiceImpl implements BookingStatusService {
         row.setReason(reason == null || reason.isBlank() ? null : reason.trim());
         row.setPreviousDeparture(previousDeparture);
         row.setCauseType(cause);
+        row.setChangedAt(clock.instant());
         history.save(row);
     }
 }

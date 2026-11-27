@@ -265,7 +265,6 @@ class BenXeJourneyFlowTest {
         runDelivery(scenario, booking, operations, horses, deliveryAt);
         assertThat(bookingStatus(booking)).isEqualTo("DELIVERED");
         String path = "/bookings/" + booking;
-        operations.useDatabaseDeliveryTime(booking);
         ok(act(customer, path + "/delivery-complaints/confirm", "{\"confirmed\":true}"));
         String settlement = ok(act(manager, path + "/settlement/complete", "{}"));
         assertThat(new BigDecimal(JsonPath.read(settlement, "$.data.outstanding").toString())).isEqualByComparingTo("0");

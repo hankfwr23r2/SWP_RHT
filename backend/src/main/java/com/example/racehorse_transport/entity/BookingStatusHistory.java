@@ -19,7 +19,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import org.hibernate.annotations.Generated;
 
 import java.time.Instant;
 
@@ -54,9 +53,8 @@ public class BookingStatusHistory {
     @JoinColumn(name = "changed_by")
     private AppUser changedBy;
 
-    // DB đặt giá trị mặc định now() lúc thêm dòng
-    @Generated
-    @Column(name = "changed_at", nullable = false, insertable = false, updatable = false)
+    // Ứng dụng đặt theo Clock để hạn khiếu nại, tự đóng đơn chạy đúng khi tua giờ
+    @Column(name = "changed_at", nullable = false, updatable = false)
     private Instant changedAt;
 
     @Column(name = "reason", columnDefinition = "text")
