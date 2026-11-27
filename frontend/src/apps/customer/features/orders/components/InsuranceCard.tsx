@@ -7,6 +7,7 @@ import { Button } from '@shared/ui/Button'
 import { Card } from '@shared/ui/Card'
 import { ConfirmDialog } from '@shared/ui/ConfirmDialog'
 import { Field } from '@shared/ui/Field'
+import { FilePreviewButton } from '@shared/ui/FilePreviewButton'
 import { Input } from '@shared/ui/Input'
 import type { OrderData } from '../loaders'
 import { useInsuranceRevision } from '../useInsuranceRevision'
@@ -82,11 +83,14 @@ function RevisionForm({ bookingId, horse }: { bookingId: number; horse: HorseDet
         <Field label={t('bookingForm.services.policyFile')} required
           hint={file?.name ?? t('bookingForm.services.policyFileHint')}
           error={fields.file ?? (invalidFile ? t('bookingForm.services.policyFileInvalid') : missing(file?.name ?? ''))}>
-          {control => <Input {...control} type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={event => {
-            setFile(event.target.files?.[0])
-            clearErrors()
-            event.target.value = ''
-          }} />}
+          {control => <>
+            <Input {...control} type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={event => {
+              setFile(event.target.files?.[0])
+              clearErrors()
+              event.target.value = ''
+            }} />
+            {file && <FilePreviewButton fileName={file.name} file={file} label={t('ui.previewFile')} />}
+          </>}
         </Field>
       </div>
       {error && !Object.keys(fields).length && <p className={s.error} role="alert">{error}</p>}

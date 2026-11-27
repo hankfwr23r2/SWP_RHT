@@ -4,6 +4,7 @@ import type { CrewTrip, DeliveryRecipient, Handover, HandoverScanRequest } from 
 import { formatDateTime } from '@shared/lib/format'
 import { Button } from '@shared/ui/Button'
 import { Field } from '@shared/ui/Field'
+import { FilePreviewButton } from '@shared/ui/FilePreviewButton'
 import { Input } from '@shared/ui/Input'
 import { StatusBadge } from '@shared/ui/StatusBadge'
 import { HandoverChipForm } from './HandoverChipForm'
@@ -30,6 +31,7 @@ export function TripHandoverPanel({ handover, horses, busy, onScan, onPhoto, onC
   onTrip, onRefuse, onConfirmStay, onFail }: Props) {
   const { t } = useTranslation()
   const [recipients, setRecipients] = useState<Record<string, DeliveryRecipient>>({})
+  const [photos, setPhotos] = useState<Record<number, File>>({})
   const handoverId = handover.id ?? 0
   const deliveryCodes = handover.handoverType === 'DELIVERY' ? [...new Set(
     (handover.horses ?? []).filter(horse => horse.microchipMatched).map(horse => horse.bookingCode ?? ''),
@@ -61,10 +63,17 @@ export function TripHandoverPanel({ handover, horses, busy, onScan, onPhoto, onC
               <HandoverChipForm horse={horse} needsCondition={needsPhoto} busy={busy} onSave={onScan} />
               {horse.photoAttached && <StatusBadge tone="success" label={t('handoverEvidence.photoAttached')} />}
               {needsPhoto && horse.microchipMatched && <Field label={t('handoverEvidence.photo')} required>
-                {c => <Input {...c} type="file" accept="image/*" disabled={busy} onChange={e => {
-                  const photo = e.target.files?.[0]
-                  if (photo) onPhoto(legId, photo)
-                }} />}
+                {c => <>
+                  <Input {...c} type="file" accept="image/*" disabled={busy} onChange={e => {
+                    const photo = e.target.files?.[0]
+                    if (photo) {
+                      setPhotos(current => ({ ...current, [legId]: photo }))
+                      onPhoto(legId, photo)
+                    }
+                  }} />
+                  {photos[legId] && <FilePreviewButton fileName={photos[legId].name} file={photos[legId]}
+                    label={t('ui.previewFile')} />}
+                </>}
               </Field>}
               {canRefuse(handover) && (
                 <Button variant="danger" size="lg" fullWidth

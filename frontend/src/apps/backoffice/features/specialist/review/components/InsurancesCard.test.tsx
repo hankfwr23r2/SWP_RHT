@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import type { BookingDocument } from '@shared/api/bookingDocuments'
@@ -55,7 +55,8 @@ describe('Thao tác bảo hiểm trên hồ sơ chuyên viên', () => {
       { bookingHorseId: 5, typeCode: 'INSURANCE_POLICY', fileName: 'policy.pdf', fileUrl: 'https://example.test/policy.pdf' },
     ])
     const personal = within(screen.getAllByRole('listitem').at(-1)!)
-    expect(personal.getByRole('link', { name: 'Xem policy.pdf' }).getAttribute('href')).toBe('https://example.test/policy.pdf')
+    fireEvent.click(personal.getByRole('button', { name: 'Xem policy.pdf' }))
+    expect(screen.getByTitle('policy.pdf').getAttribute('src')).toBe('https://example.test/policy.pdf')
     expect(personal.getByRole('button', { name: 'Xác nhận bảo hiểm' })).toBeTruthy()
   })
 

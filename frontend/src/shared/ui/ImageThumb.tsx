@@ -11,11 +11,12 @@ type ToolbarVariant = 'default' | 'balanced'
 export interface ImageLightboxProps {
   name: string
   title?: string
+  fileType?: string
   onClose: () => void
   toolbarVariant?: ToolbarVariant
 }
 
-export function ImageLightbox({ name, title, onClose, toolbarVariant = 'default' }: ImageLightboxProps) {
+export function ImageLightbox({ name, title, fileType, onClose, toolbarVariant = 'default' }: ImageLightboxProps) {
   const isUrl = name.startsWith('http://') || name.startsWith('https://') || name.startsWith('blob:') || name.startsWith('data:')
   const src = isUrl ? name : previewOf(name)
   const [scale, setScale] = useState(1)
@@ -32,7 +33,7 @@ export function ImageLightbox({ name, title, onClose, toolbarVariant = 'default'
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  const isPdf = name.toLowerCase().endsWith('.pdf') || (src ? src.toLowerCase().includes('.pdf') : false)
+  const isPdf = fileType === 'application/pdf' || name.toLowerCase().endsWith('.pdf') || (src ? src.toLowerCase().includes('.pdf') : false)
   const displayName = name.split('/').pop()?.split('?')[0] || name
 
   const content = (

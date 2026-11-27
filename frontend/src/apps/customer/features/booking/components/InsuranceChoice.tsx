@@ -2,6 +2,7 @@ import { DateInput } from '@shared/ui/DateInput'
 import { useTranslation } from 'react-i18next'
 import { documentUploadError } from '@shared/lib/documentUpload'
 import { Field } from '@shared/ui/Field'
+import { FilePreviewButton } from '@shared/ui/FilePreviewButton'
 import { Input } from '@shared/ui/Input'
 import { PolicyLink } from '@shared/ui/PolicyLink'
 import type { HorseChoice } from '../draft'
@@ -53,10 +54,14 @@ export function InsuranceChoice({ horseId, choice, missing, fileError, onChange 
           <Field label={t('bookingForm.services.policyFile')} required
             hint={choice.policyFile?.name ?? t('bookingForm.services.policyFileHint')}
             error={fileError ?? (invalidFile ? t('bookingForm.services.policyFileInvalid') : required(choice.policyFile?.name ?? ''))}>
-            {control => <Input {...control} type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={event => {
-              onChange({ policyFile: event.target.files?.[0] })
-              event.target.value = ''
-            }} />}
+            {control => <>
+              <Input {...control} type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={event => {
+                onChange({ policyFile: event.target.files?.[0] })
+                event.target.value = ''
+              }} />
+              {choice.policyFile && <FilePreviewButton fileName={choice.policyFile.name} file={choice.policyFile}
+                label={t('ui.previewFile')} />}
+            </>}
           </Field>
         </div>
       )}

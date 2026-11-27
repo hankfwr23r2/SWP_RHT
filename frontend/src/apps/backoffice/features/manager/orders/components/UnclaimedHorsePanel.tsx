@@ -7,6 +7,7 @@ import { Card } from '@shared/ui/Card'
 import { ConfirmDialog } from '@shared/ui/ConfirmDialog'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { Field } from '@shared/ui/Field'
+import { FilePreviewButton } from '@shared/ui/FilePreviewButton'
 import { Input } from '@shared/ui/Input'
 import { Select } from '@shared/ui/Select'
 import { Skeleton } from '@shared/ui/Skeleton'
@@ -61,7 +62,10 @@ export function UnclaimedHorsePanel({ bookingId, onChange }: { bookingId: number
               onChange={event => setRecipientName(event.target.value)} />}
           </Field>
           <Field label={t('mgr.unclaimed.proof')}>
-            {control => <Input {...control} required type="file" accept="image/*,application/pdf" onChange={event => setProof(event.target.files?.[0])} />}
+            {control => <>
+              <Input {...control} required type="file" accept="image/*,application/pdf" onChange={event => setProof(event.target.files?.[0])} />
+              {proof && <FilePreviewButton fileName={proof.name} file={proof} label={t('ui.previewFile')} />}
+            </>}
           </Field>
           <Button type="submit" variant="primary" disabled={!proof || !recipientName.trim()}>{t('mgr.unclaimed.save')}</Button>
         </form>

@@ -5,6 +5,7 @@ import type { BookingDocument } from '@shared/api/bookingDocuments'
 import { formatDate, formatDateTime, formatVND } from '@shared/lib/format'
 import { EmptyState } from '@shared/ui/EmptyState'
 import { ErrorState } from '@shared/ui/ErrorState'
+import { FilePreviewButton } from '@shared/ui/FilePreviewButton'
 import { Badge } from '@shared/ui/Badge'
 import s from './StaffPanels.module.css'
 
@@ -74,7 +75,11 @@ export function StaffBookingInfo({ detail, documents, retry }: {
           ? <EmptyState compact title={t('mgr.info.noDocuments')} description={t('mgr.info.noDocumentsHint')} />
           : <ul className={s.stack}>{documents.map(document => (
             <li key={document.id} className={s.row}>
-              {document.fileUrl ? <a href={document.fileUrl} target="_blank" rel="noreferrer">{document.fileName ?? document.typeCode}</a>
+              {document.fileUrl ? <>
+                <span>{document.fileName ?? document.typeCode}</span>
+                <FilePreviewButton fileName={document.fileName ?? document.typeCode ?? ''} fileUrl={document.fileUrl}
+                  label={t('ui.previewFile')} />
+              </>
                 : <span>{document.fileName ?? document.typeCode}</span>}
               {document.status && <Badge>{t(`mgr.info.documentStatus.${document.status}`)}</Badge>}
             </li>

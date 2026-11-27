@@ -63,7 +63,7 @@ it('starts rest and waits until the backend deadline even after a fitness photo 
   await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Tải ảnh xác nhận đủ sức' })) })
   expect(apiClient.post).toHaveBeenCalledWith('/incidents/5/photos', expect.any(FormData),
     expect.objectContaining({ params: { documentType: 'FIT_CHECK_PHOTO' } }))
-  expect(screen.getByRole('link', { name: fitPhoto.fileName })).toBeTruthy()
+  expect(screen.getByRole('button', { name: `Xem ${fitPhoto.fileName}` })).toBeTruthy()
   expect(confirmFitButton().disabled).toBe(true)
 
   await act(async () => { vi.advanceTimersByTime(120_000) })

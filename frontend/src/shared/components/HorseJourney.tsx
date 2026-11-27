@@ -1,5 +1,6 @@
 // Timeline hành trình từng con ngựa (B6): chặng, lưu trú, giao nhận và ngựa đang trong tay ai. Cả hai ứng dụng dùng.
 import { useTranslation } from 'react-i18next'
+import { FilePreviewButton } from '@shared/ui/FilePreviewButton'
 import { trackingApi, type HorseJourney as HorseJourneyData } from '@shared/api/tracking'
 import { useLoad } from '@shared/hooks/useLoad'
 import { formatClock, formatDate, formatDateTime } from '@shared/lib/format'
@@ -63,9 +64,9 @@ export function HorseJourney({ horse }: { horse: HorseJourneyData }) {
                     <ul>
                       {entry.evidence.map(file => (
                         <li key={file.id}>
-                          <a href={file.fileUrl} target="_blank" rel="noopener noreferrer">
-                            {t(file.type === 'HANDOVER_RECORD' ? 'journey.evidence.record' : 'journey.evidence.photo', { name: file.fileName })}
-                          </a>
+                          <span>{file.fileName ?? t('ui.previewFile')}</span>
+                          <FilePreviewButton fileName={file.fileName ?? t('ui.previewFile')}
+                            fileUrl={file.fileUrl} label={t('ui.previewFile')} />
                         </li>
                       ))}
                     </ul>

@@ -14,6 +14,7 @@ import { ConfirmDialog } from '@shared/ui/ConfirmDialog'
 import { EmptyState } from '@shared/ui/EmptyState'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { Field } from '@shared/ui/Field'
+import { FilePreviewButton } from '@shared/ui/FilePreviewButton'
 import { Input } from '@shared/ui/Input'
 import { Modal } from '@shared/ui/Modal'
 import { Select } from '@shared/ui/Select'
@@ -228,10 +229,16 @@ export default function HubPage() {
           {isHubHandover && (
             <>
               <Field label={t('handoverEvidence.photo')} required>
-                {c => <Input {...c} type="file" accept="image/*" onChange={e => setPhoto(e.target.files?.[0])} />}
+                {c => <>
+                  <Input {...c} type="file" accept="image/*" onChange={e => setPhoto(e.target.files?.[0])} />
+                  {photo && <FilePreviewButton fileName={photo.name} file={photo} label={t('ui.previewFile')} />}
+                </>}
               </Field>
               <Field label={t('handoverEvidence.record')} required>
-                {c => <Input {...c} type="file" accept="image/*,application/pdf" onChange={e => setRecord(e.target.files?.[0])} />}
+                {c => <>
+                  <Input {...c} type="file" accept="image/*,application/pdf" onChange={e => setRecord(e.target.files?.[0])} />
+                  {record && <FilePreviewButton fileName={record.name} file={record} label={t('ui.previewFile')} />}
+                </>}
               </Field>
             </>
           )}

@@ -6,6 +6,7 @@ import { useLoad } from '@shared/hooks/useLoad'
 import { formatDateTime } from '@shared/lib/format'
 import { Button } from '@shared/ui/Button'
 import { Field } from '@shared/ui/Field'
+import { FilePreviewButton } from '@shared/ui/FilePreviewButton'
 import { useToast } from '@shared/ui/toast'
 import s from './EvidencePanel.module.css'
 
@@ -49,7 +50,13 @@ export function EvidencePanel({ title, load, evidence, upload, accept = 'image/*
         <ul className={s.list} aria-label={title}>
           {items.map(item => (
             <li key={item.id} className={s.muted}>
-              <a href={item.fileUrl} target="_blank" rel="noreferrer">{item.fileName}</a>
+              {item.fileUrl
+                ? <>
+                  <span>{item.fileName ?? t('incidents.evidenceFile')}</span>
+                  <FilePreviewButton fileName={item.fileName ?? t('incidents.evidenceFile')} fileUrl={item.fileUrl}
+                    label={t('ui.previewFile')} />
+                </>
+                : <span>{item.fileName ?? t('incidents.evidenceFile')}</span>}
               {item.documentTypeCode === 'VET_REPORT' && <> · {t('incidents.vetReport')}</>}
               {item.documentTypeCode === 'VEHICLE_SWAP_RECORD' && <> · {t('incidents.vehicleSwapRecord')}</>}
               {' · '}{item.uploadedByName}
@@ -62,7 +69,10 @@ export function EvidencePanel({ title, load, evidence, upload, accept = 'image/*
       {upload && (
         <div className={s.row}>
           <Field label={fileLabel ?? t('incidents.evidenceFile')}>
-            {c => <input {...c} type="file" accept={accept} capture="environment" onChange={e => setFile(e.target.files?.[0])} />}
+            {c => <>
+              <input {...c} type="file" accept={accept} capture="environment" onChange={e => setFile(e.target.files?.[0])} />
+              {file && <FilePreviewButton fileName={file.name} file={file} label={t('ui.previewFile')} />}
+            </>}
           </Field>
           <Button size="sm" disabled={!file} loading={busy} onClick={() => void send()}>{uploadLabel ?? t('incidents.uploadEvidence')}</Button>
         </div>

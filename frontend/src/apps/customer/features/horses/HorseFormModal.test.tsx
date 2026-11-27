@@ -43,7 +43,8 @@ it('hiện giấy đã trả trong tab giấy tờ và quay về tab có lỗi k
   expect(docsTab.getAttribute('aria-selected')).toBe('true')
   expect(dialog.getByText('Bị trả lại')).toBeTruthy()
   expect(dialog.getByText(/Thiếu trang nhận dạng/)).toBeTruthy()
-  expect(dialog.getByRole('link', { name: 'returned.pdf' }).getAttribute('href')).toBe('https://example.test/returned.pdf')
+  fireEvent.click(dialog.getByRole('button', { name: 'Xem returned.pdf' }))
+  expect(screen.getByTitle('returned.pdf').getAttribute('src')).toBe('https://example.test/returned.pdf')
 
   fireEvent.click(dialog.getByRole('button', { name: 'Lưu' }))
   expect(dialog.getByRole('tab', { name: 'Nhận dạng & Đặc điểm' }).getAttribute('aria-selected')).toBe('true')
@@ -91,6 +92,8 @@ it('tải lại đúng tệp lỗi sau khi đã lưu ngựa và tệp còn lại
   fireEvent.change(dialog.getByLabelText('Chọn tệp Sổ tiêm phòng'), {
     target: { files: [new File(['%PDF-1.7'], 'vaccines.pdf', { type: 'application/pdf' })] },
   })
+  expect(dialog.getByRole('button', { name: 'Xem passport.pdf' })).toBeTruthy()
+  expect(dialog.getByRole('button', { name: 'Xem vaccines.pdf' })).toBeTruthy()
   expect(dialog.getByRole('tab', { name: 'Giấy tờ (2/2)' })).toBeTruthy()
   fireEvent.click(dialog.getByRole('button', { name: 'Lưu' }))
 

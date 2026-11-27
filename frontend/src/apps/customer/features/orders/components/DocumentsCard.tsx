@@ -8,6 +8,7 @@ import { Button } from '@shared/ui/Button'
 import { Card } from '@shared/ui/Card'
 import { ConfirmDialog } from '@shared/ui/ConfirmDialog'
 import { ErrorState } from '@shared/ui/ErrorState'
+import { FilePreviewButton } from '@shared/ui/FilePreviewButton'
 import { StatusBadge } from '@shared/ui/StatusBadge'
 import { showDate } from '../format'
 import type { OrderData } from '../loaders'
@@ -47,7 +48,11 @@ export function DocumentsCard({ data }: { data: OrderData }) {
                   {!item.requirement?.mandatory && <p className={s.hint}>{t('bookingForm.route.optional')}</p>}
                   {document?.expiryDate && <p className={s.hint}>{t('myOrders.documents.expiry', { date: showDate(document.expiryDate) })}</p>}
                   {document?.status === 'REJECTED' && document.reviewNote && <p className={s.error}>{document.reviewNote}</p>}
-                  {document?.fileUrl && <a href={document.fileUrl} target="_blank" rel="noreferrer">{document.fileName ?? t('myOrders.documents.view')}</a>}
+                  {document?.fileUrl && <div>
+                    <span>{document.fileName ?? t('myOrders.documents.view')}</span>
+                    <FilePreviewButton fileName={document.fileName ?? t('myOrders.documents.view')}
+                      fileUrl={document.fileUrl} label={t('ui.previewFile')} />
+                  </div>}
                 </div>
                 <StatusBadge tone={TONE[key]} label={t(`myOrders.documents.status.${key}`)} />
                 {canUpload(status, item, document) && (

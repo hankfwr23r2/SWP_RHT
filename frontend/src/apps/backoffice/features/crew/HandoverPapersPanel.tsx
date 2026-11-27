@@ -5,6 +5,7 @@ import { tripExecutionApi, type CrewTrip, type Handover } from '@shared/api/trip
 import { useLoad } from '@shared/hooks/useLoad'
 import { Button } from '@shared/ui/Button'
 import { Field } from '@shared/ui/Field'
+import { FilePreviewButton } from '@shared/ui/FilePreviewButton'
 import { Input } from '@shared/ui/Input'
 import { StatusBadge } from '@shared/ui/StatusBadge'
 import { useToast } from '@shared/ui/toast'
@@ -54,7 +55,10 @@ export function HandoverPapersPanel({ handover, receiving, onTrip }: { handover:
         : (
           <>
             <Field label={t('myTrips.run.papers.record')}>
-              {c => <Input {...c} type="file" accept="image/*,application/pdf" capture="environment" onChange={e => setFile(e.target.files?.[0])} />}
+              {c => <>
+                <Input {...c} type="file" accept="image/*,application/pdf" capture="environment" onChange={e => setFile(e.target.files?.[0])} />
+                {file && <FilePreviewButton fileName={file.name} file={file} label={t('ui.previewFile')} />}
+              </>}
             </Field>
             <Button size="lg" fullWidth disabled={!file} loading={busy} onClick={() => void upload()}>{t('myTrips.run.papers.upload')}</Button>
           </>

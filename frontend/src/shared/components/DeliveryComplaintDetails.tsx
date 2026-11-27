@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import type { Complaint } from '@shared/api/deliveryComplaints'
+import { FilePreviewButton } from '@shared/ui/FilePreviewButton'
 import s from './DeliveryComplaintDetails.module.css'
 
 export function DeliveryComplaintDetails({ complaint, horseName }: { complaint: Complaint; horseName?: string }) {
@@ -19,7 +20,11 @@ export function DeliveryComplaintDetails({ complaint, horseName }: { complaint: 
       {!!complaint.photos?.length && (
         <ul className={s.stack}>
           {complaint.photos.map(photo => photo.fileUrl && (
-            <li key={photo.id}><a href={photo.fileUrl} target="_blank" rel="noreferrer">{photo.fileName ?? t('deliveryComplaint.photos')}</a></li>
+            <li key={photo.id}>
+              <span>{photo.fileName ?? t('deliveryComplaint.photos')}</span>
+              <FilePreviewButton fileName={photo.fileName ?? t('deliveryComplaint.photos')}
+                fileUrl={photo.fileUrl} label={t('ui.previewFile')} />
+            </li>
           ))}
         </ul>
       )}

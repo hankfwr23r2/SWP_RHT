@@ -5,6 +5,7 @@ import type { BookingDetail, BookingStatus } from '@shared/api/bookingOrders'
 import { Button } from '@shared/ui/Button'
 import { Card } from '@shared/ui/Card'
 import { EmptyState } from '@shared/ui/EmptyState'
+import { FilePreviewButton } from '@shared/ui/FilePreviewButton'
 import { StatusBadge } from '@shared/ui/StatusBadge'
 import { showDate } from '../reviewDisplay'
 import type { ReviewAction, ReviewActions } from '../useReviewActions'
@@ -49,8 +50,11 @@ function HorseInsurance({ horse, editable, canEdit, documents, actions }: {
         {coverageOption === 'PERSONAL' && documents && <div>
           <dt>{t('staffReview.policyFile')}</dt>
           <dd>{policyFile?.fileUrl
-            ? <a className={s.file} href={policyFile.fileUrl} target="_blank" rel="noopener noreferrer">
-              {t('staffReview.viewFile', { name: policyFile.fileName ?? '' })}</a>
+            ? <>
+              <span>{policyFile.fileName ?? t('staffReview.policyFile')}</span>
+              <FilePreviewButton fileName={policyFile.fileName ?? t('staffReview.policyFile')}
+                fileUrl={policyFile.fileUrl} label={t('ui.previewFile')} />
+            </>
             : t('staffReview.policyFileMissing')}</dd>
         </div>}
         {validFrom && <div><dt>{t('staffReview.validFrom')}</dt><dd>{date(validFrom)}</dd></div>}

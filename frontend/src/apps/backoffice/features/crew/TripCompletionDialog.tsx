@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import type { VehicleTrip } from '@shared/api/dispatch'
 import { ConfirmDialog } from '@shared/ui/ConfirmDialog'
 import { Field } from '@shared/ui/Field'
+import { FilePreviewButton } from '@shared/ui/FilePreviewButton'
 import { Input } from '@shared/ui/Input'
 import { Select } from '@shared/ui/Select'
 import { StatusBadge } from '@shared/ui/StatusBadge'
@@ -61,8 +62,11 @@ export function TripCompletionDialog({ trip, onUpload, onConfirm, onCancel }: Pr
           {trip.returnPhotoAttached
             ? <StatusBadge tone="success" label={t('myTrips.run.completion.photoAttached')} />
             : <Field label={t('myTrips.run.completion.photo')} error={errors.photo ?? errors.file} required>
-              {c => <Input {...c} type="file" accept="image/*" capture="environment" disabled={busy}
-                onChange={e => { setPhoto(e.target.files?.[0]); setErrors({}) }} />}
+              {c => <>
+                <Input {...c} type="file" accept="image/*" capture="environment" disabled={busy}
+                  onChange={e => { setPhoto(e.target.files?.[0]); setErrors({}) }} />
+                {photo && <FilePreviewButton fileName={photo.name} file={photo} label={t('ui.previewFile')} />}
+              </>}
             </Field>}
           <Field label={t('myTrips.run.completion.condition')} error={errors.endVehicleCondition} required>
             {c => <Select {...c} value={condition} disabled={busy} onChange={value => { setCondition(value); setErrors({}) }} options={[

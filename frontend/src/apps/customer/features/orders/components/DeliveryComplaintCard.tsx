@@ -10,6 +10,7 @@ import { EmptyState } from '@shared/ui/EmptyState'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { Field } from '@shared/ui/Field'
 import { FormSelect } from '@shared/ui/FormSelect'
+import { FilePreviewButton } from '@shared/ui/FilePreviewButton'
 import { Input } from '@shared/ui/Input'
 import { Skeleton } from '@shared/ui/Skeleton'
 import { Textarea } from '@shared/ui/Textarea'
@@ -24,6 +25,7 @@ export function DeliveryComplaintCard({ bookingId, horses }: Props) {
   const delivery = useDeliveryComplaint(bookingId)
   const [showForm, setShowForm] = useState(false)
   const [horseId, setHorseId] = useState('')
+  const [photos, setPhotos] = useState<File[]>([])
   const [confirmation, setConfirmation] = useState<'confirm' | FormData>()
   const selectableHorses = horses.filter(horse => horse.id != null && horse.status !== 'EXCLUDED' && horse.status !== 'CANCELLED')
 
@@ -45,6 +47,7 @@ export function DeliveryComplaintCard({ bookingId, horses }: Props) {
     if (saved) {
       setShowForm(false)
       setHorseId('')
+      setPhotos([])
     }
   }
 
@@ -76,9 +79,12 @@ export function DeliveryComplaintCard({ bookingId, horses }: Props) {
             <Field label={t('deliveryComplaint.description')} required error={delivery.fieldErrors.description}>{field => (
               <Textarea {...field} name="description" maxLength={4000} rows={3} />
             )}</Field>
-            <Field label={t('deliveryComplaint.photos')} required error={delivery.fieldErrors.photos}>{field => (
-              <Input {...field} name="photos" type="file" accept="image/*" multiple />
-            )}</Field>
+            <Field label={t('deliveryComplaint.photos')} required error={delivery.fieldErrors.photos}>{field => <>
+              <Input {...field} name="photos" type="file" accept="image/*" multiple
+                onChange={event => setPhotos(Array.from(event.currentTarget.files ?? []))} />
+              {photos.map((file, index) => <FilePreviewButton key={`${file.name}:${index}`} fileName={file.name} file={file}
+                label={t('ui.previewFile')} />)}
+            </>}</Field>
             <Button type="submit" variant="primary" loading={delivery.busy}>{t('deliveryComplaint.send')}</Button>
           </form>
         )}

@@ -115,6 +115,7 @@ export const common = {
     errorTitle: 'Không tải được dữ liệu',
     close: 'Đóng',
     cancel: 'Hủy',
+    previewFile: 'Xem',
     step: 'Bước {{current}}/{{total}}',
     stepDone: 'Đã xong',
   },

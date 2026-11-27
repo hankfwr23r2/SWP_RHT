@@ -3,6 +3,7 @@ import type { HorseDocument } from '@shared/api/horses'
 import { Button } from '@shared/ui/Button'
 import { Field } from '@shared/ui/Field'
 import { Input } from '@shared/ui/Input'
+import { FilePreviewButton } from '@shared/ui/FilePreviewButton'
 import { StatusBadge } from '@shared/ui/StatusBadge'
 import { horseDocumentName } from './horseProfileDisplay'
 import type { SelectedDocuments } from './useHorseForm'
@@ -32,9 +33,11 @@ export function HorseDocumentFields({ documents, selected, onSelect, busy }: {
       const choice = selected[code]
       return <div key={code} className={s.document}>
         <div className={s.documentHeading}><strong>{name}</strong><HorseDocumentBadge document={document} /></div>
-        {document.fileUrl && <a href={document.fileUrl} target="_blank" rel="noreferrer">
-          {document.fileName || t('horses.viewDocument')}
-        </a>}
+        {document.fileUrl && <div className={s.documentHeading}>
+          <span>{document.fileName || name}</span>
+          <FilePreviewButton fileName={document.fileName || name} fileUrl={document.fileUrl}
+            label={t('ui.previewFile')} />
+        </div>}
         {document.uploadedAt && <p className={s.subtle}>
           {t('horses.uploadedOn', { date: uploadedFormat.format(new Date(document.uploadedAt)) })}
         </p>}
@@ -53,6 +56,7 @@ export function HorseDocumentFields({ documents, selected, onSelect, busy }: {
         </Field>}
         {choice && <div className={s.documentHeading}>
           <span>{choice.file.name}</span>
+          <FilePreviewButton fileName={choice.file.name} file={choice.file} label={t('ui.previewFile')} />
           <Button size="sm" variant="ghost" disabled={busy} aria-label={t('horses.removeFile', { name: choice.file.name })}
             icon={<i className="fa-solid fa-xmark" />} onClick={() => onSelect(code)} />
         </div>}

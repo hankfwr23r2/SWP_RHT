@@ -115,6 +115,7 @@ export const common = {
     errorTitle: 'Could not load data',
     close: 'Close',
     cancel: 'Cancel',
+    previewFile: 'View',
     step: 'Step {{current}} of {{total}}',
     stepDone: 'Done',
   },

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { afterEach, expect, it } from 'vitest'
 import type { DocumentChecklist } from '@shared/api/bookingDocuments'
@@ -31,8 +31,9 @@ it('hiện hộ chiếu đã duyệt từ quy định khác và chỉ nhắc con
 
   const [reused, missing] = screen.getAllByRole('listitem').map(row => within(row))
   expect(reused.getByText('Đã duyệt')).toBeTruthy()
-  expect(reused.getByRole('link', { name: 'passport.pdf' }).getAttribute('href')).toBe('https://example.test/passport.pdf')
-  expect(reused.queryByRole('button')).toBeNull()
+  fireEvent.click(reused.getByRole('button', { name: 'Xem passport.pdf' }))
+  expect(screen.getByTitle('passport.pdf').getAttribute('src')).toBe('https://example.test/passport.pdf')
+  expect(reused.queryByRole('button', { name: 'Nộp giấy' })).toBeNull()
   expect(missing.getByRole('button', { name: 'Nộp giấy' })).toBeTruthy()
   expect(missingDocuments(checklist).map(item => item.bookingHorseId)).toEqual([22])
 })
@@ -51,7 +52,7 @@ it('hiện giấy hồ sơ đang chờ duyệt trong đơn và không yêu cầu
   render(<RouterProvider router={router} />)
 
   expect(screen.getByText('Chờ duyệt')).toBeTruthy()
-  expect(screen.getByRole('link', { name: 'passport.pdf' }).getAttribute('href')).toBe('https://example.test/passport.pdf')
+  expect(screen.getByRole('button', { name: 'Xem passport.pdf' })).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Nộp giấy' })).toBeNull()
   expect(missingDocuments(checklist)).toEqual([])
 })

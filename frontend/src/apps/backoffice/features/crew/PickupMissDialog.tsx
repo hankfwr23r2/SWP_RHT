@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import type { PickupMissReport } from '@shared/api/tripExecution'
 import { Button } from '@shared/ui/Button'
 import { Field } from '@shared/ui/Field'
+import { FilePreviewButton } from '@shared/ui/FilePreviewButton'
 import { Input } from '@shared/ui/Input'
 import { Modal } from '@shared/ui/Modal'
 import { Select } from '@shared/ui/Select'
@@ -49,7 +50,10 @@ export function PickupMissDialog({ horseLegId, name, busy, onClose, onSubmit }: 
         {props => <Input {...props} maxLength={500} value={notes[key]} onChange={e => setNotes({ ...notes, [key]: e.target.value })} />}
       </Field>)}
       <Field label={t('myTrips.run.refusal.photo')} required>
-        {props => <Input {...props} type="file" accept="image/*" capture="environment" onChange={e => setPhoto(e.target.files?.[0])} />}
+        {props => <>
+          <Input {...props} type="file" accept="image/*" capture="environment" onChange={e => setPhoto(e.target.files?.[0])} />
+          {photo && <FilePreviewButton fileName={photo.name} file={photo} label={t('ui.previewFile')} />}
+        </>}
       </Field>
     </Modal>
   )
