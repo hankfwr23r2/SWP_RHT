@@ -2,7 +2,7 @@ import { PrivateVehicleBadge } from '@shared/components/PrivateVehicleBadge'
 import { ListPanel } from '@shared/ui/ListPanel'
 import { OrderRoute } from '@shared/components/OrderRoute'
 import { Suspense, useState } from 'react'
-import { Await, Link, useRevalidator } from 'react-router'
+import { Await, Link, useRevalidator, useSearchParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import type { BookingSummary } from '@shared/api/bookingOrders'
 import { OrderStatusBadge } from '@shared/components/OrderStatusBadge'
@@ -32,7 +32,10 @@ export function OrderList(props: Props) {
 function LoadedOrders({ groups, emptyTitle, emptyHint, orders, failed }: Props & { orders?: BookingSummary[]; failed: boolean }) {
   const { t } = useTranslation()
   const { revalidate, state } = useRevalidator()
-  const [tab, setTab] = useState<OrderGroup | 'all'>('all')
+  // Trang chủ khách dẫn tới đúng nhóm đơn qua ?tab=
+  const [params] = useSearchParams()
+  const linked = params.get('tab') as OrderGroup | null
+  const [tab, setTab] = useState<OrderGroup | 'all'>(linked && groups.includes(linked) ? linked : 'all')
   const [query, setQuery] = useState('')
 
   const mine = (orders ?? []).filter(order => groups.includes(groupOf(order)))
