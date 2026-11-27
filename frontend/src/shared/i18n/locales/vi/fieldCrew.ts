@@ -223,7 +223,7 @@ export const fieldCrew = {
         "FAILED": "Không thành"
       },
       "chip": "Chip của {{name}}",
-      "scan": "Quét",
+      "scan": "Đối chiếu mã chip",
       "matched": "Đúng chip",
       "mismatched": "Sai chip",
       "notScanned": "Chưa quét",

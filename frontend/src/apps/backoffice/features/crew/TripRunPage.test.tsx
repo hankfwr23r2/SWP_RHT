@@ -225,39 +225,22 @@ it('explains why an approved stable plan cannot be carried out at the customer a
   expect(screen.queryByRole('button', { name: 'Gửi chuồng cho Chuồng Bình An' })).toBeNull()
 })
 
-it('requires a reason for a typed chip and shows the server validation at that field', async () => {
+it('submits the chip code without a separate manual-entry mode', async () => {
   crewRole = 'escort'
   const horse = { horseLegId: 31, horseName: 'Sao Mai' }
   const handover: NonNullable<CrewTrip['handovers']>[number] = {
     id: 40, handoverType: 'HUB_IN', status: 'PENDING', tripStopId: 21, horses: [horse],
   }
-  const trip = renderTrip(true, [], undefined, horses, [handover])
+  renderTrip(true, [], undefined, horses, [handover])
   const chip = await screen.findByRole('textbox', { name: 'Chip của Sao Mai' })
   expect(screen.queryByRole('textbox', { name: 'Lý do gõ tay' })).toBeNull()
-  fireEvent.click(screen.getByRole('checkbox', { name: 'Gõ tay (không quét được chip)' }))
-  const reason = screen.getByRole('textbox', { name: 'Lý do gõ tay' })
-  const check = screen.getByRole('button', { name: 'Quét' }) as HTMLButtonElement
-
-  fireEvent.change(chip, { target: { value: '985000000100002' } })
-  fireEvent.change(reason, { target: { value: '   ' } })
+  expect(screen.queryByRole('checkbox', { name: 'Gõ tay (không quét được chip)' })).toBeNull()
+  const check = screen.getByRole('button', { name: 'Đối chiếu mã chip' }) as HTMLButtonElement
   expect(check.disabled).toBe(true)
+  fireEvent.change(chip, { target: { value: '985000000100002' } })
+  expect(check.disabled).toBe(false)
   fireEvent.click(check)
-  expect(apiClient.post).not.toHaveBeenCalled()
-
-  const message = 'Vui lòng ghi lý do gõ tay mã chip.'
-  vi.mocked(apiClient.post).mockResolvedValueOnce({ status: 400, data: { message, data: { manualReason: message } } })
-  fireEvent.change(reason, { target: { value: '  Máy đọc hết pin  ' } })
-  fireEvent.click(check)
-  expect((await screen.findByRole('alert')).textContent).toBe(message)
-  expect(reason.getAttribute('aria-invalid')).toBe('true')
   expect(apiClient.post).toHaveBeenCalledWith('/handovers/40/horses', {
-    horseLegId: 31, microchip: '985000000100002', entryMethod: 'MANUAL', manualReason: 'Máy đọc hết pin', conditionNote: undefined,
+    horseLegId: 31, microchip: '985000000100002', entryMethod: 'SCAN', conditionNote: undefined,
   }, expect.any(Object))
-
-  vi.mocked(apiClient.post).mockResolvedValueOnce({ status: 200, data: { data: { ...trip, handovers: [{
-    ...handover, horses: [{ ...horse, microchipMatched: true, entryMethod: 'MANUAL', manualReason: 'Máy đọc hết pin' }],
-  }] } } })
-  fireEvent.click(check)
-  expect(await screen.findByText('Gõ tay')).toBeTruthy()
-  expect(screen.getByText('Đúng chip')).toBeTruthy()
 })
