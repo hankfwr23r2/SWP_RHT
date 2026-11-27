@@ -18,7 +18,6 @@ import com.example.racehorse_transport.dto.booking.BookingCreateRequestDto.Addre
 import com.example.racehorse_transport.dto.booking.BookingCreateRequestDto.HorseInput;
 import com.example.racehorse_transport.dto.booking.BookingCreateRequestDto.PartyInput;
 import com.example.racehorse_transport.dto.booking.InsuranceDeclarationRequestDto;
-import com.example.racehorse_transport.dto.booking.InsuranceEvidenceRequestDto;
 import com.example.racehorse_transport.dto.booking.PersonalInsuranceRevisionRequestDto;
 import com.example.racehorse_transport.entity.enums.AddressRole;
 import com.example.racehorse_transport.entity.enums.BookingPartyRole;
@@ -108,8 +107,9 @@ class PersonalInsuranceFlowTest {
                 .andExpect(jsonPath(policyNames(firstLine), contains("original.pdf")))
                 .andExpect(jsonPath(policyNames(lastLine), contains("second.pdf")));
 
-        var evidence = new InsuranceEvidenceRequestDto(insurerName, BigDecimal.valueOf(1_000_000), null, "VND", null);
-        insuranceAction(bookingId, lastInsurance, "record-evidence", assignedToken, evidence).andExpect(status().isOk());
+        // Bảo hiểm tự có không ghi báo giá: chuyên viên chỉ xem hợp đồng rồi xác nhận
+        insuranceAction(bookingId, lastInsurance, "record-evidence", assignedToken,
+                java.util.Map.of("insurerName", insurerName, "coverageAmount", 1_000_000)).andExpect(status().isConflict());
         // Mô phỏng bảo hiểm khai trước khi hệ thống bắt buộc tệp.
         jdbc.update("DELETE FROM document WHERE horse_insurance_id = ?", lastInsurance);
         insuranceAction(bookingId, lastInsurance, "confirm", assignedToken, null)
@@ -144,9 +144,6 @@ class PersonalInsuranceFlowTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[?(@.title == 'Hợp đồng bảo hiểm đã bổ sung')].linkUrl",
                         contains("/specialist/insurance/" + bookingId)));
-        var revisedEvidence = new InsuranceEvidenceRequestDto(
-                "Hãng bảo hiểm mới", BigDecimal.valueOf(1_000_000), null, "VND", null);
-        insuranceAction(bookingId, firstInsurance, "record-evidence", assignedToken, revisedEvidence).andExpect(status().isOk());
         insuranceAction(bookingId, firstInsurance, "confirm", assignedToken, null).andExpect(status().isOk());
         mvc.perform(get("/bookings/{id}/review-detail", bookingId).header(HttpHeaders.AUTHORIZATION, assignedToken))
                 .andExpect(status().isOk())

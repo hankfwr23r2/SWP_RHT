@@ -7,7 +7,6 @@ import com.example.racehorse_transport.exception.BookingRuleException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.Currency;
 
 public final class InsuranceReviewPolicy {
     public static final String POLICY_DOCUMENT_CODE = "INSURANCE_POLICY";
@@ -26,27 +25,20 @@ public final class InsuranceReviewPolicy {
         }
     }
 
+    // Chỉ bảo hiểm nhờ mua hộ có báo giá (số tiền, phí, hạn), luôn bằng VND. Bảo hiểm tự có chỉ cần tệp hợp đồng.
     public static void validateEvidence(InsuranceCoverageOption option, String insurerName, BigDecimal coverage,
-            BigDecimal premium, String currency, Instant expiresAt, Instant now) {
-        if (option == InsuranceCoverageOption.NONE) {
-            throw BookingRuleException.conflict("Miễn trách không có báo giá bảo hiểm.");
+            BigDecimal premium, Instant expiresAt, Instant now) {
+        if (option != InsuranceCoverageOption.ARRANGED) {
+            throw BookingRuleException.conflict("Chỉ bảo hiểm nhờ mua hộ mới ghi báo giá.");
         }
-        if (currency == null || !Currency.getAvailableCurrencies().stream()
-                .anyMatch(value -> value.getCurrencyCode().equals(currency))) {
-            throw new BookingRuleException("Mã tiền tệ không hợp lệ.");
+        if (insurerName == null || insurerName.isBlank() || insurerName.strip().length() > 200) {
+            throw new BookingRuleException("Cần nhập tên hãng bảo hiểm mua hộ.");
         }
-        validateAmount(coverage, currency);
-        if (option == InsuranceCoverageOption.ARRANGED) {
-            if (insurerName == null || insurerName.isBlank() || insurerName.strip().length() > 200) {
-                throw new BookingRuleException("Cần nhập tên hãng bảo hiểm mua hộ.");
-            }
-            if (!"VND".equals(currency) || !isQuoteCurrent(expiresAt, now)) {
-                throw new BookingRuleException("Bảo hiểm mua hộ cần báo giá VND còn hạn.");
-            }
-            validateAmount(premium, currency);
-        } else if (premium != null || expiresAt != null) {
-            throw new BookingRuleException("Bảo hiểm tự mua không có phí hoặc hạn báo giá mua hộ.");
+        if (!isQuoteCurrent(expiresAt, now)) {
+            throw new BookingRuleException("Bảo hiểm mua hộ cần báo giá còn hạn.");
         }
+        validateAmount(coverage);
+        validateAmount(premium);
     }
 
     public static void validateForQuoting(HorseInsurance insurance, String horseName, LocalDate pickup,
@@ -69,9 +61,9 @@ public final class InsuranceReviewPolicy {
         return expiresAt != null && expiresAt.isAfter(now);
     }
 
-    private static void validateAmount(BigDecimal amount, String currency) {
+    private static void validateAmount(BigDecimal amount) {
         if (amount == null || amount.signum() <= 0 || amount.compareTo(new BigDecimal("10000000000000")) >= 0
-                || amount.stripTrailingZeros().scale() > ("VND".equals(currency) ? 0 : 2)) {
+                || amount.stripTrailingZeros().scale() > 0) {
             throw new BookingRuleException("Số tiền bảo hiểm không hợp lệ.");
         }
     }
@@ -88,11 +80,12 @@ public final class InsuranceReviewPolicy {
             }
             return;
         }
-        validateEvidence(insurance.getCoverageOption(), insurance.getInsurerName(), insurance.getCoverageAmount(),
-                insurance.getPremiumAmount(), insurance.getCurrencyCode(), insurance.getQuoteExpiresAt(), now);
         if (insurance.getCoverageOption() == InsuranceCoverageOption.PERSONAL) {
             validatePeriod(insurance.getValidFrom(), insurance.getValidTo(), pickup, departure);
+            return;
         }
+        validateEvidence(insurance.getCoverageOption(), insurance.getInsurerName(), insurance.getCoverageAmount(),
+                insurance.getPremiumAmount(), insurance.getQuoteExpiresAt(), now);
     }
 
     public static void validatePeriod(LocalDate start, LocalDate end, LocalDate pickup, LocalDate departure) {

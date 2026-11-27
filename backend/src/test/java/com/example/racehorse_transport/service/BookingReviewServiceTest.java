@@ -316,8 +316,6 @@ class BookingReviewServiceTest {
         insurance.requestRevision(BOOKING_ID, INSURANCE_ID, "specialist", "Cập nhật hạn hợp đồng");
         insurance.revise(BOOKING_ID, INSURANCE_ID, "customer",
                 new PersonalInsuranceRevisionRequestDto("Hãng A", "new-policy", PICKUP, replacement.getDepartureDate()), FILE);
-        insurance.recordEvidence(BOOKING_ID, INSURANCE_ID,
-                new InsuranceEvidenceRequestDto("Hãng A", BigDecimal.TEN, null, "VND", null), "specialist");
         when(insurances.hasPolicyFile(INSURANCE_ID, "INSURANCE_POLICY")).thenReturn(true);
         insurance.confirm(BOOKING_ID, INSURANCE_ID, "specialist");
         assertThat(review.startQuoting(BOOKING_ID, "specialist").status()).isEqualTo(QUOTING);

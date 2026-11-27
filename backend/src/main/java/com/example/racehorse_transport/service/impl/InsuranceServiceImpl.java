@@ -90,8 +90,7 @@ public class InsuranceServiceImpl implements InsuranceService {
         HorseInsurance insurance = editableInsurance(booking, insuranceId);
         InsuranceReviewPolicy.requireStatus(insurance, HorseInsuranceStatus.DRAFT);
         InsuranceReviewPolicy.validateEvidence(insurance.getCoverageOption(), request.insurerName(),
-                request.coverageAmount(), request.premiumAmount(), request.currencyCode(),
-                request.quoteExpiresAt(), clock.instant());
+                request.coverageAmount(), request.premiumAmount(), request.quoteExpiresAt(), clock.instant());
         request.applyTo(insurance);
         insurance.setCoverageAmount(request.coverageAmount());
         insurance.setPremiumAmount(request.premiumAmount());

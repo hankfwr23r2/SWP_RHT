@@ -58,6 +58,9 @@ describe('Thao tác bảo hiểm trên hồ sơ chuyên viên', () => {
     fireEvent.click(personal.getByRole('button', { name: 'Xem policy.pdf' }))
     expect(screen.getByTitle('policy.pdf').getAttribute('src')).toBe('https://example.test/policy.pdf')
     expect(personal.getByRole('button', { name: 'Xác nhận bảo hiểm' })).toBeTruthy()
+    // Bảo hiểm tự có: xem hợp đồng rồi xác nhận, không chép số tiền hay mã tiền tệ
+    expect(personal.getAllByRole('button').map(button => button.getAttribute('aria-label') ?? button.textContent))
+      .toEqual(['Xem policy.pdf', 'Xác nhận bảo hiểm', 'Yêu cầu bổ sung bảo hiểm'])
   })
 
   it('vẫn cho yêu cầu bổ sung khi tệp chỉ thuộc con khác', () => {

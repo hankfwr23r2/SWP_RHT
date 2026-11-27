@@ -625,7 +625,7 @@ class BookingSubmissionPostgresTest {
         review.intake(id, "manager.dev", specialistId);
         Long insuranceId = queries.get(owner, id).horses().getFirst().insurance().id();
         var evidence = new com.example.racehorse_transport.dto.booking.InsuranceEvidenceRequestDto("Hãng mua hộ",
-                new BigDecimal("8000000"), new BigDecimal("2500"), "VND", clock.instant().plusSeconds(3600));
+                new BigDecimal("8000000"), new BigDecimal("2500"), clock.instant().plusSeconds(3600));
         insurance.recordEvidence(id, insuranceId, evidence, specialist);
 
         try (var executor = Executors.newFixedThreadPool(2)) {
