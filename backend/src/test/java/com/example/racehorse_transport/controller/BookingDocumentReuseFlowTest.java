@@ -435,9 +435,9 @@ class BookingDocumentReuseFlowTest {
 
     private void confirmRemainingQuoteEvidence(long line, LocalDate departure, long customer, long horse, long specialist) {
         jdbc.update("""
-                INSERT INTO horse_insurance (booking_horse_id, coverage_option, insurer_name, coverage_amount,
+                INSERT INTO horse_insurance (booking_horse_id, coverage_option, insurer_name,
                         currency_code, policy_number, valid_from, valid_to, status, confirmed_by, confirmed_at)
-                VALUES (?, 'PERSONAL', 'Hãng bảo hiểm mẫu', 100000000,
+                VALUES (?, 'PERSONAL', 'Hãng bảo hiểm mẫu',
                         'VND', 'F9-POLICY', ?, ?, 'CONFIRMED', ?, now())
                 """, line, departure.minusDays(1), departure, specialist);
         jdbc.update("""

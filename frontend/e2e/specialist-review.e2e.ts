@@ -170,7 +170,10 @@ test('tìm không dấu, đổi thẻ và mở giấy tờ chuyến đi ở 360p
 
 test('duyệt giấy từng ngựa, từ chối kèm lý do và nộp giấy thay người nhận', async ({ page }) => {
   const { calls } = await open(page, detailPath)
-  await expect(page.getByRole('link', { name: 'Xem passport.pdf' })).toHaveAttribute('href', 'https://example.test/passport.pdf')
+  await page.getByRole('button', { name: 'Xem passport.pdf' }).click()
+  const passport = page.getByRole('dialog', { name: 'passport.pdf' })
+  await expect(passport.getByRole('link', { name: 'Mở trong tab mới' })).toHaveAttribute('href', 'https://example.test/passport.pdf')
+  await passport.getByRole('button', { name: 'Đóng' }).click()
   await confirm(page, 'Duyệt giấy')
   await expect(page.getByText('Đã đáp ứng', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Con sau' }).click()
@@ -222,18 +225,19 @@ test('chuyên viên thu hồi giấy đã duyệt và thấy yêu cầu giấy t
 
 test('ghi báo giá và xác nhận bảo hiểm, mở lại và yêu cầu bổ sung', async ({ page }) => {
   const { calls } = await open(page, insuranceDetailPath)
-  await expect(page.getByRole('link', { name: 'Xem policy.pdf' })).toHaveAttribute('href', 'https://example.test/policy.pdf')
+  await page.getByRole('button', { name: 'Xem policy.pdf' }).click()
+  const preview = page.getByRole('dialog', { name: 'Xem tài liệu policy.pdf' })
+  await expect(preview.getByRole('link', { name: 'Mở tab mới' })).toHaveAttribute('href', 'https://example.test/policy.pdf')
+  await preview.getByRole('button', { name: 'Đóng' }).click()
   await page.getByRole('button', { name: 'Ghi báo giá bảo hiểm', exact: true }).click()
   const evidence = page.getByRole('dialog')
   await evidence.getByLabel('Hãng bảo hiểm').fill('Hãng A')
-  await evidence.getByLabel('Số tiền bảo hiểm').fill('10000000')
   await evidence.getByLabel('Phí bảo hiểm').fill('300000')
-  await evidence.getByLabel('Mã tiền tệ').fill('VND')
   await evidence.getByLabel('Hạn báo giá bảo hiểm (giờ Việt Nam)', { exact: false }).fill('2099-01-20T13:00')
   await evidence.getByRole('button', { name: 'Ghi báo giá bảo hiểm', exact: true }).click()
   await expect(evidence).toHaveCount(0)
   expect(calls[0]).toEqual({ path: `${insurancePath}/32/record-evidence`, body: {
-    insurerName: 'Hãng A', coverageAmount: 10000000, premiumAmount: 300000, currencyCode: 'VND', quoteExpiresAt: '2099-01-20T06:00:00.000Z',
+    insurerName: 'Hãng A', premiumAmount: 300000, quoteExpiresAt: '2099-01-20T06:00:00.000Z',
   } })
   const arranged = page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: 'Sao Mai', exact: true }) })
   await arranged.getByRole('button', { name: 'Xác nhận bảo hiểm', exact: true }).click()

@@ -1162,7 +1162,6 @@ Index: `document_id`.
 | `booking_horse_id` | `bigint` | | UK, FK → booking_horse, CASCADE | |
 | `coverage_option` | `varchar(30)` | | CK `PERSONAL, ARRANGED, NONE` | Khách tự mua / công ty mua giúp / không mua |
 | `insurer_name` | `varchar(200)` | có | | Tên hãng ghi theo hợp đồng hoặc báo giá |
-| `coverage_amount` | `numeric(15,2)` | có | CK `> 0` | |
 | `premium_amount` | `numeric(15,2)` | có | CK `>= 0` | Phí bảo hiểm |
 | `currency_code` | `char(3)` | có | | |
 | `quote_expires_at` | `timestamptz` | có | | Hạn của báo giá bảo hiểm |
@@ -1180,7 +1179,7 @@ Index: `document_id`.
 Ràng buộc bảng:
 - `CHECK (status <> 'CONFIRMED' OR coverage_option <> 'ARRANGED' OR (insurer_name IS NOT NULL AND btrim(insurer_name) <> ''))`
 - `CHECK (coverage_option <> 'NONE' OR waiver_terms_acceptance_id IS NOT NULL)`
-- `CHECK (status <> 'CONFIRMED' OR coverage_option = 'NONE' OR (coverage_amount IS NOT NULL AND currency_code IS NOT NULL))`
+- `CHECK (status <> 'CONFIRMED' OR coverage_option <> 'ARRANGED' OR currency_code IS NOT NULL)`
 - `CHECK (status <> 'REVISION_REQUESTED' OR (revision_reason IS NOT NULL AND revision_requested_at IS NOT NULL))`. Chỉ được yêu cầu bổ sung khi `coverage_option = PERSONAL` (kiểm ở service).
 - `CHECK (status <> 'CONFIRMED' OR (confirmed_by IS NOT NULL AND confirmed_at IS NOT NULL))`
 

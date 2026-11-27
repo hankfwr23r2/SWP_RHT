@@ -14,23 +14,22 @@ import org.junit.jupiter.api.Test;
 
 class InsuranceReviewPolicyTest {
     private static final Instant NOW = Instant.parse("2026-11-23T00:00:00Z");
-    private static final BigDecimal COVERAGE = new BigDecimal("1500000.00");
     private static final BigDecimal PREMIUM = new BigDecimal("2500");
 
     @Test
-    void arrangedRequiresPositiveWholeVndAndAnUnexpiredQuote() {
-        assertThatCode(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, "Hãng A", COVERAGE, PREMIUM, "VND",
+    void arrangedRequiresAnInsurerPositiveWholePremiumAndAnUnexpiredQuote() {
+        assertThatCode(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, "Hãng A", PREMIUM,
                 NOW.plusSeconds(1), NOW)).doesNotThrowAnyException();
-        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, "Hãng A", COVERAGE, new BigDecimal("2.5"),
-                "VND", NOW.plusSeconds(1), NOW)).isInstanceOf(BookingRuleException.class);
-        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, "Hãng A", COVERAGE, PREMIUM, "VND",
+        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, "Hãng A", new BigDecimal("2.5"),
+                NOW.plusSeconds(1), NOW)).isInstanceOf(BookingRuleException.class);
+        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, "Hãng A", PREMIUM,
                 NOW, NOW)).isInstanceOf(BookingRuleException.class);
-        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, "Hãng A", COVERAGE, PREMIUM, "USD",
+        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(PERSONAL, "Hãng A", PREMIUM,
+                null, NOW)).isInstanceOf(BookingRuleException.class);
+        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, " ", PREMIUM,
                 NOW.plusSeconds(1), NOW)).isInstanceOf(BookingRuleException.class);
-        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, " ", COVERAGE, PREMIUM, "VND",
+        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, "A".repeat(201), PREMIUM,
                 NOW.plusSeconds(1), NOW)).isInstanceOf(BookingRuleException.class);
-        assertThatThrownBy(() -> InsuranceReviewPolicy.validateEvidence(ARRANGED, "A".repeat(201), COVERAGE, PREMIUM,
-                "VND", NOW.plusSeconds(1), NOW)).isInstanceOf(BookingRuleException.class);
     }
 
     @Test
@@ -44,13 +43,11 @@ class InsuranceReviewPolicyTest {
     }
 
     @Test
-    void personalInsuranceNeedsAFileEvenWhenDatesAndEvidenceAreValid() {
+    void personalInsuranceNeedsOnlyAFileAndAValidPeriod() {
         LocalDate pickup = LocalDate.of(2026, 11, 23);
         HorseInsurance insurance = new HorseInsurance();
         insurance.setCoverageOption(PERSONAL);
         insurance.setStatus(HorseInsuranceStatus.DRAFT);
-        insurance.setCoverageAmount(COVERAGE);
-        insurance.setCurrencyCode("VND");
         insurance.setValidFrom(pickup);
         insurance.setValidTo(pickup.plusDays(1));
 

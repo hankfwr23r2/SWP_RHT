@@ -71,10 +71,17 @@ DECLARE
     v_pass      numeric(15, 2);
     v_deposit   numeric(15, 2);
     v_pickup    date;
+    v_has_coverage_amount boolean;
 BEGIN
     IF EXISTS (SELECT 1 FROM booking WHERE code = 'DEV-DIRECT-001') THEN
         RETURN;
     END IF;
+
+    -- Migration tests replay this seed on schemas both before and after the column removal.
+    SELECT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'horse_insurance' AND column_name = 'coverage_amount'
+    ) INTO v_has_coverage_amount;
 
     SELECT c.user_id INTO v_user
     FROM customer c JOIN app_user u ON u.id = c.user_id
@@ -111,8 +118,13 @@ BEGIN
 
     SELECT id INTO v_horse FROM horse WHERE microchip = '985000000100001';
     INSERT INTO booking_horse (booking_id, horse_id, stall_type_code, status) VALUES (v_booking, v_horse, 'STANDARD', 'ACTIVE') RETURNING id INTO v_line;
-    INSERT INTO horse_insurance (booking_horse_id, coverage_option, coverage_amount, currency_code, policy_number, valid_from, valid_to, status, confirmed_by, confirmed_at)
-    VALUES (v_line, 'PERSONAL', 500000000, 'VND', 'POL-DEV-0001', v_pickup - 1, v_pickup + 30, 'CONFIRMED', v_specialist, now());
+    IF v_has_coverage_amount THEN
+        INSERT INTO horse_insurance (booking_horse_id, coverage_option, coverage_amount, currency_code, policy_number, valid_from, valid_to, status, confirmed_by, confirmed_at)
+        VALUES (v_line, 'PERSONAL', 500000000, 'VND', 'POL-DEV-0001', v_pickup - 1, v_pickup + 30, 'CONFIRMED', v_specialist, now());
+    ELSE
+        INSERT INTO horse_insurance (booking_horse_id, coverage_option, currency_code, policy_number, valid_from, valid_to, status, confirmed_by, confirmed_at)
+        VALUES (v_line, 'PERSONAL', 'VND', 'POL-DEV-0001', v_pickup - 1, v_pickup + 30, 'CONFIRMED', v_specialist, now());
+    END IF;
 
     INSERT INTO quotation (booking_id, version, price_list_id, currency_code, deposit_rate, expires_at, confirmed_pickup_date, confirmed_departure_date,
                            estimated_delivery_date, total_amount, pass_through_amount, deposit_amount, status, sent_by, sent_at, accepted_at)
@@ -149,8 +161,13 @@ BEGIN
 
     FOR v_horse IN SELECT id FROM horse WHERE microchip IN ('985000000100002', '985000000100003') ORDER BY id LOOP
         INSERT INTO booking_horse (booking_id, horse_id, stall_type_code, status) VALUES (v_booking, v_horse, 'STANDARD', 'ACTIVE') RETURNING id INTO v_line;
-        INSERT INTO horse_insurance (booking_horse_id, coverage_option, coverage_amount, currency_code, policy_number, valid_from, valid_to, status, confirmed_by, confirmed_at)
-        VALUES (v_line, 'PERSONAL', 500000000, 'VND', 'POL-DEV-' || v_horse, v_pickup - 1, v_pickup + 30, 'CONFIRMED', v_specialist, now());
+        IF v_has_coverage_amount THEN
+            INSERT INTO horse_insurance (booking_horse_id, coverage_option, coverage_amount, currency_code, policy_number, valid_from, valid_to, status, confirmed_by, confirmed_at)
+            VALUES (v_line, 'PERSONAL', 500000000, 'VND', 'POL-DEV-' || v_horse, v_pickup - 1, v_pickup + 30, 'CONFIRMED', v_specialist, now());
+        ELSE
+            INSERT INTO horse_insurance (booking_horse_id, coverage_option, currency_code, policy_number, valid_from, valid_to, status, confirmed_by, confirmed_at)
+            VALUES (v_line, 'PERSONAL', 'VND', 'POL-DEV-' || v_horse, v_pickup - 1, v_pickup + 30, 'CONFIRMED', v_specialist, now());
+        END IF;
     END LOOP;
     UPDATE departure SET booked_stall_count = booked_stall_count + 2 WHERE id = v_dep;
 
@@ -195,8 +212,13 @@ BEGIN
 
     SELECT id INTO v_horse FROM horse WHERE microchip = '985000000100004';
     INSERT INTO booking_horse (booking_id, horse_id, stall_type_code, status) VALUES (v_booking, v_horse, 'STANDARD', 'ACTIVE') RETURNING id INTO v_line;
-    INSERT INTO horse_insurance (booking_horse_id, coverage_option, coverage_amount, currency_code, policy_number, valid_from, valid_to, status, confirmed_by, confirmed_at)
-    VALUES (v_line, 'PERSONAL', 800000000, 'VND', 'POL-DEV-0004', v_pickup - 1, v_pickup + 45, 'CONFIRMED', v_specialist, now());
+    IF v_has_coverage_amount THEN
+        INSERT INTO horse_insurance (booking_horse_id, coverage_option, coverage_amount, currency_code, policy_number, valid_from, valid_to, status, confirmed_by, confirmed_at)
+        VALUES (v_line, 'PERSONAL', 800000000, 'VND', 'POL-DEV-0004', v_pickup - 1, v_pickup + 45, 'CONFIRMED', v_specialist, now());
+    ELSE
+        INSERT INTO horse_insurance (booking_horse_id, coverage_option, currency_code, policy_number, valid_from, valid_to, status, confirmed_by, confirmed_at)
+        VALUES (v_line, 'PERSONAL', 'VND', 'POL-DEV-0004', v_pickup - 1, v_pickup + 45, 'CONFIRMED', v_specialist, now());
+    END IF;
     UPDATE departure SET booked_stall_count = booked_stall_count + 1 WHERE id = v_dep;
 
     INSERT INTO quotation (booking_id, version, price_list_id, currency_code, deposit_rate, expires_at, confirmed_pickup_date, confirmed_departure_date,
