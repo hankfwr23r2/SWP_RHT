@@ -44,6 +44,9 @@ public class HealthCheckTaskServiceImpl implements HealthCheckTaskService {
     public HealthCheckTaskResponseDto assign(HealthCheckTaskCreateRequestDto request, String username) {
         Staff coordinator = actor(username);
         Target target = target(request.bookingHorseId(), request.vehicleTripId(), request.horseStayId(), true);
+        if (target.stay() != null && request.checkType() == HealthCheckType.BEFORE_DEPARTURE) {
+            throw new DispatchRuleException("checkType", "Giao khám trước khi khởi hành từ danh sách ngựa của lượt xe trục.", false);
+        }
         Instant now = clock.instant();
         Staff escort = staff.findById(request.assignedTo())
                 .filter(person -> eligible(person, target, handlerId(target)))

@@ -42,6 +42,7 @@ function AssignmentDialog({ target, horseName, onChanged, onClose }: {
   const [confirm, setConfirm] = useState(false)
   const [cancelId, setCancelId] = useState<number>()
   const [reason, setReason] = useState('')
+  const availableTypes = TYPES.filter(value => target.horseStayId == null || value !== 'BEFORE_DEPARTURE')
 
   if (cancelId != null) return (
     <ConfirmDialog title={t('healthCheckTasks.cancel')} tone="danger"
@@ -85,7 +86,7 @@ function AssignmentDialog({ target, horseName, onChanged, onClose }: {
             </Field>
             <Field label={t('healthCheckTasks.type')} error={errors.checkType} required>
               {control => <Select {...control} value={type} onChange={value => setType(value as HealthCheckTaskDraft['checkType'])}
-                options={TYPES.map(value => ({ value, label: t(`healthCheckTasks.types.${value}`) }))} />}
+                options={availableTypes.map(value => ({ value, label: t(`healthCheckTasks.types.${value}`) }))} />}
             </Field>
             <Field label={t('healthCheckTasks.due')} error={errors.dueAt} required>
               {control => <Input {...control} type="datetime-local" value={due} onChange={event => setDue(event.target.value)} required />}

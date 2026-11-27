@@ -464,6 +464,8 @@ Việc chăm sóc suy ra từ nơi ngựa đang ở, nên đổi người thì v
 
 #### 7.3 Chặng trục chính
 
+Trước khi tài xế bấm **Xuất phát**, mỗi con lên xe tại hub đầu cần hoàn tất việc **Trước khi khởi hành** của lượt trục đó. Điều phối giao loại việc này từ danh sách ngựa của lượt. Hệ thống kiểm lại khi bàn giao ngựa ra hub.
+
 | Việc | Bảng |
 |---|---|
 | Chuyến bắt đầu | `departure.status = IN_PROGRESS`, `vehicle_trip` LINEHAUL IN_PROGRESS |

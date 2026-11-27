@@ -10,9 +10,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.example.racehorse_transport.PostgresIntegrationTest;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.security.JwtUtils;
+import com.example.racehorse_transport.support.HubExitCheckFixtures;
 import com.example.racehorse_transport.support.TestData;
 import com.jayway.jsonpath.JsonPath;
 import jakarta.persistence.EntityManager;
+import java.time.Clock;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,6 +39,7 @@ class StallPlanFlowTest {
     @Autowired private TestData testData;
     @Autowired private JwtUtils jwtUtils;
     @Autowired private EntityManager entityManager;
+    @Autowired private Clock clock;
 
     private String coordinator;
     private String driver;
@@ -110,8 +113,9 @@ class StallPlanFlowTest {
 
     @Test
     void planIsLockedOnceTheVehicleDeparts() throws Exception {
-        assign(lines.get(0)).andExpect(status().isCreated());
-        long standard = legOf(lines.get(0));
+        long horse = lines.getFirst();
+        assign(horse).andExpect(status().isCreated());
+        long standard = legOf(horse);
         Staff escortStaff = testData.staff(testData.unique("stall.escort"), "ESCORT");
         for (Staff member : List.of(driverStaff, escortStaff)) {
             String role = member == driverStaff ? "DRIVER" : "ESCORT";
@@ -130,13 +134,46 @@ class StallPlanFlowTest {
                 .andExpect(jsonPath("$.message", startsWith("Còn ngựa chưa có vị trí khoang")));
         mvc.perform(post("/vehicle-trips/{id}/stall-plan/apply", trip).header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"horses\":[{\"horseLegId\":%d,\"stallPosition\":1}]}".formatted(standard))).andExpect(status().isOk());
-        mvc.perform(post("/vehicle-trips/{id}/start", trip).header(HttpHeaders.AUTHORIZATION, driver)
-                .contentType(MediaType.APPLICATION_JSON).content("{\"earlyReason\":\"Đã sẵn sàng xuất phát sớm\"}")).andExpect(status().isOk());
+
+        entityManager.flush();
+        long stay = jdbc.queryForObject("""
+                INSERT INTO horse_stay (booking_horse_id, location_id, stay_type, planned_start_at, planned_end_at, actual_start_at)
+                SELECT ?, location_id, 'ASSEMBLY', now(), now() + interval '1 hour', now()
+                FROM trip_stop WHERE id = ? RETURNING id
+                """, Long.class, horse, stops.getFirst());
+        long coordinatorId = jdbc.queryForObject("SELECT coordinator_id FROM vehicle_trip WHERE id = ?", Long.class, trip);
+        // Dữ liệu cũ cho phép hoàn tất khám trước khi khởi hành trên ca lưu trú.
+        HubExitCheckFixtures.collectionDone(jdbc, stay, coordinatorId);
+        jdbc.update("UPDATE health_check_task SET check_type = 'BEFORE_DEPARTURE' WHERE horse_stay_id = ?", stay);
+        start().andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message", startsWith("Chưa khám trước khi chạy: ")));
+
+        var assignment = mvc.perform(post("/health-check-tasks").header(HttpHeaders.AUTHORIZATION, coordinator)
+                .contentType(MediaType.APPLICATION_JSON).content("""
+                        {"bookingHorseId":%d,"vehicleTripId":%d,"assignedTo":%d,"checkType":"BEFORE_DEPARTURE","dueAt":"%s"}
+                        """.formatted(horse, trip, escortStaff.getUserId(), clock.instant().plusSeconds(3600))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.status").value("ASSIGNED"));
+        start().andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message", startsWith("Chưa khám trước khi chạy: ")));
+
+        long check = ((Number) JsonPath.read(assignment.andReturn().getResponse().getContentAsString(), "$.data.id")).longValue();
+        String escort = token(escortStaff, "ESCORT");
+        mvc.perform(post("/health-check-tasks/{id}/accept", check).header(HttpHeaders.AUTHORIZATION, escort))
+                .andExpect(status().isOk());
+        mvc.perform(post("/health-logs").header(HttpHeaders.AUTHORIZATION, escort).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"bookingHorseId\":%d,\"horseStayId\":%d,\"healthStatus\":\"NORMAL\"}".formatted(horse, stay)))
+                .andExpect(status().isCreated());
+        start().andExpect(status().isOk());
 
         apply(List.of(new long[] {standard, 1, 2})).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Lượt xe đã xuất phát hoặc đã kết thúc, sơ đồ khoang đã khóa."));
         mvc.perform(get("/vehicle-trips/{id}/stall-plan", trip).header(HttpHeaders.AUTHORIZATION, driver))
                 .andExpect(jsonPath("$.data.editable").value(false)).andExpect(jsonPath("$.data.horses[0].stallPosition").value(1));
+    }
+
+    private ResultActions start() throws Exception {
+        return mvc.perform(post("/vehicle-trips/{id}/start", trip).header(HttpHeaders.AUTHORIZATION, driver)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"earlyReason\":\"Đã sẵn sàng xuất phát sớm\"}"));
     }
 
     private ResultActions assign(long line) throws Exception {

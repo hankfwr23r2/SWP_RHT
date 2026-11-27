@@ -117,6 +117,13 @@ class HealthCheckTaskFlowTest {
         assignRequest(Long.MAX_VALUE, escort).andExpect(status().isConflict());
     }
 
+    @Test
+    void beforeDepartureCheckRequiresATripTarget() throws Exception {
+        assignRequest(horse, escort, "BEFORE_DEPARTURE").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.data.checkType").value("Giao khám trước khi khởi hành từ danh sách ngựa của lượt xe trục."));
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM health_check_task WHERE horse_stay_id = ?", Long.class, stay)).isZero();
+    }
+
     private long assign() throws Exception {
         Number id = JsonPath.read(assignRequest(horse, escort).andExpect(status().isOk()).andReturn()
                 .getResponse().getContentAsString(), "$.data.id");
@@ -124,10 +131,14 @@ class HealthCheckTaskFlowTest {
     }
 
     private ResultActions assignRequest(long horseId, Staff assignee) throws Exception {
+        return assignRequest(horseId, assignee, "ROUTINE");
+    }
+
+    private ResultActions assignRequest(long horseId, Staff assignee, String checkType) throws Exception {
         return mvc.perform(post("/health-check-tasks").header(HttpHeaders.AUTHORIZATION, token(coordinator, "COORDINATOR"))
                 .contentType(MediaType.APPLICATION_JSON).content("""
-                        {"bookingHorseId":%d,"horseStayId":%d,"assignedTo":%d,"checkType":"ROUTINE","dueAt":"%s"}
-                        """.formatted(horseId, stay, assignee.getUserId(), clock.instant().plusSeconds(3600))));
+                        {"bookingHorseId":%d,"horseStayId":%d,"assignedTo":%d,"checkType":"%s","dueAt":"%s"}
+                        """.formatted(horseId, stay, assignee.getUserId(), checkType, clock.instant().plusSeconds(3600))));
     }
 
     private ResultActions log(Staff recorder) throws Exception {

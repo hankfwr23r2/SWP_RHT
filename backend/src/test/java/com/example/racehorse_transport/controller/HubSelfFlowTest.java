@@ -174,7 +174,11 @@ class HubSelfFlowTest {
         assertThat(customerNotices(booking)).contains("Đã nhận ngựa");
 
         acknowledge();
-        act(driver, "/vehicle-trips/" + trip + "/start").andExpect(status().isOk());
+        act(driver, "/vehicle-trips/" + trip + "/start").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message", startsWith("Chưa khám trước khi chạy: ")));
+        assertThat(jdbc.queryForObject("SELECT actual_start_at IS NULL FROM vehicle_trip WHERE id = ?", Boolean.class, trip)).isTrue();
+        // Một lượt đã bắt đầu từ trước vẫn cần qua kiểm tra khám ở bước HUB_OUT.
+        sql("UPDATE vehicle_trip SET status = 'IN_PROGRESS', actual_start_at = now() WHERE id = " + trip);
         act(driver, "/trip-stops/" + stops.getFirst() + "/arrive").andExpect(status().isOk());
         for (int attempt = 0; attempt < 2; attempt++) {
             mvc.perform(post("/trip-stops/{id}/handovers", stops.getFirst()).header(HttpHeaders.AUTHORIZATION, escort)

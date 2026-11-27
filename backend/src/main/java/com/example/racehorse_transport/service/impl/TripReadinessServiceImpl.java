@@ -11,6 +11,7 @@ import com.example.racehorse_transport.entity.enums.IncidentSeverity;
 import com.example.racehorse_transport.entity.enums.TripStopType;
 import com.example.racehorse_transport.entity.enums.VehicleStatus;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
+import com.example.racehorse_transport.entity.enums.VehicleTripType;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.IncidentPolicy;
@@ -100,8 +101,14 @@ public class TripReadinessServiceImpl implements TripReadinessService {
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
     public void requireReadyToStart(VehicleTrip trip) {
+        var tripStops = stops.findByVehicleTrip_IdOrderBySequenceNumber(trip.getId());
+        if (trip.getTripType() == VehicleTripType.LINEHAUL && !tripStops.isEmpty()
+                && tripStops.getFirst().getStopType() == TripStopType.HUB) {
+            legs.findByBoardTripStop_IdAndStatusIn(tripStops.getFirst().getId(), Set.of(HorseLegStatus.PLANNED))
+                    .forEach(handoverReadiness::requireHubExitCheck);
+        }
         Map<Long, Booking> bookings = new TreeMap<>();
-        for (TripStop stop : stops.findByVehicleTrip_IdOrderBySequenceNumber(trip.getId())) {
+        for (TripStop stop : tripStops) {
             if (stop.getStopType() != TripStopType.PICKUP) continue;
             for (HorseLeg leg : legs.findByBoardTripStop_IdAndStatusIn(stop.getId(), Set.of(HorseLegStatus.PLANNED))) {
                 var horse = leg.getBookingHorse();

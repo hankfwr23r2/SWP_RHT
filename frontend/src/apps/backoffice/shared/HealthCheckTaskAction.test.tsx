@@ -30,6 +30,22 @@ it('confirms an assignment to an eligible escort for the exact stay', async () =
   }, expect.anything()))
 })
 
+it('offers before-departure checks for trip assignments and omits them for stays', async () => {
+  vi.mocked(apiClient.get).mockImplementation(async (url: string) => ({
+    data: { data: url.endsWith('/assignees') ? [{ id: 11, name: 'Lan' }] : [] },
+  }))
+  const { rerender } = render(<ToastProvider><HealthCheckTaskAction key="stay" bookingHorseId={3} horseStayId={7} /></ToastProvider>)
+  fireEvent.click(screen.getByRole('button', { name: 'Giao khám' }))
+  fireEvent.click(await screen.findByRole('combobox', { name: 'Loại khám' }))
+  expect(screen.getByRole('option', { name: 'Trước khi giao' })).toBeTruthy()
+  expect(screen.queryByRole('option', { name: 'Trước khi khởi hành' })).toBeNull()
+
+  rerender(<ToastProvider><HealthCheckTaskAction key="trip" bookingHorseId={3} vehicleTripId={8} /></ToastProvider>)
+  fireEvent.click(screen.getByRole('button', { name: 'Giao khám' }))
+  fireEvent.click(await screen.findByRole('combobox', { name: 'Loại khám' }))
+  expect(screen.getByRole('option', { name: 'Trước khi khởi hành' })).toBeTruthy()
+})
+
 it('offers a retry when eligible escorts cannot be loaded', async () => {
   vi.mocked(apiClient.get).mockImplementation(async (url: string) => {
     if (url.endsWith('/assignees')) throw new Error('Unavailable')

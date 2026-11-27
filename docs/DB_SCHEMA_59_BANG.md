@@ -1772,7 +1772,7 @@ Các quy tắc dưới đây cần so dữ liệu ở nhiều bảng nên CHECK 
 | 38 | Hộ tống không kết thúc ca hoặc lượt xe khi còn phụ trách ngựa chưa bàn giao. Người ký nhận phải đang trong ca, có mặt ở nơi đó, và đã xem phiếu tóm tắt của từng con | handover, vehicle_trip |
 | 39 | Trên cùng một đoạn đường của lượt xe, hai con không trùng `stall_position`. Khoang rộng chiếm hai vị trí liền nhau **bất kỳ** (vách di động). Vị trí cuối không vượt số chỗ của xe (quy tắc #9) | horse_leg, vehicle, trip_stop |
 | 40 | Sơ đồ chốt **trước khi lượt xe bắt đầu**: mọi con của lượt xe phải có `stall_position` thì mới cho bắt đầu. Lượt xe đã bắt đầu thì khóa cả sơ đồ, kể cả các con đón ở điểm dừng sau. Lưu sơ đồ phải khóa `vehicle_trip` và lưu cả xe trong một giao dịch | horse_leg, vehicle_trip |
-| 42 | Khi hoàn tất `HUB_OUT` của lượt `LINEHAUL` hoặc `DELIVERY`, mỗi con ra hub phải có việc `BEFORE_DEPARTURE` hoặc `BEFORE_DELIVERY` tương ứng ở trạng thái `DONE`, gắn đúng lượt. Khi hoàn tất giao cho người nhận tại hub, cần việc `BEFORE_DELIVERY` `DONE` gắn đúng ca lưu trú. Lượt `TRANSFER` và đưa ngựa về hub do sự cố được miễn | handover, health_check_task, vehicle_trip, horse_stay |
+| 42 | Trước khi bắt đầu lượt `LINEHAUL`, mỗi con lên xe ở hub đầu phải có việc `BEFORE_DEPARTURE` ở trạng thái `DONE`, gắn đúng lượt trục. Việc `BEFORE_DEPARTURE` được giao theo lượt xe. Khi hoàn tất `HUB_OUT` của lượt `LINEHAUL` hoặc `DELIVERY`, mỗi con ra hub phải có việc `BEFORE_DEPARTURE` hoặc `BEFORE_DELIVERY` tương ứng ở trạng thái `DONE`, gắn đúng lượt. Khi hoàn tất giao cho người nhận tại hub, cần việc `BEFORE_DELIVERY` `DONE` gắn đúng ca lưu trú. Lượt `TRANSFER` và đưa ngựa về hub do sự cố được miễn | handover, health_check_task, vehicle_trip, horse_stay |
 
 ### Bổ sung đợt 2
 
