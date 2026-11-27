@@ -25,9 +25,9 @@ public final class InsuranceReviewPolicy {
         }
     }
 
-    // Chỉ bảo hiểm nhờ mua hộ có báo giá (số tiền, phí, hạn), luôn bằng VND. Bảo hiểm tự có chỉ cần tệp hợp đồng.
-    public static void validateEvidence(InsuranceCoverageOption option, String insurerName, BigDecimal coverage,
-            BigDecimal premium, Instant expiresAt, Instant now) {
+    // Bảo hiểm mua hộ cần hãng, phí và hạn báo giá; bảo hiểm tự có chỉ cần tệp hợp đồng.
+    public static void validateEvidence(InsuranceCoverageOption option, String insurerName, BigDecimal premium,
+            Instant expiresAt, Instant now) {
         if (option != InsuranceCoverageOption.ARRANGED) {
             throw BookingRuleException.conflict("Chỉ bảo hiểm nhờ mua hộ mới ghi báo giá.");
         }
@@ -37,8 +37,7 @@ public final class InsuranceReviewPolicy {
         if (!isQuoteCurrent(expiresAt, now)) {
             throw new BookingRuleException("Bảo hiểm mua hộ cần báo giá còn hạn.");
         }
-        validateAmount(coverage);
-        validateAmount(premium);
+        validatePremium(premium);
     }
 
     public static void validateForQuoting(HorseInsurance insurance, String horseName, LocalDate pickup,
@@ -61,10 +60,10 @@ public final class InsuranceReviewPolicy {
         return expiresAt != null && expiresAt.isAfter(now);
     }
 
-    private static void validateAmount(BigDecimal amount) {
-        if (amount == null || amount.signum() <= 0 || amount.compareTo(new BigDecimal("10000000000000")) >= 0
-                || amount.stripTrailingZeros().scale() > 0) {
-            throw new BookingRuleException("Số tiền bảo hiểm không hợp lệ.");
+    private static void validatePremium(BigDecimal premium) {
+        if (premium == null || premium.signum() <= 0 || premium.compareTo(new BigDecimal("10000000000000")) >= 0
+                || premium.stripTrailingZeros().scale() > 0) {
+            throw new BookingRuleException("Phí bảo hiểm không hợp lệ.");
         }
     }
 
@@ -84,8 +83,8 @@ public final class InsuranceReviewPolicy {
             validatePeriod(insurance.getValidFrom(), insurance.getValidTo(), pickup, departure);
             return;
         }
-        validateEvidence(insurance.getCoverageOption(), insurance.getInsurerName(), insurance.getCoverageAmount(),
-                insurance.getPremiumAmount(), insurance.getQuoteExpiresAt(), now);
+        validateEvidence(insurance.getCoverageOption(), insurance.getInsurerName(), insurance.getPremiumAmount(),
+                insurance.getQuoteExpiresAt(), now);
     }
 
     public static void validatePeriod(LocalDate start, LocalDate end, LocalDate pickup, LocalDate departure) {

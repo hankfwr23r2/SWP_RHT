@@ -90,9 +90,8 @@ public class InsuranceServiceImpl implements InsuranceService {
         HorseInsurance insurance = editableInsurance(booking, insuranceId);
         InsuranceReviewPolicy.requireStatus(insurance, HorseInsuranceStatus.DRAFT);
         InsuranceReviewPolicy.validateEvidence(insurance.getCoverageOption(), request.insurerName(),
-                request.coverageAmount(), request.premiumAmount(), request.quoteExpiresAt(), clock.instant());
+                request.premiumAmount(), request.quoteExpiresAt(), clock.instant());
         request.applyTo(insurance);
-        insurance.setCoverageAmount(request.coverageAmount());
         insurance.setPremiumAmount(request.premiumAmount());
     }
 
@@ -181,7 +180,6 @@ public class InsuranceServiceImpl implements InsuranceService {
                 booking.getRequestedPickupDate(), departureDate(booking));
         attachPolicyFile(insurance, file, booking.getCustomer().getUserId());
         request.applyTo(insurance);
-        insurance.setCoverageAmount(null);
         insurance.setCurrencyCode(null);
         insurance.setStatus(HorseInsuranceStatus.DRAFT);
         var recipients = assignments.recipients(booking);

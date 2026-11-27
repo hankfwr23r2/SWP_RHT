@@ -232,13 +232,12 @@ test('ghi báo giá và xác nhận bảo hiểm, mở lại và yêu cầu bổ
   await page.getByRole('button', { name: 'Ghi báo giá bảo hiểm', exact: true }).click()
   const evidence = page.getByRole('dialog')
   await evidence.getByLabel('Hãng bảo hiểm').fill('Hãng A')
-  await evidence.getByLabel('Số tiền bảo hiểm').fill('10000000')
   await evidence.getByLabel('Phí bảo hiểm').fill('300000')
   await evidence.getByLabel('Hạn báo giá bảo hiểm (giờ Việt Nam)', { exact: false }).fill('2099-01-20T13:00')
   await evidence.getByRole('button', { name: 'Ghi báo giá bảo hiểm', exact: true }).click()
   await expect(evidence).toHaveCount(0)
   expect(calls[0]).toEqual({ path: `${insurancePath}/32/record-evidence`, body: {
-    insurerName: 'Hãng A', coverageAmount: 10000000, premiumAmount: 300000, quoteExpiresAt: '2099-01-20T06:00:00.000Z',
+    insurerName: 'Hãng A', premiumAmount: 300000, quoteExpiresAt: '2099-01-20T06:00:00.000Z',
   } })
   const arranged = page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: 'Sao Mai', exact: true }) })
   await arranged.getByRole('button', { name: 'Xác nhận bảo hiểm', exact: true }).click()

@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 public record InsuranceEvidenceRequestDto(@Size(max = 200) String insurerName,
-        @NotNull BigDecimal coverageAmount, BigDecimal premiumAmount, Instant quoteExpiresAt) {
+        @NotNull BigDecimal premiumAmount, Instant quoteExpiresAt) {
 
     public void applyTo(HorseInsurance insurance) {
         if (insurerName != null) {

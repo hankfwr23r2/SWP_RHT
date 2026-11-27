@@ -73,7 +73,6 @@ export function InsuranceEvidenceDialog({ insurance, id, actions, onClose }: {
   const actionLabel = t('staffReview.recordEvidence')
   const [submitted, setSubmitted] = useState(false)
   const [insurerName, setInsurerName] = useState(insurance.insurerName ?? '')
-  const [coverage, setCoverage] = useState(String(insurance.coverageAmount ?? ''))
   const [premium, setPremium] = useState(String(insurance.premiumAmount ?? ''))
   const [expires, setExpires] = useState(vietnamLocalTime(insurance.quoteExpiresAt))
   const close = () => { if (!actions.busy) { actions.clear(); onClose() } }
@@ -84,7 +83,7 @@ export function InsuranceEvidenceDialog({ insurance, id, actions, onClose }: {
       setSubmitted(true)
       if (!insurerName.trim()) return
       if (await actions.recordEvidence(id, {
-        insurerName: insurerName.trim(), coverageAmount: Number(coverage), premiumAmount: Number(premium),
+        insurerName: insurerName.trim(), premiumAmount: Number(premium),
         quoteExpiresAt: new Date(`${expires}+07:00`).toISOString(),
       })) onClose()
     }}>
@@ -94,9 +93,6 @@ export function InsuranceEvidenceDialog({ insurance, id, actions, onClose }: {
           {control => <Input {...control} maxLength={200} value={insurerName}
             placeholder={t('staffReview.insurerPlaceholder')}
             onChange={event => { setInsurerName(event.target.value); actions.clear() }} />}
-        </Field>
-        <Field label={t('staffReview.coverageAmount')} required error={actions.fields.coverageAmount}>
-          {control => <GroupedAmountInput {...control} value={coverage} onValueChange={setCoverage} />}
         </Field>
         <Field label={t('staffReview.premiumAmount')} required error={actions.fields.premiumAmount}>
           {control => <GroupedAmountInput {...control} value={premium} onValueChange={setPremium} />}

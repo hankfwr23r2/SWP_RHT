@@ -161,7 +161,6 @@ export const staffReview = {
     "coverage": "Phương án bảo hiểm",
     "insurer": "Hãng bảo hiểm",
     "insurerPlaceholder": "Nhập tên hãng theo báo giá",
-    "coverageAmount": "Số tiền bảo hiểm",
     "premiumAmount": "Phí bảo hiểm",
     "quoteExpiry": "Hạn báo giá bảo hiểm (giờ Việt Nam)",
     "recordEvidence": "Ghi báo giá bảo hiểm",
