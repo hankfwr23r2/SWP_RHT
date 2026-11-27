@@ -1,7 +1,6 @@
 package com.example.racehorse_transport.controller;
 
 import com.example.racehorse_transport.dto.common.ApiResponseDto;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,15 +12,8 @@ import java.util.Map;
 @RequestMapping("/health")
 public class HealthCheckController {
 
-    // Commit đang chạy, để biết bản deploy đã cập nhật chưa mà không cần quyền vào Render
-    private final String commit;
-
-    public HealthCheckController(@Value("${app.commit}") String commit) {
-        this.commit = commit;
-    }
-
     @GetMapping
     public ResponseEntity<ApiResponseDto<Map<String, String>>> checkHealth() {
-        return ResponseEntity.ok(ApiResponseDto.success(Map.of("status", "UP", "commit", commit), "Service is healthy"));
+        return ResponseEntity.ok(ApiResponseDto.success(Map.of("status", "UP"), "Service is healthy"));
     }
 }
