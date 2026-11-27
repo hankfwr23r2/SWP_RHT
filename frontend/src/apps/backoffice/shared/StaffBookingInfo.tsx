@@ -75,13 +75,10 @@ export function StaffBookingInfo({ detail, documents, retry }: {
           ? <EmptyState compact title={t('mgr.info.noDocuments')} description={t('mgr.info.noDocumentsHint')} />
           : <ul className={s.stack}>{documents.map(document => (
             <li key={document.id} className={s.row}>
-              {document.fileUrl ? <>
-                <span>{document.fileName ?? document.typeCode}</span>
-                <FilePreviewButton fileName={document.fileName ?? document.typeCode ?? ''} fileUrl={document.fileUrl}
-                  label={t('ui.previewFile')} />
-              </>
-                : <span>{document.fileName ?? document.typeCode}</span>}
+              <span>{document.fileName ?? document.typeCode}</span>
               {document.status && <Badge>{t(`mgr.info.documentStatus.${document.status}`)}</Badge>}
+              {document.fileUrl && <FilePreviewButton fileName={document.fileName ?? document.typeCode ?? ''}
+                fileUrl={document.fileUrl} label={t('ui.previewFile')} />}
             </li>
           ))}</ul>}
       </Card>

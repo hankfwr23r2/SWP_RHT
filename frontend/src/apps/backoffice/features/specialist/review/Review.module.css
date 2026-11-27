@@ -66,6 +66,15 @@
   overflow-wrap: anywhere;
 }
 
+.fileName {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.previewButton {
+  margin-left: auto;
+}
+
 .error {
   color: var(--color-danger);
 }

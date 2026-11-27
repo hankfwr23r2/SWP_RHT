@@ -33,7 +33,9 @@ it('hiện hộ chiếu dùng lại trong hồ sơ chuyên viên với đúng co
 
   const reused = within(screen.getByText('Hộ chiếu ngựa · Sao Mai').closest('li')!)
   expect(reused.getByText('Đã đáp ứng')).toBeTruthy()
-  expect(reused.getByRole('link', { name: 'Xem passport.pdf' }).getAttribute('href')).toBe('https://example.test/passport.pdf')
+  expect(reused.getByText('passport.pdf')).toBeTruthy()
+  const previewButton = reused.getByRole('button', { name: 'Xem trước tệp' })
+  expect(previewButton.parentElement?.lastElementChild).toBe(previewButton)
   expect(reused.queryByRole('button', { name: 'Duyệt giấy' })).toBeNull()
   expect(reused.getByRole('button', { name: 'Thu hồi' })).toBeTruthy()
   const missing = within(screen.getByText('Hộ chiếu ngựa · Gió Nam').closest('li')!)
@@ -90,7 +92,7 @@ it('cho duyệt giấy nộp từ hồ sơ ngựa dù chưa gắn với yêu c�
   render(<RouterProvider router={createMemoryRouter([{ path: '/', Component: Page }])} />)
 
   const passport = within(screen.getByText('Hộ chiếu ngựa · Sao Mai').closest('li')!)
-  expect(passport.getByRole('link', { name: 'Xem passport.pdf' })).toBeTruthy()
+  expect(passport.getByRole('button', { name: 'Xem trước tệp' })).toBeTruthy()
   expect(passport.getByRole('button', { name: 'Duyệt giấy' })).toBeTruthy()
   expect(passport.getByRole('button', { name: 'Từ chối giấy' })).toBeTruthy()
   const vaccines = within(screen.getByText('Sổ tiêm phòng · Sao Mai').closest('li')!)

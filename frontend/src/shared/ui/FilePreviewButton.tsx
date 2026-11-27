@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { rememberPreview } from '@shared/lib/previews'
 import { Button } from './Button'
 import { ImageLightbox } from './ImageThumb'
+import s from './FilePreviewButton.module.css'
 
 interface FilePreviewButtonProps {
   fileName: string
@@ -23,9 +24,9 @@ export function FilePreviewButton({ fileName, label, file, fileUrl }: FilePrevie
   }
 
   return (
-    <>
+    <div className={s.action}>
       <Button size="sm" onClick={openPreview} aria-label={`${label} ${fileName}`}>{label}</Button>
       {open && <ImageLightbox name={source} title={fileName} fileType={fileType} onClose={() => setOpen(false)} />}
-    </>
+    </div>
   )
 }
