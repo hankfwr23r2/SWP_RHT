@@ -19,6 +19,7 @@ import com.example.racehorse_transport.entity.enums.BookingHorseStatus;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
 import com.example.racehorse_transport.entity.enums.HorseLegType;
+import com.example.racehorse_transport.entity.enums.TransferMethod;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
@@ -87,9 +88,7 @@ public class HorseLegServiceImpl implements HorseLegService {
             List<HorseDto> horses = lines.stream().map(line -> {
                 List<HorseLegResponseDto> own = legsByHorse.getOrDefault(line.getId(), List.of());
                 return HorseDto.from(line, own, LegNeedsPolicy.missing(line.getStatus(), booking.getBookingType(), booking.getDeparture() != null,
-                        line.getPickupMissChoice() == com.example.racehorse_transport.entity.enums.PickupMissChoice.SELF_DELIVERY
-                                ? com.example.racehorse_transport.entity.enums.TransferMethod.SELF : booking.getPickupMethod(),
-                        booking.getDeliveryMethod(),
+                        pickupMethod(booking, line), booking.getDeliveryMethod(),
                         own.stream().filter(leg -> !INACTIVE.contains(leg.status())).map(HorseLegResponseDto::legType).toList()));
             }).toList();
             var departure = booking.getDeparture();
@@ -130,7 +129,7 @@ public class HorseLegServiceImpl implements HorseLegService {
         if (chain.stream().anyMatch(l -> !INACTIVE.contains(l.getStatus()) && l.getVehicleTrip() != null && l.getVehicleTrip().getId().equals(trip.getId()))) {
             throw new DispatchRuleException("bookingHorseId", "Ngựa đã có trên lượt xe này.", true);
         }
-        HorseLeg failed = requireAfterPredecessor(legType, booking, chain, board, pickupAddressId);
+        HorseLeg failed = requireAfterPredecessor(legType, booking, line, chain, board, pickupAddressId);
         List<HorseLeg> assigned = legs.findActiveOnTrip(trip.getId(), INACTIVE);
         if (assigned.stream().map(leg -> leg.getBookingHorse().getBooking())
                 .anyMatch(other -> DispatchPolicy.conflictsWithPrivateBooking(booking, other))) {
@@ -235,7 +234,7 @@ public class HorseLegServiceImpl implements HorseLegService {
             Long pickupAddressId = requireStopsForLeg(type, trip, booking, line, tripStops, board, alight);
             var chain = legs.findByBookingHorse_IdOrderBySequenceNumber(line.getId());
             var before = chain.stream().filter(other -> other.getSequenceNumber() < leg.getSequenceNumber()).toList();
-            HorseLeg failed = requireAfterPredecessor(type, booking, before, board, pickupAddressId);
+            HorseLeg failed = requireAfterPredecessor(type, booking, line, before, board, pickupAddressId);
             requireLegTimes(type, trip, booking, tripStops, board, alight, failed);
             chain.stream().filter(other -> other.getSequenceNumber() > leg.getSequenceNumber() && !INACTIVE.contains(other.getStatus()))
                     .findFirst().ifPresent(next -> {
@@ -249,6 +248,12 @@ public class HorseLegServiceImpl implements HorseLegService {
             leg.setPlannedEndAt(leg.getAlightTripStop().getPlannedArrivalAt());
         });
         return onTrip;
+    }
+
+    // Khách chọn tự chở sau khi đón hụt thì con đó không còn chặng đón
+    private static TransferMethod pickupMethod(Booking booking, BookingHorse line) {
+        return line.getPickupMissChoice() == com.example.racehorse_transport.entity.enums.PickupMissChoice.SELF_DELIVERY
+                ? TransferMethod.SELF : booking.getPickupMethod();
     }
 
     private static void requireAssignable(BookingHorse line, Booking booking, HorseLegType legType) {
@@ -282,7 +287,7 @@ public class HorseLegServiceImpl implements HorseLegService {
         return addressIds.get(AddressRole.PICKUP);
     }
 
-    private HorseLeg requireAfterPredecessor(HorseLegType legType, Booking booking, List<HorseLeg> chain,
+    private HorseLeg requireAfterPredecessor(HorseLegType legType, Booking booking, BookingHorse line, List<HorseLeg> chain,
                                              TripStop board, Long pickupAddressId) {
         HorseLeg previous = chain.stream().filter(l -> !INACTIVE.contains(l.getStatus())).reduce((first, second) -> second).orElse(null);
         HorseLeg last = chain.stream().filter(existing -> existing.getStatus() != HorseLegStatus.CANCELLED)
@@ -298,6 +303,8 @@ public class HorseLegServiceImpl implements HorseLegService {
         } else if (legType != HorseLegType.LINEHAUL) {
             // Chặng đầu tiên đi từ địa chỉ đón; riêng chặng trục có thể là chặng đầu (khách tự đưa ngựa tới hub, hoặc nhận ở cửa khẩu)
             DispatchPolicy.requireContinuous("A" + pickupAddressId, placeKey(board));
+        } else {
+            DispatchPolicy.requirePickupBeforeLinehaul(pickupMethod(booking, line) != TransferMethod.SELF, booking.getCode());
         }
         return failed;
     }

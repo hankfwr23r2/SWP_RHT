@@ -166,8 +166,9 @@ class BenXeJourneyFlowTest {
         Instant departureAt = day.atTime(6, 0).atZone(QuotationPolicy.BUSINESS_ZONE).toInstant();
         long booking = confirmBooking(scenario, departure, day.minusDays(1));
         if (scenario.privateTruck()) {
+            // Đơn ghép cùng chuyến: khách tự đưa ngựa tới hub, nên được lên trục mà không cần lượt đón
             var shared = new Scenario(scenario.type(), scenario.route(), scenario.origin(), scenario.destination(),
-                    scenario.pickup(), scenario.delivery(), 1, false, false, false, scenario.leadDays());
+                    scenario.pickup(), scenario.delivery(), 1, false, true, false, scenario.leadDays());
             confirmBooking(shared, departure, day.minusDays(1));
         }
         NOW.set(departureAt.minus(Duration.ofHours(36)));

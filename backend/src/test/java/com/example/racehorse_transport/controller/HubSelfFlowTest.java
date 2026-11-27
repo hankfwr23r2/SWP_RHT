@@ -307,6 +307,7 @@ class HubSelfFlowTest {
 
     @Test
     void consigneeCollectsTheHorsesAtTheHubAndTheBookingIsDelivered() throws Exception {
+        sql("UPDATE booking SET pickup_method = 'SELF' WHERE id = " + booking);
         long trip = linehaulTrip();
         List<Long> stops = stopIds(trip);
         for (long line : lines) assign(trip, line, stops.getFirst(), stops.getLast());
@@ -357,6 +358,7 @@ class HubSelfFlowTest {
 
     @Test
     void lateConsigneeHorseGoesToStablingAndTheConsigneePaysTheFee() throws Exception {
+        sql("UPDATE booking SET pickup_method = 'SELF' WHERE id = " + booking);
         long trip = linehaulTrip();
         List<Long> stops = stopIds(trip);
         for (long line : lines) assign(trip, line, stops.getFirst(), stops.getLast());
