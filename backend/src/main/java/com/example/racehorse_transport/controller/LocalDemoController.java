@@ -2,12 +2,10 @@ package com.example.racehorse_transport.controller;
 
 import com.example.racehorse_transport.service.LocalDemoService;
 import io.swagger.v3.oas.annotations.Hidden;
-import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.Resource;
@@ -22,8 +20,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.util.HtmlUtils;
-import org.springframework.web.util.UriComponentsBuilder;
 
 // Trang công cụ của chế độ chạy thử, chỉ có khi bật profile local-demo
 @RestController
@@ -84,29 +80,6 @@ public class LocalDemoController {
         return ResponseEntity.ok()
                 .contentType(MediaTypeFactory.getMediaType(name).orElse(MediaType.APPLICATION_OCTET_STREAM))
                 .body(demo.file(name));
-    }
-
-    @GetMapping(value = "/vnpay", produces = "text/html;charset=UTF-8")
-    public String payPage(@RequestParam Map<String, String> request) {
-        StringBuilder fields = new StringBuilder();
-        request.forEach((name, value) -> fields.append("<input type=\"hidden\" name=\"%s\" value=\"%s\">"
-                .formatted(HtmlUtils.htmlEscape(name), HtmlUtils.htmlEscape(value))));
-        BigDecimal amount = new BigDecimal(request.getOrDefault("vnp_Amount", "0")).movePointLeft(2);
-        return html("Thanh toán giả lập", """
-                <p>Không có tiền thật. Số tiền: <b>%,d đ</b></p><p>%s</p>
-                <form method="post" action="%s/vnpay">%s
-                <button name="success" value="true">Trả thành công</button>
-                <button name="success" value="false">Hủy giao dịch</button></form>
-                """.formatted(amount.longValue(), HtmlUtils.htmlEscape(request.getOrDefault("vnp_OrderInfo", "")), BASE, fields));
-    }
-
-    @PostMapping("/vnpay")
-    public ResponseEntity<Void> pay(@RequestParam Map<String, String> request, @RequestParam boolean success) {
-        request.remove("success");
-        Map<String, String> result = demo.pay(request, success);
-        UriComponentsBuilder target = UriComponentsBuilder.fromPath("/payment/vnpay-return");
-        result.keySet().forEach(name -> target.queryParam(name, "{" + name + "}"));
-        return ResponseEntity.status(HttpStatus.SEE_OTHER).location(target.encode().buildAndExpand(result).toUri()).build();
     }
 
     private static ResponseEntity<Void> redirect(String path) {

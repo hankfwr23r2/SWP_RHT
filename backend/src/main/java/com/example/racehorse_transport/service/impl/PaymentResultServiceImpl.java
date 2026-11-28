@@ -109,7 +109,11 @@ public class PaymentResultServiceImpl implements PaymentResultService {
             return PaymentResultResponseDto.unverified(acknowledgment.code(), "Không xác minh được giao dịch.");
         }
         boolean paid = gateway.success();
-        boolean success = paid && PaymentPolicy.isAppliedBy(payment, gateway.amount(), gateway.paidAt());
+        // So với giờ trả đã ghi ở lần nhận đầu: tua giờ thêm rồi tính lại từ vnp_PayDate sẽ ra giờ khác
+        boolean success = paid && transactions.findByGatewayCodeAndGatewayTransactionNumber(
+                        VnpayClient.GATEWAY_CODE, gateway.transactionNumber())
+                .filter(row -> PaymentPolicy.isAppliedBy(payment, gateway.amount(), row.getGatewayPaidAt()))
+                .isPresent();
         return PaymentResultResponseDto.from(payment, success, paid && !success, gateway.responseCode(),
                 success ? "Thanh toán thành công." : paid
                         ? "Đã nhận tiền nhưng chưa thể xác nhận đơn. Nhà xe sẽ kiểm tra và liên hệ hoàn tiền."

@@ -22,36 +22,4 @@ public class LocalDemoConfig {
                 ? Duration.parse(Files.readString(properties.clockFile()).trim()) : Duration.ZERO;
         return new OffsetClock(Clock.systemUTC(), offset);
     }
-
-    // Cổng thanh toán giả lập: trang trả tiền nằm ngay trong backend, khóa ký chỉ dùng trong chế độ này
-    @Bean
-    @Primary
-    public VnpayProperties localDemoVnpayProperties() {
-        return new VnpayProperties() {
-            @Override
-            public String getTmnCode() {
-                return "LOCALDEMO";
-            }
-
-            @Override
-            public String getHashSecret() {
-                return "local-demo-signing";
-            }
-
-            @Override
-            public String getPayUrl() {
-                return "/api/v1/public/demo/vnpay";
-            }
-
-            @Override
-            public String getReturnUrl() {
-                return "/payment/vnpay-return";
-            }
-
-            @Override
-            public boolean isConfigured() {
-                return true;
-            }
-        };
-    }
 }

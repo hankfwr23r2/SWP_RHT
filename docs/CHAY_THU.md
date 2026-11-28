@@ -1,6 +1,6 @@
 # Chạy thử một đơn trong một buổi (25/11/2026)
 
-Dùng để thử hoặc demo trên máy cá nhân. Không cần khóa VNPAY, Cloudinary, mail hay Turnstile. **Không dùng cho bản deploy**: backend tự từ chối khởi động nếu cơ sở dữ liệu không nằm trên máy hoặc có profile `prod`/`production`.
+Dùng để thử hoặc demo trên máy cá nhân. Không cần khóa Cloudinary, mail hay Turnstile. Trả tiền đi qua VNPAY sandbox thật nên cần `VNPAY_HASH_SECRET` (đặt trong `.env`, hoặc đặt biến môi trường khi chạy tay) và mạng. **Không dùng cho bản deploy**: backend tự từ chối khởi động nếu cơ sở dữ liệu không nằm trên máy hoặc có profile `prod`/`production`.
 
 ## Cần vì sao
 
@@ -43,10 +43,12 @@ Mở nhiều vai cùng lúc thì dùng nhiều cửa sổ ẩn danh. Tua giờ x
 | Giờ hệ thống | Giờ thật | Giờ thật cộng khoảng đã tua, giữ qua lần khởi động lại. "Về giờ thật" để bỏ |
 | Việc tự động | Theo lịch | Chạy ngay sau mỗi lần tua: sinh chuyến, đóng nhận đặt, hết hạn báo giá, nhả chỗ, tự đóng đơn |
 | Tệp tải lên | Cloudinary | Thư mục `local-demo/files` |
-| VNPAY | Cổng thử của VNPAY | Trang "Thanh toán giả lập", ký và báo kết quả như cổng thật |
+| VNPAY | Cổng thử của VNPAY | Vẫn cổng thử của VNPAY. Backend gửi giờ thật cho cổng và đổi giờ trả tiền sang giờ đã tua |
 | Turnstile | Khóa thật | Khóa thử công khai của Cloudflare (vẫn cần mạng) |
 
 Phiên đăng nhập làm mới bằng cookie 15 ngày theo giờ thật, không bị ảnh hưởng.
+
+Đang ở trang VNPAY thì **đừng tua giờ hay bấm "Về giờ thật"**: trả xong, quay về trang kết quả rồi mới tua. Tua quá hạn cọc giữa chừng, hoặc về giờ thật giữa chừng, thì khoản đang trả có thể không được ghi vào đơn.
 
 ## Kịch bản: đơn liên tỉnh TP.HCM → Huế (mô hình bến xe)
 

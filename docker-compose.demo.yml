@@ -1,4 +1,4 @@
-# Chạy thử trên máy cá nhân: tua giờ, tệp lưu tại máy, thanh toán giả lập (docs/CHAY_THU.md)
+# Chạy thử trên máy cá nhân: tua giờ, tệp lưu tại máy (docs/CHAY_THU.md). VNPAY sandbox thật: cần VNPAY_HASH_SECRET
 # docker compose -f docker-compose.yml -f docker-compose.demo.yml up -d --build
 services:
   backend:

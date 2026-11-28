@@ -8,7 +8,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 import org.springframework.stereotype.Component;
 
-// Chế độ chạy thử trên máy cá nhân: tua giờ, tệp lưu tại máy, thanh toán giả lập. Không khởi động được với DB ngoài máy.
+// Chế độ chạy thử trên máy cá nhân: tua giờ, tệp lưu tại máy. Không khởi động được với DB ngoài máy.
 @Component
 @Profile("local-demo")
 public class LocalDemoProperties {

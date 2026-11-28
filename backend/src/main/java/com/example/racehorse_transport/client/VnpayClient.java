@@ -1,10 +1,13 @@
 package com.example.racehorse_transport.client;
 
 import com.example.racehorse_transport.config.VnpayProperties;
+import com.example.racehorse_transport.util.OffsetClock;
 import com.example.racehorse_transport.util.VnpayUtil;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Clock;
 import java.time.DateTimeException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -27,6 +30,7 @@ public class VnpayClient {
     private static final String SUCCESS = "00";
 
     private final VnpayProperties properties;
+    private final Clock clock;
 
     // Kết quả đã kiểm chữ ký. paidAt null khi cổng không gửi hoặc gửi sai định dạng.
     public record GatewayResult(String reference, String transactionNumber, String bankCode, String responseCode,
@@ -63,8 +67,8 @@ public class VnpayClient {
         params.put("vnp_Locale", "vn");
         params.put("vnp_ReturnUrl", properties.getReturnUrl());
         params.put("vnp_IpAddr", clientIp);
-        params.put("vnp_CreateDate", gatewayTime(createdAt));
-        params.put("vnp_ExpireDate", gatewayTime(expiresAt));
+        params.put("vnp_CreateDate", gatewayTime(createdAt.minus(travelled())));
+        params.put("vnp_ExpireDate", gatewayTime(expiresAt.minus(travelled())));
         return VnpayUtil.buildPaymentUrl(properties.getPayUrl(), params, properties.getHashSecret());
     }
 
@@ -86,6 +90,11 @@ public class VnpayClient {
         return amount != null && amount.signum() > 0 && amount.stripTrailingZeros().scale() <= 0;
     }
 
+    // Cổng chạy theo giờ thật; hệ thống đang tua giờ chạy thử thì phải đổi qua lại. Bình thường bằng 0.
+    private Duration travelled() {
+        return clock instanceof OffsetClock travel ? travel.offset() : Duration.ZERO;
+    }
+
     private static String gatewayAmount(BigDecimal amount) {
         if (!isPayable(amount)) {
             throw new IllegalArgumentException("Số tiền thanh toán VNPAY phải là số nguyên đồng lớn hơn 0.");
@@ -104,12 +113,12 @@ public class VnpayClient {
         return GATEWAY_TIME.format(instant.atZone(GATEWAY_ZONE));
     }
 
-    private static Instant paidAt(String value) {
+    private Instant paidAt(String value) {
         if (value == null || value.isBlank()) {
             return null;
         }
         try {
-            return LocalDateTime.parse(value, GATEWAY_TIME).atZone(GATEWAY_ZONE).toInstant();
+            return LocalDateTime.parse(value, GATEWAY_TIME).atZone(GATEWAY_ZONE).toInstant().plus(travelled());
         } catch (DateTimeException e) {
             return null;
         }

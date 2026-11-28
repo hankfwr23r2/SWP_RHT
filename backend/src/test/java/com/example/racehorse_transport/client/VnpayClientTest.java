@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,7 +29,7 @@ class VnpayClientTest {
         ReflectionTestUtils.setField(properties, "payUrl", "https://gateway.test/pay");
         ReflectionTestUtils.setField(properties, "returnUrl", "https://app.test/return");
         ReflectionTestUtils.setField(properties, "expireMinutes", 15);
-        return new VnpayClient(properties);
+        return new VnpayClient(properties, Clock.systemUTC());
     }
 
     private static Map<String, String> query(String url) {
