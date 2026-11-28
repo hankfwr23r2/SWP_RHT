@@ -89,7 +89,7 @@ export const staffDispatch = {
     "changeHint": "Chỗ ở chuyến cũ được nhả và khách nhận thông báo.",
     "seats": "Còn {{count}} chỗ",
     "noOther": "Không có chuyến khác cùng tuyến",
-    "noOtherHint": "Nhờ quản lý tạo chuyến đột xuất nếu cần.",
+    "noOtherHint": "Liên hệ quản lý nếu cần.",
     "empty": "Không có đơn ở trạng thái này",
     "emptyHint": "Chọn trạng thái khác để xem."
   },

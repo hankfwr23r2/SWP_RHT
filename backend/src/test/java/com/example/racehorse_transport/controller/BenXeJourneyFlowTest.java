@@ -159,11 +159,8 @@ class BenXeJourneyFlowTest {
         long route = jdbc.queryForObject("SELECT id FROM route WHERE code = ?", Long.class, scenario.route());
         long vehicleClass = jdbc.queryForObject("SELECT id FROM vehicle_class WHERE code = ?", Long.class,
                 scenario.origin().equals("HUB-VTE") ? "MEDIUM" : "HEAVY");
-        long departure = id(act(manager, "/departures", """
-                {"routeId":%d,"departureDate":"%s","departureTime":"06:00","bookingCutoffHours":72,
-                 "vehicleClassId":%d,"vehicleCount":1}
-                """.formatted(route, day, vehicleClass)));
         Instant departureAt = day.atTime(6, 0).atZone(QuotationPolicy.BUSINESS_ZONE).toInstant();
+        long departure = departureWithBaseVehicle(route, day, departureAt, vehicleClass);
         long booking = confirmBooking(scenario, departure, day.minusDays(1));
         if (scenario.privateTruck()) {
             // Đơn ghép cùng chuyến: khách tự đưa ngựa tới hub, nên được lên trục mà không cần lượt đón
@@ -174,6 +171,20 @@ class BenXeJourneyFlowTest {
         NOW.set(departureAt.minus(Duration.ofHours(36)));
         ok(act(manager, "/departures/" + departure + "/confirm-run", "{}"));
         operate(scenario, departure, departureAt, booking);
+    }
+
+    // Một chuyến 06:00 giờ Việt Nam, chốt nhận đơn trước 72 giờ, một xe nền
+    private long departureWithBaseVehicle(long route, LocalDate day, Instant departureAt, long vehicleClass) {
+        var planned = departureAt.atZone(QuotationPolicy.BUSINESS_ZONE).toOffsetDateTime();
+        long departure = jdbc.queryForObject("""
+                INSERT INTO departure (route_id, departure_date, planned_departure_at, booking_cutoff_at, stall_capacity, status)
+                SELECT ?, ?, ?, ?, max_stall_count, 'OPEN' FROM vehicle_class WHERE id = ? RETURNING id
+                """, Long.class, route, day, planned, planned.minusHours(72), vehicleClass);
+        jdbc.update("""
+                INSERT INTO departure_vehicle (departure_id, vehicle_class_id, vehicle_count, allotment_type, created_at)
+                VALUES (?, ?, 1, 'BASE', now())
+                """, departure, vehicleClass);
+        return departure;
     }
 
     private long confirmBooking(Scenario scenario, long departure, LocalDate pickup) throws Exception {

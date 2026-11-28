@@ -142,10 +142,6 @@ public class BookingStatusServiceImpl implements BookingStatusService {
                     "/manager/orders/" + bookingId);
             notifications.notify(List.of(booking.getCustomer().getUser().getId()), bookingId, "Báo giá hết hạn",
                     "Báo giá của đơn " + booking.getCode() + " đã hết hạn.", "/orders/" + bookingId);
-        } else if (toStatus == BookingStatus.SCHEDULE_CHANGE_REQUIRED && cause == ScheduleChangeCause.COMPANY
-                && previousDeparture != null && previousDeparture.getMergedIntoDeparture() != null) {
-            notifications.notify(List.of(booking.getCustomer().getUser().getId()), bookingId, "Cần chọn lại chuyến",
-                    reason, "/orders/" + bookingId + "#reschedule");
         } else if (toStatus == BookingStatus.DELIVERED) {
             var managers = staff.findUserIdsByRoleAndStatus("MANAGER", AppUserStatus.ACTIVE);
             if (!managers.isEmpty()) {

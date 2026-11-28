@@ -25,7 +25,7 @@ Muốn chạy hết một đơn trong một buổi (tua giờ, thanh toán giả
 | Khách | Đặt đơn 4 bước | Nội địa, xuất, nhập; hết chỗ; ngựa đang bận; giữ bản nháp khi quay lại |
 | Khách | Đơn của tôi, chi tiết, lịch sử | Nộp giấy, chấp nhận hoặc từ chối báo giá, đổi chuyến, hủy đơn (xem số tiền trước khi hủy), hành trình từng con ngựa, đánh giá |
 | Chuyên viên | Thẩm định đơn, Đơn thiếu giấy | Duyệt và từ chối giấy, xác nhận hoặc mở lại bảo hiểm |
-| Quản lý | Đơn hàng, Chuyến cần quyết định, Hoàn tiền | Báo giá, gửi, chuyến đột xuất, dồn, hủy chuyến, quyết toán, hủy đơn |
+| Quản lý | Đơn hàng, Chuyến cần quyết định, Hoàn tiền | Báo giá, gửi, hủy chuyến, quyết toán, hủy đơn |
 | Quản lý | Sự cố, Chuyến đi, Bảng giá | Duyệt phương án, báo cáo vận hành, tạo và kích hoạt bảng giá |
 | Quản trị viên | Toàn bộ menu | Khóa và mở tài khoản, hotline, xe, đối tác, quy định, tuyến, lịch, bảng giá, nhật ký |
 | Điều phối | Kế hoạch đơn, Theo dõi, Hub | Đổi chuyến trước khi cọc; ngựa nào ai giữ, trễ khám; lịch hẹn và giao nhận ở hub |

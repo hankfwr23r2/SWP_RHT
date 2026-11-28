@@ -148,8 +148,8 @@ class DepartureServiceTest {
 
     @Test
     void concurrentDeparturesAtOneHubCannotBothTakeItsOnlySpareVehicle() throws Exception {
-        Long first = adHoc("HCM-PNH", 107);
-        Long second = adHoc("HCM-DN", 107);
+        Long first = offSchedule("HCM-PNH", 107);
+        Long second = offSchedule("HCM-DN", 107);
         try {
             try (var pool = Executors.newFixedThreadPool(2)) {
                 var start = new CyclicBarrier(2);
@@ -185,15 +185,14 @@ class DepartureServiceTest {
         }
     }
 
-    private Long adHoc(String routeCode, int days) {
-        var request = new com.example.racehorse_transport.dto.departure.DepartureCreateRequestDto();
-        request.setRouteId(routes.findByCode(routeCode).orElseThrow().getId());
-        request.setDepartureDate(TODAY.plusDays(days));
-        request.setDepartureTime(LocalTime.of(9, 0));
-        request.setBookingCutoffHours(24);
-        request.setVehicleClassId(jdbc.queryForObject("SELECT id FROM vehicle_class WHERE code = 'HEAVY'", Long.class));
-        request.setVehicleCount(1);
-        return departureService.createAdHoc(request, "manager.dev").getId();
+    // Chuyến ngoài lịch có một xe nặng làm xe nền
+    private Long offSchedule(String routeCode, int days) {
+        Long id = testData.departure(routeCode, TODAY.plusDays(days), 9).getId();
+        jdbc.update("""
+                INSERT INTO departure_vehicle (departure_id, vehicle_class_id, vehicle_count, allotment_type, created_at)
+                SELECT ?, id, 1, 'BASE', now() FROM vehicle_class WHERE code = 'HEAVY'
+                """, id);
+        return id;
     }
 
     private Booking onDeparture(Booking booking, Departure departure) {

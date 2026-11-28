@@ -46,10 +46,6 @@ public class Departure {
     @JoinColumn(name = "departure_schedule_id")
     private DepartureSchedule departureSchedule;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "merged_into_departure_id")
-    private Departure mergedIntoDeparture;
-
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "route_id", nullable = false)
     private Route route;

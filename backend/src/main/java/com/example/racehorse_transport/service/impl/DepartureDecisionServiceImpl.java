@@ -11,7 +11,6 @@ import com.example.racehorse_transport.entity.enums.DepartureStatus;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.DepartureDecisionPolicy;
 import com.example.racehorse_transport.policy.DepartureDelayPolicy;
-import com.example.racehorse_transport.policy.DepartureMergePolicy;
 import com.example.racehorse_transport.policy.StallSeatPolicy;
 import com.example.racehorse_transport.repository.AppUserRepository;
 import com.example.racehorse_transport.repository.BookingHorseRepository;
@@ -133,8 +132,7 @@ public class DepartureDecisionServiceImpl implements DepartureDecisionService {
                     reasonNotConfirmable(departure, decisionHours, now).isEmpty(),
                     departure.getRunRemindedAt() != null && departure.getRunConfirmedAt() == null
                             && DepartureDelayPolicy.notStarted(departure.getStatus()),
-                    DepartureDelayPolicy.notStarted(departure.getStatus()), receivedBookings(departure),
-                    DepartureMergePolicy.canMergeSource(departure));
+                    DepartureDelayPolicy.notStarted(departure.getStatus()), receivedBookings(departure));
         }).toList();
     }
 

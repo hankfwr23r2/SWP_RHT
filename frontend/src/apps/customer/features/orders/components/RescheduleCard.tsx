@@ -24,13 +24,12 @@ interface Props {
 
 export function RescheduleCard({ data, excludeDepartureId, reschedule }: Props) {
   const { t } = useTranslation()
-  const { today, merge, suggestions, submit, accept, busy, error } = useReschedule(data, reschedule)
+  const { today, suggestions, submit, busy, error } = useReschedule(data, reschedule)
   const [departureId, setDepartureId] = useState<number>()
   const [pickupDate, setPickupDate] = useState('')
   const [confirming, setConfirming] = useState(false)
   const booking = data.detail?.booking
   const { data: suggestion, loaded, error: loadError, reload } = suggestions
-  const offered = booking?.status === 'SCHEDULE_CHANGE_REQUIRED' && merge.data?.departureId != null ? merge.data : null
 
   const departures = (suggestion?.departures ?? []).filter(departure => departure.id !== (excludeDepartureId ?? booking?.departureId))
   const selected = departures.find(departure => departure.id === departureId)
@@ -52,15 +51,8 @@ export function RescheduleCard({ data, excludeDepartureId, reschedule }: Props) 
   return (
     <Card title={t('myOrders.reschedule.title')}>
       <div className={s.stack}>
-        {merge.error && <ErrorState message={merge.error.message} onRetry={merge.reload} />}
-        {offered && !merge.error && <div className={s.stack}>
-          <strong>{t('myOrders.reschedule.mergeSuggestion', { date: showDate(offered.departureDate) })}</strong>
-          <p>{t('myOrders.reschedule.mergePickup', { date: showDate(offered.requestedPickupDate) })}</p>
-          {offered.availability && <span>{t(`bookingForm.route.availability.${offered.availability}`)}</span>}
-          <div><Button variant="primary" loading={busy} disabled={offered.availability === 'FULL'} onClick={() => void accept()}>{t('myOrders.reschedule.acceptMerge')}</Button></div>
-        </div>}
         {loadError ? <ErrorState message={loadError.message} onRetry={reload} /> : !loaded ? <Skeleton lines={3} /> : !departures.length
-          ? !offered && <EmptyState icon={<i className="fa-solid fa-truck" />} title={t('bookingForm.route.noDeparture')} description={t('myOrders.reschedule.none')} />
+          ? <EmptyState icon={<i className="fa-solid fa-truck" />} title={t('bookingForm.route.noDeparture')} description={t('myOrders.reschedule.none')} />
           : (
             <fieldset className={s.options}>
               {departures.map(departure => (
@@ -80,7 +72,7 @@ export function RescheduleCard({ data, excludeDepartureId, reschedule }: Props) 
           </Field>
         )}
         {error && <p className={s.error} role="alert">{error}</p>}
-        <div><Button variant={offered ? 'secondary' : 'primary'} loading={busy} disabled={!selected || selected.availability === 'FULL' || badDate}
+        <div><Button variant="primary" loading={busy} disabled={!selected || selected.availability === 'FULL' || badDate}
           onClick={() => setConfirming(true)}>{t('myOrders.reschedule.send')}</Button></div>
       </div>
       {confirming && selected && <ConfirmDialog title={t('myOrders.reschedule.confirmTitle')}

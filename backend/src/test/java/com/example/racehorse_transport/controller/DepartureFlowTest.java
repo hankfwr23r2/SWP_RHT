@@ -9,7 +9,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.example.racehorse_transport.PostgresIntegrationTest;
-import com.example.racehorse_transport.repository.RouteRepository;
 import com.example.racehorse_transport.security.JwtUtils;
 import com.example.racehorse_transport.support.TestData;
 import java.time.LocalDate;
@@ -24,18 +23,16 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
-// Gợi ý chuyến cho khách theo 4 loại đơn, và quản lý tạo chuyến đột xuất. Dùng chuyến do seed dev sinh từ lịch.
+// Gợi ý chuyến cho khách theo 4 loại đơn. Dùng chuyến do seed dev sinh từ lịch.
 @PostgresIntegrationTest
 @AutoConfigureMockMvc
 class DepartureFlowTest {
-    @Autowired private com.example.racehorse_transport.repository.VehicleClassRepository vehicleClasses;
 
     private static final String TODAY = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh")).toString();
 
     @Autowired private MockMvc mvc;
     @Autowired private TestData testData;
     @Autowired private JwtUtils jwtUtils;
-    @Autowired private RouteRepository routes;
     @Autowired private org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     private String customerToken;
@@ -143,13 +140,7 @@ class DepartureFlowTest {
 
     @Test
     void marksDeparturesTooCloseToFinishThePapers() throws Exception {
-        long routeId = routes.findByCode("HCM-DN").orElseThrow().getId();
-        String body = mvc.perform(post("/departures").header(HttpHeaders.AUTHORIZATION, "Bearer " + managerToken)
-                        .contentType(MediaType.APPLICATION_JSON).content("""
-                                {"routeId":%d,"departureDate":"%s","departureTime":"07:00","bookingCutoffHours":24,"vehicleClassId":%d,"vehicleCount":1}"""
-                                .formatted(routeId, LocalDate.now().plusDays(4), vehicleClasses.findByCode("MEDIUM").orElseThrow().getId())))
-                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
-        int id = com.jayway.jsonpath.JsonPath.read(body, "$.data.id");
+        int id = Math.toIntExact(testData.departure("HCM-DN", LocalDate.now().plusDays(4), 6).getId());
         mvc.perform(suggestions("INTERPROVINCE", "VN-75", "VN-46"))
                 .andExpect(jsonPath("$.data.leadDays", greaterThan(0)))
                 .andExpect(jsonPath("$.data.tooLateDepartureIds", org.hamcrest.Matchers.hasItem(id)));
@@ -161,24 +152,25 @@ class DepartureFlowTest {
     }
 
     @Test
-    void managerCreatesAdHocDepartureAndCustomerCannot() throws Exception {
-        long routeId = routes.findByCode("HCM-DN").orElseThrow().getId();
-        String body = """
-                {"routeId":%d,"departureDate":"%s","departureTime":"07:00","bookingCutoffHours":48,"vehicleClassId":%d,"vehicleCount":1}"""
-                .formatted(routeId, LocalDate.now().plusDays(40), vehicleClasses.findByCode("MEDIUM").orElseThrow().getId());
+    @org.springframework.transaction.annotation.Transactional
+    void adHocCreationAndDepartureMergeAreNotOffered() throws Exception {
+        long source = testData.departure("HCM-DN", LocalDate.now().plusDays(200), 9).getId();
+        long target = testData.departure("HCM-DN", LocalDate.now().plusDays(201), 9).getId();
+        var owner = testData.customer(testData.unique("khach"));
+        long booking = testData.booking(owner, com.example.racehorse_transport.entity.enums.BookingType.INTERPROVINCE,
+                com.example.racehorse_transport.entity.enums.BookingStatus.SCHEDULE_CHANGE_REQUIRED).getId();
+        String ownerToken = jwtUtils.generateToken(owner.getUser().getUsername(), List.of("CUSTOMER"), 0);
 
-        mvc.perform(post("/departures").header(HttpHeaders.AUTHORIZATION, "Bearer " + customerToken)
-                        .contentType(MediaType.APPLICATION_JSON).content(body))
-                .andExpect(status().isForbidden());
         mvc.perform(post("/departures").header(HttpHeaders.AUTHORIZATION, "Bearer " + managerToken)
-                        .contentType(MediaType.APPLICATION_JSON).content(body))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.departureScheduleId").doesNotExist())
-                .andExpect(jsonPath("$.data.status").value("OPEN"))
-                .andExpect(jsonPath("$.data.availableStalls").value(6));
-        mvc.perform(get("/departures").header(HttpHeaders.AUTHORIZATION, "Bearer " + managerToken)
-                        .param("routeId", String.valueOf(routeId)).param("from", TODAY).param("to", LocalDate.now().plusDays(60).toString()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()", greaterThan(0)));
+                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isMethodNotAllowed());
+        mvc.perform(get("/departures/{id}/merge-targets", source).header(HttpHeaders.AUTHORIZATION, "Bearer " + managerToken))
+                .andExpect(status().isNotFound());
+        mvc.perform(post("/departures/{id}/merge", source).header(HttpHeaders.AUTHORIZATION, "Bearer " + managerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"targetDepartureId\":%d,\"reason\":\"Ít khách\"}".formatted(target)))
+                .andExpect(status().isNotFound());
+        mvc.perform(get("/bookings/{id}/reschedule-suggestion", booking).header(HttpHeaders.AUTHORIZATION, "Bearer " + ownerToken))
+                .andExpect(status().isNotFound());
     }
 }

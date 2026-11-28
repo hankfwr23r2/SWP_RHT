@@ -3,8 +3,6 @@ package com.example.racehorse_transport.service;
 import com.example.racehorse_transport.entity.enums.DepartureAvailability;
 import com.example.racehorse_transport.dto.departure.DepartureDetailResponseDto;
 import com.example.racehorse_transport.entity.Departure;
-import com.example.racehorse_transport.dto.departure.DepartureCreateRequestDto;
-import com.example.racehorse_transport.dto.departure.DepartureMergeRequestDto;
 import com.example.racehorse_transport.dto.departure.DepartureResponseDto;
 import com.example.racehorse_transport.entity.enums.DepartureStatus;
 import java.time.LocalDate;
@@ -31,8 +29,6 @@ public interface DepartureService {
     // Nhả khoang: hủy đơn, từ chối, báo giá hết hạn, loại ngựa, đổi chuyến
     void release(Long departureId, int stalls);
 
-    boolean hasPrivateVehicle(Departure departure, int stalls);
-
     void reservePrivate(Long departureId, com.example.racehorse_transport.entity.Booking booking, int stalls);
 
     void releasePrivate(Long departureId, Long bookingId);
@@ -46,14 +42,8 @@ public interface DepartureService {
     // routeId, status null nghĩa là không lọc
     List<DepartureResponseDto> departures(Long routeId, DepartureStatus status, LocalDate fromDate, LocalDate toDate);
 
-    DepartureResponseDto createAdHoc(DepartureCreateRequestDto request, String username);
-
     // Hủy chuyến chưa chạy; các đơn trên chuyến chuyển sang SCHEDULE_CHANGE_REQUIRED kèm lý do
     DepartureResponseDto cancel(Long departureId, String reason, String actorUsername);
-
-    List<DepartureResponseDto> mergeTargets(Long departureId);
-
-    DepartureResponseDto merge(Long departureId, DepartureMergeRequestDto request, String actorUsername);
 
     void cancelForDelay(Long departureId, String reason);
 }

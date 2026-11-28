@@ -75,7 +75,6 @@ export const routes: AppRoute[] = [
   },
   {
     path: '/manager/departures', roles: M, layout: 'staff', catalog: false,
-    loader: () => import('./features/manager/departures/loaders').then(m => m.departuresLoader()),
     lazyPage: () => Promise.all([import('./features/manager/departures/DeparturesPage'), managerTexts()]).then(([page]) => page), title: 'Chuyến cần quyết định',
   },
   {

@@ -2,7 +2,6 @@ package com.example.racehorse_transport.controller;
 
 import com.example.racehorse_transport.dto.booking.BookingCreateRequestDto;
 import com.example.racehorse_transport.dto.booking.BookingDetailResponseDto;
-import com.example.racehorse_transport.dto.booking.BookingMergeSuggestionResponseDto;
 import com.example.racehorse_transport.dto.booking.BookingRescheduleRequestDto;
 import com.example.racehorse_transport.dto.booking.BookingResponseDto;
 import com.example.racehorse_transport.dto.booking.BookingSummaryResponseDto;
@@ -57,11 +56,6 @@ public class BookingController {
     @GetMapping("/{id}")
     public ApiResponseDto<BookingDetailResponseDto> get(@PathVariable Long id, Authentication authentication) {
         return ApiResponseDto.success(queries.get(authentication.getName(), id), "Chi tiết đơn.");
-    }
-
-    @GetMapping("/{id}/reschedule-suggestion")
-    public ApiResponseDto<BookingMergeSuggestionResponseDto> rescheduleSuggestion(@PathVariable Long id, Authentication authentication) {
-        return ApiResponseDto.success(reschedules.mergeSuggestion(id, authentication.getName()).orElse(null), "Gợi ý đổi chuyến.");
     }
 
     // Đơn chờ chọn lại lịch

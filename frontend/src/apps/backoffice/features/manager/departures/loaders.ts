@@ -1,20 +1,9 @@
-import { useLoaderData, useSearchParams } from 'react-router'
+import { useSearchParams } from 'react-router'
 import { departuresApi } from '@shared/api/departures'
 import { useLoad } from '@shared/hooks/useLoad'
-import { loadAll } from '@shared/routing/pageData'
 import { addDays, todayIso } from '@backoffice/shared/staffFormat'
 
 const DEFAULT_DAYS = 28
-
-export async function departuresLoader() {
-  const { routes } = await loadAll({ routes: departuresApi.routes() })
-  return { errors: [] as string[], routes: routes ?? [] }
-}
-
-export const useRoutesData = () => useLoaderData() as Awaited<ReturnType<typeof departuresLoader>>
-
-export const useMergeTargets = (departureId: number) =>
-  useLoad(() => departuresApi.mergeTargets(departureId), [departureId], { toastOnError: false })
 
 // Khoảng ngày nằm trên đường dẫn để quay lại không mất bộ lọc
 export function useDecisions() {

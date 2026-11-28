@@ -10,9 +10,7 @@ import com.example.racehorse_transport.entity.Departure;
 import com.example.racehorse_transport.entity.Location;
 import com.example.racehorse_transport.entity.Route;
 import com.example.racehorse_transport.entity.enums.DepartureStatus;
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalTime;
 import org.junit.jupiter.api.Test;
 
 class DepartureDtoTest {
@@ -29,28 +27,6 @@ class DepartureDtoTest {
         route.setOrigin(origin);
         route.setDestination(destination);
         return route;
-    }
-
-    @Test
-    void createRequestLeavesStatusAndBookedStallsToService() {
-        DepartureCreateRequestDto request = new DepartureCreateRequestDto();
-        request.setRouteId(4L);
-        request.setDepartureDate(LocalDate.of(2027, 1, 5));
-        request.setDepartureTime(LocalTime.of(7, 0));
-        request.setBookingCutoffHours(48);
-        request.setVehicleClassId(1L);
-        request.setVehicleCount(1);
-        Instant planned = Instant.parse("2027-01-05T00:00:00Z");
-        Instant cutoff = Instant.parse("2027-01-03T00:00:00Z");
-
-        Departure departure = request.toEntity(route(), planned, cutoff);
-
-        assertThat(departure.getId()).isNull();
-        assertThat(departure.getDepartureSchedule()).isNull();
-        assertThat(departure.getStatus()).isNull();
-        assertThat(departure.getPlannedDepartureAt()).isEqualTo(planned);
-        assertThat(departure.getBookingCutoffAt()).isEqualTo(cutoff);
-        assertThat(departure.getStallCapacity()).isNull();
     }
 
     @Test

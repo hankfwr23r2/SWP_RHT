@@ -1,7 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.entity.enums.TransportMode;
-import com.example.racehorse_transport.dto.booking.BookingMergeSuggestionResponseDto;
 import com.example.racehorse_transport.dto.booking.BookingRescheduleRequestDto;
 import com.example.racehorse_transport.dto.booking.BookingResponseDto;
 import com.example.racehorse_transport.entity.Booking;
@@ -17,9 +16,7 @@ import com.example.racehorse_transport.exception.BookingRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.BookingSubmissionPolicy;
 import com.example.racehorse_transport.policy.BalanceHoldPolicy;
-import com.example.racehorse_transport.policy.DepartureCapacityPolicy;
 import com.example.racehorse_transport.policy.DepartureDecisionPolicy;
-import com.example.racehorse_transport.policy.DepartureMergePolicy;
 import com.example.racehorse_transport.policy.InsuranceReviewPolicy;
 import com.example.racehorse_transport.policy.StallSeatPolicy;
 import com.example.racehorse_transport.repository.BookingHorseRepository;
@@ -36,7 +33,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,39 +52,6 @@ public class BookingRescheduleServiceImpl implements BookingRescheduleService {
     private final Clock clock;
     private final BookingStatusHistoryRepository history;
     private final HorseInsuranceRepository insurance;
-
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<BookingMergeSuggestionResponseDto> mergeSuggestion(Long bookingId, String username) {
-        Booking booking = bookings.findByIdAndCustomer_User_Username(bookingId, username)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn."));
-        if (booking.getStatus() != BookingStatus.SCHEDULE_CHANGE_REQUIRED) {
-            return Optional.empty();
-        }
-        Departure source = history.findFirstByBooking_IdAndToStatusOrderByChangedAtDescIdDesc(bookingId, BookingStatus.SCHEDULE_CHANGE_REQUIRED)
-                .map(BookingStatusHistory::getPreviousDeparture)
-                .orElse(null);
-        Departure target = source == null ? null : source.getMergedIntoDeparture();
-        if (target == null) {
-            return Optional.empty();
-        }
-        Instant now = clock.instant();
-        LocalDate holdThrough = BookingSubmissionPolicy.priceHoldThrough(source.getDepartureDate(), config.getInt("PRICE_HOLD_DAYS"));
-        LocalDate pickupDate = BookingSubmissionPolicy.latestPickupDate(booking.getBookingType(), target.getDepartureDate(), config.timeRulesSkipped());
-        boolean privateMode = booking.getTransportMode() == TransportMode.PRIVATE;
-        int stalls = seatsFor(activeHorses(bookingId));
-        long sellableCapacity = privateMode ? stalls : departures.sellableCapacity(target);
-        if (!DepartureMergePolicy.withinPriceHold(source, target, holdThrough)
-                || pickupDate.isBefore(BookingSubmissionPolicy.businessDate(now))
-                || DepartureCapacityPolicy.reasonNotReservable(target.getStatus(), target.getBookingCutoffAt(), now,
-                        sellableCapacity, privateMode ? 0 : target.getBookedStallCount(), stalls).isPresent()
-                || (privateMode && !departures.hasPrivateVehicle(target, stalls))) {
-            return Optional.empty();
-        }
-        return Optional.of(BookingMergeSuggestionResponseDto.from(target, pickupDate,
-                privateMode ? com.example.racehorse_transport.entity.enums.DepartureAvailability.AVAILABLE
-                        : departures.availability(target, sellableCapacity - target.getStallCapacity())));
-    }
 
     @Override
     @Transactional

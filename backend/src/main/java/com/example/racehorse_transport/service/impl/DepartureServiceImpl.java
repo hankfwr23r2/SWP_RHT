@@ -8,14 +8,11 @@ import com.example.racehorse_transport.policy.DepartureFleetPolicy;
 import com.example.racehorse_transport.repository.VehicleTripRepository;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import com.example.racehorse_transport.entity.enums.VehicleTripType;
-import com.example.racehorse_transport.dto.departure.DepartureCreateRequestDto;
-import com.example.racehorse_transport.dto.departure.DepartureMergeRequestDto;
 import com.example.racehorse_transport.dto.departure.DepartureResponseDto;
 import com.example.racehorse_transport.entity.AppUser;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Departure;
 import com.example.racehorse_transport.entity.DepartureSchedule;
-import com.example.racehorse_transport.entity.Route;
 import com.example.racehorse_transport.entity.enums.ActiveStatus;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.DepartureStatus;
@@ -24,16 +21,13 @@ import com.example.racehorse_transport.entity.enums.ScheduleChangeCause;
 import com.example.racehorse_transport.exception.BookingRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.BookingStatusPolicy;
-import com.example.racehorse_transport.policy.BookingSubmissionPolicy;
 import com.example.racehorse_transport.policy.DepartureCapacityPolicy;
 import com.example.racehorse_transport.policy.DepartureDecisionPolicy;
 import com.example.racehorse_transport.policy.DepartureGenerationPolicy;
-import com.example.racehorse_transport.policy.DepartureMergePolicy;
 import com.example.racehorse_transport.repository.AppUserRepository;
 import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.DepartureRepository;
 import com.example.racehorse_transport.repository.DepartureScheduleRepository;
-import com.example.racehorse_transport.repository.RouteRepository;
 import com.example.racehorse_transport.service.BookingStatusService;
 import com.example.racehorse_transport.service.DepartureService;
 import com.example.racehorse_transport.service.SystemConfigService;
@@ -61,7 +55,6 @@ public class DepartureServiceImpl implements DepartureService {
 
     private final DepartureRepository departures;
     private final DepartureScheduleRepository schedules;
-    private final RouteRepository routes;
     private final BookingRepository bookings;
     private final AppUserRepository users;
     private final BookingStatusService bookingStatus;
@@ -196,75 +189,23 @@ public class DepartureServiceImpl implements DepartureService {
 
     @Override
     @Transactional
-    public DepartureResponseDto createAdHoc(DepartureCreateRequestDto request, String username) {
-        Route route = routes.findWithEndpoints(request.getRouteId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tuyến " + request.getRouteId()));
-        if (route.getStatus() != ActiveStatus.ACTIVE) {
-            throw new IllegalArgumentException("Tuyến " + route.getCode() + " đang ngừng chạy.");
-        }
-        Instant planned = DepartureGenerationPolicy.plannedDepartureAt(request.getDepartureDate(), request.getDepartureTime(), BUSINESS_ZONE);
-        if (!planned.isAfter(clock.instant())) {
-            throw new IllegalArgumentException("Giờ xuất phát phải ở tương lai.");
-        }
-        Departure departure = request.toEntity(route, planned,
-                cutoffAt(planned, request.getBookingCutoffHours()));
-        departure.setBookedStallCount(0);
-        departure.setStatus(DepartureStatus.OPEN);
-        AppUser actor = users.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài khoản " + username));
-        var vehicleClass = fleet.vehicleClass(request.getVehicleClassId());
-        departure.setStallCapacity(DepartureFleetPolicy.capacity(request.getVehicleCount(), vehicleClass.getMaxStallCount()));
-        Departure saved = departures.save(departure);
-        fleet.attach(saved, vehicleClass, request.getVehicleCount(), DepartureAllotmentType.BASE, actor);
-        return toDto(saved);
-    }
-
-    @Override
-    @Transactional
     public DepartureResponseDto cancel(Long departureId, String reason, String actorUsername) {
-        return cancelForUser(departureId, reason, actorUsername, null);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<DepartureResponseDto> mergeTargets(Long departureId) {
-        Departure source = departures.findWithRoute(departureId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chuyến " + departureId));
-        if (!DepartureMergePolicy.canMergeSource(source)) {
-            return List.of();
-        }
-        LocalDate holdThrough = priceHoldThrough(source);
-        Instant now = clock.instant();
-        return departures.search(source.getRoute().getId(), null, source.getDepartureDate(), holdThrough).stream()
-                .filter(target -> DepartureMergePolicy.reasonNotMergeable(source, target, holdThrough, now, fleet.sellableCapacity(target)).isEmpty())
-                .map(this::toDto).toList();
-    }
-
-    @Override
-    @Transactional
-    public DepartureResponseDto merge(Long departureId, DepartureMergeRequestDto request, String actorUsername) {
-        return cancelForUser(departureId, request.reason(), actorUsername, request);
-    }
-
-    private DepartureResponseDto cancelForUser(Long departureId, String reason, String actorUsername, DepartureMergeRequestDto merge) {
         AppUser actor = users.findByUsername(actorUsername)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài khoản " + actorUsername));
-        cancelDeparture(departureId, reason, actor.getId(), merge);
+        cancelDeparture(departureId, reason, actor.getId());
         return toDto(departures.findWithRoute(departureId).orElseThrow());
     }
 
     @Override
     @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
     public void cancelForDelay(Long departureId, String reason) {
-        cancelDeparture(departureId, reason, null, null);
+        cancelDeparture(departureId, reason, null);
     }
 
-    private void cancelDeparture(Long departureId, String reason, Long actorId, DepartureMergeRequestDto merge) {
-        // Khóa đơn trước, chuyến sau. Trong mỗi nhóm khóa theo id tăng dần như luồng đổi chuyến.
+    private void cancelDeparture(Long departureId, String reason, Long actorId) {
+        // Khóa đơn trước, chuyến sau. Đơn khóa theo id tăng dần như luồng đổi chuyến.
         Set<Long> locked = new HashSet<>(bookings.findIdsByDeparture(departureId));
         locked.stream().sorted().forEach(bookings::findForUpdate);
-        Long targetId = merge == null ? null : merge.targetDepartureId();
-        Departure target = targetId != null && targetId < departureId ? lockDeparture(targetId) : null;
         Departure departure = lockDeparture(departureId);
         if (!DepartureCapacityPolicy.canCancel(departure.getStatus())) {
             throw new IllegalStateException("Chuyến đã chạy hoặc đã hủy, không hủy được.");
@@ -279,15 +220,6 @@ public class DepartureServiceImpl implements DepartureService {
                     throw new IllegalStateException("Đơn " + booking.getCode() + " đã nhận ngựa nên không hủy chuyến. Xử lý bằng sự cố.");
                 });
         String bookingReason = "Chuyến ngày " + departure.getDepartureDate() + " bị hủy: " + reason.trim();
-        if (merge != null) {
-            if (target == null) {
-                target = departureId.equals(targetId) ? departure : lockDeparture(targetId);
-            }
-            DepartureMergePolicy.reasonNotMergeable(departure, target, priceHoldThrough(departure), clock.instant(), fleet.sellableCapacity(target))
-                    .ifPresent(problem -> { throw BookingRuleException.conflict(problem); });
-            merge.applyTo(departure, target);
-            bookingReason = "Dồn sang chuyến ngày " + target.getDepartureDate() + ": " + reason.trim();
-        }
         departure.setStatus(DepartureStatus.CANCELLED);
 
         for (Booking booking : onDeparture) {
@@ -297,12 +229,6 @@ public class DepartureServiceImpl implements DepartureService {
                 bookingStatus.clearPlannedTransport(booking.getId());
             }
         }
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean hasPrivateVehicle(Departure departure, int stalls) {
-        return fleet.privateStock(departure, stalls, false).isPresent();
     }
 
     @Override
@@ -349,10 +275,6 @@ public class DepartureServiceImpl implements DepartureService {
     private Departure lockDeparture(Long id) {
         return departures.findForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chuyến " + id));
-    }
-
-    private LocalDate priceHoldThrough(Departure source) {
-        return BookingSubmissionPolicy.priceHoldThrough(source.getDepartureDate(), config.getInt("PRICE_HOLD_DAYS"));
     }
 
     private DepartureResponseDto toDto(Departure departure) {
