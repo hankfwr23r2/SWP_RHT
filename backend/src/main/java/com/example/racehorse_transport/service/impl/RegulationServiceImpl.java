@@ -56,6 +56,7 @@ public class RegulationServiceImpl implements RegulationService {
     private final DepartureRepository departures;
     private final RouteStopRepository routeStops;
     private final Clock clock;
+    private final com.example.racehorse_transport.service.SystemConfigService configs;
 
     @Override
     public RegulationPreviewResponseDto preview(RegulationPreviewRequestDto request) {
@@ -100,7 +101,12 @@ public class RegulationServiceImpl implements RegulationService {
                 .orElseThrow(() -> new RegulationRuleException("requestedPickupDate",
                         "Chưa cấu hình quy định có hiệu lực cho quốc gia và chiều vận chuyển này.", true, null));
         List<DocumentRequirement> configured = requirements.findByRule_Id(rule.getId());
-        return new RegulationPreviewResponseDto(CountryRuleResponseDto.from(rule), RegulationPolicy.leadDays(rule),
+        // Demo bỏ kiểm tra giờ: không cần thời gian làm giấy trước chuyến
+        boolean skip = configs.timeRulesSkipped();
+        CountryRuleResponseDto ruleDto = CountryRuleResponseDto.from(rule);
+        if (skip) ruleDto = new CountryRuleResponseDto(ruleDto.id(), ruleDto.countryCode(), ruleDto.direction(), 0, 0,
+                ruleDto.validFrom(), ruleDto.validTo());
+        return new RegulationPreviewResponseDto(ruleDto, skip ? 0 : RegulationPolicy.leadDays(rule),
                 DocumentRequirementResponseDto.fromList(RegulationPolicy.requirementsForGate(configured, gateLocationId)),
                 gateLocationId == null && configured.stream().anyMatch(item -> item.getGateLocation() != null),
                 null, null);

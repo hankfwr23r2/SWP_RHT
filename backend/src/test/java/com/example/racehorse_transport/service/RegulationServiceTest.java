@@ -46,7 +46,8 @@ class RegulationServiceTest {
     @BeforeEach
     void setUp() {
         Clock clock = Clock.fixed(Instant.parse("2026-12-01T00:00:00Z"), ZoneOffset.UTC);
-        service = new RegulationServiceImpl(rules, types, requirements, countries, locations, departures, routeStops, clock);
+        service = new RegulationServiceImpl(rules, types, requirements, countries, locations, departures, routeStops, clock,
+                org.mockito.Mockito.mock(com.example.racehorse_transport.service.SystemConfigService.class));
     }
 
     @Test

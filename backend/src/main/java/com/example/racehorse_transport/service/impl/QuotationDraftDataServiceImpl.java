@@ -119,7 +119,7 @@ public class QuotationDraftDataServiceImpl {
             throw BookingRuleException.conflict("Ngày đón đã qua.");
         }
         if (linehaul) {
-            BookingSubmissionPolicy.validatePickupDate(type, pickupDate, departureDate);
+            BookingSubmissionPolicy.validatePickupDate(type, pickupDate, departureDate, configs.timeRulesSkipped());
             if (route.getStatus() != ActiveStatus.ACTIVE || !now.isBefore(departure.getPlannedDepartureAt())) {
                 throw BookingRuleException.conflict("Chuyến trục đã qua giờ xuất phát hoặc tuyến không còn hoạt động.");
             }

@@ -207,7 +207,7 @@ public class PricingDataServiceImpl implements PricingDataService {
             throw new PricingRuleException("Chuyến trục không đủ điều kiện để đặt.", true);
         }
         BookingSubmissionPolicy.validatePickupDate(type, LocalDate.ofInstant(request.pickupAt(), BUSINESS_ZONE),
-                departure.getDepartureDate());
+                departure.getDepartureDate(), config.timeRulesSkipped());
         if (!DepartureRoutePolicy.matches(route, type, hubId(originHub), hubId(destinationHub))) {
             throw new PricingRuleException("Chuyến trục không phù hợp với địa chỉ đã chọn.");
         }

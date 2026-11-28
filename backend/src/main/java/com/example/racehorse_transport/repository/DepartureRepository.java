@@ -70,6 +70,15 @@ public interface DepartureRepository extends JpaRepository<Departure, Long> {
     @Query("UPDATE Departure d SET d.status = :to WHERE d.status = :from AND d.bookingCutoffAt <= :now")
     int changeStatusWhenCutoffPassed(@Param("from") DepartureStatus from, @Param("to") DepartureStatus to, @Param("now") Instant now);
 
+    // Demo bỏ kiểm tra giờ: giờ chốt nhận đơn dời về giờ xuất phát và mở lại chuyến chưa chạy
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query(value = """
+            UPDATE departure SET booking_cutoff_at = planned_departure_at - interval '1 minute', status = 'OPEN'
+            WHERE status IN ('OPEN', 'CLOSED') AND planned_departure_at > :now
+              AND booking_cutoff_at < planned_departure_at - interval '1 minute'
+            """, nativeQuery = true)
+    int moveCutoffToDeparture(@Param("now") Instant now);
+
     // routeId, status null nghĩa là không lọc
     @Query("""
             SELECT d FROM Departure d JOIN FETCH d.route r JOIN FETCH r.origin JOIN FETCH r.destination

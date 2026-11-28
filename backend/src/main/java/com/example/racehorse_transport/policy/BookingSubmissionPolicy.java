@@ -101,11 +101,20 @@ public final class BookingSubmissionPolicy {
     }
 
     public static void validatePickupDate(BookingType type, LocalDate pickupDate, LocalDate departureDate) {
-        LocalDate latest = latestPickupDate(type, departureDate);
+        validatePickupDate(type, pickupDate, departureDate, false);
+    }
+
+    // sameDayAllowed: demo bỏ kiểm tra giờ cho đón ngay trong ngày chạy
+    public static void validatePickupDate(BookingType type, LocalDate pickupDate, LocalDate departureDate, boolean sameDayAllowed) {
+        LocalDate latest = latestPickupDate(type, departureDate, sameDayAllowed);
         if (latest.isBefore(departureDate) && pickupDate.isAfter(latest)) {
             throw new BookingRuleException("Ngày đưa ngựa đến phải trước ngày xuất phát ít nhất một ngày.");
         }
         validatePickupDate(pickupDate, departureDate);
+    }
+
+    public static LocalDate latestPickupDate(BookingType type, LocalDate departureDate, boolean sameDayAllowed) {
+        return sameDayAllowed ? departureDate : latestPickupDate(type, departureDate);
     }
 
     public static LocalDate latestPickupDate(BookingType type, LocalDate departureDate) {

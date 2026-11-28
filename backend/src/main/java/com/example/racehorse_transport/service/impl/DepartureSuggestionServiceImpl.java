@@ -51,6 +51,7 @@ public class DepartureSuggestionServiceImpl implements DepartureSuggestionServic
     private final CountryRuleRepository countryRules;
     private final Clock clock;
     private final DepartureFleetService fleet;
+    private final com.example.racehorse_transport.service.SystemConfigService configs;
 
     @Override
     @Transactional(readOnly = true)
@@ -104,9 +105,9 @@ public class DepartureSuggestionServiceImpl implements DepartureSuggestionServic
                 .departures(found.stream().map(candidate -> DepartureResponseDto.forCustomer(candidate.departure(),
                         privateMode ? privateAvailability(candidate.departure(), query.getStalls())
                                 : fleet.availability(candidate.departure(), candidate.spareCapacity()))).toList())
-                .leadDays(found.isEmpty() ? null : RegulationPolicy.leadDays(rules, found.getFirst().departure().getDepartureDate()))
+                .leadDays(found.isEmpty() ? null : leadDays(rules, found.getFirst().departure().getDepartureDate()))
                 .tooLateDepartureIds(found.stream().map(Candidate::departure).filter(d -> !RegulationPolicy.feasible(
-                        RegulationPolicy.leadDays(rules, d.getDepartureDate()), clock.instant(), d.getBookingCutoffAt()))
+                        leadDays(rules, d.getDepartureDate()), clock.instant(), d.getBookingCutoffAt()))
                         .map(Departure::getId).toList())
                 .build();
     }
@@ -140,5 +141,10 @@ public class DepartureSuggestionServiceImpl implements DepartureSuggestionServic
                 .map(area -> area.getHub())
                 .filter(hub -> hub.getStatus() == ActiveStatus.ACTIVE)
                 .orElse(null);
+    }
+
+    // Demo bỏ kiểm tra giờ: không cần thời gian làm giấy trước chuyến
+    private long leadDays(List<CountryRule> rules, java.time.LocalDate departureDate) {
+        return configs.timeRulesSkipped() ? 0 : RegulationPolicy.leadDays(rules, departureDate);
     }
 }
