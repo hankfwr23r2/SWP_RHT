@@ -103,7 +103,6 @@ export const staffDispatch = {
       "all": "Tất cả ({{count}})",
       "nextWeekHint": "Tuần này không có đơn chờ. Còn {{count}} đơn ở tuần sau đó.",
       "openWeek": "Mở tuần {{date}}",
-      "awayAt": "Đang ở {{name}}",
       "planReturn": "Lập lượt về",
       "nothing": "Không còn đơn chờ xếp",
       "pickupOn": "Đón {{date}}",

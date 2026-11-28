@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { invalidateStaffWork } from '@backoffice/shared/useStaffWork'
 import { useTranslation } from 'react-i18next'
-import { useAuth } from '@shared/auth/AuthContext'
 import { PickupMissPanel } from '@shared/components/PickupMissPanel'
 import { dispatchApi, type DispatchBooking, type DispatchHorse, type DispatchVehicle, type VehicleTrip } from '@shared/api/dispatch'
 import { BookingJourney } from '@shared/components/HorseJourney'
@@ -31,7 +30,6 @@ const today = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_
 
 export default function DispatchPage() {
   const { t } = useTranslation()
-  const { session } = useAuth()
   const [params, setParams] = useSearchParams()
   const requestedDate = params.get('date')
   const linkedDate = requestedDate && /^\d{4}-\d{2}-\d{2}$/.test(requestedDate) && Number.isFinite(Date.parse(requestedDate))
@@ -42,7 +40,6 @@ export default function DispatchPage() {
   const clearLink = (key: string) => {
     if (params.has(key)) setParams(previous => { previous.delete(key); return previous }, { replace: true })
   }
-  const [onlyMine, setOnlyMine] = useState(false)
   const [weekStart, setWeekStart] = useState(() => mondayOf(today()))
   const [grouping, setGrouping] = useState(false)
   const [linehaul, setLinehaul] = useState(false)
@@ -79,7 +76,7 @@ export default function DispatchPage() {
         <WaitingList bookings={data.bookings} next={data.next} onWeek={chooseWeek} onJourney={setJourneyOf}
           onHub={(booking, horse) => setHubOf({ booking, horse })} />
         <WeekBoard weekStart={shownWeek} vehicles={data.vehicles}
-          trips={onlyMine ? data.trips.filter(trip => trip.coordinatorStaffCode != null && trip.coordinatorStaffCode === session?.staffCode) : data.trips}
+          trips={data.trips}
           onOpen={(trip: VehicleTrip) => setOpenTripId(trip.id)} onReturn={setCreating} />
       </div>
     )
@@ -97,7 +94,6 @@ export default function DispatchPage() {
               {control => <DateInput {...control} value={shownWeek} onValueChange={value => value && chooseWeek(mondayOf(value))} />}
             </Field>
             <Button aria-label={t('dispatch.board.next')} icon={<i className="fa-solid fa-chevron-right" />} onClick={() => chooseWeek(addDays(shownWeek, 7))} />
-            <Button aria-pressed={onlyMine} onClick={() => setOnlyMine(value => !value)}>{t('coordAssignment.mine')}</Button>
             <Button variant="primary" icon={<i className="fa-solid fa-route" />} onClick={() => setGrouping(true)}>{t('dispatch.board.group')}</Button>
             <Button onClick={() => setLinehaul(true)}>{t('linehaul.suggest')}</Button>
             <Button icon={<i className="fa-solid fa-plus" />} onClick={() => setCreating(true)}>{t('dispatch.newTrip')}</Button>
