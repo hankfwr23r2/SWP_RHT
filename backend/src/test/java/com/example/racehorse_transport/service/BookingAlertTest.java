@@ -36,7 +36,8 @@ class BookingAlertTest {
         when(payments.findLinkedOverdue(1L, 10L, "0900000000", PaymentType.EXTRA_CHARGE, PaymentStatus.PENDING, NOW))
                 .thenReturn(List.of(debt));
         var notices = new CustomerNoticeServiceImpl(notifications, staff, mock(BookingAssignmentService.class), mock(HorseLegRepository.class),
-                mock(HorseStayRepository.class), configs, payments, Clock.fixed(NOW, ZoneOffset.UTC));
+                mock(HorseStayRepository.class), configs, payments, Clock.fixed(NOW, ZoneOffset.UTC),
+                mock(com.example.racehorse_transport.service.BillMailService.class));
 
         notices.bookingSubmitted(booking);
         verify(notifications).notify(eq(List.of(30L)), eq(1L), any(), any(), eq("/manager/orders/1"));

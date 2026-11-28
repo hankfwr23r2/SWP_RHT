@@ -115,6 +115,7 @@ public class BookingStatusServiceImpl implements BookingStatusService {
 
         recordHistory(booking, from, reason, actorUserId == null ? null : users.getReferenceById(actorUserId),
                 previousDeparture, cause);
+        notices.statusChanged(booking, from, reason);
         if (toStatus == BookingStatus.CONFIRMED && from == BookingStatus.AWAITING_DEPOSIT) {
             notifications.notifyManagers(bookingId, "Khách đã đặt cọc", "Đơn " + booking.getCode() + " đã xác nhận.",
                     "/manager/orders/" + bookingId);
