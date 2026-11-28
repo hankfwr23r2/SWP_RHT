@@ -29,7 +29,7 @@ test('điều phối đổi chỗ trong sơ đồ khoang rồi lưu, sơ đồ c
     if (path === '/vehicle-trips/9/horse-legs') return ok(route, [])
     if (path === '/vehicle-trips/9/stall-plan') return ok(route, plan)
     if (path === '/vehicle-trips/9/stall-plan/suggest') {
-      return ok(route, { ...plan, horses: [row(70, 'Sao Mai', 1, 3), row(71, 'Gió Bấc', 2, 1)], warnings: ['Ngựa đực Gió Bấc đứng cạnh ngựa cái Sao Mai.'] })
+      return ok(route, { ...plan, horses: [row(70, 'Sao Mai', 1, 3), row(71, 'Gió Bấc', 2, 1)], warnings: ['Sao Mai xuống trước nhưng bị Gió Bấc chắn phía cửa.'] })
     }
     if (path === '/vehicle-trips/9/stall-plan/apply') {
       applied.push(request.postDataJSON())
@@ -53,7 +53,7 @@ test('điều phối đổi chỗ trong sơ đồ khoang rồi lưu, sơ đồ c
 
   // Xếp lại tự động: chỉ đổi bản nháp, hiện cảnh báo
   await dialog.getByRole('button', { name: 'Xếp lại tự động' }).click()
-  await expect(dialog.getByRole('list', { name: 'Cảnh báo sơ đồ khoang' })).toContainText('Ngựa đực Gió Bấc đứng cạnh ngựa cái Sao Mai.')
+  await expect(dialog.getByRole('list', { name: 'Cảnh báo sơ đồ khoang' })).toContainText('Sao Mai xuống trước nhưng bị Gió Bấc chắn phía cửa.')
   await dialog.getByRole('button', { name: 'Lưu sơ đồ' }).click()
   await expect(page.getByText('Sơ đồ khoang vừa thay đổi (thêm, bớt ngựa hoặc đổi chỗ). Tải lại sơ đồ mới rồi xếp lại.')).toBeVisible()
 

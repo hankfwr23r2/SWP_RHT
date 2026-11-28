@@ -84,9 +84,6 @@ public final class StallPlanPolicy {
                 Integer pa = positions.get(a.legId());
                 Integer pb = positions.get(b.legId());
                 if (a == b || pa == null || pb == null || !a.overlaps(b)) continue;
-                if (a.sex() == HorseGender.STALLION && b.sex() == HorseGender.MARE && adjacent(a, pa, b, pb)) {
-                    result.add("Ngựa đực " + a.name() + " đứng cạnh ngựa cái " + b.name() + ".");
-                }
                 // Xe chất và dỡ ngựa ở cửa sau: con đứng phía cửa (số lớn hơn) chắn con phía trong
                 if (pa < pb && a.alight() < b.alight()) {
                     result.add(a.name() + " xuống trước nhưng bị " + b.name() + " chắn phía cửa.");
@@ -108,10 +105,6 @@ public final class StallPlanPolicy {
             .thenComparing(StallHorse::bookingId, Comparator.nullsLast(Comparator.naturalOrder()))
             .thenComparing(h -> h.sex() == HorseGender.STALLION ? 0 : 1)
             .thenComparing(StallHorse::legId);
-
-    private static boolean adjacent(StallHorse a, int pa, StallHorse b, int pb) {
-        return pa + a.seats() == pb || pb + b.seats() == pa;
-    }
 
     // Con nằm gọn trong một đoạn và không trùng con nào đã đặt mà ở trên xe cùng lúc
     private static boolean fits(StallHorse horse, int position, List<StallHorse> others, Map<Long, Integer> placed, List<Integer> segments) {

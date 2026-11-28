@@ -65,7 +65,7 @@ class StallPlanPolicyTest {
         StallHorse mare = new StallHorse(2L, "Sao Mai", 2L, HorseGender.MARE, 1, 2, 1, 1, false);
         StallHorse late = new StallHorse(3L, "Trăng Non", 3L, HorseGender.GELDING, 2, 3, 1, 3, false);
         List<String> warnings = StallPlanPolicy.warnings(List.of(stallion, mare, late), Map.of(1L, 2, 2L, 1, 3L, 3));
-        assertThat(warnings).contains("Ngựa đực Gió Bấc đứng cạnh ngựa cái Sao Mai.", "Sao Mai xuống trước nhưng bị Gió Bấc chắn phía cửa.");
+        assertThat(warnings).containsExactly("Sao Mai xuống trước nhưng bị Gió Bấc chắn phía cửa.");
         assertThat(StallPlanPolicy.warnings(List.of(stallion, late), Map.of(1L, 3, 3L, 1)))
                 .contains("Trăng Non lên sau nhưng bị Gió Bấc chắn phía cửa.");
     }
