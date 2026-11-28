@@ -163,7 +163,7 @@ public class DepartureServiceImpl implements DepartureService {
             for (LocalDate date : dates) {
                 Instant planned = DepartureGenerationPolicy.plannedDepartureAt(date, schedule.getDepartureTime(), BUSINESS_ZONE);
                 created += departures.insertIfAbsent(schedule.getId(), schedule.getRoute().getId(), date, planned,
-                        DepartureGenerationPolicy.bookingCutoffAt(planned, schedule.getBookingCutoffHours()),
+                        cutoffAt(planned, schedule.getBookingCutoffHours()),
                         DepartureFleetPolicy.capacity(schedule.getBaseVehicleCount(), schedule.getBaseVehicleClass().getMaxStallCount()),
                         schedule.getBaseVehicleClass().getId(), schedule.getBaseVehicleCount(), clock.instant());
             }
@@ -177,6 +177,10 @@ public class DepartureServiceImpl implements DepartureService {
     @Override
     @Transactional
     public int closePastCutoff() {
+        // Demo bỏ kiểm tra giờ: nhận đơn tới giờ xuất phát, kể cả chuyến đã sinh hoặc đã đóng theo giờ chốt cũ
+        if (config.timeRulesSkipped()) {
+            departures.moveCutoffToDeparture(clock.instant());
+        }
         // Cùng điều kiện với DepartureCapacityPolicy.shouldClose, chạy một lệnh cho mọi chuyến
         return departures.changeStatusWhenCutoffPassed(DepartureStatus.OPEN, DepartureStatus.CLOSED, clock.instant());
     }
@@ -203,7 +207,7 @@ public class DepartureServiceImpl implements DepartureService {
             throw new IllegalArgumentException("Giờ xuất phát phải ở tương lai.");
         }
         Departure departure = request.toEntity(route, planned,
-                DepartureGenerationPolicy.bookingCutoffAt(planned, request.getBookingCutoffHours()));
+                cutoffAt(planned, request.getBookingCutoffHours()));
         departure.setBookedStallCount(0);
         departure.setStatus(DepartureStatus.OPEN);
         AppUser actor = users.findByUsername(username)
@@ -354,5 +358,11 @@ public class DepartureServiceImpl implements DepartureService {
     private DepartureResponseDto toDto(Departure departure) {
         return DepartureResponseDto.from(departure,
                 DepartureCapacityPolicy.available(departure.getStallCapacity(), departure.getBookedStallCount()));
+    }
+
+    // Demo bỏ kiểm tra giờ: chốt nhận đơn ngay trước giờ xuất phát (DB bắt giờ chốt phải trước giờ xuất phát)
+    private Instant cutoffAt(Instant planned, int configuredHours) {
+        return config.timeRulesSkipped() ? com.example.racehorse_transport.policy.DemoTimeRulePolicy.bookingCutoffAt(planned)
+                : DepartureGenerationPolicy.bookingCutoffAt(planned, configuredHours);
     }
 }

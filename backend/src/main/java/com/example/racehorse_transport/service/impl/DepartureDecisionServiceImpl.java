@@ -152,7 +152,9 @@ public class DepartureDecisionServiceImpl implements DepartureDecisionService {
         Instant original = departure.getPlannedDepartureAt();
         Instant planningTime = now.isBefore(original) ? original
                 : DepartureDelayPolicy.effectiveTime(original, departure.getRevisedDepartureAt());
-        return DepartureDecisionPolicy.reasonNotConfirmable(departure.getStatus(), planningTime, decisionHours,
+        // Demo bỏ kiểm tra giờ: quyết định chạy ngay, không chờ tới 48 giờ cuối
+        int hours = config.timeRulesSkipped() ? com.example.racehorse_transport.policy.DemoTimeRulePolicy.DECISION_HOURS : decisionHours;
+        return DepartureDecisionPolicy.reasonNotConfirmable(departure.getStatus(), planningTime, hours,
                 departure.getRunConfirmedAt() != null, now);
     }
 

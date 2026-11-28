@@ -74,7 +74,7 @@ public class BookingRescheduleServiceImpl implements BookingRescheduleService {
         }
         Instant now = clock.instant();
         LocalDate holdThrough = BookingSubmissionPolicy.priceHoldThrough(source.getDepartureDate(), config.getInt("PRICE_HOLD_DAYS"));
-        LocalDate pickupDate = BookingSubmissionPolicy.latestPickupDate(booking.getBookingType(), target.getDepartureDate());
+        LocalDate pickupDate = BookingSubmissionPolicy.latestPickupDate(booking.getBookingType(), target.getDepartureDate(), config.timeRulesSkipped());
         boolean privateMode = booking.getTransportMode() == TransportMode.PRIVATE;
         int stalls = seatsFor(activeHorses(bookingId));
         long sellableCapacity = privateMode ? stalls : departures.sellableCapacity(target);

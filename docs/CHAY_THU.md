@@ -94,3 +94,30 @@ Tỉnh không có trong bảng (ví dụ Banteay Meanchey, Ratanakiri, Bokeo, Lu
 ## Máy cũ không khởi động được backend
 
 Bản trước 25/11 có lỗi: máy đã từng lập lượt trục thì hễ dữ liệu mẫu đổi là backend dừng ở `fk_trip_stop_route_stop`. Đã sửa, chỉ cần lấy code mới, **không** phải xóa dữ liệu.
+
+## Demo trên giờ thật (dịch vụ thật, bỏ kiểm tra mốc thời gian)
+
+Dùng khi cần trình diễn với VNPAY sandbox, Cloudinary, mail và Turnstile thật. Không tua giờ; thay vào đó các mốc thời gian chặn thao tác được bỏ qua để đi hết một đơn trong buổi demo. Bản thường, test và CI vẫn giữ đủ kiểm tra. Chỉ khởi động được với cơ sở dữ liệu trên máy.
+
+Bật bằng Docker (key lấy từ `.env`: `VNPAY_HASH_SECRET`, `CLOUDINARY_*`, `MAIL_*`, `TURNSTILE_SECRET_KEY`, `VITE_TURNSTILE_SITE_KEY`):
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.demo-live.yml up -d --build
+```
+
+Chạy tay: trong `backend/` đặt `$env:SPRING_PROFILES_ACTIVE="local,demo-live"` (profile `local` nạp key trong `application-local.properties`) rồi `.\mvnw.cmd spring-boot:run`.
+
+| Bỏ qua | Bình thường |
+|---|---|
+| Giờ chốt nhận đơn (chuyến nhận đơn tới giờ xuất phát; chuyến đã đóng được mở lại sau 1 phút) | 72 giờ trước giờ chạy |
+| Cửa sổ quyết định chạy chuyến | 48 giờ cuối |
+| Thời gian làm giấy theo quy định nước | 5 / 14+7 / 30+7 ngày |
+| Đón trước ngày chạy | Ít nhất 1 ngày |
+| Hạn ngựa có mặt ở hub | 3 giờ trước giờ chạy |
+| Khung giờ đón, giao | 06:00–18:00 |
+| Xuất phát sớm phải ghi lý do | Sớm hơn 30 phút |
+| Nghỉ ở trạm, chờ người nhận, chờ ở điểm đón | 30 phút, 120 phút, 30 phút |
+
+Giữ nguyên: sức chứa, giấy tờ phải được duyệt và còn hạn, tiền, hạn báo giá 24 giờ, hạn trả số dư, phân quyền. Trang quy định cho khách vẫn hiện số gốc.
+
+Lưu ý: tài khoản mẫu `@racehorse.test` không nhận mail thật; đăng ký một khách bằng email thật. Thanh toán bằng thẻ test của VNPAY sandbox.

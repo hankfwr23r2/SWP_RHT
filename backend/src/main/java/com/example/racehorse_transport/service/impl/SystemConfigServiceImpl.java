@@ -35,10 +35,25 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     private final StaffRepository staff;
     private final AuditService audit;
     private final Clock clock;
+    private final com.example.racehorse_transport.config.DemoProperties demo;
 
     @Override
     @Transactional(readOnly = true)
     public int getInt(String key) {
+        if (demo.skipTimeRules()) {
+            var override = com.example.racehorse_transport.policy.DemoTimeRulePolicy.override(key);
+            if (override.isPresent()) return override.getAsInt();
+        }
+        return storedInt(key);
+    }
+
+    @Override
+    public boolean timeRulesSkipped() {
+        return demo.skipTimeRules();
+    }
+
+    // Giá trị lưu trong DB, không qua chế độ demo (dùng cho trang quy định hiện cho khách)
+    private int storedInt(String key) {
         String value = repository.findById(key)
                 .orElseThrow(() -> new IllegalStateException("Thiếu tham số hệ thống " + key))
                 .getConfigValue();
@@ -99,14 +114,14 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     @Override
     @Transactional(readOnly = true)
     public TransportRulesResponseDto transportRules() {
-        Rules rules = new Rules(getInt("MAX_CONTINUOUS_HOURS"), getInt("MIN_REST_MINUTES"), getInt("MAX_DRIVE_HOURS_PER_DAY"), 0, 0);
+        Rules rules = new Rules(storedInt("MAX_CONTINUOUS_HOURS"), storedInt("MIN_REST_MINUTES"), storedInt("MAX_DRIVE_HOURS_PER_DAY"), 0, 0);
         return new TransportRulesResponseDto(
-                getInt("PICKUP_WINDOW_START_HOUR"), getInt("PICKUP_WINDOW_END_HOUR"),
-                getInt("DELIVERY_WINDOW_START_HOUR"), getInt("DELIVERY_WINDOW_END_HOUR"),
-                getInt("HUB_CHECKIN_HOURS"), getInt("HANDOVER_FREE_WAIT_MINUTES"), getInt("BALANCE_WAIT_MINUTES"),
-                getInt("DEPARTURE_DECISION_HOURS"),
+                storedInt("PICKUP_WINDOW_START_HOUR"), storedInt("PICKUP_WINDOW_END_HOUR"),
+                storedInt("DELIVERY_WINDOW_START_HOUR"), storedInt("DELIVERY_WINDOW_END_HOUR"),
+                storedInt("HUB_CHECKIN_HOURS"), storedInt("HANDOVER_FREE_WAIT_MINUTES"), storedInt("BALANCE_WAIT_MINUTES"),
+                storedInt("DEPARTURE_DECISION_HOURS"),
                 Math.toIntExact(TripSchedulePolicy.rideLimitSeconds(false, rules) / 60),
-                getInt("STABLING_DAILY_FEE"));
+                storedInt("STABLING_DAILY_FEE"));
     }
 
     private String text(String key) {

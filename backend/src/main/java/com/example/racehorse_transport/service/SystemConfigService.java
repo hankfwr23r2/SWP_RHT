@@ -12,6 +12,9 @@ public interface SystemConfigService {
     // Tham số kiểu số nguyên. Thiếu khóa hoặc giá trị không phải số thì ném lỗi cấu hình.
     int getInt(String key);
 
+    // Demo trên giờ thật (app.demo.skip-time-rules): bỏ qua các mốc thời gian chặn thao tác
+    boolean timeRulesSkipped();
+
     List<SystemConfigResponseDto> configurations();
 
     SystemConfigResponseDto configuration(String key);
