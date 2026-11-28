@@ -429,8 +429,9 @@ class BenXeJourneyFlowTest {
             if (item.get("bookingHorseId") != null) {
                 request.param("bookingHorseId", item.get("bookingHorseId").toString());
             }
-            long document = id(mvc.perform(request.header(HttpHeaders.AUTHORIZATION, specialist)));
-            ok(act(specialist, path + "/" + document + "/approve", "{}"));
+            // Chuyên viên nộp là đã duyệt
+            mvc.perform(request.header(HttpHeaders.AUTHORIZATION, specialist)).andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.status").value("APPROVED"));
         }
     }
 

@@ -151,8 +151,13 @@ public class DocumentReviewServiceImpl implements DocumentReviewService {
         DocumentRequirementResponseDto requirement = requirement(booking, request.requirementId());
         var reviewer = assignments.requireAssigned(booking, username);
         DocumentReviewPolicy.requirePartnerUpload(booking.getStatus(), requirement.submitterType());
-        return attach(bookingId, request.toUploadRequest(), requirement, reviewer.getUserId(),
+        BookingDocumentResponseDto uploaded = attach(bookingId, request.toUploadRequest(), requirement, reviewer.getUserId(),
                 DocumentCompletenessPolicy.requiredOn(booking, businessDate(clock.instant())));
+        // Chuyên viên phụ trách tự nộp giấy của công ty hoặc người nhận: nộp là đã duyệt, không phải bấm Duyệt lần nữa.
+        // Nộp nhầm thì thu hồi như giấy đã duyệt khác.
+        Document document = lockDocument(uploaded.id());
+        markReviewed(document, reviewer, DocumentStatus.APPROVED);
+        return BookingDocumentResponseDto.from(document);
     }
 
     private DocumentRequirementResponseDto requirement(Booking booking, Long requirementId) {

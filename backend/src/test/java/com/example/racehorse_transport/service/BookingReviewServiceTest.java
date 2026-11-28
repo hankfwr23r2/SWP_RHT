@@ -202,10 +202,8 @@ class BookingReviewServiceTest {
 
         for (var requirement : List.of(certificate, permit)) {
             prepareUpload(requirement, STAFF_ID);
+            // Chuyên viên tự nộp giấy công ty, người nhận: nộp là đã duyệt
             assertThat(docs.attachForPartner(BOOKING_ID, "specialist", partnerUpload(requirement)).status())
-                    .isEqualTo(DocumentStatus.UPLOADED);
-            assertThat(completeness.isComplete(BOOKING_ID)).isFalse();
-            assertThat(docs.approve(BOOKING_ID, requirement.id(), "specialist", null).status())
                     .isEqualTo(DocumentStatus.APPROVED);
             verify(attachments).attachForReview(eq(FILE), eq(requirement.documentTypeCode()), eq(DocumentSubject.BOOKING), eq(BOOKING_ID),
                     eq(STAFF_ID), eq(requirement.id()), any());
@@ -223,13 +221,13 @@ class BookingReviewServiceTest {
         prepareUpload(passport, CUSTOMER_ID);
         prepareUpload(certificate, STAFF_ID);
         docs.attach(BOOKING_ID, "customer", customerUpload(passport));
-        docs.attachForPartner(BOOKING_ID, "specialist", partnerUpload(certificate));
+        assertThat(docs.attachForPartner(BOOKING_ID, "specialist", partnerUpload(certificate)).status())
+                .isEqualTo(DocumentStatus.APPROVED);
         docs.reject(BOOKING_ID, passport.id(), "specialist", "Sai hộ chiếu");
-        docs.reject(BOOKING_ID, certificate.id(), "specialist", "Sai giấy chứng nhận");
         verify(notifications).notify(List.of(CUSTOMER_ID), BOOKING_ID, "Giấy tờ cần bổ sung",
                 "Sai hộ chiếu", "/orders/" + BOOKING_ID);
-        verify(notifications).notify(List.of(STAFF_ID), BOOKING_ID, "Giấy tờ cần bổ sung",
-                "Sai giấy chứng nhận", "/specialist/review/" + BOOKING_ID);
+        // Giấy chuyên viên đã nộp và duyệt thì không từ chối được nữa, chỉ thu hồi
+        assertConflict(() -> docs.reject(BOOKING_ID, certificate.id(), "specialist", "Sai giấy chứng nhận"), "đã được kết luận");
         verifyNoMoreInteractions(notifications);
     }
 
