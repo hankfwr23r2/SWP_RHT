@@ -78,7 +78,7 @@ class DemoLiveFlowTest {
         data.staff(username, "MANAGER");
         // Bình thường chỉ xác nhận được trong 48 giờ cuối
         mvc.perform(post("/departures/{id}/confirm-run", departure)
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwt.generateToken(username, List.of("MANAGER"))))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwt.generateToken(username, List.of("MANAGER"), 0)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.runConfirmedAt").isNotEmpty());
     }
