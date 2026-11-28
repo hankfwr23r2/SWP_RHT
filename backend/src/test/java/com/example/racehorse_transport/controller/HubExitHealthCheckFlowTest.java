@@ -176,6 +176,6 @@ class HubExitHealthCheckFlowTest {
     }
 
     private String token(Staff actor, String role) {
-        return "Bearer " + jwt.generateToken(actor.getUser().getUsername(), List.of(role));
+        return "Bearer " + jwt.generateToken(actor.getUser().getUsername(), List.of(role), 0);
     }
 }

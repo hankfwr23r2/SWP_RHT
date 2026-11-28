@@ -105,7 +105,7 @@ class DepartureDelayFlowTest {
                 {"vehicleTripId":%d,"incidentType":"DELAY","causeType":"COMPANY_FAULT",
                  "title":"Trễ ở điểm Route 1","description":"Xe đang chậm so với kế hoạch."}
                 """.formatted(trip);
-        String driverToken = "Bearer " + jwt.generateToken(driverName, List.of("DRIVER"));
+        String driverToken = "Bearer " + jwt.generateToken(driverName, List.of("DRIVER"), 0);
         mvc.perform(post("/incidents").header(HttpHeaders.AUTHORIZATION, driverToken)
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated())
@@ -221,7 +221,7 @@ class DepartureDelayFlowTest {
         var booking = attach(departure);
         String managerName = data.unique("g3-manager");
         data.staff(managerName, "MANAGER");
-        String managerToken = "Bearer " + jwt.generateToken(managerName, List.of("MANAGER"));
+        String managerToken = "Bearer " + jwt.generateToken(managerName, List.of("MANAGER"), 0);
         Instant original = departure.getPlannedDepartureAt();
         for (int hours : List.of(1, 2, 5)) {
             Instant revised = original.plus(Duration.ofHours(hours));
@@ -292,7 +292,7 @@ class DepartureDelayFlowTest {
     }
 
     private String ownerToken(Booking booking) {
-        return "Bearer " + jwt.generateToken(booking.getCustomer().getUser().getUsername(), List.of("CUSTOMER"));
+        return "Bearer " + jwt.generateToken(booking.getCustomer().getUser().getUsername(), List.of("CUSTOMER"), 0);
     }
 
     private Departure departureAt(Instant instant) {

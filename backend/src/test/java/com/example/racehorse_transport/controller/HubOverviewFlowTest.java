@@ -313,7 +313,7 @@ class HubOverviewFlowTest {
 
     private String token(String role) {
         var user = data.staff(data.unique("m8." + role.toLowerCase()), role).getUser();
-        return "Bearer " + jwt.generateToken(user.getUsername(), List.of(role));
+        return "Bearer " + jwt.generateToken(user.getUsername(), List.of(role), 0);
     }
 
     private static Timestamp timestamp(Instant instant) {

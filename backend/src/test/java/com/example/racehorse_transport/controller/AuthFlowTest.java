@@ -282,6 +282,90 @@ class AuthFlowTest {
                 .andExpect(status().isOk());
     }
 
+    @Test
+    void logoutEndsEverySessionOfTheAccountEvenAfterARestart() throws Exception {
+        String username = testData.unique("khachhaimay");
+        testData.customer(username);
+        MvcResult phone = login("/auth/customer/login", username);
+        MvcResult laptop = login("/auth/customer/login", username);
+        String laptopAccess = JsonPath.read(laptop.getResponse().getContentAsString(), "$.data.accessToken");
+        Cookie laptopCookie = laptop.getResponse().getCookie("rt_customer");
+        String wrongCurrentPassword = "{\"currentPassword\":\"Sai@1234\",\"newPassword\":\"Matkhau@9\",\"confirmPassword\":\"Matkhau@9\"}";
+
+        mvc.perform(post("/auth/logout").header("X-Client-App", "customer").cookie(phone.getResponse().getCookie("rt_customer")))
+                .andExpect(status().isOk());
+
+        // Phiên bản lưu ở DB: máy kia hết phiên, không phụ thuộc bộ nhớ của máy chủ
+        assertThat(users.findByUsername(username).orElseThrow().getTokenVersion()).isEqualTo(1);
+        mvc.perform(post("/auth/change-password").header(HttpHeaders.AUTHORIZATION, "Bearer " + laptopAccess)
+                        .contentType(MediaType.APPLICATION_JSON).content(wrongCurrentPassword))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(post("/auth/refresh-token").header("X-Client-App", "customer").cookie(laptopCookie))
+                .andExpect(status().isUnauthorized());
+        // Đăng nhập lại thì dùng được
+        login("/auth/customer/login", username);
+    }
+
+    @Test
+    void refreshRotatesTheCookieAndChangingPasswordEndsOldSessions() throws Exception {
+        String username = testData.unique("khachdoimk");
+        testData.customer(username);
+        MvcResult first = login("/auth/customer/login", username);
+        String access = JsonPath.read(first.getResponse().getContentAsString(), "$.data.accessToken");
+        Cookie oldCookie = first.getResponse().getCookie("rt_customer");
+
+        MvcResult refreshed = mvc.perform(post("/auth/refresh-token").header("X-Client-App", "customer").cookie(oldCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.refreshToken").doesNotExist())
+                .andReturn();
+        assertThat(refreshed.getResponse().getCookie("rt_customer")).isNotNull();
+
+        MvcResult changed = mvc.perform(post("/auth/change-password").header(HttpHeaders.AUTHORIZATION, "Bearer " + access)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"currentPassword\":\"%s\",\"newPassword\":\"Matkhau@7\",\"confirmPassword\":\"Matkhau@7\"}"
+                                .formatted(TestData.PASSWORD)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.accessToken").isNotEmpty())
+                .andReturn();
+
+        // Phiên cũ (kể cả của người biết mật khẩu cũ) hết hiệu lực, máy vừa đổi nhận cookie mới
+        mvc.perform(post("/auth/refresh-token").header("X-Client-App", "customer").cookie(oldCookie))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(post("/auth/refresh-token").header("X-Client-App", "customer")
+                        .cookie(changed.getResponse().getCookie("rt_customer")))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void repeatedWrongPasswordsLockTheAccountForAWhile() throws Exception {
+        String username = testData.unique("nvsaimk");
+        testData.staff(username, "MANAGER");
+        String wrong = "{\"username\":\"%s\",\"password\":\"Sai@12345\"}".formatted(username);
+        String right = "{\"username\":\"%s\",\"password\":\"%s\"}".formatted(username, TestData.PASSWORD);
+
+        for (int attempt = 1; attempt < 5; attempt++) {
+            mvc.perform(post("/auth/staff/login").contentType(MediaType.APPLICATION_JSON).content(wrong))
+                    .andExpect(status().isBadRequest());
+        }
+        assertThat(users.findByUsername(username).orElseThrow().getFailedLoginCount()).isEqualTo(4);
+        mvc.perform(post("/auth/staff/login").contentType(MediaType.APPLICATION_JSON).content(wrong))
+                .andExpect(status().isBadRequest());
+
+        // Đủ 5 lần sai: khóa tạm, mật khẩu đúng cũng bị từ chối
+        AppUser locked = users.findByUsername(username).orElseThrow();
+        assertThat(locked.getLockedUntil()).isNotNull();
+        assertThat(locked.getFailedLoginCount()).isZero();
+        mvc.perform(post("/auth/staff/login").contentType(MediaType.APPLICATION_JSON).content(right))
+                .andExpect(status().isTooManyRequests());
+
+        // Hết hạn khóa: đăng nhập đúng được và bộ đếm xóa
+        locked.setLockedUntil(java.time.Instant.now().minusSeconds(1));
+        users.saveAndFlush(locked);
+        mvc.perform(post("/auth/staff/login").contentType(MediaType.APPLICATION_JSON).content(right))
+                .andExpect(status().isOk());
+        assertThat(users.findByUsername(username).orElseThrow().getLockedUntil()).isNull();
+    }
+
     private MvcResult login(String path, String username) throws Exception {
         return mvc.perform(post(path).contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"%s\",\"password\":\"%s\"}".formatted(username, TestData.PASSWORD)))

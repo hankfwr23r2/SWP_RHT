@@ -45,10 +45,10 @@ class NetworkAdminFlowTest {
     void tokens() {
         String admin = testData.unique("admin");
         testData.staff(admin, "ADMIN");
-        adminToken = jwtUtils.generateToken(admin, List.of("ADMIN"));
+        adminToken = jwtUtils.generateToken(admin, List.of("ADMIN"), 0);
         String customer = testData.unique("khach");
         testData.customer(customer);
-        customerToken = jwtUtils.generateToken(customer, List.of("CUSTOMER"));
+        customerToken = jwtUtils.generateToken(customer, List.of("CUSTOMER"), 0);
     }
 
     private ResultActions call(MockHttpServletRequestBuilder request, String token, String body) throws Exception {

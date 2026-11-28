@@ -65,6 +65,6 @@ class SpecialistWorkFlowTest {
 
     private ResultActions summary(String username, String role) throws Exception {
         return mvc.perform(get("/specialist/work-summary")
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwt.generateToken(username, List.of(role))));
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwt.generateToken(username, List.of(role), 0)));
     }
 }

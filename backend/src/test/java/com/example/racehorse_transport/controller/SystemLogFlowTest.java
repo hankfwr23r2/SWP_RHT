@@ -44,7 +44,7 @@ class SystemLogFlowTest {
 
     @BeforeEach
     void setUp() {
-        admin = "Bearer " + jwtUtils.generateToken("admin.dev", List.of("ADMIN"));
+        admin = "Bearer " + jwtUtils.generateToken("admin.dev", List.of("ADMIN"), 0);
         Long manager = users.findByUsername("manager.dev").orElseThrow().getId();
         Long coordinator = users.findByUsername("coordinator.dev").orElseThrow().getId();
         audit.record(manager, "SYSLOG_TEST_APPROVE", "syslog_test_quote", 7001L, Map.of("status", "DRAFT"), Map.of("status", "APPROVED"));
@@ -85,7 +85,7 @@ class SystemLogFlowTest {
         mvc.perform(get("/admin/system-logs").param("from", to.toString()).param("to", from.toString()).header(HttpHeaders.AUTHORIZATION, admin))
                 .andExpect(status().isBadRequest());
         mvc.perform(get("/admin/system-logs").param("from", from.toString()).param("to", to.toString())
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwtUtils.generateToken("manager.dev", List.of("MANAGER")))).andExpect(status().isForbidden());
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwtUtils.generateToken("manager.dev", List.of("MANAGER"), 0))).andExpect(status().isForbidden());
     }
 
     private ResultActions search(Map<String, String> filters) throws Exception {

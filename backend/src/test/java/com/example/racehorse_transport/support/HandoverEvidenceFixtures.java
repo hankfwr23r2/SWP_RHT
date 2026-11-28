@@ -71,6 +71,6 @@ public final class HandoverEvidenceFixtures {
 
     public static void confirm(MockMvc mvc, JwtUtils jwt, long booking, String username) throws Exception {
         mvc.perform(post("/bookings/{id}/confirm-collection", booking).header(HttpHeaders.AUTHORIZATION,
-                "Bearer " + jwt.generateToken(username, List.of("CUSTOMER")))).andExpect(status().isOk());
+                "Bearer " + jwt.generateToken(username, List.of("CUSTOMER"), 0))).andExpect(status().isOk());
     }
 }

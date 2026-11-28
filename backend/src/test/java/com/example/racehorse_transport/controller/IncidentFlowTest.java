@@ -136,7 +136,7 @@ class IncidentFlowTest {
         long incident = id(report(leg, "HEALTH", "HORSE_CONDITION").andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.horseName").value("Sao Mai")).andExpect(jsonPath("$.data.bookingCode").value("DEV-DIRECT-001")));
         mvc.perform(get("/notifications/mine").header(HttpHeaders.AUTHORIZATION,
-                        "Bearer " + jwtUtils.generateToken("customer1.dev", List.of("CUSTOMER"))))
+                        "Bearer " + jwtUtils.generateToken("customer1.dev", List.of("CUSTOMER"), 0)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[?(@.title == 'Sự cố vận chuyển')]").isNotEmpty());
         mvc.perform(get("/notifications/mine").header(HttpHeaders.AUTHORIZATION, coordinator))
@@ -208,9 +208,9 @@ class IncidentFlowTest {
         String customerName = jdbc.queryForObject("""
                 SELECT u.username FROM app_user u JOIN booking b ON b.customer_id = u.id WHERE b.id = ?
                 """, String.class, booking);
-        String customer = "Bearer " + jwtUtils.generateToken(customerName, List.of("CUSTOMER"));
+        String customer = "Bearer " + jwtUtils.generateToken(customerName, List.of("CUSTOMER"), 0);
         var otherCustomer = testData.customer(testData.unique("incident.other-customer"));
-        String other = "Bearer " + jwtUtils.generateToken(otherCustomer.getUser().getUsername(), List.of("CUSTOMER"));
+        String other = "Bearer " + jwtUtils.generateToken(otherCustomer.getUser().getUsername(), List.of("CUSTOMER"), 0);
         long incident = id(report(leg, "HEALTH", "HORSE_CONDITION"));
         long declined = id(cost(incident, "VET", "500000", false).andExpect(status().isCreated()));
         long accepted = id(cost(incident, "VET", "1500000", false).andExpect(status().isCreated()));
@@ -474,7 +474,7 @@ class IncidentFlowTest {
     }
 
     private String token(Staff staff, String role) {
-        return "Bearer " + jwtUtils.generateToken(staff.getUser().getUsername(), List.of(role));
+        return "Bearer " + jwtUtils.generateToken(staff.getUser().getUsername(), List.of(role), 0);
     }
     private void managerNotice(long incidentId, String title) throws Exception {
         mvc.perform(get("/notifications/mine").header(HttpHeaders.AUTHORIZATION, manager))

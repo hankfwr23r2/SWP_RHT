@@ -124,7 +124,7 @@ class LinehaulAllocationFlowTest {
         entities.flush();
         long base = allotment(departure.getId(), heavy.getVehicleClass().getId(), "BASE");
         long spare = allotment(departure.getId(), medium.getVehicleClass().getId(), "SPARE");
-        return new Scenario(departure.getId(), "Bearer " + jwt.generateToken(coordinator, List.of("COORDINATOR")),
+        return new Scenario(departure.getId(), "Bearer " + jwt.generateToken(coordinator, List.of("COORDINATOR"), 0),
                 base, spare, heavy.getId(), medium.getId(), near, far);
     }
 

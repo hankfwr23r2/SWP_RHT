@@ -45,10 +45,10 @@ class DepartureFlowTest {
     void tokens() {
         String customer = testData.unique("khach");
         testData.customer(customer);
-        customerToken = jwtUtils.generateToken(customer, List.of("CUSTOMER"));
+        customerToken = jwtUtils.generateToken(customer, List.of("CUSTOMER"), 0);
         String manager = testData.unique("quanly");
         testData.staff(manager, "MANAGER");
-        managerToken = jwtUtils.generateToken(manager, List.of("MANAGER"));
+        managerToken = jwtUtils.generateToken(manager, List.of("MANAGER"), 0);
     }
 
     private MockHttpServletRequestBuilder suggestions(String type, String pickupProvince, String deliveryProvince) {

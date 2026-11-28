@@ -108,6 +108,6 @@ class SystemConfigFlowTest {
     private String staffToken(String role) {
         String username = data.unique("config-a2");
         data.staff(username, role);
-        return "Bearer " + jwt.generateToken(username, List.of(role));
+        return "Bearer " + jwt.generateToken(username, List.of(role), 0);
     }
 }
