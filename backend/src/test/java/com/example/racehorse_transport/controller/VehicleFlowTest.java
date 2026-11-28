@@ -46,7 +46,7 @@ class VehicleFlowTest {
     void setUp() {
         String username = testData.unique("vehicle.admin");
         testData.staff(username, "ADMIN");
-        admin = "Bearer " + jwtUtils.generateToken(username, List.of("ADMIN"));
+        admin = "Bearer " + jwtUtils.generateToken(username, List.of("ADMIN"), 0);
         headquarters = locations.findByCode("HUB-HCM").orElseThrow().getId();
         vehicleClass = classes.findByCode("LIGHT").orElseThrow().getId();
     }
@@ -75,7 +75,7 @@ class VehicleFlowTest {
         String username = testData.unique("vehicle.customer");
         testData.customer(username);
         mvc.perform(get("/vehicles").header(HttpHeaders.AUTHORIZATION,
-                        "Bearer " + jwtUtils.generateToken(username, List.of("CUSTOMER"))))
+                        "Bearer " + jwtUtils.generateToken(username, List.of("CUSTOMER"), 0)))
                 .andExpect(status().isForbidden());
     }
 
@@ -118,7 +118,7 @@ class VehicleFlowTest {
         long id = vehicles.findByLicensePlate("51C-100.01").orElseThrow().getId();
         String username = testData.unique("vehicle.customer");
         testData.customer(username);
-        String customer = "Bearer " + jwtUtils.generateToken(username, List.of("CUSTOMER"));
+        String customer = "Bearer " + jwtUtils.generateToken(username, List.of("CUSTOMER"), 0);
         mvc.perform(statusChange(id, "start-maintenance", customer)).andExpect(status().isForbidden());
         mvc.perform(statusChange(id, "start-maintenance", admin))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.status").value("MAINTENANCE"));

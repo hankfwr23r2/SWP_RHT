@@ -101,37 +101,36 @@ public class AuthController {
         ClientApp app = ClientApp.fromHeader(clientApp)
                 .orElseThrow(() -> new InvalidTokenException("Thiếu hoặc sai header " + ClientApp.HEADER + "."));
         String refreshToken = jwtUtils.getRefreshTokenFromCookies(request, app);
-        return ResponseEntity.ok(ApiResponseDto.success(authService.refreshToken(refreshToken, app), "Làm mới Access Token thành công"));
+        // Mỗi lần làm mới cấp luôn refresh token mới trong cookie
+        return withRefreshCookie(authService.refreshToken(refreshToken, app), app, "Làm mới Access Token thành công");
     }
 
-    // Thu hồi token và xóa cookie của ứng dụng gửi yêu cầu; không rõ ứng dụng thì xóa cả hai
+    // Đăng xuất mọi máy của tài khoản và xóa cookie của ứng dụng gửi yêu cầu; không rõ ứng dụng thì xóa cả hai
     @PostMapping("/logout")
     public ResponseEntity<ApiResponseDto<Void>> logout(
             HttpServletRequest request,
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
             @RequestHeader(value = ClientApp.HEADER, required = false) String clientApp) {
         List<ClientApp> apps = ClientApp.fromHeader(clientApp).map(List::of).orElse(List.of(ClientApp.values()));
+        String accessToken = authHeader != null && authHeader.startsWith("Bearer ") ? authHeader.substring(7) : null;
         ResponseEntity.BodyBuilder response = ResponseEntity.ok();
         for (ClientApp app : apps) {
-            jwtUtils.blacklistToken(jwtUtils.getRefreshTokenFromCookies(request, app));
+            authService.logout(jwtUtils.getRefreshTokenFromCookies(request, app), accessToken);
             response.header(HttpHeaders.SET_COOKIE, jwtUtils.getCleanRefreshCookie(app).toString());
-        }
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            jwtUtils.blacklistToken(authHeader.substring(7));
         }
         return response.body(ApiResponseDto.success(null, "Đăng xuất thành công"));
     }
 
     // Người đổi mật khẩu lấy từ Authentication, không lấy từ body
     @PostMapping("/change-password")
-    public ResponseEntity<ApiResponseDto<Void>> changePassword(
+    public ResponseEntity<ApiResponseDto<AuthResponseDto>> changePassword(
             Authentication authentication,
             @Valid @RequestBody ChangePasswordRequestDto request) {
         if (authentication == null || !authentication.isAuthenticated() || authentication instanceof AnonymousAuthenticationToken) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Vui lòng đăng nhập để đổi mật khẩu!");
         }
-        authService.changePassword(authentication.getName(), request);
-        return ResponseEntity.ok(ApiResponseDto.success(null, "Đổi mật khẩu thành công!"));
+        AuthResponseDto response = authService.changePassword(authentication.getName(), request);
+        return withRefreshCookie(response, ClientApp.forRole(response.getRole()), "Đổi mật khẩu thành công!");
     }
 
     @PostMapping("/password-reset/request-otp")
@@ -153,7 +152,7 @@ public class AuthController {
     }
 
     private ResponseEntity<ApiResponseDto<AuthResponseDto>> withRefreshCookie(AuthResponseDto response, ClientApp app, String message) {
-        ResponseCookie refreshCookie = jwtUtils.generateRefreshCookie(response.getUsername(), app);
+        ResponseCookie refreshCookie = jwtUtils.generateRefreshCookie(response.getRefreshToken(), app);
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
                 .body(ApiResponseDto.success(response, message));

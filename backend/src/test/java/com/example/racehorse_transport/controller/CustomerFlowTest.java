@@ -81,7 +81,7 @@ class CustomerFlowTest {
         String username = data.unique("profile-staff-a2");
         data.staff(username, "ADMIN");
         mvc.perform(get("/customers/me").header(HttpHeaders.AUTHORIZATION,
-                        "Bearer " + jwt.generateToken(username, List.of("ADMIN"))))
+                        "Bearer " + jwt.generateToken(username, List.of("ADMIN"), 0)))
                 .andExpect(status().isForbidden());
     }
 
@@ -95,6 +95,6 @@ class CustomerFlowTest {
     private String customerToken() {
         String username = data.unique("customer-a2");
         data.customer(username);
-        return "Bearer " + jwt.generateToken(username, List.of("CUSTOMER"));
+        return "Bearer " + jwt.generateToken(username, List.of("CUSTOMER"), 0);
     }
 }

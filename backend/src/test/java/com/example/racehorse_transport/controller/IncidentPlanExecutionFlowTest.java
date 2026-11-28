@@ -352,7 +352,7 @@ class IncidentPlanExecutionFlowTest {
     }
 
     private String token(Staff staff, String role) {
-        return "Bearer " + jwt.generateToken(staff.getUser().getUsername(), List.of(role));
+        return "Bearer " + jwt.generateToken(staff.getUser().getUsername(), List.of(role), 0);
     }
 
     private static long handoverId(ResultActions response) throws Exception {

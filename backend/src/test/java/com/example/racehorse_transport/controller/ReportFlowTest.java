@@ -141,6 +141,6 @@ class ReportFlowTest {
     }
 
     private String token(Staff staff, String role) {
-        return "Bearer " + jwtUtils.generateToken(staff.getUser().getUsername(), List.of(role));
+        return "Bearer " + jwtUtils.generateToken(staff.getUser().getUsername(), List.of(role), 0);
     }
 }

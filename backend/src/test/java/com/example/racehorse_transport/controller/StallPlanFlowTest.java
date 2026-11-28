@@ -203,7 +203,7 @@ class StallPlanFlowTest {
     }
 
     private String token(Staff staff, String role) {
-        return "Bearer " + jwtUtils.generateToken(staff.getUser().getUsername(), List.of(role));
+        return "Bearer " + jwtUtils.generateToken(staff.getUser().getUsername(), List.of(role), 0);
     }
 
     // Quản lý đã xác nhận chạy chuyến (A6b): điều kiện để lập lượt trục

@@ -114,7 +114,7 @@ class DeliveryFailureFlowTest {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM notification_recipient r JOIN notification n ON n.id = r.notification_id WHERE r.user_id = ? AND n.title = 'Giao ngựa không thành'", Integer.class, coordinatorStaff.getUserId())).isEqualTo(1);
         long timeout = jdbc.queryForObject("SELECT id FROM incident WHERE horse_leg_id = ? AND incident_type = 'HANDOVER_TIMEOUT'",
                 Long.class, failedLeg);
-        String managerToken = "Bearer " + jwtUtils.generateToken("manager.dev", List.of("MANAGER"));
+        String managerToken = "Bearer " + jwtUtils.generateToken("manager.dev", List.of("MANAGER"), 0);
         mvc.perform(get("/notifications/mine").header(HttpHeaders.AUTHORIZATION, managerToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[?(@.title == 'Quá hạn bàn giao' && @.linkUrl == '/manager/incidents?incidentId="
@@ -465,7 +465,7 @@ class DeliveryFailureFlowTest {
     }
 
     private String token(Staff staff, String role) {
-        return "Bearer " + jwtUtils.generateToken(staff.getUser().getUsername(), List.of(role));
+        return "Bearer " + jwtUtils.generateToken(staff.getUser().getUsername(), List.of(role), 0);
     }
 
     // Biên bản đã ký (giả lập ảnh đã tải lên): bắt buộc trước khi hoàn tất nhận hoặc giao ngựa
