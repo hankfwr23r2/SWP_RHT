@@ -470,8 +470,8 @@ Index: `route_id`.
 | Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
 |---|---|---|---|---|
 | `id` | `bigint` | | PK, identity | |
-| `departure_schedule_id` | `bigint` | có | FK → departure_schedule | NULL = chuyến đột xuất |
-| `route_id` | `bigint` | | FK → route | Bắt buộc để chuyến đột xuất cũng biết tuyến |
+| `departure_schedule_id` | `bigint` | có | FK → departure_schedule | NULL = chuyến ngoài lịch. Chỉ còn ở dữ liệu cũ vì không còn chức năng tạo tay |
+| `route_id` | `bigint` | | FK → route | Bắt buộc để chuyến ngoài lịch cũng biết tuyến |
 | `departure_date` | `date` | | | |
 | `planned_departure_at` | `timestamptz` | | | Giờ gốc của chuyến, giữ nguyên khi dời lịch |
 | `booking_cutoff_at` | `timestamptz` | | | |
@@ -486,14 +486,14 @@ Index: `route_id`.
 | `delay_reason` | `varchar(500)` | có | | Lý do công ty ghi khi chuyến chậm hoặc dời giờ |
 | `delay_escalated_at` | `timestamptz` | có | | Lúc báo quản lý xử lý vì đã nhận ngựa và chưa có giờ mới |
 | `auto_cancelled_at` | `timestamptz` | có | CK chỉ khi CANCELLED | Lúc hệ thống hủy chuyến trễ do công ty |
-| `merged_into_departure_id` | `bigint` | có | FK → departure | Chuyến đích quản lý đề xuất khi dồn chuyến. Khách xác nhận thì đơn mới chuyển chuyến |
+| `merged_into_departure_id` | `bigint` | có | FK → departure | Không còn dùng từ 28/11/2026 (đã bỏ dồn chuyến). Giữ cột để không mất dữ liệu cũ |
 
 Ràng buộc bảng:
 - `CHECK ((run_confirmed_at IS NULL) = (run_confirmed_by IS NULL))`.
 - `CHECK (revised_departure_at IS NULL OR revised_departure_at > planned_departure_at)`.
 - `delayed_at` và `delay_reason` cùng có giá trị. `auto_cancelled_at` chỉ có khi chuyến đã ghi chậm và có trạng thái `CANCELLED`.
-- `merged_into_departure_id` chỉ có trên chuyến theo lịch đã `CANCELLED`, và phải khác `id`. Service kiểm chuyến đích theo lịch, cùng tuyến, chưa chạy, còn đủ chỗ và nằm trong `PRICE_HOLD_DAYS` kể từ `departure_date` của chuyến nguồn.
-- `UNIQUE (departure_schedule_id, departure_date)`: mỗi lịch sinh tối đa một chuyến mỗi ngày. Chuyến đột xuất có `departure_schedule_id` NULL nên không bị giới hạn.
+- DB vẫn kiểm: `merged_into_departure_id` chỉ có trên chuyến theo lịch đã `CANCELLED`, và phải khác `id`. Không service nào ghi cột này nữa.
+- `UNIQUE (departure_schedule_id, departure_date)`: mỗi lịch sinh tối đa một chuyến mỗi ngày. Chuyến ngoài lịch có `departure_schedule_id` NULL nên không bị giới hạn.
 - `CHECK (booking_cutoff_at < planned_departure_at)`.
 - `CHECK (booked_stall_count BETWEEN 0 AND stall_capacity)`: DB chặn bán quá chỗ.
 

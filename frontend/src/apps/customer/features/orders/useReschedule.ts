@@ -11,10 +11,6 @@ export function useReschedule(data: OrderData, reschedule?: (body: BookingResche
   const { run, busy, error } = useOrderAction()
   const [today] = useState(() => todayIso())
   const booking = data.detail?.booking
-  const showMerge = booking?.status === 'SCHEDULE_CHANGE_REQUIRED'
-  const merge = useLoad(() => showMerge ? bookingOrdersApi.mergeSuggestion(data.id) : Promise.resolve(null),
-    [data.id, showMerge], { toastOnError: false })
-
   const suggestions = useLoad(() => {
     const pickup = data.detail?.addresses?.find(address => address.addressType === 'PICKUP')
     const delivery = data.detail?.addresses?.find(address => address.addressType === 'DELIVERY')
@@ -33,16 +29,5 @@ export function useReschedule(data: OrderData, reschedule?: (body: BookingResche
   const submit = (body: BookingReschedule) => run(
     () => reschedule ? reschedule(body) : bookingOrdersApi.reschedule(data.id, body), done)
 
-  const accept = async () => {
-    const choice = merge.data
-    if (!choice) return
-    const body = { departureId: choice.departureId, requestedPickupDate: choice.requestedPickupDate }
-    if (await run(() => bookingOrdersApi.reschedule(data.id, body), done)) {
-      merge.updateData(() => null)
-    } else {
-      void merge.reload()
-    }
-  }
-
-  return { today, merge, suggestions, submit, accept, busy, error }
+  return { today, suggestions, submit, busy, error }
 }

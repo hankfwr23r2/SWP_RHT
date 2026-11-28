@@ -5,9 +5,7 @@ import com.example.racehorse_transport.dto.departure.DepartureDetailResponseDto;
 import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.dto.departure.DepartureCancelRequestDto;
 import com.example.racehorse_transport.dto.departure.DepartureConfirmRunRequestDto;
-import com.example.racehorse_transport.dto.departure.DepartureCreateRequestDto;
 import com.example.racehorse_transport.dto.departure.DepartureDecisionResponseDto;
-import com.example.racehorse_transport.dto.departure.DepartureMergeRequestDto;
 import com.example.racehorse_transport.dto.departure.DepartureResponseDto;
 import com.example.racehorse_transport.dto.departure.DepartureSuggestionQueryDto;
 import com.example.racehorse_transport.dto.departure.DepartureSuggestionResponseDto;
@@ -20,7 +18,6 @@ import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -33,7 +30,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-// Chuyến cụ thể theo ngày: danh sách cho nhân viên, chuyến đột xuất, hủy chuyến, gợi ý chuyến cho khách.
+// Chuyến cụ thể theo ngày: danh sách cho nhân viên, hủy chuyến, gợi ý chuyến cho khách.
 @RestController
 @RequestMapping("/departures")
 @RequiredArgsConstructor
@@ -92,14 +89,6 @@ public class DepartureController {
                 decisionService.confirmRun(id, authentication.getName(), request), "Đã xác nhận chạy"));
     }
 
-    @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-    public ResponseEntity<ApiResponseDto<DepartureResponseDto>> createAdHoc(
-            @Valid @RequestBody DepartureCreateRequestDto request, Authentication authentication) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponseDto.success(departureService.createAdHoc(request, authentication.getName()), "Đã tạo chuyến đột xuất"));
-    }
-
     // Người hủy lấy từ Authentication
     @PostMapping("/{id}/cancel")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -107,19 +96,5 @@ public class DepartureController {
             @PathVariable Long id, @Valid @RequestBody DepartureCancelRequestDto request, Authentication authentication) {
         return ResponseEntity.ok(ApiResponseDto.success(
                 departureService.cancel(id, request.getReason(), authentication.getName()), "Đã hủy chuyến"));
-    }
-
-    @GetMapping("/{id}/merge-targets")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-    public ResponseEntity<ApiResponseDto<List<DepartureResponseDto>>> mergeTargets(@PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponseDto.success(departureService.mergeTargets(id), "Danh sách chuyến đích"));
-    }
-
-    @PostMapping("/{id}/merge")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-    public ResponseEntity<ApiResponseDto<DepartureResponseDto>> merge(@PathVariable Long id,
-            @Valid @RequestBody DepartureMergeRequestDto request, Authentication authentication) {
-        return ResponseEntity.ok(ApiResponseDto.success(
-                departureService.merge(id, request, authentication.getName()), "Đã dồn chuyến"));
     }
 }

@@ -130,7 +130,7 @@ Người dùng chốt qua trao đổi ngày 26/11/2026. **Code chưa làm.** Ngh
 - [x] ~~Đơn xuất: giấy gốc có bàn giao cho đại lý ở cửa khẩu không?~~ Hết ý nghĩa: không còn bàn giao đại lý (mục 4b).
 - [ ] Xe có thêm ô giấy phép liên vận (nước, hạn) để chỉ gán xe có phép cho chuyến quốc tế không?
 - [x] ~~Ai được tăng cường xe~~: hệ thống tự gắn xe để sẵn khi xe nền đầy (26/11/2026), quản lý bỏ bớt xe thừa. Xem `QUY_CHE_DOI_XE.md`.
-- [ ] Bỏ chuyến đột xuất do quản lý tạo không (tăng cường và xe riêng đã thay được)?
+- [x] ~~Bỏ chuyến đột xuất do quản lý tạo không~~: đã chốt bỏ, đồng thời bỏ dồn chuyến (28/11/2026).
 - [x] **Giá xe riêng:** cước trục bằng sức chứa xe × đơn giá khoang STANDARD; cước đón/giao theo km và hạng xe riêng.
 - [ ] Gộp nguyên nhân sự cố Lỗi đại lý vào Lỗi công ty?
 - [ ] Danh sách chuồng gửi đêm có lọc theo nơi nghỉ không (phải thêm địa điểm cho đối tác)?

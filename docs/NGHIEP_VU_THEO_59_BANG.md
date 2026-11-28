@@ -68,7 +68,7 @@ Một **đơn** có nhiều ngựa. Một **lượt xe** chở ngựa của nhi�
 | Thứ Bảy | | Lao Bảo → Đà Nẵng |
 | Chủ nhật – thứ Hai | | Đà Nẵng → HCM, nghỉ đêm dọc đường |
 
-Xe B đi từ thứ Ba tới thứ Hai tuần sau nên cần hai xe nặng và hai tổ xe luân phiên. Giờ chạy và quãng đường là số mẫu, tính bằng Valhalla ở 80 km/h (`R__dev_seed_base.sql`). Nhu cầu gấp hoặc số lượng lớn đi **chuyến đột xuất**; đơn cùng hub chạy thẳng bất kỳ ngày nào.
+Xe B đi từ thứ Ba tới thứ Hai tuần sau nên cần hai xe nặng và hai tổ xe luân phiên. Giờ chạy và quãng đường là số mẫu, tính bằng Valhalla ở 80 km/h (`R__dev_seed_base.sql`). Đơn cùng hub chạy thẳng bất kỳ ngày nào.
 
 **Chọn cách chạy theo hub, không theo loại đơn:**
 
@@ -90,7 +90,7 @@ Hub đón và hub giao tra từ `hub_service_area` theo tỉnh của `booking_ad
 
 Đơn hồi hương (khứ hồi) là một đơn `IMPORT` có `original_booking_id` trỏ về đơn đi.
 
-Đơn quốc tế chỉ chọn được tuyến có cửa khẩu khớp nước đối tác (`location.counterpart_country_code`). Vì mỗi đơn có một chặng trục, Đà Nẵng → Campuchia và TP.HCM → Lào chưa có tuyến định kỳ: hệ thống báo chưa có tuyến và cho xin chuyến đột xuất.
+Đơn quốc tế chỉ chọn được tuyến có cửa khẩu khớp nước đối tác (`location.counterpart_country_code`). Vì mỗi đơn có một chặng trục, Đà Nẵng → Campuchia và TP.HCM → Lào chưa có tuyến định kỳ: hệ thống báo chưa có tuyến.
 
 ---
 
@@ -156,7 +156,7 @@ Một **scheduler** chạy hằng ngày, lấy các `departure_schedule` ACTIVE 
 - `stall_capacity` chép từ lịch;
 - `status = OPEN`.
 
-Ràng buộc `UNIQUE (departure_schedule_id, departure_date)` bảo đảm chạy lại scheduler cũng không sinh trùng. Quản lý có thể tạo thêm **chuyến đột xuất** với `departure_schedule_id = NULL`.
+Ràng buộc `UNIQUE (departure_schedule_id, departure_date)` bảo đảm chạy lại scheduler cũng không sinh trùng. Chuyến chỉ sinh từ lịch, không tạo tay.
 
 Một scheduler khác chuyển `departure` sang `CLOSED` khi đã qua `booking_cutoff_at`.
 
@@ -175,8 +175,6 @@ Khi quyết định chỉ đếm chỗ của đơn CONFIRMED hoặc IN_OPERATION
 | Lựa chọn | Với khách |
 |---|---|
 | Chạy xe nhỏ hơn (ưu tiên) | Không đổi ngày, không đổi giá |
-| Dồn sang chuyến gần nhất cùng tuyến | Phải đồng ý, giữ giá |
-| Một khách thuê cả chuyến | Báo giá chuyến đột xuất |
 | Hủy chuyến | Đổi chuyến miễn phí hoặc hoàn 100% |
 
 Xe ra hub vệ tinh phải về trụ sở: chuyến chiều về bị hủy thì vẫn có lượt về không chở ngựa. Bỏ một tuyến mà tuyến sau trong tuần cần xe đó thì hệ thống cảnh báo.
@@ -590,7 +588,7 @@ Quy trình theo bản cũ của nhóm. Khác bản cũ: sự cố gắn lượt 
 
 ### 5.2 Chuyến bị hủy hoặc đổi
 
-1. Quản lý hủy hoặc dồn chuyến kèm lý do: `departure.status = CANCELLED`.
+1. Quản lý hủy chuyến kèm lý do: `departure.status = CANCELLED`.
 2. Các đơn trên chuyến chuyển sang `SCHEDULE_CHANGE_REQUIRED`.
 3. Xe trục đầu tiên rời điểm đầu thì chuyến sang `IN_PROGRESS`. Mọi lượt trục chưa hủy hoàn thành thì chuyến sang `COMPLETED`. Cấm hủy ở cả hai trạng thái hoặc khi còn đơn `IN_OPERATION`.
 4. Lịch sử ghi nguyên nhân COMPANY và chuyến vừa hủy. Khách chọn chuyến khác (miễn phí; đơn đã cọc thì giữ giá trong `PRICE_HOLD_DAYS`) hoặc hủy và được **hoàn 100%**. Đổi chuyến thì trừ `booked_stall_count` của chuyến cũ và cộng vào chuyến mới, giữ `FOR UPDATE` trên cả hai dòng.
@@ -681,7 +679,7 @@ Nếu cùng khách đó gửi ngựa từ Đồng Nai sang Bình Dương thì c�
 | 3 | `horse_type` | Admin | Dữ liệu nền |
 | 3 | `horse` | Khách. Chuyên viên sửa khi duyệt | GĐ1–2 |
 | 4 | `route`, `route_stop`, `departure_schedule`, `departure_schedule_day` | Admin | Dữ liệu nền |
-| 4 | `departure` | Scheduler. Quản lý tạo chuyến đột xuất hoặc hủy chuyến | Dữ liệu nền, 5.2 |
+| 4 | `departure` | Scheduler. Quản lý hủy chuyến | Dữ liệu nền, 5.2 |
 | 5 | `vehicle_class`, `stall_type`, `vehicle` | Admin, gồm đổi trạng thái xe (bảo dưỡng, hoạt động lại, ngừng sử dụng). Luồng B báo "cần bảo dưỡng" khi xe về hub gốc | Dữ liệu nền |
 | 6 | `billable_service`, `price_list`, `price_item` | Admin hoặc quản lý | Dữ liệu nền |
 | 7 | `country_rule`, `document_type`, `document_requirement` | Admin hoặc chuyên viên | Dữ liệu nền |

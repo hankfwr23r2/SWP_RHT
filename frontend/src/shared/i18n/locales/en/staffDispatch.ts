@@ -89,7 +89,7 @@ export const staffDispatch = {
     "changeHint": "Places on the old departure are released and the customer is notified.",
     "seats": "{{count}} places left",
     "noOther": "No other departure on this route",
-    "noOtherHint": "Ask the manager for a special departure if needed.",
+    "noOtherHint": "Contact the manager if needed.",
     "empty": "No order in this status",
     "emptyHint": "Choose another status."
   },

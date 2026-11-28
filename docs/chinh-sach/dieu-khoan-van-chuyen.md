@@ -70,7 +70,7 @@ Giá cũ được giữ nếu khách chọn chuyến khác cùng tuyến, chạy
 
 ## 9. Công ty đổi hoặc hủy chuyến
 
-Từ 48 giờ trước giờ chạy, công ty quyết định chuyến có chạy hay không. Đổi sang xe nhỏ hơn không làm đổi ngày và giá. Dồn sang chuyến gần nhất cùng tuyến phải được khách đồng ý và giữ giá. Công ty hủy chuyến thì khách chọn chuyến khác miễn phí (giữ giá như mục 8) hoặc được **hoàn 100%** số đã trả, gồm cả khoản thu hộ.
+Từ 48 giờ trước giờ chạy, công ty quyết định chuyến có chạy hay không. Đổi sang xe nhỏ hơn không làm đổi ngày và giá. Công ty hủy chuyến thì khách chọn chuyến khác miễn phí (giữ giá như mục 8) hoặc được **hoàn 100%** số đã trả, gồm cả khoản thu hộ.
 
 Ở mốc 48 giờ, đơn chưa được gửi báo giá sẽ mất chỗ. Khách chọn chuyến khác hoặc hủy miễn phí.
 

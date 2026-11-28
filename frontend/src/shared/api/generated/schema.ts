@@ -331,7 +331,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_5"];
+        get: operations["list_4"];
         put?: never;
         post: operations["submitWithInsuranceFiles"];
         delete?: never;
@@ -1316,22 +1316,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/bookings/{id}/reschedule-suggestion": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["rescheduleSuggestion"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/bookings/{id}/resubmit": {
         parameters: {
             query?: never;
@@ -1787,7 +1771,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_4"];
+        get: operations["list_3"];
         put?: never;
         post: operations["create_3"];
         delete?: never;
@@ -1867,9 +1851,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_3"];
+        get: operations["list_6"];
         put?: never;
-        post: operations["createAdHoc"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2014,38 +1998,6 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["delay"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/departures/{id}/merge": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["merge"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/departures/{id}/merge-targets": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["mergeTargets"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2875,7 +2827,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_6"];
+        get: operations["list_5"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4633,11 +4585,6 @@ export interface components {
             message?: string;
             status?: string;
         };
-        ApiResponseBookingMergeSuggestionResponseDto: {
-            data?: components["schemas"]["BookingMergeSuggestionResponseDto"];
-            message?: string;
-            status?: string;
-        };
         ApiResponseBookingResponseDto: {
             data?: components["schemas"]["BookingResponseDto"];
             message?: string;
@@ -5419,16 +5366,6 @@ export interface components {
             /** @enum {string} */
             status?: "PENDING_INTAKE" | "UNDER_REVIEW" | "NEEDS_RESUBMISSION" | "QUOTING" | "AWAITING_DEPOSIT" | "QUOTE_EXPIRED" | "CONFIRMED" | "SCHEDULE_CHANGE_REQUIRED" | "IN_OPERATION" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED";
         };
-        BookingMergeSuggestionResponseDto: {
-            /** @enum {string} */
-            availability?: "AVAILABLE" | "NEARLY_FULL" | "FULL";
-            /** Format: date */
-            departureDate?: string;
-            /** Format: int64 */
-            departureId?: number;
-            /** Format: date */
-            requestedPickupDate?: string;
-        };
         BookingQuotingRequestDto: unknown;
         BookingReassignmentRequestDto: {
             reason: string;
@@ -5901,26 +5838,12 @@ export interface components {
             reason: string;
         };
         DepartureConfirmRunRequestDto: unknown;
-        DepartureCreateRequest: {
-            /** Format: int32 */
-            bookingCutoffHours: number;
-            /** Format: date */
-            departureDate: string;
-            departureTime: string;
-            /** Format: int64 */
-            routeId: number;
-            /** Format: int64 */
-            vehicleClassId: number;
-            /** Format: int32 */
-            vehicleCount: number;
-        };
         DepartureDecisionResponseDto: {
             /** Format: date-time */
             autoCancelledAt?: string;
             belowMinimum?: boolean;
             /** Format: int32 */
             bookedStallCount?: number;
-            canMerge?: boolean;
             canRevise?: boolean;
             /** Format: int32 */
             committedStallCount?: number;
@@ -5962,11 +5885,6 @@ export interface components {
         DepartureDetailResponseDto: {
             departure?: components["schemas"]["DepartureResponse"];
             vehicles?: components["schemas"]["DepartureVehicleResponseDto"][];
-        };
-        DepartureMergeRequestDto: {
-            reason: string;
-            /** Format: int64 */
-            targetDepartureId: number;
         };
         DepartureResponse: {
             /** @enum {string} */
@@ -9052,7 +8970,7 @@ export interface operations {
             };
         };
     };
-    list_5: {
+    list_4: {
         parameters: {
             query?: never;
             header?: never;
@@ -10635,28 +10553,6 @@ export interface operations {
             };
         };
     };
-    rescheduleSuggestion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ApiResponseBookingMergeSuggestionResponseDto"];
-                };
-            };
-        };
-    };
     resubmit: {
         parameters: {
             query?: never;
@@ -11467,7 +11363,7 @@ export interface operations {
             };
         };
     };
-    list_4: {
+    list_3: {
         parameters: {
             query?: {
                 routeId?: number;
@@ -11605,7 +11501,7 @@ export interface operations {
             };
         };
     };
-    list_3: {
+    list_6: {
         parameters: {
             query: {
                 routeId?: number;
@@ -11626,30 +11522,6 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListDepartureResponse"];
-                };
-            };
-        };
-    };
-    createAdHoc: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DepartureCreateRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ApiResponseDepartureResponse"];
                 };
             };
         };
@@ -11869,54 +11741,6 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseDepartureResponse"];
-                };
-            };
-        };
-    };
-    merge: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DepartureMergeRequestDto"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ApiResponseDepartureResponse"];
-                };
-            };
-        };
-    };
-    mergeTargets: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ApiResponseListDepartureResponse"];
                 };
             };
         };
@@ -13332,7 +13156,7 @@ export interface operations {
             };
         };
     };
-    list_6: {
+    list_5: {
         parameters: {
             query?: never;
             header?: never;
