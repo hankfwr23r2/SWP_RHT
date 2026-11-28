@@ -1,91 +1,52 @@
 package com.example.racehorse_transport.controller;
 
-import com.example.racehorse_transport.dto.notification.NoticeResponseDto;
 import com.example.racehorse_transport.dto.common.ApiResponseDto;
-import com.example.racehorse_transport.service.NotificationService;
+import com.example.racehorse_transport.dto.notification.NotificationResponseDto;
+import com.example.racehorse_transport.service.NotificationInboxService;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
-@Slf4j
+// Chuông thông báo: mọi tài khoản đã đăng nhập chỉ thấy và sửa thông báo gửi cho chính mình
 @RestController
-@RequestMapping("/notifications")
 @RequiredArgsConstructor
+@PreAuthorize("isAuthenticated()")
 public class NotificationController {
 
-    private final NotificationService notificationService;
+    private final NotificationInboxService inbox;
 
-    @GetMapping
-    public ResponseEntity<ApiResponseDto<List<NoticeResponseDto>>> getNotifications(
-            @RequestParam(value = "role", required = false) String role,
-            @RequestParam(value = "name", required = false) String name,
-            Authentication authentication) {
-
-        // Chỉ đọc thông báo của vai trò và tài khoản đang đăng nhập (thông báo nội bộ có lý do trả lại, chi phí…)
-        String queryUsername = requireRecipient(role, authentication);
-
-
-        List<NoticeResponseDto> responses = notificationService.findForUser(role, queryUsername);
-        return ResponseEntity.ok(ApiResponseDto.success(responses, "Lấy danh sách thông báo thành công"));
+    @GetMapping("/notifications/mine")
+    public ApiResponseDto<List<NotificationResponseDto>> mine(Authentication authentication) {
+        return ApiResponseDto.success(inbox.mine(authentication.getName()), "Thông báo của tôi");
     }
 
-    @PatchMapping("/{id}/read")
-    public ResponseEntity<ApiResponseDto<Void>> markAsRead(@PathVariable Integer id) {
-        notificationService.markAsRead(id);
-        return ResponseEntity.ok(ApiResponseDto.success(null, "Đã đánh dấu thông báo là đã đọc"));
+    @PostMapping("/notifications/{id}/read")
+    public ApiResponseDto<Void> markRead(@PathVariable Long id, Authentication authentication) {
+        inbox.markRead(id, authentication.getName());
+        return ApiResponseDto.success(null, "Đã đọc");
     }
 
-    @PatchMapping("/read-all")
-    public ResponseEntity<ApiResponseDto<Void>> markAllAsRead(
-            @RequestParam(value = "role", required = false) String role,
-            @RequestParam(value = "name", required = false) String name,
-            Authentication authentication) {
-        notificationService.markAllAsRead(role, requireRecipient(role, authentication));
-        return ResponseEntity.ok(ApiResponseDto.success(null, "Đã đánh dấu tất cả thông báo là đã đọc"));
+    @PostMapping("/notifications/read-all")
+    public ApiResponseDto<Void> markAllRead(Authentication authentication) {
+        inbox.markAllRead(authentication.getName());
+        return ApiResponseDto.success(null, "Đã đọc tất cả");
     }
 
-    @DeleteMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponseDto<Void>> deleteNotification(
-            @PathVariable Integer id,
-            @RequestParam String role,
-            Authentication authentication) {
-        String username = requireRecipient(role, authentication);
-        notificationService.delete(id, role, username);
-        return ResponseEntity.ok(ApiResponseDto.success(null, "Đã xóa thông báo"));
+    @DeleteMapping("/notifications/{id}")
+    public ApiResponseDto<Void> delete(@PathVariable Long id, Authentication authentication) {
+        inbox.delete(id, authentication.getName());
+        return ApiResponseDto.success(null, "Đã xóa thông báo");
     }
 
-    @DeleteMapping
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponseDto<Void>> deleteAllNotifications(
-            @RequestParam String role,
-            Authentication authentication) {
-        String username = requireRecipient(role, authentication);
-        notificationService.deleteAll(role, username);
-        return ResponseEntity.ok(ApiResponseDto.success(null, "Đã xóa tất cả thông báo"));
-    }
-
-    private String requireRecipient(String role, Authentication authentication) {
-        if (role == null || role.isBlank() || authentication == null
-                || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getName())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
-        }
-
-        String requiredAuthority = "ROLE_" + role.toUpperCase();
-        boolean authorized = authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .anyMatch(requiredAuthority::equals);
-        if (!authorized) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
-        }
-        return authentication.getName();
+    @DeleteMapping("/notifications/mine")
+    public ApiResponseDto<Void> deleteAll(Authentication authentication) {
+        inbox.deleteAll(authentication.getName());
+        return ApiResponseDto.success(null, "Đã xóa tất cả thông báo");
     }
 }

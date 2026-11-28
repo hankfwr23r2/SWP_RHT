@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { cameraError, captureTimestamp, captureTime, evidenceOf, registerCaptureEvidence } from './capture'
-import type { CaptureEvidence } from '../types/capture'
+import { cameraError, captureTimestamp, captureTime, evidenceOf, registerCaptureEvidence, type CaptureEvidence } from './capture'
 
 describe('thời gian chứng từ camera', () => {
   it('không suy diễn thời gian thật từ tên ảnh cũ hoặc URL', () => {

@@ -1,64 +1,122 @@
 package com.example.racehorse_transport.entity;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.Size;
-import lombok.*;
-import org.hibernate.annotations.Nationalized;
+import com.example.racehorse_transport.entity.enums.PaymentMethod;
+import com.example.racehorse_transport.entity.enums.PaymentStatus;
+import com.example.racehorse_transport.entity.enums.PaymentType;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
+// Khoản phải thu hoặc phải hoàn. Số tiền luôn dương, chiều tiền xác định bằng paymentType.
 @Getter
 @Setter
-@Entity
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
-@Table(name = "PAYMENT")
+@Entity
+@Table(name = "payment")
 public class Payment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "PaymentID", nullable = false)
-    private Integer id;
+    @Column(name = "id")
+    private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "BookingID")
-    private Booking bookingID;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "booking_id", nullable = false)
+    private Booking booking;
 
-    @Column(name = "Amount", precision = 18, scale = 2)
+    // Bắt buộc với cọc và số dư (CHECK ở DB)
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "quotation_id")
+    private Quotation quotation;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_type", length = 30, nullable = false)
+    private PaymentType paymentType;
+
+    @Column(name = "amount", nullable = false, precision = 15, scale = 2)
     private BigDecimal amount;
 
-    @Column(name = "PaymentDate")
-    private Instant paymentDate;
+    @JdbcTypeCode(SqlTypes.CHAR)
+    @Column(name = "currency_code", length = 3, nullable = false)
+    private String currencyCode;
 
-    @Size(max = 50)
-    @Column(name = "payment_type", length = 50)
-    private String paymentType; // DEPOSIT, SETTLEMENT, REFUND
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_method", length = 30, nullable = false)
+    private PaymentMethod paymentMethod;
 
-    @Size(max = 50)
-    @Column(name = "payment_method", length = 50)
-    private String paymentMethod; // BANK_TRANSFER, VNPAY, CASH, CARD
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", length = 30, nullable = false)
+    private PaymentStatus status;
 
-    @Size(max = 100)
-    @Column(name = "transaction_code", length = 100)
-    private String transactionCode;
+    @Column(name = "due_at")
+    private Instant dueAt;
 
-    @Size(max = 50)
-    @Column(name = "status", length = 50)
-    private String status; // PENDING, COMPLETED, FAILED, NEEDS_REVIEW (đã trừ tiền nhưng đơn không còn hợp lệ)
+    // Lúc lập khoản thu thêm, mốc tính công nợ
+    @Column(name = "issued_at")
+    private Instant issuedAt;
 
-    // Mã giao dịch phía VNPAY (vnp_TransactionNo) và ngân hàng khách dùng (vnp_BankCode)
-    @Size(max = 50)
-    @Column(name = "gateway_transaction_no", length = 50)
-    private String gatewayTransactionNo;
+    @Column(name = "extended_at")
+    private Instant extendedAt;
 
-    @Size(max = 20)
-    @Column(name = "bank_code", length = 20)
-    private String bankCode;
+    @Column(name = "disputed_at")
+    private Instant disputedAt;
 
-    @Size(max = 255)
-    @Nationalized
-    @Column(name = "note")
-    private String note;
+    @Column(name = "dispute_reason", length = 500)
+    private String disputeReason;
+
+    @Column(name = "dispute_resolved_at")
+    private Instant disputeResolvedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "dispute_decision", length = 20)
+    private com.example.racehorse_transport.entity.enums.DisputeDecision disputeDecision;
+
+    @Column(name = "dispute_response", length = 500)
+    private String disputeResponse;
+
+    @Column(name = "written_off_at")
+    private Instant writtenOffAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "written_off_by")
+    private AppUser writtenOffBy;
+
+    @Column(name = "write_off_reason", length = 500)
+    private String writeOffReason;
+
+    @Column(name = "block_released_at")
+    private Instant blockReleasedAt;
+
+    @Column(name = "paid_at")
+    private Instant paidAt;
+
+    // Khoản được hoàn, chỉ có khi REFUND (CHECK ở DB)
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "refunded_payment_id")
+    private Payment refundedPayment;
+
+    @OneToMany(mappedBy = "extraChargePayment")
+    private List<CostItem> extraChargeCosts = new ArrayList<>();
 }

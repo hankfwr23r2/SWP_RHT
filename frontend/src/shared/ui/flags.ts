@@ -1,5 +1,5 @@
 // Cờ 3 nước (SVG), chuyển nguyên từ home.js
-import type { CountryCode } from '../config/network'
+type CountryCode = 'VN' | 'LA' | 'KH'
 
 export const FLAG_SVG: Record<CountryCode, string> = {
     VN: `<svg viewBox="0 0 30 20" preserveAspectRatio="xMidYMid slice"><rect width="30" height="20" fill="#da251d"/><polygon points="15,4 16.18,7.6 19.96,7.6 16.9,9.8 18.07,13.4 15,11.2 11.93,13.4 13.1,9.8 10.04,7.6 13.82,7.6" fill="#ffff00"/></svg>`,

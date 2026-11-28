@@ -1,0 +1,100 @@
+package com.example.racehorse_transport.service.impl;
+
+import com.example.racehorse_transport.client.VnpayClient;
+import com.example.racehorse_transport.dto.payment.PaymentCheckoutResponseDto;
+import com.example.racehorse_transport.entity.Payment;
+import com.example.racehorse_transport.entity.PaymentTransaction;
+import java.util.List;
+import com.example.racehorse_transport.entity.enums.PaymentStatus;
+import com.example.racehorse_transport.entity.enums.PaymentTransactionStatus;
+import com.example.racehorse_transport.entity.enums.PaymentType;
+import com.example.racehorse_transport.exception.BookingRuleException;
+import com.example.racehorse_transport.exception.ResourceNotFoundException;
+import com.example.racehorse_transport.policy.PaymentPolicy;
+import com.example.racehorse_transport.repository.BookingRepository;
+import com.example.racehorse_transport.repository.PaymentRepository;
+import com.example.racehorse_transport.repository.PaymentTransactionRepository;
+import com.example.racehorse_transport.service.PaymentCheckoutService;
+import java.time.Clock;
+import java.time.temporal.ChronoUnit;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+public class PaymentCheckoutServiceImpl implements PaymentCheckoutService {
+    static final String SESSION_GATEWAY = "VNPAY_SESSION";
+
+    private final BookingRepository bookings;
+    private final PaymentRepository payments;
+    private final PaymentTransactionRepository transactions;
+    private final VnpayClient vnpay;
+    private final Clock clock;
+
+    @Override
+    @Transactional
+    public PaymentCheckoutResponseDto checkout(Long paymentId, String username, String ipAddress) {
+        Long bookingId = payments.findBookingId(paymentId).orElseThrow(PaymentCheckoutServiceImpl::notFound);
+        var booking = bookings.findForUpdate(bookingId)
+                .filter(row -> username.equals(row.getCustomer().getUser().getUsername()))
+                .orElseThrow(PaymentCheckoutServiceImpl::notFound);
+        var payment = payments.findById(paymentId).orElseThrow(PaymentCheckoutServiceImpl::notFound);
+        var now = clock.instant().truncatedTo(ChronoUnit.SECONDS);
+        if (!PaymentPolicy.isOpen(payment, booking, now) || !"VND".equals(payment.getCurrencyCode())
+                || !VnpayClient.isPayable(payment.getAmount()) || !vnpay.isConfigured()) {
+            throw BookingRuleException.conflict("Khoản thu hiện không thể thanh toán qua VNPAY.");
+        }
+        var expiry = now.plus(vnpay.defaultExpireMinutes(), ChronoUnit.MINUTES);
+        if (payment.getPaymentType() == PaymentType.DEPOSIT && payment.getDueAt().isBefore(expiry)) {
+            expiry = payment.getDueAt();
+        }
+        String reference = PaymentPolicy.reference(paymentId, now, UUID.randomUUID());
+        String url = vnpay.createPaymentUrl(reference, payment.getAmount(), "Thanh toan " + booking.getCode(),
+                ipAddress, now, expiry);
+        var session = new PaymentTransaction();
+        session.setPayment(payment);
+        session.setGatewayCode(SESSION_GATEWAY);
+        session.setGatewayTransactionNumber(reference);
+        session.setResponseCode("PENDING");
+        session.setAmount(payment.getAmount());
+        session.setStatus(PaymentTransactionStatus.PENDING);
+        session.setRawPayload("{}");
+        transactions.save(session);
+        return new PaymentCheckoutResponseDto(url, expiry);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean hasPendingBalanceConfirmation(Long bookingId) {
+        var now = clock.instant();
+        return transactions.findByPayment_Booking_IdAndPayment_PaymentTypeAndGatewayCodeAndStatus(
+                        bookingId, PaymentType.BALANCE, SESSION_GATEWAY, PaymentTransactionStatus.PENDING)
+                .stream().filter(session -> session.getPayment().getStatus() == PaymentStatus.PENDING)
+                .anyMatch(session -> PaymentPolicy.awaitsGateway(
+                        PaymentPolicy.parseReference(session.getGatewayTransactionNumber()), session.getPayment().getDueAt(),
+                        now, vnpay.depositConfirmationGraceMinutes()));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean hasPendingBalanceConfirmationAt(Long bookingId, java.time.Instant cutoff) {
+        return transactions.findByPayment_Booking_IdAndPayment_PaymentTypeAndGatewayCodeAndStatus(
+                        bookingId, PaymentType.BALANCE, SESSION_GATEWAY, PaymentTransactionStatus.PENDING)
+                .stream().filter(session -> session.getPayment().getStatus() == PaymentStatus.PENDING)
+                .map(session -> PaymentPolicy.parseReference(session.getGatewayTransactionNumber()))
+                .anyMatch(session -> session != null && !session.createdAt().isAfter(cutoff)
+                        && !session.createdAt().plus(vnpay.defaultExpireMinutes(), ChronoUnit.MINUTES).isBefore(cutoff));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isBalanceOverdue(List<Payment> entries) {
+        return PaymentPolicy.isBalanceOverdue(entries, clock.instant());
+    }
+
+    private static ResourceNotFoundException notFound() {
+        return new ResourceNotFoundException("Không tìm thấy khoản thanh toán.");
+    }
+}

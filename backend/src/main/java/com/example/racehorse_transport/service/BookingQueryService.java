@@ -1,33 +1,22 @@
 package com.example.racehorse_transport.service;
 
+import java.util.Set;
+import com.example.racehorse_transport.entity.enums.BookingStatus;
+import com.example.racehorse_transport.dto.booking.BookingSummaryResponseDto;
+import com.example.racehorse_transport.dto.booking.BookingDetailResponseDto;
 import com.example.racehorse_transport.dto.booking.BookingResponseDto;
-import com.example.racehorse_transport.dto.booking.CustomerTripTeamResponseDto;
-import com.example.racehorse_transport.dto.booking.PublicTrackingResponseDto;
-import com.example.racehorse_transport.dto.common.PagedResponseDto;
-import com.example.racehorse_transport.entity.Booking;
 import java.util.List;
 
 public interface BookingQueryService {
 
-    List<BookingResponseDto> getCustomerBookings(String customerUsername);
+    List<BookingResponseDto> reviewQueue(String username);
 
-    PagedResponseDto<BookingResponseDto> getCustomerBookingsPaged(String customerUsername, int page, int size);
+    // Mới nhất trước, mỗi trang tối đa PAGE_SIZE dòng
+    List<BookingSummaryResponseDto> summaries(Set<BookingStatus> statuses, int page, String username);
 
-    BookingResponseDto getBookingById(Integer id, String customerUsername);
+    BookingDetailResponseDto reviewDetail(Long id, String username);
 
-    List<CustomerTripTeamResponseDto> getCustomerTripTeam(Integer id, String customerUsername);
+    List<BookingSummaryResponseDto> list(String username);
 
-    List<BookingResponseDto> getBookingsByStatus(String status);
-
-    PagedResponseDto<BookingResponseDto> getBookingsPaged(String status, int page, int size);
-
-    List<BookingResponseDto> getMyFieldBookings(String username, String role);
-
-    List<BookingResponseDto> getAssignedBookings(String username);
-
-    PublicTrackingResponseDto getPublicTracking(String code, String phoneLast4);
-
-    BookingResponseDto mapToResponse(Booking b);
-
-    Integer resolveBookingId(String code);
+    BookingDetailResponseDto get(String username, Long id);
 }

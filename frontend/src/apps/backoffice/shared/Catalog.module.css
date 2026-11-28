@@ -1,0 +1,45 @@
+.page, .stack, .form {
+  display: grid;
+  gap: var(--space-4);
+  min-inline-size: 0;
+}
+.page {
+  overflow-wrap: anywhere;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  align-items: start;
+  gap: var(--space-4);
+  min-inline-size: 0;
+}
+.actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.dialogActions {
+  composes: actions;
+  justify-content: flex-end;
+}
+.error {
+  color: var(--color-danger);
+  margin: 0;
+}
+.snapshot {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .page :global(td) {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+  .page :global(td)::before {
+    max-inline-size: 100%;
+  }
+}
+.row { display: flex; flex-wrap: wrap; gap: var(--space-2); }

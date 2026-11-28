@@ -7,13 +7,45 @@
   },
   "overrides": [
     {
-      "files": ["src/apps/customer/**", "src/shared/**"],
+      "files": ["src/**"],
       "rules": {
         "no-restricted-imports": ["error", {
-          "patterns": [{
-            "group": ["**/apps/backoffice/**", "**/backoffice/**"],
-            "message": "App khách và shared không được dùng code nội bộ (giá vốn, biên lãi)."
-          }]
+          "patterns": [
+            { "regex": "^(\\.\\./){2,}", "message": "Không import tương đối quá một cấp. Dùng alias @shared, @customer, @backoffice (AGENTS.md mục 8.3)." }
+          ]
+        }]
+      }
+    },
+    {
+      "files": ["src/apps/customer/**"],
+      "rules": {
+        "no-restricted-imports": ["error", {
+          "patterns": [
+            { "regex": "^(\\.\\./){2,}", "message": "Không import tương đối quá một cấp. Dùng alias @shared, @customer, @backoffice (AGENTS.md mục 8.3)." },
+            { "regex": "(^@backoffice(/|$)|apps/backoffice|(^|/)backoffice/)", "message": "App khách không được dùng code nội bộ (giá vốn, biên lãi). AGENTS.md mục 8.3." }
+          ]
+        }]
+      }
+    },
+    {
+      "files": ["src/apps/backoffice/**"],
+      "rules": {
+        "no-restricted-imports": ["error", {
+          "patterns": [
+            { "regex": "^(\\.\\./){2,}", "message": "Không import tương đối quá một cấp. Dùng alias @shared, @customer, @backoffice (AGENTS.md mục 8.3)." },
+            { "regex": "(^@customer(/|$)|apps/customer)", "message": "App nội bộ không import app khách. Cần dùng chung thì chuyển lên shared (AGENTS.md mục 8.3)." }
+          ]
+        }]
+      }
+    },
+    {
+      "files": ["src/shared/**"],
+      "rules": {
+        "no-restricted-imports": ["error", {
+          "patterns": [
+            { "regex": "^(\\.\\./){2,}", "message": "Không import tương đối quá một cấp. Dùng alias @shared, @customer, @backoffice (AGENTS.md mục 8.3)." },
+            { "regex": "(^@customer(/|$)|^@backoffice(/|$)|apps/|(^|/)backoffice/)", "message": "shared không import apps (AGENTS.md mục 8.3)." }
+          ]
         }]
       }
     }

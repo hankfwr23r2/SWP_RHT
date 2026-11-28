@@ -1,20 +1,30 @@
 package com.example.racehorse_transport.repository;
 
 import com.example.racehorse_transport.entity.Horse;
-
+import jakarta.persistence.LockModeType;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
 
-@Repository
-public interface HorseRepository extends JpaRepository<Horse, Integer> {
-    java.util.List<Horse> findByCustomerID_Id(Integer customerId);
+public interface HorseRepository extends JpaRepository<Horse, Long> {
 
-    // Hồ sơ mới thêm hoặc vừa chỉnh sửa đứng trước
-    @org.springframework.data.jpa.repository.Query("""
-            select h from Horse h where h.customerID.id = :customerId
-            order by coalesce(h.updatedAt, h.createdAt) desc nulls last, h.id desc""")
-    java.util.List<Horse> findByCustomerNewestFirst(@org.springframework.data.repository.query.Param("customerId") Integer customerId);
-    boolean existsByMicrochipIDIgnoreCase(String microchipID);
-    boolean existsByMicrochipIDIgnoreCaseAndIdNot(String microchipID, Integer id);
-    boolean existsByHorseTypeID_Id(Integer horseTypeId);
+    Optional<Horse> findByMicrochip(String microchip);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            SELECT h FROM Horse h
+            WHERE h.owner.userId = :customerId AND h.id IN :ids
+            ORDER BY h.id
+            """)
+    List<Horse> findOwnedForUpdate(Long customerId, Collection<Long> ids);
+
+    @EntityGraph(attributePaths = "horseType")
+    List<Horse> findByOwner_User_UsernameOrderByNameAscIdAsc(String username);
+
+    @EntityGraph(attributePaths = "horseType")
+    Optional<Horse> findByIdAndOwner_User_Username(Long id, String username);
 }

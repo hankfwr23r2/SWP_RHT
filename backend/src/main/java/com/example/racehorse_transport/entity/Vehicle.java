@@ -1,111 +1,60 @@
 package com.example.racehorse_transport.entity;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.Size;
-import lombok.*;
+import com.example.racehorse_transport.entity.enums.VehicleStatus;
+import com.example.racehorse_transport.entity.enums.VehicleServiceRole;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+// Xe. Sức chứa lấy từ cột số khoang, không đọc từ chuỗi.
 @Getter
 @Setter
-@Entity
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
-@Table(name = "VEHICLE")
+@Entity
+@Table(name = "vehicle")
 public class Vehicle {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "VehicleID", nullable = false)
-    private Integer id;
+    @Column(name = "id")
+    private Long id;
 
-    @Size(max = 100)
-    @Column(name = "vehicle_type", length = 100)
-    private String vehicleType;
-
-    @Size(max = 50)
-    @Column(name = "license_plate", length = 50)
+    @Column(name = "license_plate", length = 20, nullable = false)
     private String licensePlate;
 
-    @Size(max = 50)
-    @Column(name = "status", length = 50)
-    private String status;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "vehicle_class_id", nullable = false)
+    private VehicleClass vehicleClass;
 
-    // =========================================================================
-    // HELPER / DERIVED BUSINESS PROPERTIES (Không lưu DB, đảm bảo nghiệp vụ & UI)
-    // =========================================================================
+    @Column(name = "standard_stall_count", nullable = false)
+    private Integer standardStallCount;
 
-    /**
-     * Suy ra mã xe định danh theo chuẩn hệ thống: VH-001, VH-002,...
-     */
-    public String getVehicleCode() {
-        return "VH-" + String.format("%03d", id != null ? id : 0);
-    }
+    @Column(name = "wide_stall_count", nullable = false)
+    private Integer wideStallCount;
 
-    public void setVehicleCode(String vehicleCode) {
-        // No-op: Mã xe được chuẩn hóa suy từ ID để đồng bộ frontend
-    }
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "home_hub_location_id", nullable = false)
+    private Location homeHubLocation;
 
-    /**
-     * Suy ra sức chứa (số ngăn chở ngựa) tự động từ vehicle_type:
-     * - Nếu chuỗi chứa số (2, 4, 6, 9) -> lấy số đó (ví dụ "Xe 2 ngăn", "4_stalls" -> 2, 4)
-     * - Nếu là light -> 2, medium -> 4, heavy -> 9
-     * - Mặc định: 2 ngăn
-     */
-    public Integer getCapacity() {
-        if (vehicleType == null || vehicleType.isBlank()) {
-            return 2;
-        }
-        String cleanDigits = vehicleType.replaceAll("\\D+", "");
-        if (!cleanDigits.isEmpty()) {
-            try {
-                int cap = Integer.parseInt(cleanDigits);
-                if (cap > 0 && cap <= 20) {
-                    return cap;
-                }
-            } catch (NumberFormatException ignored) {
-            }
-        }
-        String lower = vehicleType.toLowerCase();
-        if (lower.contains("heavy")) return 9;
-        if (lower.contains("medium")) return 4;
-        if (lower.contains("light") || lower.contains("van")) return 2;
-        return 2;
-    }
+    // Xe đang chạy hay rảnh suy ra từ vehicle_trip, không lưu ở đây
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", length = 30, nullable = false)
+    private VehicleStatus status;
 
-    public void setCapacity(Integer capacity) {
-        if (capacity == null || capacity <= 0 || capacity > 20) return;
-        String type = vehicleType == null ? "" : vehicleType.trim();
-        type = type.replaceFirst("(?i)\\s+\\d+\\s*(?:ngăn|stalls?)\\s*$", "").trim();
-        vehicleType = (type.isEmpty() ? "Xe chuyên dụng" : type) + " " + capacity + " ngăn";
-    }
-
-    /**
-     * Suy ra tên hiển thị của xe cho giao diện điều phối & quản lý
-     */
-    public String getVehicleName() {
-        return "Xe chuyên dụng " + getCapacity() + " ngăn (" + (licensePlate != null ? licensePlate : "Chưa có biển") + ")";
-    }
-
-    public void setVehicleName(String vehicleName) {
-        // No-op
-    }
-
-    /**
-     * Toàn bộ hệ thống quản lý tập trung duy nhất tại Trụ sở chính — Việt Nam (Đã bỏ depot)
-     */
-    public String getHomeDepot() {
-        return "Trụ sở chính — Việt Nam";
-    }
-
-    public void setHomeDepot(String homeDepot) {
-        // No-op
-    }
-
-    public String getCurrentLocation() {
-        return "Trụ sở chính — Việt Nam";
-    }
-
-    public void setCurrentLocation(String currentLocation) {
-        // No-op
-    }
+    @Enumerated(EnumType.STRING)
+    @Column(name = "service_role", length = 30, nullable = false)
+    private VehicleServiceRole serviceRole = VehicleServiceRole.BRANCH;
 }

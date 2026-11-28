@@ -1,38 +1,42 @@
 package com.example.racehorse_transport.service;
 
-import com.example.racehorse_transport.dto.incident.*;
-
+import com.example.racehorse_transport.dto.incident.PlanApproveRequestDto;
+import com.example.racehorse_transport.dto.incident.IncidentPlanRequestDto;
+import com.example.racehorse_transport.dto.incident.IncidentReportRequestDto;
+import com.example.racehorse_transport.dto.incident.IncidentResponseDto;
+import com.example.racehorse_transport.dto.incident.PlanRejectRequestDto;
 import java.util.List;
 
+// Sự cố và phương án xử lý có phiên bản (B4). Chủ sở hữu incident, incident_plan. Không đổi booking.status.
 public interface IncidentService {
 
-    IncidentResponseDto reportIncident(ReportIncidentRequestDto request, String actor, String role);
+    List<IncidentResponseDto> open();
 
-    IncidentResponseDto proposeExternalPlan(Integer incidentId, ProposeExternalPlanRequestDto request, String actor);
+    List<IncidentResponseDto> ofTrip(Long vehicleTripId);
 
-    IncidentResponseDto approveIncidentPlan(Integer incidentId, ApproveIncidentPlanRequestDto request, String actor);
+    IncidentResponseDto incident(Long id);
 
-    IncidentResponseDto rejectIncidentPlan(Integer incidentId, RejectIncidentPlanRequestDto request, String actor);
+    // Tổ xe báo (người trong tổ lái); lượt đang có sự cố chưa đóng thì không báo sự cố mới cho cả lượt
+    IncidentResponseDto report(IncidentReportRequestDto request, String username);
 
-    IncidentResponseDto addExpense(Integer incidentId, IncidentExpenseRequestDto request, String actor, String role);
+    // Điều phối lập phương án phiên bản mới; phương án đang chờ trước đó bị thay
+    IncidentResponseDto propose(Long incidentId, IncidentPlanRequestDto request, String username);
 
-    IncidentResponseDto deleteExpense(Integer incidentId, String expenseId, String actor, String role);
+    List<IncidentResponseDto.PlanDto> plansForCustomer(Long bookingId, String username);
 
-    IncidentResponseDto confirmFit(Integer incidentId, ConfirmIncidentFitRequestDto request, String actor, String role);
+    void acceptPlan(Long planId, String username);
 
-    IncidentResponseDto resumeJourney(Integer incidentId, String actor, String role);
+    IncidentResponseDto approve(Long planId, PlanApproveRequestDto request, String username);
 
-    // Rời trạm SOS trước giờ nghỉ đã duyệt chỉ được khi kíp xe xác nhận (confirmEarlyLeave), kèm ghi chú nếu có
-    IncidentResponseDto resumeJourney(Integer incidentId, String actor, String role, boolean confirmEarlyLeave, String note);
+    // Từ chối phải có lý do; điều phối lập phiên bản tiếp theo
+    IncidentResponseDto reject(Long planId, PlanRejectRequestDto request, String username);
 
-    IncidentResponseDto completeResolution(Integer incidentId, ResolveIncidentRequestDto request, String actor);
+    IncidentResponseDto startRest(Long incidentId, String username);
 
-    List<IncidentResponseDto> getIncidentsByBooking(Integer bookingId, String requester, String role);
+    // Ngựa đủ sức đi tiếp, sau khi phương án được duyệt và đã nghỉ đủ MIN_REST_MINUTES
+    IncidentResponseDto confirmFit(Long incidentId, String username);
 
-    List<IncidentResponseDto> getCustomerIncidents(String customerUsername);
+    IncidentResponseDto resolve(Long incidentId, String username);
 
-    List<IncidentResponseDto> getAllIncidents(String status);
-
-    // Sự cố của nhiều đơn trong một truy vấn (đơn đã được kiểm tra quyền ở nơi gọi)
-    List<IncidentResponseDto> getIncidentsForBookings(java.util.Collection<Integer> bookingIds);
+    IncidentResponseDto close(Long incidentId, String username);
 }

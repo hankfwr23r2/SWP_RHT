@@ -7,13 +7,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Clock;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.HexFormat;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 // Lưu đệm kết quả dịch vụ chỉ đường 30 ngày: không gọi lại, và lộ trình với báo giá dùng cùng số liệu
 @Slf4j
@@ -25,13 +27,16 @@ public class RouteCacheServiceImpl implements RouteCacheService {
 
     private final RouteCacheRepository repository;
     private final ObjectMapper json;
+    private final Clock clock;
 
     public <T> Optional<T> find(String key, Class<T> type) {
         return repository.findById(hash(key))
-                .filter(entry -> entry.getCreatedAt().isAfter(Instant.now().minus(TTL)))
+                .filter(entry -> entry.getCreatedAt().isAfter(clock.instant().minus(TTL)))
                 .flatMap(entry -> read(entry.getPayload(), type));
     }
 
+    // Giao dịch riêng: nơi gọi có thể đang ở giao dịch chỉ đọc
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void put(String key, Object value) {
         String payload;
         try {
@@ -39,7 +44,7 @@ public class RouteCacheServiceImpl implements RouteCacheService {
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Không ghi được kết quả lộ trình vào bộ đệm", e);
         }
-        repository.upsert(hash(key), payload, Instant.now());
+        repository.upsert(hash(key), payload, clock.instant());
     }
 
     static String hash(String key) {

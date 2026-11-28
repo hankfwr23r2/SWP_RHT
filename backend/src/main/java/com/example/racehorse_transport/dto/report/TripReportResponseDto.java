@@ -1,38 +1,37 @@
 package com.example.racehorse_transport.dto.report;
 
-import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
+import com.example.racehorse_transport.entity.enums.CostCategory;
+import com.example.racehorse_transport.entity.enums.CostPayerType;
+import com.example.racehorse_transport.entity.enums.HealthStatus;
+import com.example.racehorse_transport.entity.enums.IncidentCauseType;
+import com.example.racehorse_transport.entity.enums.IncidentStatus;
+import com.example.racehorse_transport.entity.enums.IncidentType;
+import com.example.racehorse_transport.entity.enums.IntakeLevel;
+import com.example.racehorse_transport.entity.enums.TripStopType;
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-@Schema(name = "TripReportResponse")
-public class TripReportResponseDto {
-    private String id;
-    private String tripId;
-    private String customer;
-    private String route;
-    private String type;
-    private String horses;
-    private String escort;
-    private Long completedAt;
-    private Long plannedAt;
-    private String otd;
-    private Integer otdMinutes;
-    private Double incidentCost;
-    private Long tollCost; // tổng phí cầu đường tài xế ghi theo hóa đơn (nhà xe chịu)
-    private List<java.util.Map<String, Object>> tolls;
-    private String incidentNote;
-    private String totalTime;
-    private List<ReportLegDto> legs;
-    private List<List<Object>> health; // [thời điểm ms, nội dung, bình thường?]
-    private List<List<Object>> events; // [thời điểm ms, nội dung, đúng kế hoạch?]
-    private Integer rating;
-    private String feedback;
+// Báo cáo một lượt xe (docs/NGHIEP_VU_THEO_59_BANG.md: dựng từ trip_stop, horse_health_log, incident, cost_item, booking_rating)
+public record TripReportResponseDto(
+        TripReportRowResponseDto summary, List<ReportStopDto> stops, List<ReportHealthDto> healthLogs,
+        List<ReportIncidentDto> incidents, List<ReportCostDto> costs, List<ReportRatingDto> ratings) {
+
+    public record ReportStopDto(Integer sequenceNumber, TripStopType stopType, String name,
+                                Instant plannedArrivalAt, Instant actualArrivalAt, Instant actualDepartureAt, boolean late) {
+    }
+
+    public record ReportHealthDto(String horseName, Instant recordedAt, HealthStatus healthStatus, BigDecimal temperatureCelsius,
+                                  IntakeLevel waterIntake, IntakeLevel feedIntake, String symptoms) {
+    }
+
+    public record ReportIncidentDto(Long id, String title, IncidentType incidentType, IncidentCauseType causeType, IncidentStatus status,
+                                    Instant reportedAt, Instant resolvedAt) {
+    }
+
+    public record ReportCostDto(CostCategory category, String description, BigDecimal amount, CostPayerType payerType, boolean approved) {
+    }
+
+    public record ReportRatingDto(String bookingCode, Short score, String comment) {
+    }
 }

@@ -1,32 +1,19 @@
 package com.example.racehorse_transport.repository;
 
 import com.example.racehorse_transport.entity.Notification;
+
+import java.time.Instant;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
 
-import java.util.List;
+public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
-@Repository
-public interface NotificationRepository extends JpaRepository<Notification, Integer> {
-
-    @Query("SELECT n FROM Notification n WHERE " +
-           "(:role IS NULL OR n.recipientRole IS NULL OR LOWER(n.recipientRole) = LOWER(:role)) AND " +
-           "(:username IS NULL OR (LOWER(COALESCE(n.recipientRole, '')) != 'customer' AND n.recipientUsername IS NULL) OR LOWER(n.recipientUsername) = LOWER(:username)) " +
-           "ORDER BY n.createdAt DESC")
-    List<Notification> findForUser(@Param("role") String role, @Param("username") String username);
-
-    @Modifying
-    @Query("UPDATE Notification n SET n.isRead = true WHERE " +
-           "(:role IS NULL OR n.recipientRole IS NULL OR LOWER(n.recipientRole) = LOWER(:role)) AND " +
-           "(:username IS NULL OR (LOWER(COALESCE(n.recipientRole, '')) != 'customer' AND n.recipientUsername IS NULL) OR LOWER(n.recipientUsername) = LOWER(:username))")
-    int markAllAsRead(@Param("role") String role, @Param("username") String username);
-
-    @Modifying
-    @Query("DELETE FROM Notification n WHERE " +
-           "(:role IS NULL OR n.recipientRole IS NULL OR LOWER(n.recipientRole) = LOWER(:role)) AND " +
-           "(:username IS NULL OR (LOWER(COALESCE(n.recipientRole, '')) != 'customer' AND n.recipientUsername IS NULL) OR LOWER(n.recipientUsername) = LOWER(:username))")
-    int deleteForUser(@Param("role") String role, @Param("username") String username);
+    @Query(value = """
+            WITH saved AS (
+                INSERT INTO notification (booking_id, title, message, link_url, created_at)
+                VALUES (:bookingId, :title, :message, :link, :createdAt) RETURNING id
+            )
+            SELECT id FROM saved
+            """, nativeQuery = true)
+    Long insertAt(Long bookingId, String title, String message, String link, Instant createdAt);
 }

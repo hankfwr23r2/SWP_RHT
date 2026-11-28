@@ -1,14 +1,31 @@
 package com.example.racehorse_transport.service;
 
-import com.example.racehorse_transport.dto.admin.SystemConfigResponseDto;
-import com.example.racehorse_transport.dto.admin.UpdateSystemConfigRequestDto;
-
+import com.example.racehorse_transport.dto.config.ContactResponseDto;
+import com.example.racehorse_transport.dto.config.SystemConfigResponseDto;
+import com.example.racehorse_transport.dto.config.SystemConfigUpdateRequestDto;
+import com.example.racehorse_transport.dto.config.SystemTextConfigUpdateRequestDto;
+import com.example.racehorse_transport.dto.config.TransportRulesResponseDto;
 import java.util.List;
-import java.util.Map;
 
 public interface SystemConfigService {
-    List<SystemConfigResponseDto> getAllConfigs();
-    Map<String, List<SystemConfigResponseDto>> getAllConfigsGrouped();
-    SystemConfigResponseDto getConfig(String key);
-    SystemConfigResponseDto updateConfig(String key, UpdateSystemConfigRequestDto request, String updatedBy);
+
+    // Tham số kiểu số nguyên. Thiếu khóa hoặc giá trị không phải số thì ném lỗi cấu hình.
+    int getInt(String key);
+
+    // Demo trên giờ thật (app.demo.skip-time-rules): bỏ qua các mốc thời gian chặn thao tác
+    boolean timeRulesSkipped();
+
+    List<SystemConfigResponseDto> configurations();
+
+    SystemConfigResponseDto configuration(String key);
+
+    SystemConfigResponseDto updateConfiguration(String key, String username, SystemConfigUpdateRequestDto request);
+
+    SystemConfigResponseDto updateText(String key, String username, SystemTextConfigUpdateRequestDto request);
+
+    // Hotline và địa chỉ văn phòng hiện cho khách
+    ContactResponseDto contact();
+
+    // Các con số quy định vận chuyển hiện cho khách
+    TransportRulesResponseDto transportRules();
 }

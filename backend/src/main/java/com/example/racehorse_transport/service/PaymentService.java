@@ -1,51 +1,30 @@
 package com.example.racehorse_transport.service;
 
-import com.example.racehorse_transport.dto.payment.*;
-import com.example.racehorse_transport.entity.Payment;
-
+import com.example.racehorse_transport.dto.payment.PaymentResponseDto;
+import com.example.racehorse_transport.entity.Quotation;
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 
 public interface PaymentService {
-    void reconcileInsurance(String identifier, ReconcileInsuranceRequestDto request, String actor);
-    // CRUD cơ bản
-    List<Payment> findAll();
-    Optional<Payment> findById(Integer id);
-    Payment save(Payment entity);
-    void deleteById(Integer id);
+    BigDecimal outstanding(Quotation quotation);
+    List<PaymentResponseDto> payments(Long bookingId, String username);
 
-    // =========================================================================
-    // NGHIỆP VỤ TÀI CHÍNH DEV 2 (Flow 1, 4, 6, 8)
-    // =========================================================================
+    List<PaymentResponseDto> paymentsForManager(Long bookingId);
 
-    /**
-     * Khách hủy đơn của chính mình sau khi đặt cọc (mất cọc). Chỉ chủ đơn được hủy, và chỉ trước khi xe chở ngựa đi.
-     */
-    CancelWithRefundResponseDto cancelWithRefundPolicy(String bookingIdentifier, CancelBookingRequestDto request, String username);
+    // Luồng B gọi khi hoàn tất nhận ngựa. A khóa đơn trước khi tạo khoản thu.
+    void requestBalance(Long bookingId, Instant receivedAt);
 
-    // Quản lý hủy đơn "Không nhận được ngựa": khách mất phần cọc vận chuyển
-    CancelWithRefundResponseDto cancelPickupFailed(String bookingIdentifier, String reason, String username);
+    // Các thao tác nội bộ A7 chạy trong transaction đang giữ khóa booking.
+    void createDeposit(Quotation quotation);
 
-    /**
-     * Quản lý hủy chuyến đã đặt cọc, chưa rời điểm đón.
-     * fault = COMPANY: công ty không thực hiện được chuyến, hoàn 100% số đã thu.
-     * fault = CUSTOMER: lỗi do khách (không giao ngựa, không trả 70%...), khách mất phần cọc vận chuyển.
-     */
-    CancelWithRefundResponseDto cancelTrip(String bookingIdentifier, String fault, String reason, String username);
+    void cancelPendingDeposits(Long bookingId);
 
-    /**
-     * Xem tóm tắt tài chính (tổng tiền, đã cọc, còn thiếu, trạng thái đã thanh toán đủ chưa)
-     */
-    PaymentSummaryResponseDto getPaymentSummary(String bookingIdentifier, String customerUsername);
+    boolean expireDepositAndRelease(Quotation quotation, Instant now);
 
-    /**
-     * Lấy danh sách lịch sử tất cả các đợt thanh toán của một đơn hàng
-     */
-    List<PaymentResponseDto> getPaymentsByBooking(String bookingIdentifier, String customerUsername);
+    BigDecimal reconcileBalance(Quotation quotation);
 
-    /**
-     * Lấy chi tiết một giao dịch thanh toán.
-     * Ở các hàm xem: customerUsername khác null thì người gọi là khách và phải là chủ đơn; null là nhân viên.
-     */
-    PaymentResponseDto getPaymentDetail(Integer paymentId, String customerUsername);
+    Long createExtraCharge(Long bookingId, List<Long> costItemIds, Long actorUserId);
+
+    Long createExtraChargeForUser(Long bookingId, List<Long> costItemIds, String username);
 }

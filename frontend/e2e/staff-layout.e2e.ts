@@ -1,0 +1,61 @@
+import { expect, test, type Page } from '@playwright/test'
+
+// Khung app nội bộ phải dùng được từ bề rộng 360px (AGENTS.md mục 8.6)
+async function openAdminPage(page: Page) {
+  await page.addInitScript(() => sessionStorage.setItem('SWP_SESSION_backoffice', JSON.stringify({ role: 'admin', name: 'Admin Test', username: 'admin@example.com' })))
+  await page.route('**/api/v1/**', route => {
+    const path = new URL(route.request().url()).pathname
+    const data = path.endsWith('/system-logs/options') ? {} : path.endsWith('/system-logs') ? { content: [], totalElements: 0, totalPages: 0, number: 0, size: 20 } : []
+    return route.fulfill({ json: { status: 'success', message: '', data } })
+  })
+  await page.goto('/backoffice/admin/system-logs')
+  await expect(page.getByRole('heading', { name: 'Nhật ký hệ thống' })).toBeVisible()
+}
+
+test('thanh trên ở bề rộng 360px không tràn ngang, thấy chuông và đăng xuất trong menu', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 720 })
+  await openAdminPage(page)
+
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+  expect(overflow).toBe(0)
+
+  const banner = page.getByRole('banner')
+  const bell = await banner.getByRole('button', { name: /thông báo/i }).boundingBox()
+  expect(bell).not.toBeNull()
+  expect(bell!.x + bell!.width).toBeLessThanOrEqual(360)
+  await expect(banner.getByRole('button', { name: 'Đăng xuất' })).toBeHidden()
+  await banner.getByRole('button', { name: 'Mở menu' }).click()
+  const nav = page.getByRole('navigation', { name: 'Điều hướng chính' })
+  await expect(nav.getByRole('button', { name: 'Đăng xuất' })).toBeVisible()
+  await expect(nav.getByRole('button', { name: 'EN', exact: true })).toBeVisible()
+})
+
+test('menu điện thoại mở đủ mục và đóng khi điều hướng', async ({ page }) => {
+  let workSummaryCalls = 0
+  page.on('request', request => {
+    if (new URL(request.url()).pathname.endsWith('/staff/work-summary')) workSummaryCalls++
+  })
+  await page.setViewportSize({ width: 360, height: 720 })
+  await openAdminPage(page)
+
+  const nav = page.getByRole('navigation', { name: 'Điều hướng chính' })
+  await expect(nav).toBeHidden()
+  await page.getByRole('button', { name: 'Mở menu' }).click()
+  await expect(nav.getByRole('link', { name: 'Nhật ký hệ thống' })).toHaveAttribute('aria-current', 'page')
+  await nav.getByRole('link', { name: 'Tài khoản nhân viên' }).click()
+  await expect(page).toHaveURL(/\/admin\/accounts/)
+  await expect(nav).toBeHidden()
+  expect(workSummaryCalls).toBe(0)
+})
+
+test('ở bề rộng 360px vẫn tìm được đơn từ thanh trên', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 720 })
+  await openAdminPage(page)
+
+  const search = page.getByRole('searchbox', { name: 'Tìm đơn hàng' }).or(page.getByRole('textbox', { name: 'Tìm đơn hàng' }))
+  await search.click()
+  expect((await search.boundingBox())!.width).toBeGreaterThan(200)
+  await search.fill('BK-001')
+  await search.press('Enter')
+  await expect(page).toHaveURL(/\/admin\/accounts\?q=BK-001/)
+})

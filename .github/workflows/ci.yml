@@ -1,6 +1,5 @@
 # Chạy test và build cho mỗi pull request và mỗi lần push lên main, để biết trước khi merge là code còn chạy được.
-# Backend cần một Postgres trống (test contextLoads khởi động cả ứng dụng); service dưới đây dùng đúng tên DB,
-# user và mật khẩu mặc định trong application.properties nên không cần đặt thêm biến môi trường.
+# Test backend tự bật PostgreSQL riêng bằng Testcontainers (Docker có sẵn trên máy chạy của GitHub).
 name: CI
 
 on:
@@ -12,20 +11,6 @@ jobs:
   backend:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: horse_transport_db
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: RaceHorse@2026
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d horse_transport_db"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
     defaults:
       run:
         working-directory: backend
@@ -38,6 +23,16 @@ jobs:
           cache: maven
       - name: Test and package
         run: ./mvnw -B verify
+      # OpenApiExportTest vừa ghi lại hợp đồng API; lệch với bản đã commit nghĩa là API đổi mà chưa commit openapi.json
+      - name: API contract is committed
+        run: git diff --exit-code -- ../frontend/openapi/openapi.json
+      # Báo cáo độ phủ test của JaCoCo, tải về ở trang của lượt chạy CI
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jacoco-report
+          path: backend/target/site/jacoco
+          if-no-files-found: ignore
 
   frontend:
     runs-on: ubuntu-latest
@@ -53,6 +48,11 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
+      # Kiểu dữ liệu API phải sinh từ openapi.json đã commit, không sửa tay
+      - name: Generated API types are up to date
+        run: |
+          npm run api:gen
+          git diff --exit-code -- src/shared/api/generated
       - name: Test
         run: npm test
       # npm run build gồm cả oxlint và tsc -b

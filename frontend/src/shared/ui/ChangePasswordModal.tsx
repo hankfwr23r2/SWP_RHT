@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Modal } from './Modal'
 import { useToast } from './toast'
 import { authApi } from '../api/auth'
+import s from './ChangePasswordModal.module.css'
 
 interface ChangePasswordModalProps {
   onClose: () => void
@@ -89,54 +90,31 @@ export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
         </>
       }
     >
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <form onSubmit={handleSubmit} className={s.form}>
         {error && (
-          <div
-            style={{
-              padding: '10px 14px',
-              borderRadius: 8,
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              color: '#ef4444',
-              fontSize: 14,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-            }}
-          >
+          <div className={s.error}>
             <i className="fa-solid fa-circle-exclamation" />
             <span>{error}</span>
           </div>
         )}
 
-        <div className="form-group" style={{ margin: 0 }}>
+        <div className={`form-group ${s.group}`}>
           <label htmlFor="cp-current">{t('changePassword.currentPassword', 'Mật khẩu hiện tại *')}</label>
-          <div style={{ position: 'relative' }}>
+          <div className={s.field}>
             <input
               id="cp-current"
               type={showCurrent ? 'text' : 'password'}
-              className="form-control"
+              className={`form-control ${s.input}`}
               value={currentPassword}
               onChange={e => setCurrentPassword(e.target.value)}
               placeholder={t('changePassword.currentPasswordPlaceholder', 'Nhập mật khẩu đang dùng')}
               autoComplete="current-password"
               disabled={loading}
-              style={{ paddingRight: 40 }}
             />
             <button
               type="button"
               onClick={() => setShowCurrent(!showCurrent)}
-              style={{
-                position: 'absolute',
-                right: 12,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                color: 'var(--text-muted, #888)',
-                padding: 4,
-              }}
+              className={s.toggle}
               tabIndex={-1}
             >
               <i className={`fa-regular ${showCurrent ? 'fa-eye-slash' : 'fa-eye'}`} />
@@ -144,34 +122,23 @@ export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
           </div>
         </div>
 
-        <div className="form-group" style={{ margin: 0 }}>
+        <div className={`form-group ${s.group}`}>
           <label htmlFor="cp-new">{t('changePassword.newPassword', 'Mật khẩu mới *')}</label>
-          <div style={{ position: 'relative' }}>
+          <div className={s.field}>
             <input
               id="cp-new"
               type={showNew ? 'text' : 'password'}
-              className="form-control"
+              className={`form-control ${s.input}`}
               value={newPassword}
               onChange={e => setNewPassword(e.target.value)}
               placeholder={t('changePassword.newPasswordPlaceholder', 'Ít nhất 6 ký tự')}
               autoComplete="new-password"
               disabled={loading}
-              style={{ paddingRight: 40 }}
             />
             <button
               type="button"
               onClick={() => setShowNew(!showNew)}
-              style={{
-                position: 'absolute',
-                right: 12,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                color: 'var(--text-muted, #888)',
-                padding: 4,
-              }}
+              className={s.toggle}
               tabIndex={-1}
             >
               <i className={`fa-regular ${showNew ? 'fa-eye-slash' : 'fa-eye'}`} />
@@ -179,34 +146,23 @@ export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
           </div>
         </div>
 
-        <div className="form-group" style={{ margin: 0 }}>
+        <div className={`form-group ${s.group}`}>
           <label htmlFor="cp-confirm">{t('changePassword.confirmPassword', 'Xác nhận mật khẩu mới *')}</label>
-          <div style={{ position: 'relative' }}>
+          <div className={s.field}>
             <input
               id="cp-confirm"
               type={showConfirm ? 'text' : 'password'}
-              className="form-control"
+              className={`form-control ${s.input}`}
               value={confirmPassword}
               onChange={e => setConfirmPassword(e.target.value)}
               placeholder={t('changePassword.confirmPasswordPlaceholder', 'Nhập lại mật khẩu mới')}
               autoComplete="new-password"
               disabled={loading}
-              style={{ paddingRight: 40 }}
             />
             <button
               type="button"
               onClick={() => setShowConfirm(!showConfirm)}
-              style={{
-                position: 'absolute',
-                right: 12,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                color: 'var(--text-muted, #888)',
-                padding: 4,
-              }}
+              className={s.toggle}
               tabIndex={-1}
             >
               <i className={`fa-regular ${showConfirm ? 'fa-eye-slash' : 'fa-eye'}`} />

@@ -1,17 +1,44 @@
-import { HOUR } from '../config/business-rules'
-import type { Time } from './dates'
+export type Time = string | number | Date
 
-const pad = (n: number) => String(n).padStart(2, '0')
+const DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/
+const localDateTime = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'Asia/Ho_Chi_Minh',
+  year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
+})
+
+function dateParts(value: Time) {
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? {} : Object.fromEntries(localDateTime.formatToParts(date).map(part => [part.type, part.value]))
+}
 
 export const formatVND = (n: number) => Math.round(n).toLocaleString('en-US') + ' ₫'
-export const formatDate = (t: Time) => { const d = new Date(t); return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}` }
-export const formatDateTime = (t: Time) => { const d = new Date(t); return `${formatDate(d)} ${pad(d.getHours())}:${pad(d.getMinutes())}` }
-export const formatClock = (t: Time) => { const d = new Date(t); return `${pad(d.getHours())}:${pad(d.getMinutes())}` }
 
-// "x giờ yy phút" còn lại tới mốc t (không âm)
-export function timeLeftText(t: number, now = Date.now()) {
-  const ms = Math.max(0, t - now)
-  return `${Math.floor(ms / HOUR)} giờ ${pad(Math.floor((ms % HOUR) / 60000))} phút`
+export function formatDate(value: Time) {
+  const iso = typeof value === 'string' ? DATE_ONLY.exec(value) : null
+  if (iso) return [iso[3], iso[2], iso[1]].join('/')
+  const { day, month, year } = dateParts(value)
+  return year ? [day, month, year].join('/') : ''
+}
+
+export function formatClock(value: Time) {
+  const { hour, minute } = dateParts(value)
+  return hour ? [hour, minute].join(':') : ''
+}
+
+// Nhật ký và chứng từ cần giây: formatDateTime(at, { seconds: true })
+export function formatDateTime(value: Time, options: { seconds?: boolean } = {}) {
+  if (typeof value === 'string' && DATE_ONLY.test(value)) return formatDate(value)
+  const { day, month, year, hour, minute, second } = dateParts(value)
+  const clock = options.seconds ? [hour, minute, second] : [hour, minute]
+  return year ? [day, month, year].join('/') + ' ' + clock.join(':') : ''
+}
+
+export function parseDisplayDate(value: string): string | undefined {
+  const parts = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value)
+  if (!parts || parts[3] === '0000') return undefined
+  const iso = [parts[3], parts[2], parts[1]].join('-')
+  const date = new Date(iso)
+  return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(iso) ? iso : undefined
 }
 
 const DIGITS = ['không', 'một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám', 'chín']

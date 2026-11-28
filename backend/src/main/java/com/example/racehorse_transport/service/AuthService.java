@@ -1,31 +1,31 @@
 package com.example.racehorse_transport.service;
 
-import com.example.racehorse_transport.dto.AuthResponseDto;
-import com.example.racehorse_transport.dto.LoginRequestDto;
-import com.example.racehorse_transport.dto.RegisterRequestDto;
+import com.example.racehorse_transport.dto.auth.AuthResponseDto;
+import com.example.racehorse_transport.dto.auth.ChangePasswordRequestDto;
+import com.example.racehorse_transport.dto.auth.LoginRequestDto;
+import com.example.racehorse_transport.security.ClientApp;
 
+// Đăng nhập, làm mới token, đổi mật khẩu. Vai trò lấy từ app_user.role_code. Đăng ký nằm ở CustomerRegistrationService.
 public interface AuthService {
 
-    boolean isInactiveStaff(String username);
-    
-    // Đăng ký tài khoản người dùng mới
-    void register(RegisterRequestDto request);
-
-    // 1. Đăng nhập cho Khách hàng
     AuthResponseDto loginCustomer(LoginRequestDto request);
 
-    // Gửi lại OTP xác thực email cho khách
-    void resendEmailOtp(String email);
-
-    // Nhập đúng OTP email thì đăng nhập luôn
-    AuthResponseDto confirmEmail(String email, String otp);
-
-    // 2. Đăng nhập cho Nhân viên nội bộ
     AuthResponseDto loginStaff(LoginRequestDto request);
 
-    // 3. Làm mới Access Token từ Refresh Token
-    AuthResponseDto refreshToken(String refreshToken);
+    void resendEmailOtp(String email);
 
-    // 4. Đổi mật khẩu cá nhân cho người dùng đang đăng nhập
-    void changePassword(String username, com.example.racehorse_transport.dto.ChangePasswordRequestDto request);
+    AuthResponseDto confirmEmail(String email, String otp);
+
+    // Refresh token lấy từ cookie của ứng dụng app; sai loại, hết hạn hay không đúng ứng dụng thì ném InvalidTokenException
+    AuthResponseDto refreshToken(String refreshToken, ClientApp app);
+
+    // Đổi mật khẩu: mọi phiên cũ hết hiệu lực, trả token mới cho máy đang dùng
+    AuthResponseDto changePassword(String username, ChangePasswordRequestDto request);
+
+    // Đăng xuất mọi máy của tài khoản sở hữu một trong hai token (token nào không hợp lệ thì bỏ qua)
+    void logout(String refreshToken, String accessToken);
+
+    // Tài khoản ACTIVE, nếu là nhân viên thì chưa nghỉ việc, và token cùng phiên bản phiên đăng nhập.
+    // Bộ lọc JWT dùng để từ chối token của tài khoản bị khóa hoặc đã đăng xuất.
+    boolean isSessionValid(String username, int tokenVersion);
 }

@@ -1,142 +1,46 @@
 package com.example.racehorse_transport.controller;
 
-import com.example.racehorse_transport.dto.document.HorseDocumentResponseDto;
-import com.example.racehorse_transport.dto.document.ReviewHorseDocumentRequestDto;
 import com.example.racehorse_transport.dto.common.ApiResponseDto;
+import com.example.racehorse_transport.dto.horse.HorseDocumentResponseDto;
+import com.example.racehorse_transport.dto.horse.HorseDocumentUploadRequestDto;
+import com.example.racehorse_transport.dto.regulation.DocumentTypeResponseDto;
 import com.example.racehorse_transport.service.HorseDocumentService;
+import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
-/**
- * Controller xử lý nghiệp vụ Hồ sơ Ngựa (Dev 2 - Domain: Document & Finance).
- *
- * Các API cốt lõi:
- *  POST /api/v1/horse-documents/upload              - Khách hàng upload hồ sơ
- *  PUT  /api/v1/horse-documents/{id}/review         - Chuyên viên duyệt / từ chối
- *  GET  /api/v1/horse-documents/horse/{horseId}     - Xem hồ sơ của một con ngựa
- *  GET  /api/v1/horse-documents/mine                - Khách hàng xem hồ sơ của mọi con ngựa của mình
- *  GET  /api/v1/horse-documents/pending             - Danh sách hồ sơ chờ duyệt
- *  GET  /api/v1/horse-documents/{id}               - Chi tiết một hồ sơ
- */
 @RestController
-@RequestMapping("/horse-documents")
+@RequestMapping("/horses")
+@PreAuthorize("hasRole('CUSTOMER')")
 @RequiredArgsConstructor
 public class HorseDocumentController {
+    private final HorseDocumentService documents;
 
-    private final HorseDocumentService horseDocumentService;
-
-    /**
-     * Upload hồ sơ ngựa (Flow 2 - Bước 1).
-     * Khách hàng tải lên giấy tờ ngựa để chuyên viên xét duyệt.
-     *
-     * POST /api/v1/horse-documents/upload
-     * Content-Type: multipart/form-data
-     * Params:
-     *   - file         : File ảnh (JPG/PNG) hoặc PDF
-     *   - horseId      : ID con ngựa
-     *   - documentType : PASSPORT | VACCINATION | BLOOD_TEST | HEALTH_CERT | OTHER
-     */
-    @PreAuthorize("hasAnyRole('CUSTOMER', 'SPECIALIST', 'ADMIN')")
-    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponseDto<HorseDocumentResponseDto>> uploadDocument(
-            @RequestParam("file") MultipartFile file,
-            @RequestParam("horseId") Integer horseId,
-            @RequestParam(value = "documentType", required = false, defaultValue = "OTHER") String documentType,
-            Authentication authentication) {
-
-        assertHorseAccess(horseId, authentication);
-
-        HorseDocumentResponseDto response = horseDocumentService.uploadHorseDocument(
-                horseId, documentType, file);
-
-        return ResponseEntity.ok(ApiResponseDto.success(response,
-                "Tải giấy tờ thành công. Bạn có thể đặt đơn ngay. Chuyên viên sẽ kiểm tra khi thẩm định đơn."));
+    @GetMapping("/document-types")
+    public ApiResponseDto<List<DocumentTypeResponseDto>> listHorseDocumentTypes() {
+        return ApiResponseDto.success(documents.documentTypes(), "Danh sách loại giấy tờ của ngựa.");
     }
 
-    /**
-     * Chuyên viên duyệt hoặc từ chối hồ sơ (Flow 2 - Bước 2).
-     *
-     * PUT /api/v1/horse-documents/{id}/review
-     * Body JSON:
-     * {
-     *   "approved": true,           // true = Duyệt, false = Từ chối
-     *   "note": "Hồ sơ hợp lệ",    // Ghi chú (bắt buộc khi từ chối)
-     *   "reviewerName": "Nguyen A"  // Tên chuyên viên
-     * }
-     */
-    @PreAuthorize("hasAnyRole('SPECIALIST', 'INSPECTOR', 'MANAGER', 'ADMIN')")
-    @PutMapping("/{id}/review")
-    public ResponseEntity<ApiResponseDto<HorseDocumentResponseDto>> reviewDocument(
-            @PathVariable Integer id,
-            @RequestBody ReviewHorseDocumentRequestDto request) {
-
-        HorseDocumentResponseDto response = horseDocumentService.reviewDocument(id, request);
-
-        String message = request.isApproved()
-                ? "Hồ sơ đã được DUYỆT thành công!"
-                : "Hồ sơ đã bị TỪ CHỐI. Khách hàng cần bổ sung lại.";
-
-        return ResponseEntity.ok(ApiResponseDto.success(response, message));
+    @GetMapping("/{id}/documents")
+    public ApiResponseDto<List<HorseDocumentResponseDto>> listHorseDocuments(Authentication actor, @PathVariable Long id) {
+        return ApiResponseDto.success(documents.documents(actor.getName(), id), "Giấy tờ của ngựa.");
     }
 
-    /**
-     * Lấy toàn bộ hồ sơ của một con ngựa (mọi trạng thái).
-     *
-     * GET /api/v1/horse-documents/horse/{horseId}
-     */
-    @PreAuthorize("hasAnyRole('CUSTOMER', 'SPECIALIST', 'INSPECTOR', 'MANAGER', 'COORDINATOR', 'DRIVER', 'ESCORT', 'ADMIN')")
-    @GetMapping("/horse/{horseId}")
-    public ResponseEntity<ApiResponseDto<List<HorseDocumentResponseDto>>> getDocumentsByHorse(
-            @PathVariable Integer horseId, Authentication authentication) {
-
-        assertHorseAccess(horseId, authentication);
-
-        List<HorseDocumentResponseDto> documents = horseDocumentService.getDocumentsByHorse(horseId);
-        return ResponseEntity.ok(ApiResponseDto.success(documents,
-                "Lấy danh sách hồ sơ ngựa ID=" + horseId + " thành công. Tổng: " + documents.size()));
-    }
-
-    /**
-     * Khách hàng lấy hồ sơ của mọi con ngựa của mình trong một lần gọi.
-     *
-     * GET /api/v1/horse-documents/mine
-     */
-    @PreAuthorize("hasRole('CUSTOMER')")
-    @GetMapping("/mine")
-    public ResponseEntity<ApiResponseDto<List<HorseDocumentResponseDto>>> getMyDocuments(Authentication authentication) {
-        List<HorseDocumentResponseDto> documents = horseDocumentService.getCustomerDocuments(authentication.getName());
-        return ResponseEntity.ok(ApiResponseDto.success(documents, "Lấy hồ sơ ngựa của khách hàng thành công"));
-    }
-
-    private void assertHorseAccess(Integer horseId, Authentication authentication) {
-        if (isCustomer(authentication)) horseDocumentService.assertCustomerOwnsHorse(horseId, authentication.getName());
-    }
-
-    private boolean isCustomer(Authentication authentication) {
-        return authentication != null && authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_CUSTOMER"));
-    }
-
-    /**
-     * Khách hàng xóa một giấy tờ ngựa của mình.
-     * Chỉ cho phép xóa khi giấy tờ chưa được APPROVED (tránh xóa giấy đã duyệt đang được dùng trong đơn).
-     *
-     * DELETE /api/v1/horse-documents/{id}
-     */
-    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponseDto<Void>> deleteDocument(
-            @PathVariable Integer id,
-            Authentication authentication) {
-
-        horseDocumentService.deleteDocument(id, isCustomer(authentication) ? authentication.getName() : null);
-        return ResponseEntity.ok(ApiResponseDto.success(null, "Đã xóa giấy tờ thành công."));
+    @PostMapping(value = "/{id}/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponseDto<HorseDocumentResponseDto> uploadHorseDocument(Authentication actor, @PathVariable Long id,
+            @Valid @ModelAttribute HorseDocumentUploadRequestDto request) {
+        return ApiResponseDto.success(documents.upload(actor.getName(), id, request), "Đã nộp giấy tờ của ngựa.");
     }
 }

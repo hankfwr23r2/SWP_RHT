@@ -1,148 +1,89 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.dto.manager.QuoteLineDto;
-import com.example.racehorse_transport.dto.settlement.ExpenseItemDto;
+import static com.example.racehorse_transport.util.MailHtml.money;
+import static com.example.racehorse_transport.util.MailHtml.paragraph;
+import static com.example.racehorse_transport.util.MailHtml.row;
+import static com.example.racehorse_transport.util.MailHtml.table;
+import static com.example.racehorse_transport.util.MailHtml.time;
+
+import com.example.racehorse_transport.client.MailClient;
+import com.example.racehorse_transport.client.VnpayClient;
 import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.entity.Payment;
+import com.example.racehorse_transport.entity.PaymentTransaction;
+import com.example.racehorse_transport.entity.Quotation;
+import com.example.racehorse_transport.entity.QuotationLine;
+import com.example.racehorse_transport.entity.enums.BookingStatus;
+import com.example.racehorse_transport.entity.enums.PaymentStatus;
+import com.example.racehorse_transport.entity.enums.PaymentTransactionStatus;
+import com.example.racehorse_transport.entity.enums.PaymentType;
+import com.example.racehorse_transport.entity.enums.QuotationStatus;
+import com.example.racehorse_transport.policy.BillStatementPolicy;
+import com.example.racehorse_transport.repository.BookingRepository;
+import com.example.racehorse_transport.repository.PaymentRepository;
+import com.example.racehorse_transport.repository.PaymentTransactionRepository;
+import com.example.racehorse_transport.repository.QuotationLineRepository;
+import com.example.racehorse_transport.repository.QuotationRepository;
 import com.example.racehorse_transport.service.BillMailService;
-import com.example.racehorse_transport.service.MailDeliveryService;
-import java.math.BigDecimal;
-import java.net.URI;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
+import com.example.racehorse_transport.util.MailHtml;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.util.HtmlUtils;
 
-// Mail hóa đơn (tiếng Việt hoặc tiếng Anh theo lựa chọn VI/EN của khách) gửi ở các mốc tiền: báo giá, đã nhận cọc / 70% / quyết toán, phát hành bảng quyết toán.
-// Chỉ gửi sau khi giao dịch đã lưu; mail lỗi thì ghi log, không làm hỏng việc đang làm.
+// Theo BillMailServiceImpl của nhánh main, đổi nguồn số liệu sang quotation, quotation_line, payment, payment_transaction.
+// Dữ liệu đọc lại sau khi transaction gốc đã lưu, nên khoản hoàn tạo cùng lúc với lệnh hủy cũng có trong mail.
 @Slf4j
 @Service
 public class BillMailServiceImpl implements BillMailService {
 
-    private static final ZoneId VN = ZoneId.of("Asia/Ho_Chi_Minh");
-    private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").withZone(VN);
+    enum Kind { QUOTE, DEPOSIT_RECEIPT, SCHEDULE_CHANGE, CANCELLED, STATEMENT }
 
-    private final MailDeliveryService sender;
+    record Mail(String to, String subject, String html, String text) {
+    }
+
+    private final MailClient mail;
+    private final BookingRepository bookings;
+    private final QuotationRepository quotations;
+    private final QuotationLineRepository lines;
+    private final PaymentRepository payments;
+    private final PaymentTransactionRepository transactions;
+    private final TransactionTemplate readOnly;
     private final String webBase;
 
-    // Địa chỉ trang khách lấy theo trang trả về của VNPay (local: localhost:5173, trên mạng: Vercel)
-    public BillMailServiceImpl(MailDeliveryService sender, @Value("${vnpay.return-url:}") String vnpayReturnUrl) {
-        this.sender = sender;
-        this.webBase = originOf(vnpayReturnUrl);
+    public BillMailServiceImpl(MailClient mail, BookingRepository bookings, QuotationRepository quotations,
+                               QuotationLineRepository lines, PaymentRepository payments,
+                               PaymentTransactionRepository transactions, PlatformTransactionManager transactionManager,
+                               @Value("${app.customer-web-url:http://localhost:5173}") String webBase) {
+        this.mail = mail;
+        this.bookings = bookings;
+        this.quotations = quotations;
+        this.lines = lines;
+        this.payments = payments;
+        this.transactions = transactions;
+        this.readOnly = new TransactionTemplate(transactionManager);
+        this.readOnly.setReadOnly(true);
+        this.webBase = webBase == null ? "" : webBase.replaceAll("/+$", "");
     }
 
-    // Khoản thanh toán trong mail biên nhận, có sẵn tên tiếng Việt và tiếng Anh
-
-
-    public void scheduleChangeRequired(Booking booking) {
-        boolean en = english(booking);
-        String day = DateTimeFormatter.ofPattern("dd/MM/yyyy").withZone(VN).format(booking.getDepartureDate());
-        String message = en
-                ? "The requested departure date " + day + " has passed before preparations were completed. Please choose a new date, cancel the unpaid request, or ask for support on the order page. The company will review and confirm your new schedule."
-                : "Ngày khởi hành dự kiến " + day + " đã qua, nhưng đơn chưa hoàn tất chuẩn bị chuyến. Vui lòng chọn ngày mới, hủy yêu cầu chưa thanh toán hoặc liên hệ hỗ trợ trong trang đơn hàng. Công ty sẽ kiểm tra và xác nhận lịch mới.";
-        send(booking, (en ? "Please confirm a new schedule: " : "Cần xác nhận lại lịch: ") + code(booking),
-                en ? "New departure date needed" : "Cần xác nhận lại lịch", "<p>" + esc(message) + "</p>", message);
-    }
-
-    public void quoteIssued(Booking booking, List<QuoteLineDto> lines, BigDecimal total, BigDecimal deposit,
-            BigDecimal balance, Instant expiresAt) {
-        boolean en = english(booking);
-        StringBuilder rows = new StringBuilder();
-        StringBuilder text = new StringBuilder();
-        for (QuoteLineDto line : lines == null ? List.<QuoteLineDto>of() : lines) {
-            rows.append(row(line.getLabel(), money(line.getAmount(), en)));
-            text.append("- ").append(line.getLabel()).append(": ").append(money(line.getAmount(), en)).append('\n');
-        }
-        String totalLabel = en ? "Total" : "Tổng cộng";
-        String depositLabel = en ? "Deposit (30%)" : "Đặt cọc 30%";
-        String balanceLabel = en ? "Remaining balance (70%)" : "Còn lại 70%";
-        rows.append(row("<b>" + totalLabel + "</b>", "<b>" + money(total, en) + "</b>", true));
-        text.append(totalLabel).append(": ").append(money(total, en)).append('\n')
-                .append(depositLabel).append(": ").append(money(deposit, en))
-                .append(en ? " (due " : " (hạn ").append(time(expiresAt)).append(")\n")
-                .append(balanceLabel).append(": ").append(money(balance, en))
-                .append(en ? " (paid once the crew has picked up the horses)\n" : " (trả khi kíp xe nhận ngựa xong)\n");
-        String body = en
-                ? "<p>We have sent you the quotation for order <b>" + code(booking) + "</b>.</p>" + table(rows.toString())
-                        + "<p>" + depositLabel + ": <b>" + money(deposit, en) + "</b>, due by <b>" + time(expiresAt) + "</b>.<br>"
-                        + balanceLabel + ": <b>" + money(balance, en) + "</b>, paid once the crew has picked up the horses and signed the handover record.</p>"
-                : "<p>Hệ thống đã gửi báo giá cho đơn <b>" + code(booking) + "</b>.</p>" + table(rows.toString())
-                        + "<p>" + depositLabel + ": <b>" + money(deposit, en) + "</b>, hạn đặt cọc <b>" + time(expiresAt) + "</b>.<br>"
-                        + balanceLabel + ": <b>" + money(balance, en) + "</b>, thanh toán khi kíp xe nhận ngựa và ký biên bản giao nhận.</p>";
-        send(booking, en ? "Quotation for order " + code(booking) : "Báo giá đơn " + code(booking),
-                en ? "Transport quotation" : "Báo giá vận chuyển", body, text.toString());
-    }
-
-    public void paymentReceived(Booking booking, Payment payment, BigDecimal amount, String transactionNo, Instant paidAt, String waybillNo) {
-        boolean en = english(booking);
-        String what = en ? payment.en() : payment.vi();
-        String txn = transactionNo == null ? "-" : transactionNo;
-        String waybill = waybillNo == null || waybillNo.isBlank() ? null : (en ? "Waybill: " : "Vận đơn: ") + waybillNo;
-        String rows = row(en ? "Payment" : "Khoản thanh toán", esc(what)) + row(en ? "Amount" : "Số tiền", "<b>" + money(amount, en) + "</b>")
-                + row(en ? "VNPAY transaction" : "Mã giao dịch VNPAY", esc(txn)) + row(en ? "Time" : "Thời gian", time(paidAt))
-                + (waybill == null ? "" : row(en ? "Note" : "Ghi chú", esc(waybill)));
-        String text = what + ": " + money(amount, en) + (en ? "\nVNPAY transaction: " : "\nMã giao dịch VNPAY: ") + txn
-                + (en ? "\nTime: " : "\nThời gian: ") + time(paidAt) + (waybill == null ? "" : "\n" + waybill) + "\n";
-        send(booking, en ? "Payment received: " + what + " · order " + code(booking) : "Đã nhận " + what + " · đơn " + code(booking),
-                en ? "Payment receipt" : "Biên nhận thanh toán",
-                (en ? "<p>We have received the payment for order <b>" : "<p>Hệ thống đã nhận khoản thanh toán của đơn <b>")
-                        + code(booking) + "</b>.</p>" + table(rows), text);
-    }
-
-    public void balanceDue(Booking booking, BigDecimal amount) {
-        boolean en = english(booking);
-        String what = en ? Payment.BALANCE.en() : Payment.BALANCE.vi();
-        String rows = row(en ? "Payment" : "Khoản thanh toán", esc(what)) + row(en ? "Amount" : "Số tiền", "<b>" + money(amount, en) + "</b>");
-        String note = en ? "The crew has collected your horses and signed the handover record. Please pay the remaining balance so the vehicle can start the journey."
-                : "Kíp xe đã nhận ngựa và ký biên bản giao nhận. Vui lòng thanh toán phần còn lại để xe được bắt đầu hành trình.";
-        send(booking, en ? "Please pay the remaining balance · order " + code(booking) : "Thanh toán 70% còn lại · đơn " + code(booking),
-                en ? "Remaining balance due" : "Đến hạn thanh toán 70% còn lại",
-                "<p>" + note + "</p>" + table(rows), note + "\n" + what + ": " + money(amount, en) + "\n");
-    }
-
-    /** Retired: internal company expenses must never be mailed to customers. */
-    @Deprecated
-    public void settlementIssued(Booking booking, List<ExpenseItemDto> customerItems, BigDecimal total, Instant dueAt) {
-        // Kept for callers upgrading from the former customer settlement workflow.
-    }
-
-    // Ngôn ngữ khách chọn trên giao diện (lưu ở tài khoản); chưa chọn thì tiếng Việt
-    private static boolean english(Booking booking) {
-        return booking.getCustomerID() != null && booking.getCustomerID().getUser() != null
-                && "en".equalsIgnoreCase(booking.getCustomerID().getUser().getPreferredLanguage());
-    }
-
-    private void send(Booking booking, String subject, String title, String bodyHtml, String bodyText) {
-        String to = booking.getCustomerID() != null && booking.getCustomerID().getUser() != null
-                ? booking.getCustomerID().getUser().getEmail() : null;
-        if (to == null || to.isBlank() || !sender.isConfigured()) return;
-        boolean en = english(booking);
-        String name = booking.getCustomerID().getFullName() != null ? booking.getCustomerID().getFullName() : (en ? "there" : "bạn");
-        String link = webBase + "/orders/" + code(booking);
-        String view = (en ? "View order " : "Xem đơn ") + code(booking);
-        String html = "<div style=\"font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#1e293b\">"
-                + "<h2 style=\"color:#c2410c;margin:0 0 12px\">" + title + "</h2>"
-                + "<p>" + (en ? "Hello " : "Chào ") + esc(name) + ",</p>" + bodyHtml
-                + "<p><a href=\"" + esc(link) + "\" style=\"display:inline-block;padding:10px 18px;background:#c2410c;color:#fff;"
-                + "border-radius:8px;text-decoration:none\">" + view + "</a></p>"
-                + "<p style=\"color:#64748b;font-size:12px\">"
-                + (en ? "Horse Transport · automated message, please do not reply." : "Vận chuyển Ngựa · thư tự động, vui lòng không trả lời.")
-                + "</p></div>";
-        String text = (en ? "Hello " : "Chào ") + name + ",\n\n" + title + " · " + code(booking) + "\n" + bodyText
-                + "\n" + view + ": " + link + "\n";
+    @Override
+    public void statusChanged(Long bookingId, BookingStatus from, BookingStatus to, String reason) {
+        Kind kind = kindOf(from, to);
+        if (kind == null) return;
         Runnable task = () -> {
             try {
-                sender.sendHtml(to.trim(), subject, html, text);
+                Mail message = readOnly.execute(status -> compose(bookingId, kind, reason));
+                if (message != null) mail.sendHtml(message.to(), message.subject(), message.html(), message.text());
             } catch (RuntimeException ex) {
-                log.warn("Không gửi được mail \"{}\" tới {}: {}", subject, to, ex.getMessage());
+                log.warn("Không gửi được mail {} của đơn {}: {}", kind, bookingId, ex.getMessage());
             }
         };
         // Chỉ gửi khi giao dịch đã lưu xong, để không báo khách về việc rồi bị hoàn tác
@@ -158,44 +99,142 @@ public class BillMailServiceImpl implements BillMailService {
         }
     }
 
-    private static String table(String rows) {
-        return "<table style=\"width:100%;border-collapse:collapse;margin:8px 0 12px\">" + rows + "</table>";
+    static Kind kindOf(BookingStatus from, BookingStatus to) {
+        if (to == BookingStatus.AWAITING_DEPOSIT) return Kind.QUOTE;
+        if (to == BookingStatus.CONFIRMED && from == BookingStatus.AWAITING_DEPOSIT) return Kind.DEPOSIT_RECEIPT;
+        if (to == BookingStatus.SCHEDULE_CHANGE_REQUIRED) return Kind.SCHEDULE_CHANGE;
+        if (to == BookingStatus.CANCELLED) return Kind.CANCELLED;
+        if (to == BookingStatus.COMPLETED) return Kind.STATEMENT;
+        return null;
     }
 
-    private static String row(String label, String value) {
-        return row(label, value, false);
+    Mail compose(Long bookingId, Kind kind, String reason) {
+        Booking booking = bookings.findById(bookingId).orElse(null);
+        if (booking == null || booking.getCustomer() == null || booking.getCustomer().getUser() == null) return null;
+        String to = booking.getCustomer().getUser().getEmail();
+        if (to == null || to.isBlank()) return null;
+        boolean en = "en".equalsIgnoreCase(booking.getCustomer().getUser().getPreferredLanguage());
+        String code = booking.getCode();
+        return switch (kind) {
+            case QUOTE -> quote(booking, en).map(body -> mail(booking, to.trim(), en,
+                    en ? "Quotation for order " + code : "Báo giá đơn " + code, en ? "Transport quotation" : "Báo giá vận chuyển",
+                    body, "")).orElse(null);
+            case DEPOSIT_RECEIPT -> mail(booking, to.trim(), en, en ? "Deposit received · order " + code : "Đã nhận tiền cọc · đơn " + code,
+                    en ? "Payment receipt" : "Biên nhận thanh toán", depositReceipt(booking, en), "");
+            case SCHEDULE_CHANGE -> mail(booking, to.trim(), en, en ? "Please choose a new departure · order " + code
+                            : "Cần chọn lại chuyến · đơn " + code, en ? "New departure needed" : "Cần chọn lại chuyến",
+                    scheduleChange(reason, en), "#reschedule");
+            case CANCELLED -> mail(booking, to.trim(), en, en ? "Order cancelled · " + code : "Đã hủy đơn " + code,
+                    en ? "Order cancelled" : "Đơn đã hủy", cancellation(booking, reason, en), "");
+            case STATEMENT -> mail(booking, to.trim(), en, en ? "Final statement · order " + code : "Bảng quyết toán · đơn " + code,
+                    en ? "Final statement" : "Bảng quyết toán", statement(booking, en), "");
+        };
     }
 
-    private static String row(String label, String value, boolean strong) {
-        String border = strong ? "border-top:2px solid #1e293b" : "border-top:1px solid #e2e8f0";
-        return "<tr><td style=\"padding:6px 0;" + border + "\">" + (strong ? label : esc(label)) + "</td>"
-                + "<td style=\"padding:6px 0;text-align:right;white-space:nowrap;" + border + "\">" + value + "</td></tr>";
+    private java.util.Optional<String> quote(Booking booking, boolean en) {
+        return quotations.findByBooking_IdAndStatus(booking.getId(), QuotationStatus.SENT).map(quotation -> {
+            StringBuilder rows = new StringBuilder();
+            for (QuotationLine line : lines.findByQuotation_IdOrderByLineNumber(quotation.getId())) {
+                String label = line.getDescription() != null && !line.getDescription().isBlank() ? line.getDescription()
+                        : line.getBillableService() != null ? line.getBillableService().getName() : "-";
+                if (Boolean.TRUE.equals(line.getPassThrough())) label += en ? " (collected on behalf)" : " (thu hộ)";
+                rows.append(row(label, money(line.getAmount(), en), false));
+            }
+            rows.append(row(en ? "Total" : "Tổng cộng", money(quotation.getTotalAmount(), en), true));
+            rows.append(row(en ? "Deposit" : "Tiền cọc", money(quotation.getDepositAmount(), en), false));
+            rows.append(row(en ? "Remaining balance" : "Số dư", money(BillStatementPolicy.balance(
+                    quotation.getTotalAmount(), quotation.getDepositAmount()), en), false));
+            String note = en
+                    ? "Please pay the deposit by " + time(quotation.getExpiresAt()) + " to keep your place on the departure. "
+                      + "The remaining balance is paid when the company receives your horses; the exact deadline is shown on the order page."
+                    : "Vui lòng đặt cọc trước " + time(quotation.getExpiresAt()) + " để giữ chỗ trên chuyến. "
+                      + "Số dư thanh toán khi công ty nhận ngựa; hạn cụ thể hiện trên trang đơn.";
+            return paragraph(en ? "Here is the quotation for order " + booking.getCode() + "."
+                    : "Công ty gửi báo giá cho đơn " + booking.getCode() + ".") + table(rows.toString()) + paragraph(note);
+        });
     }
 
-    private static String money(BigDecimal amount, boolean en) {
-        DecimalFormat format = new DecimalFormat("#,##0", DecimalFormatSymbols.getInstance(Locale.US));
-        return format.format(amount == null ? BigDecimal.ZERO : amount) + (en ? " VND" : " ₫");
+    private String depositReceipt(Booking booking, boolean en) {
+        List<Payment> all = payments.findByBooking_IdOrderById(booking.getId());
+        Payment deposit = all.stream().filter(p -> p.getPaymentType() == PaymentType.DEPOSIT && p.getStatus() == PaymentStatus.PAID)
+                .max(Comparator.comparing(Payment::getId)).orElse(null);
+        String transaction = transactions.findByPayment_Booking_IdAndPayment_PaymentTypeAndGatewayCodeAndStatus(booking.getId(),
+                        PaymentType.DEPOSIT, VnpayClient.GATEWAY_CODE, PaymentTransactionStatus.SUCCESS).stream()
+                .map(PaymentTransaction::getGatewayTransactionNumber).filter(Objects::nonNull).reduce((a, b) -> b).orElse("-");
+        var summary = BillStatementPolicy.statement(acceptedTotal(booking), all);
+        String rows = row(en ? "Payment" : "Khoản thanh toán", en ? "Deposit" : "Tiền cọc", false)
+                + row(en ? "Amount" : "Số tiền", money(deposit == null ? null : deposit.getAmount(), en), true)
+                + row(en ? "VNPAY transaction" : "Mã giao dịch VNPAY", transaction, false)
+                + row(en ? "Time" : "Thời gian", time(deposit == null ? null : deposit.getPaidAt()), false)
+                + (booking.getWaybillNumber() == null ? "" : row(en ? "Waybill" : "Vận đơn", booking.getWaybillNumber(), false))
+                + row(en ? "Remaining balance" : "Số dư còn lại", money(summary.outstanding(), en), false);
+        return paragraph(en ? "We have received the deposit for order " + booking.getCode() + ". Your place on the departure is confirmed."
+                : "Công ty đã nhận tiền cọc của đơn " + booking.getCode() + ". Chỗ trên chuyến đã được xác nhận.") + table(rows);
     }
 
-    private static String time(Instant at) {
-        return at == null ? "-" : TIME.format(at);
+    private String scheduleChange(String reason, boolean en) {
+        String why = reason == null || reason.isBlank() ? "" : (en ? "Reason: " : "Lý do: ") + reason.strip();
+        return paragraph(en ? "Your order can no longer travel on the planned departure. Please choose another departure "
+                        + "or cancel the order on the order page."
+                : "Đơn không còn đi được chuyến đã chọn. Vui lòng chọn chuyến khác hoặc hủy đơn trên trang đơn.")
+                + (why.isEmpty() ? "" : paragraph(why));
     }
 
-    private static String code(Booking booking) {
-        return booking.getCode();
+    private String cancellation(Booking booking, String reason, boolean en) {
+        var summary = BillStatementPolicy.statement(acceptedTotal(booking), payments.findByBooking_IdOrderById(booking.getId()));
+        String why = reason == null || reason.isBlank() ? "" : paragraph((en ? "Reason: " : "Lý do: ") + reason.strip());
+        String intro = paragraph(en ? "Order " + booking.getCode() + " has been cancelled." : "Đơn " + booking.getCode() + " đã hủy.");
+        if (summary.paid().signum() == 0) return intro + why;
+        Instant refundDue = payments.findByBooking_IdOrderById(booking.getId()).stream()
+                .filter(p -> p.getPaymentType() == PaymentType.REFUND && p.getStatus() == PaymentStatus.PENDING)
+                .map(Payment::getDueAt).filter(Objects::nonNull).max(Comparator.naturalOrder()).orElse(null);
+        String rows = row(en ? "Paid" : "Đã thanh toán", money(summary.paid(), en), false)
+                + row(en ? "Refund" : "Được hoàn", money(summary.refunded().add(summary.refundPending()), en), false)
+                + row(en ? "Retained by the company" : "Công ty giữ lại", money(summary.retained(), en), true)
+                + (refundDue == null ? "" : row(en ? "Refund by" : "Hạn hoàn", time(refundDue), false));
+        return intro + why + table(rows);
     }
 
-    private static String esc(String value) {
-        return value == null ? "" : HtmlUtils.htmlEscape(value, "UTF-8");
-    }
-
-    private static String originOf(String url) {
-        try {
-            URI uri = URI.create(url == null ? "" : url.trim());
-            if (uri.getScheme() == null || uri.getHost() == null) return "";
-            return uri.getScheme() + "://" + uri.getHost() + (uri.getPort() > 0 ? ":" + uri.getPort() : "");
-        } catch (IllegalArgumentException ex) {
-            return "";
+    private String statement(Booking booking, boolean en) {
+        List<Payment> all = payments.findByBooking_IdOrderById(booking.getId());
+        var summary = BillStatementPolicy.statement(acceptedTotal(booking), all);
+        StringBuilder rows = new StringBuilder(row(en ? "Accepted quotation" : "Báo giá đã chấp nhận", money(summary.quoted(), en), false));
+        if (summary.extraCharges().signum() > 0) rows.append(row(en ? "Extra charges" : "Phụ thu", money(summary.extraCharges(), en), false));
+        for (Payment p : all) {
+            if (p.getStatus() != PaymentStatus.PAID) continue;
+            rows.append(row(label(p.getPaymentType(), en) + " · " + time(p.getPaidAt()), money(p.getAmount(), en), false));
         }
+        rows.append(row(en ? "Outstanding" : "Còn nợ", money(summary.outstanding(), en), true));
+        return paragraph(en ? "Order " + booking.getCode() + " has been settled and closed. Thank you for choosing us."
+                : "Đơn " + booking.getCode() + " đã quyết toán và đóng. Cảm ơn quý khách đã sử dụng dịch vụ.") + table(rows.toString());
+    }
+
+    private java.math.BigDecimal acceptedTotal(Booking booking) {
+        return quotations.findByBooking_IdAndStatus(booking.getId(), QuotationStatus.ACCEPTED)
+                .map(Quotation::getTotalAmount).orElse(java.math.BigDecimal.ZERO);
+    }
+
+    private static String label(PaymentType type, boolean en) {
+        return switch (type) {
+            case DEPOSIT -> en ? "Deposit" : "Tiền cọc";
+            case BALANCE -> en ? "Remaining balance" : "Số dư";
+            case EXTRA_CHARGE -> en ? "Extra charge" : "Phụ thu";
+            case REFUND -> en ? "Refund" : "Hoàn tiền";
+        };
+    }
+
+    private Mail mail(Booking booking, String to, boolean en, String subject, String title, String body, String anchor) {
+        String name = booking.getCustomer().getFullName();
+        String greeting = (en ? "Hello " : "Chào ") + (name == null || name.isBlank() ? (en ? "there" : "quý khách") : name) + ",";
+        String link = webBase + "/orders/" + booking.getId() + anchor;
+        String linkLabel = (en ? "View order " : "Xem đơn ") + booking.getCode();
+        String footer = en ? "Horse Transport · automated message, please do not reply." : "Vận chuyển Ngựa · thư tự động, vui lòng không trả lời.";
+        String html = MailHtml.page(title, greeting, body, link, linkLabel, footer);
+        // Bản chữ thuần cho trình đọc thư không hiện HTML: mỗi dòng bảng một dòng "nhãn: giá trị"
+        String plain = body.replace("</p>", "\n").replace("<tr>", "\n").replaceAll("</td><td[^>]*>", ": ")
+                .replaceAll("<[^>]+>", "").replaceAll("[ \\t]+", " ").replaceAll("\n\\s*\n+", "\n").trim();
+        String text = greeting + "\n\n" + title + " · " + booking.getCode() + "\n" + HtmlUtils.htmlUnescape(plain)
+                + "\n\n" + linkLabel + ": " + link + "\n";
+        return new Mail(to, subject, html, text);
     }
 }

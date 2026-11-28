@@ -1,18 +1,18 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.dto.ResetPasswordWithOtpRequestDto;
-import com.example.racehorse_transport.entity.EmailOtp;
-import com.example.racehorse_transport.entity.OtpPurpose;
-import com.example.racehorse_transport.entity.User;
-import com.example.racehorse_transport.repository.EmailOtpRepository;
-import com.example.racehorse_transport.repository.OtpLockRepository;
-import com.example.racehorse_transport.repository.UserRepository;
-import com.example.racehorse_transport.service.MailDeliveryService;
+import com.example.racehorse_transport.client.MailClient;
+import com.example.racehorse_transport.dto.auth.ResetPasswordWithOtpRequestDto;
+import com.example.racehorse_transport.entity.AppUser;
+import com.example.racehorse_transport.entity.Otp;
+import com.example.racehorse_transport.entity.enums.OtpPurpose;
+import com.example.racehorse_transport.policy.OtpPolicy;
+import com.example.racehorse_transport.repository.AppUserRepository;
+import com.example.racehorse_transport.repository.OtpRepository;
 import com.example.racehorse_transport.service.PasswordResetService;
+import com.example.racehorse_transport.service.SystemConfigService;
 import java.security.SecureRandom;
-import java.time.Duration;
+import java.time.Clock;
 import java.time.Instant;
-import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.MailException;
@@ -24,89 +24,101 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class PasswordResetServiceImpl implements PasswordResetService {
-    private static final Duration OTP_TTL = Duration.ofMinutes(10);
-    private static final Duration RESEND_COOLDOWN = Duration.ofSeconds(60);
-    private static final int MAX_ATTEMPTS = 5;
 
-    private final UserRepository userRepository;
-    private final EmailOtpRepository otpRepository;
-    private final OtpLockRepository otpLock;
+    private final AppUserRepository users;
+    private final OtpRepository otps;
     private final PasswordEncoder passwordEncoder;
-    private final MailDeliveryService mailSender;
-    private final SecureRandom secureRandom = new SecureRandom();
-
+    private final MailClient mail;
+    private final SystemConfigService config;
+    private final Clock clock;
+    private final SecureRandom random = new SecureRandom();
 
     @Override
     @Transactional
     public void requestOtp(String email) {
-        String normalizedEmail = normalize(email);
-        otpLock.acquire(normalizedEmail);
-        var user = userRepository.findByEmailIgnoreCase(normalizedEmail);
-        if (user.isEmpty()) return;
-
-        Instant now = Instant.now();
-        EmailOtp otp = otpRepository.findByEmailAndPurpose(normalizedEmail, OtpPurpose.RESET_PASSWORD).orElseGet(EmailOtp::new);
-        if (otp.getLastSentAt() != null && otp.getLastSentAt().isAfter(now.minus(RESEND_COOLDOWN))) return;
-
-        String code = String.format("%06d", secureRandom.nextInt(1_000_000));
-        try {
-            mailSender.send(user.get().getEmail(), "Mã OTP đặt lại mật khẩu - Vận chuyển Ngựa",
-                    "Mã OTP đặt lại mật khẩu của bạn là: " + code
-                    + "\nMã có hiệu lực trong 10 phút. Không chia sẻ mã này với bất kỳ ai."
-                    + "\nNếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này.");
-        } catch (MailException ex) {
-            log.error("Unable to send password-reset OTP email: {}", ex.getMessage());
+        String normalized = OtpPolicy.normalizeEmail(email);
+        otps.lockEmail(normalized);
+        AppUser user = users.findByEmailIgnoreCase(normalized).orElse(null);
+        if (user == null) {
+            return;
+        }
+        Instant now = clock.instant();
+        Otp otp = otps.findByEmailAndPurpose(normalized, OtpPurpose.RESET_PASSWORD).orElseGet(Otp::new);
+        if (!OtpPolicy.canSendAgain(otp.getLastSentAt(), now)) {
             return;
         }
 
-        otp.setEmail(normalizedEmail);
-        otp.setUser(user.get());
+        int expiryMinutes = config.getInt("OTP_EXPIRY_MINUTES");
+        String code = OtpPolicy.generateCode(random);
+        if (!deliver(user.getEmail(), code, expiryMinutes)) {
+            return;
+        }
+
+        otp.setEmail(normalized);
+        otp.setUser(user);
         otp.setPurpose(OtpPurpose.RESET_PASSWORD);
         otp.setOtpHash(passwordEncoder.encode(code));
-        otp.setExpiresAt(now.plus(OTP_TTL));
+        otp.setExpiresAt(OtpPolicy.expiryOf(now, expiryMinutes));
         otp.setLastSentAt(now);
         otp.setAttempts(0);
-        otpRepository.save(otp);
+        otps.save(otp);
     }
 
     @Override
     @Transactional(noRollbackFor = IllegalArgumentException.class)
     public void resetPassword(ResetPasswordWithOtpRequestDto request) {
-        String normalizedEmail = normalize(request.getEmail());
-        otpLock.acquire(normalizedEmail);
-        EmailOtp otp = otpRepository.findByEmailAndPurpose(normalizedEmail, OtpPurpose.RESET_PASSWORD)
-                .orElseThrow(this::invalidOtp);
-        Instant now = Instant.now();
-        if (!otp.getExpiresAt().isAfter(now) || otp.getAttempts() >= MAX_ATTEMPTS) {
-            otpRepository.delete(otp);
+        String normalized = OtpPolicy.normalizeEmail(request.getEmail());
+        otps.lockEmail(normalized);
+        Otp otp = otps.findByEmailAndPurpose(normalized, OtpPurpose.RESET_PASSWORD).orElseThrow(this::invalidOtp);
+        int maxAttempts = config.getInt("OTP_MAX_ATTEMPTS");
+        if (!OtpPolicy.isUsable(otp.getExpiresAt(), otp.getAttempts(), maxAttempts, clock.instant())) {
+            otps.delete(otp);
             throw invalidOtp();
         }
-
         if (!passwordEncoder.matches(request.getOtp(), otp.getOtpHash())) {
             otp.setAttempts(otp.getAttempts() + 1);
-            if (otp.getAttempts() >= MAX_ATTEMPTS) otpRepository.delete(otp);
-            else otpRepository.save(otp);
+            if (OtpPolicy.isExhausted(otp.getAttempts(), maxAttempts)) {
+                otps.delete(otp);
+            } else {
+                otps.save(otp);
+            }
             throw invalidOtp();
         }
-
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
             throw new IllegalArgumentException("Mật khẩu xác nhận không khớp.");
         }
 
-        User user = userRepository.findByEmailIgnoreCase(normalizedEmail)
-                .orElseThrow(this::invalidOtp);
+        AppUser user = users.findByEmailIgnoreCase(normalized).orElseThrow(this::invalidOtp);
         if (passwordEncoder.matches(request.getNewPassword(), user.getPasswordHash())) {
             throw new IllegalArgumentException("Mật khẩu mới phải khác mật khẩu hiện tại.");
         }
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
         // Nhận được OTP qua email cũng là đã xác thực email
         user.setEmailVerified(true);
-        userRepository.save(user);
-        otpRepository.delete(otp);
+        // Mọi phiên cũ hết hiệu lực; chứng minh được chủ email thì gỡ khóa tạm do nhập sai
+        user.setTokenVersion(user.getTokenVersion() + 1);
+        user.setFailedLoginCount(0);
+        user.setLockedUntil(null);
+        users.save(user);
+        otps.delete(otp);
     }
 
-    private String normalize(String email) {
-        return email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
+    // Gửi mã qua mail. Không ghi mã OTP ra log (AGENTS.md mục 9).
+    private boolean deliver(String email, String code, int expiryMinutes) {
+        if (!mail.isConfigured()) {
+            log.warn("Chưa cấu hình mail nên không gửi được mã đặt lại mật khẩu cho {}", email);
+            return false;
+        }
+        try {
+            mail.send(email, "Mã OTP đặt lại mật khẩu - Vận chuyển Ngựa",
+                    "Mã OTP đặt lại mật khẩu của bạn là: " + code
+                            + "\nMã có hiệu lực trong " + expiryMinutes + " phút. Không chia sẻ mã này với bất kỳ ai."
+                            + "\nNếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này.");
+            return true;
+        } catch (MailException ex) {
+            log.error("Không gửi được mã đặt lại mật khẩu: {}", ex.getMessage());
+            return false;
+        }
     }
 
     private IllegalArgumentException invalidOtp() {

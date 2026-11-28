@@ -1,28 +1,42 @@
 package com.example.racehorse_transport.repository;
 
 import com.example.racehorse_transport.entity.Staff;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
+import com.example.racehorse_transport.entity.enums.AppUserStatus;
+import jakarta.persistence.LockModeType;
 import java.util.List;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
-@Repository
-public interface StaffRepository extends JpaRepository<Staff, Integer> {
-    long countByRoleIgnoreCase(String role);
-    List<Staff> findByRoleIgnoreCase(String role);
-    List<Staff> findByRoleIgnoreCaseAndEmploymentStatusIgnoreCase(String role, String employmentStatus);
-    java.util.Optional<Staff> findByStaffCode(String staffCode);
-    java.util.Optional<Staff> findByUser_Username(String username);
+import org.springframework.data.jpa.repository.JpaRepository;
 
-    // Mã nhân sự chưa ai dùng: giữ mã mong muốn nếu còn trống, nếu không thì tăng số cuối (ADMIN-01 -> ADMIN-02 ...)
-    default String nextFreeStaffCode(String preferred) {
-        if (findByStaffCode(preferred).isEmpty()) return preferred;
-        int dash = preferred.lastIndexOf('-');
-        String prefix = dash >= 0 ? preferred.substring(0, dash + 1) : preferred + "-";
-        int width = dash >= 0 ? preferred.length() - dash - 1 : 2;
-        for (int number = 1; ; number++) {
-            String candidate = prefix + String.format("%0" + Math.max(width, 1) + "d", number);
-            if (findByStaffCode(candidate).isEmpty()) return candidate;
-        }
-    }
+import java.util.Optional;
+
+public interface StaffRepository extends JpaRepository<Staff, Long> {
+
+    @Query("""
+            select s from Staff s join fetch s.user u join fetch u.role r where r.code = :role
+              and u.status = com.example.racehorse_transport.entity.enums.AppUserStatus.ACTIVE
+              and s.employmentStatus = com.example.racehorse_transport.entity.enums.EmploymentStatus.ACTIVE
+            order by s.fullName, s.userId
+            """)
+    List<Staff> findActiveForRole(String role);
+
+    Optional<Staff> findByUser_Username(String username);
+
+    Optional<Staff> findByStaffCode(String staffCode);
+
+    @Query("select s.userId from Staff s where s.user.role.code = :role and s.user.status = :status order by s.userId")
+    List<Long> findUserIdsByRoleAndStatus(String role, AppUserStatus status);
+
+    @EntityGraph(attributePaths = {"user", "user.role", "homeHubLocation"})
+    List<Staff> findAllByOrderByStaffCodeAsc();
+
+    @EntityGraph(attributePaths = {"user", "user.role", "homeHubLocation"})
+    Optional<Staff> findOneByUserId(Long userId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select s from Staff s where s.userId = :id")
+    Optional<Staff> findForUpdate(@Param("id") Long id);
 }

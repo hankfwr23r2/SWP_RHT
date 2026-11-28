@@ -1,39 +1,10 @@
 package com.example.racehorse_transport.service;
 
-import com.example.racehorse_transport.dto.manager.QuoteLineDto;
-import com.example.racehorse_transport.dto.settlement.ExpenseItemDto;
-import com.example.racehorse_transport.entity.Booking;
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.util.List;
+import com.example.racehorse_transport.entity.enums.BookingStatus;
 
+// Mail hóa đơn gửi khách ở các mốc tiền của đơn: báo giá, biên nhận cọc, cần chọn lại chuyến, hủy đơn, bảng quyết toán.
+// Gọi trong transaction đổi trạng thái; mail dựng và gửi sau khi transaction lưu xong, lỗi gửi chỉ ghi log.
 public interface BillMailService {
 
-    public enum Payment {
-        DEPOSIT("Đặt cọc 30%", "Deposit (30%)"),
-        BALANCE("Thanh toán 70% còn lại", "Remaining balance (70%)"),
-        SETTLEMENT("Thanh toán quyết toán", "Final settlement");
-
-        private final String vi;
-        private final String en;
-
-        Payment(String vi, String en) {
-            this.vi = vi;
-            this.en = en;
-        }
-        public String vi() { return vi; }
-        public String en() { return en; }
-    }
-
-    void scheduleChangeRequired(Booking booking);
-
-    void quoteIssued(Booking booking, List<QuoteLineDto> lines, BigDecimal total, BigDecimal deposit,
-            BigDecimal balance, Instant expiresAt);
-
-    void paymentReceived(Booking booking, Payment payment, BigDecimal amount, String transactionNo, Instant paidAt, String waybillNo);
-
-    // Kíp xe đã nhận ngựa ở điểm đón: nhắc khách trả 70% còn lại để xe được bắt đầu hành trình
-    void balanceDue(Booking booking, BigDecimal amount);
-
-    void settlementIssued(Booking booking, List<ExpenseItemDto> customerItems, BigDecimal total, Instant dueAt);
+    void statusChanged(Long bookingId, BookingStatus from, BookingStatus to, String reason);
 }

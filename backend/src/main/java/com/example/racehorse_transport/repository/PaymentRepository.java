@@ -1,24 +1,52 @@
 package com.example.racehorse_transport.repository;
 
+import org.springframework.data.jpa.repository.EntityGraph;
+import com.example.racehorse_transport.entity.enums.PaymentType;
+import com.example.racehorse_transport.entity.enums.PaymentStatus;
 import com.example.racehorse_transport.entity.Payment;
-
-import jakarta.persistence.LockModeType;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Lock;
-import org.springframework.stereotype.Repository;
-
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
-@Repository
-public interface PaymentRepository extends JpaRepository<Payment, Integer> {
-    List<Payment> findByBookingID_IdOrderByPaymentDateDesc(Integer bookingId);
+public interface PaymentRepository extends JpaRepository<Payment, Long> {
+    @Query("""
+            SELECT p FROM Payment p
+            WHERE p.paymentType = :type AND p.status = :status AND p.dueAt < :now
+            AND p.booking.customer.userId <> :customerId
+            AND (p.disputedAt IS NULL OR p.disputeResolvedAt IS NOT NULL)
+            AND (
+                (:phone IS NOT NULL AND :phone <> '' AND p.booking.customer.phone = :phone)
+                OR EXISTS (
+                    SELECT 1 FROM BookingHorse other, BookingHorse selected
+                    WHERE other.booking.customer = p.booking.customer AND selected.booking.id = :bookingId
+                    AND other.horse.microchip <> '' AND other.horse.microchip = selected.horse.microchip
+                )
+            )
+            """)
+    List<Payment> findLinkedOverdue(Long bookingId, Long customerId, String phone,
+                                    PaymentType type, PaymentStatus status, Instant now);
 
-    // Đọc ID trước, rồi luôn khóa theo thứ tự booking -> payment để tránh deadlock và dữ liệu cũ.
-    @org.springframework.data.jpa.repository.Query("select p.bookingID.id from Payment p where p.transactionCode = :transactionCode")
-    Optional<Integer> findBookingIdByTransactionCode(@org.springframework.data.repository.query.Param("transactionCode") String transactionCode);
+    List<Payment> findByBooking_IdOrderById(Long bookingId);
 
-    // Khóa dòng khi xác nhận VNPAY để IPN và Return URL đến cùng lúc không xử lý 2 lần
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    Optional<Payment> findByTransactionCode(String transactionCode);
+    @EntityGraph(attributePaths = {"booking", "booking.customer", "refundedPayment"})
+    List<Payment> findByPaymentTypeAndStatusOrderById(PaymentType type, PaymentStatus status);
+
+    @Query("""
+            SELECT DISTINCT p.booking.customer.userId FROM Payment p
+            WHERE p.paymentType = :type AND p.status = :status AND p.dueAt < :now
+            AND (p.disputedAt IS NULL OR p.disputeResolvedAt IS NOT NULL)
+            AND (p.issuedAt IS NULL OR p.issuedAt > :badBefore)
+            ORDER BY p.booking.customer.userId
+            """)
+    List<Long> findCustomersWithOverdue(PaymentType type, PaymentStatus status, Instant now, Instant badBefore);
+
+    List<Payment> findByBooking_Customer_UserIdAndPaymentType(Long customerId, PaymentType type);
+
+    @Query("SELECT p.id FROM Payment p WHERE p.paymentType = :type AND p.status = :status AND p.issuedAt <= :before ORDER BY p.id")
+    List<Long> findIssuedBefore(PaymentType type, PaymentStatus status, Instant before);
+
+    @Query("select p.booking.id from Payment p where p.id = :paymentId")
+    Optional<Long> findBookingId(Long paymentId);
 }

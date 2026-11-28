@@ -3,6 +3,9 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 ARG VITE_TURNSTILE_SITE_KEY
 ENV VITE_TURNSTILE_SITE_KEY=$VITE_TURNSTILE_SITE_KEY
+# Chỉ đặt khi chạy thử trên máy cá nhân
+ARG VITE_LOCAL_DEMO
+ENV VITE_LOCAL_DEMO=$VITE_LOCAL_DEMO
 COPY package*.json ./
 RUN npm ci
 COPY . .

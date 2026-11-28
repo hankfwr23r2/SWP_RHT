@@ -1,0 +1,68 @@
+.skeleton {
+  position: relative;
+  height: 100%;
+}
+
+.bones {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  height: 100%;
+}
+
+.bone {
+  display: block;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, var(--color-neutral-soft), var(--color-border), var(--color-neutral-soft));
+  background-size: 200% 100%;
+  animation: shimmer 1400ms ease-in-out infinite;
+}
+
+.text {
+  height: 0.875rem;
+}
+
+.text:last-child:not(:first-child) {
+  width: 60%;
+}
+
+.title {
+  width: 40%;
+  height: 1.5rem;
+}
+
+.block {
+  flex: 1;
+  min-height: 96px;
+}
+
+.circle {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bone {
+    animation: none;
+  }
+}

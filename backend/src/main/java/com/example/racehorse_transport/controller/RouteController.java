@@ -1,124 +1,67 @@
 package com.example.racehorse_transport.controller;
 
-import com.example.racehorse_transport.dto.route.LocationRouteDto;
-import com.example.racehorse_transport.dto.route.RouteDto;
-import com.example.racehorse_transport.entity.LocationRoute;
-import com.example.racehorse_transport.entity.Route;
 import com.example.racehorse_transport.dto.common.ApiResponseDto;
+import com.example.racehorse_transport.dto.network.RouteRequestDto;
+import com.example.racehorse_transport.dto.network.RouteResponseDto;
 import com.example.racehorse_transport.service.RouteService;
 import jakarta.validation.Valid;
-import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
+// Tuyến trục chính cố định kèm điểm dừng.
 @RestController
 @RequestMapping("/routes")
+@RequiredArgsConstructor
 public class RouteController {
 
+    private static final String STAFF = "hasAnyRole('ADMIN', 'MANAGER', 'COORDINATOR', 'SPECIALIST', 'DRIVER', 'ESCORT')";
+
     private final RouteService routeService;
-    private final ModelMapper modelMapper;
 
-    @Autowired
-    public RouteController(RouteService routeService, ModelMapper modelMapper) {
-        this.routeService = routeService;
-        this.modelMapper = modelMapper;
-    }
-
-    // 1. Lấy tất cả lộ trình
     @GetMapping
-    public ResponseEntity<ApiResponseDto<List<RouteDto>>> getAllRoutes() {
-        List<Route> routes = routeService.findAll();
-        List<RouteDto> dtos = routes.stream()
-                .map(this::toRouteDTO)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(ApiResponseDto.success(dtos, "Lấy danh sách lộ trình thành công"));
+    @PreAuthorize(STAFF)
+    public ResponseEntity<ApiResponseDto<List<RouteResponseDto>>> list() {
+        return ResponseEntity.ok(ApiResponseDto.success(routeService.routes(), "Danh sách tuyến"));
     }
 
-    // 2. Xem chi tiết 1 lộ trình
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponseDto<RouteDto>> getRouteById(@PathVariable Integer id) {
-        Optional<Route> routeOpt = routeService.findById(id);
-        if (routeOpt.isPresent()) {
-            RouteDto dto = toRouteDTO(routeOpt.get());
-            return ResponseEntity.ok(ApiResponseDto.success(dto, "Lấy thông tin lộ trình thành công"));
-        } else {
-            return ResponseEntity.status(404).body(ApiResponseDto.error("Không tìm thấy lộ trình ID: " + id));
-        }
+    @PreAuthorize(STAFF)
+    public ResponseEntity<ApiResponseDto<RouteResponseDto>> get(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponseDto.success(routeService.route(id), "Chi tiết tuyến"));
     }
 
-    // 3. Dev 4: Lấy danh sách điểm dừng của lộ trình theo thứ tự
-    @GetMapping("/{routeId}/stops")
-    public ResponseEntity<ApiResponseDto<List<LocationRouteDto>>> getRouteStops(@PathVariable Integer routeId) {
-        List<LocationRoute> stops = routeService.getStopsByRouteId(routeId);
-        List<LocationRouteDto> dtos = stops.stream()
-                .map(this::toDTO)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(ApiResponseDto.success(dtos, "Lấy danh sách điểm dừng thành công"));
-    }
-
-    // 4. Admin: Tạo mới tuyến đường cố định
-    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<ApiResponseDto<RouteDto>> createRoute(@Valid @RequestBody com.example.racehorse_transport.dto.route.CreateRouteRequestDto request) {
-        Route created = routeService.createRoute(request);
-        RouteDto dto = toRouteDTO(created);
-        return ResponseEntity.ok(ApiResponseDto.success(dto, "Tạo tuyến đường cố định thành công"));
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponseDto<RouteResponseDto>> create(@Valid @RequestBody RouteRequestDto request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponseDto.success(routeService.createRoute(request), "Đã thêm tuyến"));
     }
 
-    // 5. Admin: Cập nhật tuyến đường cố định
-    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponseDto<RouteDto>> updateRoute(
-            @PathVariable Integer id,
-            @Valid @RequestBody com.example.racehorse_transport.dto.route.CreateRouteRequestDto request) {
-        Route updated = routeService.updateRoute(id, request);
-        RouteDto dto = toRouteDTO(updated);
-        return ResponseEntity.ok(ApiResponseDto.success(dto, "Cập nhật tuyến đường thành công"));
-    }
-
-    // 6. Admin: Ngừng kích hoạt tuyến đường
     @PreAuthorize("hasRole('ADMIN')")
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponseDto<Void>> deleteRoute(@PathVariable Integer id) {
-        routeService.deactivateRoute(id);
-        return ResponseEntity.ok(ApiResponseDto.success(null, "Ngừng kích hoạt tuyến đường thành công"));
+    public ResponseEntity<ApiResponseDto<RouteResponseDto>> update(@PathVariable Long id, @Valid @RequestBody RouteRequestDto request) {
+        return ResponseEntity.ok(ApiResponseDto.success(routeService.updateRoute(id, request), "Đã cập nhật tuyến"));
     }
 
-    private LocationRouteDto toDTO(LocationRoute entity) {
-        LocationRouteDto dto = modelMapper.map(entity, LocationRouteDto.class);
-        if (entity.getId() != null) {
-            dto.setRouteID(entity.getId().getRouteID());
-            dto.setLocationID(entity.getId().getLocationID());
-        }
-        if (entity.getLocationID() != null) {
-            dto.setLocationName(entity.getLocationID().getLocationName());
-            dto.setLocationType(entity.getLocationID().getLocationType());
-            dto.setAddress(entity.getLocationID().getAddress());
-            dto.setProvince(entity.getLocationID().getProvince());
-            dto.setCountry(entity.getLocationID().getCountry());
-        }
-        dto.setLatitude(entity.getLatitude());
-        dto.setLongitude(entity.getLongitude());
-        return dto;
+    @PostMapping("/{id}/activate")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponseDto<RouteResponseDto>> activate(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponseDto.success(routeService.activateRoute(id), "Đã cho tuyến chạy lại"));
     }
 
-    private RouteDto toRouteDTO(Route route) {
-        RouteDto dto = modelMapper.map(route, RouteDto.class);
-        List<LocationRoute> stops = routeService.getStopsByRouteId(route.getId());
-        if (!stops.isEmpty()) {
-            LocationRoute origin = stops.get(0);
-            LocationRoute destination = stops.get(stops.size() - 1);
-            dto.setOriginId(origin.getLocationID().getId());
-            dto.setOriginName(origin.getLocationID().getLocationName());
-            dto.setDestinationId(destination.getLocationID().getId());
-            dto.setDestinationName(destination.getLocationID().getLocationName());
-        }
-        return dto;
+    @PostMapping("/{id}/deactivate")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponseDto<RouteResponseDto>> deactivate(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponseDto.success(routeService.deactivateRoute(id), "Đã ngừng tuyến"));
     }
 }

@@ -1,0 +1,65 @@
+// Kiểm style trong file .tsx (AGENTS.md mục 8.5):
+//   S1. Không dùng style={{...}}. Giá trị động không biểu diễn được bằng class (tọa độ, phần trăm, kích thước tính lúc chạy)
+//       thì được dùng khi dòng ngay trên có comment "check-style: dynamic <lý do>".
+//   S2. Không viết mã màu (#fff, #1e293b, rgb(...), hsl(...)). Dùng design token trong shared/styles/tokens.css.
+// File có từ trước khi có kiểm tra này nằm trong EXCEPTIONS. Danh sách chỉ được rút ngắn:
+// file trong danh sách mà đã hết vi phạm thì script báo lỗi để gỡ khỏi danh sách.
+import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { dirname, join, relative, sep } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const FRONTEND = join(dirname(fileURLToPath(import.meta.url)), '..')
+const SRC = join(FRONTEND, 'src')
+
+const EXCEPTIONS = {
+  S1: [],
+  S2: [],
+}
+
+const INLINE_STYLE = /style=\{\{/
+const DYNAMIC_MARKER = /check-style:\s*dynamic\s+\S/
+// Mã hex 6 hoặc 8 ký tự; 3 hoặc 4 ký tự thì phải có chữ a-f, để không nhầm số đơn như "#123"
+const COLOR = /#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|(?=[0-9]*[a-fA-F])[0-9a-fA-F]{3,4})\b|\b(?:rgba?|hsla?)\(/
+
+function tsxFiles(dir) {
+  return readdirSync(dir).flatMap(name => {
+    const path = join(dir, name)
+    if (statSync(path).isDirectory()) return tsxFiles(path)
+    return name.endsWith('.tsx') ? [path] : []
+  })
+}
+
+const violations = { S1: new Map(), S2: new Map() }
+const report = (rule, file, line) => violations[rule].set(file, [...(violations[rule].get(file) ?? []), line])
+
+for (const path of tsxFiles(SRC)) {
+  const file = relative(FRONTEND, path).split(sep).join('/')
+  const lines = readFileSync(path, 'utf8').split('\n')
+  lines.forEach((text, index) => {
+    if (INLINE_STYLE.test(text) && !DYNAMIC_MARKER.test(lines[index - 1] ?? '')) report('S1', file, index + 1)
+    if (COLOR.test(text)) report('S2', file, index + 1)
+  })
+}
+
+const MESSAGES = {
+  S1: 'không dùng style={{...}}; dùng class trong CSS Module. Giá trị động thì thêm comment "check-style: dynamic <lý do>" ở dòng trên.',
+  S2: 'không viết mã màu trong TSX; dùng design token (var(--color-...)) trong CSS Module.',
+}
+
+const errors = []
+for (const rule of Object.keys(violations)) {
+  const allowed = new Set(EXCEPTIONS[rule])
+  for (const [file, lineNumbers] of violations[rule]) {
+    if (!allowed.has(file)) errors.push(`${file}:${lineNumbers.join(',')}: ${rule} ${MESSAGES[rule]}`)
+  }
+  for (const file of allowed) {
+    if (!violations[rule].has(file)) errors.push(`${file}: đã hết vi phạm ${rule}, gỡ khỏi EXCEPTIONS.${rule} trong scripts/check-style.mjs`)
+  }
+}
+
+if (errors.length) {
+  console.error(errors.join('\n'))
+  console.error(`\ncheck-style: ${errors.length} lỗi (AGENTS.md mục 8.5)`)
+  process.exit(1)
+}
+console.log('check-style: không có vi phạm mới')

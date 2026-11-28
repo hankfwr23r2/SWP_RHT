@@ -1,13 +1,30 @@
 // Dữ liệu các trang đơn của khách, router tải song song với file trang (xem shared/routing/pageData)
+import { useLoaderData } from 'react-router'
+import { bookingDocumentsApi } from '@shared/api/bookingDocuments'
+import { bookingOrdersApi } from '@shared/api/bookingOrders'
+import { catalogApi } from '@shared/api/catalog'
+import { bookingPaymentsApi } from '@shared/api/payments'
+import { quotationsApi } from '@shared/api/quotations'
 import { loadAll, type PageLoaderContext } from '@shared/routing/pageData'
 
-// Đơn của tôi, Lịch sử đơn
-export async function ordersLoader({ session }: PageLoaderContext) {
-  const { customerBookingsApi } = await import('@shared/services/bookings')
-  return loadAll({ orders: customerBookingsApi.list(session.name) })
+export async function ordersLoader() {
+  return { errors: [] as string[], result: loadAll({ orders: bookingOrdersApi.list() }) }
 }
 
-export async function orderDetailLoader({ params, session }: PageLoaderContext) {
-  const { customerBookingsApi } = await import('@shared/services/bookings')
-  return loadAll({ b: customerBookingsApi.get(session.name, params.id ?? '') })
+export async function orderDetailLoader({ params }: PageLoaderContext) {
+  const id = Number(params.id)
+  const { errors: _errors, ...loaded } = await loadAll({
+    detail: bookingOrdersApi.detail(id),
+    quotations: quotationsApi.ofBooking(id),
+    payments: bookingPaymentsApi.ofBooking(id),
+    checklist: bookingDocumentsApi.myChecklist(id),
+    stallTypes: catalogApi.stallTypes(),
+  })
+  return { errors: [] as string[], id, ...loaded }
 }
+
+export type OrdersData = Awaited<ReturnType<typeof ordersLoader>>
+export type OrderData = Awaited<ReturnType<typeof orderDetailLoader>>
+
+export const useOrdersData = () => useLoaderData() as OrdersData
+export const useOrderData = () => useLoaderData() as OrderData

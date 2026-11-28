@@ -1,0 +1,177 @@
+-- Dữ liệu nền bắt buộc, chạy ở mọi môi trường. Admin chỉnh sửa được qua ứng dụng.
+-- Dữ liệu mẫu cho máy dev và test nằm ở db/seed-dev (không chạy trên môi trường thật).
+
+INSERT INTO country (code, name, default_currency) VALUES
+    ('VN', 'Việt Nam', 'VND'),
+    ('KH', 'Campuchia', 'KHR'),
+    ('LA', 'Lào', 'LAK');
+
+-- 34 tỉnh/thành Việt Nam theo sắp xếp đơn vị hành chính từ 01/07/2025 (nguồn: provinces.open-api.vn),
+-- 25 tỉnh Campuchia và 18 tỉnh Lào (nguồn: geoBoundaries). Cùng nguồn với frontend/src/shared/config.
+INSERT INTO province (code, country_code, name) VALUES
+    ('VN-92', 'VN', 'Thành phố Cần Thơ'),
+    ('VN-48', 'VN', 'Thành phố Đà Nẵng'),
+    ('VN-1', 'VN', 'Thành phố Hà Nội'),
+    ('VN-31', 'VN', 'Thành phố Hải Phòng'),
+    ('VN-79', 'VN', 'Thành phố Hồ Chí Minh'),
+    ('VN-46', 'VN', 'Thành phố Huế'),
+    ('VN-91', 'VN', 'Tỉnh An Giang'),
+    ('VN-24', 'VN', 'Tỉnh Bắc Ninh'),
+    ('VN-96', 'VN', 'Tỉnh Cà Mau'),
+    ('VN-4', 'VN', 'Tỉnh Cao Bằng'),
+    ('VN-66', 'VN', 'Tỉnh Đắk Lắk'),
+    ('VN-11', 'VN', 'Tỉnh Điện Biên'),
+    ('VN-75', 'VN', 'Tỉnh Đồng Nai'),
+    ('VN-82', 'VN', 'Tỉnh Đồng Tháp'),
+    ('VN-52', 'VN', 'Tỉnh Gia Lai'),
+    ('VN-42', 'VN', 'Tỉnh Hà Tĩnh'),
+    ('VN-33', 'VN', 'Tỉnh Hưng Yên'),
+    ('VN-56', 'VN', 'Tỉnh Khánh Hòa'),
+    ('VN-12', 'VN', 'Tỉnh Lai Châu'),
+    ('VN-20', 'VN', 'Tỉnh Lạng Sơn'),
+    ('VN-15', 'VN', 'Tỉnh Lào Cai'),
+    ('VN-68', 'VN', 'Tỉnh Lâm Đồng'),
+    ('VN-40', 'VN', 'Tỉnh Nghệ An'),
+    ('VN-37', 'VN', 'Tỉnh Ninh Bình'),
+    ('VN-25', 'VN', 'Tỉnh Phú Thọ'),
+    ('VN-51', 'VN', 'Tỉnh Quảng Ngãi'),
+    ('VN-22', 'VN', 'Tỉnh Quảng Ninh'),
+    ('VN-44', 'VN', 'Tỉnh Quảng Trị'),
+    ('VN-14', 'VN', 'Tỉnh Sơn La'),
+    ('VN-80', 'VN', 'Tỉnh Tây Ninh'),
+    ('VN-19', 'VN', 'Tỉnh Thái Nguyên'),
+    ('VN-38', 'VN', 'Tỉnh Thanh Hóa'),
+    ('VN-8', 'VN', 'Tỉnh Tuyên Quang'),
+    ('VN-86', 'VN', 'Tỉnh Vĩnh Long'),
+    ('KH-1', 'KH', 'Bantey Meanchey'),
+    ('KH-2', 'KH', 'Battambang'),
+    ('KH-3', 'KH', 'Kampong Cham'),
+    ('KH-4', 'KH', 'Kampong Chhnang'),
+    ('KH-5', 'KH', 'Kampong Speu'),
+    ('KH-6', 'KH', 'Kampong Thom'),
+    ('KH-7', 'KH', 'Kampot'),
+    ('KH-8', 'KH', 'Kandal'),
+    ('KH-23', 'KH', 'Kep'),
+    ('KH-9', 'KH', 'Koh Kong'),
+    ('KH-10', 'KH', 'Kratie'),
+    ('KH-11', 'KH', 'Mondulkiri'),
+    ('KH-22', 'KH', 'Oddar Meanchey'),
+    ('KH-24', 'KH', 'Pailin'),
+    ('KH-12', 'KH', 'Phnom Penh'),
+    ('KH-18', 'KH', 'Preah Sihanouk'),
+    ('KH-13', 'KH', 'Preah Vihear'),
+    ('KH-14', 'KH', 'Prey Veng'),
+    ('KH-15', 'KH', 'Pursat'),
+    ('KH-16', 'KH', 'Ratanakiri'),
+    ('KH-17', 'KH', 'Siem Reap'),
+    ('KH-19', 'KH', 'Stung Treng'),
+    ('KH-20', 'KH', 'Svay Rieng'),
+    ('KH-21', 'KH', 'Takeo'),
+    ('KH-25', 'KH', 'Tbong Khmum'),
+    ('LA-AT', 'LA', 'Attapeu'),
+    ('LA-BK', 'LA', 'Bokeo'),
+    ('LA-BL', 'LA', 'Bolikhamsai'),
+    ('LA-CH', 'LA', 'Champasak'),
+    ('LA-HO', 'LA', 'Houaphan'),
+    ('LA-KH', 'LA', 'Khammouane'),
+    ('LA-LM', 'LA', 'Luang Namtha'),
+    ('LA-LP', 'LA', 'Luang Prabang'),
+    ('LA-OU', 'LA', 'Oudomxay'),
+    ('LA-PH', 'LA', 'Phongsaly'),
+    ('LA-SL', 'LA', 'Salavan'),
+    ('LA-SV', 'LA', 'Savannakhet'),
+    ('LA-VI', 'LA', 'Vientiane'),
+    ('LA-VT', 'LA', 'Vientiane Capital'),
+    ('LA-XA', 'LA', 'Xaignabouli'),
+    ('LA-XN', 'LA', 'Xaisomboun'),
+    ('LA-XE', 'LA', 'Xekong'),
+    ('LA-XI', 'LA', 'Xiangkhouang');
+
+INSERT INTO role (code, name) VALUES
+    ('CUSTOMER', 'Khách hàng'),
+    ('ADMIN', 'Quản trị hệ thống'),
+    ('MANAGER', 'Quản lý'),
+    ('COORDINATOR', 'Điều phối viên'),
+    ('SPECIALIST', 'Chuyên viên hồ sơ'),
+    ('DRIVER', 'Tài xế'),
+    ('ESCORT', 'Người chăm ngựa (groom)');
+
+INSERT INTO stall_type (code, name) VALUES
+    ('STANDARD', 'Khoang tiêu chuẩn'),
+    ('WIDE', 'Khoang rộng');
+
+-- Số khoang tối đa theo hạng xe, giữ như hệ thống cũ (light 2, medium 6, heavy 9)
+INSERT INTO vehicle_class (code, name, max_stalls) VALUES
+    ('LIGHT', 'Xe tải nhẹ / Van', 2),
+    ('MEDIUM', 'Xe tải trung', 6),
+    ('HEAVY', 'Xe tải nặng', 9);
+
+INSERT INTO horse_type (name, description) VALUES
+    ('Thoroughbred', 'Ngựa đua thuần chủng, nhanh và bền, chủ yếu dùng để đua'),
+    ('Arabian', 'Ngựa Ả Rập, sức bền tốt, đầu có hình dáng đặc trưng'),
+    ('American Quarter Horse', 'Cơ bắp, tăng tốc nhanh, đa dụng'),
+    ('Friesian', 'Lông đen, bờm dài, khỏe'),
+    ('Andalusian', 'Ngựa Tây Ban Nha, khỏe và nhanh nhẹn'),
+    ('Lusitano', 'Ngựa Bồ Đào Nha, nhanh nhẹn, phản ứng tốt'),
+    ('Appaloosa', 'Đa dụng, bộ lông có đốm đặc trưng'),
+    ('American Paint Horse', 'Ngựa làm việc, bộ lông nhiều màu'),
+    ('Morgan', 'Nhỏ gọn, khỏe, tính tình hiền'),
+    ('Tennessee Walking Horse', 'Ngựa cưỡi, dáng đi êm'),
+    ('Standardbred', 'Thường dùng trong đua xe ngựa'),
+    ('Hanoverian', 'Ngựa thể thao, hợp với dressage và nhảy chướng ngại'),
+    ('Akhal-Teke', 'Thân mảnh, lông ánh kim, sức bền cao'),
+    ('Mustang', 'Khỏe, nguồn gốc ngựa hoang Bắc Mỹ'),
+    ('Clydesdale', 'Ngựa kéo cỡ lớn'),
+    ('Shire', 'Ngựa kéo rất lớn, khỏe và điềm tĩnh'),
+    ('Belgian Draft', 'Ngựa kéo khỏe, dùng cho việc nặng'),
+    ('Percheron', 'Ngựa kéo Pháp'),
+    ('Haflinger', 'Chắc khỏe, lông màu hạt dẻ, bờm vàng nhạt'),
+    ('Shetland Pony', 'Ngựa lùn nhỏ, khỏe và dẻo dai');
+
+-- subject quyết định chứng từ gắn vào cột chủ sở hữu nào của bảng document
+INSERT INTO document_type (code, name, subject) VALUES
+    ('HORSE_PASSPORT', 'Hộ chiếu ngựa', 'HORSE'),
+    ('VACCINATION_RECORD', 'Sổ tiêm phòng', 'HORSE'),
+    ('LAB_TEST', 'Phiếu xét nghiệm (EIA/EVA)', 'BOOKING_HORSE'),
+    ('HEALTH_CERT', 'Giấy chứng nhận kiểm dịch động vật vận chuyển', 'BOOKING_HORSE'),
+    ('EXPORT_QUARANTINE_CERT', 'Giấy chứng nhận kiểm dịch xuất khẩu', 'BOOKING_HORSE'),
+    ('IMPORT_PERMIT', 'Giấy phép nhập khẩu của nước đến', 'BOOKING'),
+    ('CUSTOMS_DECLARATION', 'Tờ khai hải quan', 'BOOKING'),
+    ('ATA_CARNET', 'Sổ tạm xuất tái nhập ATA Carnet', 'BOOKING'),
+    ('COMMERCIAL_INVOICE', 'Hóa đơn thương mại', 'BOOKING'),
+    ('POWER_OF_ATTORNEY', 'Giấy ủy quyền', 'BOOKING'),
+    ('INSURANCE_POLICY', 'Hợp đồng bảo hiểm', 'INSURANCE'),
+    ('HANDOVER_RECORD', 'Biên bản giao nhận', 'HANDOVER'),
+    ('HANDOVER_PHOTO', 'Ảnh giao nhận', 'HANDOVER'),
+    ('FIELD_PHOTO', 'Ảnh hiện trường trên chặng', 'HORSE_LEG'),
+    ('INCIDENT_PHOTO', 'Ảnh sự cố', 'INCIDENT'),
+    ('TOLL_RECEIPT', 'Biên lai cầu đường', 'COST_ITEM'),
+    ('EXPENSE_INVOICE', 'Hóa đơn chi phí', 'COST_ITEM'),
+    ('DISINFECTION_RECORD', 'Biên bản tiêu độc khử trùng xe', 'VEHICLE_TRIP'),
+    ('VEHICLE_REGISTRATION', 'Giấy đăng ký xe', 'VEHICLE'),
+    ('DRIVER_LICENSE', 'Giấy phép lái xe', 'STAFF'),
+    ('PARTNER_CONTRACT', 'Hợp đồng với đối tác', 'PARTY');
+
+-- Danh mục dịch vụ tính tiền. Đơn giá nằm ở price_list/price_item, không nằm ở đây
+INSERT INTO service (code, name, layer, billing_unit, is_pass_through, auto_apply, status) VALUES
+    ('LINEHAUL_STALL', 'Cước chuyến trục chính (theo khoang)', 'LINEHAUL', 'PER_STALL', false, true, 'ACTIVE'),
+    ('PICKUP_KM', 'Cước chặng đón (theo km)', 'PICKUP', 'PER_KM', false, true, 'ACTIVE'),
+    ('DELIVERY_KM', 'Cước chặng giao (theo km)', 'DELIVERY', 'PER_KM', false, true, 'ACTIVE'),
+    ('DIRECT_KM', 'Cước chạy thẳng (theo km)', 'DIRECT', 'PER_KM', false, true, 'ACTIVE'),
+    ('FUEL_TOLL', 'Nhiên liệu và phí cầu đường', 'FUEL', 'PER_KM', false, true, 'ACTIVE'),
+    ('STALL_WIDE', 'Phụ thu khoang rộng', 'STALL', 'PER_HORSE', false, true, 'ACTIVE'),
+    ('QUARANTINE_STAY', 'Lưu chuồng, cách ly', 'QUARANTINE', 'PER_HORSE_DAY', false, true, 'ACTIVE'),
+    ('FEEDING', 'Cho ăn theo chỉ dẫn', 'ADD_ON', 'PER_HORSE_DAY', false, false, 'ACTIVE'),
+    ('VET_CHECK', 'Khám thú y trước chuyến', 'ADD_ON', 'PER_HORSE', false, false, 'ACTIVE'),
+    ('QUARANTINE_DOCS', 'Phí làm thủ tục kiểm dịch', 'DOCS', 'PER_BOOKING', false, true, 'ACTIVE'),
+    ('GOV_FEE', 'Lệ phí nhà nước (thu hộ)', 'DOCS', 'PER_BOOKING', true, true, 'ACTIVE'),
+    ('INSURANCE_PREMIUM', 'Phí bảo hiểm (thu hộ)', 'SURCHARGE', 'PER_HORSE', true, false, 'ACTIVE');
+
+-- Tham số kỹ thuật (không phải giá tiền). Giá trị khởi đầu lấy theo hệ thống cũ, admin chỉnh được
+INSERT INTO system_config (key, value, unit, config_group, description) VALUES
+    ('HANDOVER_FREE_WAIT_MINUTES', '120', 'MINUTE', 'HANDOVER', 'Thời gian chờ người nhận miễn phí trước khi xử lý quá hạn'),
+    ('QUOTATION_VALID_HOURS', '24', 'HOUR', 'QUOTATION', 'Hiệu lực của báo giá kể từ khi gửi'),
+    ('BALANCE_DUE_DAYS_BEFORE_PICKUP', '1', 'DAY', 'PAYMENT', 'Số dư phải trả trước ngày đón bao nhiêu ngày'),
+    ('DEPARTURE_GENERATION_WEEKS', '8', 'COUNT', 'SCHEDULE', 'Sinh trước chuyến từ lịch chạy cho bao nhiêu tuần tới'),
+    ('OTP_EXPIRY_MINUTES', '10', 'MINUTE', 'AUTH', 'Thời hạn của mã OTP'),
+    ('OTP_MAX_ATTEMPTS', '5', 'COUNT', 'AUTH', 'Số lần nhập sai OTP tối đa');

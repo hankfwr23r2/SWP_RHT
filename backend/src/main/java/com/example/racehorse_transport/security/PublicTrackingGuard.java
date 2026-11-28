@@ -22,12 +22,12 @@ public class PublicTrackingGuard {
     static final Duration WINDOW = Duration.ofMinutes(15);
 
     private final Clock clock;
-    private final Map<Integer, Failures> failures = new ConcurrentHashMap<>();
+    private final Map<Long, Failures> failures = new ConcurrentHashMap<>();
 
     private record Failures(Instant firstAt, int count) {
     }
 
-    public void checkAllowed(Integer bookingId, String code) {
+    public void checkAllowed(Long bookingId, String code) {
         Failures current = failures.get(bookingId);
         if (current == null) return;
         if (expired(current)) {
@@ -40,13 +40,13 @@ public class PublicTrackingGuard {
         }
     }
 
-    public void recordFailure(Integer bookingId) {
+    public void recordFailure(Long bookingId) {
         failures.compute(bookingId, (id, current) -> current == null || expired(current)
                 ? new Failures(clock.instant(), 1)
                 : new Failures(current.firstAt(), current.count() + 1));
     }
 
-    public void recordSuccess(Integer bookingId) {
+    public void recordSuccess(Long bookingId) {
         failures.remove(bookingId);
     }
 

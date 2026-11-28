@@ -1,63 +1,49 @@
 package com.example.racehorse_transport.controller;
 
-import com.example.racehorse_transport.dto.DocumentRequirementRequestDto;
-import com.example.racehorse_transport.dto.DocumentRequirementResponseDto;
 import com.example.racehorse_transport.dto.common.ApiResponseDto;
-import com.example.racehorse_transport.service.DocumentRequirementService;
+import com.example.racehorse_transport.dto.regulation.DocumentRequirementCreateRequestDto;
+import com.example.racehorse_transport.dto.regulation.DocumentRequirementResponseDto;
+import com.example.racehorse_transport.dto.regulation.DocumentRequirementUpdateRequestDto;
+import com.example.racehorse_transport.service.RegulationService;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequestMapping("/country-rules/{ruleId}/document-requirements")
 @RequiredArgsConstructor
 public class DocumentRequirementController {
-    private final DocumentRequirementService service;
 
-    @GetMapping("/public/document-requirements")
-    @PreAuthorize("permitAll()")
-    public ResponseEntity<ApiResponseDto<List<DocumentRequirementResponseDto>>> listActive() {
-        return ResponseEntity.ok(ApiResponseDto.success(service.listActive(), "Lấy danh sách giấy tờ bắt buộc thành công"));
+    private final RegulationService regulations;
+
+    @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'SPECIALIST')")
+    public ApiResponseDto<List<DocumentRequirementResponseDto>> listDocumentRequirements(@PathVariable Long ruleId) {
+        return ApiResponseDto.success(regulations.listDocumentRequirements(ruleId), "Danh sách");
     }
 
-    @GetMapping("/admin/document-requirements")
+    @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponseDto<List<DocumentRequirementResponseDto>>> listAll() {
-        return ResponseEntity.ok(ApiResponseDto.success(service.listAll(), "Lấy cấu hình giấy tờ thành công"));
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponseDto<DocumentRequirementResponseDto> createDocumentRequirement(@PathVariable Long ruleId,
+            @Valid @RequestBody DocumentRequirementCreateRequestDto request) {
+        return ApiResponseDto.success(regulations.createDocumentRequirement(ruleId, request), "Đã tạo");
     }
 
-    @PostMapping("/admin/document-requirements")
+    @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponseDto<DocumentRequirementResponseDto>> create(
-            @Valid @RequestBody DocumentRequirementRequestDto request, Authentication authentication) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponseDto.success(
-                service.create(request, authentication.getName()), "Tạo cấu hình giấy tờ thành công"));
-    }
-
-    @PutMapping("/admin/document-requirements/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponseDto<DocumentRequirementResponseDto>> update(
-            @PathVariable Integer id, @Valid @RequestBody DocumentRequirementRequestDto request,
-            Authentication authentication) {
-        return ResponseEntity.ok(ApiResponseDto.success(
-                service.update(id, request, authentication.getName()), "Cập nhật cấu hình giấy tờ thành công"));
-    }
-
-    @PatchMapping("/admin/document-requirements/{id}/status")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponseDto<DocumentRequirementResponseDto>> changeStatus(
-            @PathVariable Integer id, @Valid @RequestBody StatusRequest request, Authentication authentication) {
-        return ResponseEntity.ok(ApiResponseDto.success(
-                service.changeStatus(id, request.status(), authentication.getName()),
-                "Cập nhật trạng thái giấy tờ thành công"));
-    }
-
-    public record StatusRequest(
-            @jakarta.validation.constraints.NotBlank
-            @jakarta.validation.constraints.Pattern(regexp = "ACTIVE|INACTIVE") String status) {
+    public ApiResponseDto<DocumentRequirementResponseDto> updateDocumentRequirement(@PathVariable Long ruleId,
+            @PathVariable Long id, @Valid @RequestBody DocumentRequirementUpdateRequestDto request) {
+        return ApiResponseDto.success(regulations.updateDocumentRequirement(ruleId, id, request), "Đã cập nhật");
     }
 }

@@ -1,20 +1,27 @@
 package com.example.racehorse_transport.repository;
 
 import com.example.racehorse_transport.entity.HorseHealthLog;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
-
 import java.util.List;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-@Repository
-public interface HorseHealthLogRepository extends JpaRepository<HorseHealthLog, Integer> {
-    @Query("SELECT h FROM HorseHealthLog h WHERE h.horseID.id = :horseId")
-    List<HorseHealthLog> findByHorseId(@Param("horseId") Integer horseId);
+public interface HorseHealthLogRepository extends JpaRepository<HorseHealthLog, Long> {
 
-    boolean existsByHorseID_Id(Integer horseId);
+    @EntityGraph(attributePaths = {"recordedBy", "tripStop", "tripStop.location", "horseStay", "horseStay.location"})
+    List<HorseHealthLog> findByBookingHorse_IdOrderByRecordedAtDesc(Long bookingHorseId);
 
-    @Query("SELECT h FROM HorseHealthLog h WHERE h.bookingID.id = :bookingId")
-    List<HorseHealthLog> findByBookingId(@Param("bookingId") Integer bookingId);
+    @EntityGraph(attributePaths = {"recordedBy", "bookingHorse", "bookingHorse.horse"})
+    List<HorseHealthLog> findByTripStop_IdOrderByRecordedAt(Long tripStopId);
+
+    // Lần ghi gần nhất của con ngựa ở nơi khác (điểm dừng hoặc lưu trú trước)
+    Optional<HorseHealthLog> findFirstByBookingHorse_IdOrderByRecordedAtDesc(Long bookingHorseId);
+
+    @EntityGraph(attributePaths = {"bookingHorse", "tripStop", "tripStop.location", "tripStop.bookingAddress",
+            "horseStay", "horseStay.location", "vehicleTrip"})
+    List<HorseHealthLog> findByBookingHorse_Booking_IdOrderByRecordedAtDescIdDesc(Long bookingId);
+
+    // Báo cáo chuyến: các lần ghi sức khỏe trên một lượt xe
+    @EntityGraph(attributePaths = {"bookingHorse", "bookingHorse.horse"})
+    List<HorseHealthLog> findByVehicleTrip_IdOrderByRecordedAt(Long vehicleTripId);
 }

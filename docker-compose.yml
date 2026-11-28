@@ -10,8 +10,9 @@ services:
       POSTGRES_PASSWORD: RaceHorse@2026
     ports:
       - "5432:5432"
+    # Volume mới cho lược đồ 59 bảng: Flyway không chạy trên DB cũ đã có bảng. Dữ liệu cũ vẫn nằm ở volume postgres_data.
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_v2:/var/lib/postgresql/data
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres -d horse_transport_db" ]
       interval: 5s
@@ -37,7 +38,7 @@ services:
       - ./docker/pgadmin/servers.json:/pgadmin4/servers.json:ro
       - pgadmin_data:/var/lib/pgadmin
 
-  # 2. Backend Spring Boot 3
+  # 2. Backend Spring Boot 4
   backend:
     build:
       context: ./backend
@@ -51,13 +52,13 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/horse_transport_db
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=RaceHorse@2026
-      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      # Lược đồ do Flyway tạo; máy dev nạp thêm dữ liệu mẫu ở db/seed-dev
+      - FLYWAY_LOCATIONS=classpath:db/migration,classpath:db/seed-dev
+      # Khóa ký JWT: để trống thì máy dev dùng khóa ngẫu nhiên; bản deploy bắt buộc đặt
+      - APP_JWT_SECRET=${APP_JWT_SECRET:-}
+      - APP_CORS_ALLOWED_ORIGINS=${APP_CORS_ALLOWED_ORIGINS:-http://localhost:*,http://127.0.0.1:*}
       - VNPAY_HASH_SECRET=${VNPAY_HASH_SECRET:-}
       - VNPAY_RETURN_URL=${VNPAY_RETURN_URL:-http://localhost:5173/payment/vnpay-return}
-      - APP_SEED_REFERENCE_DATA=${APP_SEED_REFERENCE_DATA:-true}
-      - APP_BOOTSTRAP_ADMIN_USERNAME=${APP_BOOTSTRAP_ADMIN_USERNAME:-}
-      - APP_BOOTSTRAP_ADMIN_EMAIL=${APP_BOOTSTRAP_ADMIN_EMAIL:-}
-      - APP_BOOTSTRAP_ADMIN_PASSWORD=${APP_BOOTSTRAP_ADMIN_PASSWORD:-}
       - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME:-}
       - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY:-}
       - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET:-}
@@ -65,7 +66,6 @@ services:
       - MAIL_HOST=${MAIL_HOST:-}
       - MAIL_USERNAME=${MAIL_USERNAME:-}
       - MAIL_PASSWORD=${MAIL_PASSWORD:-}
-      - BREVO_API_KEY=${BREVO_API_KEY:-}
       - TURNSTILE_SECRET_KEY=${TURNSTILE_SECRET_KEY:-}
     ports:
       - "8080:8080"
@@ -85,5 +85,5 @@ services:
       - "5173:80"
 
 volumes:
-  postgres_data:
+  postgres_data_v2:
   pgadmin_data:

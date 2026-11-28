@@ -2,14 +2,27 @@
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Nội bộ — Vận chuyển Ngựa đua</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400..800&display=swap" />
+    <style>
+      /* Khung trang hiện ngay trong lúc tải mã; React thay thế khi chạy. Màu theo shared/styles/tokens.css. */
+      .boot { min-height: 100vh; background: #f8fafc; }
+      .boot-bar { display: flex; align-items: center; gap: 12px; height: 64px; padding: 0 16px; border-bottom: 1px solid #e2e8f0; background: #fff; color: #0f172a; font: 700 16px/1.2 Roboto, sans-serif; }
+      .boot-body { display: grid; gap: 16px; max-width: 1200px; margin: 24px auto; padding: 0 16px; }
+      .boot-block { height: 120px; border-radius: 12px; background: #e2e8f0; animation: boot 1.2s ease-in-out infinite alternate; }
+      .boot-block:first-child { height: 220px; }
+      @keyframes boot { to { opacity: 0.55; } }
+      @media (prefers-reduced-motion: reduce) { .boot-block { animation: none; } }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="boot" role="status" aria-label="Đang tải trang">
+        <div class="boot-bar"><img src="/logo.png" alt="" width="38" height="38" /><span>Vận chuyển Ngựa đua</span></div>
+        <div class="boot-body" aria-hidden="true"><div class="boot-block"></div><div class="boot-block"></div><div class="boot-block"></div></div>
+      </div>
+    </div>
     <script type="module" src="/src/apps/backoffice/main.tsx"></script>
   </body>
 </html>

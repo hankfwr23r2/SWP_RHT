@@ -1,260 +1,102 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.dto.document.HorseDocumentResponseDto;
-import com.example.racehorse_transport.dto.document.ReviewHorseDocumentRequestDto;
+import static com.example.racehorse_transport.policy.BookingSubmissionPolicy.businessDate;
+import static java.util.stream.Collectors.groupingBy;
+
+import com.example.racehorse_transport.dto.horse.HorseDocumentResponseDto;
+import com.example.racehorse_transport.dto.horse.HorseDocumentUploadRequestDto;
+import com.example.racehorse_transport.dto.regulation.DocumentTypeResponseDto;
+import com.example.racehorse_transport.entity.Document;
+import com.example.racehorse_transport.entity.DocumentType;
 import com.example.racehorse_transport.entity.Horse;
-import com.example.racehorse_transport.entity.HorseDocument;
+import com.example.racehorse_transport.entity.enums.DocumentSubject;
+import com.example.racehorse_transport.entity.enums.BookingStatus;
+import com.example.racehorse_transport.repository.BookingHorseRepository;
+import com.example.racehorse_transport.service.NotificationService;
+import java.util.Set;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
-import com.example.racehorse_transport.repository.HorseDocumentRepository;
+import com.example.racehorse_transport.policy.DocumentReviewPolicy;
+import com.example.racehorse_transport.repository.DocumentRepository;
+import com.example.racehorse_transport.repository.DocumentTypeRepository;
 import com.example.racehorse_transport.repository.HorseRepository;
+import com.example.racehorse_transport.service.DocumentService;
 import com.example.racehorse_transport.service.HorseDocumentService;
-import com.example.racehorse_transport.service.StorageService;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.AccessDeniedException;
+import java.time.Clock;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.time.Instant;
-import java.util.List;
-import java.util.stream.Collectors;
-
-@Slf4j
 @Service
+@RequiredArgsConstructor
 public class HorseDocumentServiceImpl implements HorseDocumentService {
+    private final HorseRepository horses;
+    private final DocumentTypeRepository types;
+    private final DocumentRepository documents;
+    private final DocumentService attachments;
+    private final Clock clock;
+    private final BookingHorseRepository bookingHorses;
+    private final NotificationService notifications;
 
-    private final HorseDocumentRepository horseDocumentRepository;
-    private final HorseRepository horseRepository;
-    private final StorageService storageService;
-
-    @Autowired
-    public HorseDocumentServiceImpl(HorseDocumentRepository horseDocumentRepository,
-                                    HorseRepository horseRepository,
-                                    StorageService storageService) {
-        this.horseDocumentRepository = horseDocumentRepository;
-        this.horseRepository = horseRepository;
-        this.storageService = storageService;
-    }
-
-    // =========================================================================
-    // CRUD CƠ BẢN
-    // =========================================================================
-
-    @Override
-    public List<HorseDocument> findAll() {
-        return horseDocumentRepository.findAll();
-    }
-
-    @Override
-    public HorseDocument save(HorseDocument entity) {
-        return horseDocumentRepository.save(entity);
-    }
-
-    @Override
-    public void deleteById(Integer id) {
-        horseDocumentRepository.deleteById(id);
-    }
-
-    // =========================================================================
-    // PHẦN VIỆC CỦA DEV 2: Hồ sơ (Flow 2)
-    // =========================================================================
-
-    /**
-     * Upload hồ sơ (tích hợp Cloud/Local) trả về DTO Response.
-     *
-     * Luồng xử lý:
-     * 1. Kiểm tra con ngựa tồn tại
-     * 2. Tải tệp lên hệ thống lưu trữ (thư mục: "horse-documents/{horseId}").
-     * 3. Lưu metadata vào bảng HORSE_DOCUMENT với status = PENDING
-     * 4. Trả về thông tin hồ sơ vừa tạo
-     */
-    @Override
-    @Transactional
-    public HorseDocumentResponseDto uploadHorseDocument(Integer horseId,
-                                                     String documentType,
-                                                     MultipartFile file) {
-        // 1. Kiểm tra con ngựa tồn tại
-        Horse horse = horseRepository.findById(horseId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Không tìm thấy ngựa với ID: " + horseId));
-
-        // 2. Kiểm tra file hợp lệ
-        if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("File hồ sơ không được để trống!");
-        }
-
-        // Chỉ chấp nhận ảnh (JPG, PNG) và tài liệu PDF
-        String contentType = file.getContentType();
-        if (contentType == null ||
-                (!contentType.startsWith("image/") && !contentType.equals("application/pdf"))) {
-            throw new IllegalArgumentException(
-                    "Định dạng file không hợp lệ! Chỉ chấp nhận ảnh (JPG/PNG) hoặc PDF.");
-        }
-
-        // Loại giấy tờ mặc định nếu không truyền
-        String docType = (documentType != null && !documentType.isBlank())
-                ? documentType.toUpperCase()
-                : "OTHER";
-
-        // 3. Tải lên và phân loại theo thư mục horse-documents/{horseId}.
-        String folder = "horse-documents/" + horseId;
-        String fileUrl = storageService.uploadFile(file, folder);
-
-        // 4. Tạo và lưu bản ghi HorseDocument
-        HorseDocument document = new HorseDocument();
-        document.setHorseID(horse);
-        document.setDocumentType(docType);
-        document.setFileUrl(fileUrl);
-        document.setStatus("PENDING");          // Chờ chuyên viên duyệt
-        document.setUploadDate(Instant.now());
-
-        HorseDocument saved = horseDocumentRepository.save(document);
-        log.info("Uploaded horse document: horseId={}, documentType={}, url={}, status=PENDING",
-                horseId, docType, fileUrl);
-
-        return mapToResponse(saved);
-    }
-
-    /**
-     * Chuyên viên duyệt/từ chối hồ sơ (nhận DTO request).
-     *
-     * Luồng xử lý:
-     * 1. Tìm hồ sơ theo documentId
-     * 2. Kiểm tra hồ sơ đang ở trạng thái PENDING (chỉ được duyệt hồ sơ chờ)
-     * 3. Cập nhật status = APPROVED hoặc REJECTED kèm ghi chú
-     * 4. Lưu và trả về kết quả
-     */
-    @Override
-    @Transactional
-    public HorseDocumentResponseDto reviewDocument(Integer documentId,
-                                                ReviewHorseDocumentRequestDto request) {
-        // 1. Tìm hồ sơ
-        HorseDocument document = horseDocumentRepository.findById(documentId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Không tìm thấy hồ sơ với ID: " + documentId));
-
-        // 2. Kiểm tra trạng thái - chỉ được duyệt hồ sơ đang PENDING
-        if (!"PENDING".equalsIgnoreCase(document.getStatus())) {
-            throw new IllegalStateException(
-                    "Hồ sơ này đã được xử lý trước đó! Trạng thái hiện tại: "
-                    + document.getStatus() + ". Chỉ có thể duyệt hồ sơ ở trạng thái PENDING.");
-        }
-
-        // 3. Cập nhật kết quả duyệt
-        Instant now = Instant.now();
-        String reviewer = (request.getReviewerName() != null && !request.getReviewerName().isBlank())
-                ? request.getReviewerName()
-                : "Chuyên viên";
-
-        if (request.isApproved()) {
-            document.setStatus("APPROVED");
-            log.info("Document ID={} APPROVED by {}", documentId, reviewer);
-        } else {
-            // Bắt buộc phải có lý do khi từ chối
-            if (request.getNote() == null || request.getNote().isBlank()) {
-                throw new IllegalArgumentException(
-                        "Vui lòng nhập lý do từ chối hồ sơ (trường 'note' không được để trống)!");
-            }
-            document.setStatus("REJECTED");
-            log.info("Document ID={} REJECTED by {}: {}", documentId, reviewer, request.getNote());
-        }
-
-        document.setReviewNote(request.getNote());
-        document.setReviewerName(reviewer);
-        document.setReviewedAt(now);
-
-        HorseDocument saved = horseDocumentRepository.save(document);
-        return mapToResponse(saved);
-    }
-
-    /**
-     * Overload duyệt/từ chối hồ sơ trả về Entity (tương thích ngược).
-     */
-    @Override
-    @Transactional
-    public HorseDocument reviewDocument(Integer documentId, boolean isApproved, String note) {
-        ReviewHorseDocumentRequestDto req = new ReviewHorseDocumentRequestDto();
-        req.setApproved(isApproved);
-        req.setNote(note);
-        HorseDocumentResponseDto response = reviewDocument(documentId, req);
-        return horseDocumentRepository.findById(response.getId()).orElse(null);
-    }
-
-    /**
-     * Lấy toàn bộ hồ sơ của một con ngựa (mọi trạng thái).
-     */
     @Override
     @Transactional(readOnly = true)
-    public List<HorseDocumentResponseDto> getDocumentsByHorse(Integer horseId) {
-        if (!horseRepository.existsById(horseId)) {
-            throw new ResourceNotFoundException("Không tìm thấy ngựa với ID: " + horseId);
-        }
-        return horseDocumentRepository.findByHorseID_Id(horseId)
-                .stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+    public List<DocumentTypeResponseDto> documentTypes() {
+        return DocumentTypeResponseDto.fromList(types.findByOwnerTypeOrderById(DocumentSubject.HORSE));
     }
 
-    /**
-     * Lấy hồ sơ của mọi con ngựa thuộc khách hàng (một truy vấn thay cho từng ngựa).
-     */
     @Override
     @Transactional(readOnly = true)
-    public List<HorseDocumentResponseDto> getCustomerDocuments(String customerUsername) {
-        return horseDocumentRepository.findByHorseID_CustomerID_User_UsernameIgnoreCase(customerUsername)
-                .stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-    }
-
-    // =========================================================================
-    // HELPER METHODS
-    // =========================================================================
-
-    private HorseDocumentResponseDto mapToResponse(HorseDocument doc) {
-        String horseName = null;
-        if (doc.getHorseID() != null) {
-            horseName = doc.getHorseID().getHorseName();
-        }
-
-        return HorseDocumentResponseDto.builder()
-                .id(doc.getId())
-                .horseId(doc.getHorseID() != null ? doc.getHorseID().getId() : null)
-                .horseName(horseName)
-                .documentType(doc.getDocumentType())
-                .fileUrl(doc.getFileUrl())
-                .status(doc.getStatus())
-                .uploadDate(doc.getUploadDate())
-                .reviewNote(doc.getReviewNote())
-                .reviewerName(doc.getReviewerName())
-                .reviewedAt(doc.getReviewedAt())
-                .build();
+    public List<HorseDocumentResponseDto> documents(String username, Long horseId) {
+        ownedHorse(username, horseId);
+        return documentsFor(List.of(horseId)).get(horseId);
     }
 
     @Override
-    public void assertCustomerOwnsHorse(Integer horseId, String customerUsername) {
-        Horse horse = horseRepository.findById(horseId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngựa với ID: " + horseId));
-        if (horse.getCustomerID() == null || horse.getCustomerID().getUser() == null
-                || !customerUsername.equalsIgnoreCase(horse.getCustomerID().getUser().getUsername())) {
-            throw new AccessDeniedException("Bạn không có quyền truy cập giấy tờ ngựa này.");
+    @Transactional
+    public HorseDocumentResponseDto upload(String username, Long horseId, HorseDocumentUploadRequestDto request) {
+        Horse horse = ownedHorse(username, horseId);
+        Long id = attachments.attachForReview(request.file(), request.documentTypeCode(), DocumentSubject.HORSE, horseId,
+                horse.getOwner().getUserId(), null, businessDate(clock.instant()));
+        Document document = documents.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy giấy tờ vừa tải."));
+        var reviewable = Set.of(BookingStatus.UNDER_REVIEW, BookingStatus.NEEDS_RESUBMISSION,
+                BookingStatus.QUOTING, BookingStatus.AWAITING_DEPOSIT, BookingStatus.CONFIRMED);
+        for (var booking : bookingHorses.findAssignedBookingsForHorse(horseId, reviewable)) {
+            notifications.notify(List.of(booking.getSpecialist().getUserId()), booking.getId(), "Khách đã nộp giấy tờ",
+                    horse.getName() + " · " + document.getDocumentType().getName(),
+                    "/specialist/verification/" + booking.getId());
         }
+        return HorseDocumentResponseDto.from(document.getDocumentType(), document, document.getStatus(), false);
     }
 
     @Override
-    public void deleteDocument(Integer documentId, String customerUsername) {
-        HorseDocument doc = horseDocumentRepository.findById(documentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy giấy tờ với ID: " + documentId));
-
-        if (customerUsername != null) {
-            if (doc.getHorseID() == null || doc.getHorseID().getCustomerID() == null
-                    || doc.getHorseID().getCustomerID().getUser() == null
-                    || !customerUsername.equalsIgnoreCase(doc.getHorseID().getCustomerID().getUser().getUsername())) {
-                throw new AccessDeniedException("Bạn không có quyền xóa giấy tờ này.");
-            }
+    @Transactional(readOnly = true)
+    public Map<Long, List<HorseDocumentResponseDto>> documentsFor(List<Long> horseIds) {
+        if (horseIds.isEmpty()) {
+            return Map.of();
         }
+        List<DocumentType> catalog = types.findByOwnerTypeOrderById(DocumentSubject.HORSE);
+        var byHorseAndType = documents.findForHorseProfiles(horseIds).stream().collect(
+                groupingBy(document -> document.getHorse().getId(), groupingBy(document -> document.getDocumentType().getId())));
+        LocalDate today = businessDate(clock.instant());
+        return horseIds.stream().distinct().collect(Collectors.toMap(Function.identity(), id -> {
+            var byType = byHorseAndType.getOrDefault(id, Map.of());
+            return catalog.stream().map(type -> profileDocument(type, byType.getOrDefault(type.getId(), List.of()), today)).toList();
+        }));
+    }
 
-        horseDocumentRepository.deleteById(documentId);
+    private static HorseDocumentResponseDto profileDocument(DocumentType type, List<Document> versions, LocalDate today) {
+        Document latest = versions.isEmpty() ? null : versions.getFirst();
+        boolean canUpload = versions.stream().noneMatch(document -> DocumentReviewPolicy.blocksReplacement(document, null, today));
+        return HorseDocumentResponseDto.from(type, latest, latest == null ? null : DocumentReviewPolicy.statusOn(latest, today), canUpload);
+    }
+
+    private Horse ownedHorse(String username, Long id) {
+        return horses.findByIdAndOwner_User_Username(id, username)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ ngựa."));
     }
 }

@@ -1,28 +1,26 @@
 package com.example.racehorse_transport.scheduler;
 
-import com.example.racehorse_transport.service.BookingService;
+import com.example.racehorse_transport.service.QuotationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-@Slf4j
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class QuotationExpiryScheduler {
+    private final QuotationService quotations;
 
-    private final BookingService bookingService;
-
-    // Quét thường xuyên để nhả phân công sau hạn cọc/khoảng chờ xác nhận.
-    @Scheduled(fixedDelayString = "${vnpay.quotation-expiry-scan-ms:30000}", initialDelay = 10000)
-    public void scheduleReleaseExpiredQuotations() {
-        try {
-            int released = bookingService.releaseExpiredQuotations();
-            if (released > 0) {
-                log.info("QuotationExpiryScheduler: Đã tự động giải phóng xe và kíp xe cho {} đơn hàng hết hạn.", released);
+    @Scheduled(fixedDelayString = "${vnpay.quotation-expiry-scan-ms:30000}",
+            initialDelayString = "${vnpay.quotation-expiry-scan-ms:30000}")
+    public void expireQuotations() {
+        for (Long id : quotations.expirationCandidates()) {
+            try {
+                quotations.expire(id);
+            } catch (RuntimeException ex) {
+                log.error("Không thể xử lý báo giá hết hạn {}", id, ex);
             }
-        } catch (Exception ex) {
-            log.error("QuotationExpiryScheduler gặp lỗi khi quét đơn hết hạn: {}", ex.getMessage());
         }
     }
 }
