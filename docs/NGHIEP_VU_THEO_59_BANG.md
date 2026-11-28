@@ -375,7 +375,7 @@ Giá cũ giữ trong `PRICE_HOLD_DAYS` ngày tính từ ngày chạy của chuy�
 **Xếp vị trí khoang** (`horse_leg.stall_position`):
 - Khách chọn **loại khoang**, không chọn vị trí. Hệ thống tự xếp ngay khi gán ngựa vào xe, điều phối xem sơ đồ và đổi chỗ khi cần. "Xếp lại tự động" tính lại cả xe.
 - Bắt buộc: quy tắc #39, #40. Đủ chỗ nhưng lẻ vị trí thì hệ thống dồn các con khác; dồn không được thì từ chối và nêu con vướng.
-- Ưu tiên khi tự xếp, không chặn: con xuống trước đứng gần cửa sau; ngựa đực và ngựa cái không cạnh nhau, đực về phía đầu xe; ngựa cùng đơn cạnh nhau. Không đạt thì hiện cảnh báo, điều phối quyết định.
+- Ưu tiên khi tự xếp, không chặn: con xuống trước đứng gần cửa sau; ngựa đực về phía đầu xe; ngựa cùng đơn cạnh nhau. Con bị chắn phía cửa lúc lên hoặc xuống thì hiện cảnh báo, điều phối quyết định. Không cảnh báo ngựa đực đứng cạnh ngựa cái (28/11/2026).
 - Kế hoạch đón và sơ đồ chốt **trước khi lượt xe bắt đầu**: mọi con, kể cả con đón ở điểm sau, đã có vị trí thì lượt xe mới được bắt đầu. Lượt xe bắt đầu thì khóa cả sơ đồ. Con không lên xe được thì để trống vị trí đó, không xếp lại. Chuyển ngựa sang xe khác là lượt xe mới, có sơ đồ mới.
 - Lưu sơ đồ gửi kèm sơ đồ đang nhìn (mọi `horse_leg` của lượt xe và vị trí hiện tại). Server khóa `vehicle_trip` rồi so với dữ liệu thật: khác vị trí, thêm hoặc bớt ngựa thì trả 409, điều phối xem bản mới. Sơ đồ mới phải đủ đúng các con đó.
 - Đổi xe hoặc loại ngựa trước khi lượt xe bắt đầu thì xếp lại cả xe. Chuồng ở hub chưa quản lý vị trí ở đợt này.

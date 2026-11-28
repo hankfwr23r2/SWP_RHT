@@ -73,10 +73,14 @@ function LoadedOrders({ groups, emptyTitle, emptyHint, orders, failed }: Props &
               {order.requestedPickupDate && <span>{t('myOrders.pickup', { date: showDate(order.requestedPickupDate) })}</span>}
               {order.createdAt && <span>{t('myOrders.created', { date: day(order.createdAt) })}</span>}
             </div> },
-            { key: 'status', header: t('listPanel.status'), render: order => <div>
-              <OrderStatusBadge status={order.status} />
-              <p className={s.next}>{t(`myOrders.next.${nextStepOf(order).key}.title`)}</p>
-            </div> },
+            { key: 'status', header: t('listPanel.status'), render: order => {
+              const next = nextStepOf(order)
+              const title = t(`myOrders.next.${next.key}.title`)
+              return <div>
+                <OrderStatusBadge status={order.status} />
+                <p className={s.next}>{next.action && next.anchor ? <Link to={`/orders/${order.id}#${next.anchor}`}>{title}</Link> : title}</p>
+              </div>
+            } },
           ]} />}
     </ListPanel>
   )
