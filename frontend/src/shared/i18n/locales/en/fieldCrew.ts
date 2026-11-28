@@ -42,7 +42,6 @@ export const fieldCrew = {
   stayHealth: {
     record: "Record health",
     reportedBy: "Reported by",
-    reportChannel: "Report channel (e.g. phone)",
     heartRateBpm: "Heart rate (bpm)",
     respirationRatePerMinute: "Respiratory rate (breaths/min)",
     symptoms: "Symptoms",

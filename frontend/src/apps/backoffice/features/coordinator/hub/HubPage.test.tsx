@@ -42,12 +42,11 @@ it('shows each required check with its deadline and updates the hub after record
   fireEvent.click(delivery.getByRole('button', { name: 'Ghi khám' }))
   const dialog = within(screen.getByRole('dialog'))
   fireEvent.change(dialog.getByLabelText(/Người báo/), { target: { value: 'Lan' } })
-  fireEvent.change(dialog.getByLabelText(/Kênh báo/), { target: { value: 'Tại hub' } })
   fireEvent.click(dialog.getByRole('button', { name: /lưu|ghi nhận/i }))
   fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: /lưu|ghi nhận/i }))
   expect(await delivery.findByText('Xong')).toBeTruthy()
   expect(delivery.queryByRole('button', { name: 'Ghi khám' })).toBeNull()
   expect(apiClient.post).toHaveBeenCalledWith('/health-logs', {
-    bookingHorseId: 52, horseStayId: 8, healthStatus: 'NORMAL', reportedBy: 'Lan', reportChannel: 'Tại hub',
+    bookingHorseId: 52, horseStayId: 8, healthStatus: 'NORMAL', reportedBy: 'Lan',
   }, expect.anything())
 })

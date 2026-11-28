@@ -367,7 +367,7 @@ test('hộ tống ghi ăn uống ở trạm, tài xế gửi lý do khi rời s�
     if (path === '/booking-horses/50/health-logs') return ok(route, logs)
     if (path === '/health-logs') {
       sent.log = request.postDataJSON()
-      logs.push({ id: 1, bookingHorseId: 50, tripStopId: 3, waterIntake: 'NORMAL', feedIntake: 'REDUCED' })
+      logs.push({ id: 1, bookingHorseId: 50, tripStopId: 3, healthStatus: 'WATCH' })
       return route.fulfill({ status: 201, json: { status: 'success', message: '', data: logs[0] } })
     }
     if (path === '/trip-stops/3/depart') {
@@ -382,14 +382,14 @@ test('hộ tống ghi ăn uống ở trạm, tài xế gửi lý do khi rời s�
   const rest = page.getByRole('list', { name: 'Điểm dừng' }).getByRole('listitem').filter({ hasText: 'Trạm Phan Thiết' }).first()
   const health = rest.getByRole('region', { name: 'Ghi sức khỏe tại điểm này' })
   await expect(health).toContainText('Chưa ghi', { timeout: 15_000 })
-  await expect(health.getByRole('button', { name: 'Lưu' })).toBeDisabled()
-  await health.getByRole('combobox', { name: 'Uống nước' }).click()
-  await page.getByRole('option', { name: 'Bình thường' }).click()
-  await health.getByRole('combobox', { name: 'Ăn' }).click()
-  await page.getByRole('option', { name: 'Ít' }).click()
+  await expect(health.getByRole('combobox', { name: 'Uống nước' })).toHaveCount(0)
+  await expect(health.getByRole('combobox', { name: 'Ăn' })).toHaveCount(0)
+  await expect(health.getByLabel('Nhiệt độ (°C)')).toHaveCount(0)
+  await health.getByRole('combobox', { name: 'Sức khỏe' }).click()
+  await page.getByRole('option', { name: 'Theo dõi' }).click()
   await health.getByRole('button', { name: 'Lưu' }).click()
   await expect(health).toContainText('Đã ghi')
-  expect(sent.log).toEqual({ bookingHorseId: 50, tripStopId: 3, healthStatus: 'NORMAL', waterIntake: 'NORMAL', feedIntake: 'REDUCED' })
+  expect(sent.log).toEqual({ bookingHorseId: 50, tripStopId: 3, healthStatus: 'WATCH' })
 
   await expect(rest.getByRole('button', { name: 'Rời đi' })).toHaveCount(0)
   await driverPage.goto('/backoffice/my-trips/9')

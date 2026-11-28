@@ -1,13 +1,11 @@
 package com.example.racehorse_transport.policy;
 
 import com.example.racehorse_transport.entity.enums.HealthStatus;
-import com.example.racehorse_transport.entity.enums.IntakeLevel;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.entity.enums.HorseStayType;
 import com.example.racehorse_transport.entity.enums.LocationType;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Collection;
 
 // Quy tắc ghi sức khỏe và rời trạm nghỉ (B3), hàm thuần
 public final class HealthLogPolicy {
@@ -26,35 +24,15 @@ public final class HealthLogPolicy {
                 || (stayType == HorseStayType.OVERNIGHT && hasOperator);
     }
 
-    public static String reportedNote(String reporter, String channel, String note) {
+    public static String reportedNote(String reporter) {
         if (reporter == null || reporter.isBlank()) {
             throw new DispatchRuleException("reportedBy", "Nhập tên người báo.");
         }
-        if (channel == null || channel.isBlank()) {
-            throw new DispatchRuleException("reportChannel", "Nhập kênh tiếp nhận báo cáo.");
-        }
-        String result = "Người báo: " + reporter.strip() + "\nKênh báo: " + channel.strip();
-        if (note != null && !note.isBlank()) result += "\n" + note.strip();
-        if (result.length() > 2000) {
-            throw new DispatchRuleException("note", "Ghi chú gồm nguồn báo tối đa 2000 ký tự.");
-        }
-        return result;
-    }
-
-    // Bỏ uống 2 lần dừng liền thì ít nhất WATCH (docs/NGHIEP_VU_THEO_59_BANG.md mục 7.2)
-    public static boolean refusedWaterTwice(IntakeLevel now, IntakeLevel previous) {
-        return now == IntakeLevel.REFUSED && previous == IntakeLevel.REFUSED;
+        return "Người báo: " + reporter.strip();
     }
 
     public static HealthStatus atLeastWatch(HealthStatus status) {
         return status.ordinal() < HealthStatus.WATCH.ordinal() ? HealthStatus.WATCH : status;
-    }
-
-    // Quy tắc #34: rời trạm khi mọi con trên xe đã được ghi uống và ăn ở trạm này
-    public static void requireAllLogged(Collection<String> horsesNotLogged) {
-        if (!horsesNotLogged.isEmpty()) {
-            throw new DispatchRuleException("healthLogs", "Chưa ghi ăn uống cho: " + String.join(", ", horsesNotLogged) + ".", true);
-        }
     }
 
     public static boolean isOvernightRest(Instant plannedArrivalAt, Instant plannedDepartureAt, int overnightRestHours) {

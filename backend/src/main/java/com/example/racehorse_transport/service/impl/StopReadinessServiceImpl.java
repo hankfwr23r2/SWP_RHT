@@ -1,6 +1,5 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.entity.HorseHealthLog;
 import com.example.racehorse_transport.entity.CrewAssignment;
 import com.example.racehorse_transport.entity.VehicleTrip;
 import com.example.racehorse_transport.entity.enums.CrewRole;
@@ -17,7 +16,6 @@ import com.example.racehorse_transport.policy.HealthLogPolicy;
 import com.example.racehorse_transport.policy.TripExecutionPolicy;
 import com.example.racehorse_transport.repository.HandoverHorseRepository;
 import com.example.racehorse_transport.repository.HandoverRepository;
-import com.example.racehorse_transport.repository.HorseHealthLogRepository;
 import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.service.AuditService;
 import com.example.racehorse_transport.service.PaymentReadinessService;
@@ -32,7 +30,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -47,7 +44,6 @@ public class StopReadinessServiceImpl implements StopReadinessService {
     private final HandoverRepository handovers;
     private final HandoverHorseRepository scans;
     private final HorseLegRepository legs;
-    private final HorseHealthLogRepository healthLogs;
     private final PaymentReadinessService payments;
     private final SystemConfigService configs;
     private final AuditService audit;
@@ -60,8 +56,7 @@ public class StopReadinessServiceImpl implements StopReadinessService {
     public boolean hasPendingHorseWork(TripStop stop) {
         long pending = handovers.countByTripStop_IdAndStatus(stop.getId(), HandoverStatus.PENDING);
         return pending > emptyHubOuts(stop).size() || hasUnfinishedBoarding(stop) || hasUnfinishedAlighting(stop)
-                || !horsesAtStable(stop).isEmpty()
-                || (REST_STOPS.contains(stop.getStopType()) && !horsesMissingRestLogs(stop).isEmpty());
+                || !horsesAtStable(stop).isEmpty();
     }
 
     @Override
@@ -178,22 +173,8 @@ public class StopReadinessServiceImpl implements StopReadinessService {
         });
     }
 
-    private List<String> horsesMissingRestLogs(TripStop stop) {
-        int sequence = stop.getSequenceNumber();
-        List<HorseLeg> onBoard = legs.findActiveOnTrip(stop.getVehicleTrip().getId(), Set.of(HorseLegStatus.CANCELLED, HorseLegStatus.FAILED)).stream()
-                .filter(l -> l.getStatus() == HorseLegStatus.IN_PROGRESS
-                        && l.getBoardTripStop().getSequenceNumber() < sequence && sequence < l.getAlightTripStop().getSequenceNumber())
-                .toList();
-        Set<Long> logged = healthLogs.findByTripStop_IdOrderByRecordedAt(stop.getId()).stream()
-                .filter(log -> log.getWaterIntake() != null && log.getFeedIntake() != null)
-                .map(HorseHealthLog::getBookingHorse).map(line -> line.getId()).collect(Collectors.toSet());
-        return onBoard.stream().filter(l -> !logged.contains(l.getBookingHorse().getId()))
-                .map(l -> l.getBookingHorse().getHorse().getName()).toList();
-    }
-
-    // Quy tắc #34: mọi con đang trên xe đã ghi uống và ăn ở trạm này, và đã nghỉ đủ; rời sớm thì ghi lý do vào nhật ký
+    // Quy tắc #34: đã nghỉ đủ; rời sớm thì ghi lý do vào nhật ký
     private boolean requireRestStopDone(TripStop stop, String earlyReason, Long actorUserId) {
-        HealthLogPolicy.requireAllLogged(horsesMissingRestLogs(stop));
         Instant now = clock.instant();
         int overnightRestHours = configs.getInt("OVERNIGHT_REST_HOURS");
         boolean overnight = HealthLogPolicy.isOvernightRest(stop.getPlannedArrivalAt(), stop.getPlannedDepartureAt(), overnightRestHours);
