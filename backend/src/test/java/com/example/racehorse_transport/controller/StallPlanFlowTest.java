@@ -145,6 +145,8 @@ class StallPlanFlowTest {
         // Dữ liệu cũ cho phép hoàn tất khám trước khi khởi hành trên ca lưu trú.
         HubExitCheckFixtures.collectionDone(jdbc, stay, coordinatorId);
         jdbc.update("UPDATE health_check_task SET check_type = 'BEFORE_DEPARTURE' WHERE horse_stay_id = ?", stay);
+        // Lần ghi sức khỏe đó đã quá 12 giờ trước lúc rời hub nên không còn tính là khám trước khi chạy
+        jdbc.update("UPDATE horse_health_log SET recorded_at = now() - interval '13 hours' WHERE horse_stay_id = ?", stay);
         start().andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message", startsWith("Chưa khám trước khi chạy: ")));
 
