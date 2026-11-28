@@ -39,9 +39,9 @@ export function HandoverPapersPanel({ handover, receiving, onTrip }: { handover:
       setBusy(false)
     }
   }
-  const mark = async (documentId: number, originalMissing = false) => {
+  const mark = async (documentId: number) => {
     try {
-      const next = await tripExecutionApi.markPaper(handoverId, documentId, originalMissing)
+      const next = await tripExecutionApi.markPaper(handoverId, documentId)
       updateData(() => next)
     } catch (e) {
       toast(e instanceof Error ? e.message : String(e), 'error')
@@ -76,9 +76,6 @@ export function HandoverPapersPanel({ handover, receiving, onTrip }: { handover:
                   {t(receiving ? 'myTrips.run.papers.receive' : 'myTrips.run.papers.return')}
                 </Button>
               )}
-              {receiving && paper.direction !== 'NOT_RECEIVED' && <Button size="lg" fullWidth onClick={() => void mark(paper.documentId ?? 0, true)}>
-                {t('handoverEvidence.originalMissing')}
-              </Button>}
             </li>
           ))}
         </ul>
