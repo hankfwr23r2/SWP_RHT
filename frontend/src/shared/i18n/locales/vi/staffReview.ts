@@ -138,7 +138,7 @@ export const staffReview = {
     "optional": "Không bắt buộc",
     "satisfied": "Đã đáp ứng",
     "unsatisfied": "Chưa đáp ứng",
-    "upload": "Nộp giấy thay",
+    "upload": "Nộp giấy",
     "file": "Tệp giấy tờ",
     "expiryDate": "Ngày hết hạn của giấy",
     "expiry": "Hết hạn ngày {{date}}",

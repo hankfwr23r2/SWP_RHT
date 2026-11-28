@@ -138,7 +138,7 @@ export const staffReview = {
     "optional": "Optional",
     "satisfied": "Requirement met",
     "unsatisfied": "Requirement pending",
-    "upload": "Upload on behalf",
+    "upload": "Upload document",
     "file": "Document file",
     "expiryDate": "Document expiry date",
     "expiry": "Expires on {{date}}",

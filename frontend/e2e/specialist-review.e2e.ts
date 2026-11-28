@@ -91,7 +91,7 @@ async function open(page: Page, path: string, initialStatus: Status = 'UNDER_REV
         documents[1].reviewNote = body.reason
       }
       if (path === `${documentPath}/upload-for-partner`) {
-        documents.push({ id: 3, bookingHorseId: 22, requirementId: 5, fileName: 'isolation.pdf', status: 'UPLOADED', expiryDate: '2099-02-01' })
+        documents.push({ id: 3, bookingHorseId: 22, requirementId: 5, fileName: 'isolation.pdf', status: 'APPROVED', expiryDate: '2099-02-01' })
       }
       const insurance = policies.find(horse => path.startsWith(`${insurancePath}/${horse.insurance?.id}/`))?.insurance
       if (insurance) {
@@ -194,11 +194,11 @@ test('duyệt giấy từng ngựa, từ chối kèm lý do và nộp giấy tha
 
   await page.getByRole('link', { name: /Giấy tờ chuyến đi/ }).click()
   await page.getByRole('link', { name: 'BK-TEST' }).click()
-  await page.getByRole('button', { name: 'Nộp giấy thay', exact: true }).click()
+  await page.getByRole('button', { name: 'Nộp giấy', exact: true }).click()
   const upload = page.getByRole('dialog')
   await upload.locator('input[type=file]').setInputFiles({ name: 'isolation.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4') })
   await upload.getByLabel('Ngày hết hạn của giấy').fill('01/02/2099')
-  await upload.getByRole('button', { name: 'Nộp giấy thay' }).click()
+  await upload.getByRole('button', { name: 'Nộp giấy' }).click()
   await expect(upload).toHaveCount(0)
   const submission = calls.find(call => call.path.endsWith('/upload-for-partner'))
   expect(submission?.body).toEqual(expect.stringContaining('name="bookingHorseId"'))

@@ -90,12 +90,12 @@ it('hiện giấy riêng cửa khẩu và cho nộp thay đúng ngựa', async (
   expect(screen.getByText('Giấy kiểm dịch · Gió Nam')).toBeTruthy()
   expect(screen.getByText('Sổ ATA')).toBeTruthy()
   expect(screen.queryByText('Hộ chiếu · Sao Mai')).toBeNull()
-  fireEvent.click(screen.getByRole('button', { name: 'Nộp giấy thay' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Nộp giấy' }))
   const upload = screen.getByRole('dialog')
   fireEvent.change(upload.querySelector('input[type="file"]')!, {
     target: { files: [new File(['%PDF-1.7'], 'border.pdf', { type: 'application/pdf' })] },
   })
-  fireEvent.click(within(upload).getByRole('button', { name: 'Nộp giấy thay' }))
+  fireEvent.click(within(upload).getByRole('button', { name: 'Nộp giấy' }))
   await waitFor(() => expect(post.mock.calls[0]?.[0]).toBe('/bookings/8/documents/upload-for-partner'))
   const form = post.mock.calls[0]?.[1] as FormData
   expect(form.get('bookingHorseId')).toBe('22')
