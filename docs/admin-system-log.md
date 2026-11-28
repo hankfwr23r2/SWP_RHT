@@ -84,4 +84,4 @@ URL lưu bộ lọc, phân trang và ID chi tiết. Thay bộ lọc đưa về t
 - Frontend: biên ngày UTC+7, dữ liệu trước/sau và ánh xạ lịch sử tài khoản.
 - Playwright `e2e/system-logs.e2e.ts`: tra cứu, phân trang, chi tiết, Escape, retry và chặn vai trò. Test giao diện dùng API giả lập; kiểm tra database thực hiện ở integration test backend.
 
-Chạy các Quality Gate theo `frontend/docs/AGENT_GUIDE.md`. Một số test backend hiện có dùng Testcontainers và yêu cầu Docker, ngoài PostgreSQL dùng cho `contextLoads` và integration test audit.
+Chạy các Quality Gate theo `AGENTS.md` (mục 10). Một số test backend hiện có dùng Testcontainers và yêu cầu Docker, ngoài PostgreSQL dùng cho `contextLoads` và integration test audit.

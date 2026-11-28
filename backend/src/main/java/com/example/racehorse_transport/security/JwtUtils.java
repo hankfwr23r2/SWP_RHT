@@ -12,6 +12,7 @@ import org.springframework.http.ResponseCookie;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -79,14 +80,16 @@ public class JwtUtils {
         return null;
     }
 
-    // 1. Sinh Access Token từ username và role (thời hạn 15 phút)
-    public String generateToken(String username, String role) {
+    // 1. Sinh Access Token (thời hạn 15 phút). roles lấy từ bảng user_role, phần tử đầu là vai trò chính;
+    //    claim "role" giữ vai trò chính để tương thích giao diện cũ, claim "roles" chứa đủ danh sách.
+    public String generateToken(String username, List<String> roles) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + accessTokenExpirationMs);
 
         return Jwts.builder()
                 .setSubject(username)
-                .claim("role", role)
+                .claim("role", roles.isEmpty() ? null : roles.get(0))
+                .claim("roles", roles)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
@@ -120,9 +123,13 @@ public class JwtUtils {
         return extractClaims(token).getSubject();
     }
 
-    // Lấy role từ JWT token
-    public String getRoleFromToken(String token) {
-        return extractClaims(token).get("role", String.class);
+    // Lấy danh sách vai trò từ JWT token
+    public List<String> getRolesFromToken(String token) {
+        Object roles = extractClaims(token).get("roles");
+        if (roles instanceof List<?> list) {
+            return list.stream().map(String::valueOf).toList();
+        }
+        return List.of();
     }
 
     // Trích xuất toàn bộ Claims từ token

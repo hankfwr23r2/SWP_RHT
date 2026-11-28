@@ -1,57 +1,62 @@
 package com.example.racehorse_transport.entity;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.Nationalized;
+
+import org.hibernate.annotations.Generated;
 
 import java.time.Instant;
 
-/**
- * Bảng cấu hình tham số nghiệp vụ hệ thống (System Config / Business Rules).
- * Mỗi bản ghi là một cặp key-value cho phép Admin điều chỉnh linh hoạt mà không cần deploy lại code.
- * Ví dụ: MAX_CONTINUOUS_HOURS=4, DEPOSIT_RATE=0.3, QUOTE_VALID_HOURS=24, DEMURRAGE_PER_HOUR=400000.
- */
+// Tham số kỹ thuật (không phải giá tiền), ví dụ thời gian chờ giao, hạn OTP. Giá cước nằm ở price_list/price_item.
 @Getter
 @Setter
+@NoArgsConstructor
 @Entity
-@Table(name = "SYSTEM_CONFIG")
+@Table(name = "system_config")
 public class SystemConfig {
 
     @Id
-    @Column(name = "config_key", nullable = false, length = 100)
+    @Column(name = "config_key", length = 100, nullable = false)
     private String configKey;
 
-    @NotBlank
-    @Size(max = 255)
-    @Nationalized
-    @Column(name = "config_name", nullable = false, length = 255)
-    private String configName;
+    @Generated
+    @Column(name = "audit_target_id", nullable = false, insertable = false, updatable = false)
+    private Long auditTargetId;
 
-    @NotBlank
-    @Column(name = "config_value", nullable = false, length = 500)
+    @Column(name = "config_value", length = 500, nullable = false)
     private String configValue;
 
-    @Size(max = 50)
-    @Column(name = "unit", length = 50)
+    @Column(name = "min_value", insertable = false, updatable = false)
+    private Integer minValue;
+
+    @Column(name = "max_value", insertable = false, updatable = false)
+    private Integer maxValue;
+
+    // MINUTE, HOUR, DAY, COUNT
+    @Column(name = "unit", length = 30)
     private String unit;
 
-    @NotBlank
-    @Size(max = 50)
-    @Column(name = "config_group", nullable = false, length = 50)
+    @Column(name = "config_group", length = 50, nullable = false)
     private String configGroup;
 
-    @Column(name = "description", columnDefinition = "TEXT")
-    @Nationalized
+    @Column(name = "description", columnDefinition = "text")
     private String description;
 
-    // Nhân viên (ADMIN) sửa gần nhất; null = giá trị mặc định do hệ thống tạo
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "updated_by_staffid", foreignKey = @ForeignKey(name = "fk_system_config_updated_by_staff"))
+    @JoinColumn(name = "updated_by")
     private Staff updatedBy;
 
-    @Column(name = "updated_at")
+    // DB đặt mặc định lúc thêm dòng. Service cập nhật khi thay tham số.
+    @Generated
+    @Column(name = "updated_at", nullable = false, insertable = false)
     private Instant updatedAt;
 }
