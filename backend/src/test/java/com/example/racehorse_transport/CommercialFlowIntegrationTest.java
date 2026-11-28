@@ -53,6 +53,7 @@ class CommercialFlowIntegrationTest {
     @Autowired private JwtUtils jwt;
     @MockitoBean private CloudinaryClient cloudinary;
     @MockitoBean private PricingRouteService maps;
+    @MockitoBean private com.example.racehorse_transport.client.MailClient mail;
 
     private String customer;
     private String manager;
@@ -101,11 +102,20 @@ class CommercialFlowIntegrationTest {
         long quotation = id(act(manager, "/bookings/" + booking + "/quotations", "{}"));
         act(manager, "/quotations/" + quotation + "/send", "{}").andExpect(status().isOk());
         assertThat(bookingStatus(booking)).isEqualTo("AWAITING_DEPOSIT");
+        // Mail báo giá gửi sau khi lưu, số tiền lấy từ báo giá vừa gửi
+        String code = jdbc.queryForObject("SELECT code FROM booking WHERE id = ?", String.class, booking);
+        java.math.BigDecimal total = jdbc.queryForObject("SELECT total_amount FROM quotation WHERE id = ?", java.math.BigDecimal.class, quotation);
+        org.mockito.Mockito.verify(mail).sendHtml(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.eq("Báo giá đơn " + code),
+                org.mockito.ArgumentMatchers.contains(com.example.racehorse_transport.util.MailHtml.money(total, false)),
+                org.mockito.ArgumentMatchers.contains("/orders/" + booking));
         act(customer, "/quotations/" + quotation + "/accept", "{}").andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("ACCEPTED"));
 
         payDeposit(booking);
         assertThat(bookingStatus(booking)).isEqualTo("CONFIRMED");
+        org.mockito.Mockito.verify(mail).sendHtml(org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.eq("Đã nhận tiền cọc · đơn " + code),
+                org.mockito.ArgumentMatchers.contains("Mã giao dịch VNPAY"), org.mockito.ArgumentMatchers.anyString());
         assertThat(jdbc.queryForObject("SELECT waybill_number FROM booking WHERE id = ?", String.class, booking)).isNotBlank();
         assertThat(jdbc.queryForList("SELECT to_status FROM booking_status_history WHERE booking_id = ? ORDER BY id", String.class, booking))
                 .containsExactly("PENDING_INTAKE", "UNDER_REVIEW", "QUOTING", "AWAITING_DEPOSIT", "CONFIRMED");

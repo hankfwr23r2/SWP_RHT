@@ -272,3 +272,17 @@ Thay 6.3, 6.4 và bổ sung theo [NGU_CANH_THIET_KE_LAI.md](NGU_CANH_THIET_KE_LA
 | Đơn thiếu giấy do công ty hoặc bên nhận chuẩn bị trong cửa sổ nhắc | Chuyên viên phụ trách | `/specialist/legal/{id}` | Tối đa một lần mỗi ngày theo lịch nhắc hiện có |
 
 Chi tiết ba khu vực hiển thị người phụ trách và lý do thẩm định gần nhất. API hiện tại chưa trả danh sách lịch sử trạng thái cho chuyên viên.
+
+## Mail hóa đơn cho khách
+
+Theo `BillMailServiceImpl` của nhánh `main`, số liệu lấy từ `quotation`, `quotation_line`, `payment`, `payment_transaction`. Gắn ở `BookingStatusServiceImpl` qua `CustomerNoticeService.statusChanged`. Mail dựng và gửi sau khi transaction lưu xong; lỗi gửi chỉ ghi log. Ngôn ngữ theo `app_user.preferred_language`. Chi phí nội bộ của công ty không in ra mail.
+
+| Đơn chuyển sang | Mail | Nội dung |
+|---|---|---|
+| Chờ đặt cọc | Báo giá | Dòng báo giá (đánh dấu thu hộ), tổng, cọc, số dư, hạn cọc |
+| Đã xác nhận (từ Chờ đặt cọc) | Biên nhận cọc | Số tiền, mã giao dịch VNPAY, giờ trả, vận đơn, số dư còn lại |
+| Cần chọn lại chuyến | Đổi lịch | Lý do, đường dẫn chọn chuyến |
+| Đã hủy | Hủy đơn | Đã trả, được hoàn, công ty giữ lại, hạn hoàn |
+| Hoàn tất | Bảng quyết toán | Báo giá đã chấp nhận, phụ thu, từng lần đã trả và đã hoàn, còn nợ |
+
+Chưa có: biên nhận số dư, khoản thu thêm, xác nhận đã chuyển hoàn (cần gắn ở `PaymentResultServiceImpl`, `RefundServiceImpl`, hai service đã đủ 10 dependency).

@@ -40,6 +40,12 @@ public class CustomerNoticeServiceImpl implements CustomerNoticeService {
     private final SystemConfigService configs;
     private final com.example.racehorse_transport.repository.PaymentRepository payments;
     private final java.time.Clock clock;
+    private final com.example.racehorse_transport.service.BillMailService bills;
+
+    @Override
+    public void statusChanged(Booking booking, com.example.racehorse_transport.entity.enums.BookingStatus from, String reason) {
+        bills.statusChanged(booking.getId(), from, booking.getStatus(), reason);
+    }
 
     @Override
     public void bookingSubmitted(Booking booking) {
