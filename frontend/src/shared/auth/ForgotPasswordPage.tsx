@@ -141,7 +141,7 @@ function ForgotPasswordFlow({ staffMode }: { staffMode: boolean }) {
           <button className="btn btn-primary btn-full btn-lg" type="submit" disabled={loading}>
             {loading ? t('authPages.updatingPassword') : t('authPages.confirmNewPasswordBtn')}
           </button>
-          <button className="btn btn-ghost btn-full btn-lg" type="button" disabled={loading} onClick={() => void sendOtp()} style={{ marginTop: 10 }}>
+          <button className={`btn btn-ghost btn-full btn-lg ${s.resend}`} type="button" disabled={loading} onClick={() => void sendOtp()}>
             {t('authPages.resendOtp')}
           </button>
         </form>

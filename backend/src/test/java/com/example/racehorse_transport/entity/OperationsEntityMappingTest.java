@@ -18,6 +18,7 @@ import com.example.racehorse_transport.entity.enums.HorseLegStatus;
 import com.example.racehorse_transport.entity.enums.HorseLegType;
 import com.example.racehorse_transport.entity.enums.HorseStayType;
 import com.example.racehorse_transport.entity.enums.IncidentCauseType;
+import com.example.racehorse_transport.entity.enums.IncidentSeverity;
 import com.example.racehorse_transport.entity.enums.IncidentPlanStatus;
 import com.example.racehorse_transport.entity.enums.IncidentResolutionType;
 import com.example.racehorse_transport.entity.enums.IncidentStatus;
@@ -201,7 +202,6 @@ class OperationsEntityMappingTest {
         Staff manager = staff.findByStaffCode("MGR-001").orElseThrow();
         Location hcm = locations.findByCode("HUB-HCM").orElseThrow();
         Location danang = locations.findByCode("HUB-DN").orElseThrow();
-        Party agent = parties.findAll().stream().filter(p -> p.getDisplayName().startsWith("Đại lý")).findFirst().orElseThrow();
         List<RouteStop> routePlan = routeStops.findById_RouteIdOrderById_SequenceNumber(booking.getDeparture().getRoute().getId());
 
         // Lượt xe trục chính và điểm dừng: điểm chép từ tuyến, và điểm là địa chỉ của khách
@@ -242,12 +242,12 @@ class OperationsEntityMappingTest {
         HorseLeg failedDelivery = leg(bookingHorse, 2, HorseLegType.DELIVERY, HorseLegStatus.FAILED);
         failedDelivery.setFromLocation(danang);
         failedDelivery.setToBookingAddress(delivery);
-        failedDelivery.setAgentParty(agent);
+        failedDelivery.setVehicleTrip(trip);
         failedDelivery = horseLegs.save(failedDelivery);
         HorseLeg redelivery = leg(bookingHorse, 3, HorseLegType.DELIVERY, HorseLegStatus.PLANNED);
         redelivery.setFromLocation(danang);
         redelivery.setToBookingAddress(delivery);
-        redelivery.setAgentParty(agent);
+        redelivery.setVehicleTrip(trip);
         redelivery.setReplacedHorseLeg(failedDelivery);
         horseLegs.save(redelivery);
 
@@ -309,6 +309,7 @@ class OperationsEntityMappingTest {
         Incident incident = new Incident();
         incident.setVehicleTrip(trip);
         incident.setIncidentType(IncidentType.DELAY);
+        incident.setSeverity(IncidentSeverity.LOW);
         incident.setCauseType(IncidentCauseType.COMPANY_FAULT);
         incident.setTitle("Kẹt xe trên quốc lộ");
         incident.setDescription("Chậm 2 giờ");
@@ -389,7 +390,7 @@ class OperationsEntityMappingTest {
                 .singleElement().satisfies(c -> assertThat(c.getAssignedAt()).isNotNull());
         assertThat(horseLegs.findByBookingHorse_IdOrderBySequenceNumber(bookingHorse.getId())).satisfiesExactly(
                 first -> assertThat(first.getBoardTripStop().getSequenceNumber()).isEqualTo(1),
-                second -> assertThat(second.getAgentParty().getId()).isEqualTo(agent.getId()),
+                second -> assertThat(second.getVehicleTrip().getId()).isEqualTo(tripId),
                 third -> assertThat(third.getReplacedHorseLeg().getStatus()).isEqualTo(HorseLegStatus.FAILED));
         assertThat(horseStays.findById(quarantine.getId()).orElseThrow().getQuarantineResult()).isEqualTo(QuarantineResult.PASSED);
         assertThat(healthLogs.findAll()).filteredOn(h -> h.getTripStop() != null && h.getTripStop().getVehicleTrip().getId().equals(tripId))
@@ -405,6 +406,7 @@ class OperationsEntityMappingTest {
                 .getDirection()).isEqualTo(HandoverDocumentDirection.RECEIVED);
         assertThat(documents.findById(record.getId()).orElseThrow().getUploadedAt()).isNotNull();
         assertThat(incidents.findById(incidentId).orElseThrow().getReportedAt()).isNotNull();
+        assertThat(incidents.findById(incidentId).orElseThrow().getSeverity()).isEqualTo(IncidentSeverity.LOW);
         assertThat(incidentPlans.findAll()).filteredOn(p -> p.getIncident().getId().equals(incidentId))
                 .singleElement().satisfies(p -> assertThat(p.getProposedAt()).isNotNull());
         assertThat(costItems.findAll()).filteredOn(c -> c.getIncident() != null && c.getIncident().getId().equals(incidentId))

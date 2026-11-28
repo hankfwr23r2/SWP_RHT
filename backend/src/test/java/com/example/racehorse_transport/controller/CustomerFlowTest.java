@@ -21,7 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class CustomerFlowTest {
 
     private static final String ADDRESS = """
-            {"label":"Home","addressLine":"Test address","provinceCode":"VN-79","countryCode":"VN","defaultAddress":true}
+            {"label":"Home","ward":"Phường Bến Nghé","addressLine":"Test address","provinceCode":"VN-79","countryCode":"VN","defaultAddress":true}
             """;
 
     @Autowired private MockMvc mvc;
@@ -52,6 +52,25 @@ class CustomerFlowTest {
     }
 
     @Test
+    void wardIsRequiredButStreetIsOptional() throws Exception {
+        String token = customerToken();
+        mvc.perform(post("/customers/me/addresses").header(HttpHeaders.AUTHORIZATION, token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"label":"Trại","addressLine":"12 Đường Đua","provinceCode":"VN-79","countryCode":"VN"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.data.ward").exists());
+        mvc.perform(post("/customers/me/addresses").header(HttpHeaders.AUTHORIZATION, token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"label":"Trại","ward":"Phường Hiệp An","provinceCode":"VN-79","countryCode":"VN"}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.addressLine").doesNotExist());
+    }
+
+    @Test
     void forbidsStaffAndHidesAddressesBelongingToAnotherCustomer() throws Exception {
         long id = createAddress(customerToken());
         String other = customerToken();
@@ -62,7 +81,7 @@ class CustomerFlowTest {
         String username = data.unique("profile-staff-a2");
         data.staff(username, "ADMIN");
         mvc.perform(get("/customers/me").header(HttpHeaders.AUTHORIZATION,
-                        "Bearer " + jwt.generateToken(username, List.of("ADMIN"))))
+                        "Bearer " + jwt.generateToken(username, List.of("ADMIN"), 0)))
                 .andExpect(status().isForbidden());
     }
 
@@ -76,6 +95,6 @@ class CustomerFlowTest {
     private String customerToken() {
         String username = data.unique("customer-a2");
         data.customer(username);
-        return "Bearer " + jwt.generateToken(username, List.of("CUSTOMER"));
+        return "Bearer " + jwt.generateToken(username, List.of("CUSTOMER"), 0);
     }
 }

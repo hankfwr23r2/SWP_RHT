@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.entity;
 
+import com.example.racehorse_transport.entity.enums.VehicleEndCondition;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import com.example.racehorse_transport.entity.enums.VehicleTripType;
 
@@ -28,6 +29,19 @@ import java.time.Instant;
 @Entity
 @Table(name = "vehicle_trip")
 public class VehicleTrip {
+
+    @Column(name = "delivery_window_warned_at")
+    private Instant deliveryWindowWarnedAt;
+
+    @Column(name = "delivery_ride_warned_at")
+    private Instant deliveryRideWarnedAt;
+
+    @Column(name = "return_late_notified_at")
+    private Instant returnLateNotifiedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "coordinator_id")
+    private Staff coordinator;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -70,6 +84,13 @@ public class VehicleTrip {
 
     @Column(name = "actual_end_at")
     private Instant actualEndAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "end_vehicle_condition", length = 30)
+    private VehicleEndCondition endVehicleCondition;
+
+    @Column(name = "end_vehicle_note", length = 1000)
+    private String endVehicleNote;
 
     // Niêm phong và khử trùng chỉ ghi nhận, đợt này chưa có quy tắc kiểm tra
     @Column(name = "sealed_at")

@@ -1,0 +1,58 @@
+package com.example.racehorse_transport.policy;
+
+import com.example.racehorse_transport.entity.enums.HealthStatus;
+import com.example.racehorse_transport.exception.DispatchRuleException;
+import com.example.racehorse_transport.entity.enums.HorseStayType;
+import com.example.racehorse_transport.entity.enums.LocationType;
+import java.time.Duration;
+import java.time.Instant;
+
+// Quy tắc ghi sức khỏe và rời trạm nghỉ (B3), hàm thuần
+public final class HealthLogPolicy {
+
+    private HealthLogPolicy() {}
+
+    // Mỗi lần ghi gắn đúng một nơi: điểm dừng của xe hoặc một lần lưu trú
+    public static void requireOnePlace(boolean atStop, boolean inStay) {
+        if (atStop == inStay) {
+            throw new DispatchRuleException("tripStopId", "Ghi sức khỏe tại một điểm dừng hoặc trong một lần lưu trú.");
+        }
+    }
+
+    public static boolean canRecordStay(LocationType type, HorseStayType stayType, boolean hasOperator) {
+        return type == LocationType.HUB || type == LocationType.STABLE
+                || (stayType == HorseStayType.OVERNIGHT && hasOperator);
+    }
+
+    public static String reportedNote(String reporter) {
+        if (reporter == null || reporter.isBlank()) {
+            throw new DispatchRuleException("reportedBy", "Nhập tên người báo.");
+        }
+        return "Người báo: " + reporter.strip();
+    }
+
+    public static HealthStatus atLeastWatch(HealthStatus status) {
+        return status.ordinal() < HealthStatus.WATCH.ordinal() ? HealthStatus.WATCH : status;
+    }
+
+    public static boolean isOvernightRest(Instant plannedArrivalAt, Instant plannedDepartureAt, int overnightRestHours) {
+        return Duration.between(plannedArrivalAt, plannedDepartureAt).compareTo(Duration.ofHours(overnightRestHours)) >= 0;
+    }
+
+    public static boolean requireRested(Instant arrivedAt, Instant now, int minRestMinutes, String earlyReason) {
+        return requireRested(arrivedAt, now, Duration.ofMinutes(minRestMinutes), minRestMinutes + " phút", earlyReason);
+    }
+
+    public static boolean requireOvernightRested(Instant arrivedAt, Instant now, int overnightRestHours, String earlyReason) {
+        return requireRested(arrivedAt, now, Duration.ofHours(overnightRestHours), overnightRestHours + " giờ", earlyReason);
+    }
+
+    // Quy tắc #34: trả về false khi rời sớm có lý do.
+    private static boolean requireRested(Instant arrivedAt, Instant now, Duration minimumRest, String minimumLabel, String earlyReason) {
+        boolean rested = Duration.between(arrivedAt, now).compareTo(minimumRest) >= 0;
+        if (!rested && (earlyReason == null || earlyReason.isBlank())) {
+            throw new DispatchRuleException("earlyReason", "Chưa nghỉ đủ " + minimumLabel + ". Rời sớm phải ghi lý do.", true);
+        }
+        return rested;
+    }
+}

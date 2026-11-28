@@ -42,6 +42,13 @@ class BookingStatusPolicyTest {
     }
 
     @Test
+    void onlyUnclaimedReturnFlowMayCancelAnOperatingBooking() {
+        assertThat(BookingStatusPolicy.canCancelAfterUnclaimedReturns(BookingStatus.IN_OPERATION)).isTrue();
+        assertThat(BookingStatusPolicy.canCancelAfterUnclaimedReturns(BookingStatus.DELIVERED)).isFalse();
+        assertThat(BookingStatusPolicy.canTransition(BookingStatus.IN_OPERATION, BookingStatus.CANCELLED)).isFalse();
+    }
+
+    @Test
     void everyStatusHasAnEntry() {
         for (BookingStatus status : BookingStatus.values()) {
             assertThat(BookingStatusPolicy.nextOf(status)).as(status.name()).isNotNull();

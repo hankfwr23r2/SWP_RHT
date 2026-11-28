@@ -1,4 +1,4 @@
-import apiClient, { type ApiResponse } from './client'
+import apiClient, { tokenStorage, type ApiResponse } from './client'
 
 // DTO gửi lên cho Đăng nhập
 export interface LoginPayload {
@@ -81,8 +81,11 @@ export const authApi = {
   },
 
   // 6. Đổi mật khẩu cá nhân -> POST /api/v1/auth/change-password
+  // Backend cho mọi phiên cũ hết hiệu lực và trả token mới cho máy đang dùng
   changePassword: async (payload: ChangePasswordPayload): Promise<void> => {
-    await apiClient.post('/auth/change-password', payload)
+    const res = await apiClient.post<ApiResponse<AuthResponseData>>('/auth/change-password', payload)
+    const accessToken = res.data?.data?.accessToken
+    if (accessToken) tokenStorage.set(accessToken)
   },
 
   requestPasswordResetOtp: async (email: string, captchaToken: string): Promise<string> => {

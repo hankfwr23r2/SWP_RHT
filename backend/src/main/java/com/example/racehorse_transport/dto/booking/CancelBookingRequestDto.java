@@ -1,0 +1,6 @@
+package com.example.racehorse_transport.dto.booking;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+public record CancelBookingRequestDto(@NotBlank @Size(max = 500) String reason) {}

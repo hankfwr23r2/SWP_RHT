@@ -36,13 +36,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         try {
             String jwt = parseJwt(request);
-            if (jwt != null && jwtUtils.validateToken(jwt)) {
+            if (jwt != null && jwtUtils.validateAccessToken(jwt)) {
                 String username = jwtUtils.getUsernameFromToken(jwt);
 
                 if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    // Tài khoản bị khóa, vô hiệu hóa hoặc nhân viên đã nghỉ việc: token cũ không còn dùng được
-                    if (!authService.isActive(username)) {
-                        log.warn("Từ chối token của tài khoản không còn hoạt động: {}", username);
+                    // Tài khoản bị khóa, vô hiệu hóa, nhân viên đã nghỉ việc, hoặc đã đăng xuất/đổi mật khẩu: token cũ không còn dùng được
+                    if (!authService.isSessionValid(username, jwtUtils.getVersionFromToken(jwt))) {
+                        log.warn("Từ chối token đã hết phiên hoặc của tài khoản không còn hoạt động: {}", username);
                         filterChain.doFilter(request, response);
                         return;
                     }

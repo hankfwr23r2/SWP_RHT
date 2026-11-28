@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.entity;
 
 import com.example.racehorse_transport.entity.enums.VehicleStatus;
+import com.example.racehorse_transport.entity.enums.VehicleServiceRole;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -17,8 +18,6 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.time.LocalDate;
 
 // Xe. Sức chứa lấy từ cột số khoang, không đọc từ chuỗi.
 @Getter
@@ -50,11 +49,12 @@ public class Vehicle {
     @JoinColumn(name = "home_hub_location_id", nullable = false)
     private Location homeHubLocation;
 
-    @Column(name = "registration_expiry_date")
-    private LocalDate registrationExpiryDate;
-
     // Xe đang chạy hay rảnh suy ra từ vehicle_trip, không lưu ở đây
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 30, nullable = false)
     private VehicleStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "service_role", length = 30, nullable = false)
+    private VehicleServiceRole serviceRole = VehicleServiceRole.BRANCH;
 }

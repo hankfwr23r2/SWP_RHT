@@ -1,16 +1,16 @@
-# Đặc tả cơ sở dữ liệu: 59 bảng
+# Đặc tả cơ sở dữ liệu
 
 > Tài liệu dùng để tạo DB (viết Flyway migration). Bản này thay cho mô hình 64 bảng trong
 > `ERD_ENTITY_MERMAID.md`, `ERD_ALL_IN_ONE.md`, `ERD_ENTITY_BOXES.md` (các file đó chưa cập nhật).
-> Hệ quản trị: PostgreSQL 15 trở lên.
+> Hệ quản trị: PostgreSQL 15 trở lên. Mô hình 59 bảng được bổ sung `hub_stall` trong mục 15.5 của phương án 6 luồng.
 
-> Migration `V202611231300__sync_names.sql` đồng bộ tên bảng, cột và các đối tượng liên quan theo [BANG_DOI_TEN.md](BANG_DOI_TEN.md).
+> Migration `V202611231300__sync_names.sql` đồng bộ tên bảng, cột và các đối tượng liên quan.
 
 ## Mục lục
 
 0. [Quy ước chung](#0-quy-ước-chung)
 1. [Thay đổi so với bản 64 bảng](#thay-đổi-so-với-bản-64-bảng)
-2. [Danh sách 59 bảng](#danh-sách-59-bảng)
+2. [Danh sách bảng](#danh-sách-bảng)
 3. [Thứ tự tạo bảng](#thứ-tự-tạo-bảng)
 4. Chi tiết từng nhóm: [1](#nhóm-1-danh-mục-địa-lý) · [2](#nhóm-2-tài-khoản-nhân-sự-các-bên) · [3](#nhóm-3-ngựa) · [4](#nhóm-4-mạng-lưới-và-lịch-chạy) · [5](#nhóm-5-xe) · [6](#nhóm-6-dịch-vụ-và-bảng-giá) · [7](#nhóm-7-quy-định-và-giấy-tờ-yêu-cầu) · [8](#nhóm-8-đơn-hàng) · [9](#nhóm-9-vận-hành) · [10](#nhóm-10-chuỗi-giao-nhận) · [11](#nhóm-11-bảo-hiểm) · [12](#nhóm-12-báo-giá-và-thanh-toán) · [13](#nhóm-13-sự-cố-và-chi-phí) · [14](#nhóm-14-chứng-từ) · [15](#nhóm-15-hỗ-trợ)
 5. [Dữ liệu dẫn xuất](#dữ-liệu-dẫn-xuất)
@@ -45,7 +45,7 @@
 ### Đặt tên
 
 - Bảng và cột dùng `snake_case`, tên bảng số ít (`booking`, không phải `bookings`).
-- Mọi định danh (bảng, cột, enum, class, biến, endpoint) dùng **tiếng Anh**. Chữ hiển thị cho người dùng đi qua i18n. Bảng đối chiếu tên cũ và tên mới: [BANG_DOI_TEN.md](BANG_DOI_TEN.md).
+- Mọi định danh (bảng, cột, enum, class, biến, endpoint) dùng **tiếng Anh**. Chữ hiển thị cho người dùng đi qua i18n.
 - **N1** Không viết tắt, trừ các từ phổ biến: `id`, `url`, `otp`, `ip`, `km`, `kg`.
 - **N2** Số hiệu dùng hậu tố `_number`.
 - **N3** Thời điểm dùng hậu tố `_at`, ngày dùng `_date`. Riêng `valid_from`/`valid_to` giữ nguyên.
@@ -110,31 +110,41 @@ CREATE EXTENSION IF NOT EXISTS btree_gist;   -- cho EXCLUDE chống trùng thờ
 | 14 | `hub_service_area`: thêm `UNIQUE (province_code)` | Mỗi tỉnh thuộc đúng một hub, để tra được hub đón và hub giao |
 | 15 | Có **trục nội địa** (ví dụ HCM ⇄ Đà Nẵng) với **hub vệ tinh** | Hub vệ tinh là location loại HUB, có vùng phục vụ nhưng không có xe hay nhân viên trực thuộc. `vehicle.home_hub_location_id` và `staff.home_hub_location_id` vẫn là trụ sở |
 | 17 | `route.origin_hub_id` đổi thành `origin_location_id`, cho phép điểm đầu là cửa khẩu (migration `V202611231100`) | Đơn IMPORT đi tuyến định kỳ từ cửa khẩu về hub, đối xứng với chiều xuất |
-| 18 | Bỏ `user_role`, thêm `app_user.role_code` và `customer`; `party_address` thành `customer_address`; `party` chỉ chứa đối tác; sửa CHECK của `handover` (migration `V202611231200`) | Mỗi tài khoản một vai trò, hồ sơ khách và nhân viên đối xứng, FK chặn gán sai loại. Lý do ở [SUA_TAI_KHOAN_VA_HO_SO.md](SUA_TAI_KHOAN_VA_HO_SO.md) |
+| 18 | Bỏ `user_role`, thêm `app_user.role_code` và `customer`; `party_address` thành `customer_address`; `party` chỉ chứa đối tác; sửa CHECK của `handover` (migration `V202611231200`) | Mỗi tài khoản một vai trò, hồ sơ khách và nhân viên đối xứng, FK chặn gán sai loại. Lý do ở `NGU_CANH_THIET_KE_LAI.md` mục 4 |
 | 16 | Bỏ mọi view. Thêm cột dẫn xuất `quotation.total_amount`, `pass_through_amount`, `deposit_amount` và `departure.booked_stall_count` | Logic nghiệp vụ nằm hoàn toàn trong code. Chỉ lưu cột khi giá trị đã chốt (báo giá) hoặc có khóa bảo vệ (khoang). Đã trả và còn nợ tính trong code vì đổi liên tục |
+| 19 | Bỏ `country_rule.quarantine_days`, thay bằng loại giấy `QUARANTINE_CLEARANCE` theo từng con | Công ty không bán chỗ cách ly, chỉ chở ngựa đủ điều kiện. Điều kiện thể hiện bằng giấy |
+| 20 | Bỏ `vehicle.registration_expiry_date` | Quản lý xe chỉ gồm thuộc tính và trạng thái, không quản lý giấy tờ xe |
+| 21 | Thêm `location.counterpart_country_code`, `booking.pickup_method`, `delivery_method`, `horse_health_log.water_intake`, `feed_intake` (**chờ migration** cho hai cột của bảng `horse_health_log`) | Cửa khẩu phải khớp nước đối tác; khách chọn công ty chở hoặc tự chở tới hub; theo dõi ăn uống từng con |
+| 22 | Khoang rộng chiếm **2 chỗ** khi tính sức chứa, không đổi cột | Xe dùng vách ngăn di động. Trước đó mỗi ngựa tính 1 chỗ nên bán quá được khoang rộng |
+| 23 | Ngừng dùng các giá trị `QUARANTINE`, `QUARANTINE_FARM` và cột `quarantine_result`; chưa xóa khỏi DB | Xóa khi luồng B đồng ý |
+| 24 | Thêm `SHIFT` vào `handover.handover_type` (**chờ migration**, luồng B làm) | Đổi người phụ trách ngựa khi ngựa không đổi chỗ: đổi ca ở hub, thay hộ tống giữa đường, đổi xe do sự cố |
+
+Các dòng ghi **chờ migration** là lược đồ đích đã chốt ngày 23/11/2026. Migration và entity làm ở task A6b (`KE_HOACH_TRIEN_KHAI.md`), trước đó DB vẫn theo bản cũ.
 
 ---
 
-## Danh sách 59 bảng
+## Danh sách bảng
+
+Mô hình gốc 59 bảng, ngày 25/11/2026 thêm `booking_specialist_history`, `hub_stall`, `health_check_task`, `coordinator_assignment_history` (mục 15 của PHUONG_AN_6_LUONG). M2 bổ sung `departure_vehicle`, nâng tổng số lên 64 bảng. Sơ đồ: [ERD](database/ERD.md).
 
 | Nhóm | Bảng | Số bảng |
 |---|---|---|
 | 1. Địa lý | `country`, `province`, `location`, `hub_service_area` | 4 |
 | 2. Tài khoản, các bên | `app_user`, `role`, `customer`, `customer_address`, `staff`, `party`, `party_role`, `otp` | 8 |
 | 3. Ngựa | `horse_type`, `horse` | 2 |
-| 4. Mạng lưới, lịch chạy | `route`, `route_stop`, `departure_schedule`, `departure_schedule_day`, `departure` | 5 |
+| 4. Mạng lưới, lịch chạy | `route`, `route_stop`, `departure_schedule`, `departure_schedule_day`, `departure`, `departure_vehicle` | 6 |
 | 5. Xe | `vehicle_class`, `stall_type`, `vehicle` | 3 |
 | 6. Dịch vụ, bảng giá | `billable_service`, `price_list`, `price_item` | 3 |
 | 7. Quy định, giấy tờ yêu cầu | `country_rule`, `document_type`, `document_requirement` | 3 |
-| 8. Đơn hàng | `booking`, `booking_party`, `booking_address`, `booking_horse`, `booking_horse_service`, `booking_status_history`, `terms_acceptance`, `booking_rating` | 8 |
-| 9. Vận hành | `vehicle_trip`, `trip_stop`, `crew_assignment`, `horse_leg`, `horse_stay`, `horse_health_log` | 6 |
+| 8. Đơn hàng | `booking`, `booking_party`, `booking_address`, `booking_horse`, `booking_horse_service`, `booking_status_history`, `booking_specialist_history`, `terms_acceptance`, `booking_rating` | 9 |
+| 9. Vận hành | `vehicle_trip`, `trip_stop`, `crew_assignment`, `horse_leg`, `horse_stay`, `horse_health_log`, `hub_stall`, `health_check_task`, `coordinator_assignment_history` | 9 |
 | 10. Giao nhận | `handover`, `handover_horse`, `handover_document` | 3 |
 | 11. Bảo hiểm | `horse_insurance` | 1 |
 | 12. Báo giá, thanh toán | `quotation`, `quotation_line`, `payment`, `payment_transaction` | 4 |
 | 13. Sự cố, chi phí | `incident`, `incident_plan`, `cost_item` | 3 |
 | 14. Chứng từ | `document` | 1 |
 | 15. Hỗ trợ | `notification`, `notification_recipient`, `audit_log`, `system_config`, `route_cache` | 5 |
-| | **Tổng** | **59** |
+| | **Tổng** | **64** |
 
 ---
 
@@ -147,11 +157,12 @@ Thứ tự này bảo đảm bảng cha luôn được tạo trước bảng con
 | 1 | `country`, `role`, `horse_type`, `vehicle_class`, `stall_type`, `billable_service`, `price_list`, `document_type`, `route_cache` |
 | 2 | `app_user`, `province`, `country_rule` |
 | 3 | `customer`, `otp`, `location`, `party` |
-| 4 | `hub_service_area`, `staff`, `party_role`, `customer_address`, `horse`, `route`, `vehicle`, `document_requirement` |
+| 4 | `hub_stall`, `hub_service_area`, `staff`, `party_role`, `customer_address`, `horse`, `route`, `vehicle`, `document_requirement` |
 | 5 | `route_stop`, `departure_schedule`, `price_item`, `system_config` |
 | 6 | `departure_schedule_day`, `departure` |
+| M2 | `departure_vehicle` |
 | 7 | `booking` |
-| 8 | `booking_party`, `booking_address`, `booking_horse`, `booking_status_history`, `terms_acceptance`, `booking_rating`, `vehicle_trip`, `quotation`, `notification`, `audit_log` |
+| 8 | `booking_party`, `booking_address`, `booking_horse`, `booking_status_history`, `terms_acceptance`, `booking_rating`, `booking_specialist_history`, `vehicle_trip`, `quotation`, `notification`, `audit_log` |
 | 9 | `booking_horse_service`, `trip_stop`, `crew_assignment`, `horse_stay`, `horse_insurance`, `payment`, `notification_recipient` |
 | 10 | `horse_leg`, `handover`, `payment_transaction` |
 | 11 | `horse_health_log`, `handover_horse`, `quotation_line`, `incident` |
@@ -178,12 +189,14 @@ Thứ tự này bảo đảm bảng cha luôn được tạo trước bảng con
 | `code` | `varchar(10)` | | PK | Mã tỉnh, ví dụ `VN-SG`, `KH-12` |
 | `country_code` | `char(2)` | | FK → country | |
 | `name` | `varchar(200)` | | | |
+| `latitude` | `numeric(9,6)` | | CHECK `-90..90` | Trung tâm tỉnh: mở bản đồ và kiểm vị trí ghim |
+| `longitude` | `numeric(9,6)` | | CHECK `-180..180` | |
 
 Index: `ix_province_country_code`.
 
 ### 1.3 `location`: điểm thuộc mạng lưới của công ty
 
-Gồm hub, trại cách ly, trạm nghỉ, cửa khẩu, chuồng và trường đua cố định. **Không chứa** địa chỉ đón hoặc giao của khách: các địa chỉ đó nằm ở `booking_address`.
+Gồm hub, trạm nghỉ, cửa khẩu, chuồng và trường đua cố định (`QUARANTINE_FARM` ngừng dùng). **Không chứa** địa chỉ đón hoặc giao của khách: các địa chỉ đó nằm ở `booking_address`.
 
 | Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
 |---|---|---|---|---|
@@ -200,10 +213,14 @@ Gồm hub, trại cách ly, trạm nghỉ, cửa khẩu, chuồng và trường 
 | `opening_time` | `time` | có | | Giờ mở cửa |
 | `closing_time` | `time` | có | | Giờ đóng cửa |
 | `contact_phone` | `varchar(20)` | có | | |
+| `counterpart_country_code` | `char(2)` | có | FK → country | Nước ở phía bên kia cửa khẩu, ví dụ `GATE-MOCBAI` là `KH`, `GATE-LAOBAO` là `LA` |
 | `status` | `varchar(30)` | | CK `ACTIVE, INACTIVE` | |
 
-Ràng buộc bảng: `CHECK ((latitude IS NULL) = (longitude IS NULL))`.
-Index: `country_code`, `province_code`, `location_type`.
+Ràng buộc bảng:
+- `CHECK ((latitude IS NULL) = (longitude IS NULL))`
+- `CHECK (counterpart_country_code IS NULL OR location_type = 'BORDER_GATE')`. Khi tạo hoặc cập nhật cửa khẩu, service yêu cầu mã nước đối diện khác `country_code`.
+
+Index: `country_code`, `province_code`, `location_type`, `counterpart_country_code`.
 
 ### 1.4 `hub_service_area`: tỉnh nào do hub nào phục vụ
 
@@ -232,6 +249,9 @@ Hub đón của đơn là hub phục vụ tỉnh của `booking_address` PICKUP.
 | `role_code` | `varchar(30)` | | FK → role | Mỗi tài khoản đúng một vai trò |
 | `preferred_language` | `varchar(5)` | | default `'vi'`, CK `vi, en` | |
 | `status` | `varchar(30)` | | CK `ACTIVE, LOCKED, DISABLED` | |
+| `token_version` | `int` | | default `0`, CK `>= 0` | Phiên bản phiên đăng nhập. Access và refresh token mang số này; tăng khi đăng xuất, đổi hoặc đặt lại mật khẩu, bị khóa, thì mọi token cũ hết hiệu lực trên mọi máy |
+| `failed_login_count` | `int` | | default `0`, CK `>= 0` | Số lần nhập sai mật khẩu liên tiếp. Đăng nhập đúng hoặc bị khóa tạm thì về 0 |
+| `locked_until` | `timestamptz` | có | | Khóa tạm tới thời điểm này sau `LOGIN_MAX_FAILED_ATTEMPTS` lần sai (`LOGIN_LOCK_MINUTES` phút). Khác `status = LOCKED` do quản trị khóa |
 | `created_at` | `timestamptz` | | default `now()` | |
 
 Index: `role_code`.
@@ -275,7 +295,7 @@ Không có `status` và `email`: lấy từ `app_user`.
 | `phone` | `varchar(20)` | | | |
 | `hire_date` | `date` | | | |
 | `employment_status` | `varchar(30)` | | CK `ACTIVE, ON_LEAVE, TERMINATED` | |
-| `home_hub_location_id` | `bigint` | | FK → location | Hub trực thuộc. Đợt này mọi nhân viên thuộc trụ sở. Hub vệ tinh không có nhân viên trực thuộc |
+| `home_hub_location_id` | `bigint` | | FK → location | Hub trực thuộc, hub bất kỳ (26/11/2026) |
 | `driver_license_class` | `varchar(10)` | có | | Chỉ có với tài xế |
 | `driver_license_expiry_date` | `date` | có | | |
 
@@ -314,7 +334,7 @@ Index: `country_code`.
 | Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
 |---|---|---|---|---|
 | `party_id` | `bigint` | | PK, FK → party, CASCADE | |
-| `role_type` | `varchar(30)` | | PK, CK `DEST_AGENT, QUARANTINE_FARM, STABLE, VET, RESCUE, INSURER` | |
+| `role_type` | `varchar(30)` | | PK, CK `QUARANTINE_FARM, STABLE, VET, RESCUE, INSURER` | `QUARANTINE_FARM` ngừng dùng |
 | `valid_from` | `date` | | | |
 | `valid_to` | `date` | có | CK `valid_to >= valid_from` | |
 
@@ -327,7 +347,7 @@ Index: `role_type`, dùng để tra danh sách bác sĩ thú y, đội cứu h�
 | `id` | `bigint` | | PK, identity | |
 | `customer_id` | `bigint` | | FK → customer(user_id), CASCADE | |
 | `label` | `varchar(100)` | | | Ví dụ "Trang trại Bình Dương" |
-| `address_line` | `varchar(500)` | | | |
+| `address_line` | `varchar(500)` | có | | Số nhà, tên đường. Không bắt buộc; phường (`ward`) bắt buộc khi tạo, sửa (kiểm ở DTO) |
 | `ward` | `varchar(100)` | có | | |
 | `province_code` | `varchar(10)` | | FK → province | |
 | `country_code` | `char(2)` | | FK → country | |
@@ -372,24 +392,16 @@ Ràng buộc bảng: `UNIQUE (email, purpose)`.
 | `id` | `bigint` | | PK, identity | |
 | `owner_customer_id` | `bigint` | | FK → customer(user_id) | Chủ ngựa |
 | `name` | `varchar(100)` | | | |
-| `microchip` | `varchar(30)` | có | UK | Dùng để quét chip khi giao nhận |
-| `passport_number` | `varchar(50)` | có | UK | |
+| `microchip` | `varchar(30)` | có | UK | API tạo hồ sơ yêu cầu 15 chữ số ISO. Mã không đổi sau khi tạo |
 | `sex` | `varchar(30)` | | CK `STALLION, MARE, GELDING` | |
-| `birth_year` | `smallint` | có | CK `1980..2100` | |
-| `color` | `varchar(50)` | có | | |
-| `breed` | `varchar(100)` | có | | |
-| `sire` | `varchar(100)` | có | | Tên ngựa bố |
-| `dam` | `varchar(100)` | có | | Tên ngựa mẹ |
-| `horse_type_id` | `bigint` | | FK → horse_type | |
+| `birth_year` | `smallint` | có | CK `1980..2100` | API tạo và sửa yêu cầu từ 1990 tới năm hiện tại. Cho phép NULL trong DB để đọc hồ sơ cũ |
+| `color` | `varchar(50)` | có | | API tạo và sửa yêu cầu màu lông. Cho phép NULL trong DB để đọc hồ sơ cũ |
+| `horse_type_id` | `bigint` | | FK → horse_type | Giống ngựa, chọn từ danh mục |
 | `identification_marks` | `text` | có | | Đặc điểm nhận dạng |
-| `weight_kg` | `numeric(6,1)` | có | CK `> 0` | |
-| `declared_value` | `numeric(15,2)` | có | CK `>= 0` | Giá trị khai báo, dùng cho bảo hiểm |
-| `declared_currency_code` | `char(3)` | có | | |
 | `status` | `varchar(30)` | | CK `ACTIVE, RETIRED, DECEASED` | Trạng thái của hồ sơ. Ngựa đang ở đâu tính từ `handover` mới nhất (mục 5) |
 | `created_at` | `timestamptz` | | default `now()` | |
 | `updated_at` | `timestamptz` | | | |
 
-Ràng buộc bảng: `CHECK ((declared_value IS NULL) = (declared_currency_code IS NULL))`.
 Index: `owner_customer_id`, `horse_type_id`.
 
 ---
@@ -404,15 +416,17 @@ Index: `owner_customer_id`, `horse_type_id`.
 | `code` | `varchar(30)` | | UK | Ví dụ `HCM-PNH` |
 | `name` | `varchar(200)` | | | |
 | `origin_location_id` | `bigint` | | FK → location | Điểm đầu: HUB, hoặc BORDER_GATE với tuyến chiều nhập |
-| `destination_location_id` | `bigint` | | FK → location | Điểm cuối: hub, trại cách ly hoặc cửa khẩu |
+| `destination_location_id` | `bigint` | | FK → location | Điểm cuối: hub hoặc cửa khẩu |
 | `distance_km` | `numeric(8,2)` | | CK `> 0` | |
 | `estimated_duration_minutes` | `int` | | CK `> 0` | |
 | `status` | `varchar(30)` | | CK `ACTIVE, INACTIVE` | |
+| `fleet_outbound` | `boolean` | | default `false` | Chiều đi của cặp tuyến đảo đầu và cuối. Hub đầu tuyến sở hữu xe trục của cặp |
 
 Ràng buộc bảng: `CHECK (origin_location_id <> destination_location_id)`.
 Index: `origin_location_id`, `destination_location_id`.
 
 Loại điểm đầu, điểm cuối và điểm dừng được kiểm ở `RouteStopsPolicy` (cần so với bảng `location`).
+`RouteService` kiểm tra khi tạo hoặc sửa tuyến. Nếu tuyến ngược đã bật `fleet_outbound`, yêu cầu bật chiều đi trả HTTP 409.
 
 ### 4.2 `route_stop`: các điểm dừng trên tuyến
 
@@ -421,7 +435,7 @@ Loại điểm đầu, điểm cuối và điểm dừng được kiểm ở `Ro
 | `route_id` | `bigint` | | PK, FK → route, CASCADE | |
 | `sequence_number` | `int` | | PK, CK `>= 1` | Thứ tự dừng |
 | `location_id` | `bigint` | | FK → location | |
-| `stop_type` | `varchar(30)` | | CK `HUB, REST, VITAL_CHECK, BORDER, QUARANTINE` | |
+| `stop_type` | `varchar(30)` | | CK `HUB, REST, VITAL_CHECK, BORDER, QUARANTINE` | `QUARANTINE` ngừng dùng. Nghỉ đêm là `REST` có `dwell_minutes` đủ dài (quy tắc #31) |
 | `arrival_offset_minutes` | `int` | | CK `>= 0` | Số phút tính từ lúc xuất phát |
 | `dwell_minutes` | `int` | | CK `>= 0` | Số phút dừng tại điểm |
 
@@ -436,7 +450,8 @@ Index: `location_id`.
 | `route_id` | `bigint` | | FK → route | |
 | `departure_time` | `time` | | | Giờ xuất phát |
 | `booking_cutoff_hours` | `int` | | CK `> 0` | Chốt nhận đơn trước giờ xuất phát bao lâu |
-| `stall_capacity` | `int` | | CK `> 0` | Số khoang tối đa mỗi chuyến |
+| `base_vehicle_class_id` | `bigint` | | FK → vehicle_class | Hạng xe nền |
+| `base_vehicle_count` | `int` | | CK `> 0` | Số xe nền |
 | `valid_from` | `date` | | | |
 | `valid_to` | `date` | có | CK `>= valid_from` | |
 | `status` | `varchar(30)` | | CK `ACTIVE, PAUSED, ENDED` | |
@@ -455,21 +470,51 @@ Index: `route_id`.
 | Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
 |---|---|---|---|---|
 | `id` | `bigint` | | PK, identity | |
-| `departure_schedule_id` | `bigint` | có | FK → departure_schedule | NULL = chuyến đột xuất |
-| `route_id` | `bigint` | | FK → route | Bắt buộc để chuyến đột xuất cũng biết tuyến |
+| `departure_schedule_id` | `bigint` | có | FK → departure_schedule | NULL = chuyến ngoài lịch. Chỉ còn ở dữ liệu cũ vì không còn chức năng tạo tay |
+| `route_id` | `bigint` | | FK → route | Bắt buộc để chuyến ngoài lịch cũng biết tuyến |
 | `departure_date` | `date` | | | |
-| `planned_departure_at` | `timestamptz` | | | |
+| `planned_departure_at` | `timestamptz` | | | Giờ gốc của chuyến, giữ nguyên khi dời lịch |
 | `booking_cutoff_at` | `timestamptz` | | | |
-| `stall_capacity` | `int` | | CK `> 0` | Snapshot từ lịch, sửa được cho từng chuyến |
-| `booked_stall_count` | `int` | | default `0` | Dẫn xuất: số khoang đã đặt. Chỉ `DepartureService` ghi, khi đang giữ `FOR UPDATE` |
+| `stall_capacity` | `int` | | CK `> 0` | Tổng sức chứa các xe BASE và SPARE đã gắn cho chuyến |
+| `booked_stall_count` | `int` | | default `0` | Dẫn xuất: số **chỗ xe ghép** đã đặt (khoang thường 1, khoang rộng 2). Chỉ `DepartureService` ghi, khi đang giữ `FOR UPDATE` |
 | `status` | `varchar(30)` | | CK `OPEN, CLOSED, IN_PROGRESS, COMPLETED, CANCELLED` | |
+| `run_confirmed_at` | `timestamptz` | có | | Lúc quản lý xác nhận chạy. NULL = chưa xác nhận, điều phối chưa được lập lượt trục |
+| `run_confirmed_by` | `bigint` | có | FK → app_user | Quản lý xác nhận |
+| `revised_departure_at` | `timestamptz` | có | CK sau giờ gốc | Giờ mới nhất do quản lý nhập |
+| `run_reminded_at` | `timestamptz` | có | | Lúc hệ thống gửi nhắc chưa xác nhận chạy |
+| `delayed_at` | `timestamptz` | có | | Lúc công ty ghi nhận chuyến chậm lần đầu |
+| `delay_reason` | `varchar(500)` | có | | Lý do công ty ghi khi chuyến chậm hoặc dời giờ |
+| `delay_escalated_at` | `timestamptz` | có | | Lúc báo quản lý xử lý vì đã nhận ngựa và chưa có giờ mới |
+| `auto_cancelled_at` | `timestamptz` | có | CK chỉ khi CANCELLED | Lúc hệ thống hủy chuyến trễ do công ty |
+| `merged_into_departure_id` | `bigint` | có | FK → departure | Không còn dùng từ 28/11/2026 (đã bỏ dồn chuyến). Giữ cột để không mất dữ liệu cũ |
 
 Ràng buộc bảng:
-- `UNIQUE (departure_schedule_id, departure_date)`: mỗi lịch sinh tối đa một chuyến mỗi ngày. Chuyến đột xuất có `departure_schedule_id` NULL nên không bị giới hạn.
+- `CHECK ((run_confirmed_at IS NULL) = (run_confirmed_by IS NULL))`.
+- `CHECK (revised_departure_at IS NULL OR revised_departure_at > planned_departure_at)`.
+- `delayed_at` và `delay_reason` cùng có giá trị. `auto_cancelled_at` chỉ có khi chuyến đã ghi chậm và có trạng thái `CANCELLED`.
+- DB vẫn kiểm: `merged_into_departure_id` chỉ có trên chuyến theo lịch đã `CANCELLED`, và phải khác `id`. Không service nào ghi cột này nữa.
+- `UNIQUE (departure_schedule_id, departure_date)`: mỗi lịch sinh tối đa một chuyến mỗi ngày. Chuyến ngoài lịch có `departure_schedule_id` NULL nên không bị giới hạn.
 - `CHECK (booking_cutoff_at < planned_departure_at)`.
 - `CHECK (booked_stall_count BETWEEN 0 AND stall_capacity)`: DB chặn bán quá chỗ.
 
-Index: `route_id`, `(status, planned_departure_at)`.
+Index: `route_id`, `(status, planned_departure_at)`, `run_confirmed_by`.
+
+
+### 4.6 `departure_vehicle`: xe đã gắn cho chuyến
+
+| Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
+|---|---|---|---|---|
+| `id` | `bigint` | | PK, identity | |
+| `departure_id` | `bigint` | | FK → departure, CASCADE | |
+| `vehicle_class_id` | `bigint` | | FK → vehicle_class | |
+| `vehicle_count` | `int` | | CK `> 0` | |
+| `allotment_type` | `varchar(30)` | | CK `BASE, SPARE, PRIVATE` | PRIVATE giữ một xe cho đơn |
+| `booking_id` | `bigint` | có | FK → booking, UNIQUE khi có giá trị | Chỉ có giá trị khi PRIVATE |
+| `reason` | `varchar(500)` | có | | |
+| `created_by` | `bigint` | có | FK → app_user | NULL = hệ thống |
+| `created_at` | `timestamptz` | | | |
+
+Index: `departure_id`, `booking_id`.
 
 ---
 
@@ -491,6 +536,8 @@ Index: `route_id`, `(status, planned_departure_at)`.
 | `code` | `varchar(30)` | | PK | `STANDARD, WIDE` |
 | `name` | `varchar(200)` | | | |
 
+Khi tính sức chứa, `STANDARD` chiếm 1 chỗ, `WIDE` chiếm 2 chỗ.
+
 ### 5.3 `vehicle`: xe
 
 | Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
@@ -498,13 +545,15 @@ Index: `route_id`, `(status, planned_departure_at)`.
 | `id` | `bigint` | | PK, identity | |
 | `license_plate` | `varchar(20)` | | UK | |
 | `vehicle_class_id` | `bigint` | | FK → vehicle_class | |
-| `standard_stall_count` | `int` | | CK `>= 0` | |
-| `wide_stall_count` | `int` | | CK `>= 0` | |
-| `home_hub_location_id` | `bigint` | | FK → location | Hub gốc. Đợt này mọi xe thuộc trụ sở |
-| `registration_expiry_date` | `date` | có | | |
-| `status` | `varchar(30)` | | CK `ACTIVE, MAINTENANCE, RETIRED` | Xe đang chạy hay rảnh suy ra từ `vehicle_trip` |
+| `standard_stall_count` | `int` | | CK `>= 0` | Số khoang thường ở bố trí mặc định. Chỉ dùng để tính tổng chỗ |
+| `wide_stall_count` | `int` | | CK `>= 0` | Số khoang rộng ở bố trí mặc định. Chỉ dùng để tính tổng chỗ, không giới hạn số con khoang rộng và không cố định vị trí |
+| `home_hub_location_id` | `bigint` | | FK → location | Hub gốc, hub bất kỳ (26/11/2026) |
+| `service_role` | `varchar(30)` | | CK `LINEHAUL, SPARE, BRANCH`, default `BRANCH` | Vai trò xe |
+| `status` | `varchar(30)` | | CK `ACTIVE, MAINTENANCE, RETIRED` | Quản trị viên đổi thủ công. Hệ thống chuyển sang bảo dưỡng khi tổ xe báo cần bảo dưỡng lúc kết thúc lượt hoặc khi xe được thay do sự cố. Mỗi lần đổi trạng thái ghi `audit_log` (quy tắc #36). Xe đang chạy hay rảnh suy ra từ `vehicle_trip` |
 
-Ràng buộc bảng: `CHECK (standard_stall_count + wide_stall_count > 0)`. Service kiểm tổng khoang ≤ `vehicle_class.max_stall_count` và yêu cầu hub gốc của xe là địa điểm được đánh dấu `is_headquarters`. Cờ này chỉ áp dụng cho `location_type = 'HUB'` và unique index cho phép tối đa một trụ sở. Hub gốc xác định đơn vị quản lý. Vị trí xe và điều kiện nhận lượt tiếp theo thuộc luồng vận hành.
+Vách ngăn **di động**: hai vị trí liền nhau bất kỳ ghép thành một khoang rộng. Cả xe là một dãy liền, đánh số từ 1 tới tổng chỗ.
+
+Ràng buộc bảng: `CHECK (standard_stall_count + wide_stall_count > 0)`. Service kiểm tổng chỗ `standard_stall_count + 2 × wide_stall_count` ≤ `vehicle_class.max_stall_count` và yêu cầu hub gốc của xe là địa điểm được đánh dấu `is_headquarters`. Cờ này chỉ áp dụng cho `location_type = 'HUB'` và unique index cho phép tối đa một trụ sở. Hub gốc xác định đơn vị quản lý. Vị trí xe và điều kiện nhận lượt tiếp theo thuộc luồng vận hành.
 Index: `vehicle_class_id`, `home_hub_location_id`.
 
 ---
@@ -516,13 +565,21 @@ Index: `vehicle_class_id`, `home_hub_location_id`.
 | Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
 |---|---|---|---|---|
 | `id` | `bigint` | | PK, identity | |
-| `code` | `varchar(30)` | | UK | Ví dụ `LINEHAUL_STALL`, `PICKUP_KM`, `FEED_PACK` |
+| `code` | `varchar(30)` | | UK | Ví dụ `LINEHAUL_STALL`, `PICKUP_KM`, `VET_CHECK` |
 | `name` | `varchar(200)` | | | |
 | `layer` | `varchar(30)` | | CK `LINEHAUL, PICKUP, DELIVERY, DIRECT, FUEL, STALL, QUARANTINE, ADD_ON, DOCS, SURCHARGE` | Nhóm cước. `DIRECT` = cước chạy thẳng theo km × hạng xe |
 | `billing_unit` | `varchar(30)` | | CK `PER_STALL, PER_KM, PER_HORSE, PER_HORSE_DAY, PER_BOOKING` | Đơn vị tính |
 | `is_pass_through` | `boolean` | | default `false` | Thu hộ, không tính biên lợi nhuận |
 | `is_auto_applied` | `boolean` | | default `false` | Tự thêm vào báo giá, khách không phải chọn |
 | `status` | `varchar(30)` | | CK `ACTIVE, INACTIVE` | |
+
+Ý nghĩa của các dịch vụ đã chốt ngày 23/11/2026 (tên hiển thị đổi bằng migration, mã giữ nguyên):
+
+| Mã | Tên | Cách áp dụng |
+|---|---|---|
+| `VET_CHECK` | Thú y tại chuồng: khám và lấy mẫu | Tự thêm cho mỗi con khi đơn bắt buộc có `LAB_TEST` do công ty nộp (`submitter_type = COMPANY`). Trường hợp khác khách chọn |
+| `QUARANTINE_STAY` | Lưu chuồng theo ngày | Chỉ tính số ngày khách xin đón sớm hơn lịch đón chuẩn. Không phải phí cách ly |
+| `FEEDING` | Cho ăn theo chỉ dẫn | Ngừng (`INACTIVE`). Ăn uống nằm trong cước |
 
 ### 6.2 `price_list`: bảng giá có hiệu lực
 
@@ -557,17 +614,17 @@ Mỗi dòng là một đơn giá của một dịch vụ, áp theo các điều 
 | `vehicle_class_id` | `bigint` | có | FK → vehicle_class | Giá theo hạng xe, dùng cho cước đón và giao |
 | `stall_type_code` | `varchar(30)` | có | FK → stall_type | |
 | `km_from` | `numeric(8,2)` | có | | Bậc km: từ |
-| `km_to` | `numeric(8,2)` | có | | Bậc km: đến |
+| `km_to` | `numeric(8,2)` | có | | Bậc km: đến, NULL nếu không giới hạn trên |
 | `unit_price` | `numeric(15,2)` | | CK `>= 0` | |
 
 Ràng buộc bảng:
-- `CHECK ((km_from IS NULL) = (km_to IS NULL))`
+- `CHECK (km_to IS NULL OR km_from IS NOT NULL)`
 - `CHECK (km_from IS NULL OR km_from < km_to)`
 - `UNIQUE NULLS NOT DISTINCT (price_list_id, billable_service_id, route_id, vehicle_class_id, stall_type_code, km_from)`
 
 Index: `billable_service_id`, `route_id`, `vehicle_class_id`.
 
-Cách tra giá: chọn `price_list` ACTIVE có thời hạn hiệu lực chứa ngày báo giá, rồi lọc `price_item` theo `billable_service_id`. Điều kiện nào có giá trị thì phải khớp, điều kiện NULL nghĩa là áp cho mọi giá trị. Riêng `km_from`/`km_to` thì chọn bậc chứa số km.
+Cách tra giá: chọn `price_list` ACTIVE có thời hạn hiệu lực chứa ngày báo giá, rồi lọc `price_item` theo `billable_service_id`. Điều kiện nào có giá trị thì phải khớp, điều kiện NULL nghĩa là áp cho mọi giá trị. Riêng `km_from`/`km_to` thì chọn bậc chứa số km theo cận dưới bao gồm và cận trên không bao gồm nếu có.
 
 ---
 
@@ -582,7 +639,6 @@ Cách tra giá: chọn `price_list` ACTIVE có thời hạn hiệu lực chứa 
 | `direction` | `varchar(30)` | | CK `INTERPROVINCE, EXPORT, IMPORT` | Cùng bộ giá trị với `booking.booking_type`, trừ LOCAL |
 | `permit_lead_days` | `int` | | CK `>= 0` | Số ngày lịch cần để xin giấy phép |
 | `certificate_lead_days` | `int` | | CK `>= 0` | Số ngày lịch cần để làm giấy chứng nhận |
-| `quarantine_days` | `int` | | CK `>= 0` | Số ngày cách ly |
 | `valid_from` | `date` | | | |
 | `valid_to` | `date` | có | CK `>= valid_from` | |
 
@@ -592,18 +648,30 @@ EXCLUDE USING gist (country_code WITH =, direction WITH =,
                     daterange(valid_from, valid_to, '[]') WITH &&)
 ```
 
-Đơn LOCAL không cần tra quy định.
+Đơn LOCAL không cần tra quy định. `certificate_lead_days` gồm cả thời gian lấy mẫu, xét nghiệm và chuẩn bị giấy. Không có số ngày cách ly: ngựa phải đủ điều kiện trước khi đón, thể hiện bằng giấy.
 
 ### 7.2 `document_type`: loại giấy tờ
 
 | Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
 |---|---|---|---|---|
 | `id` | `bigint` | | PK, identity | |
-| `code` | `varchar(30)` | | UK | Ví dụ `HEALTH_CERT`, `EXPORT_PERMIT`, `HANDOVER_RECORD`, `TOLL_RECEIPT` |
+| `code` | `varchar(30)` | | UK | Ví dụ `HEALTH_CERT`, `EXPORT_PERMIT`, `HANDOVER_RECORD`, `TOLL_RECEIPT`, `REFUND_RECEIPT` (chủ sở hữu `BOOKING`) |
 | `name` | `varchar(200)` | | | |
 | `owner_type` | `varchar(30)` | | CK `HORSE, BOOKING, BOOKING_HORSE, HORSE_LEG, VEHICLE_TRIP, INSURANCE, INCIDENT, COST_ITEM, HANDOVER, VEHICLE, STAFF, PARTY, CUSTOMER` | Loại giấy này gắn với đối tượng nào. Mỗi giá trị ứng với đúng một cột chủ sở hữu trong `document` |
 
 Giấy cấp **cho từng con ngựa** có `owner_type = HORSE` hoặc `BOOKING_HORSE`. Giấy cấp **cho cả đơn** có `owner_type = BOOKING`.
+
+`HORSE_PASSPORT` (hộ chiếu ngựa) và `VACCINATION_RECORD` (sổ tiêm phòng) thuộc danh mục `HORSE`. Chủ ngựa có thể nộp tệp trong hồ sơ. Lần nộp này ghi `document.horse_id` và để `document_requirement_id` NULL. Chuyên viên thẩm định từ đơn có ngựa đó. Hồ sơ hiển thị bản nộp mới nhất của từng loại. Bản chờ duyệt được tính là đã nộp trên hồ sơ, còn checklist của đơn vẫn kiểm trạng thái duyệt và hạn theo ngày chạy.
+
+`VEHICLE_RETURN_PHOTO` có `owner_type = VEHICLE_TRIP`, dùng cho ảnh xe tại hub cuối khi xác nhận kết thúc lượt (M6).
+
+Loại giấy thêm ngày 23/11/2026, cùng `owner_type = BOOKING_HORSE`:
+- `QUARANTINE_CLEARANCE`: xác nhận ngựa đạt điều kiện cách ly trước khi vận chuyển. Dùng cho EXPORT, `submitter_type = COMPANY` (chuyên viên tải bản do cơ quan thú y hoặc chủ ngựa cung cấp);
+- `ORIGIN_QUARANTINE_CERT`: giấy kiểm dịch của nước xuất, dùng cho IMPORT, `submitter_type = COMPANY`;
+- `IMPORT_APPROVAL`: văn bản đồng ý và hướng dẫn kiểm dịch, dùng cho IMPORT;
+- `IMPORT_TRANSPORT_CERT`: giấy vận chuyển động vật nhập khẩu (mẫu 14a, Điều 11 Thông tư 01/2026), cửa khẩu cấp khi ngựa tới, dùng cho IMPORT.
+
+Loại giấy của xe và nhân viên (`VEHICLE_REGISTRATION`, `DRIVER_LICENSE`, `DISINFECTION_RECORD`) còn trong danh mục nhưng không có nghiệp vụ nào dùng.
 
 ### 7.3 `document_requirement`: theo quy định thì cần giấy gì
 
@@ -613,7 +681,7 @@ Giấy cấp **cho từng con ngựa** có `owner_type = HORSE` hoặc `BOOKING_
 | `country_rule_id` | `bigint` | | FK → country_rule, CASCADE | |
 | `document_type_id` | `bigint` | | FK → document_type | |
 | `gate_location_id` | `bigint` | có | FK → location | Chỉ áp cho một cửa khẩu. NULL = mọi cửa khẩu |
-| `submitter_type` | `varchar(30)` | | CK `CUSTOMER, CONSIGNEE, COMPANY, AGENT` | Ai chịu trách nhiệm nộp |
+| `submitter_type` | `varchar(30)` | | CK `CUSTOMER, CONSIGNEE, COMPANY` | Ai chịu trách nhiệm nộp |
 | `is_mandatory` | `boolean` | | default `true` | |
 
 Ràng buộc bảng: `UNIQUE NULLS NOT DISTINCT (country_rule_id, document_type_id, gate_location_id)`.
@@ -628,12 +696,20 @@ Index: `document_type_id`, `gate_location_id`.
 | Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
 |---|---|---|---|---|
 | `id` | `bigint` | | PK, identity | |
+| `collection_code` | `varchar(6)` | có | CK 6 chữ số | Mã nhận ngựa, sinh khi chuyển sang `IN_OPERATION`, chỉ trả cho chủ đơn |
+| `collection_failed_attempts` | `integer` | | Default 0, CK ≥ 0 | Đếm lần nhập sai dưới khóa dòng `booking`. Giới hạn `COLLECTION_CODE_MAX_ATTEMPTS` |
+| `collection_confirmed` | `boolean` | | Default false | Chủ đơn đã xác nhận cho phép giao mà không cần mã |
 | `code` | `varchar(30)` | | UK | Mã đơn hiển thị cho khách |
 | `customer_id` | `bigint` | | FK → customer(user_id) | Người đặt đơn |
+| `specialist_id` | `bigint` | có | FK → staff(user_id), có index | Chuyên viên phụ trách. Đơn cũ để trống đến khi quản lý giao |
 | `booking_type` | `varchar(30)` | | CK `LOCAL, INTERPROVINCE, EXPORT, IMPORT` | |
+| `transport_mode` | `varchar(30)` | | CK `SHARED, PRIVATE`, default `SHARED` | Chế độ vận chuyển của cả đơn |
 | `departure_id` | `bigint` | có | FK → departure | Chuyến trục chính. NULL khi chưa gán chuyến, hoặc khi đơn chạy thẳng (hub đón trùng hub giao). Mỗi đơn có tối đa một chặng trục |
 | `requested_pickup_date` | `date` | | | Ngày khách muốn đón |
+| `pickup_method` | `varchar(30)` | | default `COMPANY`, CK `COMPANY, SELF` | Đầu đón: công ty tới đón, hoặc khách tự chở ngựa tới hub |
+| `delivery_method` | `varchar(30)` | | default `COMPANY`, CK `COMPANY, SELF` | Đầu giao: công ty giao tận nơi, hoặc người nhận tới hub. `SELF` chỉ dùng cho đầu trong nước của đơn đi trục (kiểm ở service) |
 | `waybill_number` | `varchar(30)` | có | UK | Số vận đơn, cấp sau khi khách đặt cọc |
+| `delivery_confirmed_at` | `timestamptz` | có | | Thời điểm khách xác nhận đã nhận ngựa ổn. Hạn khiếu nại tính từ mốc `DELIVERED` trong `booking_status_history`. |
 | `emergency_spending_limit` | `numeric(15,2)` | có | CK `>= 0` | Hạn mức chi khẩn cấp không cần hỏi khách |
 | `original_booking_id` | `bigint` | có | FK → booking | Đơn này là chuyến hồi hương của đơn nào |
 | `status` | `varchar(30)` | | CK, xem bên dưới | |
@@ -652,8 +728,8 @@ Các giá trị `status`, chỉ gồm mốc thương mại:
 | `QUOTE_EXPIRED` | Báo giá hết hạn |
 | `CONFIRMED` | Đã cọc, đã cấp vận đơn |
 | `SCHEDULE_CHANGE_REQUIRED` | Chuyến bị hủy hoặc đổi, cần khách xác nhận lại lịch |
-| `IN_OPERATION` | Ngựa đã được nhận, đơn đang vận hành. Chi tiết ngựa đang ở đâu xem `horse_leg`, `horse_stay` và `incident` |
-| `DELIVERED` | Mọi `horse_leg` giao hàng đã xong, chờ quyết toán |
+| `IN_OPERATION` | Ngựa đã được nhận, khách đã trả đủ và xe đã rời nơi nhận. Đơn đang vận hành. Chi tiết ngựa đang ở đâu xem `horse_leg`, `horse_stay` và `incident` |
+| `DELIVERED` | Đã bàn giao mọi ngựa cho người nhận, gồm giao tận nơi hoặc ký trả tại hub, chờ quyết toán |
 | `COMPLETED` | Đã quyết toán xong |
 | `CANCELLED` / `REJECTED` | Bị hủy / bị từ chối |
 
@@ -690,7 +766,7 @@ Index: `customer_id`, `departure_id`, `original_booking_id`, `(status, created_a
 | `location_id` | `bigint` | có | FK → location | Nếu điểm này trùng một location của mạng lưới, ví dụ trường đua |
 | `source_customer_address_id` | `bigint` | có | FK → customer_address, ON DELETE SET NULL | Chép từ sổ địa chỉ nào |
 
-Ràng buộc bảng: `UNIQUE (booking_id, address_type)`.
+Ràng buộc bảng: chỉ một `PICKUP` mỗi đơn (unique index theo điều kiện), cho phép nhiều `DELIVERY`. `UNIQUE (booking_id, id)` làm đích FK tổ hợp từ `booking_horse`.
 Index: `province_code`, `location_id`.
 
 ### 8.4 `booking_horse`: dòng đơn (mỗi con ngựa một dòng)
@@ -700,17 +776,28 @@ Index: `province_code`, `location_id`.
 | `id` | `bigint` | | PK, identity | |
 | `booking_id` | `bigint` | | FK → booking, CASCADE | |
 | `horse_id` | `bigint` | | FK → horse | |
+| `delivery_address_id` | `bigint` | có với dòng thiếu địa chỉ trước migration | FK `(booking_id, delivery_address_id)` → `booking_address(booking_id, id)` | Nơi giao của từng con. Service gán địa chỉ DELIVERY khi đặt đơn. |
 | `stall_type_code` | `varchar(30)` | | FK → stall_type | Loại khoang cần đặt |
 | `diet_note` | `text` | có | | |
 | `feedings_per_day` | `smallint` | có | CK `1..10` | |
 | `is_feed_supplied_by_owner` | `boolean` | | default `false` | |
-| `status` | `varchar(30)` | | CK `ACTIVE, EXCLUDED, CANCELLED, DELIVERED, RETURNED` | `EXCLUDED` = bị loại vì không đủ sức khỏe khi đón |
+| `status` | `varchar(30)` | | CK `ACTIVE, EXCLUDED, CANCELLED, DELIVERED, RETURNED` | `EXCLUDED` = bị loại vì không đủ sức khỏe khi đón; `RETURNED` = đã trả ngựa xong |
 | `added_at` | `timestamptz` | | default `now()` | |
+| `pickup_missed_at` | `timestamptz` | có | | Giờ ghi lần đón hụt gần nhất |
+| `pickup_choice_due_at` | `timestamptz` | có | Chỉ mục khi chưa chọn | Hạn quyết định cho lần hụt gần nhất |
+| `pickup_miss_reason` | `varchar(500)` | có | | Diễn giải lý do tại nơi đón. Mã nguyên nhân và kết quả từng cuộc gọi nằm trong sự kiện `PICKUP_MISSED` của `audit_log` |
+| `pickup_miss_liability` | `varchar(20)` | có | CK `CUSTOMER, COMPANY, FORCE_MAJEURE` | Quản lý chốt |
+| `pickup_miss_choice` | `varchar(24)` | có | CK `DROP_HORSE, RETRY_PICKUP, SELF_DELIVERY, CHANGE_DEPARTURE, RESCHEDULE_PICKUP, CANCEL_BOOKING` | Quyết định đã ghi dưới khóa đơn |
+| `pickup_retry_departure_id` | `bigint` | có | FK → departure | Chuyến đã dùng lượt đón lại |
 
 Ràng buộc bảng: `UNIQUE (booking_id, horse_id)`.
 Index: `horse_id`.
 
+Ảnh hiện trường dùng `document` loại `PICKUP_MISS_PHOTO`, chủ sở hữu `BOOKING_HORSE`. Mã nguyên nhân, kết quả từng cuộc gọi và lựa chọn hộ ghi vào `audit_log`. Cấu hình `PICKUP_CHOICE_LONG_HOURS`, `PICKUP_CHOICE_SHORT_HOURS`, `PICKUP_RETRY_PREPARATION_HOURS` và `PICKUP_MISS_WAIT_MINUTES` nằm trong `system_config`.
+
 ### 8.5 `booking_horse_service`: dịch vụ thêm cho từng con
+
+`completed_at timestamptz` có thể trống. Quản lý xác nhận dịch vụ thuộc đúng con đang hoạt động, dưới khóa đơn. Thử lại giữ nguyên thời điểm hoàn thành.
 
 | Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
 |---|---|---|---|---|
@@ -726,11 +813,14 @@ Index: `horse_id`.
 | `booking_id` | `bigint` | | FK → booking, CASCADE | |
 | `from_status` | `varchar(30)` | có | | NULL ở dòng đầu tiên |
 | `to_status` | `varchar(30)` | | | |
-| `changed_by` | `bigint` | | FK → app_user | |
+| `changed_by` | `bigint` | có | FK → app_user | NULL = hệ thống tự đổi (scheduler) |
 | `changed_at` | `timestamptz` | | default `now()` | |
-| `reason` | `text` | có | | Lý do từ chối, lý do yêu cầu bổ sung hồ sơ… |
+| `reason` | `text` | có | | Lý do từ chối, yêu cầu bổ sung hồ sơ, đổi chuyến hoặc hủy đơn |
+| `cause_type` | `varchar(30)` | có | CK `CUSTOMER, COMPANY, AUTHORITY` | Nguyên nhân đổi chuyến. Để trống khi hệ thống nhả chỗ đơn chưa cọc ở mốc quyết định |
 
-Index: `(booking_id, changed_at)`.
+| `previous_departure_id` | `bigint` | có | FK → departure | Chuyến vừa lỡ khi chuyển sang SCHEDULE_CHANGE_REQUIRED. Mốc giữ giá lấy từ ngày chạy của chuyến này |
+
+Index: `(booking_id, changed_at)`, `previous_departure_id`.
 
 ### 8.7 `terms_acceptance`: bằng chứng khách đồng ý điều khoản
 
@@ -757,6 +847,20 @@ Index: `user_id`, `booking_id`.
 
 Chỉ đánh giá được khi đơn ở trạng thái `DELIVERED` hoặc `COMPLETED` (kiểm ở service).
 
+### 8.9 `booking_specialist_history`: lịch sử phân công chuyên viên
+
+| Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
+|---|---|---|---|---|
+| `id` | `bigint` | | PK, identity | |
+| `booking_id` | `bigint` | | FK → booking, có index | Đơn được giao |
+| `from_staff_id` | `bigint` | có | FK → staff(user_id) | Chuyên viên cũ, trống ở lần giao đầu |
+| `to_staff_id` | `bigint` | | FK → staff(user_id) | Chuyên viên được giao |
+| `changed_by` | `bigint` | | FK → app_user(id) | Quản lý thực hiện |
+| `reason` | `varchar(1000)` | có | | Bắt buộc khi đổi người, có thể trống khi tiếp nhận |
+| `changed_at` | `timestamptz` | | | Thời điểm giao hoặc đổi người |
+
+Giao việc và ghi lịch sử trong cùng giao dịch. Chỉ giao cho chuyên viên có hồ sơ và tài khoản đang hoạt động. Tính số đơn đang giữ khi đọc, bỏ các mốc `COMPLETED`, `CANCELLED`, `REJECTED` và `QUOTE_EXPIRED`. Chặn khóa tài khoản hoặc cho nghỉ khi số đơn đang giữ lớn hơn 0.
+
 ---
 
 ## Nhóm 9. Vận hành
@@ -776,6 +880,9 @@ Chỉ đánh giá được khi đơn ở trạng thái `DELIVERED` hoặc `COMPL
 | `planned_end_at` | `timestamptz` | | | |
 | `actual_start_at` | `timestamptz` | có | | |
 | `actual_end_at` | `timestamptz` | có | | |
+| `end_vehicle_condition` | `varchar(30)` | có | CK `NORMAL, NEEDS_MAINTENANCE` | Tình trạng xe do tổ lái báo khi hoàn tất lượt. Lượt đã hoàn tất trước khi áp dụng quy tắc có thể để trống |
+| `end_vehicle_note` | `varchar(1000)` | có | | Ghi chú của tổ lái, bắt buộc có nội dung khi báo cần bảo dưỡng |
+| `return_late_notified_at` | `timestamptz` | có | | `TripReturnService` ghi cùng giao dịch gửi thông báo trễ về hub lần đầu cho điều phối phụ trách |
 | `sealed_at` | `timestamptz` | có | | Thời điểm niêm phong xe. Chỉ ghi nhận, đợt này không có quy tắc kiểm tra |
 | `disinfected_at` | `timestamptz` | có | | Thời điểm khử trùng xe. Chỉ ghi nhận |
 | `status` | `varchar(30)` | | CK `PLANNED, DISPATCHED, IN_PROGRESS, COMPLETED, CANCELLED` | |
@@ -784,6 +891,9 @@ Ràng buộc bảng:
 - `CHECK (trip_type <> 'LINEHAUL' OR departure_id IS NOT NULL)`
 - `CHECK (planned_end_at > planned_start_at)`
 - `CHECK (actual_end_at IS NULL OR actual_start_at IS NOT NULL)`
+- Chỉ lượt `COMPLETED` được lưu tình trạng xe cuối lượt. Chỉ lưu ghi chú khi có tình trạng xe, và `NEEDS_MAINTENANCE` yêu cầu ghi chú có ít nhất một ký tự khác khoảng trắng.
+
+Service chỉ kết thúc lượt sau khi điểm dừng cuối có giờ tới thực tế, xe đã bàn giao hết ngựa và có chứng từ `VEHICLE_RETURN_PHOTO` của lượt. Khi xuất phát, giữ khóa xe và các nhân viên tổ lái để kiểm xe, tài xế hoặc hộ tống còn lượt khác `IN_PROGRESS`.
 
 Index: `departure_id`, `vehicle_id`, `(status, planned_start_at)`.
 
@@ -792,7 +902,7 @@ Index: `departure_id`, `vehicle_id`, `(status, planned_start_at)`.
 | Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
 |---|---|---|---|---|
 | `id` | `bigint` | | PK, identity | |
-| `vehicle_trip_id` | `bigint` | | FK → vehicle_trip, CASCADE | |
+| `vehicle_trip_id` | `bigint` | có | FK → vehicle_trip, CASCADE | |
 | `sequence_number` | `int` | | CK `>= 1` | |
 | `location_id` | `bigint` | có | FK → location | Điểm thuộc mạng lưới |
 | `booking_address_id` | `bigint` | có | FK → booking_address | Điểm đón hoặc giao của khách |
@@ -818,7 +928,7 @@ Index: `location_id`, `booking_address_id`, `(route_id, route_stop_sequence_numb
 | Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
 |---|---|---|---|---|
 | `id` | `bigint` | | PK, identity | |
-| `vehicle_trip_id` | `bigint` | | FK → vehicle_trip, CASCADE | |
+| `vehicle_trip_id` | `bigint` | có | FK → vehicle_trip, CASCADE | |
 | `staff_id` | `bigint` | | FK → staff(user_id) | |
 | `crew_role` | `varchar(30)` | | CK `DRIVER, ESCORT, VET` | |
 | `status` | `varchar(30)` | | CK `ASSIGNED, ACKNOWLEDGED, RELEASED` | `ACKNOWLEDGED` = nhân viên đã xác nhận nhận việc |
@@ -830,7 +940,7 @@ Index: `staff_id`.
 
 ### 9.4 `horse_leg`: một chặng di chuyển của một con ngựa
 
-Mỗi con ngựa trong đơn có một chuỗi chặng: đón → hub → trục chính → trại cách ly → giao. Đơn chạy thẳng chỉ có một chặng `DIRECT` từ địa chỉ đón tới địa chỉ giao. Một chặng do xe công ty chở (`vehicle_trip_id`) hoặc do đại lý đảm nhận (`agent_party_id`).
+Mỗi con ngựa trong đơn có một chuỗi chặng: đón → hub → trục chính → giao. Đơn chạy thẳng chỉ có một chặng `DIRECT` từ địa chỉ đón tới địa chỉ giao. Mỗi chặng thuộc một lượt xe công ty (`vehicle_trip_id`).
 
 | Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
 |---|---|---|---|---|
@@ -843,9 +953,9 @@ Mỗi con ngựa trong đơn có một chuỗi chặng: đón → hub → trục
 | `to_location_id` | `bigint` | có | FK → location | |
 | `to_booking_address_id` | `bigint` | có | FK → booking_address | |
 | `vehicle_trip_id` | `bigint` | có | FK → vehicle_trip | Xe công ty chở |
-| `agent_party_id` | `bigint` | có | FK → party | Đại lý chở |
 | `board_trip_stop_id` | `bigint` | có | FK → trip_stop | Lên xe ở điểm dừng nào |
 | `alight_trip_stop_id` | `bigint` | có | FK → trip_stop | Xuống xe ở điểm dừng nào |
+| `stall_position` | `smallint` | có | CK `>= 1` | Vị trí trên xe, đánh số từ đầu xe ra cửa sau. Khoang rộng chiếm vị trí này và vị trí kế sau. NULL = chưa xếp. Chỉ dịch vụ xếp khoang của luồng B ghi |
 | `replaced_horse_leg_id` | `bigint` | có | FK → horse_leg | Chặng thay thế cho chặng thất bại, ví dụ giao lại lần hai |
 | `planned_start_at` | `timestamptz` | | | |
 | `planned_end_at` | `timestamptz` | | | |
@@ -857,11 +967,9 @@ Ràng buộc bảng:
 - `UNIQUE (booking_horse_id, sequence_number)`
 - `CHECK (num_nonnulls(from_location_id, from_booking_address_id) = 1)`
 - `CHECK (num_nonnulls(to_location_id, to_booking_address_id) = 1)`
-- `CHECK (num_nonnulls(vehicle_trip_id, agent_party_id) = 1)`
-- `CHECK (agent_party_id IS NULL OR (board_trip_stop_id IS NULL AND alight_trip_stop_id IS NULL))`: chặng do đại lý chở thì không có điểm lên xuống trên xe công ty.
 - `CHECK (planned_end_at > planned_start_at)`
 
-Index: `vehicle_trip_id`, `agent_party_id`, `board_trip_stop_id`, `alight_trip_stop_id`, `replaced_horse_leg_id`, `status`.
+Index: `vehicle_trip_id`, `board_trip_stop_id`, `alight_trip_stop_id`, `replaced_horse_leg_id`, `status`.
 
 ### 9.5 `horse_stay`: thời gian ngựa ở một nơi, không trên xe
 
@@ -869,21 +977,78 @@ Index: `vehicle_trip_id`, `agent_party_id`, `board_trip_stop_id`, `alight_trip_s
 |---|---|---|---|---|
 | `id` | `bigint` | | PK, identity | |
 | `booking_horse_id` | `bigint` | | FK → booking_horse | |
-| `stay_type` | `varchar(30)` | | CK `ASSEMBLY, QUARANTINE, OVERNIGHT, STABLING` | Tập kết ở hub / cách ly / nghỉ qua đêm / gửi chuồng |
+| `stay_type` | `varchar(30)` | | CK `ASSEMBLY, QUARANTINE, OVERNIGHT, STABLING` | Tập kết ở hub / (ngừng dùng) / nghỉ qua đêm / gửi chuồng |
 | `location_id` | `bigint` | | FK → location | |
-| `operator_party_id` | `bigint` | có | FK → party | Đơn vị vận hành nơi đó, ví dụ trại cách ly đối tác |
+| `hub_stall_id` | `bigint` | có | FK → hub_stall | Ô được gán trong lần lưu trú tại hub |
+| `operator_party_id` | `bigint` | có | FK → party | Đơn vị vận hành nơi đó, ví dụ chuồng gửi đối tác |
 | `planned_start_at` | `timestamptz` | | | |
 | `planned_end_at` | `timestamptz` | | | |
 | `actual_start_at` | `timestamptz` | có | | |
 | `actual_end_at` | `timestamptz` | có | | |
-| `quarantine_result` | `varchar(30)` | có | CK `PASSED, FAILED` | Chỉ dùng cho QUARANTINE |
+| `balance_hold_at` | `timestamptz` | có | Chỉ trên `STABLING` đã bắt đầu | Mốc T tính hạn hủy. Với chuyến trục, phí bắt đầu từ mốc muộn hơn giữa T và giờ chạy thực tế |
+| `missed_departure_id` | `bigint` | có | FK → departure | Chuyến trục vừa lỡ vì chưa trả số dư |
+| `failed_delivery_leg_id` | `bigint` | có | FK → horse_leg | Chặng giao hụt do người nhận vắng dẫn tới lưu trú |
+| `ready_at` | `timestamptz` | có | | Lúc báo sẵn sàng nhận |
+| `ready_call_note` | `varchar(500)` | có | | Ghi chú khi điều phối ghi hộ qua điện thoại |
+| `earliest_redelivery_at`, `chosen_redelivery_at` | `timestamptz` | có | Cùng có giá trị khi đã sẵn sàng và khách chọn khung muộn hơn | Đồng hồ tiếp tục từ khung sớm nhất đã đưa |
+| `collection_reported_at`, `collection_expected_at` | `timestamptz` | có | Cùng có giá trị và giờ đến nằm trong 24 giờ từ lúc báo | Ghép với thời điểm bàn giao tại hub để xác định khoảng tạm dừng |
+| `stabling_unit_price` | `numeric(15,2)` | có | Dương, chỉ trên `STABLING` | Snapshot đơn giá mỗi 24 giờ lúc bắt đầu giữ; trống thì dùng cấu hình |
+| `quarantine_result` | `varchar(30)` | có | CK `PASSED, FAILED` | Ngừng dùng cùng `QUARANTINE` |
 
 Ràng buộc bảng:
 - `CHECK (planned_end_at > planned_start_at)`
 - `CHECK (quarantine_result IS NULL OR stay_type = 'QUARANTINE')`
 - `CHECK (actual_end_at IS NULL OR actual_start_at IS NOT NULL)`
+- `CHECK (balance_hold_at IS NULL OR (stay_type = 'STABLING' AND actual_start_at IS NOT NULL))`
 
 Index: `booking_horse_id`, `location_id`, `operator_party_id`.
+
+Một ô chỉ được gán cho một lưu trú đã bắt đầu và chưa kết thúc (unique index từng phần).
+
+#### `coordinator_assignment_history` · lịch sử điều phối phụ trách
+
+`departure.coordinator_id` và `vehicle_trip.coordinator_id` (FK → staff, có thể trống) là người đang phụ trách. `departure.coordinator_reminded_on` là ngày đã nhắc quản lý gần nhất. Lượt trục lập mới lấy người của chuyến, lượt khác lấy người lập.
+
+| Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
+|---|---|---|---|---|
+| `id` | `bigint` | | PK, identity | |
+| `departure_id`, `vehicle_trip_id` | `bigint` | có | FK, đúng một cột có giá trị | Chuyến hoặc lượt đổi người |
+| `from_staff_id` | `bigint` | có | FK → staff(user_id) | Người trước |
+| `to_staff_id` | `bigint` | | FK → staff(user_id) | Người mới |
+| `changed_by` | `bigint` | | FK → app_user | Quản lý, điều phối nhận thay, hoặc người lập lượt |
+| `reason` | `varchar(500)` | có | | Bắt buộc khi đổi người hoặc nhận thay |
+| `changed_at` | `timestamptz` | | | |
+
+#### `health_check_task` · việc khám giao cho hộ tống hoặc điều phối
+
+| Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
+|---|---|---|---|---|
+| `id` | `bigint` | | PK, identity | |
+| `booking_horse_id` | `bigint` | | FK → booking_horse | Con cần khám |
+| `vehicle_trip_id`, `horse_stay_id` | `bigint` | có | FK, đúng một cột có giá trị | Lượt xe liên quan hoặc ca lưu trú |
+| `assigned_to`, `assigned_by` | `bigint` | | FK → staff(user_id) | Người được giao khám và điều phối giao việc |
+| `assigned_at`, `due_at` | `timestamptz` | | | Lúc giao, hạn. Quá hạn suy ra khi đọc |
+| `check_type` | `varchar(30)` | | CK `ROUTINE, FOLLOW_UP, BEFORE_DEPARTURE, BEFORE_DELIVERY` | |
+| `status` | `varchar(30)` | | CK `ASSIGNED, ACCEPTED, DONE, CANCELLED` | |
+| `accepted_at`, `done_at`, `overdue_notified_at` | `timestamptz` | có | | |
+| `health_log_id` | `bigint` | có | FK → horse_health_log | Bắt buộc khi DONE. Chỉ `HealthCheckTaskService` ghi |
+| `note`, `cancel_reason` | `varchar(500)` | có | Lý do bắt buộc khi CANCELLED | |
+
+Khám trước khi ra hub gắn lượt xe sắp đi hoặc ca lưu trú khi người nhận tới hub. Nhật ký sức khỏe dùng để hoàn tất việc khám ghi theo ca đang lưu trú tại hub. Scheduler tạo việc trong `PRE_EXIT_CHECK_HOURS` giờ trước giờ rời dự kiến và bù cho lượt hoặc hẹn đã đến hạn mà ngựa vẫn chờ ở hub. Hạn khám lấy từ `trip_stop.planned_departure_at` hoặc giờ tự nhận. Ca tập kết ở hub đích dùng `horse_stay.planned_end_at` như API hẹn giờ nhận. Ca gửi chuồng dùng `collection_expected_at` nếu đã báo giờ mới, hoặc giờ hẹn cũ được ghi vào `planned_start_at` khi chuyển sang gửi chuồng do trễ hẹn.
+
+Mỗi con có tối đa một việc khám ra hub chưa hủy cùng loại cho mỗi lượt hoặc ca. Lượt xe giao việc cho hộ tống chưa được giải phóng hoặc điều phối phụ trách lượt. Ca tự nhận giao điều phối phụ trách tại hub.
+
+#### `hub_stall` · ô chuồng tại hub
+
+| Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
+|---|---|---|---|---|
+| `id` | `bigint` | | PK identity | |
+| `location_id` | `bigint` | | FK → location | Phải là hub |
+| `code` | `varchar(40)` | | UK cùng `location_id` | Mã ô tại hub |
+| `stall_kind` | `varchar(16)` | | CK STANDARD, ISOLATION | Ô thường hoặc ô cách ly |
+| `is_active` | `boolean` | | Mặc định true | Ô còn dùng |
+
+Service kiểm hub của ô trùng địa điểm lưu trú và chỉ gán ô đang dùng cho lưu trú đang mở tại hub do công ty vận hành. Khi mở lưu trú, chọn ô thường trống theo mã. Nếu hết ô, vẫn nhập hub và báo điều phối. Người dùng có thể chọn ô cách ly khi đổi ô. Ô có lưu trú đang mở không được ngừng dùng. Số ô trống suy ra từ lưu trú đang mở.
 
 ### 9.6 `horse_health_log`: lần đo sức khỏe ngựa
 
@@ -895,12 +1060,14 @@ Index: `booking_horse_id`, `location_id`, `operator_party_id`.
 | `recorded_at` | `timestamptz` | | | |
 | `vehicle_trip_id` | `bigint` | có | FK → vehicle_trip | Đo trên đường, không ở điểm dừng |
 | `trip_stop_id` | `bigint` | có | FK → trip_stop | Đo tại một điểm dừng |
-| `horse_stay_id` | `bigint` | có | FK → horse_stay | Đo trong thời gian lưu trú hoặc cách ly |
+| `horse_stay_id` | `bigint` | có | FK → horse_stay | Đo trong thời gian lưu trú |
 | `health_status` | `varchar(30)` | | CK `NORMAL, WATCH, SICK, CRITICAL` | |
 | `temperature_celsius` | `numeric(4,1)` | có | CK `30..45` | |
 | `heart_rate_bpm` | `smallint` | có | CK `10..200` | |
 | `respiration_rate_per_minute` | `smallint` | có | CK `4..100` | |
 | `weight_kg` | `numeric(6,1)` | có | CK `> 0` | |
+| `water_intake` | `varchar(30)` | có | CK `NORMAL, REDUCED, REFUSED` | Uống nước trong lần dừng hoặc lưu trú (`V202611241000`) |
+| `feed_intake` | `varchar(30)` | có | CK `NORMAL, REDUCED, REFUSED` | Ăn trong lần dừng hoặc lưu trú (`V202611241000`) |
 | `symptoms` | `text` | có | | |
 | `note` | `text` | có | | |
 
@@ -916,7 +1083,9 @@ Index: `(booking_horse_id, recorded_at)`, `trip_stop_id`, `horse_stay_id`, `vehi
 | Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
 |---|---|---|---|---|
 | `id` | `bigint` | | PK, identity | |
-| `handover_type` | `varchar(30)` | | CK `PICKUP, HUB_IN, HUB_OUT, STAY_IN, STAY_OUT, AGENT, DELIVERY, RETURN` | |
+| `handover_type` | `varchar(30)` | | CK `PICKUP, HUB_IN, HUB_OUT, STAY_IN, STAY_OUT, DELIVERY, RETURN, SHIFT` | `SHIFT` chờ migration |
+| `unclaimed_outcome` | `varchar(40)` | Có | `RETURNED_TO_SENDER`, `RETURNED_TO_AUTHORIZED_PERSON`, `RELEASED_BY_LEGAL_DOCUMENT`. Chỉ cho giao nhận `RETURN` đã `DONE` tại lưu trú. |
+| `incident_plan_id` | `bigint` | có | FK → incident_plan | Phiên bản phương án `STABLE_NEARBY` của lần gửi chuồng `STAY_IN` tại điểm dừng (V202611291700). |
 | `trip_stop_id` | `bigint` | có | FK → trip_stop | Giao nhận tại điểm dừng của xe |
 | `horse_stay_id` | `bigint` | có | FK → horse_stay | Giao nhận khi nhập hoặc xuất trại, chuồng |
 | `from_party_id` | `bigint` | có | FK → party | Đối tác giao. NULL = công ty hoặc bên trong đơn |
@@ -929,10 +1098,16 @@ Index: `(booking_horse_id, recorded_at)`, `trip_stop_id`, `horse_stay_id`, `vehi
 
 Biên bản ký là một `document` có `handover_id` trỏ về dòng này.
 
+Nhận tại điểm đón, nhận hoặc giao cho khách tại hub và giao ở điểm giao yêu cầu tình trạng và ảnh của từng con có mã chip khớp. Biên bản bắt buộc ở các lần này.
+
+Hành trình của chủ đơn chỉ trả biên bản và ảnh gắn với lần giao nhận DONE có ngựa của đơn đã khớp chip. Tệp gắn chung cho nhiều đơn cần được phân quyền theo từng đơn trước khi hiện cho khách.
+
 Ràng buộc bảng:
 - `CHECK (num_nonnulls(trip_stop_id, horse_stay_id) = 1)`
 - `CHECK (from_party_id IS NULL OR to_party_id IS NULL OR from_party_id <> to_party_id)`
 - `CHECK (status <> 'DONE' OR handed_at IS NOT NULL)`
+- `CHECK (incident_plan_id IS NULL OR (handover_type = 'STAY_IN' AND trip_stop_id IS NOT NULL AND to_party_id IS NOT NULL))`
+- Mỗi phương án có tối đa một lần gửi chuồng `PENDING` hoặc `DONE` (unique index trên `incident_plan_id`). Service kiểm phiên bản mới nhất đã duyệt, đối tác nhận đúng phương án và điểm dừng có địa điểm mạng lưới.
 
 Index: `trip_stop_id`, `horse_stay_id`, `from_party_id`, `to_party_id`, `handled_by`.
 
@@ -941,10 +1116,9 @@ Bên giao và bên nhận suy ra từ `handover_type`:
 | `handover_type` | Bên giao | Bên nhận |
 |---|---|---|
 | `PICKUP` | `booking_party` SHIPPER | Công ty |
-| `HUB_IN`, `HUB_OUT` | Công ty | Công ty |
+| `HUB_IN`, `HUB_OUT`, `SHIFT` | Công ty | Công ty |
 | `STAY_IN`, `STAY_OUT` | Công ty hoặc đối tác (`from_party_id`) | Công ty hoặc đối tác (`to_party_id`) |
-| `AGENT` | Công ty hoặc đối tác (`from_party_id`) | Công ty hoặc đối tác (`to_party_id`); ít nhất một bên là đối tác (kiểm ở service) |
-| `DELIVERY` | Công ty, hoặc đại lý (`from_party_id`) | `booking_party` CONSIGNEE |
+| `DELIVERY` | Công ty | `booking_party` CONSIGNEE |
 | `RETURN` | Công ty, hoặc đối tác (`from_party_id`) | `booking_party` SHIPPER |
 
 ### 10.2 `handover_horse`: ngựa nào được giao trong lần giao nhận
@@ -953,9 +1127,14 @@ Bên giao và bên nhận suy ra từ `handover_type`:
 |---|---|---|---|---|
 | `handover_id` | `bigint` | | PK, FK → handover, CASCADE | |
 | `horse_leg_id` | `bigint` | | PK, FK → horse_leg | |
-| `scanned_microchip` | `varchar(30)` | có | | Mã chip đọc được |
+| `scanned_microchip` | `varchar(30)` | có | | Mã chip do máy đọc hoặc người dùng gõ |
+| `microchip_entry_method` | `varchar(10)` | | CK `SCAN, MANUAL`, mặc định `SCAN` | Cách nhập mã chip; bản ghi cũ dùng mặc định |
+| `manual_entry_reason` | `varchar(500)` | có | CK theo cách nhập | Bắt buộc có nội dung khi `MANUAL`; `SCAN` để NULL |
 | `is_microchip_matched` | `boolean` | | | So với `horse.microchip` |
 | `condition_note` | `text` | có | | Tình trạng ngựa lúc giao nhận |
+| `recipient_name` | `varchar(120)` | có | | Họ tên người nhận do nhân viên ghi khi giao |
+
+Khi trả ngựa quá hạn, dòng giao nhận dùng lại mã chip, cách nhập và lý do đã ghi ở lần đón.
 
 Index: `horse_leg_id`.
 
@@ -965,7 +1144,7 @@ Index: `horse_leg_id`.
 |---|---|---|---|---|
 | `handover_id` | `bigint` | | PK, FK → handover, CASCADE | |
 | `document_id` | `bigint` | | PK, FK → document | Ví dụ hộ chiếu ngựa bản gốc |
-| `direction` | `varchar(30)` | | CK `RECEIVED, RETURNED` | |
+| `direction` | `varchar(30)` | | CK `RECEIVED, NOT_RECEIVED, RETURNED` | |
 
 Index: `document_id`.
 
@@ -975,13 +1154,14 @@ Index: `document_id`.
 
 ### 11.1 `horse_insurance`: bảo hiểm cho từng con trong đơn (1–1 với booking_horse)
 
+`refunded_premium_amount numeric(15,2)` ghi tổng phí hãng đã hoàn theo chứng từ chuyên viên xác nhận khi đón hụt do khách. Giá trị NULL nếu chưa ghi nhận, nếu có thì dương và không vượt phí bảo hiểm xác nhận. Ghi nhận lại cùng tổng không lập thêm khoản hoàn.
+
 | Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
 |---|---|---|---|---|
 | `id` | `bigint` | | PK, identity | |
 | `booking_horse_id` | `bigint` | | UK, FK → booking_horse, CASCADE | |
 | `coverage_option` | `varchar(30)` | | CK `PERSONAL, ARRANGED, NONE` | Khách tự mua / công ty mua giúp / không mua |
-| `insurer_party_id` | `bigint` | có | FK → party | Công ty bảo hiểm |
-| `coverage_amount` | `numeric(15,2)` | có | CK `> 0` | |
+| `insurer_name` | `varchar(200)` | có | | Tên hãng ghi theo hợp đồng hoặc báo giá |
 | `premium_amount` | `numeric(15,2)` | có | CK `>= 0` | Phí bảo hiểm |
 | `currency_code` | `char(3)` | có | | |
 | `quote_expires_at` | `timestamptz` | có | | Hạn của báo giá bảo hiểm |
@@ -997,13 +1177,13 @@ Index: `document_id`.
 | `confirmed_at` | `timestamptz` | có | | |
 
 Ràng buộc bảng:
-- `CHECK (coverage_option <> 'ARRANGED' OR insurer_party_id IS NOT NULL)`
+- `CHECK (status <> 'CONFIRMED' OR coverage_option <> 'ARRANGED' OR (insurer_name IS NOT NULL AND btrim(insurer_name) <> ''))`
 - `CHECK (coverage_option <> 'NONE' OR waiver_terms_acceptance_id IS NOT NULL)`
-- `CHECK (coverage_option = 'NONE' OR (coverage_amount IS NOT NULL AND currency_code IS NOT NULL))`
+- `CHECK (status <> 'CONFIRMED' OR coverage_option <> 'ARRANGED' OR currency_code IS NOT NULL)`
 - `CHECK (status <> 'REVISION_REQUESTED' OR (revision_reason IS NOT NULL AND revision_requested_at IS NOT NULL))`. Chỉ được yêu cầu bổ sung khi `coverage_option = PERSONAL` (kiểm ở service).
 - `CHECK (status <> 'CONFIRMED' OR (confirmed_by IS NOT NULL AND confirmed_at IS NOT NULL))`
 
-Index: `insurer_party_id`, `waiver_terms_acceptance_id`.
+Index: `waiver_terms_acceptance_id`.
 
 ---
 
@@ -1040,6 +1220,8 @@ Index: `price_list_id`.
 
 ### 12.2 `quotation_line`: dòng báo giá
 
+`pickup_deposit_floor boolean NOT NULL DEFAULT false` đánh dấu dòng điều chỉnh dương theo sàn cọc đã trả. Dòng này phải là `ADJUSTMENT` và không phải khoản thu hộ. Khi loại thêm ngựa, báo giá thay thế bỏ dòng sàn cũ và tính lại. Dòng cước đón lại và nhiên liệu gắn `horse_leg_id` để xác định lượt xe đã tính phí.
+
 | Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
 |---|---|---|---|---|
 | `id` | `bigint` | | PK, identity | |
@@ -1047,7 +1229,7 @@ Index: `price_list_id`.
 | `line_number` | `int` | | CK `>= 1` | |
 | `line_type` | `varchar(30)` | | CK `LINEHAUL, PICKUP, DELIVERY, DIRECT, FUEL, STALL, QUARANTINE, SERVICE, DOCS, INSURANCE, ADJUSTMENT` | |
 | `billable_service_id` | `bigint` | có | FK → billable_service | |
-| `price_item_id` | `bigint` | có | FK → price_item | Đơn giá lấy từ dòng giá nào. NULL với dòng điều chỉnh tay |
+| `price_item_id` | `bigint` | có | FK → price_item | Đơn giá lấy từ dòng giá nào. NULL với dòng điều chỉnh tay và dòng phí bảo hiểm |
 | `booking_horse_id` | `bigint` | có | FK → booking_horse | Dòng này tính cho con ngựa nào |
 | `horse_leg_id` | `bigint` | có | FK → horse_leg | Dòng này tính cho chặng nào |
 | `description` | `varchar(500)` | | | |
@@ -1056,17 +1238,20 @@ Index: `price_list_id`.
 | `unit_price` | `numeric(15,2)` | | snapshot | |
 | `amount` | `numeric(15,2)` | | `GENERATED ALWAYS AS (round(quantity * unit_price, 2)) STORED` | |
 | `is_pass_through` | `boolean` | | snapshot | |
+| `refund_payment_id` | `bigint` | có | FK → payment | Khoản hoàn đầu tiên được lập cho dòng này. Từ 24/11/2026 không hoàn riêng từng dòng nên không còn nơi ghi; giữ cột cho dữ liệu cũ |
 
 Ràng buộc bảng:
 - `UNIQUE (quotation_id, line_number)`
 - `CHECK (unit_price >= 0 OR line_type = 'ADJUSTMENT')`: chỉ dòng điều chỉnh được có đơn giá âm (giảm giá).
 - `CHECK (line_type = 'ADJUSTMENT' OR billable_service_id IS NOT NULL)`
 
-Index: `billable_service_id`, `price_item_id`, `booking_horse_id`, `horse_leg_id`.
+Index: `billable_service_id`, `price_item_id`, `booking_horse_id`, `horse_leg_id`, `refund_payment_id`. Sau SENT, các cột giá giữ nguyên.
 
 Tổng tiền lưu ở `quotation.total_amount`, do `QuotationService` tính từ các dòng (mục 5).
 
 ### 12.3 `payment`: khoản phải thu hoặc phải hoàn
+
+Một đơn có thể có nhiều khoản `BALANCE` đã trả. Service giữ khóa đơn và chỉ lập thêm khoản chờ khi vẫn còn thiếu so với báo giá đã chấp nhận. Hạn trả tính từ lần giao nhận kích hoạt khoản đó.
 
 | Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
 |---|---|---|---|---|
@@ -1080,6 +1265,17 @@ Tổng tiền lưu ở `quotation.total_amount`, do `QuotationService` tính t�
 | `status` | `varchar(30)` | | CK `PENDING, PAID, FAILED, CANCELLED` | |
 | `due_at` | `timestamptz` | có | | |
 | `paid_at` | `timestamptz` | có | | |
+| `issued_at` | `timestamptz` | có | Chỉ `EXTRA_CHARGE` | Lúc lập khoản thu thêm |
+| `extended_at` | `timestamptz` | có | Chỉ `EXTRA_CHARGE` | Đã gia hạn, một lần |
+| `disputed_at` | `timestamptz` | có | Chỉ `EXTRA_CHARGE` | Khách khiếu nại khoản |
+| `dispute_reason` | `varchar(500)` | có | Chỉ `EXTRA_CHARGE` | Có cùng `disputed_at` |
+| `dispute_resolved_at` | `timestamptz` | có | Chỉ `EXTRA_CHARGE` | Có cùng `dispute_decision` |
+| `dispute_decision` | `varchar(20)` | có | Chỉ `EXTRA_CHARGE` | CK `ACCEPTED, REJECTED` |
+| `dispute_response` | `varchar(500)` | có | Chỉ `EXTRA_CHARGE` | Trả lời của quản lý |
+| `written_off_at` | `timestamptz` | có | Chỉ `EXTRA_CHARGE` | Xóa nợ, `status` là `CANCELLED` |
+| `written_off_by` | `bigint` | có | Chỉ `EXTRA_CHARGE` | FK → app_user |
+| `write_off_reason` | `varchar(500)` | có | Chỉ `EXTRA_CHARGE` | Bắt buộc khi xóa nợ |
+| `block_released_at` | `timestamptz` | có | Chỉ `EXTRA_CHARGE` | Quản lý cho đặt đơn lại |
 | `refunded_payment_id` | `bigint` | có | FK → payment | |
 
 Ràng buộc bảng:
@@ -1120,24 +1316,48 @@ Index: `payment_id`.
 | `booking_id` | `bigint` | có | FK → booking | |
 | `vehicle_trip_id` | `bigint` | có | FK → vehicle_trip | Một sự cố xe có thể ảnh hưởng nhiều đơn |
 | `horse_leg_id` | `bigint` | có | FK → horse_leg | Sự cố của riêng một con ngựa |
-| `incident_type` | `varchar(30)` | | CK `HEALTH, VEHICLE_BREAKDOWN, ACCIDENT, DELAY, DOCUMENT, HANDOVER_TIMEOUT, OTHER` | |
-| `cause_type` | `varchar(30)` | | CK `COMPANY_FAULT, HORSE_CONDITION, CUSTOMER_DOCS, AGENT_FAULT, FORCE_MAJEURE, RECIPIENT_ABSENT` | Nguyên nhân, quyết định ai chịu chi phí |
+| `incident_type` | `varchar(30)` | | CK `HEALTH, VEHICLE_BREAKDOWN, ACCIDENT, DELAY, DOCUMENT, HANDOVER_TIMEOUT, OTHER, COMPLAINT` | |
+| `severity` | `varchar(10)` | | CK `LOW, MEDIUM, HIGH` | Nhẹ, Vừa, Nặng. Tổ lái có thể chọn khi báo; điều phối hoặc quản lý có thể đổi mức và ghi kiểm toán |
+| `cause_type` | `varchar(30)` | chỉ với `COMPLAINT` | CK `COMPANY_FAULT, HORSE_CONDITION, CUSTOMER_DOCS, FORCE_MAJEURE, RECIPIENT_ABSENT` | Nguyên nhân do tổ lái đề xuất; trống với `COMPLAINT` |
+| `confirmed_cause_type` | `varchar(30)` | có | Cùng tập giá trị với `cause_type` | Nguyên nhân quản lý chốt khi duyệt phương án |
+| `cause_confirmed_by` | `bigint` | có | FK → staff.user_id | Quản lý chốt, để trống với sự cố hệ thống |
+| `cause_confirmed_at` | `timestamptz` | có | Cùng có với `confirmed_cause_type` | Giờ chốt |
 | `title` | `varchar(200)` | | | |
 | `description` | `text` | | | |
 | `latitude` | `numeric(9,6)` | có | | |
 | `longitude` | `numeric(9,6)` | có | | |
-| `reported_by` | `bigint` | | FK → staff(user_id) | |
+| `reported_by` | `bigint` | chỉ với `COMPLAINT` | FK → staff(user_id) | Có thể trống khi khách tự gửi khiếu nại |
 | `reported_at` | `timestamptz` | | default `now()` | |
 | `status` | `varchar(30)` | | CK `REPORTED, PLAN_PENDING, PLAN_ACTIVE, RESOLVED, CLOSED` | |
+| `rest_started_at` | `timestamptz` | có | | Giờ hộ tống bắt đầu cho ngựa nghỉ khi phương án đang hiệu lực |
+| `trip_unlocked_at` | `timestamptz` | có | | Thời điểm điều phối mở khóa lượt xe |
+| `trip_unlocked_by` | `bigint` | có | FK → staff(user_id) | Điều phối viên mở khóa |
+| `trip_unlock_reason` | `varchar(1000)` | có | | Lý do mở khóa, bắt buộc khi điều phối mở khóa |
 | `fit_confirmed_by` | `bigint` | có | FK → staff(user_id) | Người xác nhận ngựa đủ sức khỏe đi tiếp |
 | `fit_confirmed_at` | `timestamptz` | có | | |
 | `resolved_at` | `timestamptz` | có | | |
+| `booking_horse_id` | `bigint` | có | FK → booking_horse | Ngựa được chọn trong khiếu nại. Trống khi khiếu nại cả đơn. |
+| `complaint_reply` | `text` | có | | Nội dung quản lý trả lời khiếu nại |
+| `complaint_decision` | `varchar(30)` | có | CK `ACCEPTED, REJECTED` | Kết luận khiếu nại |
+| `complaint_decision_reason` | `text` | có | | Lý do kết luận |
+| `complaint_decided_by` | `bigint` | có | FK → staff(user_id) | Quản lý kết luận khiếu nại |
 
 Ràng buộc bảng:
 - `CHECK (num_nonnulls(booking_id, vehicle_trip_id, horse_leg_id) >= 1)`
+- `CHECK (incident_type <> 'COMPLAINT' OR booking_id IS NOT NULL)`
+- `CHECK (incident_type = 'COMPLAINT' OR (reported_by IS NOT NULL AND cause_type IS NOT NULL))`
+- Các trường riêng của khiếu nại chỉ dùng cho `COMPLAINT`. Khi có kết luận phải có lý do, người kết luận, thời điểm xử lý và trạng thái `CLOSED`.
+- Mỗi đơn có tối đa một `COMPLAINT` chưa `CLOSED` theo unique index có điều kiện. Service kiểm tra ngựa được chọn thuộc đơn, ảnh `COMPLAINT_PHOTO` và quyền khách hoặc quản lý trong cùng luồng ghi khiếu nại.
 - `CHECK ((fit_confirmed_by IS NULL) = (fit_confirmed_at IS NULL))`
+- Ba cột mở khóa lượt xe cùng trống hoặc cùng có giá trị; lý do không được chỉ có khoảng trắng.
+
+Mức mặc định khi không chọn hoặc khi hệ thống tạo sự cố: `HIGH` cho `HEALTH`, `ACCIDENT`; `MEDIUM` cho `VEHICLE_BREAKDOWN`, `HANDOVER_TIMEOUT`, `DOCUMENT`; `LOW` cho `DELAY`, `OTHER`, `COMPLAINT`. Danh sách nghiệp vụ ưu tiên Nặng, Vừa, Nhẹ rồi theo thời điểm báo mới nhất.
+
+Service chặn Tới nơi và Rời đi khi lượt xe còn sự cố `HIGH` đang mở, chưa ở `PLAN_ACTIVE` và chưa có `trip_unlocked_at`. Duyệt phương án mở khóa theo trạng thái. Khi điều phối mở khóa bằng lý do, service ghi ba cột mở khóa cùng bản ghi kiểm toán trong một giao dịch.
 
 Index: `booking_id`, `vehicle_trip_id`, `horse_leg_id`, `status`.
+
+Service ghi `rest_started_at` một lần cho sự cố cần xác nhận đủ sức. Khi xác nhận, service kiểm ngựa đã nghỉ đủ `MIN_REST_MINUTES` kể từ mốc này.
 
 ### 13.2 `incident_plan`: phương án xử lý sự cố (có phiên bản)
 
@@ -1170,19 +1390,30 @@ Index: `handler_party_id`.
 | Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
 |---|---|---|---|---|
 | `id` | `bigint` | | PK, identity | |
-| `category` | `varchar(30)` | | CK `TOLL, FUEL, STABLING, VET, RESCUE, REPAIR, WAITING, OTHER` | |
+| `category` | `varchar(30)` | | CK `TOLL, FUEL, STABLING, VET, RESCUE, REPAIR, WAITING, OTHER, REDELIVERY, PLANNED_STABLING` | WAITING chỉ giữ cho dữ liệu cũ |
+| `stabling_days` | `bigint` | có | CK dương, chỉ với `STABLING` gắn `horse_stay` | Snapshot số ngày tính trên dòng phí, dùng để tính chênh khi ngựa rời hub |
+| `stabling_delivery_credit` | `numeric(15,2)` | | Mặc định 0. Snapshot phần phí giữ cấn từ cước giao chưa chạy khi hủy sau giao hụt. `UnclaimedSettlementService` ghi. |
+| `stabling_deposit_credit` | `numeric(15,2)` | | Mặc định 0, từ 0 tới `amount`, chỉ khác 0 cho `STABLING` gắn `horse_stay` | Phần phí giữ được cấn cọc trên đơn đã hủy |
 | `description` | `varchar(500)` | | | |
 | `amount` | `numeric(15,2)` | | CK `> 0` | |
 | `currency_code` | `char(3)` | | | |
-| `payer_type` | `varchar(30)` | | CK `COMPANY, CUSTOMER, CONSIGNEE, AGENT` | Ai chịu khoản này |
+| `payer_type` | `varchar(30)` | | CK `COMPANY, CUSTOMER, CONSIGNEE` | Ai chịu khoản này |
 | `booking_id` | `bigint` | có | FK → booking | |
 | `vehicle_trip_id` | `bigint` | có | FK → vehicle_trip | |
 | `incident_id` | `bigint` | có | FK → incident | |
-| `handover_id` | `bigint` | có | FK → handover | Ví dụ phí chờ khi người nhận vắng mặt |
+| `handover_id` | `bigint` | có | FK → handover | Biên bản liên quan. Không thu phí chờ |
 | `horse_stay_id` | `bigint` | có | FK → horse_stay | Ví dụ phí gửi chuồng |
-| `is_customer_consulted` | `boolean` | | default `false` | Đã hỏi ý kiến khách trước khi chi |
+| `is_customer_consulted` | `boolean` | | default `false` | Hệ thống đặt khi có phản hồi đồng ý từ khách hoặc qua điện thoại |
+| `customer_agreed` | `boolean` | có | Đồng thời có người và giờ phản hồi | Đồng ý hoặc từ chối |
+| `customer_response_by` | `bigint` | có | FK → app_user.id | Chủ đơn hoặc điều phối ghi cuộc gọi |
+| `customer_response_at` | `timestamptz` | có | | Giờ phản hồi |
+| `customer_response_due_at` | `timestamptz` | có | | Hạn phản hồi, lấy từ CUSTOMER_COST_RESPONSE_MINUTES |
+| `phone_consent_note` | `varchar(500)` | có | | Nội dung khách đồng ý qua điện thoại |
+| `emergency_override_reason` | `varchar(500)` | có | | Lý do quản lý duyệt VET khi khách từ chối |
+| `agent_recovery_required` | `boolean` | | default false | Khoản công ty chịu do đại lý có lỗi |
+| `agent_recovered_at` | `timestamptz` | có | Phải có cờ thu hồi | Giờ quản lý đánh dấu đã đòi |
 | `incurred_at` | `timestamptz` | | | |
-| `recorded_by` | `bigint` | | FK → staff(user_id) | |
+| `recorded_by` | `bigint` | có | FK → staff(user_id) | Trống với dòng phí tự sinh theo biểu giá |
 | `approved_by` | `bigint` | có | FK → staff(user_id) | |
 | `approved_at` | `timestamptz` | có | | |
 | `extra_charge_payment_id` | `bigint` | có | FK → payment | Khoản thu thêm từ khách cho chi phí này |
@@ -1192,14 +1423,24 @@ Hóa đơn hoặc biên lai là một `document` có `cost_item_id` trỏ về d
 Ràng buộc bảng:
 - `CHECK (payer_type = 'COMPANY' OR booking_id IS NOT NULL)`
 - `CHECK (num_nonnulls(booking_id, vehicle_trip_id, incident_id) >= 1)`
-- `CHECK ((approved_by IS NULL) = (approved_at IS NULL))`
+- Với dòng do nhân viên ghi, `approved_by` và `approved_at` cùng có giá trị hoặc cùng trống. Dòng hệ thống tự duyệt có `recorded_by` và `approved_by` trống, có `approved_at`.
+- `recorded_by` chỉ được trống cho `STABLING` có `horse_stay_id` và `stabling_days`, `PLANNED_STABLING` có `horse_stay_id`, hoặc `REDELIVERY`.
+- `REDELIVERY` bắt buộc gắn với booking và lượt xe. Unique index trên cặp `vehicle_trip_id, booking_id` chỉ áp dụng cho loại này.
 - `CHECK (extra_charge_payment_id IS NULL OR payer_type <> 'COMPANY')`
 
 Index: `booking_id`, `vehicle_trip_id`, `incident_id`, `handover_id`, `horse_stay_id`, `extra_charge_payment_id`.
 
+Phí giữ sau giao hụt thuộc `CONSIGNEE`. Phí giữ do chưa trả số dư và lưu chuồng theo kế hoạch thuộc `CUSTOMER`. `PLANNED_STABLING` gắn với lưu trú và không tính vào số lần đủ 24 giờ. Số ngày đã thu nằm trên từng dòng phí, không lưu tổng trên `horse_stay`. Khoản thu thêm có `due_at` và quá hạn được tính khi đọc.
+
 ---
 
 ## Nhóm 14. Chứng từ
+
+`document_type` có mã `VET_REPORT` với chủ thể `INCIDENT`. Điều phối dùng mã này để xác nhận đủ sức thay tổ lái.
+
+`VEHICLE_SWAP_RECORD` có chủ thể `INCIDENT`. Tổ xe tải ảnh biên bản đã ký trước khi điều phối thực hiện phương án đổi xe.
+
+`FIT_CHECK_PHOTO` có chủ thể `INCIDENT`. Hộ tống của lượt xe tải ảnh con ngựa trước khi tự xác nhận đủ sức đi tiếp.
 
 ### 14.1 `document`: tệp chứng từ
 
@@ -1234,6 +1475,7 @@ Mỗi chứng từ thuộc **đúng một** đối tượng, được chỉ bằ
 | `incident_id` | `bigint` | có | FK → incident | owner_type `INCIDENT` |
 | `cost_item_id` | `bigint` | có | FK → cost_item | owner_type `COST_ITEM` |
 | `handover_id` | `bigint` | có | FK → handover | owner_type `HANDOVER` |
+| `evidence_horse_leg_id` | `bigint` | có | FK → horse_leg và FK ghép (`handover_id`, `evidence_horse_leg_id`) → handover_horse | Chỉ định con trong ảnh giao nhận. Cột này không phải chủ sở hữu tệp. |
 | `vehicle_id` | `bigint` | có | FK → vehicle | owner_type `VEHICLE` |
 | `staff_id` | `bigint` | có | FK → staff(user_id) | owner_type `STAFF` |
 | `party_id` | `bigint` | có | FK → party | owner_type `PARTY` (đối tác) |
@@ -1303,11 +1545,17 @@ Chỉ chứa tham số **không phải giá tiền**, ví dụ thời gian chờ
 | `config_value` | `varchar(500)` | | | |
 | `min_value` | `int` | có | CHECK cùng có giá trị hoặc cùng NULL với `max_value` | Cận dưới, tính cả giá trị cận |
 | `max_value` | `int` | có | CHECK `min_value <= max_value` khi có giới hạn | Cận trên, tính cả giá trị cận |
-| `unit` | `varchar(30)` | có | | `MINUTE`, `HOUR`, `COUNT` |
+| `unit` | `varchar(30)` | có | | `MINUTE`, `HOUR`, `DAY`, `COUNT`, `PERCENT`, `TEXT` (giá trị chữ, chỉ sửa qua API dạng chữ). `LINEHAUL_REST_HOURS` dùng `HOURS` |
 | `config_group` | `varchar(50)` | | | |
 | `description` | `text` | có | | |
 | `updated_by` | `bigint` | có | FK → staff(user_id) | |
 | `updated_at` | `timestamptz` | | default `now()` | |
+
+`HOTLINE` và `OFFICE_ADDRESS` (nhóm `CONTACT`, đơn vị `TEXT`) hiện cho khách qua `GET /public/contact`; `HOTLINE` phải là số điện thoại.
+
+`LOGIN_MAX_FAILED_ATTEMPTS` (mặc định 5, nhóm `SECURITY`, đơn vị `COUNT`) và `LOGIN_LOCK_MINUTES` (mặc định 15, đơn vị `MINUTE`): nhập sai mật khẩu đủ số lần liên tiếp thì tài khoản bị khóa tạm, kể cả khi lần sau nhập đúng.
+
+`PRE_EXIT_CHECK_HOURS` (mặc định 12, nhóm `HANDOVER`, đơn vị `HOUR`) là số giờ báo trước để tạo việc khám trước khi ra hub.
 
 Backend kiểm tra giới hạn khi cập nhật giá trị. Nếu hai cận đều NULL, quy tắc cập nhật số nguyên dương cho đơn vị được hỗ trợ vẫn áp dụng.
 
@@ -1316,9 +1564,93 @@ Backend kiểm tra giới hạn khi cập nhật giá trị. Nếu hai cận đ�
 | `DEPARTURE_GENERATION_WEEKS` | 1 | 52 |
 | `OTP_EXPIRY_MINUTES` | 1 | 30 |
 | `OTP_MAX_ATTEMPTS` | 1 | 10 |
+| `LOGIN_MAX_FAILED_ATTEMPTS` | 3 | 20 |
+| `LOGIN_LOCK_MINUTES` | 1 | 1440 |
 | `QUOTATION_VALID_HOURS` | 1 | 720 |
-| `BALANCE_DUE_DAYS_BEFORE_PICKUP` | 1 | 30 |
+| `DEPARTURE_DECISION_HOURS` | 1 | 168 |
+| `DEPARTURE_MIN_FILL_PERCENT` | 1 | 100 |
+| `DEPARTURE_RUN_REMINDER_HOURS`, `DEPARTURE_DELAY_RESCHEDULE_HOURS`, `DEPARTURE_DELAY_REFUND_HOURS` | 1 | 168 |
+| `DEPARTURE_DELAY_GRACE_MINUTES` | 1 | 240 |
+| `RETURN_LATE_MINUTES` | 1 | 240 |
+| `BALANCE_WAIT_MINUTES` | 5 | 240 |
+| `ADDRESS_MAX_KM_FROM_PROVINCE` | 50 | 500 |
+| `PICKUP_WINDOW_START_HOUR`, `DELIVERY_WINDOW_START_HOUR` | 0 | 23 |
+| `PICKUP_WINDOW_END_HOUR`, `DELIVERY_WINDOW_END_HOUR` | 1 | 24 |
+| `STOP_BASE_MINUTES` | 5 | 120 |
+| `STOP_MINUTES_PER_HORSE` | 1 | 60 |
+| `SCHEDULE_CHANGE_NOTICE_MINUTES` | 5 | 240 |
+
+Bỏ `BALANCE_DUE_DAYS_BEFORE_PICKUP`: số dư không còn trả trước ngày đón.
+
+`ADDRESS_MAX_KM_FROM_PROVINCE` (mặc định 200, nhóm `ADDRESS`): khi lưu sổ địa chỉ, vị trí ghim cách trung tâm tỉnh đã chọn tối đa bao nhiêu km.
+
+Nhóm `SCHEDULE_WINDOW` (24/11/2026): khung giờ đón, giao 6–18, dừng 20 phút cộng 10 phút mỗi con, giờ dời quá 30 phút thì báo khách. `TripSchedulePolicy` tính giờ lượt xe từ các tham số này và đường thật (Valhalla).
+
+`RETURN_LATE_MINUTES` (mặc định 30, nhóm `SCHEDULE_WINDOW`): số phút ân hạn sau giờ dự kiến về hub cuối của lượt xe.
+
+Giá trị khởi đầu của các tham số chốt ngày 23/11/2026, thêm bằng migration ở A6b:
+
+| Tham số | Giá trị | Ý nghĩa |
+|---|---:|---|
+| `DEPARTURE_DECISION_HOURS` | 48 | Mốc quyết định chạy, tính trước giờ xuất phát |
+| `DEPARTURE_MIN_FILL_PERCENT` | 30 | Ngưỡng cảnh báo số chỗ đã cọc trên `stall_capacity` |
+| `DEPARTURE_RUN_REMINDER_HOURS` | 24 | Nhắc trước giờ gốc nếu chưa xác nhận chạy |
+| `DEPARTURE_DELAY_GRACE_MINUTES` | 30 | Thời gian chờ khởi hành với chuyến đã xác nhận |
+| `DEPARTURE_DELAY_RESCHEDULE_HOURS` | 2 | Trễ từ giờ gốc để được đổi chuyến miễn phí |
+| `DEPARTURE_DELAY_REFUND_HOURS` | 5 | Trễ từ giờ gốc để được yêu cầu hoàn 100%; tới mốc này chưa có giờ mới thì xét tự hủy |
+| `HUB_CHECKIN_HOURS` | 3 | Ngựa phải tới hub trước giờ chuyến trục xuất phát |
+| `BALANCE_WAIT_MINUTES` | 30 | Thời gian chờ khách trả số dư (tổng trừ số đã trả) sau khi nhận ngựa |
+| `BALANCE_PICKUP_REMINDER_MID_MINUTES`, `BALANCE_PICKUP_REMINDER_LAST_MINUTES` | 15, 25 | Nhắc sau khi nhận tại nhà |
+| `BALANCE_HUB_FINAL_REMINDER_HOURS`, `BALANCE_HUB_LOADING_HOURS` | 3, 1 | Mốc nhắc cuối và mốc nhả chỗ, tính trước giờ chạy |
+| `BALANCE_HUB_GATEWAY_GRACE_MINUTES` | 5 | Giới hạn chờ xác nhận phiên thanh toán đã mở ở mốc xếp ngựa |
+| `BALANCE_IMPORT_HUB_HOURS` | 24 | Hạn giữ miễn phí sau khi ngựa nhập về hub |
+| `STABLING_MAX_DAYS`, `STABLING_WRITTEN_NOTICE_DAYS`, `STABLING_MANAGER_NOTICE_DAYS` | 3, 7, 45 | Hạn phản hồi, mốc gửi văn bản và số ngày sau văn bản để báo quản lý |
+| `STABLING_REMINDER_HOUR`, `BALANCE_HOLD_MIN_CONTACTS` | 8, 3 | Giờ nhắc hằng ngày và số lần ghi đã liên hệ trước khi tự hủy |
+| `MAX_CONTINUOUS_HOURS` | 4 | Thời gian chạy liên tục tối đa |
+| `MAX_TRANSFER_HORSE_HOURS` | 8 | Giới hạn giờ ngựa ngồi xe một chặng đón hoặc giao (1–8) |
+
+`ROAD_DISTANCE_FACTOR` (nhóm ROUTING): 130 (%), giới hạn 100–300. Khi bản đồ không tìm được đường xe tải tới nơi đón hoặc giao, giá xem trước và báo giá tính quãng đường bằng đường chim bay × hệ số này; điều phối xác nhận đường thật khi lập lượt. Chạy thẳng vẫn bị chặn.
+
+| `MAX_DIRECT_HORSE_HOURS` | 10 | Giới hạn giờ ngựa ngồi xe một chặng chạy thẳng (1–10) |
+| `HORSE_REST_INTERVAL_HOURS` | 4 | Giới hạn giờ liên tục trước khi phải dừng ở trạm nghỉ (1–8) |
+| `MIN_REST_MINUTES` | 30 | Thời gian nghỉ tối thiểu ở trạm |
+| `MAX_DRIVE_HOURS_PER_DAY` | 10 | Giờ lái tối đa mỗi ngày |
+| `OVERNIGHT_REST_HOURS` | 10 | Thời gian nghỉ đêm |
+| `DOCUMENT_REMINDER_DAYS` | 5 | Nhắc thiếu giấy trước chuyến |
+| `AUTHORITY_DELAY_REFUND_MISSES` | 2 | Số lần lỡ chuyến do cơ quan cấp giấy để hoàn cọc vận chuyển khi hủy. Đơn vị `COUNT`, giới hạn 1–10 |
+| `PRICE_HOLD_DAYS` | 30 | Giữ giá khi đổi chuyến, tính từ ngày chạy của chuyến vừa lỡ |
+| `SETTLEMENT_AUTO_CLOSE_DAYS` | 7 | Hạn khiếu nại trên ứng dụng kể từ lúc đơn sang `DELIVERED`; sau hạn mới xét tự đóng đơn không phát sinh |
+| `COMPLAINT_MANAGER_DEADLINE_DAYS` | 14 | Hạn quản lý nhập khiếu nại thay khách kể từ lúc đơn sang `DELIVERED` |
+| `SCHEDULE_CHOICE_REMINDER_1..4_DAYS` | 3, 7, 14, 25 | Nhắc chọn lại lịch sau đón hụt |
+| `EXTRA_CHARGE_DUE_DAYS` | 7 | Hạn khoản thu thêm từ lúc lập, 1–30 ngày |
+| `COST_APPROVAL_REMINDER_1_DAYS`, `_2_DAYS`, `COST_APPROVAL_DAYS` | 3, 7, 14 | Nhắc duyệt chi phí; quá hạn thì công ty chịu |
+| `LATE_INVOICE_DAYS`, `INCIDENT_AUTO_CLOSE_DAYS`, `REFUND_DUE_DAYS` | 30, 7, 7 | Hóa đơn muộn; tự đóng sự cố đã xử lý; hạn chuyển khoản hoàn |
+| `DEBT_CALL_DAYS`, `DEBT_BAD_DAYS`, `DEBT_EXTENSION_MAX_DAYS`, `DEBT_BLOCK_MIN_AMOUNT` | 14, 30, 14, 200.000 đ | Công nợ khoản thu thêm |
+| `STABLING_DAILY_FEE` | 1.000.000 đ | Phí giữ cho mỗi 24 giờ trọn vẹn, phần lẻ không tính |
+| `STABLING_OPEN_HOUR`, `STABLING_CLOSE_HOUR`, `STABLING_MORNING_HOUR` | 6, 18, 8 | Mốc 24 giờ rơi ngoài giờ mở cửa thì dời tới 08:00 |
+| `STABLING_MAX_BLOCKS` | 30 | Số lần 24 giờ tối đa tính phí |
+| `STABLING_WARNING_HOURS` | 3 | Báo trước mốc tính phí kế tiếp |
+| `DELIVERY_NOTICE_WINDOW_MINUTES` | 60 | Khung giờ giao đã báo; xe tới sau khung là lỗi công ty (số mẫu, tự đề xuất) |
 | `HANDOVER_FREE_WAIT_MINUTES` | 1 | 1440 |
+
+Hạn nội bộ ở điểm 1.F5:
+
+| Tham số | Nhóm | Mặc định (giờ) | Nhỏ nhất | Lớn nhất |
+|---|---|---:|---:|---:|
+| `BOOKING_INTAKE_DUE_HOURS` | `BOOKING` | 4 | 1 | 168 |
+| `BOOKING_REVIEW_DUE_HOURS` | `BOOKING` | 24 | 1 | 168 |
+| `BOOKING_QUOTE_DUE_HOURS` | `QUOTATION` | 24 | 1 | 168 |
+
+Tham số quy chế đội xe ở màn Tham số, nhóm `SCHEDULE`. Báo cáo dùng lại `LINEHAUL_REST_HOURS` và `SPARE_VEHICLE_PERCENT` của M2.
+
+| Tham số | Đơn vị | Mặc định | Giới hạn | Ý nghĩa |
+|---|---|---:|---|---|
+| `CREW_PER_VEHICLE_PERCENT` | `PERCENT` | 120 | 100–1000 | Tỷ lệ nhân sự mỗi vai trò (tài xế và hộ tống) trên số xe chạy |
+| `SMALL_BRANCH_VEHICLES_PER_HUB` | `COUNT` | 1 | 0–100 | Số xe nhánh 2 chỗ mỗi hub |
+| `MIN_BRANCH_SPARE_PER_HUB` | `COUNT` | 1 | 0–100 | Số xe dự phòng nhánh tối thiểu mỗi hub |
+| `BRANCH_SHARE_PERCENT` | `PERCENT` | 50 | 0–100 | Tỷ lệ chỗ dành cho ngựa do công ty đón, giao |
+| `BRANCH_VEHICLE_STALLS` | `COUNT` | 6 | 1–100 | Sức chứa dùng để tính số xe nhánh |
+| `SPARE_HUB_MIN_PAIRS` | `COUNT` | 2 | 1–100 | Số cặp tuyến tối thiểu mà hub sở hữu để giữ xe để sẵn |
 
 ### 15.5 `route_cache`: bộ đệm kết quả tính lộ trình
 
@@ -1344,19 +1676,24 @@ Có hai cách xử lý giá trị dẫn xuất:
 
 ### Cột dẫn xuất được lưu
 
+`departure.stall_capacity` = tổng `departure_vehicle.vehicle_count × vehicle_class.max_stall_count` của xe BASE và SPARE. Chỉ `DepartureServiceImpl` ghi trong transaction gắn hoặc bỏ xe, giữ khóa dòng chuyến.
+
+
 | Cột | Ý nghĩa | Ai ghi, khi nào | Ràng buộc ở DB |
 |---|---|---|---|
 | `quotation.total_amount` | Tổng các dòng báo giá | `QuotationService`, lúc tạo hoặc sửa bản DRAFT. Bất biến sau khi SENT | `CHECK (total_amount >= 0)` |
 | `quotation.pass_through_amount` | Phần thu hộ (bảo hiểm, lệ phí nhà nước) | Như trên | `CHECK (pass_through_amount BETWEEN 0 AND total_amount)` |
 | `quotation.deposit_amount` | Tiền cọc, gồm **toàn bộ** phần thu hộ | Như trên, tính bằng `DepositPolicy` | `CHECK (deposit_amount BETWEEN pass_through_amount AND total_amount)` |
-| `departure.booked_stall_count` | Số khoang đã được đặt | `DepartureService`, cộng khi đặt chỗ, trừ khi nhả chỗ (hủy, từ chối, báo giá hết hạn, loại ngựa). Luôn giữ `SELECT … FOR UPDATE` trên dòng `departure` | `CHECK (booked_stall_count BETWEEN 0 AND stall_capacity)`: DB chặn bán quá chỗ |
+| `cost_item.stabling_days` | Snapshot số lần đủ 24 giờ của từng dòng phí giữ đã tính | `StablingChargeService`, khi tạo dòng phí theo biểu | Dương, chỉ áp dụng với khoản STABLING có `horse_stay_id` |
+| `cost_item.stabling_deposit_credit` | Snapshot phần phí đã cấn vào tiền cọc | `StablingChargeService`, khi chốt phí trên đơn đã hủy dưới khóa đơn | Tổng phần đã cấn của đơn không vượt tiền cọc thực nhận |
+| `departure.booked_stall_count` | Số chỗ xe ghép đã được đặt (khoang rộng 2 chỗ) | `DepartureService`, cộng khi đặt chỗ, trừ khi nhả chỗ (hủy, từ chối, báo giá hết hạn, loại ngựa). Luôn giữ `SELECT … FOR UPDATE` trên dòng `departure` | `CHECK (booked_stall_count BETWEEN 0 AND stall_capacity)`: DB chặn bán quá chỗ |
 
 Công thức:
 
 ```
 total_amount        = Σ quotation_line.amount
 pass_through_amount = Σ quotation_line.amount với is_pass_through = true
-deposit_amount      = round(deposit_rate × (total_amount − pass_through_amount), 2) + pass_through_amount
+deposit_amount      = min(làm tròn lên nghìn đồng của (deposit_rate × (total_amount − pass_through_amount) + pass_through_amount), total_amount)   -- tổng không đổi
 ```
 
 Phí bảo hiểm và lệ phí thu hộ được **thu đủ ngay khi đặt cọc**. Tỷ lệ cọc chỉ áp lên cước dịch vụ của công ty. Khoản `payment` DEPOSIT lấy `amount = quotation.deposit_amount`.
@@ -1370,6 +1707,7 @@ Phí bảo hiểm và lệ phí thu hộ được **thu đủ ngay khi đặt c�
 | Số còn nợ | `total_amount` của báo giá ACCEPTED + chi phí phát sinh khách phải trả − đã trả + đã hoàn | `SettlementPolicy` |
 | Ngựa đang trong tay ai | `handover` DONE mới nhất có `handover_horse` thuộc chặng của con ngựa đó. Xét cả `handover_type` (bảng ở mục 10.1): `to_party_id` NULL có thể là công ty, người nhận (DELIVERY) hoặc người gửi (RETURN) | Repository, `HandoverService` |
 | Đơn đã đủ giấy bắt buộc chưa | Xem cách tính bên dưới | `DocumentCompletenessPolicy` |
+| Lượt xe đang về, giờ về dự kiến, cờ trễ | Trạng thái lượt, các chặng ngựa, giờ kế hoạch và giờ thực tế ở điểm dừng, `RETURN_LATE_MINUTES` | `TripReturnPolicy` và `TripReturnService` |
 
 Mọi số tiền cộng với nhau phải cùng `currency_code` với báo giá (quy tắc #22).
 
@@ -1378,44 +1716,92 @@ Mọi số tiền cộng với nhau phải cùng `currency_code` với báo giá
 1. Xác định nước đối tác của đơn. Với EXPORT là `country_code` của `booking_address` DELIVERY, với IMPORT là của PICKUP, với INTERPROVINCE là `VN`.
 2. Tìm `country_rule` cùng nước, có `direction = booking_type` và có thời hạn hiệu lực chứa `requested_pickup_date`.
 3. Lấy các `document_requirement` có `is_mandatory` của quy định đó.
-4. Với mỗi yêu cầu:
-   - nếu `document_type.owner_type` là `HORSE` hoặc `BOOKING_HORSE` thì **mỗi** `booking_horse` ACTIVE phải có một `document` APPROVED, còn hạn, có `document_requirement_id` này;
-   - nếu là `BOOKING` thì chỉ cần một `document` cho cả đơn.
-5. Kết quả gồm danh sách yêu cầu, con ngựa (nếu có) và trạng thái đạt hay chưa. Repository nạp dữ liệu, còn `DocumentCompletenessPolicy` quyết định đạt hay không. Policy này cần unit test với nhiều trường hợp.
+4. Lọc theo mốc kiểm:
+   - sang báo giá: chỉ giấy có `submitter_type = CUSTOMER`;
+   - xe xuất phát đón (LOCAL không có, INTERPROVINCE, EXPORT): mọi giấy bắt buộc;
+   - nhận ngựa ở cửa khẩu (IMPORT): mọi giấy bắt buộc, vì `IMPORT_TRANSPORT_CERT` chỉ có khi ngựa tới nơi.
+5. Với mỗi yêu cầu:
+   - nếu `document_type.owner_type` là `HORSE` thì **mỗi** `booking_horse` ACTIVE phải có một `document` APPROVED, còn hạn, cùng `document_type_id` và cùng `horse_id`. Giấy có thể đã được duyệt theo quy định khác.
+   - nếu là `BOOKING_HORSE` thì **mỗi** `booking_horse` ACTIVE phải có một `document` APPROVED, còn hạn, gắn với dòng ngựa trong đơn và có `document_requirement_id` này.
+   - nếu là `BOOKING` thì cần một `document` APPROVED, còn hạn, gắn với đơn và có `document_requirement_id` này.
+6. Kết quả gồm danh sách yêu cầu, con ngựa (nếu có) và trạng thái đạt hay chưa. Repository nạp dữ liệu, còn `DocumentCompletenessPolicy` quyết định đạt hay không. Policy này cần unit test với nhiều trường hợp.
 
 ---
 
 ## Ràng buộc phải kiểm ở service
 
+M2: khóa chuyến rồi khóa hub xuất phát khi thiếu chỗ. Trừ xe SPARE đã gắn cùng hạng ở chuyến có khung bận giao nhau, tính từ giờ gốc tới hết hai lượt tuyến cộng `LINEHAUL_REST_HOURS` (12, 1–48). Gắn đủ xe hoặc không gắn xe nào. Chỉ bỏ xe trước khi chạy nếu còn dòng xe và đủ chỗ đã đặt. Ngưỡng `DEPARTURE_NEARLY_FULL_PERCENT` là 80 (50–100). `SPARE_VEHICLE_PERCENT` là 20 (0–100), dùng cho mẫu và báo cáo.
+
+M4: `LINEHAUL_CLUSTER_RADIUS_KM` (nhóm `SCHEDULE`, đơn vị km, mặc định 60, giới hạn 1–300) là khoảng cách đường chim bay tối đa giữa các điểm giao khi gom đơn trong gợi ý chia xe trục và gom lượt giao. Các điểm giao của một đơn giữ chung theo quy tắc cùng đơn.
+
+
 Các quy tắc dưới đây cần so dữ liệu ở nhiều bảng nên CHECK không làm được. Đặt chúng trong lớp policy hoặc service, theo `AGENTS.md`.
 
 | # | Quy tắc | Bảng liên quan |
 |---|---|---|
-| 1 | `location` được tham chiếu phải đúng `location_type`: `hub_service_area`, `staff.home_hub_location_id`, `vehicle.home_hub_location_id` là HUB. Hub gốc của xe phải có `is_headquarters = true`. `route.origin_location_id` là HUB hoặc BORDER_GATE. `document_requirement.gate_location_id` là BORDER_GATE | location |
+| 1 | `location` được tham chiếu phải đúng `location_type`: `hub_service_area`, `staff.home_hub_location_id`, `vehicle.home_hub_location_id` là HUB (hub bất kỳ, kể cả hub nước ngoài, từ 26/11/2026). `route.origin_location_id` và `route.destination_location_id` là HUB; cửa khẩu chỉ là `route_stop` loại `BORDER`. `document_requirement.gate_location_id` là BORDER_GATE | location |
 | 2 | `departure.route_id` phải bằng `departure_schedule.route_id` khi có `departure_schedule_id` | departure |
-| 3 | Chỉ nhận đặt chỗ khi `departure.status = OPEN`, `now() < booking_cutoff_at` và còn đủ khoang (`booked_stall_count + số ngựa ≤ stall_capacity`) | booking, departure |
-| 4 | `booking_cutoff_at` phải đủ xa: lấy `permit_lead_days`, `certificate_lead_days` và `quarantine_days` từ `country_rule` | departure, country_rule |
-| 5 | Tổng khoang của xe ≤ `vehicle_class.max_stall_count` | vehicle |
+| 3 | Chỉ nhận đặt chỗ khi `departure.status = OPEN`, `now() < booking_cutoff_at` và xe ghép còn đủ chỗ (`booked_stall_count + số chỗ của đơn ≤ stall_capacity`; khoang thường 1 chỗ, khoang rộng 2 chỗ). Với xe riêng, khóa dòng hub xuất phát và giữ một xe ACTIVE thuộc nhóm SPARE hoặc BRANCH đủ chỗ và rảnh trong khung bận của chuyến | booking, departure, departure_vehicle |
+| 4 | `booking_cutoff_at` phải đủ xa: lấy `permit_lead_days` và `certificate_lead_days` từ `country_rule` | departure, country_rule |
+| 5 | Tổng chỗ của xe (`standard_stall_count + 2 × wide_stall_count`) ≤ `vehicle_class.max_stall_count` | vehicle |
 | 6 | Các `trip_stop` của một lượt LINEHAUL phải chép từ `route_stop` của đúng tuyến của `departure` | trip_stop |
 | 7 | Chuỗi `horse_leg` của một con ngựa phải liền mạch: `to_*` của chặng n bằng `from_*` của chặng n+1 | horse_leg |
 | 8 | `board_trip_stop_id`/`alight_trip_stop_id` phải thuộc đúng `vehicle_trip_id` của chặng, và `board.sequence_number < alight.sequence_number` | horse_leg, trip_stop |
-| 9 | Tại một thời điểm, số ngựa trên xe ≤ số khoang của xe, theo đúng loại khoang | horse_leg, vehicle |
-| 10 | Một nhân viên hoặc một xe không được nằm trong hai lượt chạy trùng thời gian | crew_assignment, vehicle_trip |
+| 9 | Tại một thời điểm, số chỗ ngựa trên xe chiếm ≤ tổng chỗ của xe (khoang rộng 2 chỗ). Vách ngăn di động nên không cố định số khoang từng loại | horse_leg, vehicle |
+| 10 | Một nhân viên hoặc một xe không được nằm trong hai lượt chạy trùng thời gian. Lượt mới của nhân viên bắt đầu ở nơi lượt trước kết thúc, giống quy tắc #20 của xe | crew_assignment, vehicle_trip |
 | 11 | Cột chủ sở hữu được điền trong `document` phải khớp `document_type.owner_type` | document |
 | 12 | `document.document_requirement_id` phải cùng `document_type_id` với yêu cầu | document |
 | 13 | `incident_plan.handler_party_id` phải có `party_role` phù hợp với `resolution_type`, ví dụ VET_TREATMENT thì bên xử lý có vai trò VET | incident_plan |
 | 14 | `horse_insurance` chỉ chuyển sang REVISION_REQUESTED khi `coverage_option = PERSONAL` | horse_insurance |
 | 15 | `booking_horse_service.billable_service_id` phải là dịch vụ có `layer = ADD_ON` | booking_horse_service |
 | 16 | `booking` chỉ chuyển sang DELIVERED khi mọi `booking_horse` ACTIVE đã có `horse_leg` leg_type DELIVERY hoặc DIRECT ở trạng thái COMPLETED | booking, horse_leg |
-| 17 | Đơn giá trong `quotation_line` phải lấy từ `price_item` thuộc đúng `quotation.price_list_id` | quotation_line |
-| 18 | Mỗi lần đổi `booking.status` phải ghi một dòng `booking_status_history`, trong cùng transaction | booking |
-| 19 | Chọn cách chạy theo hub, không theo `booking_type`: hub đón trùng hub giao thì chạy thẳng (`DIRECT`, `departure_id` NULL); khác hub thì đi trục (bắt buộc có `departure_id`, `route` nối hai hub hoặc nối hub với cửa khẩu) | booking, hub_service_area, route |
+| 17 | Đơn giá trong `quotation_line` phải lấy từ `price_item` thuộc đúng `quotation.price_list_id`. Ngoại lệ: dòng ADJUSTMENT nhập tay và dòng INSURANCE lấy `horse_insurance.premium_amount` hãng báo, cả hai có `price_item_id` NULL | quotation_line |
+| 18 | Mỗi lần đổi `booking.status` phải ghi một dòng `booking_status_history`, trong cùng transaction. Khi chuyển sang SCHEDULE_CHANGE_REQUIRED, lưu chuyến vừa lỡ và nguyên nhân (COMPANY khi hủy chuyến, NULL khi nhả đơn chưa cọc tại mốc quyết định) | booking, booking_status_history |
+| 19 | Chọn cách chạy theo hub, không theo `booking_type`: hub đón trùng hub giao thì chạy thẳng (`DIRECT`, `departure_id` NULL); khác hub thì đi trục (bắt buộc có `departure_id`, `route` nối hub đón với hub giao). Đơn xuất, nhập cũng cần hub ở cả hai đầu, kể cả hub nước ngoài; cửa khẩu của đơn là điểm dừng `BORDER` đầu tiên trên tuyến | booking, hub_service_area, route |
 | 20 | `vehicle_trip.start_location_id` phải bằng `end_location_id` của lượt chạy liền trước của cùng xe. Xe tới hub vệ tinh thì phải có lượt chạy về trụ sở, ví dụ chuyến trục chiều ngược | vehicle_trip |
 | 21 | Đợt này ngựa chỉ lên xe trục ở điểm đầu tuyến và xuống ở điểm cuối tuyến. Vì vậy `departure.booked_stall_count` đếm theo cả chuyến là đúng | horse_leg, trip_stop, departure |
 | 22 | Mọi khoản `payment` và `cost_item` của một đơn dùng cùng `currency_code` với báo giá. Chi phí phát sinh ở nước ngoài quy đổi lúc ghi; hóa đơn gốc lưu ở `document` | payment, cost_item, quotation |
-| 23 | `quotation.total_amount`, `pass_through_amount`, `deposit_amount` chỉ được ghi khi báo giá còn DRAFT, và phải khớp tổng các dòng. Tổng dòng ADJUSTMENT không được làm tổng báo giá âm | quotation, quotation_line |
+| 23 | `quotation.total_amount`, `pass_through_amount`, `deposit_amount` chỉ được ghi khi báo giá còn DRAFT, và phải khớp tổng các dòng. Tổng dòng ADJUSTMENT không được làm tổng báo giá âm. Báo giá có tổng hoặc tiền cọc bằng 0 thì không gửi được. Báo giá thay thế khi loại ngựa chỉ tính khoản giảm tới mức tiền còn lại ngoài thu hộ | quotation, quotation_line |
 | 24 | Thay báo giá đã ACCEPTED (ví dụ khi loại ngựa): chuyển bản cũ sang SUPERSEDED và bản mới sang ACCEPTED trong cùng một transaction | quotation |
-| 25 | Mọi thao tác làm đổi số khoang đã đặt (đặt chỗ, đổi chuyến, hủy, từ chối, báo giá hết hạn, loại ngựa) phải cập nhật `departure.booked_stall_count` trong cùng transaction, khi đang giữ `FOR UPDATE` | departure, booking, booking_horse |
-| 26 | Bên được tham chiếu phải có `party_role` còn hiệu lực đúng loại: `horse_leg.agent_party_id` là `DEST_AGENT`; `horse_stay.operator_party_id` là `QUARANTINE_FARM`, `STABLE` hoặc `DEST_AGENT`; `horse_insurance.insurer_party_id` là `INSURER`. `incident_plan.handler_party_id` theo quy tắc #13 | party_role, horse_leg, horse_stay, horse_insurance |
+| 25 | Mọi thao tác làm đổi số chỗ xe ghép đã đặt (đặt chỗ, đổi chuyến, hủy, từ chối, báo giá hết hạn, loại ngựa) phải cập nhật `departure.booked_stall_count` trong cùng transaction, khi đang giữ `FOR UPDATE` | departure, booking, booking_horse |
+| 26 | Bên được tham chiếu phải có `party_role` còn hiệu lực đúng loại: `horse_stay.operator_party_id` là `QUARANTINE_FARM` hoặc `STABLE`. `incident_plan.handler_party_id` theo quy tắc #13 | party_role, horse_stay |
 | 27 | Vai trò khớp hồ sơ: tài khoản `CUSTOMER` có đúng một dòng `customer` và không có `staff`; vai trò khác có đúng một dòng `staff` và không có `customer`. Ghi trong cùng transaction | app_user, customer, staff |
-| 28 | `handover` loại `AGENT` phải có ít nhất một bên là đối tác | handover |
+| 29 | Đơn EXPORT, IMPORT chỉ đi tuyến có cửa khẩu mà `counterpart_country_code` bằng nước đối tác của đơn | booking, route, location |
+| 30 | Mọi ngựa ACTIVE của một đơn đi cùng một lượt LINEHAUL | horse_leg, vehicle_trip |
+| 31 | Tuyến trục áp dụng `MAX_CONTINUOUS_HOURS`, `MIN_REST_MINUTES`, `MAX_DRIVE_HOURS_PER_DAY` và `OVERNIGHT_REST_HOURS`. Lượt đón, giao hoặc chạy thẳng giới hạn giờ ngựa ngồi xe theo loại lượt. Nếu vượt `HORSE_REST_INTERVAL_HOURS` thì phải có điểm `REST` ở trạm nghỉ đang hoạt động, dừng ít nhất `MIN_REST_MINUTES`. | route_stop, trip_stop, horse_leg |
+| 32 | Tại hub, kiểm đã trả đủ trước khi hoàn tất HUB_OUT. Đơn chỉ sang IN_OPERATION khi đã trả đủ. Quy trình quá hạn ở nhà khách và giữ ngựa tại hub theo phương án mục 9. | trip_stop, handover, payment |
+| 33 | `quotation.expires_at` là mốc sớm nhất trong 24 giờ sau khi gửi, hết ngày đón và hết ngày hiệu lực báo giá bảo hiểm (nếu có). Mốc `planned_departure_at − DEPARTURE_DECISION_HOURS` chỉ nhả chỗ đơn chưa gửi báo giá. Đơn AWAITING_DEPOSIT giữ chỗ đến khi báo giá hết hạn | quotation, departure |
+| 34 | Xe chỉ rời trạm nghỉ khi mọi ngựa trên xe có `horse_health_log` ở điểm đó (gồm `water_intake`, `feed_intake`) và đã nghỉ đủ. Rời sớm phải xác nhận kèm lý do | trip_stop, horse_health_log |
+| 35 | Trước khi lượt trục rời điểm `BORDER`, mọi đơn có ngựa trên xe phải đủ giấy bắt buộc chung và giấy theo cửa khẩu đã qua. | trip_stop, horse_leg, document_requirement, document |
+| 36 | Quản trị viên chỉ đưa xe vào MAINTENANCE hoặc RETIRED khi xe không còn lượt chưa hoàn thành. Khi hoàn tất lượt có báo cần bảo dưỡng hoặc khi đã đổi xe do sự cố, hệ thống đưa xe cần bảo dưỡng vào MAINTENANCE dù còn lượt đã lên lịch. Ghi kiểm toán và báo điều phối, quản trị viên kèm mã các lượt PLANNED sắp tới của xe. Chỉ xe ACTIVE được xếp lượt mới hoặc xuất phát. RETIRED là trạng thái cuối | vehicle, vehicle_trip, audit_log, notification |
+| 37 | Người phụ trách một con ngựa là `handled_by` của `handover` DONE mới nhất mà công ty là bên nhận. Không sửa tay. `crew_assignment` chỉ là kế hoạch | handover, crew_assignment |
+| 38 | Hộ tống không kết thúc ca hoặc lượt xe khi còn phụ trách ngựa chưa bàn giao. Người ký nhận phải đang trong ca, có mặt ở nơi đó, và đã xem phiếu tóm tắt của từng con | handover, vehicle_trip |
+| 39 | Trên cùng một đoạn đường của lượt xe, hai con không trùng `stall_position`. Khoang rộng chiếm hai vị trí liền nhau **bất kỳ** (vách di động). Vị trí cuối không vượt số chỗ của xe (quy tắc #9) | horse_leg, vehicle, trip_stop |
+| 40 | Sơ đồ chốt **trước khi lượt xe bắt đầu**: mọi con của lượt xe phải có `stall_position` thì mới cho bắt đầu. Lượt xe đã bắt đầu thì khóa cả sơ đồ, kể cả các con đón ở điểm dừng sau. Lưu sơ đồ phải khóa `vehicle_trip` và lưu cả xe trong một giao dịch | horse_leg, vehicle_trip |
+| 42 | Trước khi bắt đầu lượt `LINEHAUL`, mỗi con lên xe ở hub đầu phải có việc `BEFORE_DEPARTURE` ở trạng thái `DONE`, gắn đúng lượt trục. Việc `BEFORE_DEPARTURE` được giao theo lượt xe. Khi hoàn tất `HUB_OUT` của lượt `LINEHAUL` hoặc `DELIVERY`, mỗi con ra hub phải có việc `BEFORE_DEPARTURE` hoặc `BEFORE_DELIVERY` tương ứng ở trạng thái `DONE`, gắn đúng lượt. Khi hoàn tất giao cho người nhận tại hub, cần việc `BEFORE_DELIVERY` `DONE` gắn đúng ca lưu trú. Lượt `TRANSFER` và đưa ngựa về hub do sự cố được miễn | handover, health_check_task, vehicle_trip, horse_stay |
+
+### Bổ sung đợt 2
+
+Các phương án đã duyệt trước đợt 2 được chuyển tiếp bằng nguyên nhân đã dùng và giờ duyệt. Khoản khách chịu chưa duyệt được mở cửa sổ phản hồi theo cấu hình. Cờ xác nhận cũ của nhân viên không mang sang chi phí chưa duyệt.
+
+- `incident_plan.customer_agreed_by` (FK tới `app_user.id`) và `customer_agreed_at` (`timestamptz`) cùng có khi chủ đơn đồng ý với phiên bản phương án.
+- `CUSTOMER_COST_RESPONSE_MINUTES` mặc định 15 phút, cấu hình từ 5 đến 1440.
+- `booking_status_history.previous_departure_id` lưu chuyến đã nhả chỗ khi báo giá hết hạn, để giữ lại chỗ khi mở lại.
+
+## Thay đổi chờ thiết kế theo quyết định 26/11/2026
+
+Người dùng chốt **mô hình bến xe** ([NGU_CANH_THIET_KE_LAI.md](NGU_CANH_THIET_KE_LAI.md) mục 4b). Lược đồ **chưa đổi**: mỗi mục dưới đây phải được thiết kế, duyệt và có migration Flyway riêng (DB-first) trước khi code. Danh sách là phạm vi ảnh hưởng, chưa phải đặc tả.
+
+| Bảng, cột hoặc quy tắc | Hiện tại | Hướng thay đổi |
+|---|---|---|
+| `location` loại HUB, `hub_service_area` | **Đã làm ở M1 (dữ liệu mẫu)** | Hub Nha Trang, Vinh, Phnom Penh, Viêng Chăn, Savannakhet; tỉnh chỉ gán khi tâm tỉnh trong 8 giờ lái |
+| Quy tắc #1: hub gốc của xe, người | **Đã làm ở M1** | Hub gốc là bất kỳ hub nào |
+| `route.origin_location_id`, `destination_location_id`; quy tắc #19 | **Đã làm ở M1** | Tuyến luôn nối hai hub; cửa khẩu là `route_stop` loại `BORDER` |
+| `departure.stall_capacity`, `booked_stall_count`, `CHECK (booked_stall_count BETWEEN 0 AND stall_capacity)` | **Đã làm ở M2** | Sức chứa theo xe nền và xe tăng cường của chuyến; hạn mức xe trục của hub; khóa khi đặt chỗ theo đội xe |
+| `departure_schedule` | Số chỗ theo lịch | Xe nền theo loại xe; lịch được kiểm với hạn mức xe của hub |
+| `system_config` | | Thêm thời gian nghỉ tối thiểu sau chuyến trục (12 giờ), tỷ lệ dự phòng (20%) |
+| `booking` | Chỉ có xe ghép | Thêm lựa chọn xe riêng; cước trục tính đủ sức chứa xe theo đơn giá khoang STANDARD (`price_item`) |
+| Chặng và bàn giao đại lý ở cửa khẩu | Gỡ chặng đại lý, mã loại đại lý và các quy tắc liên quan | Đã thực hiện ở M7 |
+| `health_check_task.check_type` | `ROUTINE, FOLLOW_UP, BEFORE_DEPARTURE`, không bắt buộc | **Đã làm ở M5** (#520) |
+| Trạng thái xe về | Vị trí suy ra từ lượt cuối | Thêm ghi nhận "Đã về hub gốc" có ảnh và tình trạng xe, theo thiết kế cũ nhánh `main` |
+| `document_requirement.gate_location_id` | **Đã làm ở M1** | Cửa khẩu lấy từ `route_stop` loại `BORDER`; giấy riêng theo cửa khẩu và các cửa khẩu của bản cũ |

@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.entity;
 
 import com.example.racehorse_transport.entity.enums.BookingStatus;
+import com.example.racehorse_transport.entity.enums.ScheduleChangeCause;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -18,7 +19,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import org.hibernate.annotations.Generated;
 
 import java.time.Instant;
 
@@ -48,15 +48,24 @@ public class BookingStatusHistory {
     @Column(name = "to_status", length = 30, nullable = false)
     private BookingStatus toStatus;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "changed_by", nullable = false)
+    // NULL = hệ thống tự đổi (scheduler)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "changed_by")
     private AppUser changedBy;
 
-    // DB đặt giá trị mặc định now() lúc thêm dòng
-    @Generated
-    @Column(name = "changed_at", nullable = false, insertable = false, updatable = false)
+    // Ứng dụng đặt theo Clock để hạn khiếu nại, tự đóng đơn chạy đúng khi tua giờ
+    @Column(name = "changed_at", nullable = false, updatable = false)
     private Instant changedAt;
 
     @Column(name = "reason", columnDefinition = "text")
     private String reason;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cause_type", length = 30)
+    private ScheduleChangeCause causeType;
+
+    // snapshot: chuyến vừa lỡ, kể cả khi đơn đã nhả chỗ
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "previous_departure_id")
+    private Departure previousDeparture;
 }

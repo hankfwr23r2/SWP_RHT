@@ -1,0 +1,476 @@
+package com.example.racehorse_transport.controller;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.example.racehorse_transport.PostgresIntegrationTest;
+import com.example.racehorse_transport.support.HandoverEvidenceFixtures;
+import com.example.racehorse_transport.support.HubExitCheckFixtures;
+import com.example.racehorse_transport.entity.Staff;
+import com.example.racehorse_transport.entity.enums.HealthCheckType;
+import com.example.racehorse_transport.repository.LocationRepository;
+import com.example.racehorse_transport.security.JwtUtils;
+import com.example.racehorse_transport.service.DeliveryFailureService;
+import com.example.racehorse_transport.service.HorseStayService;
+import com.example.racehorse_transport.support.TestData;
+import com.example.racehorse_transport.support.TripReturnPhotoFixtures;
+import com.jayway.jsonpath.JsonPath;
+import jakarta.persistence.EntityManager;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.transaction.annotation.Transactional;
+
+// B5: quá giờ chờ người nhận → giao thất bại (TIMEOUT, chặng FAILED, sự cố HANDOVER_TIMEOUT) → về hub gửi chuồng có phí theo ngày → giao lại thành công → đơn DELIVERED
+@PostgresIntegrationTest
+@AutoConfigureMockMvc
+@Transactional
+class DeliveryFailureFlowTest {
+
+    @Autowired private MockMvc mvc;
+    @org.springframework.test.context.bean.override.mockito.MockitoBean private com.example.racehorse_transport.client.CloudinaryClient cloudinary;
+    @org.springframework.test.context.bean.override.mockito.MockitoBean
+    private com.example.racehorse_transport.service.DeliveryRouteService deliveryRoutes;
+    @Autowired private JdbcTemplate jdbc;
+    @Autowired private TestData testData;
+    @Autowired private JwtUtils jwtUtils;
+    @Autowired private LocationRepository locations;
+    @Autowired private EntityManager entityManager;
+    @Autowired private DeliveryFailureService deliveryFailures;
+    @Autowired private HorseStayService horseStays;
+    @Autowired private com.example.racehorse_transport.service.StablingClockService stablingClock;
+
+    private String coordinator;
+    private Staff coordinatorStaff;
+    private long booking;
+    private long pickup;
+    private long delivery;
+    private long line;
+    private String chip;
+    private long hcm;
+    private Instant day;
+
+    @BeforeEach
+    void setUp() {
+        org.mockito.Mockito.when(deliveryRoutes.plan(org.mockito.ArgumentMatchers.anyLong(),
+                org.mockito.ArgumentMatchers.anyList(), org.mockito.ArgumentMatchers.anyList(), org.mockito.ArgumentMatchers.anyInt()))
+                .thenReturn(new com.example.racehorse_transport.policy.DeliveryRoutePolicy.Plan(
+                        List.of(1), 25, List.of(25.0), List.of(3600L, 3600L), 25));
+        coordinatorStaff = testData.staff(testData.unique("redeliver.coordinator"), "COORDINATOR");
+        coordinator = token(coordinatorStaff, "COORDINATOR");
+        booking = jdbc.queryForObject("SELECT id FROM booking WHERE code = 'DEV-DIRECT-001'", Long.class);
+        pickup = jdbc.queryForObject("SELECT id FROM booking_address WHERE booking_id = ? AND address_type = 'PICKUP'", Long.class, booking);
+        delivery = jdbc.queryForObject("SELECT id FROM booking_address WHERE booking_id = ? AND address_type = 'DELIVERY'", Long.class, booking);
+        line = jdbc.queryForObject("SELECT id FROM booking_horse WHERE booking_id = ?", Long.class, booking);
+        chip = jdbc.queryForObject("SELECT h.microchip FROM booking_horse bh JOIN horse h ON h.id = bh.horse_id WHERE bh.id = ?", String.class, line);
+        hcm = locations.findByCode("HUB-HCM").orElseThrow().getId();
+        day = jdbc.queryForObject("SELECT requested_pickup_date FROM booking WHERE id = ?", java.sql.Date.class, booking)
+                .toLocalDate().atTime(1, 0).toInstant(ZoneOffset.UTC);
+        entityManager.flush();
+        jdbc.update("UPDATE booking SET booking_type = 'LOCAL' WHERE id = ?", booking);
+        entityManager.clear();
+    }
+
+    @Test
+    void failedDeliveryReturnsToHubAndIsRedeliveredUntilTheBookingIsDelivered() throws Exception {
+        // Lượt 1: chạy thẳng, tới điểm giao không gặp người nhận
+        Trip first = plan("DIRECT", 0, stop("locationId", hcm, "HUB", 0), stop("bookingAddressId", pickup, "PICKUP", 60),
+                stop("bookingAddressId", delivery, "DELIVERY", 240), stop("locationId", hcm, "HUB", 480));
+        first.assign(line, 1, 2);
+        first.startAndReceiveAt(1);
+        first.drive("/trip-stops/" + first.stops.get(1) + "/depart").andExpect(status().isOk());
+        first.drive("/trip-stops/" + first.stops.get(2) + "/arrive").andExpect(status().isOk());
+        long handover = first.openHandover(2, "DELIVERY");
+
+        first.act("/handovers/" + handover + "/fail").andExpect(status().isConflict()).andExpect(jsonPath("$.message").value("Chưa bắt đầu chờ người nhận."));
+        first.act("/handovers/" + handover + "/start-waiting").andExpect(status().isOk());
+        first.act("/handovers/" + handover + "/start-waiting").andExpect(status().isConflict());
+        first.act("/handovers/" + handover + "/fail").andExpect(status().isConflict()).andExpect(jsonPath("$.message").value("Chưa hết 120 phút chờ miễn phí."));
+        entityManager.flush();
+        jdbc.update("UPDATE handover SET wait_started_at = now() - interval '121 minutes' WHERE id = ?", handover);
+        entityManager.clear();
+        first.act("/handovers/" + handover + "/fail").andExpect(status().isOk());
+
+        entityManager.flush();
+        long failedLeg = jdbc.queryForObject("SELECT id FROM horse_leg WHERE booking_horse_id = ? AND sequence_number = 1", Long.class, line);
+        assertThat(jdbc.queryForObject("SELECT status FROM handover WHERE id = ?", String.class, handover)).isEqualTo("TIMEOUT");
+        assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE id = ?", String.class, failedLeg)).isEqualTo("FAILED");
+        assertThat(jdbc.queryForObject("SELECT cause_type FROM incident WHERE horse_leg_id = ? AND incident_type = 'HANDOVER_TIMEOUT'", String.class, failedLeg))
+                .isEqualTo("RECIPIENT_ABSENT");
+        assertThat(jdbc.queryForObject("SELECT severity FROM incident WHERE horse_leg_id = ? AND incident_type = 'HANDOVER_TIMEOUT'", String.class, failedLeg))
+                .isEqualTo("MEDIUM");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM notification_recipient r JOIN notification n ON n.id = r.notification_id WHERE r.user_id = ? AND n.title = 'Giao ngựa không thành'", Integer.class, coordinatorStaff.getUserId())).isEqualTo(1);
+        long timeout = jdbc.queryForObject("SELECT id FROM incident WHERE horse_leg_id = ? AND incident_type = 'HANDOVER_TIMEOUT'",
+                Long.class, failedLeg);
+        String managerToken = "Bearer " + jwtUtils.generateToken("manager.dev", List.of("MANAGER"), 0);
+        mvc.perform(get("/notifications/mine").header(HttpHeaders.AUTHORIZATION, managerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[?(@.title == 'Quá hạn bàn giao' && @.linkUrl == '/manager/incidents?incidentId="
+                        + timeout + "')]", org.hamcrest.Matchers.hasSize(1)));
+        assertThat(bookingStatus()).isEqualTo("IN_OPERATION");
+        // B6: hành trình ghi chặng thất bại, biên bản quá giờ; ngựa vẫn trong tay công ty
+        journey().andExpect(jsonPath("$.data.horses[0].holder").value("COMPANY"))
+                .andExpect(jsonPath("$.data.horses[0].legs[0].status").value("FAILED"))
+                .andExpect(jsonPath("$.data.horses[0].handovers[1].handoverType").value("DELIVERY"))
+                .andExpect(jsonPath("$.data.horses[0].handovers[1].status").value("TIMEOUT"));
+
+        // Xe đưa ngựa về hub: chưa giao con vào hub thì chưa kết thúc lượt được
+        first.drive("/trip-stops/" + first.stops.get(2) + "/depart").andExpect(status().isOk());
+        first.drive("/trip-stops/" + first.stops.get(3) + "/arrive").andExpect(status().isOk());
+        first.drive("/vehicle-trips/" + first.id + "/complete").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Còn 1 con ngựa trên xe chưa bàn giao."));
+        // Giao vào hub: giữ và chăm sóc tại hub tới hạn STABLING_MAX_DAYS (3 ngày), báo khách hạn và phí mỗi ngày
+        first.scanAndComplete(first.openHandover(3, "HUB_IN"));
+        entityManager.flush();
+        assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE id = ?", String.class, failedLeg)).isEqualTo("FAILED");
+        long stay = jdbc.queryForObject("SELECT id FROM horse_stay WHERE booking_horse_id = ? AND stay_type = 'STABLING' AND actual_end_at IS NULL", Long.class, line);
+        assertThat(jdbc.queryForObject("SELECT round(extract(epoch FROM planned_end_at - actual_start_at) / 86400) FROM horse_stay WHERE id = ?", Integer.class, stay))
+                .isEqualTo(3);
+        assertThat(customerNotices()).contains("Ngựa đang được giữ tại hub");
+        TripReturnPhotoFixtures.attach(jdbc, first.id);
+        first.drive("/vehicle-trips/" + first.id + "/complete").andExpect(status().isOk());
+
+        // Quá hạn: mỗi sáng nhắc khách và quản lý, phí tạm tính vẫn chạy
+        assertThat(horseStays.remindOverdueStabling()).isZero();
+        jdbc.update("UPDATE horse_stay SET actual_start_at = now() - interval '4 days 2 hours', planned_start_at = now() - interval '4 days 2 hours', planned_end_at = now() - interval '1 day 2 hours' WHERE id = ?", stay);
+        entityManager.clear();
+        assertThat(horseStays.remindOverdueStabling()).isEqualTo(1);
+        assertThat(customerNotices()).contains("Quá hạn giữ ngựa tại hub");
+
+        // Lượt 2: giao lại từ hub
+        Trip second = plan("DELIVERY", 24 * 60, stop("locationId", hcm, "HUB", 24 * 60), stop("bookingAddressId", delivery, "DELIVERY", 24 * 60 + 120),
+                stop("locationId", hcm, "HUB", 24 * 60 + 300));
+        second.assign(line, 0, 1);
+        recordReady(stay);
+        entityManager.flush();
+        assertThat(jdbc.queryForObject("SELECT replaced_horse_leg_id FROM horse_leg WHERE booking_horse_id = ? AND sequence_number = 2", Long.class, line))
+                .isEqualTo(failedLeg);
+        second.acknowledgeAndStart();
+        second.drive("/trip-stops/" + second.stops.get(0) + "/arrive").andExpect(status().isOk());
+        var precharge = jdbc.queryForMap("""
+                SELECT category, payer_type, stabling_days, approved_at, extra_charge_payment_id
+                FROM cost_item WHERE horse_stay_id = ?
+                """, stay);
+        assertThat(precharge).containsEntry("category", "STABLING").containsEntry("payer_type", "CONSIGNEE");
+        assertThat(precharge.get("approved_at")).isNotNull();
+        long payment = ((Number) precharge.get("extra_charge_payment_id")).longValue();
+        long billedDays = ((Number) precharge.get("stabling_days")).longValue();
+        assertThat(billedDays).isPositive();
+        long hubOut = second.openHandover(0, "HUB_OUT");
+        second.scan(hubOut);
+        second.act("/handovers/" + hubOut + "/complete").andExpect(status().isConflict());
+        entityManager.flush();
+        jdbc.update("UPDATE payment SET status = 'PAID', paid_at = now() WHERE id = ?", payment);
+        assertThat(jdbc.update("""
+                UPDATE payment SET status = 'PAID', paid_at = now() WHERE id = (
+                    SELECT extra_charge_payment_id FROM cost_item
+                    WHERE booking_id = ? AND vehicle_trip_id = ? AND category = 'REDELIVERY')
+                """, booking, second.id)).isEqualTo(1);
+        jdbc.update("""
+                UPDATE horse_stay SET actual_start_at = now() - (? * interval '1 day') - interval '38 hour',
+                    planned_start_at = now() - (? * interval '1 day') - interval '38 hour'
+                WHERE id = ?
+                """, billedDays, billedDays, stay);
+        entityManager.clear();
+        stablingClock.remindMissingRedelivery();
+        entityManager.flush();
+        assertThat(jdbc.update("""
+                UPDATE payment SET status = 'PAID', paid_at = now() WHERE id = (
+                    SELECT extra_charge_payment_id FROM cost_item
+                    WHERE horse_stay_id = ? ORDER BY id DESC LIMIT 1)
+                    AND status = 'PENDING'
+                """, stay)).isEqualTo(1);
+        entityManager.clear();
+        second.act("/handovers/" + hubOut + "/complete").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Chưa khám trước khi giao: Sao Mai"));
+        long escortId = jdbc.queryForObject("SELECT staff_id FROM crew_assignment WHERE vehicle_trip_id = ? AND crew_role = 'ESCORT'",
+                Long.class, second.id);
+        HubExitCheckFixtures.boardingDone(jdbc, second.id, escortId, HealthCheckType.BEFORE_DELIVERY);
+        second.act("/handovers/" + hubOut + "/complete").andExpect(status().isOk());
+        entityManager.flush();
+        assertThat(jdbc.queryForList("SELECT stabling_days FROM cost_item WHERE horse_stay_id = ? ORDER BY id", Long.class, stay))
+                .containsExactly(billedDays, 1L);
+        second.drive("/trip-stops/" + second.stops.get(0) + "/depart").andExpect(status().isOk());
+        second.drive("/trip-stops/" + second.stops.get(1) + "/arrive").andExpect(status().isOk());
+        long redelivery = second.openHandover(1, "DELIVERY");
+        second.scanAndComplete(redelivery);
+        assertThat(bookingStatus()).isEqualTo("DELIVERED");
+        journey().andExpect(jsonPath("$.data.horses[0].holder").value("CONSIGNEE"))
+                .andExpect(jsonPath("$.data.horses[0].holderSince").isNotEmpty())
+                .andExpect(jsonPath("$.data.horses[0].legs.length()").value(2))
+                .andExpect(jsonPath("$.data.horses[0].legs[1].replacedHorseLegId").value(failedLeg))
+                .andExpect(jsonPath("$.data.horses[0].legs[1].status").value("COMPLETED"))
+                .andExpect(jsonPath("$.data.horses[0].handovers[*].handoverType").value(org.hamcrest.Matchers.contains("PICKUP", "DELIVERY", "HUB_IN", "HUB_OUT", "DELIVERY")));
+    }
+
+    @Test
+    void consigneeCanCollectAtTheHubWhileTheRedeliveryChargeIsUnpaid() throws Exception {
+        Trip first = plan("DIRECT", 0, stop("locationId", hcm, "HUB", 0), stop("bookingAddressId", pickup, "PICKUP", 60),
+                stop("bookingAddressId", delivery, "DELIVERY", 240), stop("locationId", hcm, "HUB", 480));
+        first.assign(line, 1, 2);
+        first.startAndReceiveAt(1);
+        first.drive("/trip-stops/" + first.stops.get(1) + "/depart").andExpect(status().isOk());
+        first.drive("/trip-stops/" + first.stops.get(2) + "/arrive").andExpect(status().isOk());
+        long handover = first.openHandover(2, "DELIVERY");
+        first.act("/handovers/" + handover + "/start-waiting").andExpect(status().isOk());
+        entityManager.flush();
+        jdbc.update("UPDATE handover SET wait_started_at = now() - interval '121 minutes' WHERE id = ?", handover);
+        entityManager.clear();
+        first.act("/handovers/" + handover + "/fail").andExpect(status().isOk());
+        first.drive("/trip-stops/" + first.stops.get(2) + "/depart").andExpect(status().isOk());
+        first.drive("/trip-stops/" + first.stops.get(3) + "/arrive").andExpect(status().isOk());
+        first.scanAndComplete(first.openHandover(3, "HUB_IN"));
+        TripReturnPhotoFixtures.attach(jdbc, first.id);
+        first.drive("/vehicle-trips/" + first.id + "/complete").andExpect(status().isOk());
+
+        Trip replacement = plan("DELIVERY", 24 * 60, stop("locationId", hcm, "HUB", 24 * 60),
+                stop("bookingAddressId", delivery, "DELIVERY", 24 * 60 + 120), stop("locationId", hcm, "HUB", 24 * 60 + 300));
+        replacement.assign(line, 0, 1);
+        entityManager.flush();
+        long stay = jdbc.queryForObject("SELECT id FROM horse_stay WHERE booking_horse_id = ? AND stay_type = 'STABLING' AND actual_end_at IS NULL",
+                Long.class, line);
+        jdbc.update("""
+                UPDATE horse_stay SET actual_start_at = now() - interval '40 hours',
+                    planned_start_at = now() - interval '40 hours' WHERE id = ?
+                """, stay);
+        entityManager.clear();
+        recordReady(stay);
+        String owner = jdbc.queryForObject("SELECT u.username FROM booking b JOIN app_user u ON u.id = b.customer_id WHERE b.id = ?", String.class, booking);
+        HandoverEvidenceFixtures.confirm(mvc, jwtUtils, booking, owner);
+        org.mockito.Mockito.when(cloudinary.uploadFile(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyString()))
+                .thenAnswer(call -> "https://example.test/" + java.util.UUID.randomUUID());
+        HubExitCheckFixtures.collectionDone(jdbc, stay, coordinatorStaff.getUserId());
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart("/horse-stays/{id}/deliveries", stay)
+                .file(new org.springframework.mock.web.MockMultipartFile("request", "", "application/json",
+                        "{\"microchip\":\"%s\",\"conditionNote\":\"Khỏe\",\"papers\":[],\"recipient\":{\"recipientName\":\"Người nhận\"}}".formatted(chip)
+                                .getBytes(java.nio.charset.StandardCharsets.UTF_8)))
+                .file(new org.springframework.mock.web.MockMultipartFile("photo", "horse.jpg", "image/jpeg", new byte[]{1}))
+                .file(new org.springframework.mock.web.MockMultipartFile("record", "record.pdf", "application/pdf", new byte[]{1}))
+                .header(HttpHeaders.AUTHORIZATION, coordinator))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.actualEndAt").isNotEmpty());
+        entityManager.flush();
+        assertThat(bookingStatus()).isEqualTo("DELIVERED");
+        assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE vehicle_trip_id = ?", String.class, replacement.id))
+                .isEqualTo("CANCELLED");
+        assertThat(jdbc.queryForObject("""
+                SELECT p.status FROM payment p JOIN cost_item c ON c.extra_charge_payment_id = p.id
+                WHERE p.booking_id = ? AND p.payment_type = 'EXTRA_CHARGE' AND c.horse_stay_id = ?
+                """, String.class, booking, stay)).isEqualTo("PENDING");
+        assertThat(jdbc.queryForObject("""
+                SELECT p.status FROM payment p JOIN cost_item c ON c.extra_charge_payment_id = p.id
+                WHERE p.booking_id = ? AND p.payment_type = 'EXTRA_CHARGE' AND c.category = 'REDELIVERY'
+                """, String.class, booking)).isEqualTo("PENDING");
+    }
+
+    private void recordReady(long stay) throws Exception {
+        mvc.perform(post("/horse-stays/{id}/record-ready", stay)
+                .header(HttpHeaders.AUTHORIZATION, coordinator)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"callNote\":\"Đã gọi người nhận.\"}"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void managerRecordsFinalReturnOnlyAfterWrittenNoticeMatures() throws Exception {
+        Trip first = plan("DIRECT", 0, stop("locationId", hcm, "HUB", 0), stop("bookingAddressId", pickup, "PICKUP", 60),
+                stop("bookingAddressId", delivery, "DELIVERY", 240), stop("locationId", hcm, "HUB", 480));
+        first.assign(line, 1, 2);
+        first.startAndReceiveAt(1);
+        first.drive("/trip-stops/" + first.stops.get(1) + "/depart").andExpect(status().isOk());
+        first.drive("/trip-stops/" + first.stops.get(2) + "/arrive").andExpect(status().isOk());
+        long handover = first.openHandover(2, "DELIVERY");
+        first.act("/handovers/" + handover + "/start-waiting").andExpect(status().isOk());
+        entityManager.flush();
+        jdbc.update("UPDATE handover SET wait_started_at = now() - interval '121 minutes' WHERE id = ?", handover);
+        entityManager.clear();
+        first.act("/handovers/" + handover + "/fail").andExpect(status().isOk());
+        first.drive("/trip-stops/" + first.stops.get(2) + "/depart").andExpect(status().isOk());
+        first.drive("/trip-stops/" + first.stops.get(3) + "/arrive").andExpect(status().isOk());
+        first.scanAndComplete(first.openHandover(3, "HUB_IN"));
+        entityManager.flush();
+
+        long stay = jdbc.queryForObject("SELECT id FROM horse_stay WHERE booking_horse_id = ? AND stay_type = 'STABLING'",
+                Long.class, line);
+        var manager = token(testData.staff(testData.unique("unclaimed.manager"), "MANAGER"), "MANAGER");
+        var request = new org.springframework.mock.web.MockMultipartFile("request", "", "application/json",
+                "{\"outcome\":\"RETURNED_TO_SENDER\",\"recipientName\":\"Sender\"}".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        var proof = new org.springframework.mock.web.MockMultipartFile("proof", "receipt.pdf", "application/pdf", new byte[]{1});
+        String endpoint = "/horse-stays/{id}/resolve-unclaimed";
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart(endpoint, stay)
+                .file(request).file(proof).header(HttpHeaders.AUTHORIZATION, manager)).andExpect(status().isConflict());
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart(endpoint, stay)
+                .file(request).header(HttpHeaders.AUTHORIZATION, manager)).andExpect(status().isBadRequest());
+
+        jdbc.update("""
+                UPDATE horse_stay SET actual_start_at = now() - interval '53 days',
+                    planned_start_at = now() - interval '53 days', planned_end_at = now() - interval '50 days'
+                WHERE id = ?
+                """, stay);
+        jdbc.update("""
+                INSERT INTO notification (booking_id, title, message, created_at)
+                VALUES (?, ?, 'Nhận lại ngựa', now() - interval '46 days')
+                """, booking, com.example.racehorse_transport.policy.BalanceHoldPolicy.WRITTEN_NOTICE_TITLE);
+        entityManager.clear();
+        org.mockito.Mockito.when(cloudinary.uploadFile(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyString()))
+                .thenReturn("https://example.test/unclaimed-proof.pdf");
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart(endpoint, stay)
+                .file(request).file(proof).header(HttpHeaders.AUTHORIZATION, manager)).andExpect(status().isOk());
+        entityManager.flush();
+        assertThat(bookingStatus()).isEqualTo("CANCELLED");
+        assertThat(jdbc.queryForObject("SELECT status FROM booking_horse WHERE id = ?", String.class, line)).isEqualTo("RETURNED");
+        assertThat(jdbc.queryForObject("SELECT actual_end_at IS NOT NULL FROM horse_stay WHERE id = ?", Boolean.class, stay)).isTrue();
+        assertThat(jdbc.queryForObject("""
+                SELECT h.unclaimed_outcome FROM handover h JOIN document d ON d.handover_id = h.id WHERE h.horse_stay_id = ?
+                """, String.class, stay)).isEqualTo("RETURNED_TO_SENDER");
+    }
+
+    @Test
+    void schedulerTimesOutWaitsPastTheFreeWait() throws Exception {
+        Trip trip = plan("DIRECT", 0, stop("locationId", hcm, "HUB", 0), stop("bookingAddressId", pickup, "PICKUP", 60),
+                stop("bookingAddressId", delivery, "DELIVERY", 240), stop("locationId", hcm, "HUB", 480));
+        trip.assign(line, 1, 2);
+        trip.startAndReceiveAt(1);
+        trip.drive("/trip-stops/" + trip.stops.get(1) + "/depart").andExpect(status().isOk());
+        trip.drive("/trip-stops/" + trip.stops.get(2) + "/arrive").andExpect(status().isOk());
+        long handover = trip.openHandover(2, "DELIVERY");
+        trip.act("/handovers/" + handover + "/start-waiting").andExpect(status().isOk());
+
+        assertThat(deliveryFailures.timeoutExpired()).isZero();
+        entityManager.flush();
+        jdbc.update("UPDATE handover SET wait_started_at = now() - interval '3 hours' WHERE id = ?", handover);
+        entityManager.clear();
+        assertThat(deliveryFailures.timeoutExpired()).isEqualTo(1);
+        entityManager.flush();
+        assertThat(jdbc.queryForObject("SELECT status FROM handover WHERE id = ?", String.class, handover)).isEqualTo("TIMEOUT");
+    }
+
+    private ResultActions journey() throws Exception {
+        entityManager.flush();
+        entityManager.clear();
+        return mvc.perform(get("/bookings/{id}/journey", booking).header(HttpHeaders.AUTHORIZATION, coordinator)).andExpect(status().isOk());
+    }
+
+    // Tiêu đề các thông báo khách nhận được trên đơn
+    private List<String> customerNotices() {
+        entityManager.flush();
+        return jdbc.queryForList("SELECT n.title FROM notification n JOIN notification_recipient r ON r.notification_id = n.id "
+                + "JOIN booking b ON b.id = n.booking_id WHERE n.booking_id = ? AND r.user_id = b.customer_id ORDER BY n.id", String.class, booking);
+    }
+
+    private String bookingStatus() {
+        return jdbc.queryForObject("SELECT status FROM booking WHERE id = ?", String.class, booking);
+    }
+
+    private Trip plan(String type, int offsetMinutes, String... stops) throws Exception {
+        Staff driver = testData.staff(testData.unique("redeliver.driver"), "DRIVER");
+        Staff escort = testData.staff(testData.unique("redeliver.escort"), "ESCORT");
+        String body = "{\"tripType\":\"%s\",\"vehicleId\":%d,\"stops\":[%s]}".formatted(type, testData.vehicle(2, 0).getId(), String.join(",", stops));
+        String created = mvc.perform(post("/vehicle-trips").header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        long id = ((Number) JsonPath.read(created, "$.data.id")).longValue();
+        List<Long> stopIds = ((List<Number>) JsonPath.read(created, "$.data.stops[*].id")).stream().map(Number::longValue).toList();
+        for (Staff member : List.of(driver, escort)) {
+            mvc.perform(post("/vehicle-trips/{id}/crew-assignments", id).header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"staffId\":%d,\"crewRole\":\"%s\"}".formatted(member.getUserId(), member == driver ? "DRIVER" : "ESCORT")))
+                    .andExpect(status().isCreated());
+        }
+        return new Trip(id, stopIds, token(driver, "DRIVER"), token(escort, "ESCORT"));
+    }
+
+    private final class Trip {
+        final long id;
+        final List<Long> stops;
+        final String driver;
+        final String escort;
+
+        Trip(long id, List<Long> stops, String driver, String escort) {
+            this.id = id;
+            this.stops = stops;
+            this.driver = driver;
+            this.escort = escort;
+        }
+
+        void assign(long bookingHorse, int board, int alight) throws Exception {
+            mvc.perform(post("/vehicle-trips/{id}/horse-legs", id).header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"bookingHorseId\":%d,\"boardTripStopId\":%d,\"alightTripStopId\":%d}".formatted(bookingHorse, stops.get(board), stops.get(alight))))
+                    .andExpect(status().isCreated());
+        }
+
+        void acknowledgeAndStart() throws Exception {
+            for (String member : List.of(driver, escort)) {
+                String mine = mvc.perform(get("/crew-assignments/mine").header(HttpHeaders.AUTHORIZATION, member)).andReturn().getResponse().getContentAsString();
+                long assignment = ((Number) JsonPath.read(mine, "$.data[0].id")).longValue();
+                mvc.perform(post("/crew-assignments/{id}/acknowledge", assignment).header(HttpHeaders.AUTHORIZATION, member))
+                        .andExpect(status().isOk());
+            }
+            mvc.perform(post("/vehicle-trips/{id}/start", id).header(HttpHeaders.AUTHORIZATION, driver)
+                    .contentType(MediaType.APPLICATION_JSON).content("{\"earlyReason\":\"Đã sẵn sàng xuất phát sớm\"}"))
+                    .andExpect(status().isOk());
+        }
+
+        void startAndReceiveAt(int pickupIndex) throws Exception {
+            acknowledgeAndStart();
+            for (int i = 0; i < pickupIndex; i++) {
+                drive("/trip-stops/" + stops.get(i) + "/arrive").andExpect(status().isOk());
+                drive("/trip-stops/" + stops.get(i) + "/depart").andExpect(status().isOk());
+            }
+            drive("/trip-stops/" + stops.get(pickupIndex) + "/arrive").andExpect(status().isOk());
+            scanAndComplete(openHandover(pickupIndex, "PICKUP"));
+        }
+
+        long openHandover(int stopIndex, String type) throws Exception {
+            String body = mvc.perform(post("/trip-stops/{id}/handovers", stops.get(stopIndex)).header(HttpHeaders.AUTHORIZATION, escort)
+                    .contentType(MediaType.APPLICATION_JSON).content("{\"handoverType\":\"%s\"}".formatted(type)))
+                    .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+            List<Number> ids = JsonPath.read(body, "$.data.handovers[*].id");
+            return ids.getLast().longValue();
+        }
+
+        void scanAndComplete(long handover) throws Exception {
+            scan(handover);
+            act("/handovers/" + handover + "/complete").andExpect(status().isOk());
+        }
+
+        void scan(long handover) throws Exception {
+            long leg = jdbc.queryForObject("SELECT id FROM horse_leg WHERE booking_horse_id = ? AND vehicle_trip_id = ?", Long.class, line, id);
+            mvc.perform(post("/handovers/{id}/horses", handover).header(HttpHeaders.AUTHORIZATION, escort).contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"horseLegId\":%d,\"conditionNote\":\"Khỏe\",\"microchip\":\"%s\"}".formatted(leg, chip))).andExpect(status().isOk());
+            signedRecord(handover);
+        }
+
+        ResultActions drive(String path) throws Exception {
+            return mvc.perform(post(path).header(HttpHeaders.AUTHORIZATION, driver));
+        }
+
+        ResultActions act(String path) throws Exception {
+            return mvc.perform(HandoverEvidenceFixtures.complete(mvc, jdbc, jwtUtils, path).header(HttpHeaders.AUTHORIZATION, escort));
+        }
+    }
+
+    private String stop(String key, long id, String type, int minutes) {
+        String at = day.plusSeconds(60L * minutes).toString();
+        String leave = day.plusSeconds(60L * (minutes + 30)).toString();
+        return "{\"%s\":%d,\"stopType\":\"%s\",\"plannedArrivalAt\":\"%s\",\"plannedDepartureAt\":\"%s\"}".formatted(key, id, type, at, leave);
+    }
+
+    private String token(Staff staff, String role) {
+        return "Bearer " + jwtUtils.generateToken(staff.getUser().getUsername(), List.of(role), 0);
+    }
+
+    // Biên bản đã ký (giả lập ảnh đã tải lên): bắt buộc trước khi hoàn tất nhận hoặc giao ngựa
+    private void signedRecord(long handoverId) {
+        jdbc.update("INSERT INTO document (document_type_id, file_url, file_name, uploaded_by, status, handover_id) "
+                + "SELECT id, 'test://record/' || md5(random()::text), 'record.jpg', (SELECT min(id) FROM app_user), 'UPLOADED', ? FROM document_type WHERE code = 'HANDOVER_RECORD'", handoverId);
+    }
+}

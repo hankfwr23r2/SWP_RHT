@@ -2,7 +2,7 @@
 
 > Agent và người viết code phải đọc file này trước khi làm việc. Đây là **file quy tắc duy nhất** của repo.
 > Không được nới lỏng, bỏ qua hay "tạm phá" bất kỳ quy tắc nào khi người dùng chưa đồng ý rõ ràng.
-> Cập nhật lần cuối: 22/11/2026.
+> Cập nhật lần cuối: 26/11/2026.
 
 ## 0. Thứ tự ưu tiên nguồn sự thật
 
@@ -14,6 +14,8 @@
 6. Code hiện có. Code cũ **không** phải là chuẩn. Nó được viết theo mô hình cũ.
 
 Khi hai nguồn mâu thuẫn: **dừng lại, nêu mâu thuẫn và hỏi người dùng**. Không tự chọn một bên. Không mở lại các quyết định đã chốt trong `NGU_CANH_THIET_KE_LAI.md`.
+
+**Nghiệp vụ khó quyết định** mà các nguồn trên chưa nói: tham khảo mô hình của IRT (International Racehorse Transport) hoặc Peden Bloodstock trước, kế đến là nghiệp vụ cũ đã có (nhánh `main`). Phương án phải nêu nguồn; không tìm được thì ghi **chưa kiểm chứng**. Việc tham khảo không thay bước xin duyệt ở mục 1.1.
 
 ---
 
@@ -63,9 +65,9 @@ Agent **không được** tạo, sửa, xóa hay di chuyển file trong repo khi
   - `backend/` dùng Java 21, Spring Boot, Spring Security (JWT + refresh token trong cookie HttpOnly), JPA, PostgreSQL 15 trở lên. Context path là `/api/v1`.
   - `frontend/` dùng React 19, TypeScript, Vite, React Router, Vitest. Có 2 ứng dụng: khách hàng (`/`) và nhân viên (`/backoffice`).
 - **Mô hình nghiệp vụ** (chi tiết ở `NGHIEP_VU_THEO_59_BANG.md`):
-  - **Gom hàng qua hub:** chặng đón → tập kết ở hub → chuyến trục định kỳ (`departure`) → lưu trú hoặc cách ly → chặng giao.
-  - **Trục nội địa** (hub ⇄ hub) và **trục quốc tế** (hub → cửa khẩu, rồi bàn giao cho đại lý).
-  - **Trụ sở và hub vệ tinh:** mọi xe và nhân viên thuộc trụ sở. Xe về **hub gốc** (`home_hub_location_id`) thì mới rảnh.
+  - **Mô hình bến xe, gom hàng qua hub:** nhánh đón → tập kết ở hub → chuyến trục định kỳ (`departure`) giữa **hai hub cố định** → lưu trú → nhánh giao. Một chuyến điều được nhiều xe (quyết định 26/11/2026, xem `NGU_CANH_THIET_KE_LAI.md` mục 4b).
+  - **Trục nội địa** (hub ⇄ hub) và **trục quốc tế** (hub ⇄ hub nước ngoài, dừng làm thủ tục ở cửa khẩu). Mọi hub, kể cả ở Lào, Campuchia, là của công ty.
+  - **Hub và xe:** mỗi xe và nhân viên thuộc một **hub gốc** (`home_hub_location_id`). Xe về hub gốc thì mới rảnh.
   - Hub đón trùng hub giao thì **chạy thẳng** (`DIRECT`). Mỗi đơn có tối đa một chặng trục.
   - Ba lớp không được trộn:
     - thương mại: `booking`, `quotation`, `payment`;
@@ -138,7 +140,7 @@ Gốc package: `backend/src/main/java/com/example/racehorse_transport/`.
 - Snapshot có chủ đích phải ghi comment `// snapshot: <lý do>`.
 - Quy ước:
   - tên bảng và cột dùng `snake_case`, tên bảng số ít;
-  - mọi định danh dùng tiếng Anh, theo quy tắc N1–N10 ở mục 0 của `DB_SCHEMA_59_BANG.md`. Tài liệu dùng tên mới; code và migration **chưa đồng bộ** thì giữ tên đang có và tra `docs/BANG_DOI_TEN.md`. Không tự đổi tên khi người dùng chưa giao việc đồng bộ;
+  - mọi định danh dùng tiếng Anh, theo quy tắc N1–N10 ở mục 0 của `DB_SCHEMA_59_BANG.md`. Code và lược đồ hiện hành đã đồng bộ tên theo đặc tả. Bảng đối chiếu tên cũ đã xóa. Không tự đổi tên khi người dùng chưa giao việc đồng bộ;
   - PK là `bigint` identity ↔ `Long`;
   - `timestamptz` ↔ `Instant`, `date` ↔ `LocalDate`;
   - tiền là `numeric(15,2)` ↔ `BigDecimal`.
@@ -195,6 +197,8 @@ public class VehicleCreateRequestDto {
 
 ## 6. Tiền và quy tắc nghiệp vụ
 
+- Ngoại lệ cho mục 5 và 6: DTO cấu hình bảng giá của `ADMIN` và `MANAGER` được nhận `unitPrice`, `marginRate`, `fuelBufferRate` và `depositRate` để service kiểm tra và ghi.
+- `SPECIALIST` được nhập phí bảo hiểm theo báo giá của công ty bảo hiểm, policy kiểm tra và service ghi.
 - **Backend là nguồn sự thật duy nhất** cho mọi con số có hệ quả tiền: giá, cọc, số dư, hoàn tiền, phụ phí, điều chỉnh.
 - Request từ client chỉ chứa **lựa chọn đầu vào**: chuyến, ngựa, dịch vụ, địa chỉ, khoản điều chỉnh kèm lý do. **Cấm** nhận `amount`, `total`, `subtotal`, `unitPrice` từ client làm dữ liệu chính thức.
 - Mỗi công thức có **đúng một nơi**, trong `policy/`. Frontend muốn xem trước thì gọi endpoint preview.
@@ -321,6 +325,15 @@ apps/<app>/features  →  shared/components  →  shared/ui
   - `style={{…}}`, trừ giá trị động không biểu diễn được bằng class (tọa độ, phần trăm tiến độ, kích thước tính lúc chạy).
 - Nút, ô nhập, nhãn trạng thái… dùng component trong `shared/ui` có biến thể (`<Button variant="primary" size="sm">`). Không tự viết lại.
 - Màu của trạng thái nghiệp vụ được ánh xạ tại **một nơi** (component `StatusBadge`), không rải ở từng trang.
+- **Quy tắc thị giác** (người dùng duyệt 26/11/2026):
+  - **Ba lớp chữ:** tiêu đề đậm; giá trị chính đậm vừa, màu chữ thường; nhãn nhỏ màu `--color-muted`. Không tô xám giá trị chính.
+  - **Nhịp khoảng cách:** 8px trong một nhóm, 16px giữa các ô, 24px giữa các khối, 32px giữa các phần của trang.
+  - **Mẫu danh sách:** một khung gồm thẻ lọc có số đếm, ô tìm và bộ lọc, bảng (điện thoại là thẻ), dòng cuối "Hiển thị N".
+  - **Ô số liệu** đầu trang có biểu tượng, số lớn, nhãn ngắn và đường dẫn tới danh sách tương ứng.
+  - **Mỗi khu vực một nút chính.** Thao tác phụ dùng nút viền; thao tác ít dùng gom vào menu "…".
+  - **Nhãn và giá trị** xếp lưới 2–4 cột, nhãn trên giá trị dưới.
+  - **Không có gì nổi đè nội dung:** thông báo việc tiếp theo nằm trong dòng chảy trang; nút đổi ngôn ngữ ở thanh trên hoặc menu tài khoản.
+  - **Điện thoại:** menu gập vào nút ba gạch, nút trong thẻ trải hết chiều ngang, mã đơn không bị bẻ giữa.
 
 ### 8.6 Trải nghiệm (UX)
 

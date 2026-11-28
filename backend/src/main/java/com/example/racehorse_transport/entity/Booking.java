@@ -2,6 +2,8 @@ package com.example.racehorse_transport.entity;
 
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.BookingType;
+import com.example.racehorse_transport.entity.enums.TransportMode;
+import com.example.racehorse_transport.entity.enums.TransferMethod;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -29,14 +31,28 @@ import java.time.LocalDate;
 @Getter
 @Setter
 @NoArgsConstructor
+@org.hibernate.annotations.DynamicUpdate
 @Entity
 @Table(name = "booking")
 public class Booking {
+
+    @Column(name = "collection_code", length = 6)
+    private String collectionCode;
+
+    @Column(name = "collection_failed_attempts", nullable = false)
+    private int collectionFailedAttempts;
+
+    @Column(name = "collection_confirmed", nullable = false)
+    private boolean collectionConfirmed;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "specialist_id")
+    private Staff specialist;
 
     @Column(name = "code", length = 30, nullable = false)
     private String code;
@@ -50,6 +66,10 @@ public class Booking {
     @Column(name = "booking_type", length = 30, nullable = false)
     private BookingType bookingType;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "transport_mode", length = 30, nullable = false)
+    private TransportMode transportMode = TransportMode.SHARED;
+
     // Chuyến trục chính. NULL khi chưa gán chuyến hoặc khi đơn chạy thẳng
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
     @JoinColumn(name = "departure_id")
@@ -58,8 +78,19 @@ public class Booking {
     @Column(name = "requested_pickup_date", nullable = false)
     private LocalDate requestedPickupDate;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "pickup_method", length = 30, nullable = false)
+    private TransferMethod pickupMethod = TransferMethod.COMPANY;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "delivery_method", length = 30, nullable = false)
+    private TransferMethod deliveryMethod = TransferMethod.COMPANY;
+
     @Column(name = "waybill_number", length = 30)
     private String waybillNumber;
+
+    @Column(name = "delivery_confirmed_at")
+    private Instant deliveryConfirmedAt;
 
     @Column(name = "emergency_spending_limit", precision = 15, scale = 2)
     private BigDecimal emergencySpendingLimit;

@@ -74,4 +74,15 @@ public class TripStop {
 
     @Column(name = "actual_departure_at")
     private Instant actualDepartureAt;
+
+    // derived: TripProgressNoticeService
+    @Column(name = "expected_arrival_at")
+    private Instant expectedArrivalAt;
+
+    // snapshot: giờ giao gần nhất dùng để thông báo và xét giao hụt
+    @Column(name = "told_arrival_at")
+    private Instant toldArrivalAt;
+
+    @Column(name = "told_at")
+    private Instant toldAt;
 }

@@ -25,27 +25,28 @@ class VehicleServiceTest {
 
     @Test
     void createsUpdatesAndReadsPersistedVehicles() {
-        long classId = classes.findByCode("LIGHT").orElseThrow().getId();
-        long hubId = locations.findByCode("HUB-HCM").orElseThrow().getId();
+        long classId = classes.findByCode("MEDIUM").orElseThrow().getId();
+        long hubId = locations.findByCode("HUB-PNH").orElseThrow().getId();
 
-        var created = vehicles.createVehicle(new VehicleCreateRequestDto(" a2-test-01 ", classId, 1, 0, hubId, null));
-        var updated = vehicles.updateVehicle(created.id(), new VehicleUpdateRequestDto("A2-TEST-01", classId, 1, 1, hubId, null));
+        var created = vehicles.createVehicle(new VehicleCreateRequestDto(" a2-test-01 ", classId, 1, 0, hubId));
+        var updated = vehicles.updateVehicle(created.id(), new VehicleUpdateRequestDto("A2-TEST-01", classId, 1, 1, hubId));
 
         assertThat(created.licensePlate()).isEqualTo("A2-TEST-01");
         assertThat(updated.status()).isEqualTo(VehicleStatus.ACTIVE);
         assertThat(updated.wideStallCount()).isEqualTo(1);
+        assertThat(updated.homeHubLocationId()).isEqualTo(hubId);
         assertThat(vehicles.vehicle(created.id())).isEqualTo(updated);
         assertThat(vehicles.vehicles()).contains(updated);
         assertThat(vehicles.vehicleClasses()).anyMatch(vehicleClass -> vehicleClass.id().equals(classId));
     }
 
     @Test
-    void rejectsSatelliteHubAndDoesNotCreateVehicle() {
+    void rejectsNonHubAndDoesNotCreateVehicle() {
         long classId = classes.findByCode("LIGHT").orElseThrow().getId();
-        long hubId = locations.findByCode("HUB-DN").orElseThrow().getId();
+        long hubId = locations.findByCode("GATE-MOCBAI").orElseThrow().getId();
 
         assertThatThrownBy(() -> vehicles.createVehicle(
-                new VehicleCreateRequestDto("A2-TEST-02", classId, 1, 0, hubId, null)))
+                new VehicleCreateRequestDto("A2-TEST-02", classId, 1, 0, hubId)))
                 .isInstanceOfSatisfying(VehicleRuleException.class,
                         error -> assertThat(error.getField()).isEqualTo("homeHubLocationId"));
         assertThat(vehicles.vehicles()).noneMatch(vehicle -> vehicle.licensePlate().equals("A2-TEST-02"));
@@ -55,7 +56,7 @@ class VehicleServiceTest {
     void returnsNotFoundForUnknownVehicle() {
         assertThatThrownBy(() -> vehicles.vehicle(Long.MAX_VALUE)).isInstanceOf(ResourceNotFoundException.class);
         assertThatThrownBy(() -> vehicles.updateVehicle(Long.MAX_VALUE,
-                new VehicleUpdateRequestDto("A2-MISSING", 1L, 1, 0, 1L, null)))
+                new VehicleUpdateRequestDto("A2-MISSING", 1L, 1, 0, 1L)))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 }

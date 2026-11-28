@@ -37,4 +37,7 @@ public class BookingHorseAddOn {
 
     @Column(name = "quantity", nullable = false)
     private Integer quantity;
+
+    @Column(name = "completed_at")
+    private java.time.Instant completedAt;
 }

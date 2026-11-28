@@ -1,7 +1,9 @@
 package com.example.racehorse_transport.security;
 
+import com.example.racehorse_transport.config.JwtProperties;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -9,30 +11,29 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseCookie;
 
-import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Component
+@RequiredArgsConstructor
 public class JwtUtils {
 
-    @Value("${app.jwt.secret:${APP_JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}}")
-    private String jwtSecret;
+    // Claim phân loại token: access token gửi trong header, refresh token chỉ nằm trong cookie.
+    // Tách loại để refresh token (hạn dài) không dùng được thay access token.
+    static final String TYPE_CLAIM = "typ";
+    static final String ACCESS = "access";
+    static final String REFRESH = "refresh";
+    // Phiên bản phiên đăng nhập (app_user.token_version) lúc cấp token
+    static final String VERSION_CLAIM = "ver";
 
-    // Danh sách đen token đã thu hồi (Revoked / Blacklisted tokens) khi Đăng xuất
-    private final Set<String> blacklistedTokens = ConcurrentHashMap.newKeySet();
+    private final JwtProperties jwtProperties;
 
     @Value("${app.jwt.access-token-expiration-ms:900000}")
     private long accessTokenExpirationMs;
 
     @Value("${app.jwt.refresh-token-expiration-ms:1296000000}")
     private long refreshTokenExpirationMs;
-
-    @Value("${app.jwt.refresh-cookie-name:refreshToken}")
-    private String refreshCookieName;
 
     @Value("${app.jwt.cookie-secure:false}")
     private boolean cookieSecure;
@@ -41,13 +42,12 @@ public class JwtUtils {
     private String cookieSameSite;
 
     private Key getSigningKey() {
-        return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+        return Keys.hmacShaKeyFor(jwtProperties.signingKey());
     }
 
-    // Đóng gói Refresh Token vào HttpOnly Cookie
-    public ResponseCookie generateRefreshCookie(String username) {
-        String refreshToken = generateRefreshToken(username);
-        return ResponseCookie.from(refreshCookieName, refreshToken)
+    // Đóng gói Refresh Token vào HttpOnly Cookie của đúng ứng dụng
+    public ResponseCookie generateRefreshCookie(String refreshToken, ClientApp app) {
+        return ResponseCookie.from(app.cookieName(), refreshToken)
                 .path("/")
                 .maxAge(refreshTokenExpirationMs / 1000)
                 .httpOnly(true)
@@ -57,8 +57,8 @@ public class JwtUtils {
     }
 
     // Cookie xóa refresh token khi đăng xuất
-    public ResponseCookie getCleanRefreshCookie() {
-        return ResponseCookie.from(refreshCookieName, "")
+    public ResponseCookie getCleanRefreshCookie(ClientApp app) {
+        return ResponseCookie.from(app.cookieName(), "")
                 .path("/")
                 .maxAge(0)
                 .httpOnly(true)
@@ -67,12 +67,12 @@ public class JwtUtils {
                 .build();
     }
 
-    // Lấy refresh token từ request cookie
-    public String getRefreshTokenFromCookies(HttpServletRequest request) {
+    // Lấy refresh token của ứng dụng từ request cookie
+    public String getRefreshTokenFromCookies(HttpServletRequest request, ClientApp app) {
         Cookie[] cookies = request.getCookies();
         if (cookies != null) {
             for (Cookie cookie : cookies) {
-                if (refreshCookieName.equals(cookie.getName())) {
+                if (app.cookieName().equals(cookie.getName())) {
                     return cookie.getValue();
                 }
             }
@@ -80,14 +80,16 @@ public class JwtUtils {
         return null;
     }
 
-    // 1. Sinh Access Token (thời hạn 15 phút). roles lấy từ bảng user_role, phần tử đầu là vai trò chính;
-    //    claim "role" giữ vai trò chính để tương thích giao diện cũ, claim "roles" chứa đủ danh sách.
-    public String generateToken(String username, List<String> roles) {
+    // 1. Sinh Access Token (thời hạn 15 phút). Mỗi tài khoản một vai trò (app_user.role_code);
+    //    claim "role" giữ vai trò để tương thích giao diện cũ, claim "roles" là danh sách một phần tử.
+    public String generateToken(String username, List<String> roles, int tokenVersion) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + accessTokenExpirationMs);
 
         return Jwts.builder()
                 .setSubject(username)
+                .claim(TYPE_CLAIM, ACCESS)
+                .claim(VERSION_CLAIM, tokenVersion)
                 .claim("role", roles.isEmpty() ? null : roles.get(0))
                 .claim("roles", roles)
                 .setIssuedAt(now)
@@ -97,12 +99,14 @@ public class JwtUtils {
     }
 
     // 2. Sinh Refresh Token từ username (thời hạn 15 ngày)
-    public String generateRefreshToken(String username) {
+    public String generateRefreshToken(String username, int tokenVersion) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + refreshTokenExpirationMs);
 
         return Jwts.builder()
                 .setSubject(username)
+                .claim(TYPE_CLAIM, REFRESH)
+                .claim(VERSION_CLAIM, tokenVersion)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
@@ -141,28 +145,28 @@ public class JwtUtils {
                 .getBody();
     }
 
-    // Thu hồi token (đưa vào blacklist khi đăng xuất)
-    public void blacklistToken(String token) {
-        if (token != null && !token.isBlank()) {
-            blacklistedTokens.add(token.trim());
-        }
+    // Phiên bản phiên đăng nhập trong token; token không có số này thì trả -1 để không khớp tài khoản nào
+    public int getVersionFromToken(String token) {
+        Integer version = extractClaims(token).get(VERSION_CLAIM, Integer.class);
+        return version == null ? -1 : version;
     }
 
-    public boolean isBlacklisted(String token) {
-        return token != null && blacklistedTokens.contains(token.trim());
+    // Access token hợp lệ: đúng chữ ký, chưa hết hạn, đúng loại access. Phiên bản do AuthService.isSessionValid kiểm
+    public boolean validateAccessToken(String token) {
+        return hasType(token, ACCESS);
     }
 
-    // Kiểm tra tính hợp lệ của token (bao gồm cả kiểm tra blacklist)
-    public boolean validateToken(String token) {
-        if (token == null || token.isBlank() || isBlacklisted(token)) {
+    // Refresh token hợp lệ: đúng chữ ký, chưa hết hạn, đúng loại refresh
+    public boolean validateRefreshToken(String token) {
+        return hasType(token, REFRESH);
+    }
+
+    private boolean hasType(String token, String type) {
+        if (token == null || token.isBlank()) {
             return false;
         }
         try {
-            Jwts.parserBuilder()
-                    .setSigningKey(getSigningKey())
-                    .build()
-                    .parseClaimsJws(token);
-            return true;
+            return type.equals(extractClaims(token).get(TYPE_CLAIM, String.class));
         } catch (JwtException | IllegalArgumentException e) {
             // Token không hợp lệ hoặc đã hết hạn
             return false;

@@ -1,0 +1,14 @@
+.page { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-4); align-items: start; }
+.list { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+.card { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2); padding: var(--space-3) var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
+.late { border-color: var(--color-danger); }
+.head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); color: var(--color-heading); }
+.chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.line { margin: 0; font-size: var(--text-sm); color: var(--color-muted); overflow-wrap: anywhere; }
+@media (max-width: 1000px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+.healthNote {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

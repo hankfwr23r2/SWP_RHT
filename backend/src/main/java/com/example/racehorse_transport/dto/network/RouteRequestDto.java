@@ -47,6 +47,8 @@ public class RouteRequestDto {
     @Min(value = 1, message = "Thời gian chạy phải lớn hơn 0")
     private Integer estimatedDurationMinutes;
 
+    private boolean fleetOutbound;
+
     @Valid
     @NotNull(message = "Tuyến phải có điểm dừng")
     @Size(min = 2, message = "Tuyến phải có ít nhất 2 điểm dừng")
@@ -66,5 +68,6 @@ public class RouteRequestDto {
         route.setDestination(destination);
         route.setDistanceKm(distanceKm);
         route.setEstimatedDurationMinutes(estimatedDurationMinutes);
+        route.setFleetOutbound(fleetOutbound);
     }
 }

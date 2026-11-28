@@ -1,104 +1,132 @@
-// Ô chọn tùy biến (thay <select> gốc để chỉnh được danh sách xổ xuống). Bàn phím: ↑ ↓ Home End Enter Space Esc.
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
+// Ô chọn một giá trị, danh sách xổ xuống vẽ lại (dấu tích ở mục đang chọn, mục bị khóa mờ đi, tự lật lên khi hết chỗ phía dưới).
+// Dùng trong Field: <Field label="Xe">{c => <Select {...c} value={v} options={opts} onChange={setV} />}</Field>
+// Bàn phím: ↑ ↓ Home End Enter Space Esc Tab.
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import s from './Select.module.css'
 
-export interface SelectGroup {
-  label: string
-  icon?: ReactNode
-  options: { value: string; label: string }[]
+export interface SelectOption {
+  value: string
+  label: ReactNode
+  disabled?: boolean
 }
 
 interface SelectProps {
-  label: string
   value: string
-  groups: SelectGroup[]
+  options: SelectOption[]
   onChange: (value: string) => void
-  invalid?: boolean
+  // Chữ hiện khi chưa chọn mục nào
+  placeholder?: ReactNode
+  disabled?: boolean
+  id?: string
+  'aria-label'?: string
+  'aria-describedby'?: string
+  'aria-invalid'?: true
+  required?: boolean
 }
 
-export function Select({ label, value, groups, onChange, invalid }: SelectProps) {
-  const id = useId()
+export function Select({ value, options, onChange, placeholder, disabled, id, required, ...aria }: SelectProps) {
+  const uid = useId()
+  const current = options.findIndex(o => o.value === value)
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(0)
-  const root = useRef<HTMLDivElement>(null)
-  const list = useRef<HTMLUListElement>(null)
-  const flat = groups.flatMap(g => g.options)
-  const selected = flat.find(o => o.value === value)
+  const [box, setBox] = useState<{ top?: number; bottom?: number; left: number; width: number }>({ left: 0, width: 0 })
+  const trigger = useRef<HTMLButtonElement>(null)
+  const menu = useRef<HTMLUListElement>(null)
 
-  const show = () => { setActive(Math.max(0, flat.findIndex(o => o.value === value))); setOpen(true) }
-  const pick = (i: number) => { onChange(flat[i].value); setOpen(false) }
+  const place = useCallback(() => {
+    const r = trigger.current?.getBoundingClientRect()
+    if (!r) return
+    // Trong hộp thoại thì chỉ tính phần nhìn thấy của hộp thoại để chân hộp thoại không che danh sách
+    const dialog = trigger.current?.closest('[data-dialog], .modal')?.getBoundingClientRect()
+    const below = Math.min(innerHeight, dialog?.bottom ?? innerHeight) - r.bottom
+    const above = r.top - Math.max(0, dialog?.top ?? 0)
+    if (below < 240 && above > below) setBox({ bottom: innerHeight - r.top + 6, left: r.left, width: r.width })
+    else setBox({ top: r.bottom + 6, left: r.left, width: r.width })
+  }, [])
 
+  useLayoutEffect(() => { if (open) place() }, [open, place])
   useEffect(() => {
     if (!open) return
-    const close = (e: MouseEvent) => { if (!root.current?.contains(e.target as Node)) setOpen(false) }
+    const close = (e: MouseEvent) => { const t = e.target as Node; if (!trigger.current?.contains(t) && !menu.current?.contains(t)) setOpen(false) }
+    const move = (e: Event) => { if (!menu.current?.contains(e.target as Node)) place() }
     document.addEventListener('mousedown', close)
-    return () => document.removeEventListener('mousedown', close)
-  }, [open])
+    window.addEventListener('resize', place)
+    window.addEventListener('scroll', move, true)
+    return () => { document.removeEventListener('mousedown', close); window.removeEventListener('resize', place); window.removeEventListener('scroll', move, true) }
+  }, [open, place])
+  useEffect(() => { if (open) menu.current?.querySelector(`[data-i="${active}"]`)?.scrollIntoView?.({ block: 'nearest' }) }, [open, active])
 
-  useEffect(() => {
-    if (open) list.current?.querySelector(`[data-i="${active}"]`)?.scrollIntoView({ block: 'nearest' })
-  }, [open, active])
-
-  const onKeyDown = (e: React.KeyboardEvent) => {
-    const move = (i: number) => { e.preventDefault(); if (open) setActive(Math.min(flat.length - 1, Math.max(0, i))); else show() }
-    if (e.key === 'ArrowDown') move(active + 1)
-    else if (e.key === 'ArrowUp') move(active - 1)
-    else if (e.key === 'Home') move(0)
-    else if (e.key === 'End') move(flat.length - 1)
+  // Mục chọn được kế tiếp theo hướng dir, bỏ qua mục bị khóa
+  const step = (from: number, dir: 1 | -1) => { for (let i = from + dir; i >= 0 && i < options.length; i += dir) if (!options[i].disabled) return i; return from }
+  const show = () => { setActive(current >= 0 ? current : step(-1, 1)); setOpen(true) }
+  const pick = (i: number) => {
+    const o = options[i]
+    if (!o || o.disabled) return
+    setOpen(false)
+    trigger.current?.focus()
+    if (o.value !== value) onChange(o.value)
+  }
+  const onKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); if (!open) show(); else setActive(a => step(a, e.key === 'ArrowDown' ? 1 : -1)) }
+    else if (e.key === 'Home' && open) { e.preventDefault(); setActive(step(-1, 1)) }
+    else if (e.key === 'End' && open) { e.preventDefault(); setActive(step(options.length, -1)) }
     else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (open) pick(active); else show() }
+    // preventDefault để Modal biết Escape đã được xử lý, không đóng hộp thoại
     else if (e.key === 'Escape' && open) { e.preventDefault(); setOpen(false) }
     else if (e.key === 'Tab') setOpen(false)
   }
 
-  let index = -1
   return (
-    <div className={s.field} ref={root}>
-      <span className={s.label} id={`${id}-label`}>{label}</span>
+    <>
       <button
+        {...aria}
+        ref={trigger}
         type="button"
+        id={id}
         role="combobox"
-        className={`${s.trigger} ${invalid ? s.invalid : ''}`}
-        aria-labelledby={`${id}-label`}
+        className={s.trigger}
+        disabled={disabled}
+        aria-required={required || undefined}
         aria-haspopup="listbox"
         aria-expanded={open}
-        aria-controls={`${id}-list`}
-        aria-activedescendant={open ? `${id}-${active}` : undefined}
+        aria-controls={`${uid}-list`}
+        aria-activedescendant={open ? `${uid}-${active}` : undefined}
         onClick={() => (open ? setOpen(false) : show())}
         onKeyDown={onKeyDown}
       >
-        <span>{selected?.label}</span>
-        <svg className={s.chevron} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+        <span className={current >= 0 ? s.value : `${s.value} ${s.placeholder}`}>{current >= 0 ? options[current].label : placeholder}</span>
+        <i className={`fa-solid fa-chevron-down ${s.chevron}`} aria-hidden="true" />
       </button>
-      {open && (
-        <ul className={s.menu} id={`${id}-list`} role="listbox" aria-labelledby={`${id}-label`} ref={list} style={{ '--cols': groups.length } as React.CSSProperties}>
-          {groups.map(g => (
-            <li key={g.label} role="presentation">
-              {g.label && <div className={s.group} role="presentation">{g.icon}{g.label}</div>}
-              <ul role="presentation">
-                {g.options.map(o => {
-                  const i = ++index
-                  return (
-                    <li
-                      key={o.value}
-                      id={`${id}-${i}`}
-                      data-i={i}
-                      role="option"
-                      aria-selected={o.value === value}
-                      className={`${s.option} ${i === active ? s.active : ''} ${o.value === value ? s.selected : ''}`}
-                      onMouseEnter={() => setActive(i)}
-                      onMouseDown={e => e.preventDefault()}
-                      onClick={() => pick(i)}
-                    >
-                      {o.label}
-                      {o.value === value && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12 5 5L20 7" /></svg>}
-                    </li>
-                  )
-                })}
-              </ul>
+      {open && createPortal(
+        <ul
+          ref={menu}
+          id={`${uid}-list`}
+          role="listbox"
+          className={s.menu}
+          // check-style: dynamic vị trí danh sách tính theo ô chọn lúc mở
+          style={{ top: box.top, bottom: box.bottom, left: box.left, width: box.width }}
+        >
+          {options.map((o, i) => (
+            <li
+              key={o.value}
+              id={`${uid}-${i}`}
+              data-i={i}
+              role="option"
+              aria-selected={i === current}
+              aria-disabled={o.disabled || undefined}
+              className={[s.option, i === active && s.active, i === current && s.selected, o.disabled && s.disabled].filter(Boolean).join(' ')}
+              onMouseEnter={() => !o.disabled && setActive(i)}
+              onMouseDown={e => e.preventDefault()}
+              onClick={() => pick(i)}
+            >
+              <span>{o.label}</span>
+              {i === current && <i className="fa-solid fa-check" aria-hidden="true" />}
             </li>
           ))}
-        </ul>
+        </ul>,
+        document.body,
       )}
-    </div>
+    </>
   )
 }

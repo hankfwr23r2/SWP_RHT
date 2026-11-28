@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import type { AppRoute } from '@shared/routing/types'
-import { ROLE_LABEL, type Role } from '@shared/types/role'
+import { ROLE_LABEL, type Role } from '@shared/auth/role'
 
 type App = 'customer' | 'backoffice'
 const BASE: Record<App, string> = { customer: '', backoffice: '/backoffice' }

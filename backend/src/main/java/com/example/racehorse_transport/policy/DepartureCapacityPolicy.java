@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.policy;
 
+import com.example.racehorse_transport.exception.BookingRuleException;
 import com.example.racehorse_transport.entity.enums.DepartureStatus;
 import java.time.Instant;
 import java.util.Optional;
@@ -20,9 +21,9 @@ public final class DepartureCapacityPolicy {
 
     // Lý do không đặt được chỗ; rỗng nghĩa là đặt được
     public static Optional<String> reasonNotReservable(DepartureStatus status, Instant bookingCutoffAt, Instant now,
-                                                       int stallCapacity, int bookedStallCount, int stalls) {
+                                                       long stallCapacity, int bookedStallCount, int stalls) {
         if (stalls <= 0) {
-            return Optional.of("Số khoang cần đặt phải lớn hơn 0.");
+            return Optional.of("Số chỗ cần đặt phải lớn hơn 0.");
         }
         if (status != DepartureStatus.OPEN) {
             return Optional.of("Chuyến không còn nhận đặt chỗ.");
@@ -30,16 +31,16 @@ public final class DepartureCapacityPolicy {
         if (!now.isBefore(bookingCutoffAt)) {
             return Optional.of("Chuyến đã qua giờ chốt nhận đơn.");
         }
-        if (bookedStallCount + stalls > stallCapacity) {
-            return Optional.of("Chuyến chỉ còn " + available(stallCapacity, bookedStallCount) + " khoang.");
+        if ((long) bookedStallCount + stalls > stallCapacity) {
+            return Optional.of("Chuyến chỉ còn " + Math.max(0, stallCapacity - bookedStallCount) + " chỗ.");
         }
         return Optional.empty();
     }
 
-    // Số khoang đã đặt sau khi nhả. Nhả nhiều hơn số đã đặt là lỗi dữ liệu, không âm thầm làm tròn về 0.
+    // Số chỗ đã đặt sau khi nhả. Nhả nhiều hơn số đã đặt là lỗi dữ liệu, không âm thầm làm tròn về 0.
     public static int bookedAfterRelease(int bookedStallCount, int stalls) {
         if (stalls <= 0 || stalls > bookedStallCount) {
-            throw new IllegalStateException("Không nhả được " + stalls + " khoang khi chuyến mới đặt " + bookedStallCount + " khoang.");
+            throw new IllegalStateException("Không nhả được " + stalls + " chỗ khi chuyến mới đặt " + bookedStallCount + " chỗ.");
         }
         return bookedStallCount - stalls;
     }
@@ -47,6 +48,16 @@ public final class DepartureCapacityPolicy {
     // Chuyến đang nhận đơn mà đã qua giờ chốt thì đóng
     public static boolean shouldClose(DepartureStatus status, Instant bookingCutoffAt, Instant now) {
         return status == DepartureStatus.OPEN && !now.isBefore(bookingCutoffAt);
+    }
+
+    public static DepartureStatus afterLinehaulDeparture(DepartureStatus status) {
+        if (status == DepartureStatus.IN_PROGRESS || status == DepartureStatus.COMPLETED) return status;
+        if (CANCELLABLE.contains(status)) return DepartureStatus.IN_PROGRESS;
+        throw BookingRuleException.conflict("Chuyến đã hủy, không thể bắt đầu.");
+    }
+
+    public static DepartureStatus afterLinehaulCompletion(DepartureStatus status, boolean unfinishedTrips) {
+        return status == DepartureStatus.IN_PROGRESS && !unfinishedTrips ? DepartureStatus.COMPLETED : status;
     }
 
     public static boolean canCancel(DepartureStatus status) {

@@ -59,6 +59,15 @@ class ValhallaClientTest {
     }
 
     @Test
+    void omitsTheDepartureTimeWhenThereIsNone() throws Exception {
+        stub.reply("/route", 200, "valhalla-truck-hcm-mocbai-phnompenh.json");
+
+        assertThat(client.truckRoute(List.of(HCM, MOC_BAI, PHNOM_PENH), 8, 70, null).legs()).hasSize(2);
+
+        assertThat(json.readTree(stub.requests("/route").getFirst().body()).has("date_time")).isFalse();
+    }
+
+    @Test
     void asksForATruckOfTheGivenWeightTopSpeedAndDepartureTime() throws Exception {
         stub.reply("/route", 200, "valhalla-truck-hcm-mocbai-phnompenh.json");
 

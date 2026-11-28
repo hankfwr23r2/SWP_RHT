@@ -1,139 +1,134 @@
+// Bản nháp đơn đặt chuyến: lưu theo từng tài khoản trong phiên trình duyệt, các bước và cột tóm tắt cùng đọc.
 import { useCallback, useSyncExternalStore } from 'react'
-import type { FeedPackageId, WaterPlanId } from '@shared/config/booking-rules'
-import type { BookingRequiredServiceCategory, BookingServiceCategory } from '@shared/types/booking'
-import type { ServiceCatalogItem } from '@shared/api/serviceCatalog'
-import type { Party, StallType, TransportType } from '@shared/types/booking'
+import type { BookingCreateRequest, DepartureSuggestion } from '@shared/api/bookingOrders'
+import { readSession } from '@shared/auth/session'
 
-export interface HorseConfig {
-  stall: StallType
-  feedPackage: FeedPackageId
-  waterPlan: WaterPlanId
-  selectedServices?: Partial<Record<BookingServiceCategory, number>>
-  selectedServiceCodes?: Partial<Record<BookingRequiredServiceCategory, string>>
-  insurance: 'buy' | 'decline' | 'personal' | 'assistance' | 'none' | ''
-  insuranceDetails?: import('@shared/types/insurance').HorseInsurance // phải chọn rõ cho từng ngựa
+export type TransportMode = NonNullable<BookingCreateRequest["transportMode"]>
+export type TransferMethod = NonNullable<BookingCreateRequest['pickupMethod']>
+export type PartyRole = BookingCreateRequest['parties'][number]['bookingRole']
+export type CoverageOption = BookingCreateRequest['horses'][number]['insurance']['coverageOption']
+export type Departure = NonNullable<DepartureSuggestion['departures']>[number]
+
+export interface HorseChoice {
+  deliveryAddressId?: number
+  stallTypeCode: string
+  dietNote: string
+  feedingsPerDay: string
+  feedSuppliedByOwner: boolean
+  addOnServiceIds: number[]
+  coverage: CoverageOption | ''
+  insurerName: string
+  policyNumber: string
+  policyFile?: File
+  validFrom: string
+  validTo: string
+  acceptedWaiver: boolean
+}
+
+export interface PartyDraft {
+  fullName: string
+  phone: string
+  address: string
+  identityType: string
+  identityNumber: string
 }
 
 export interface BookingDraft {
-  type: TransportType | ''
-  partner: 'KH' | 'LA' | '' // nước bạn (quốc tế)
-  direction: 'out' | 'in' // out: Việt Nam → nước bạn
-  originId: string
-  destId: string
-  departDate: string // YYYY-MM-DD
-  consignor: Party
-  consignee: Party
-  horseIds: string[]
-  config: Record<string, HorseConfig>
-  limitedLiabilityAccepted?: boolean // khách đã tick Điều khoản Trách nhiệm Hạn chế ở bước 3 (bản nháp cũ không có trường này)
+  pickupAddressId: number | null
+  deliveryAddressId: number | null
+  fromDate: string
+  routing: 'DIRECT' | 'LINEHAUL' | ''
+  transportMode: TransportMode
+  bookingAddOnServiceIds: number[]
+  pickupMethod: TransferMethod
+  deliveryMethod: TransferMethod
+  departure: Departure | null
+  pickupDate: string
+  horseIds: number[]
+  horses: Record<number, HorseChoice>
+  parties: Record<PartyRole, PartyDraft>
+  pickupNote: string
+  deliveryNote: string
+  deliveryContacts: Record<number, { fullName: string; phone: string }>
+  emergencySpendingLimit: string
+  acceptedTerms: boolean
 }
 
-export const STORAGE_KEY = 'SWP_RACEHORSE_TRANSPORT_REQUEST'
+export const PARTY_ROLES: PartyRole[] = ['SHIPPER', 'CONSIGNEE', 'PAYER', 'EMERGENCY_CONTACT']
 
-const blankParty = (): Party => ({ name: '', phone: '', idNumber: '', address: '' })
+const blankParty = (): PartyDraft => ({ fullName: '', phone: '', address: '', identityType: '', identityNumber: '' })
+
+export const emptyHorse = (): HorseChoice => ({
+  stallTypeCode: '', dietNote: '', feedingsPerDay: '', feedSuppliedByOwner: false, addOnServiceIds: [],
+  coverage: '', insurerName: '', policyNumber: '', validFrom: '', validTo: '', acceptedWaiver: false,
+})
 
 export const emptyDraft = (): BookingDraft => ({
-  type: '', partner: '', direction: 'out', originId: '', destId: '', departDate: '',
-  consignor: blankParty(), consignee: blankParty(), horseIds: [], config: {},
+  pickupAddressId: null, deliveryAddressId: null, fromDate: '', routing: '',
+  pickupMethod: 'COMPANY', deliveryMethod: 'COMPANY', departure: null, pickupDate: '',
+  transportMode: 'SHARED', bookingAddOnServiceIds: [],
+  horseIds: [], horses: {},
+  parties: { SHIPPER: blankParty(), CONSIGNEE: blankParty(), PAYER: blankParty(), EMERGENCY_CONTACT: blankParty() },
+  pickupNote: '', deliveryNote: '', deliveryContacts: {}, emergencySpendingLimit: '', acceptedTerms: false,
 })
 
-export const defaultConfig = (): HorseConfig => ({
-  stall: 'standard', feedPackage: 'basic', waterPlan: 'every_3h', insurance: '',
-  selectedServices: {}, selectedServiceCodes: {},
-})
+const draftKey = () => `SWP_RHT_BOOKING_DRAFT_${readSession('customer')?.username ?? ''}`
 
-const SERVICE_CODE_PREFIXES: Record<BookingServiceCategory, string> = {
-  stall: 'STALL_',
-  feed: 'FEED_',
-  water: 'WATER_',
-  insurance: 'INSURANCE_',
-}
-
-const DEFAULT_SERVICE_CODES: Partial<Record<BookingServiceCategory, string>> = {
-  stall: 'STALL_STANDARD',
-  feed: 'FEED_BASIC',
-  insurance: 'INSURANCE_BUY',
-}
-
-function legacyServiceCodeFor(category: BookingServiceCategory, config: HorseConfig): string | undefined {
-  if (category === 'stall' && config.stall === 'single') return 'STALL_SINGLE_EXTENDED'
-  if (category === 'feed') return `FEED_${config.feedPackage.toUpperCase()}`
-  if (category === 'insurance' && config.insurance === 'decline') return 'INSURANCE_DECLINED'
-  return DEFAULT_SERVICE_CODES[category]
-}
-
-export function serviceOptionFor(
-  services: ServiceCatalogItem[],
-  config: HorseConfig,
-  category: BookingServiceCategory,
-): ServiceCatalogItem | undefined {
-  if (category === 'water') return undefined
-  const options = services.filter(service => service.serviceCode.startsWith(SERVICE_CODE_PREFIXES[category]))
-  const selectedCode = config.selectedServiceCodes?.[category as BookingRequiredServiceCategory]
-  if (selectedCode) return options.find(service => service.serviceCode === selectedCode)
-  const selectedId = config.selectedServices?.[category]
-  if (selectedId !== undefined) return options.find(service => service.id === selectedId)
-  const preferredCode = legacyServiceCodeFor(category, config)
-  return options.find(service => service.serviceCode === preferredCode) ?? options[0]
-}
-
-export function isDeclinedInsurance(service: ServiceCatalogItem | undefined): boolean {
-  return !!service && (service.serviceCode === 'INSURANCE_DECLINED'
-    || service.id === 10
-    || service.serviceName.trim().toLocaleLowerCase().includes('từ chối'))
-}
-
-// Bản nháp là một kho dùng chung: cột tóm tắt và các bước cùng đọc, nên khách gõ tới đâu tóm tắt cập nhật tới đó.
 const listeners = new Set<() => void>()
+let lastKey = ''
 let lastRaw: string | null = null
 let cache: BookingDraft = emptyDraft()
 
-function readRaw() {
-  try { return sessionStorage.getItem(STORAGE_KEY) } catch { return null }
+function readRaw(key: string) {
+  try { return sessionStorage.getItem(key) } catch { return lastKey === key ? lastRaw : null }
 }
+
 function getSnapshot(): BookingDraft {
-  const raw = readRaw()
-  if (raw !== lastRaw) {
+  const key = draftKey()
+  const raw = readRaw(key)
+  if (key !== lastKey || raw !== lastRaw) {
+    lastKey = key
     lastRaw = raw
-    try {
-      cache = raw ? { ...emptyDraft(), ...JSON.parse(raw) } : emptyDraft()
-      for (const config of Object.values(cache.config)) {
-        if (config.insurance === 'buy' || config.insurance === 'decline') config.insurance = ''
-      }
-    } catch { cache = emptyDraft() }
+    try { cache = raw ? { ...emptyDraft(), ...JSON.parse(raw) as BookingDraft } : emptyDraft() } catch { cache = emptyDraft() }
   }
   return cache
 }
+
 const subscribe = (fn: () => void) => { listeners.add(fn); return () => { listeners.delete(fn) } }
-const write = (next: BookingDraft | null) => {
-  try { if (next) sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next)); else sessionStorage.removeItem(STORAGE_KEY) } catch { /* bỏ qua khi bị chặn lưu trữ */ }
+
+// File objects stay in the current tab's memory while moving between steps.
+const serialize = (draft: BookingDraft) => JSON.stringify(draft, (key, value: unknown) =>
+  key === 'policyFile' ? undefined : value)
+
+function write(next: BookingDraft | null, raw = next && serialize(next)) {
+  const key = draftKey()
+  try { if (raw) sessionStorage.setItem(key, raw); else sessionStorage.removeItem(key) } catch { /* giữ trong bộ nhớ */ }
+  lastKey = key
+  lastRaw = raw
   cache = next ?? emptyDraft()
-  lastRaw = readRaw() // nếu bị chặn lưu trữ thì giữ bản nháp trong bộ nhớ
   listeners.forEach(fn => fn())
 }
 
-export const saveDraft = (patch: Partial<BookingDraft>) => {
+export function saveDraft(patch: Partial<BookingDraft>) {
   const current = getSnapshot()
   const next = { ...current, ...patch }
-  if (JSON.stringify(current) === JSON.stringify(next)) {
-    return current
+  const raw = serialize(next)
+  if (raw !== serialize(current) || next.horseIds.some(id => next.horses[id]?.policyFile !== current.horses[id]?.policyFile)) {
+    write(next, raw)
   }
-  write(next)
-  return next
 }
 
 export const clearDraft = () => write(null)
 
 export function useBookingDraft() {
   const draft = useSyncExternalStore(subscribe, getSnapshot)
-  const save = useCallback((patch: Partial<BookingDraft>) => saveDraft(patch), [])
-  const clear = useCallback(() => clearDraft(), [])
-  return { draft, save, clear }
-}
-
-// Nước của điểm đi / điểm đến theo loại chuyến
-export const countriesOf = (d: Pick<BookingDraft, 'type' | 'partner' | 'direction'>) => {
-  if (d.type === 'domestic') return { origin: 'VN' as const, dest: 'VN' as const }
-  if (d.type === 'international' && d.partner) return d.direction === 'out' ? { origin: 'VN' as const, dest: d.partner } : { origin: d.partner, dest: 'VN' as const }
-  return null
+  const setHorse = useCallback((id: number, patch: Partial<HorseChoice>) => {
+    const { horses } = getSnapshot()
+    saveDraft({ horses: { ...horses, [id]: { ...(horses[id] ?? emptyHorse()), ...patch } } })
+  }, [])
+  const setParty = useCallback((role: PartyRole, patch: Partial<PartyDraft>) => {
+    const { parties } = getSnapshot()
+    saveDraft({ parties: { ...parties, [role]: { ...parties[role], ...patch } } })
+  }, [])
+  return { draft, save: saveDraft, setHorse, setParty }
 }

@@ -58,7 +58,7 @@ class NetworkDtoTest {
         Province province = new Province();
         province.setCode("VN-79");
 
-        Location entity = request.toEntity(vn(), province);
+        Location entity = request.toEntity(vn(), province, null);
 
         assertThat(entity.getId()).isNull();
         assertThat(entity.getStatus()).isNull();
@@ -70,8 +70,28 @@ class NetworkDtoTest {
     }
 
     @Test
+    void provinceResponseCopiesCentre() {
+        Province province = new Province();
+        province.setCode("VN-79");
+        province.setName("Thành phố Hồ Chí Minh");
+        province.setCountry(vn());
+        province.setLatitude(new BigDecimal("10.776"));
+        province.setLongitude(new BigDecimal("106.7"));
+
+        ProvinceResponseDto dto = ProvinceResponseDto.from(province);
+
+        assertThat(dto.getCode()).isEqualTo("VN-79");
+        assertThat(dto.getCountryCode()).isEqualTo("VN");
+        assertThat(dto.getLatitude()).isEqualByComparingTo("10.776");
+        assertThat(dto.getLongitude()).isEqualByComparingTo("106.7");
+    }
+
+    @Test
     void locationResponseCopiesFields() {
         Location entity = location(5L, "GATE-X", LocationType.BORDER_GATE);
+        Country counterpart = new Country();
+        counterpart.setCode("KH");
+        entity.setCounterpartCountry(counterpart);
         entity.setOpeningTime(LocalTime.of(7, 0));
 
         LocationResponseDto dto = LocationResponseDto.from(entity);
@@ -79,6 +99,7 @@ class NetworkDtoTest {
         assertThat(dto.getId()).isEqualTo(5L);
         assertThat(dto.getCountryCode()).isEqualTo("VN");
         assertThat(dto.getProvinceCode()).isNull();
+        assertThat(dto.getCounterpartCountryCode()).isEqualTo("KH");
         assertThat(dto.getOpeningTime()).isEqualTo(LocalTime.of(7, 0));
         assertThat(dto.getStatus()).isEqualTo(ActiveStatus.ACTIVE);
     }
@@ -121,22 +142,47 @@ class NetworkDtoTest {
     }
 
     @Test
+    void routeFleetDirectionDefaultsToFalseAndCanBeUpdatedWithoutChangingIdentityOrStatus() {
+        var request = new RouteRequestDto();
+        request.setCode("hub-a-b");
+        request.setName("Tuyến thử");
+        request.setDistanceKm(new BigDecimal("100.00"));
+        request.setEstimatedDurationMinutes(120);
+        Location origin = location(1L, "HUB-A", LocationType.HUB);
+        Location destination = location(2L, "HUB-B", LocationType.HUB);
+
+        Route route = request.toEntity(origin, destination);
+        assertThat(RouteResponseDto.from(route, null).isFleetOutbound()).isFalse();
+
+        route.setId(9L);
+        route.setStatus(ActiveStatus.ACTIVE);
+        request.setFleetOutbound(true);
+        request.applyTo(route, origin, destination);
+        assertThat(RouteResponseDto.from(route, null).isFleetOutbound()).isTrue();
+        assertThat(route.getId()).isEqualTo(9L);
+        assertThat(route.getStatus()).isEqualTo(ActiveStatus.ACTIVE);
+    }
+
+    @Test
     void scheduleRequestLeavesStatusAndDaysToService() {
         DepartureScheduleRequestDto request = new DepartureScheduleRequestDto();
         request.setRouteId(9L);
         request.setDepartureTime(LocalTime.of(6, 0));
         request.setBookingCutoffHours(72);
-        request.setStallCapacity(9);
+        request.setBaseVehicleClassId(1L);
+        request.setBaseVehicleCount(1);
+        var vehicleClass = new com.example.racehorse_transport.entity.VehicleClass();
         request.setValidFrom(LocalDate.of(2026, 12, 1));
         request.setDaysOfWeek(Set.of((short) 4, (short) 1));
         Route route = new Route();
         route.setId(9L);
         route.setCode("HCM-X");
 
-        DepartureSchedule schedule = request.toEntity(route);
+        DepartureSchedule schedule = request.toEntity(route, vehicleClass);
         assertThat(schedule.getId()).isNull();
         assertThat(schedule.getStatus()).isNull();
-        assertThat(schedule.getStallCapacity()).isEqualTo(9);
+        assertThat(schedule.getBaseVehicleCount()).isEqualTo(1);
+        assertThat(schedule.getBaseVehicleClass()).isSameAs(vehicleClass);
 
         schedule.setId(3L);
         schedule.setStatus(ScheduleStatus.ACTIVE);

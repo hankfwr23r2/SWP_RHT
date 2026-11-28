@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -24,8 +25,34 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(RegulationRuleException.class)
+    public ResponseEntity<ApiResponseDto<Map<String, String>>> handleRegulationRule(RegulationRuleException ex) {
+        return ResponseEntity.status(ex.isConflict() ? HttpStatus.CONFLICT : HttpStatus.BAD_REQUEST)
+                .body(ApiResponseDto.<Map<String, String>>builder()
+                        .status("error")
+                        .message(ex.getMessage())
+                        .data(Map.of(ex.getField(), ex.getMessage()))
+                        .build());
+    }
+
+    @ExceptionHandler(PricingRuleException.class)
+    public ResponseEntity<ApiResponseDto<Object>> handlePricingRule(PricingRuleException ex) {
+        return ResponseEntity.status(ex.isConflict() ? HttpStatus.CONFLICT : HttpStatus.BAD_REQUEST)
+                .body(ApiResponseDto.error(ex.getMessage()));
+    }
+
     @ExceptionHandler(VehicleRuleException.class)
     public ResponseEntity<ApiResponseDto<Map<String, String>>> handleVehicleRule(VehicleRuleException ex) {
+        return ResponseEntity.status(ex.isConflict() ? HttpStatus.CONFLICT : HttpStatus.BAD_REQUEST)
+                .body(ApiResponseDto.<Map<String, String>>builder()
+                        .status("error")
+                        .message(ex.getMessage())
+                        .data(Map.of(ex.getField(), ex.getMessage()))
+                        .build());
+    }
+
+    @ExceptionHandler(DispatchRuleException.class)
+    public ResponseEntity<ApiResponseDto<Map<String, String>>> handleDispatchRule(DispatchRuleException ex) {
         return ResponseEntity.status(ex.isConflict() ? HttpStatus.CONFLICT : HttpStatus.BAD_REQUEST)
                 .body(ApiResponseDto.<Map<String, String>>builder()
                         .status("error")
@@ -73,6 +100,12 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(ApiResponseDto.error(ex.getMessage()), HttpStatus.TOO_MANY_REQUESTS);
     }
 
+    // Refresh token thiếu, hết hạn, đã thu hồi hoặc không đúng ứng dụng
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<ApiResponseDto<Object>> handleInvalidToken(InvalidTokenException ex) {
+        return new ResponseEntity<>(ApiResponseDto.error(ex.getMessage()), HttpStatus.UNAUTHORIZED);
+    }
+
     // Tài nguyên theo đường dẫn (đơn, sự cố, ngựa...) không tồn tại
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiResponseDto<Object>> handleResourceNotFound(ResourceNotFoundException ex) {
@@ -93,6 +126,12 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(ApiResponseDto.error("Dữ liệu gửi lên không đúng định dạng."), HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(org.springframework.web.multipart.support.MissingServletRequestPartException.class)
+    public ResponseEntity<ApiResponseDto<Object>> handleMissingPart(
+            org.springframework.web.multipart.support.MissingServletRequestPartException ex) {
+        return ResponseEntity.badRequest().body(ApiResponseDto.error("Thiếu phần dữ liệu bắt buộc: " + ex.getRequestPartName()));
+    }
+
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ApiResponseDto<Object>> handleMissingParameter(MissingServletRequestParameterException ex) {
         return new ResponseEntity<>(ApiResponseDto.error("Thiếu tham số bắt buộc: " + ex.getParameterName()), HttpStatus.BAD_REQUEST);
@@ -104,9 +143,29 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(ApiResponseDto.error("Tham số không hợp lệ: " + ex.getName()), HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ApiResponseDto<Object>> handleMediaTypeNotSupported(HttpMediaTypeNotSupportedException ex) {
+        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                .body(ApiResponseDto.error("API không hỗ trợ định dạng nội dung đã gửi."));
+    }
+
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ApiResponseDto<Object>> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
         return new ResponseEntity<>(ApiResponseDto.error("API không hỗ trợ phương thức " + ex.getMethod()), HttpStatus.METHOD_NOT_ALLOWED);
+    }
+
+    @ExceptionHandler(BookingRuleException.class)
+    public ResponseEntity<ApiResponseDto<Object>> handleBookingRule(BookingRuleException ex) {
+        String message = ex.getReason() != null ? ex.getReason() : HttpStatus.valueOf(ex.getStatusCode().value()).getReasonPhrase();
+        if (ex.getField() != null) {
+            return ResponseEntity.status(ex.getStatusCode())
+                    .body(ApiResponseDto.builder()
+                            .status("error")
+                            .message(message)
+                            .data(Map.of(ex.getField(), message))
+                            .build());
+        }
+        return ResponseEntity.status(ex.getStatusCode()).body(ApiResponseDto.error(message));
     }
 
     // Controller tự chọn mã lỗi (VD: NotificationController trả 404/403): giữ đúng mã đó

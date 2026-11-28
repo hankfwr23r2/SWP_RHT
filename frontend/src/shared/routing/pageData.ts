@@ -2,7 +2,7 @@
 import { useEffect } from 'react'
 import { useLoaderData, useRevalidator, type Params, type ShouldRevalidateFunction } from 'react-router'
 import { readSession } from '../auth/session'
-import type { Role, Session } from '../types/role'
+import type { Role, Session } from '../auth/role'
 import { useToast } from '../ui/toast'
 
 export interface PageLoaderContext { params: Params; session: Session }

@@ -20,10 +20,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import org.hibernate.annotations.Generated;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 
 // Hồ sơ ngựa. Ngựa đang ở đâu tính từ handover mới nhất, không lưu ở đây.
@@ -49,9 +46,6 @@ public class Horse {
     @Column(name = "microchip", length = 30)
     private String microchip;
 
-    @Column(name = "passport_number", length = 50)
-    private String passportNumber;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "sex", length = 30, nullable = false)
     private HorseGender sex;
@@ -62,31 +56,12 @@ public class Horse {
     @Column(name = "color", length = 50)
     private String color;
 
-    @Column(name = "breed", length = 100)
-    private String breed;
-
-    @Column(name = "sire", length = 100)
-    private String sire;
-
-    @Column(name = "dam", length = 100)
-    private String dam;
-
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "horse_type_id", nullable = false)
     private HorseType horseType;
 
     @Column(name = "identification_marks", columnDefinition = "text")
     private String identificationMarks;
-
-    @Column(name = "weight_kg", precision = 6, scale = 1)
-    private BigDecimal weightKg;
-
-    @Column(name = "declared_value", precision = 15, scale = 2)
-    private BigDecimal declaredValue;
-
-    @JdbcTypeCode(SqlTypes.CHAR)
-    @Column(name = "declared_currency_code", length = 3)
-    private String declaredCurrencyCode;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 30, nullable = false)

@@ -1,0 +1,6 @@
+# Demo trên giờ thật: bỏ kiểm tra mốc thời gian, dịch vụ ngoài chạy thật với key trong .env (docs/CHAY_THU.md)
+# docker compose -f docker-compose.yml -f docker-compose.demo-live.yml up -d --build
+services:
+  backend:
+    environment:
+      - SPRING_PROFILES_ACTIVE=demo-live

@@ -11,11 +11,12 @@ type ToolbarVariant = 'default' | 'balanced'
 export interface ImageLightboxProps {
   name: string
   title?: string
+  fileType?: string
   onClose: () => void
   toolbarVariant?: ToolbarVariant
 }
 
-export function ImageLightbox({ name, title, onClose, toolbarVariant = 'default' }: ImageLightboxProps) {
+export function ImageLightbox({ name, title, fileType, onClose, toolbarVariant = 'default' }: ImageLightboxProps) {
   const isUrl = name.startsWith('http://') || name.startsWith('https://') || name.startsWith('blob:') || name.startsWith('data:')
   const src = isUrl ? name : previewOf(name)
   const [scale, setScale] = useState(1)
@@ -32,12 +33,12 @@ export function ImageLightbox({ name, title, onClose, toolbarVariant = 'default'
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  const isPdf = name.toLowerCase().endsWith('.pdf') || (src ? src.toLowerCase().includes('.pdf') : false)
+  const isPdf = fileType === 'application/pdf' || name.toLowerCase().endsWith('.pdf') || (src ? src.toLowerCase().includes('.pdf') : false)
   const displayName = name.split('/').pop()?.split('?')[0] || name
 
   const content = (
     <div className={s.backdrop} role="dialog" aria-modal="true" aria-label={`Xem tài liệu ${title || name}`} onClick={e => e.target === e.currentTarget && onClose()}>
-      {!isPdf && <div style={{ position: 'absolute', bottom: 12, left: 12, background: 'rgba(0,0,0,.8)', color: 'white', padding: 10, borderRadius: 8, zIndex: 2 }}><CaptureEvidenceInfo url={name} /></div>}
+      {!isPdf && <div className={s.evidence}><CaptureEvidenceInfo url={name} /></div>}
       <button className={s.close} onClick={onClose} aria-label="Đóng"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
 
       {/* Header thông tin tài liệu */}
@@ -84,6 +85,7 @@ export function ImageLightbox({ name, title, onClose, toolbarVariant = 'default'
                 className={s.big}
                 src={src}
                 alt={title || name}
+                // check-style: dynamic phóng to và xoay theo thao tác người xem
                 style={{
                   transform: `scale(${scale}) rotate(${rotation}deg)`,
                   transformOrigin: 'center center',
@@ -96,10 +98,10 @@ export function ImageLightbox({ name, title, onClose, toolbarVariant = 'default'
       ) : (
         <div className={s.docCard}>
           <div className={s.docSeal}><i className="fa-solid fa-circle-check" /> HỒ SƠ HỢP LỆ TRÊN HỆ THỐNG</div>
-          <i className={isPdf ? 'fa-solid fa-file-pdf' : 'fa-solid fa-file-invoice'} style={{ fontSize: '3.2rem', color: isPdf ? 'var(--red, #ef4444)' : 'var(--orange, #f97316)' }} />
+          <i className={`${isPdf ? 'fa-solid fa-file-pdf' : 'fa-solid fa-file-invoice'} ${s.docIcon} ${isPdf ? s.pdfIcon : s.fileIcon}`} />
           <div>
-            <h4 style={{ margin: '0 0 4px', fontSize: '1.05rem' }}>{title || displayName}</h4>
-            <p className="sub-text" style={{ margin: 0 }}>Chứng từ kiểm duyệt điện tử lưu trữ an toàn trong hồ sơ vận chuyển ({displayName}).</p>
+            <h4 className={s.docTitle}>{title || displayName}</h4>
+            <p className={`sub-text ${s.docNote}`}>Chứng từ kiểm duyệt điện tử lưu trữ an toàn trong hồ sơ vận chuyển ({displayName}).</p>
           </div>
           <div className={s.docActions}>
             <button type="button" className="btn btn-outline btn-sm" onClick={() => window.print()}>
@@ -125,10 +127,12 @@ export function ImageThumb({ name, size = 56, toolbarVariant = 'default', title 
   const isPdf = name.toLowerCase().endsWith('.pdf') || (src ? src.toLowerCase().includes('.pdf') : false)
   return (
     <>
-      <button type="button" className={s.thumb} style={{ width: size, height: size }} onClick={() => setOpen(true)} title={`Xem ${title || name}`} aria-label={`Xem tài liệu ${title || name}`}>
+      <button type="button" className={s.thumb}
+        // check-style: dynamic kích thước ô xem trước do nơi dùng truyền vào
+        style={{ width: size, height: size }} onClick={() => setOpen(true)} title={`Xem ${title || name}`} aria-label={`Xem tài liệu ${title || name}`}>
         {isPdf ? (
           <div className={s.pdfThumb}>
-            <i className="fa-solid fa-file-pdf" style={{ color: 'var(--red, #ef4444)' }} />
+            <i className={`fa-solid fa-file-pdf ${s.pdfIcon}`} />
             <span>PDF</span>
           </div>
         ) : src ? (

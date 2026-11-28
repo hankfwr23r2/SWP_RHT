@@ -2,6 +2,7 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { useTranslation } from 'react-i18next'
+import { TranslateToggle } from './TranslateToggle'
 import s from './AuthShell.module.css'
 
 interface AuthShellProps {
@@ -34,7 +35,10 @@ export function AuthShell({ title, subtitle, heading, tagline, homeHref = '/', h
       </div>
       <div className={s.right}>
         <div className={s.box}>
-          {back && <div className={s.back}>{back}</div>}
+          <div className={s.controls}>
+            {back && <div className={s.back}>{back}</div>}
+            <TranslateToggle />
+          </div>
           <h1>{title}</h1>
           <p>{subtitle}</p>
           {children}

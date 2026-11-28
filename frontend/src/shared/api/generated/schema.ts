@@ -4,6 +4,54 @@
  */
 
 export interface paths {
+    "/admin/system-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["search_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/system-logs/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["options"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/system-logs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_4"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/change-password": {
         parameters: {
             query?: never;
@@ -164,6 +212,1318 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/billable-services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["billableServices"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/booking-horses/{id}/complete-pickup-add-on": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["completePickupAddOn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/booking-horses/{id}/confirm-pickup-liability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["confirmPickupLiability"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/booking-horses/{id}/health-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ofHorse"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/booking-horses/{id}/hub-appointments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["appoint"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/booking-horses/{id}/pickup-add-ons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["pickupAddOns"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/booking-horses/{id}/pickup-choices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["chooseAfterPickupMiss"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_4"];
+        put?: never;
+        post: operations["submitWithInsuranceFiles"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/missing-documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["missingDocuments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/overdue-documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["overdueDocuments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/review-queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["queue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/summaries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["summaries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{bookingId}/balance-hold-contacts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["recordContact"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{bookingId}/delay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["bookingDelay"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{bookingId}/delay/refund": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["refundAfterDelay"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{bookingId}/delay/refund-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["previewDelayRefund"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{bookingId}/delay/reschedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["rescheduleAfterDelay"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{bookingId}/delivery-complaints": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["view"];
+        put?: never;
+        post: operations["submit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{bookingId}/delivery-complaints/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["confirm_3"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{bookingId}/delivery-complaints/reply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reply"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{bookingId}/delivery-complaints/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["resolve_2"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{bookingId}/delivery-complaints/submit-on-behalf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["submitOnBehalf"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{bookingId}/extend-pickup-payment-wait": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["extend_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{bookingId}/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["payments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{bookingId}/quotations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["quotations"];
+        put?: never;
+        post: operations["draft"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{bookingId}/ratings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["rate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{bookingId}/send-unclaimed-pickup-to-hub": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["sendToHub"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{bookingId}/settlement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["settlement"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{bookingId}/settlement/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["complete_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{bookingId}/settlement/extra-charges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createExtraCharge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{bookingId}/stabling-clocks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["forBooking"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_3"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["cancel_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/cancel-for-company": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["cancelForCompany"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/cancel-for-customer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["cancelForCustomer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/cancellation-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["preview_3"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/change-departure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["changeDeparture"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/collection-code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["code"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/confirm-collection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["confirm_2"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/cost-items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["costsOfBooking"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/customer-cost-items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["customerCosts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/customer-incident-plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["customerPlans"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/delivery-change": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["confirm_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/delivery-change/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["preview_2"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_7"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/documents/checklist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["checklist"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/documents/my-checklist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["customerChecklist"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/documents/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["upload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/documents/upload-for-partner": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["uploadForPartner"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/documents/{documentId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["approve"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/documents/{documentId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reject_2"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/documents/{documentId}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["revoke"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/insurances/{insuranceId}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["confirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/insurances/{insuranceId}/record-evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["recordEvidence"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/insurances/{insuranceId}/record-premium-refund": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["recordPremiumRefund"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/insurances/{insuranceId}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reopen_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/insurances/{insuranceId}/request-revision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["requestRevision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/insurances/{insuranceId}/revise": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["revise"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/intake": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["intake"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/journey": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["journey"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/manager-cancellation-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["previewForManager"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/pickup-misses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listPickupMisses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/reassign-specialist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reassign"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/refund-review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["review"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/refund-unspent-lines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["refundUnspentLines"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reject_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/reopen-quote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reopenExpiredQuote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/report-document-delay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reportDocumentDelay"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/reschedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reschedule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/resubmit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["resubmit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/return-for-resubmission": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["returnToCustomer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/review-detail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["detail_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/start-quoting": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["startQuoting"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/coordinator/vehicle-trips": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["mine_2"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/coordinator/vehicle-trips/{id}/horses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["horses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cost-items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["recordCost"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cost-items/{id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["acceptCost"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cost-items/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["approveCost"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cost-items/{id}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["declineCost"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cost-items/{id}/mark-recovered": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["markRecovered"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cost-items/{id}/phone-consent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["phoneConsent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/cost-items/{id}/receipts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["receipts"];
+        put?: never;
+        post: operations["attachReceipt"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/countries": {
         parameters: {
             query?: never;
@@ -172,6 +1532,182 @@ export interface paths {
             cookie?: never;
         };
         get: operations["countries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/country-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listCountryRules"];
+        put?: never;
+        post: operations["createCountryRule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/country-rules/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["preview_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/country-rules/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getCountryRule"];
+        put: operations["updateCountryRule"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/country-rules/{ruleId}/document-requirements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listDocumentRequirements"];
+        put?: never;
+        post: operations["createDocumentRequirement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/country-rules/{ruleId}/document-requirements/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["updateDocumentRequirement"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crew-assignments/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["mine_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crew-assignments/{id}/acknowledge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["acknowledge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crew-assignments/{id}/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["releaseCrew"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crew/vehicle-trips/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["trip_2"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crew/vehicle-trips/{id}/departure-readiness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["departureReadiness"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/custody-board": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["board"];
         put?: never;
         post?: never;
         delete?: never;
@@ -237,7 +1773,7 @@ export interface paths {
         };
         get: operations["list_3"];
         put?: never;
-        post: operations["create_2"];
+        post: operations["create_3"];
         delete?: never;
         options?: never;
         head?: never;
@@ -252,7 +1788,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put: operations["update_2"];
+        put: operations["update_3"];
         post?: never;
         delete?: never;
         options?: never;
@@ -315,9 +1851,25 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_2"];
+        get: operations["list_6"];
         put?: never;
-        post: operations["createAdHoc"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/departures/decisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["decisions"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -340,6 +1892,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/departures/{departureId}/linehaul-suggestion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["suggestLinehaul"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/departures/{departureId}/linehaul-trips": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["applyLinehaul"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/departures/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["detail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/departures/{id}/assign-coordinator": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["assignDeparture"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/departures/{id}/cancel": {
         parameters: {
             query?: never;
@@ -350,6 +1966,406 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/departures/{id}/confirm-run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["confirmRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/departures/{id}/delay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["delay"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/departures/{id}/vehicles/{allotmentId}/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["removeVehicle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dispatch/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["bookings_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dispatch/crew-candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["crewCandidates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dispatch/grouping-suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["groupingSuggestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dispatch/trip-plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["planTrip"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dispatch/vehicles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["vehicles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/document-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listDocumentTypes"];
+        put?: never;
+        post: operations["createDocumentType"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/document-types/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getDocumentType"];
+        put: operations["updateDocumentType"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/extra-charges/{id}/dispute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["dispute"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/extra-charges/{id}/dispute-decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["decideDispute"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/extra-charges/{id}/extend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["extend"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/extra-charges/{id}/release-block": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["releaseBlock"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/extra-charges/{id}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reopen"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/extra-charges/{id}/write-off": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["writeOff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/geocode/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["search"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/handovers/{id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["completeHandover"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/handovers/{id}/fail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["fail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/handovers/{id}/horses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["scan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/handovers/{id}/horses/{horseLegId}/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["photo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/handovers/{id}/papers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["papers"];
+        put?: never;
+        post: operations["mark"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/handovers/{id}/record": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["record_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/handovers/{id}/refusals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["refuse_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/handovers/{id}/start-waiting": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["startWaiting"];
         delete?: never;
         options?: never;
         head?: never;
@@ -372,6 +2388,438 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/health-check-tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listHorseHealthCheckTasks"];
+        put?: never;
+        post: operations["assignHealthCheckTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/health-check-tasks/assignees": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listHealthCheckAssignees"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/health-check-tasks/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listMyHealthCheckTasks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/health-check-tasks/{id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["acceptHealthCheckTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/health-check-tasks/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["cancelHealthCheckTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/health-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["record"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horse-legs/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["cancelLeg"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horse-stays": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["activeStays"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horse-stays/appointments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["appointments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horse-stays/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["myStays"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horse-stays/{id}/collection-time": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["collectionTime"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horse-stays/{id}/deliveries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["deliver"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horse-stays/{id}/handover-papers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["handoverPapers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horse-stays/{id}/receipts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["receive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horse-stays/{id}/refusals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["refuse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horse-stays/{id}/resolve-unclaimed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["resolve_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horse-stays/{id}/stabling": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["stable"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horse-stays/{stayId}/change-stall": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["changeHubStall"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horse-stays/{stayId}/choose-later-slot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["chooseLaterSlot"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horse-stays/{stayId}/ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ready"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horse-stays/{stayId}/record-ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["recordReady"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horse-stays/{stayId}/report-collection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reportCollection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horse-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listHorseTypes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listHorses"];
+        put?: never;
+        post: operations["createHorse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horses/document-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listHorseDocumentTypes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horses/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getHorse"];
+        put: operations["updateHorse"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horses/{id}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listHorseDocuments"];
+        put?: never;
+        post: operations["uploadHorseDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/hub-service-areas": {
         parameters: {
             query?: never;
@@ -379,7 +2827,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_4"];
+        get: operations["list_5"];
         put?: never;
         post?: never;
         delete?: never;
@@ -404,6 +2852,342 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/hubs/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["hubOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/incident-plans/{id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["acceptPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/incident-plans/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["approvePlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/incident-plans/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["rejectPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/incidents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["open"];
+        put?: never;
+        post: operations["report"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/incidents/severity-defaults": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["severityDefaults"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/incidents/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["incident"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/incidents/{id}/cancel-legs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["cancelLegs"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/incidents/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["close"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/incidents/{id}/cost-items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["costsOfIncident"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/incidents/{id}/fit-confirmation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["confirmFit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/incidents/{id}/handover-cause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["amendHandoverCause"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/incidents/{id}/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["photos"];
+        put?: never;
+        post: operations["attachPhoto"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/incidents/{id}/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["propose"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/incidents/{id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["resolve"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/incidents/{id}/rest-start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["startRest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/incidents/{id}/return-to-hub": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["returnToHub"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/incidents/{id}/severity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["changeSeverity"];
+        trace?: never;
+    };
+    "/incidents/{id}/unlock-trip": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["unlockTrip"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/incidents/{id}/vehicle-swap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["swapVehicle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/incidents/{id}/vet-result": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["recordVetResult"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/locations": {
         parameters: {
             query?: never;
@@ -411,9 +3195,41 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_1"];
+        get: operations["list_2"];
         put?: never;
-        post: operations["create_1"];
+        post: operations["create_2"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/locations/{hubId}/hub-stalls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["hubStallInventory"];
+        put?: never;
+        post: operations["createHubStall"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/locations/{hubId}/hub-stalls/{stallId}/deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["deactivateHubStall"];
         delete?: never;
         options?: never;
         head?: never;
@@ -427,8 +3243,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["get_1"];
-        put: operations["update_1"];
+        get: operations["get_2"];
+        put: operations["update_2"];
         post?: never;
         delete?: never;
         options?: never;
@@ -445,7 +3261,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["activate_1"];
+        post: operations["activate_2"];
         delete?: never;
         options?: never;
         head?: never;
@@ -468,6 +3284,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/notifications/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["mine"];
+        put?: never;
+        post?: never;
+        delete: operations["deleteAll"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["markAllRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notifications/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["delete_1"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notifications/{id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["markRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/parties": {
         parameters: {
             query?: never;
@@ -478,6 +3358,22 @@ export interface paths {
         get: operations["listParties"];
         put?: never;
         post: operations["createParty"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/parties/insurers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listInsurers"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -532,6 +3428,182 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/payments/vnpay/ipn": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ipn"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/payments/vnpay/return": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["paymentReturn"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/payments/{id}/checkout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["checkout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/price-lists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_1"];
+        put?: never;
+        post: operations["create_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/price-lists/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_1"];
+        put: operations["update_1"];
+        post?: never;
+        delete: operations["delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/price-lists/{id}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["activate_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/price-lists/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["archive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/price-lists/{id}/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["items"];
+        put?: never;
+        post: operations["createItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/price-lists/{id}/items/{itemId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getItem"];
+        put: operations["updateItem"];
+        post?: never;
+        delete: operations["deleteItem"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/pricing/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/pricing/transfer-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["transferOptions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/provinces": {
         parameters: {
             query?: never;
@@ -540,6 +3612,214 @@ export interface paths {
             cookie?: never;
         };
         get: operations["provinces"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/contact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["contact"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/tracking": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["publicTrack"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/transport-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["transportRules"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/quotations/{id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["accept"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/quotations/{id}/adjust": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["adjust"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/quotations/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/quotations/{id}/send": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["send"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/refunds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["refunds"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/refunds/{id}/mark-refunded": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["markRefunded"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reports/operations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["summary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reports/revenue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["revenue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reports/trips": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["trips_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reports/trips/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["trip_1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -612,6 +3892,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/specialist/work-queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["specialistWorkQueue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/specialist/work-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["specialistWorkSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/stable-partners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["stablePartners"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/staff-accounts": {
         parameters: {
             query?: never;
@@ -637,6 +3965,102 @@ export interface paths {
         };
         get: operations["getStaffAccount"];
         put: operations["updateStaffAccount"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/staff-accounts/{id}/lock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["lockStaffAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/staff-accounts/{id}/unlock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["unlockStaffAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/staff-workloads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["workloads"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/staff-workloads/{staffId}/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["bookings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/staff/work-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["workSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/stall-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["stallTypes"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -676,6 +4100,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/system-configs/{key}/text": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["updateSystemTextConfig"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/trip-stops/{id}/arrive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["arrive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/trip-stops/{id}/depart": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["depart"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/trip-stops/{id}/handovers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createHandover"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/vehicle-classes": {
         parameters: {
             query?: never;
@@ -686,6 +4174,246 @@ export interface paths {
         get: operations["vehicleClasses"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vehicle-trips": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["trips"];
+        put?: never;
+        post: operations["createTrip"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vehicle-trips/planned": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createPlannedTrip"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vehicle-trips/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["trip"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["updateTrip"];
+        trace?: never;
+    };
+    "/vehicle-trips/{id}/assign-coordinator": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["assignTrip"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vehicle-trips/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["cancelTrip"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vehicle-trips/{id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["complete"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vehicle-trips/{id}/crew-assignments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["assignCrew"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vehicle-trips/{id}/horse-legs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["horsesOnTrip"];
+        put?: never;
+        post: operations["assignHorse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vehicle-trips/{id}/incidents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ofTrip"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vehicle-trips/{id}/return-photo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["returnPhoto"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vehicle-trips/{id}/stall-plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["plan"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vehicle-trips/{id}/stall-plan/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["apply"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vehicle-trips/{id}/stall-plan/suggest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["suggest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vehicle-trips/{id}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["start"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vehicle-trips/{id}/take-over": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["takeOver"];
         delete?: never;
         options?: never;
         head?: never;
@@ -724,12 +4452,166 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vehicles/{id}/reactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reactivate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vehicles/{id}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["retire"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vehicles/{id}/start-maintenance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["startMaintenance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AddOn: {
+            /** Format: int32 */
+            quantity?: number;
+            /** Format: int64 */
+            serviceId?: number;
+            serviceName?: string;
+        };
+        AddOnInput: {
+            /** Format: int32 */
+            quantity: number;
+            /** Format: int64 */
+            serviceId: number;
+        };
+        AddressDto: {
+            addressLine?: string;
+            contactName?: string;
+            contactPhone?: string;
+            countryCode?: string;
+            /** Format: int64 */
+            id?: number;
+        };
+        AddressInput: {
+            accessNote?: string;
+            addressLine: string;
+            /** @enum {string} */
+            addressType: "PICKUP" | "DELIVERY";
+            contactName: string;
+            contactPhone: string;
+            countryCode: string;
+            latitude: number;
+            longitude: number;
+            provinceCode: string;
+            /** Format: int64 */
+            sourceCustomerAddressId?: number;
+        };
+        AddressSnapshot: {
+            accessNote?: string;
+            addressLine?: string;
+            /** @enum {string} */
+            addressType?: "PICKUP" | "DELIVERY";
+            contactName?: string;
+            contactPhone?: string;
+            countryCode?: string;
+            /** Format: int64 */
+            id?: number;
+            latitude?: number;
+            longitude?: number;
+            provinceCode?: string;
+            /** Format: int64 */
+            sourceCustomerAddressId?: number;
+        };
         ApiResponseAuthResponse: {
             data?: components["schemas"]["AuthResponse"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseBookingCancellationResponseDto: {
+            data?: components["schemas"]["BookingCancellationResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseBookingDetailResponseDto: {
+            data?: components["schemas"]["BookingDetailResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseBookingDocumentChecklistResponseDto: {
+            data?: components["schemas"]["BookingDocumentChecklistResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseBookingDocumentResponseDto: {
+            data?: components["schemas"]["BookingDocumentResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseBookingJourneyResponseDto: {
+            data?: components["schemas"]["BookingJourneyResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseBookingResponseDto: {
+            data?: components["schemas"]["BookingResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseCollectionCodeResponseDto: {
+            data?: components["schemas"]["CollectionCodeResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseContactResponseDto: {
+            data?: components["schemas"]["ContactResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseCostItemResponseDto: {
+            data?: components["schemas"]["CostItemResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseCountryRuleResponseDto: {
+            data?: components["schemas"]["CountryRuleResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseCrewTripResponseDto: {
+            data?: components["schemas"]["CrewTripResponseDto"];
             message?: string;
             status?: string;
         };
@@ -740,6 +4622,26 @@ export interface components {
         };
         ApiResponseCustomerProfileResponseDto: {
             data?: components["schemas"]["CustomerProfileResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseDeliveryChangeResponseDto: {
+            data?: components["schemas"]["DeliveryChangeResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseDeliveryComplaintResponseDto: {
+            data?: components["schemas"]["DeliveryComplaintResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseDepartureDecisionResponseDto: {
+            data?: components["schemas"]["DepartureDecisionResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseDepartureDetailResponseDto: {
+            data?: components["schemas"]["DepartureDetailResponseDto"];
             message?: string;
             status?: string;
         };
@@ -758,8 +4660,103 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseDocumentRequirementResponseDto: {
+            data?: components["schemas"]["DocumentRequirementResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseDocumentTypeResponseDto: {
+            data?: components["schemas"]["DocumentTypeResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseHealthCheckTaskResponseDto: {
+            data?: components["schemas"]["HealthCheckTaskResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseHealthLogResponseDto: {
+            data?: components["schemas"]["HealthLogResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseHorseDocumentResponseDto: {
+            data?: components["schemas"]["HorseDocumentResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseHorseResponseDto: {
+            data?: components["schemas"]["HorseResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseHorseStayResponseDto: {
+            data?: components["schemas"]["HorseStayResponseDto"];
+            message?: string;
+            status?: string;
+        };
         ApiResponseHubServiceAreaResponse: {
             data?: components["schemas"]["HubServiceAreaResponse"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseHubStallInventoryResponseDto: {
+            data?: components["schemas"]["HubStallInventoryResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseHubStallResponseDto: {
+            data?: components["schemas"]["HubStallResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseIncidentResponseDto: {
+            data?: components["schemas"]["IncidentResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseLinehaulSuggestionResponseDto: {
+            data?: components["schemas"]["LinehaulSuggestionResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListBillableServiceResponseDto: {
+            data?: components["schemas"]["BillableServiceResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListBookingDelayResponseDto: {
+            data?: components["schemas"]["BookingDelayResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListBookingDocumentResponseDto: {
+            data?: components["schemas"]["BookingDocumentResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListBookingResponseDto: {
+            data?: components["schemas"]["BookingResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListBookingSummaryResponseDto: {
+            data?: components["schemas"]["BookingSummaryResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListCoordinatorTripHorseResponseDto: {
+            data?: components["schemas"]["CoordinatorTripHorseResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListCoordinatorTripResponseDto: {
+            data?: components["schemas"]["CoordinatorTripResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListCostItemResponseDto: {
+            data?: components["schemas"]["CostItemResponseDto"][];
             message?: string;
             status?: string;
         };
@@ -768,8 +4765,28 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListCountryRuleResponseDto: {
+            data?: components["schemas"]["CountryRuleResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListCrewCandidateResponseDto: {
+            data?: components["schemas"]["CrewCandidateResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListCustodyRowResponseDto: {
+            data?: components["schemas"]["CustodyRowResponseDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseListCustomerAddressResponseDto: {
             data?: components["schemas"]["CustomerAddressResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListDepartureDecisionResponseDto: {
+            data?: components["schemas"]["DepartureDecisionResponseDto"][];
             message?: string;
             status?: string;
         };
@@ -783,8 +4800,93 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListDispatchBookingResponseDto: {
+            data?: components["schemas"]["DispatchBookingResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListDispatchVehicleResponseDto: {
+            data?: components["schemas"]["DispatchVehicleResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListDocumentRequirementResponseDto: {
+            data?: components["schemas"]["DocumentRequirementResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListDocumentTypeResponseDto: {
+            data?: components["schemas"]["DocumentTypeResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListEvidenceResponseDto: {
+            data?: components["schemas"]["EvidenceResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListGeocodeResultResponseDto: {
+            data?: components["schemas"]["GeocodeResultResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListHandoverPaperResponseDto: {
+            data?: components["schemas"]["HandoverPaperResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListHealthCheckAssigneeResponseDto: {
+            data?: components["schemas"]["HealthCheckAssigneeResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListHealthCheckTaskResponseDto: {
+            data?: components["schemas"]["HealthCheckTaskResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListHealthLogResponseDto: {
+            data?: components["schemas"]["HealthLogResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListHorseDocumentResponseDto: {
+            data?: components["schemas"]["HorseDocumentResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListHorseResponseDto: {
+            data?: components["schemas"]["HorseResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListHorseStayResponseDto: {
+            data?: components["schemas"]["HorseStayResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListHorseTypeResponseDto: {
+            data?: components["schemas"]["HorseTypeResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListHubOverviewResponseDto: {
+            data?: components["schemas"]["HubOverviewResponseDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseListHubServiceAreaResponse: {
             data?: components["schemas"]["HubServiceAreaResponse"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListIncidentResponseDto: {
+            data?: components["schemas"]["IncidentResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListInsurerResponseDto: {
+            data?: components["schemas"]["InsurerResponseDto"][];
             message?: string;
             status?: string;
         };
@@ -793,8 +4895,53 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListLong: {
+            data?: number[];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListMyCrewAssignmentResponseDto: {
+            data?: components["schemas"]["MyCrewAssignmentResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListNotificationResponseDto: {
+            data?: components["schemas"]["NotificationResponseDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseListPartyResponseDto: {
             data?: components["schemas"]["PartyResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListPaymentResponseDto: {
+            data?: components["schemas"]["PaymentResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListPickupAddOnResponseDto: {
+            data?: components["schemas"]["PickupAddOnResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListPickupMissResponseDto: {
+            data?: components["schemas"]["PickupMissResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListPlanDto: {
+            data?: components["schemas"]["PlanDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListPriceItemResponseDto: {
+            data?: components["schemas"]["PriceItemResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListPriceListResponseDto: {
+            data?: components["schemas"]["PriceListResponseDto"][];
             message?: string;
             status?: string;
         };
@@ -803,8 +4950,38 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListPublicTrackingResponseDto: {
+            data?: components["schemas"]["PublicTrackingResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListQuotationResponseDto: {
+            data?: components["schemas"]["QuotationResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListRefundResponseDto: {
+            data?: components["schemas"]["RefundResponseDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseListRouteResponse: {
             data?: components["schemas"]["RouteResponse"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListSpecialistWorkResponseDto: {
+            data?: components["schemas"]["SpecialistWorkResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListStablePartnerResponseDto: {
+            data?: components["schemas"]["StablePartnerResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListStablingClockResponseDto: {
+            data?: components["schemas"]["StablingClockResponseDto"][];
             message?: string;
             status?: string;
         };
@@ -813,8 +4990,33 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListStaffWorkloadResponseDto: {
+            data?: components["schemas"]["StaffWorkloadResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListStallTypeResponseDto: {
+            data?: components["schemas"]["StallTypeResponseDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseListSystemConfigResponseDto: {
             data?: components["schemas"]["SystemConfigResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListTripGroupResponseDto: {
+            data?: components["schemas"]["TripGroupResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListTripHorseResponseDto: {
+            data?: components["schemas"]["TripHorseResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListTripReportRowResponseDto: {
+            data?: components["schemas"]["TripReportRowResponseDto"][];
             message?: string;
             status?: string;
         };
@@ -828,8 +5030,27 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListVehicleTripResponseDto: {
+            data?: components["schemas"]["VehicleTripResponseDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseLocationResponse: {
             data?: components["schemas"]["LocationResponse"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseMapIncidentTypeIncidentSeverity: {
+            data?: {
+                [key: string]: "LOW" | "MEDIUM" | "HIGH";
+            };
+            message?: string;
+            status?: string;
+        };
+        ApiResponseMapStringListString: {
+            data?: {
+                [key: string]: string[];
+            };
             message?: string;
             status?: string;
         };
@@ -837,6 +5058,16 @@ export interface components {
             data?: {
                 [key: string]: string;
             };
+            message?: string;
+            status?: string;
+        };
+        ApiResponseMyCrewAssignmentResponseDto: {
+            data?: components["schemas"]["MyCrewAssignmentResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseOperationsSummaryResponseDto: {
+            data?: components["schemas"]["OperationsSummaryResponseDto"];
             message?: string;
             status?: string;
         };
@@ -850,8 +5081,83 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponsePaymentCheckoutResponseDto: {
+            data?: components["schemas"]["PaymentCheckoutResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponsePaymentResponseDto: {
+            data?: components["schemas"]["PaymentResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponsePaymentResultResponseDto: {
+            data?: components["schemas"]["PaymentResultResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponsePickupAddOnResponseDto: {
+            data?: components["schemas"]["PickupAddOnResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponsePickupMissResponseDto: {
+            data?: components["schemas"]["PickupMissResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponsePlannedTripResponseDto: {
+            data?: components["schemas"]["PlannedTripResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponsePriceItemResponseDto: {
+            data?: components["schemas"]["PriceItemResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponsePriceListResponseDto: {
+            data?: components["schemas"]["PriceListResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponsePricingPreviewResponseDto: {
+            data?: components["schemas"]["PricingPreviewResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseQuotationResponseDto: {
+            data?: components["schemas"]["QuotationResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseRatingResponseDto: {
+            data?: components["schemas"]["RatingResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseRegulationPreviewResponseDto: {
+            data?: components["schemas"]["RegulationPreviewResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseRevenueReportResponseDto: {
+            data?: components["schemas"]["RevenueReportResponseDto"];
+            message?: string;
+            status?: string;
+        };
         ApiResponseRouteResponse: {
             data?: components["schemas"]["RouteResponse"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseSettlementResponseDto: {
+            data?: components["schemas"]["SettlementResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseSpecialistWorkSummaryResponseDto: {
+            data?: components["schemas"]["SpecialistWorkSummaryResponseDto"];
             message?: string;
             status?: string;
         };
@@ -860,13 +5166,58 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseStaffWorkSummaryResponseDto: {
+            data?: components["schemas"]["StaffWorkSummaryResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseStallPlanResponseDto: {
+            data?: components["schemas"]["StallPlanResponseDto"];
+            message?: string;
+            status?: string;
+        };
         ApiResponseSystemConfigResponseDto: {
             data?: components["schemas"]["SystemConfigResponseDto"];
             message?: string;
             status?: string;
         };
+        ApiResponseSystemLogPageResponseDto: {
+            data?: components["schemas"]["SystemLogPageResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseSystemLogResponseDto: {
+            data?: components["schemas"]["SystemLogResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseTransferOptionsResponseDto: {
+            data?: components["schemas"]["TransferOptionsResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseTransportRulesResponseDto: {
+            data?: components["schemas"]["TransportRulesResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseTripDepartureReadinessResponseDto: {
+            data?: components["schemas"]["TripDepartureReadinessResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseTripReportResponseDto: {
+            data?: components["schemas"]["TripReportResponseDto"];
+            message?: string;
+            status?: string;
+        };
         ApiResponseVehicleResponseDto: {
             data?: components["schemas"]["VehicleResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseVehicleTripResponseDto: {
+            data?: components["schemas"]["VehicleTripResponseDto"];
             message?: string;
             status?: string;
         };
@@ -888,25 +5239,480 @@ export interface components {
             userId?: number;
             username?: string;
         };
+        BalanceHoldContactRequestDto: {
+            result: string;
+            /** @enum {string} */
+            target: "CUSTOMER" | "EMERGENCY_CONTACT";
+        };
+        BillableServiceResponseDto: {
+            autoApplied?: boolean;
+            /** @enum {string} */
+            billingUnit?: "PER_STALL" | "PER_KM" | "PER_HORSE" | "PER_HORSE_DAY" | "PER_BOOKING";
+            code?: string;
+            /** Format: int64 */
+            id?: number;
+            /** @enum {string} */
+            layer?: "LINEHAUL" | "PICKUP" | "DELIVERY" | "DIRECT" | "FUEL" | "STALL" | "QUARANTINE" | "ADD_ON" | "DOCS" | "SURCHARGE";
+            name?: string;
+            passThrough?: boolean;
+            /** @enum {string} */
+            status?: "ACTIVE" | "INACTIVE";
+        };
+        BookingCancellationResponseDto: {
+            allowed?: boolean;
+            /** Format: int64 */
+            bookingId?: number;
+            currencyCode?: string;
+            forfeited?: number;
+            refundable?: number;
+            reviewable?: number;
+            reviewableQuotationLineIds?: number[];
+            /** @enum {string} */
+            status?: "PENDING_INTAKE" | "UNDER_REVIEW" | "NEEDS_RESUBMISSION" | "QUOTING" | "AWAITING_DEPOSIT" | "QUOTE_EXPIRED" | "CONFIRMED" | "SCHEDULE_CHANGE_REQUIRED" | "IN_OPERATION" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED";
+        };
+        BookingCreateRequestDto: {
+            acceptedServiceTerms: boolean;
+            addresses: components["schemas"]["AddressInput"][];
+            /** @enum {string} */
+            bookingType: "LOCAL" | "INTERPROVINCE" | "EXPORT" | "IMPORT";
+            /** @enum {string} */
+            deliveryMethod?: "COMPANY" | "SELF";
+            /** Format: int64 */
+            departureId?: number;
+            emergencySpendingLimit?: number;
+            horses: components["schemas"]["HorseInput"][];
+            parties: components["schemas"]["PartyInput"][];
+            /** @enum {string} */
+            pickupMethod?: "COMPANY" | "SELF";
+            /** Format: date */
+            requestedPickupDate: string;
+            /** @enum {string} */
+            transportMode?: "SHARED" | "PRIVATE";
+        };
+        BookingDelayResponseDto: {
+            autoCancelled?: boolean;
+            canRefundFull?: boolean;
+            canRescheduleFree?: boolean;
+            delayReason?: string;
+            /** Format: int64 */
+            departureId?: number;
+            /** Format: date-time */
+            plannedDepartureAt?: string;
+            requiresManagerContact?: boolean;
+            /** Format: date-time */
+            revisedDepartureAt?: string;
+        };
+        BookingDepartureChangeRequestDto: {
+            /** Format: int64 */
+            departureId: number;
+        };
+        BookingDetailResponseDto: {
+            addresses?: components["schemas"]["AddressSnapshot"][];
+            assignedToMe?: boolean;
+            /** Format: date-time */
+            balanceHoldAt?: string;
+            booking?: components["schemas"]["BookingResponseDto"];
+            canChangeDelivery?: boolean;
+            customerName?: string;
+            customerPhone?: string;
+            deliveryChangeDisabledReason?: string;
+            /** @enum {string} */
+            deliveryMethod?: "COMPANY" | "SELF";
+            /** Format: date */
+            departureDate?: string;
+            horses?: components["schemas"]["HorseDetail"][];
+            intakeByName?: string;
+            parties?: components["schemas"]["PartySnapshot"][];
+            /** @enum {string} */
+            pickupMethod?: "COMPANY" | "SELF";
+            rated?: boolean;
+            reviewReason?: string;
+            routeName?: string;
+        };
+        BookingDocumentChecklistResponseDto: {
+            documents?: components["schemas"]["BookingDocumentResponseDto"][];
+            items?: components["schemas"]["Item"][];
+            requirementsDependOnGate?: boolean;
+        };
+        BookingDocumentResponseDto: {
+            /** Format: int64 */
+            bookingHorseId?: number;
+            /** Format: date */
+            expiryDate?: string;
+            fileName?: string;
+            fileUrl?: string;
+            /** Format: int64 */
+            horseId?: number;
+            /** Format: int64 */
+            id?: number;
+            /** Format: int64 */
+            requirementId?: number;
+            reviewNote?: string;
+            /** Format: date-time */
+            reviewedAt?: string;
+            /** @enum {string} */
+            status?: "UPLOADED" | "APPROVED" | "REJECTED" | "EXPIRED";
+            typeCode?: string;
+        };
+        BookingIntakeRequestDto: {
+            /** Format: int64 */
+            specialistId: number;
+        };
+        BookingJourneyResponseDto: {
+            bookingCode?: string;
+            /** Format: int64 */
+            bookingId?: number;
+            horses?: components["schemas"]["HorseJourneyResponseDto"][];
+            /** @enum {string} */
+            status?: "PENDING_INTAKE" | "UNDER_REVIEW" | "NEEDS_RESUBMISSION" | "QUOTING" | "AWAITING_DEPOSIT" | "QUOTE_EXPIRED" | "CONFIRMED" | "SCHEDULE_CHANGE_REQUIRED" | "IN_OPERATION" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED";
+        };
+        BookingQuotingRequestDto: unknown;
+        BookingReassignmentRequestDto: {
+            reason: string;
+            /** Format: int64 */
+            specialistId: number;
+        };
+        BookingRejectionRequestDto: {
+            reason: string;
+        };
+        BookingRescheduleRequestDto: {
+            /** Format: int64 */
+            departureId: number;
+            /** Format: date */
+            requestedPickupDate: string;
+        };
+        BookingResponseDto: {
+            /** @enum {string} */
+            bookingType?: "LOCAL" | "INTERPROVINCE" | "EXPORT" | "IMPORT";
+            code?: string;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: int64 */
+            departureId?: number;
+            emergencySpendingLimit?: number;
+            /** Format: int64 */
+            id?: number;
+            /** Format: date */
+            requestedPickupDate?: string;
+            /** Format: int64 */
+            specialistId?: number;
+            specialistName?: string;
+            /** @enum {string} */
+            status?: "PENDING_INTAKE" | "UNDER_REVIEW" | "NEEDS_RESUBMISSION" | "QUOTING" | "AWAITING_DEPOSIT" | "QUOTE_EXPIRED" | "CONFIRMED" | "SCHEDULE_CHANGE_REQUIRED" | "IN_OPERATION" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED";
+            /** @enum {string} */
+            transportMode?: "SHARED" | "PRIVATE";
+            waybillNumber?: string;
+        };
+        BookingResubmissionRequestDto: unknown;
+        BookingReturnRequestDto: {
+            reason: string;
+        };
+        BookingSummaryResponseDto: {
+            /** @enum {string} */
+            bookingType?: "LOCAL" | "INTERPROVINCE" | "EXPORT" | "IMPORT";
+            code?: string;
+            /** Format: date-time */
+            createdAt?: string;
+            customerName?: string;
+            customerPhone?: string;
+            /** Format: date */
+            departureDate?: string;
+            /** Format: int64 */
+            departureId?: number;
+            destinationCountryName?: string;
+            destinationProvinceName?: string;
+            /** Format: int32 */
+            horseCount?: number;
+            /** Format: int64 */
+            id?: number;
+            /** Format: date */
+            requestedPickupDate?: string;
+            routeName?: string;
+            /** Format: int64 */
+            specialistId?: number;
+            specialistName?: string;
+            /** @enum {string} */
+            status?: "PENDING_INTAKE" | "UNDER_REVIEW" | "NEEDS_RESUBMISSION" | "QUOTING" | "AWAITING_DEPOSIT" | "QUOTE_EXPIRED" | "CONFIRMED" | "SCHEDULE_CHANGE_REQUIRED" | "IN_OPERATION" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED";
+            /** @enum {string} */
+            transportMode?: "SHARED" | "PRIVATE";
+            waybillNumber?: string;
+        };
+        CancelBookingRequestDto: {
+            reason: string;
+        };
+        CancelLegsRequestDto: {
+            /** Format: int64 */
+            incidentPlanId: number;
+        };
         ChangePasswordRequest: {
             confirmPassword: string;
             currentPassword: string;
             newPassword: string;
+        };
+        CollectionCodeResponseDto: {
+            collectionCode?: string;
+            customerConfirmed?: boolean;
+        };
+        CompanyCancelBookingRequestDto: {
+            reason: string;
+        };
+        ComplaintCreateRequestDto: {
+            /** Format: int64 */
+            bookingHorseId?: number;
+            description: string;
+            photos: string[];
+        };
+        ComplaintOnBehalfRequestDto: {
+            /** Format: int64 */
+            bookingHorseId?: number;
+            description: string;
+            photos: string[];
+        };
+        ComplaintReplyRequestDto: {
+            reply: string;
+        };
+        ComplaintResolveRequestDto: {
+            /** @enum {string} */
+            decision: "ACCEPTED" | "REJECTED";
+            reason: string;
+        };
+        ComplaintResponseDto: {
+            /** Format: int64 */
+            bookingHorseId?: number;
+            /** @enum {string} */
+            decision?: "ACCEPTED" | "REJECTED";
+            decisionReason?: string;
+            description?: string;
+            /** Format: int64 */
+            id?: number;
+            photos?: components["schemas"]["EvidenceResponseDto"][];
+            reply?: string;
+            /** Format: date-time */
+            reportedAt?: string;
+            /** Format: date-time */
+            resolvedAt?: string;
+            /** @enum {string} */
+            status?: "REPORTED" | "PLAN_PENDING" | "PLAN_ACTIVE" | "RESOLVED" | "CLOSED";
+        };
+        CompletePickupAddOnRequestDto: {
+            /** Format: int64 */
+            serviceId: number;
+        };
+        ContactResponseDto: {
+            hotline?: string;
+            officeAddress?: string;
+        };
+        CoordinatorAssignmentRequestDto: {
+            /** Format: int64 */
+            coordinatorId: number;
+            reason?: string;
+        };
+        CoordinatorTakeOverRequestDto: {
+            reason: string;
+        };
+        CoordinatorTripHorseResponseDto: {
+            boarded?: boolean;
+            documentsComplete?: boolean;
+            horse?: components["schemas"]["TripHorseResponseDto"];
+            /** Format: date-time */
+            lastCheckAt?: string;
+            /** Format: date-time */
+            nextCheckAt?: string;
+        };
+        CoordinatorTripResponseDto: {
+            currentPoint?: string;
+            /** Format: int32 */
+            horseCount?: number;
+            late?: boolean;
+            trip?: components["schemas"]["VehicleTripResponseDto"];
+        };
+        CostApproveRequestDto: {
+            emergencyOverrideReason?: string;
+        };
+        CostItemRequestDto: {
+            amount: number;
+            /** Format: int64 */
+            bookingId?: number;
+            /** @enum {string} */
+            category: "TOLL" | "FUEL" | "STABLING" | "VET" | "RESCUE" | "REPAIR" | "WAITING" | "REDELIVERY" | "PLANNED_STABLING" | "OTHER";
+            currencyCode?: string;
+            description: string;
+            /** Format: int64 */
+            incidentId?: number;
+            /** Format: date-time */
+            incurredAt: string;
+            /** Format: int64 */
+            vehicleTripId?: number;
+        };
+        CostItemResponseDto: {
+            /** Format: date-time */
+            agentRecoveredAt?: string;
+            agentRecoveryRequired?: boolean;
+            amount?: number;
+            /** Format: date-time */
+            approvedAt?: string;
+            approvedByName?: string;
+            bookingCode?: string;
+            /** @enum {string} */
+            category?: "TOLL" | "FUEL" | "STABLING" | "VET" | "RESCUE" | "REPAIR" | "WAITING" | "REDELIVERY" | "PLANNED_STABLING" | "OTHER";
+            currencyCode?: string;
+            customerAgreed?: boolean;
+            customerConsulted?: boolean;
+            /** Format: date-time */
+            customerResponseAt?: string;
+            /** Format: date-time */
+            customerResponseDueAt?: string;
+            description?: string;
+            /** Format: int64 */
+            extraChargePaymentId?: number;
+            /** Format: int64 */
+            id?: number;
+            /** Format: int64 */
+            incidentId?: number;
+            /** Format: date-time */
+            incurredAt?: string;
+            /** @enum {string} */
+            payerType?: "COMPANY" | "CUSTOMER" | "CONSIGNEE";
+            recordedByName?: string;
         };
         CountryResponse: {
             code?: string;
             defaultCurrencyCode?: string;
             name?: string;
         };
+        CountryRuleCreateRequestDto: {
+            /** Format: int32 */
+            certificateLeadDays: number;
+            countryCode: string;
+            /** @enum {string} */
+            direction: "INTERPROVINCE" | "EXPORT" | "IMPORT";
+            /** Format: int32 */
+            permitLeadDays: number;
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo?: string;
+        };
+        CountryRuleResponseDto: {
+            /** Format: int32 */
+            certificateLeadDays?: number;
+            countryCode?: string;
+            /** @enum {string} */
+            direction?: "INTERPROVINCE" | "EXPORT" | "IMPORT";
+            /** Format: int64 */
+            id?: number;
+            /** Format: int32 */
+            permitLeadDays?: number;
+            /** Format: date */
+            validFrom?: string;
+            /** Format: date */
+            validTo?: string;
+        };
+        CountryRuleUpdateRequestDto: {
+            /** Format: int32 */
+            certificateLeadDays: number;
+            countryCode: string;
+            /** @enum {string} */
+            direction: "INTERPROVINCE" | "EXPORT" | "IMPORT";
+            /** Format: int32 */
+            permitLeadDays: number;
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo?: string;
+        };
+        CrewAssignmentRequestDto: {
+            /** @enum {string} */
+            crewRole: "DRIVER" | "ESCORT" | "VET";
+            note?: string;
+            /** Format: int64 */
+            staffId: number;
+        };
+        CrewAssignmentResponseDto: {
+            /** Format: date-time */
+            assignedAt?: string;
+            /** @enum {string} */
+            crewRole?: "DRIVER" | "ESCORT" | "VET";
+            fullName?: string;
+            /** Format: int64 */
+            id?: number;
+            note?: string;
+            staffCode?: string;
+            /** Format: int64 */
+            staffId?: number;
+            /** @enum {string} */
+            status?: "ASSIGNED" | "ACKNOWLEDGED" | "RELEASED";
+        };
+        CrewCandidateResponseDto: {
+            fullName?: string;
+            /** Format: int64 */
+            homeHubLocationId?: number;
+            homeHubName?: string;
+            /** Format: int64 */
+            positionLocationId?: number;
+            positionLocationName?: string;
+            positionTripCode?: string;
+            roleCode?: string;
+            staffCode?: string;
+            /** Format: int64 */
+            staffId?: number;
+        };
+        CrewTripResponseDto: {
+            handovers?: components["schemas"]["HandoverResponseDto"][];
+            horses?: components["schemas"]["TripHorseResponseDto"][];
+            shiftHandoverStopIds?: number[];
+            trip?: components["schemas"]["VehicleTripResponseDto"];
+            unpaidReturnStopIds?: number[];
+        };
+        CustodyRowResponseDto: {
+            balanceContactAllowed?: boolean;
+            /** Format: date-time */
+            balanceHoldAt?: string;
+            bookingCode?: string;
+            /** Format: int64 */
+            bookingHorseId?: number;
+            /** Format: int64 */
+            bookingId?: number;
+            careOverdue?: boolean;
+            /** Format: int64 */
+            healthLogStayId?: number;
+            /** @enum {string} */
+            healthStatus?: "NORMAL" | "WATCH" | "SICK" | "CRITICAL";
+            /** @enum {string} */
+            holder?: "SHIPPER" | "COMPANY" | "PARTY" | "CONSIGNEE";
+            holderName?: string;
+            /** Format: date-time */
+            holderSince?: string;
+            horseName?: string;
+            /** Format: date-time */
+            lastCheckAt?: string;
+            /** @enum {string} */
+            legType?: "PICKUP" | "LINEHAUL" | "DELIVERY" | "TRANSFER" | "RETURN" | "DIRECT";
+            /** Format: date-time */
+            nextCheckAt?: string;
+            placeName?: string;
+            point?: components["schemas"]["GeoPointDto"];
+            /** Format: int64 */
+            responsibleCoordinatorId?: number;
+            responsibleCoordinatorName?: string;
+            /** @enum {string} */
+            stayType?: "ASSEMBLY" | "QUARANTINE" | "OVERNIGHT" | "STABLING";
+            tripCode?: string;
+            /** Format: int64 */
+            unclaimedStayId?: number;
+            /** Format: int64 */
+            vehicleTripId?: number;
+            waitingPickupBalance?: boolean;
+        };
         CustomerAddressCreateRequestDto: {
-            addressLine: string;
+            addressLine?: string;
             countryCode: string;
             defaultAddress?: boolean;
             label: string;
             latitude?: number;
             longitude?: number;
             provinceCode: string;
-            ward?: string;
+            ward: string;
         };
         CustomerAddressResponseDto: {
             addressLine?: string;
@@ -921,14 +5727,14 @@ export interface components {
             ward?: string;
         };
         CustomerAddressUpdateRequestDto: {
-            addressLine: string;
+            addressLine?: string;
             countryCode: string;
             defaultAddress?: boolean;
             label: string;
             latitude?: number;
             longitude?: number;
             provinceCode: string;
-            ward?: string;
+            ward: string;
         };
         CustomerProfileResponseDto: {
             /** @enum {string} */
@@ -961,27 +5767,140 @@ export interface components {
             phone?: string;
             taxCode?: string;
         };
+        DebtDisputeDecisionRequestDto: {
+            /** @enum {string} */
+            decision: "ACCEPTED" | "REJECTED";
+            response: string;
+        };
+        DebtDisputeRequestDto: {
+            reason: string;
+        };
+        DebtExtensionRequestDto: {
+            /** Format: int32 */
+            days: number;
+        };
+        DeliveryChangeConfirmRequestDto: {
+            expectedTotal: number;
+            selection: components["schemas"]["DeliveryChangeRequestDto"];
+        };
+        DeliveryChangeRequestDto: {
+            contactName: string;
+            contactPhone: string;
+            /** Format: int64 */
+            customerAddressId: number;
+            /** Format: int64 */
+            deliveryAddressId: number;
+        };
+        DeliveryChangeResponseDto: {
+            currencyCode?: string;
+            difference?: number;
+            /** Format: date */
+            estimatedDeliveryDate?: string;
+            newBalance?: number;
+            newDeliveryCharge?: number;
+            newTotal?: number;
+            oldDeliveryCharge?: number;
+        };
+        DeliveryComplaintResponseDto: {
+            /** Format: int64 */
+            bookingId?: number;
+            complaint?: components["schemas"]["ComplaintResponseDto"];
+            /** Format: date-time */
+            confirmedAt?: string;
+            customerCanRespond?: boolean;
+            /** Format: date-time */
+            deliveredAt?: string;
+            managerCanSubmit?: boolean;
+        };
+        DeliveryConfirmationRequestDto: {
+            confirmed: boolean;
+        };
+        DeliveryEstimate: {
+            /** Format: date-time */
+            arrivalAt?: string;
+            /** Format: int64 */
+            customerAddressId?: number;
+        };
+        DeliveryFailureDto: {
+            /** Format: date-time */
+            actualArrivalAt?: string;
+            amendable?: boolean;
+            /** Format: int64 */
+            delayMinutes?: number;
+            /** Format: date-time */
+            toldArrivalAt?: string;
+        };
+        DeliveryRecipientRequestDto: {
+            collectionCode?: string;
+            recipientName: string;
+        };
         DepartureCancelRequest: {
             reason: string;
         };
-        DepartureCreateRequest: {
+        DepartureConfirmRunRequestDto: unknown;
+        DepartureDecisionResponseDto: {
+            /** Format: date-time */
+            autoCancelledAt?: string;
+            belowMinimum?: boolean;
             /** Format: int32 */
-            bookingCutoffHours: number;
-            /** Format: date */
-            departureDate: string;
-            departureTime: string;
+            bookedStallCount?: number;
+            canRevise?: boolean;
+            /** Format: int32 */
+            committedStallCount?: number;
+            confirmable?: boolean;
             /** Format: int64 */
-            routeId: number;
+            coordinatorId?: number;
+            coordinatorName?: string;
+            /** Format: date-time */
+            decisionAt?: string;
+            delayReason?: string;
+            /** Format: date-time */
+            delayedAt?: string;
+            /** Format: date */
+            departureDate?: string;
+            /** Format: int64 */
+            id?: number;
+            /** Format: date-time */
+            plannedDepartureAt?: string;
+            receivedBookings?: components["schemas"]["ReceivedBookingResponseDto"][];
+            /** Format: date-time */
+            revisedDepartureAt?: string;
+            routeCode?: string;
+            routeName?: string;
+            /** Format: date-time */
+            runConfirmedAt?: string;
             /** Format: int32 */
-            stallCapacity: number;
+            stallCapacity?: number;
+            /** @enum {string} */
+            status?: "OPEN" | "CLOSED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+            /** Format: int32 */
+            uncommittedBookingCount?: number;
+            warning?: boolean;
+        };
+        DepartureDelayRequestDto: {
+            reason: string;
+            /** Format: date-time */
+            revisedDepartureAt: string;
+        };
+        DepartureDetailResponseDto: {
+            departure?: components["schemas"]["DepartureResponse"];
+            vehicles?: components["schemas"]["DepartureVehicleResponseDto"][];
         };
         DepartureResponse: {
+            /** @enum {string} */
+            availability?: "AVAILABLE" | "NEARLY_FULL" | "FULL";
             /** Format: int32 */
             availableStalls?: number;
             /** Format: int32 */
             bookedStallCount?: number;
             /** Format: date-time */
             bookingCutoffAt?: string;
+            /** Format: int64 */
+            coordinatorId?: number;
+            coordinatorName?: string;
+            delayReason?: string;
+            /** Format: date-time */
+            delayedAt?: string;
             /** Format: date */
             departureDate?: string;
             /** Format: int64 */
@@ -992,30 +5911,39 @@ export interface components {
             originCode?: string;
             /** Format: date-time */
             plannedDepartureAt?: string;
+            /** Format: date-time */
+            revisedDepartureAt?: string;
             routeCode?: string;
             /** Format: int64 */
             routeId?: number;
             routeName?: string;
+            runConfirmed?: boolean;
             /** Format: int32 */
             stallCapacity?: number;
             /** @enum {string} */
             status?: "OPEN" | "CLOSED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
         };
         DepartureScheduleRequest: {
+            /** Format: int64 */
+            baseVehicleClassId: number;
+            /** Format: int32 */
+            baseVehicleCount: number;
             /** Format: int32 */
             bookingCutoffHours: number;
             daysOfWeek: number[];
             departureTime: string;
             /** Format: int64 */
             routeId: number;
-            /** Format: int32 */
-            stallCapacity: number;
             /** Format: date */
             validFrom: string;
             /** Format: date */
             validTo?: string;
         };
         DepartureScheduleResponse: {
+            /** Format: int64 */
+            baseVehicleClassId?: number;
+            /** Format: int32 */
+            baseVehicleCount?: number;
             /** Format: int32 */
             bookingCutoffHours?: number;
             daysOfWeek?: number[];
@@ -1025,8 +5953,6 @@ export interface components {
             routeCode?: string;
             /** Format: int64 */
             routeId?: number;
-            /** Format: int32 */
-            stallCapacity?: number;
             /** @enum {string} */
             status?: "ACTIVE" | "PAUSED" | "ENDED";
             /** Format: date */
@@ -1045,20 +5971,750 @@ export interface components {
             pickupLatitude?: number;
             pickupLongitude?: number;
             pickupProvinceCode: string;
-            /** Format: int32 */
-            stalls?: number;
+            /**
+             * Format: int32
+             * @description Số chỗ cần: khoang thường 1 chỗ, khoang rộng 2 chỗ
+             */
+            stalls: number;
+            /** @enum {string} */
+            transportMode?: "SHARED" | "PRIVATE";
         };
         DepartureSuggestionResponse: {
             deliveryHubCode?: string;
+            deliveryHubName?: string;
             departures?: components["schemas"]["DepartureResponse"][];
+            /** Format: int64 */
+            leadDays?: number;
             pickupHubCode?: string;
+            pickupHubName?: string;
             /** @enum {string} */
             routing?: "DIRECT" | "LINEHAUL";
+            servedProvinces?: string[];
+            tooLateDepartureIds?: number[];
+            /** @enum {string} */
+            unavailable?: "PICKUP_NOT_SERVED" | "DELIVERY_NOT_SERVED" | "NO_ROUTE";
+        };
+        DepartureVehicleRemoveRequestDto: {
+            reason: string;
+        };
+        DepartureVehicleResponseDto: {
+            /** @enum {string} */
+            allotmentType?: "BASE" | "SPARE" | "PRIVATE";
+            /** Format: int64 */
+            id?: number;
+            reason?: string;
+            vehicleClassCode?: string;
+            /** Format: int64 */
+            vehicleClassId?: number;
+            /** Format: int32 */
+            vehicleCount?: number;
+        };
+        DispatchBookingResponseDto: {
+            /** @enum {string} */
+            bookingType?: "LOCAL" | "INTERPROVINCE" | "EXPORT" | "IMPORT";
+            code?: string;
+            deliveryAddress?: components["schemas"]["AddressDto"];
+            /** @enum {string} */
+            deliveryMethod?: "COMPANY" | "SELF";
+            /** Format: int64 */
+            departureId?: number;
+            horses?: components["schemas"]["HorseDto"][];
+            /** Format: date-time */
+            hubCheckinDeadlineAt?: string;
+            /** Format: int64 */
+            id?: number;
+            pickupAddress?: components["schemas"]["AddressDto"];
+            /** @enum {string} */
+            pickupMethod?: "COMPANY" | "SELF";
+            /** Format: date-time */
+            plannedDepartureAt?: string;
+            /** Format: date */
+            requestedPickupDate?: string;
+            routeCode?: string;
+            /** @enum {string} */
+            status?: "PENDING_INTAKE" | "UNDER_REVIEW" | "NEEDS_RESUBMISSION" | "QUOTING" | "AWAITING_DEPOSIT" | "QUOTE_EXPIRED" | "CONFIRMED" | "SCHEDULE_CHANGE_REQUIRED" | "IN_OPERATION" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED";
+            /** @enum {string} */
+            transportMode?: "SHARED" | "PRIVATE";
+        };
+        DispatchVehicleResponseDto: {
+            currentLocationCode?: string;
+            /** Format: int64 */
+            currentLocationId?: number;
+            currentLocationName?: string;
+            /** Format: date-time */
+            freeFrom?: string;
+            homeHubLocationCode?: string;
+            /** Format: int64 */
+            homeHubLocationId?: number;
+            /** Format: int64 */
+            id?: number;
+            licensePlate?: string;
+            /** Format: int32 */
+            standardStallCount?: number;
+            /** @enum {string} */
+            status?: "ACTIVE" | "MAINTENANCE" | "RETIRED";
+            /** Format: int32 */
+            wideStallCount?: number;
+        };
+        DocumentApprovalRequestDto: {
+            note?: string;
+        };
+        DocumentRejectionRequestDto: {
+            reason: string;
+        };
+        DocumentRequirementCreateRequestDto: {
+            /** Format: int64 */
+            documentTypeId: number;
+            /** Format: int64 */
+            gateLocationId?: number;
+            mandatory: boolean;
+            /** @enum {string} */
+            submitterType: "CUSTOMER" | "CONSIGNEE" | "COMPANY";
+        };
+        DocumentRequirementResponseDto: {
+            /** Format: int64 */
+            countryRuleId?: number;
+            documentTypeCode?: string;
+            /** Format: int64 */
+            documentTypeId?: number;
+            documentTypeName?: string;
+            /** Format: int64 */
+            gateLocationId?: number;
+            /** Format: int64 */
+            id?: number;
+            mandatory?: boolean;
+            /** @enum {string} */
+            ownerType?: "HORSE" | "BOOKING" | "BOOKING_HORSE" | "HORSE_LEG" | "VEHICLE_TRIP" | "INSURANCE" | "INCIDENT" | "COST_ITEM" | "HANDOVER" | "VEHICLE" | "STAFF" | "PARTY" | "CUSTOMER";
+            /** @enum {string} */
+            submitterType?: "CUSTOMER" | "CONSIGNEE" | "COMPANY";
+        };
+        DocumentRequirementUpdateRequestDto: {
+            /** Format: int64 */
+            documentTypeId: number;
+            /** Format: int64 */
+            gateLocationId?: number;
+            mandatory: boolean;
+            /** @enum {string} */
+            submitterType: "CUSTOMER" | "CONSIGNEE" | "COMPANY";
+        };
+        DocumentRevocationRequestDto: {
+            reason: string;
+        };
+        DocumentTypeCreateRequestDto: {
+            code: string;
+            name: string;
+            /** @enum {string} */
+            ownerType: "HORSE" | "BOOKING" | "BOOKING_HORSE" | "HORSE_LEG" | "VEHICLE_TRIP" | "INSURANCE" | "INCIDENT" | "COST_ITEM" | "HANDOVER" | "VEHICLE" | "STAFF" | "PARTY" | "CUSTOMER";
+        };
+        DocumentTypeResponseDto: {
+            code?: string;
+            /** Format: int64 */
+            id?: number;
+            name?: string;
+            /** @enum {string} */
+            ownerType?: "HORSE" | "BOOKING" | "BOOKING_HORSE" | "HORSE_LEG" | "VEHICLE_TRIP" | "INSURANCE" | "INCIDENT" | "COST_ITEM" | "HANDOVER" | "VEHICLE" | "STAFF" | "PARTY" | "CUSTOMER";
+        };
+        DocumentTypeUpdateRequestDto: {
+            code: string;
+            name: string;
+            /** @enum {string} */
+            ownerType: "HORSE" | "BOOKING" | "BOOKING_HORSE" | "HORSE_LEG" | "VEHICLE_TRIP" | "INSURANCE" | "INCIDENT" | "COST_ITEM" | "HANDOVER" | "VEHICLE" | "STAFF" | "PARTY" | "CUSTOMER";
+        };
+        DocumentUploadRequestDto: {
+            /** Format: int64 */
+            bookingHorseId?: number;
+            /** Format: date */
+            expiryDate?: string;
+            /** Format: binary */
+            file: string;
+            /** Format: int64 */
+            requirementId: number;
         };
         EmailVerificationRequest: {
             /** Format: email */
             email: string;
             otp?: string;
+        };
+        EvidenceResponseDto: {
+            /** Format: date-time */
+            capturedAt?: string;
+            documentTypeCode?: string;
+            documentTypeName?: string;
+            fileName?: string;
+            fileUrl?: string;
+            /** Format: int64 */
+            id?: number;
+            latitude?: number;
+            longitude?: number;
+            /** Format: date-time */
+            uploadedAt?: string;
+            uploadedByName?: string;
+        };
+        ExpectedWindowDto: {
+            /** Format: date-time */
+            from?: string;
+            /** Format: date-time */
+            to?: string;
+        };
+        ExtraChargeRequestDto: {
+            costItemIds: number[];
+        };
+        GeoPointDto: {
+            /** Format: double */
+            lat?: number;
+            /** Format: double */
+            lng?: number;
+        };
+        GeocodeResultResponseDto: {
+            label?: string;
+            /** Format: double */
+            latitude?: number;
+            /** Format: double */
+            longitude?: number;
+        };
+        GroupBookingDto: {
+            addressLine?: string;
+            /** Format: int64 */
+            bookingAddressId?: number;
+            bookingCode?: string;
+            /** Format: int64 */
+            bookingId?: number;
+            horses?: components["schemas"]["GroupHorseDto"][];
+        };
+        GroupHorseDto: {
+            /** Format: int64 */
+            bookingHorseId?: number;
+            horseName?: string;
+            /** Format: int32 */
+            seats?: number;
+        };
+        HandoverCauseRequestDto: {
+            /** @enum {string} */
+            cause: "RECIPIENT_ABSENT" | "COMPANY_FAULT" | "FORCE_MAJEURE";
+            reason: string;
+        };
+        HandoverCompleteRequestDto: {
+            recipients?: {
+                [key: string]: components["schemas"]["DeliveryRecipientRequestDto"];
+            };
+        };
+        HandoverCreateRequestDto: {
+            /** @enum {string} */
+            handoverType: "PICKUP" | "HUB_IN" | "HUB_OUT" | "STAY_IN" | "STAY_OUT" | "DELIVERY" | "RETURN" | "SHIFT";
+            note?: string;
+            /** Format: int64 */
+            partyId?: number;
+        };
+        HandoverEvidenceResponseDto: {
+            fileName?: string;
+            fileUrl?: string;
+            /** Format: int64 */
+            id?: number;
+            type?: string;
+        };
+        HandoverHorseDto: {
+            bookingCode?: string;
+            conditionNote?: string;
+            /** @enum {string} */
+            entryMethod?: "SCAN" | "MANUAL";
+            /** Format: int64 */
+            horseLegId?: number;
+            horseName?: string;
+            manualReason?: string;
+            microchipMatched?: boolean;
+            photoAttached?: boolean;
+            scannedMicrochip?: string;
+        };
+        HandoverPaperRequestDto: {
+            /** Format: int64 */
+            documentId: number;
+            originalMissing?: boolean;
+        };
+        HandoverPaperResponseDto: {
+            bookingCode?: string;
+            /** @enum {string} */
+            direction?: "RECEIVED" | "NOT_RECEIVED" | "RETURNED";
+            /** Format: int64 */
+            documentId?: number;
+            documentTypeName?: string;
+            ownerLabel?: string;
+        };
+        HandoverRefusalRequestDto: {
+            customerContact?: string;
+            emergencyContact?: string;
+            /** Format: int64 */
+            horseLegId: number;
+            reason: string;
+            /** @enum {string} */
+            reasonCode: "SENDER_ABSENT" | "CHIP_MISMATCH" | "ORIGINAL_DOCUMENTS_MISSING" | "HORSE_UNWELL" | "HORSE_WILL_NOT_BOARD" | "VEHICLE_FAILURE" | "UNSUITABLE_STALL" | "LATE_ARRIVAL" | "CREW_SHORTAGE" | "FLOOD" | "ROAD_CLOSURE";
+            senderContact?: string;
+        };
+        HandoverResponseDto: {
+            /** Format: date-time */
+            handedAt?: string;
+            handledByName?: string;
+            /** @enum {string} */
+            handoverType?: "PICKUP" | "HUB_IN" | "HUB_OUT" | "STAY_IN" | "STAY_OUT" | "DELIVERY" | "RETURN" | "SHIFT";
+            horses?: components["schemas"]["HandoverHorseDto"][];
+            /** Format: int64 */
+            id?: number;
+            note?: string;
+            partyName?: string;
+            recordAttached?: boolean;
+            /** @enum {string} */
+            status?: "PENDING" | "DONE" | "TIMEOUT" | "FAILED";
+            /** Format: int64 */
+            tripStopId?: number;
+            /** Format: date-time */
+            waitStartedAt?: string;
+        };
+        HandoverScanRequestDto: {
+            conditionNote?: string;
+            /**
+             * @default SCAN
+             * @enum {string}
+             */
+            entryMethod: "SCAN" | "MANUAL";
+            /** Format: int64 */
+            horseLegId: number;
+            manualReason?: string;
+            microchip: string;
+        };
+        HealthCheckAssigneeResponseDto: {
+            /** Format: int64 */
+            id?: number;
+            name?: string;
+        };
+        HealthCheckTaskCancelRequestDto: {
+            reason: string;
+        };
+        HealthCheckTaskCreateRequestDto: {
+            /** Format: int64 */
+            assignedTo: number;
+            /** Format: int64 */
+            bookingHorseId: number;
+            /** @enum {string} */
+            checkType: "ROUTINE" | "FOLLOW_UP" | "BEFORE_DEPARTURE" | "BEFORE_DELIVERY";
+            /** Format: date-time */
+            dueAt: string;
+            /** Format: int64 */
+            horseStayId?: number;
+            note?: string;
+            /** Format: int64 */
+            vehicleTripId?: number;
+        };
+        HealthCheckTaskResponseDto: {
+            /** Format: date-time */
+            acceptedAt?: string;
+            /** Format: int64 */
+            assignedTo?: number;
+            assigneeName?: string;
+            /** Format: int64 */
+            bookingHorseId?: number;
+            canCancel?: boolean;
+            cancelReason?: string;
+            /** @enum {string} */
+            checkType?: "ROUTINE" | "FOLLOW_UP" | "BEFORE_DEPARTURE" | "BEFORE_DELIVERY";
+            /** Format: date-time */
+            doneAt?: string;
+            /** Format: date-time */
+            dueAt?: string;
+            /** Format: int64 */
+            healthLogId?: number;
+            horseName?: string;
+            /** Format: int64 */
+            horseStayId?: number;
+            /** Format: int64 */
+            id?: number;
+            note?: string;
+            overdue?: boolean;
+            place?: string;
+            /** Format: int64 */
+            recordingHorseStayId?: number;
+            /** @enum {string} */
+            status?: "ASSIGNED" | "ACCEPTED" | "DONE" | "CANCELLED";
+            /** Format: int64 */
+            vehicleTripId?: number;
+        };
+        HealthLogRequestDto: {
+            /** Format: int64 */
+            bookingHorseId: number;
+            /** @enum {string} */
+            feedIntake?: "NORMAL" | "REDUCED" | "REFUSED";
+            /** @enum {string} */
+            healthStatus: "NORMAL" | "WATCH" | "SICK" | "CRITICAL";
+            /** Format: int32 */
+            heartRateBpm?: number;
+            /** Format: int64 */
+            horseStayId?: number;
+            note?: string;
+            reportChannel?: string;
+            reportedBy?: string;
+            /** Format: int32 */
+            respirationRatePerMinute?: number;
+            symptoms?: string;
+            temperatureCelsius?: number;
+            /** Format: int64 */
+            tripStopId?: number;
+            /** @enum {string} */
+            waterIntake?: "NORMAL" | "REDUCED" | "REFUSED";
+            weightKg?: number;
+        };
+        HealthLogResponseDto: {
+            /** Format: int64 */
+            bookingHorseId?: number;
+            /** @enum {string} */
+            feedIntake?: "NORMAL" | "REDUCED" | "REFUSED";
+            /** @enum {string} */
+            healthStatus?: "NORMAL" | "WATCH" | "SICK" | "CRITICAL";
+            /** Format: int32 */
+            heartRateBpm?: number;
+            horseName?: string;
+            /** Format: int64 */
+            horseStayId?: number;
+            /** Format: int64 */
+            id?: number;
+            note?: string;
+            placeName?: string;
+            /** Format: date-time */
+            recordedAt?: string;
+            recordedByName?: string;
+            /** Format: int32 */
+            respirationRatePerMinute?: number;
+            symptoms?: string;
+            temperatureCelsius?: number;
+            /** Format: int64 */
+            tripStopId?: number;
+            /** @enum {string} */
+            waterIntake?: "NORMAL" | "REDUCED" | "REFUSED";
+            weightKg?: number;
+        };
+        HorseCreateRequestDto: {
+            /** Format: int32 */
+            birthYear: number;
+            color: string;
+            /** Format: int64 */
+            horseTypeId: number;
+            identificationMarks?: string;
+            microchip: string;
+            name: string;
+            /** @enum {string} */
+            sex: "STALLION" | "MARE" | "GELDING";
+        };
+        HorseDetail: {
+            addOns?: components["schemas"]["AddOn"][];
+            /** Format: int32 */
+            birthYear?: number;
+            color?: string;
+            /** Format: int64 */
+            deliveryAddressId?: number;
+            dietNote?: string;
+            feedSuppliedByOwner?: boolean;
+            /** Format: int32 */
+            feedingsPerDay?: number;
+            /** Format: int64 */
+            horseId?: number;
+            horseName?: string;
+            horseTypeName?: string;
+            /** Format: int64 */
+            id?: number;
+            insurance?: components["schemas"]["InsuranceDetail"];
+            microchip?: string;
+            /** @enum {string} */
+            sex?: "STALLION" | "MARE" | "GELDING";
+            stallTypeCode?: string;
+            /** @enum {string} */
+            status?: "ACTIVE" | "EXCLUDED" | "CANCELLED" | "DELIVERED" | "RETURNED";
+        };
+        HorseDocumentResponseDto: {
+            canUpload?: boolean;
+            documentTypeCode?: string;
+            documentTypeName?: string;
+            /** Format: date */
+            expiryDate?: string;
+            fileName?: string;
+            fileUrl?: string;
+            /** Format: int64 */
+            id?: number;
+            reviewNote?: string;
+            /** @enum {string} */
+            status?: "UPLOADED" | "APPROVED" | "REJECTED" | "EXPIRED";
+            /** Format: date-time */
+            uploadedAt?: string;
+        };
+        HorseDocumentStatusResponseDto: {
+            documentTypeCode?: string;
+            documentTypeName?: string;
+            /** @enum {string} */
+            status?: "UPLOADED" | "APPROVED" | "REJECTED" | "EXPIRED";
+        };
+        HorseDocumentUploadRequestDto: {
+            documentTypeCode: string;
+            /** Format: binary */
+            file: string;
+        };
+        HorseDto: {
+            /** Format: int64 */
+            bookingHorseId?: number;
+            deliveryAddress?: components["schemas"]["AddressDto"];
+            horseName?: string;
+            legs?: components["schemas"]["HorseLegResponseDto"][];
+            microchip?: string;
+            missingLegs?: ("PICKUP" | "LINEHAUL" | "DELIVERY" | "TRANSFER" | "RETURN" | "DIRECT")[];
+            /** Format: int32 */
+            seats?: number;
+            stallTypeCode?: string;
+            /** @enum {string} */
+            status?: "ACTIVE" | "EXCLUDED" | "CANCELLED" | "DELIVERED" | "RETURNED";
+        };
+        HorseInput: {
+            addOns?: components["schemas"]["AddOnInput"][];
+            /** Format: int32 */
+            deliveryPlaceIndex?: number;
+            dietNote?: string;
+            feedSuppliedByOwner?: boolean;
+            /** Format: int32 */
+            feedingsPerDay?: number;
+            /** Format: int64 */
+            horseId: number;
+            insurance: components["schemas"]["InsuranceDeclarationRequestDto"];
+            stallTypeCode: string;
+        };
+        HorseJourneyResponseDto: {
+            /** Format: int64 */
+            bookingHorseId?: number;
+            handovers?: components["schemas"]["JourneyHandoverDto"][];
+            healthLogs?: components["schemas"]["JourneyHealthLogResponseDto"][];
+            /** @enum {string} */
+            holder?: "SHIPPER" | "COMPANY" | "PARTY" | "CONSIGNEE";
+            holderPartyName?: string;
+            /** Format: date-time */
+            holderSince?: string;
+            horseName?: string;
+            legs?: components["schemas"]["JourneyLegDto"][];
+            microchip?: string;
+            /** @enum {string} */
+            status?: "ACTIVE" | "EXCLUDED" | "CANCELLED" | "DELIVERED" | "RETURNED";
+            stays?: components["schemas"]["JourneyStayDto"][];
+        };
+        HorseLegRequestDto: {
+            /** Format: int64 */
+            alightTripStopId: number;
+            /** Format: int64 */
+            boardTripStopId: number;
+            /** Format: int64 */
+            bookingHorseId: number;
+        };
+        HorseLegResponseDto: {
+            /** Format: int64 */
+            alightTripStopId?: number;
+            /** Format: int64 */
+            boardTripStopId?: number;
+            /** Format: int64 */
+            bookingHorseId?: number;
+            fromName?: string;
+            /** Format: int64 */
+            id?: number;
+            /** @enum {string} */
+            legType?: "PICKUP" | "LINEHAUL" | "DELIVERY" | "TRANSFER" | "RETURN" | "DIRECT";
+            /** Format: date-time */
+            plannedEndAt?: string;
+            /** Format: date-time */
+            plannedStartAt?: string;
+            /** Format: int32 */
+            sequenceNumber?: number;
+            /** Format: int32 */
+            stallPosition?: number;
+            /** @enum {string} */
+            status?: "PLANNED" | "IN_PROGRESS" | "COMPLETED" | "FAILED" | "CANCELLED";
+            toName?: string;
+            vehicleTripCode?: string;
+            /** Format: int64 */
+            vehicleTripId?: number;
+        };
+        HorseResponseDto: {
+            activeBookingCode?: string;
+            /** Format: int32 */
+            birthYear?: number;
+            color?: string;
+            /** Format: date-time */
+            createdAt?: string;
+            documentStatuses?: components["schemas"]["HorseDocumentStatusResponseDto"][];
+            /** Format: int64 */
+            horseTypeId?: number;
+            horseTypeName?: string;
+            /** Format: int64 */
+            id?: number;
+            identificationMarks?: string;
+            microchip?: string;
+            missingDocumentTypes?: string[];
+            name?: string;
+            /** @enum {string} */
+            sex?: "STALLION" | "MARE" | "GELDING";
+            /** @enum {string} */
+            status?: "ACTIVE" | "RETIRED" | "DECEASED";
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        HorseSelection: {
+            addOnServiceIds: number[];
+            /** Format: int64 */
+            deliveryAddressId?: number;
+            /** Format: int64 */
+            horseId: number;
+            stallTypeCode: string;
+        };
+        HorseStayResponseDto: {
+            /** Format: date-time */
+            actualEndAt?: string;
+            /** Format: date-time */
+            actualStartAt?: string;
+            /** Format: date-time */
+            balanceHoldAt?: string;
+            bookingCode?: string;
+            /** Format: int64 */
+            bookingHorseId?: number;
+            canChangeHubStall?: boolean;
+            /** @enum {string} */
+            deliveryMethod?: "COMPANY" | "SELF";
+            dietNote?: string;
+            feedSuppliedByOwner?: boolean;
+            /** Format: int32 */
+            feedingsPerDay?: number;
+            horseName?: string;
+            hubExitChecks?: components["schemas"]["HealthCheckTaskResponseDto"][];
+            hubStallCode?: string;
+            /** Format: int64 */
+            id?: number;
+            /** Format: int64 */
+            locationId?: number;
+            locationName?: string;
+            /** @enum {string} */
+            pickupMethod?: "COMPANY" | "SELF";
+            /** Format: date-time */
+            plannedEndAt?: string;
+            /** Format: date-time */
+            plannedStartAt?: string;
+            /** Format: date-time */
+            readyAt?: string;
+            /** Format: int64 */
+            responsibleCoordinatorId?: number;
+            responsibleCoordinatorName?: string;
+            returnForBalance?: boolean;
+            /** @enum {string} */
+            stayType?: "ASSEMBLY" | "QUARANTINE" | "OVERNIGHT" | "STABLING";
+            suggestIsolation?: boolean;
+        };
+        HorseTypeResponseDto: {
+            description?: string;
+            /** Format: int64 */
+            id?: number;
+            name?: string;
+        };
+        HorseUpdateRequestDto: {
+            /** Format: int32 */
+            birthYear: number;
+            color: string;
+            /** Format: int64 */
+            horseTypeId: number;
+            identificationMarks?: string;
+            name: string;
+            /** @enum {string} */
+            sex: "STALLION" | "MARE" | "GELDING";
+        };
+        HubAppointmentRequestDto: {
+            /** Format: date-time */
+            plannedStartAt: string;
+        };
+        HubBranchBreakdownResponseDto: {
+            /** Format: int64 */
+            sixSeat?: number;
+            /** Format: int64 */
+            spare?: number;
+            /** Format: int64 */
+            twoSeat?: number;
+        };
+        HubCollectionTimeRequestDto: {
+            /** Format: date-time */
+            collectAt: string;
+        };
+        HubDepartureResponseDto: {
+            /** Format: date-time */
+            departureAt?: string;
+            destinationName?: string;
+            /** Format: int64 */
+            id?: number;
+            originName?: string;
+            routeCode?: string;
+            /** @enum {string} */
+            status?: "OPEN" | "CLOSED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+        };
+        HubFleetRequirementResponseDto: {
+            /** Format: int64 */
+            actual?: number;
+            breakdown?: components["schemas"]["HubBranchBreakdownResponseDto"];
+            /** @enum {string} */
+            item?: "LINEHAUL" | "SPARE" | "BRANCH" | "DRIVER" | "ESCORT";
+            /** Format: int64 */
+            required?: number;
+        };
+        HubFleetResponseDto: {
+            idle?: components["schemas"]["HubVehicleGroupResponseDto"];
+            maintenance?: components["schemas"]["HubVehicleGroupResponseDto"];
+            returning?: components["schemas"]["HubVehicleGroupResponseDto"];
+            running?: components["schemas"]["HubVehicleGroupResponseDto"];
+        };
+        HubHandoverRequestDto: {
+            conditionNote: string;
+            microchip: string;
+            papers?: components["schemas"]["HandoverPaperRequestDto"][];
+            recipient?: components["schemas"]["DeliveryRecipientRequestDto"];
+        };
+        HubHorseResponseDto: {
+            /** Format: date-time */
+            actualStartAt?: string;
+            bookingCode?: string;
+            horseName?: string;
+            /** Format: int64 */
+            id?: number;
+            /** @enum {string} */
+            stayType?: "ASSEMBLY" | "QUARANTINE" | "OVERNIGHT" | "STABLING";
+        };
+        HubIncidentResponseDto: {
+            /** Format: int64 */
+            id?: number;
+            /** Format: date-time */
+            reportedAt?: string;
+            /** @enum {string} */
+            severity?: "LOW" | "MEDIUM" | "HIGH";
+            /** @enum {string} */
+            status?: "REPORTED" | "PLAN_PENDING" | "PLAN_ACTIVE" | "RESOLVED" | "CLOSED";
+            title?: string;
+        };
+        HubOverviewResponseDto: {
+            arrivals?: components["schemas"]["HubDepartureResponseDto"][];
+            code?: string;
+            countryCode?: string;
+            countryName?: string;
+            departures?: components["schemas"]["HubDepartureResponseDto"][];
+            fleet?: components["schemas"]["HubFleetResponseDto"];
+            fleetRequirement?: components["schemas"]["HubFleetRequirementResponseDto"][];
+            headquarters?: boolean;
+            /** Format: int32 */
+            horseCount?: number;
+            horses?: components["schemas"]["HubHorseResponseDto"][];
+            /** Format: int64 */
+            id?: number;
+            incidents?: components["schemas"]["HubIncidentResponseDto"][];
+            name?: string;
+            /** Format: int32 */
+            openIncidentCount?: number;
+            provinceName?: string;
+            staff?: components["schemas"]["HubStaffRoleResponseDto"][];
+            stalls?: components["schemas"]["HubStallCountsResponseDto"];
+        };
+        HubRefusalRequestDto: {
+            reason: string;
         };
         HubServiceAreaRequest: {
             /** Format: int64 */
@@ -1072,11 +6728,314 @@ export interface components {
             provinceCode?: string;
             provinceName?: string;
         };
+        HubStablingRequestDto: {
+            note?: string;
+        };
+        HubStaffRoleResponseDto: {
+            /** Format: int64 */
+            count?: number;
+            roleCode?: string;
+        };
+        HubStallChangeRequestDto: {
+            /** Format: int64 */
+            hubStallId: number;
+        };
+        HubStallCountsResponseDto: {
+            /** Format: int64 */
+            available?: number;
+            /** Format: int64 */
+            total?: number;
+        };
+        HubStallCreateRequestDto: {
+            code: string;
+            /** @enum {string} */
+            stallKind: "STANDARD" | "ISOLATION";
+        };
+        HubStallInventoryResponseDto: {
+            /** Format: int32 */
+            available?: number;
+            stalls?: components["schemas"]["HubStallResponseDto"][];
+            /** Format: int32 */
+            total?: number;
+        };
+        HubStallResponseDto: {
+            active?: boolean;
+            code?: string;
+            /** Format: int64 */
+            id?: number;
+            occupied?: boolean;
+            /** @enum {string} */
+            stallKind?: "STANDARD" | "ISOLATION";
+        };
+        HubVehicleGroupResponseDto: {
+            /** Format: int32 */
+            count?: number;
+            vehicles?: components["schemas"]["HubVehicleResponseDto"][];
+        };
+        HubVehicleResponseDto: {
+            /** Format: int64 */
+            id?: number;
+            licensePlate?: string;
+            tripCode?: string;
+        };
+        IncidentPlanRequestDto: {
+            estimatedCost?: number;
+            /** Format: int64 */
+            handlerPartyId?: number;
+            instructions: string;
+            /** @enum {string} */
+            resolutionType: "CONTINUE" | "VET_TREATMENT" | "STABLE_NEARBY" | "TRANSFER_VEHICLE" | "RETURN_TO_HUB" | "CANCEL";
+        };
+        IncidentReportRequestDto: {
+            /** @enum {string} */
+            causeType: "COMPANY_FAULT" | "HORSE_CONDITION" | "CUSTOMER_DOCS" | "FORCE_MAJEURE" | "RECIPIENT_ABSENT";
+            description: string;
+            /** Format: int64 */
+            horseLegId?: number;
+            /** @enum {string} */
+            incidentType: "HEALTH" | "VEHICLE_BREAKDOWN" | "ACCIDENT" | "DELAY" | "DOCUMENT" | "HANDOVER_TIMEOUT" | "OTHER" | "COMPLAINT";
+            latitude?: number;
+            longitude?: number;
+            /** @enum {string} */
+            severity?: "LOW" | "MEDIUM" | "HIGH";
+            title: string;
+            /** Format: int64 */
+            vehicleTripId: number;
+        };
+        IncidentResponseDto: {
+            blocksTrip?: boolean;
+            bookingCode?: string;
+            /** Format: date-time */
+            causeConfirmedAt?: string;
+            causeConfirmedByName?: string;
+            /** @enum {string} */
+            causeType?: "COMPANY_FAULT" | "HORSE_CONDITION" | "CUSTOMER_DOCS" | "FORCE_MAJEURE" | "RECIPIENT_ABSENT";
+            /** @enum {string} */
+            confirmedCauseType?: "COMPANY_FAULT" | "HORSE_CONDITION" | "CUSTOMER_DOCS" | "FORCE_MAJEURE" | "RECIPIENT_ABSENT";
+            coordinatorStaffCode?: string;
+            deliveryFailure?: components["schemas"]["DeliveryFailureDto"];
+            /** Format: date */
+            departureDate?: string;
+            /** Format: int64 */
+            departureId?: number;
+            departureRouteName?: string;
+            description?: string;
+            /** Format: date-time */
+            fitConfirmedAt?: string;
+            fitConfirmedByName?: string;
+            /** Format: date-time */
+            fitEligibleAt?: string;
+            /** Format: int64 */
+            horseLegId?: number;
+            horseName?: string;
+            /** Format: int64 */
+            id?: number;
+            /** @enum {string} */
+            incidentType?: "HEALTH" | "VEHICLE_BREAKDOWN" | "ACCIDENT" | "DELAY" | "DOCUMENT" | "HANDOVER_TIMEOUT" | "OTHER" | "COMPLAINT";
+            latitude?: number;
+            longitude?: number;
+            plans?: components["schemas"]["PlanDto"][];
+            /** Format: date-time */
+            reportedAt?: string;
+            reportedByName?: string;
+            requiresFit?: boolean;
+            /** Format: date-time */
+            resolvedAt?: string;
+            /** Format: date-time */
+            restStartedAt?: string;
+            /** @enum {string} */
+            severity?: "LOW" | "MEDIUM" | "HIGH";
+            /** @enum {string} */
+            status?: "REPORTED" | "PLAN_PENDING" | "PLAN_ACTIVE" | "RESOLVED" | "CLOSED";
+            title?: string;
+            vehicleTripCode?: string;
+            /** Format: int64 */
+            vehicleTripId?: number;
+        };
+        IncidentSeverityRequestDto: {
+            /** @enum {string} */
+            severity: "LOW" | "MEDIUM" | "HIGH";
+        };
+        IncidentTypeCountDto: {
+            /** Format: int64 */
+            count?: number;
+            key?: string;
+        };
+        InsuranceConfirmationRequestDto: unknown;
+        InsuranceDeclarationRequestDto: {
+            acceptedWaiver?: boolean;
+            /** @enum {string} */
+            coverageOption: "PERSONAL" | "ARRANGED" | "NONE";
+            insurerName?: string;
+            policyNumber?: string;
+            /** Format: date */
+            validFrom?: string;
+            /** Format: date */
+            validTo?: string;
+        };
+        InsuranceDetail: {
+            /** @enum {string} */
+            coverageOption?: "PERSONAL" | "ARRANGED" | "NONE";
+            currencyCode?: string;
+            /** Format: int64 */
+            id?: number;
+            insurerName?: string;
+            policyNumber?: string;
+            premiumAmount?: number;
+            /** Format: date-time */
+            quoteExpiresAt?: string;
+            refundedPremiumAmount?: number;
+            revisionReason?: string;
+            /** @enum {string} */
+            status?: "DRAFT" | "REVISION_REQUESTED" | "CONFIRMED";
+            /** Format: date */
+            validFrom?: string;
+            /** Format: date */
+            validTo?: string;
+            /** Format: int64 */
+            waiverTermsAcceptanceId?: number;
+        };
+        InsuranceEvidenceRequestDto: {
+            insurerName?: string;
+            premiumAmount: number;
+            /** Format: date-time */
+            quoteExpiresAt?: string;
+        };
+        InsurancePremiumRefundRequestDto: {
+            receiptReference: string;
+            refundedPremiumAmount: number;
+        };
+        InsuranceReopenRequestDto: {
+            reason: string;
+        };
+        InsuranceRevisionReasonRequestDto: {
+            reason: string;
+        };
+        InsurerResponseDto: {
+            countryCode?: string;
+            displayName?: string;
+            /** Format: int64 */
+            id?: number;
+        };
+        Item: {
+            /** Format: int64 */
+            bookingHorseId?: number;
+            profileDocumentType?: components["schemas"]["DocumentTypeResponseDto"];
+            requiredBeforePickup?: boolean;
+            requiredForQuoting?: boolean;
+            requirement?: components["schemas"]["DocumentRequirementResponseDto"];
+            satisfied?: boolean;
+            /** @enum {string} */
+            submitterType?: "CUSTOMER" | "CONSIGNEE" | "COMPANY";
+        };
+        JourneyHandoverDto: {
+            /** @enum {string} */
+            entryMethod?: "SCAN" | "MANUAL";
+            evidence?: components["schemas"]["HandoverEvidenceResponseDto"][];
+            fromPartyName?: string;
+            /** Format: date-time */
+            handedAt?: string;
+            /** @enum {string} */
+            handoverType?: "PICKUP" | "HUB_IN" | "HUB_OUT" | "STAY_IN" | "STAY_OUT" | "DELIVERY" | "RETURN" | "SHIFT";
+            /** Format: int64 */
+            id?: number;
+            manualReason?: string;
+            microchipMatched?: boolean;
+            placeName?: string;
+            /** @enum {string} */
+            status?: "PENDING" | "DONE" | "TIMEOUT" | "FAILED";
+            toPartyName?: string;
+            /** Format: date-time */
+            waitStartedAt?: string;
+        };
+        JourneyHealthLogResponseDto: {
+            /** @enum {string} */
+            feedIntake?: "NORMAL" | "REDUCED" | "REFUSED";
+            /** @enum {string} */
+            healthStatus?: "NORMAL" | "WATCH" | "SICK" | "CRITICAL";
+            /** Format: int64 */
+            id?: number;
+            placeName?: string;
+            /** Format: date-time */
+            recordedAt?: string;
+            temperatureCelsius?: number;
+            vehicleTripCode?: string;
+            /** @enum {string} */
+            waterIntake?: "NORMAL" | "REDUCED" | "REFUSED";
+        };
+        JourneyLegDto: {
+            /** Format: date-time */
+            actualEndAt?: string;
+            /** Format: date-time */
+            actualStartAt?: string;
+            deliveryWindow?: components["schemas"]["ExpectedWindowDto"];
+            fromName?: string;
+            /** Format: int64 */
+            id?: number;
+            /** @enum {string} */
+            legType?: "PICKUP" | "LINEHAUL" | "DELIVERY" | "TRANSFER" | "RETURN" | "DIRECT";
+            pickupWindow?: components["schemas"]["ExpectedWindowDto"];
+            /** Format: date-time */
+            plannedEndAt?: string;
+            /** Format: date-time */
+            plannedStartAt?: string;
+            /** Format: int64 */
+            replacedHorseLegId?: number;
+            /** Format: int32 */
+            sequenceNumber?: number;
+            /** @enum {string} */
+            status?: "PLANNED" | "IN_PROGRESS" | "COMPLETED" | "FAILED" | "CANCELLED";
+            toName?: string;
+            vehicleTripCode?: string;
+        };
+        JourneyStayDto: {
+            /** Format: date-time */
+            actualEndAt?: string;
+            /** Format: date-time */
+            actualStartAt?: string;
+            /** Format: int64 */
+            id?: number;
+            locationName?: string;
+            operatorName?: string;
+            /** Format: date-time */
+            plannedEndAt?: string;
+            /** Format: date-time */
+            plannedStartAt?: string;
+            /** @enum {string} */
+            quarantineResult?: "PASSED" | "FAILED";
+            /** @enum {string} */
+            stayType?: "ASSEMBLY" | "QUARANTINE" | "OVERNIGHT" | "STABLING";
+        };
+        LegDistance: {
+            km?: number;
+            /** @enum {string} */
+            layer?: "LINEHAUL" | "PICKUP" | "DELIVERY" | "DIRECT" | "FUEL" | "STALL" | "QUARANTINE" | "ADD_ON" | "DOCS" | "SURCHARGE";
+            /** Format: int64 */
+            vehicleClassId?: number;
+        };
+        LinehaulApplyRequestDto: {
+            trucks: components["schemas"]["TruckChoiceDto"][];
+        };
+        LinehaulHorseDto: {
+            bookingCode?: string;
+            /** Format: int64 */
+            bookingHorseId?: number;
+            /** Format: int32 */
+            cluster?: number;
+            deliveryAddress?: string;
+            horseName?: string;
+        };
+        LinehaulSuggestionResponseDto: {
+            /** Format: int32 */
+            missingSeats?: number;
+            trucks?: components["schemas"]["TruckDto"][];
+        };
         LocationRequest: {
             address: string;
             closingTime?: string;
             code: string;
             contactPhone?: string;
+            counterpartCountryCode?: string;
             countryCode: string;
             latitude?: number;
             /** @enum {string} */
@@ -1091,6 +7050,7 @@ export interface components {
             closingTime?: string;
             code?: string;
             contactPhone?: string;
+            counterpartCountryCode?: string;
             countryCode?: string;
             /** Format: int64 */
             id?: number;
@@ -1108,6 +7068,80 @@ export interface components {
             password: string;
             username: string;
         };
+        ManagerCancelBookingRequestDto: {
+            reason: string;
+            unspentQuotationLineIds: number[];
+        };
+        MarkRefundedRequestDto: {
+            transferReference: string;
+        };
+        MyCrewAssignmentResponseDto: {
+            /** @enum {string} */
+            crewRole?: "DRIVER" | "ESCORT" | "VET";
+            endLocationName?: string;
+            /** Format: int64 */
+            id?: number;
+            licensePlate?: string;
+            /** Format: date-time */
+            plannedEndAt?: string;
+            /** Format: date-time */
+            plannedStartAt?: string;
+            startLocationName?: string;
+            /** @enum {string} */
+            status?: "ASSIGNED" | "ACKNOWLEDGED" | "RELEASED";
+            tripCode?: string;
+            /** @enum {string} */
+            tripStatus?: "PLANNED" | "DISPATCHED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+            /** @enum {string} */
+            tripType?: "PICKUP" | "LINEHAUL" | "DELIVERY" | "TRANSFER" | "DIRECT";
+            /** Format: int64 */
+            vehicleTripId?: number;
+        };
+        NotificationResponseDto: {
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: int64 */
+            id?: number;
+            linkUrl?: string;
+            message?: string;
+            read?: boolean;
+            title?: string;
+        };
+        OperationsSummaryResponseDto: {
+            /** Format: int32 */
+            arrivedStopCount?: number;
+            /** Format: double */
+            averageRating?: number;
+            /** Format: int32 */
+            completedTripCount?: number;
+            costTotal?: number;
+            costsByPayer?: components["schemas"]["PayerAmountDto"][];
+            /** Format: int32 */
+            horsesDelivered?: number;
+            /** Format: int32 */
+            incidentCount?: number;
+            incidentsByType?: components["schemas"]["IncidentTypeCountDto"][];
+            /** Format: int32 */
+            lateStopCount?: number;
+            /** Format: double */
+            onTimeRate?: number;
+            /** Format: int32 */
+            openIncidentCount?: number;
+            /** Format: int32 */
+            ratingCount?: number;
+            /** Format: int32 */
+            tripCount?: number;
+        };
+        PartnerDocumentUploadRequestDto: {
+            /** Format: int64 */
+            bookingHorseId?: number;
+            /** Format: date */
+            expiryDate?: string;
+            /** Format: binary */
+            file: string;
+            /** Format: int64 */
+            requirementId: number;
+        };
         PartyCreateRequestDto: {
             address?: string;
             countryCode: string;
@@ -1118,6 +7152,16 @@ export interface components {
             partyType: "PERSON" | "ORGANIZATION";
             phone?: string;
             taxCode?: string;
+        };
+        PartyInput: {
+            address: string;
+            /** @enum {string} */
+            bookingRole: "PAYER" | "SHIPPER" | "CONSIGNEE" | "EMERGENCY_CONTACT";
+            fullName: string;
+            identityDocumentCountryCode?: string;
+            identityDocumentNumber?: string;
+            identityDocumentType?: string;
+            phone: string;
         };
         PartyResponseDto: {
             address?: string;
@@ -1136,7 +7180,7 @@ export interface components {
         };
         PartyRoleCreateRequestDto: {
             /** @enum {string} */
-            roleType: "DEST_AGENT" | "QUARANTINE_FARM" | "STABLE" | "VET" | "RESCUE" | "INSURER";
+            roleType: "QUARANTINE_FARM" | "STABLE" | "VET" | "RESCUE" | "INSURER";
             /** Format: date */
             validFrom: string;
             /** Format: date */
@@ -1144,7 +7188,7 @@ export interface components {
         };
         PartyRoleResponseDto: {
             /** @enum {string} */
-            roleType?: "DEST_AGENT" | "QUARANTINE_FARM" | "STABLE" | "VET" | "RESCUE" | "INSURER";
+            roleType?: "QUARANTINE_FARM" | "STABLE" | "VET" | "RESCUE" | "INSURER";
             /** Format: date */
             validFrom?: string;
             /** Format: date */
@@ -1155,6 +7199,16 @@ export interface components {
             validFrom: string;
             /** Format: date */
             validTo?: string;
+        };
+        PartySnapshot: {
+            address?: string;
+            /** @enum {string} */
+            bookingRole?: "PAYER" | "SHIPPER" | "CONSIGNEE" | "EMERGENCY_CONTACT";
+            fullName?: string;
+            identityDocumentCountryCode?: string;
+            identityDocumentNumber?: string;
+            identityDocumentType?: string;
+            phone?: string;
         };
         PartyUpdateRequestDto: {
             address?: string;
@@ -1171,10 +7225,454 @@ export interface components {
             /** Format: email */
             email: string;
         };
+        PayerAmountDto: {
+            amount?: number;
+            key?: string;
+        };
+        PaymentCheckoutResponseDto: {
+            /** Format: date-time */
+            expiresAt?: string;
+            paymentUrl?: string;
+        };
+        PaymentResponseDto: {
+            amount?: number;
+            /** Format: date-time */
+            blockReleasedAt?: string;
+            /** Format: int64 */
+            bookingId?: number;
+            /** Format: date-time */
+            confirmationUntil?: string;
+            currencyCode?: string;
+            /** @enum {string} */
+            disputeDecision?: "ACCEPTED" | "REJECTED";
+            disputeReason?: string;
+            disputeResponse?: string;
+            /** Format: date-time */
+            disputedAt?: string;
+            /** Format: date-time */
+            dueAt?: string;
+            /** Format: date-time */
+            extendedAt?: string;
+            /** Format: int64 */
+            id?: number;
+            /** Format: date-time */
+            issuedAt?: string;
+            /** Format: date-time */
+            paidAt?: string;
+            /** Format: int64 */
+            quotationId?: number;
+            /** @enum {string} */
+            status?: "PENDING" | "PAID" | "FAILED" | "CANCELLED";
+            /** @enum {string} */
+            type?: "DEPOSIT" | "BALANCE" | "EXTRA_CHARGE" | "REFUND";
+            /** Format: date-time */
+            writtenOffAt?: string;
+        };
+        PaymentResultResponseDto: {
+            amount?: number;
+            bookingCode?: string;
+            code?: string;
+            message?: string;
+            needsReview?: boolean;
+            /** @enum {string} */
+            paymentType?: "DEPOSIT" | "BALANCE" | "EXTRA_CHARGE" | "REFUND";
+            success?: boolean;
+            transactionNumber?: string;
+        };
+        PersonalInsuranceRevisionRequestDto: {
+            insurerName: string;
+            policyNumber: string;
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo: string;
+        };
+        PhoneCostConsentRequestDto: {
+            note: string;
+        };
+        PickupAddOnResponseDto: {
+            /** Format: date-time */
+            completedAt?: string;
+            name?: string;
+            /** Format: int64 */
+            serviceId?: number;
+        };
+        PickupHubTransferRequestDto: {
+            reason: string;
+        };
+        PickupMissChoiceRequestDto: {
+            /** @enum {string} */
+            choice: "DROP_HORSE" | "RETRY_PICKUP" | "SELF_DELIVERY" | "CHANGE_DEPARTURE" | "RESCHEDULE_PICKUP" | "CANCEL_BOOKING";
+            /** Format: date-time */
+            hubArrivalAt?: string;
+            phoneNote?: string;
+            /** Format: date */
+            pickupDate?: string;
+        };
+        PickupMissLiabilityRequestDto: {
+            /** @enum {string} */
+            liability: "CUSTOMER" | "COMPANY" | "FORCE_MAJEURE";
+        };
+        PickupMissPriceResponseDto: {
+            balanceDue?: number;
+            currencyCode?: string;
+            forfeited?: number;
+            refund?: number;
+            total?: number;
+        };
+        PickupMissResponseDto: {
+            availableChoices?: ("DROP_HORSE" | "RETRY_PICKUP" | "SELF_DELIVERY" | "CHANGE_DEPARTURE" | "RESCHEDULE_PICKUP" | "CANCEL_BOOKING")[];
+            /** Format: int64 */
+            bookingHorseId?: number;
+            /** @enum {string} */
+            choice?: "DROP_HORSE" | "RETRY_PICKUP" | "SELF_DELIVERY" | "CHANGE_DEPARTURE" | "RESCHEDULE_PICKUP" | "CANCEL_BOOKING";
+            /** Format: date-time */
+            choiceDueAt?: string;
+            horseName?: string;
+            /** @enum {string} */
+            liability?: "CUSTOMER" | "COMPANY" | "FORCE_MAJEURE";
+            /** Format: date-time */
+            missedAt?: string;
+            prices?: {
+                [key: string]: components["schemas"]["PickupMissPriceResponseDto"];
+            };
+            reason?: string;
+        };
+        PickupWaitExtensionRequestDto: {
+            reason: string;
+        };
+        PlaceDto: {
+            /** Format: int64 */
+            bookingAddressId?: number;
+            /** Format: int64 */
+            locationId?: number;
+        };
+        PlanApproveRequestDto: {
+            /** @enum {string} */
+            confirmedCauseType?: "COMPANY_FAULT" | "HORSE_CONDITION" | "CUSTOMER_DOCS" | "FORCE_MAJEURE" | "RECIPIENT_ABSENT";
+        };
+        PlanDto: {
+            /** Format: date-time */
+            customerAgreedAt?: string;
+            /** Format: date-time */
+            decidedAt?: string;
+            decidedByName?: string;
+            estimatedCost?: number;
+            /** Format: int64 */
+            handlerPartyId?: number;
+            handlerPartyName?: string;
+            /** Format: int64 */
+            id?: number;
+            instructions?: string;
+            /** Format: date-time */
+            proposedAt?: string;
+            proposedByName?: string;
+            rejectionReason?: string;
+            /** @enum {string} */
+            resolutionType?: "CONTINUE" | "VET_TREATMENT" | "STABLE_NEARBY" | "TRANSFER_VEHICLE" | "RETURN_TO_HUB" | "CANCEL";
+            /** @enum {string} */
+            status?: "PROPOSED" | "APPROVED" | "REJECTED" | "SUPERSEDED" | "DONE";
+            /** Format: int32 */
+            version?: number;
+        };
+        PlanRejectRequestDto: {
+            reason?: string;
+        };
+        PlannedStopDto: {
+            /** Format: date-time */
+            arrivalAt?: string;
+            /** Format: int64 */
+            bookingAddressId?: number;
+            bookingCode?: string;
+            /** Format: date-time */
+            departureAt?: string;
+            /** Format: int64 */
+            driveMinutes?: number;
+            /** Format: int32 */
+            horses?: number;
+            /** Format: double */
+            km?: number;
+            /** Format: int64 */
+            locationId?: number;
+            name?: string;
+            path?: components["schemas"]["GeoPointDto"][];
+            point?: components["schemas"]["GeoPointDto"];
+            /** Format: int32 */
+            restMinutes?: number;
+            /** @enum {string} */
+            stopType?: "PICKUP" | "DELIVERY" | "HUB" | "REST" | "VITAL_CHECK" | "BORDER" | "QUARANTINE";
+        };
+        PlannedTripRequestDto: {
+            bookingHorseIds: number[];
+            places: components["schemas"]["PlaceDto"][];
+            /** Format: date-time */
+            startAt?: string;
+            /** @enum {string} */
+            tripType: "PICKUP" | "LINEHAUL" | "DELIVERY" | "TRANSFER" | "DIRECT";
+            /** Format: int64 */
+            vehicleId?: number;
+        };
+        PlannedTripResponseDto: {
+            blocked?: boolean;
+            /** Format: int64 */
+            driveMinutes?: number;
+            /** Format: date-time */
+            endAt?: string;
+            /** Format: double */
+            km?: number;
+            /** Format: date-time */
+            startAt?: string;
+            stops?: components["schemas"]["PlannedStopDto"][];
+            warnings?: ("RIDE_TOO_LONG" | "LATE_FOR_HUB" | "DRIVER_DAY_LIMIT" | "OUTSIDE_WINDOW")[];
+        };
+        PlateDto: {
+            /** Format: int64 */
+            id?: number;
+            licensePlate?: string;
+        };
+        PriceItemCreateRequestDto: {
+            /** Format: int64 */
+            billableServiceId: number;
+            kmFrom?: number;
+            kmTo?: number;
+            /** Format: int64 */
+            routeId?: number;
+            stallTypeCode?: string;
+            unitPrice: number;
+            /** Format: int64 */
+            vehicleClassId?: number;
+        };
+        PriceItemResponseDto: {
+            /** Format: int64 */
+            billableServiceId?: number;
+            /** Format: int64 */
+            id?: number;
+            kmFrom?: number;
+            kmTo?: number;
+            /** Format: int64 */
+            priceListId?: number;
+            /** Format: int64 */
+            routeId?: number;
+            stallTypeCode?: string;
+            unitPrice?: number;
+            /** Format: int64 */
+            vehicleClassId?: number;
+        };
+        PriceItemUpdateRequestDto: {
+            /** Format: int64 */
+            billableServiceId: number;
+            kmFrom?: number;
+            kmTo?: number;
+            /** Format: int64 */
+            routeId?: number;
+            stallTypeCode?: string;
+            unitPrice: number;
+            /** Format: int64 */
+            vehicleClassId?: number;
+        };
+        PriceLineResponseDto: {
+            amount?: number;
+            /** @enum {string} */
+            billingUnit?: "PER_STALL" | "PER_KM" | "PER_HORSE" | "PER_HORSE_DAY" | "PER_BOOKING";
+            passThrough?: boolean;
+            /** Format: int64 */
+            priceItemId?: number;
+            quantity?: number;
+            serviceCode?: string;
+            stallTypeCode?: string;
+            unitPrice?: number;
+            /** Format: int64 */
+            vehicleClassId?: number;
+        };
+        PriceListActivateRequestDto: unknown;
+        PriceListArchiveRequestDto: unknown;
+        PriceListCreateRequestDto: {
+            currencyCode: string;
+            depositRate: number;
+            fuelBufferRate: number;
+            marginRate: number;
+            name: string;
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo?: string;
+        };
+        PriceListResponseDto: {
+            currencyCode?: string;
+            depositRate?: number;
+            fuelBufferRate?: number;
+            /** Format: int64 */
+            id?: number;
+            marginRate?: number;
+            name?: string;
+            /** @enum {string} */
+            status?: "DRAFT" | "ACTIVE" | "ARCHIVED";
+            /** Format: date */
+            validFrom?: string;
+            /** Format: date */
+            validTo?: string;
+        };
+        PriceListUpdateRequestDto: {
+            currencyCode: string;
+            depositRate: number;
+            fuelBufferRate: number;
+            marginRate: number;
+            name: string;
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo?: string;
+        };
+        PricingPreviewRequestDto: {
+            /** Format: int64 */
+            deliveryAddressId: number;
+            /** @enum {string} */
+            deliveryMethod?: "COMPANY" | "SELF";
+            /** Format: int64 */
+            departureId?: number;
+            horses: components["schemas"]["HorseSelection"][];
+            /** Format: int64 */
+            pickupAddressId: number;
+            /** Format: date-time */
+            pickupAt: string;
+            /** @enum {string} */
+            pickupMethod?: "COMPANY" | "SELF";
+            /** @enum {string} */
+            transportMode?: "SHARED" | "PRIVATE";
+        };
+        PricingPreviewResponseDto: {
+            /** @enum {string} */
+            bookingType?: "LOCAL" | "INTERPROVINCE" | "EXPORT" | "IMPORT";
+            currencyCode?: string;
+            deliveryEstimates?: components["schemas"]["DeliveryEstimate"][];
+            depositRate?: number;
+            legs?: components["schemas"]["LegDistance"][];
+            lines?: components["schemas"]["PriceLineResponseDto"][];
+            /** Format: int64 */
+            priceListId?: number;
+            /** Format: int32 */
+            privateVehicleBillableStalls?: number;
+            privateVehicleClassCode?: string;
+            total?: number;
+        };
         ProvinceResponse: {
             code?: string;
             countryCode?: string;
+            latitude?: number;
+            longitude?: number;
             name?: string;
+        };
+        PublicHorseDto: {
+            /** @enum {string} */
+            holder?: "SHIPPER" | "COMPANY" | "PARTY" | "CONSIGNEE";
+            horseName?: string;
+            /** @enum {string} */
+            legType?: "PICKUP" | "LINEHAUL" | "DELIVERY" | "TRANSFER" | "RETURN" | "DIRECT";
+            locationName?: string;
+            /** @enum {string} */
+            stayType?: "ASSEMBLY" | "QUARANTINE" | "OVERNIGHT" | "STABLING";
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        PublicTrackingRequestDto: {
+            codes: string[];
+            phoneLast4: string;
+        };
+        PublicTrackingResponseDto: {
+            code?: string;
+            found?: boolean;
+            horses?: components["schemas"]["PublicHorseDto"][];
+            /** Format: date-time */
+            plannedDeliveryAt?: string;
+            /** @enum {string} */
+            status?: "PENDING_INTAKE" | "UNDER_REVIEW" | "NEEDS_RESUBMISSION" | "QUOTING" | "AWAITING_DEPOSIT" | "QUOTE_EXPIRED" | "CONFIRMED" | "SCHEDULE_CHANGE_REQUIRED" | "IN_OPERATION" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED";
+        };
+        QuotationAcceptRequestDto: unknown;
+        QuotationAdjustmentRequestDto: {
+            adjustment: number;
+            reason: string;
+        };
+        QuotationLineResponseDto: {
+            amount?: number;
+            /** Format: int64 */
+            bookingHorseId?: number;
+            description?: string;
+            /** Format: int32 */
+            lineNumber?: number;
+            /** @enum {string} */
+            lineType?: "LINEHAUL" | "PICKUP" | "DELIVERY" | "DIRECT" | "FUEL" | "STALL" | "QUARANTINE" | "SERVICE" | "DOCS" | "INSURANCE" | "ADJUSTMENT";
+            passThrough?: boolean;
+            /** Format: int64 */
+            priceItemId?: number;
+            quantity?: number;
+            unit?: string;
+            unitPrice?: number;
+        };
+        QuotationRejectRequestDto: {
+            reason: string;
+        };
+        QuotationResponseDto: {
+            /** Format: int64 */
+            bookingId?: number;
+            currencyCode?: string;
+            /** Format: date */
+            departureDate?: string;
+            depositAmount?: number;
+            /** Format: date */
+            estimatedDeliveryDate?: string;
+            /** Format: date-time */
+            expiresAt?: string;
+            /** Format: int64 */
+            id?: number;
+            lines?: components["schemas"]["QuotationLineResponseDto"][];
+            passThroughAmount?: number;
+            /** Format: date */
+            pickupDate?: string;
+            /** @enum {string} */
+            status?: "DRAFT" | "SENT" | "ACCEPTED" | "REJECTED" | "EXPIRED" | "SUPERSEDED";
+            totalAmount?: number;
+            /** Format: int32 */
+            version?: number;
+        };
+        QuotationSendRequestDto: unknown;
+        RatingRequestDto: {
+            comment?: string;
+            /** Format: int32 */
+            score: number;
+        };
+        RatingResponseDto: {
+            /** Format: int64 */
+            bookingId?: number;
+            comment?: string;
+            /** Format: date-time */
+            ratedAt?: string;
+            /** Format: int32 */
+            score?: number;
+        };
+        ReceivedBookingResponseDto: {
+            code?: string;
+            /** Format: int64 */
+            id?: number;
+        };
+        RefundQuotationLinesRequestDto: {
+            unspentQuotationLineIds: number[];
+        };
+        RefundResponseDto: {
+            amount?: number;
+            bookingCode?: string;
+            /** Format: int64 */
+            bookingId?: number;
+            currencyCode?: string;
+            customerName?: string;
+            customerPhone?: string;
+            /** Format: int64 */
+            id?: number;
+            /** Format: date-time */
+            paidAt?: string;
+            /** @enum {string} */
+            refundedPaymentType?: "DEPOSIT" | "BALANCE" | "EXTRA_CHARGE" | "REFUND";
+            /** @enum {string} */
+            status?: "PENDING" | "PAID" | "FAILED" | "CANCELLED";
         };
         RegisterRequest: {
             acceptedTerms?: boolean;
@@ -1187,12 +7685,124 @@ export interface components {
             phone: string;
             username: string;
         };
+        RegulationPreviewRequestDto: {
+            /** @enum {string} */
+            bookingType: "LOCAL" | "INTERPROVINCE" | "EXPORT" | "IMPORT";
+            deliveryCountryCode: string;
+            /** Format: int64 */
+            departureId?: number;
+            /** Format: int64 */
+            gateLocationId?: number;
+            pickupCountryCode: string;
+            /** Format: date */
+            requestedPickupDate: string;
+        };
+        RegulationPreviewResponseDto: {
+            /** Format: date-time */
+            bookingCutoffAt?: string;
+            feasible?: boolean;
+            /** Format: int64 */
+            leadDays?: number;
+            requirements?: components["schemas"]["DocumentRequirementResponseDto"][];
+            requirementsDependOnGate?: boolean;
+            rule?: components["schemas"]["CountryRuleResponseDto"];
+        };
+        ReportCostDto: {
+            amount?: number;
+            approved?: boolean;
+            /** @enum {string} */
+            category?: "TOLL" | "FUEL" | "STABLING" | "VET" | "RESCUE" | "REPAIR" | "WAITING" | "REDELIVERY" | "PLANNED_STABLING" | "OTHER";
+            description?: string;
+            /** @enum {string} */
+            payerType?: "COMPANY" | "CUSTOMER" | "CONSIGNEE";
+        };
+        ReportDocumentDelayRequestDto: {
+            /** @enum {string} */
+            cause: "CUSTOMER" | "COMPANY" | "AUTHORITY";
+            reason: string;
+        };
+        ReportHealthDto: {
+            /** @enum {string} */
+            feedIntake?: "NORMAL" | "REDUCED" | "REFUSED";
+            /** @enum {string} */
+            healthStatus?: "NORMAL" | "WATCH" | "SICK" | "CRITICAL";
+            horseName?: string;
+            /** Format: date-time */
+            recordedAt?: string;
+            symptoms?: string;
+            temperatureCelsius?: number;
+            /** @enum {string} */
+            waterIntake?: "NORMAL" | "REDUCED" | "REFUSED";
+        };
+        ReportIncidentDto: {
+            /** @enum {string} */
+            causeType?: "COMPANY_FAULT" | "HORSE_CONDITION" | "CUSTOMER_DOCS" | "FORCE_MAJEURE" | "RECIPIENT_ABSENT";
+            /** Format: int64 */
+            id?: number;
+            /** @enum {string} */
+            incidentType?: "HEALTH" | "VEHICLE_BREAKDOWN" | "ACCIDENT" | "DELAY" | "DOCUMENT" | "HANDOVER_TIMEOUT" | "OTHER" | "COMPLAINT";
+            /** Format: date-time */
+            reportedAt?: string;
+            /** Format: date-time */
+            resolvedAt?: string;
+            /** @enum {string} */
+            status?: "REPORTED" | "PLAN_PENDING" | "PLAN_ACTIVE" | "RESOLVED" | "CLOSED";
+            title?: string;
+        };
+        ReportRatingDto: {
+            bookingCode?: string;
+            comment?: string;
+            /** Format: int32 */
+            score?: number;
+        };
+        ReportStopDto: {
+            /** Format: date-time */
+            actualArrivalAt?: string;
+            /** Format: date-time */
+            actualDepartureAt?: string;
+            late?: boolean;
+            name?: string;
+            /** Format: date-time */
+            plannedArrivalAt?: string;
+            /** Format: int32 */
+            sequenceNumber?: number;
+            /** @enum {string} */
+            stopType?: "PICKUP" | "DELIVERY" | "HUB" | "REST" | "VITAL_CHECK" | "BORDER" | "QUARANTINE";
+        };
         ResetPasswordWithOtpRequest: {
             confirmPassword: string;
             /** Format: email */
             email: string;
             newPassword: string;
             otp: string;
+        };
+        RevenueBookingDto: {
+            /** Format: int64 */
+            bookingId?: number;
+            code?: string;
+            collected?: number;
+            customerName?: string;
+            /** Format: date-time */
+            depositPaidAt?: string;
+            passThrough?: number;
+            revenue?: number;
+            /** @enum {string} */
+            status?: "PENDING_INTAKE" | "UNDER_REVIEW" | "NEEDS_RESUBMISSION" | "QUOTING" | "AWAITING_DEPOSIT" | "QUOTE_EXPIRED" | "CONFIRMED" | "SCHEDULE_CHANGE_REQUIRED" | "IN_OPERATION" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED";
+        };
+        RevenueDayDto: {
+            cost?: number;
+            /** Format: date */
+            date?: string;
+            revenue?: number;
+        };
+        RevenueReportResponseDto: {
+            bookings?: components["schemas"]["RevenueBookingDto"][];
+            collected?: number;
+            companyCost?: number;
+            days?: components["schemas"]["RevenueDayDto"][];
+            passThrough?: number;
+            profit?: number;
+            revenue?: number;
         };
         RouteRequest: {
             code: string;
@@ -1201,6 +7811,7 @@ export interface components {
             distanceKm: number;
             /** Format: int32 */
             estimatedDurationMinutes: number;
+            fleetOutbound?: boolean;
             name: string;
             /** Format: int64 */
             originLocationId: number;
@@ -1215,6 +7826,7 @@ export interface components {
             distanceKm?: number;
             /** Format: int32 */
             estimatedDurationMinutes?: number;
+            fleetOutbound?: boolean;
             /** Format: int64 */
             id?: number;
             name?: string;
@@ -1254,6 +7866,86 @@ export interface components {
             /** @enum {string} */
             stopType?: "HUB" | "REST" | "VITAL_CHECK" | "BORDER" | "QUARANTINE";
         };
+        SettlementResponseDto: {
+            approvedCustomerCosts?: number;
+            /** Format: int64 */
+            bookingId?: number;
+            canClose?: boolean;
+            chargeableCostIds?: number[];
+            costs?: components["schemas"]["CostItemResponseDto"][];
+            currencyCode?: string;
+            hasOpenIncident?: boolean;
+            outstanding?: number;
+            payments?: components["schemas"]["PaymentResponseDto"][];
+            quotationTotal?: number;
+            /** @enum {string} */
+            status?: "PENDING_INTAKE" | "UNDER_REVIEW" | "NEEDS_RESUBMISSION" | "QUOTING" | "AWAITING_DEPOSIT" | "QUOTE_EXPIRED" | "CONFIRMED" | "SCHEDULE_CHANGE_REQUIRED" | "IN_OPERATION" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED";
+        };
+        SpecialistWorkResponseDto: {
+            /** Format: int64 */
+            arranged?: number;
+            booking?: components["schemas"]["BookingSummaryResponseDto"];
+            /** Format: date */
+            documentsDueOn?: string;
+            horseNames?: string[];
+            /** @enum {string} */
+            insurance?: "TO_PROCESS" | "WAITING_CUSTOMER" | "CONFIRMED";
+            /** @enum {string} */
+            legal?: "TO_PREPARE" | "IN_PROGRESS" | "COMPLETE";
+            /** Format: int64 */
+            personal?: number;
+            /** Format: int64 */
+            uninsured?: number;
+            /** @enum {string} */
+            verification?: "TO_REVIEW" | "WAITING_CUSTOMER" | "REVIEWED" | "AWAITING_INTAKE";
+        };
+        SpecialistWorkSummaryResponseDto: {
+            /** Format: int64 */
+            insurancePending?: number;
+            /** Format: int64 */
+            legalPending?: number;
+            /** Format: int64 */
+            verificationPending?: number;
+            /** Format: int64 */
+            waitingCustomer?: number;
+        };
+        StablePartnerResponseDto: {
+            address?: string;
+            displayName?: string;
+            /** Format: int64 */
+            id?: number;
+            phone?: string;
+        };
+        StablingClockResponseDto: {
+            amount?: number;
+            canCollect?: boolean;
+            canReady?: boolean;
+            /** Format: date-time */
+            collectionExpectedAt?: string;
+            /** Format: int64 */
+            elapsedSeconds?: number;
+            horseName?: string;
+            /** Format: date-time */
+            nextChargeAt?: string;
+            /** Format: date-time */
+            readyAt?: string;
+            running?: boolean;
+            /** Format: int64 */
+            stayId?: number;
+        };
+        StablingCollectionRequestDto: {
+            /** Format: date-time */
+            expectedAt: string;
+        };
+        StablingLaterSlotRequestDto: {
+            /** Format: date-time */
+            chosenAt: string;
+            /** Format: date-time */
+            earliestAt: string;
+        };
+        StablingReadyRequestDto: {
+            callNote: string;
+        };
         StaffAccountCreateRequestDto: {
             driverLicenseClass?: string;
             /** Format: date */
@@ -1292,10 +7984,15 @@ export interface components {
             userId?: number;
             username?: string;
         };
+        StaffAccountStatusRequestDto: {
+            reason: string;
+        };
         StaffAccountUpdateRequestDto: {
             driverLicenseClass?: string;
             /** Format: date */
             driverLicenseExpiryDate?: string;
+            /** @enum {string} */
+            employmentStatus?: "ACTIVE" | "ON_LEAVE" | "TERMINATED";
             fullName: string;
             /** Format: date */
             hireDate: string;
@@ -1303,6 +8000,94 @@ export interface components {
             homeHubLocationId: number;
             phone: string;
             staffCode: string;
+        };
+        StaffWorkSummaryResponseDto: {
+            filterCounts?: {
+                [key: string]: number;
+            };
+            menuCounts?: {
+                [key: string]: number;
+            };
+        };
+        StaffWorkloadResponseDto: {
+            /** Format: int64 */
+            assignedCount?: number;
+            /** Format: int64 */
+            lateTripCount?: number;
+            /** Format: int64 */
+            openIncidentCount?: number;
+            role?: string;
+            /** Format: int64 */
+            staffId?: number;
+            staffName?: string;
+        };
+        StallAssignmentDto: {
+            /** Format: int32 */
+            currentPosition?: number;
+            /** Format: int64 */
+            horseLegId: number;
+            /** Format: int32 */
+            stallPosition: number;
+        };
+        StallHorseDto: {
+            /** Format: int32 */
+            alightSequence?: number;
+            alightStopName?: string;
+            /** Format: int32 */
+            boardSequence?: number;
+            boardStopName?: string;
+            bookingCode?: string;
+            /** Format: int64 */
+            horseLegId?: number;
+            horseName?: string;
+            locked?: boolean;
+            /** Format: int32 */
+            seats?: number;
+            /** @enum {string} */
+            sex?: "STALLION" | "MARE" | "GELDING";
+            /** Format: int32 */
+            stallPosition?: number;
+        };
+        StallPlanApplyRequestDto: {
+            horses: components["schemas"]["StallAssignmentDto"][];
+        };
+        StallPlanResponseDto: {
+            /** Format: int32 */
+            capacity?: number;
+            editable?: boolean;
+            horses?: components["schemas"]["StallHorseDto"][];
+            /** Format: int64 */
+            vehicleTripId?: number;
+            warnings?: string[];
+        };
+        StallTypeResponseDto: {
+            code?: string;
+            name?: string;
+            /** Format: int32 */
+            seats?: number;
+        };
+        StopDepartRequestDto: {
+            earlyReason?: string;
+        };
+        StopTimeRequestDto: {
+            /** Format: date-time */
+            plannedArrivalAt: string;
+            /** Format: date-time */
+            plannedDepartureAt: string;
+            /** Format: int64 */
+            stopId: number;
+        };
+        SuggestedStopDto: {
+            /** Format: int64 */
+            bookingAddressId?: number;
+            /** Format: int64 */
+            locationId?: number;
+            /** Format: date-time */
+            plannedArrivalAt?: string;
+            /** Format: date-time */
+            plannedDepartureAt?: string;
+            /** @enum {string} */
+            stopType?: "PICKUP" | "DELIVERY" | "HUB" | "REST" | "VITAL_CHECK" | "BORDER" | "QUARANTINE";
         };
         SystemConfigResponseDto: {
             configGroup?: string;
@@ -1322,6 +8107,232 @@ export interface components {
         SystemConfigUpdateRequestDto: {
             configValue: number;
         };
+        SystemLogPageResponseDto: {
+            content?: components["schemas"]["SystemLogResponseDto"][];
+            /** Format: int32 */
+            number?: number;
+            /** Format: int32 */
+            size?: number;
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+        };
+        SystemLogResponseDto: {
+            actionType?: string;
+            actorEmail?: string;
+            /** Format: int64 */
+            actorId?: number;
+            actorName?: string;
+            actorRole?: string;
+            /** Format: date-time */
+            createdAt?: string;
+            description?: string;
+            /** Format: int64 */
+            id?: number;
+            legacy?: boolean;
+            newData?: string;
+            oldData?: string;
+            targetKey?: string;
+            targetLabel?: string;
+            targetTable?: string;
+        };
+        SystemTextConfigUpdateRequestDto: {
+            configValue: string;
+        };
+        TransferEndDto: {
+            companyAllowed?: boolean;
+            reason?: string;
+            /** @enum {string} */
+            status?: "AVAILABLE" | "TOO_FAR" | "NO_ROUTE" | "UNKNOWN";
+        };
+        TransferOptionsRequestDto: {
+            /** Format: int64 */
+            deliveryAddressId: number;
+            /** Format: int64 */
+            pickupAddressId: number;
+            /** Format: date-time */
+            pickupAt: string;
+        };
+        TransferOptionsResponseDto: {
+            delivery?: components["schemas"]["TransferEndDto"];
+            pickup?: components["schemas"]["TransferEndDto"];
+        };
+        TransportRulesResponseDto: {
+            /** Format: int32 */
+            balanceWaitMinutes?: number;
+            /** Format: int32 */
+            deliveryWindowEndHour?: number;
+            /** Format: int32 */
+            deliveryWindowStartHour?: number;
+            /** Format: int32 */
+            departureDecisionHours?: number;
+            /** Format: int32 */
+            handoverFreeWaitMinutes?: number;
+            /** Format: int32 */
+            hubCheckinHours?: number;
+            /** Format: int32 */
+            maxTransferDriveMinutes?: number;
+            /** Format: int32 */
+            pickupWindowEndHour?: number;
+            /** Format: int32 */
+            pickupWindowStartHour?: number;
+            /** Format: int32 */
+            stablingDailyFee?: number;
+        };
+        TripCompleteRequestDto: {
+            /** @enum {string} */
+            endVehicleCondition: "NORMAL" | "NEEDS_MAINTENANCE";
+            endVehicleNote?: string;
+        };
+        TripDepartureReadinessResponseDto: {
+            /** Format: int64 */
+            stopId?: number;
+            waitingForEscort?: boolean;
+        };
+        TripGroupResponseDto: {
+            bookings?: components["schemas"]["GroupBookingDto"][];
+            /** Format: double */
+            hours?: number;
+            overLimit?: boolean;
+            /** Format: double */
+            routeKm?: number;
+            /** Format: int32 */
+            seats?: number;
+            stops?: components["schemas"]["SuggestedStopDto"][];
+        };
+        TripHorseResponseDto: {
+            bookingCode?: string;
+            dietNote?: string;
+            feedSuppliedByOwner?: boolean;
+            /** Format: int32 */
+            feedingsPerDay?: number;
+            horseName?: string;
+            leg?: components["schemas"]["HorseLegResponseDto"];
+            microchip?: string;
+            /** Format: int32 */
+            seats?: number;
+            stallTypeCode?: string;
+        };
+        TripReportResponseDto: {
+            costs?: components["schemas"]["ReportCostDto"][];
+            healthLogs?: components["schemas"]["ReportHealthDto"][];
+            incidents?: components["schemas"]["ReportIncidentDto"][];
+            ratings?: components["schemas"]["ReportRatingDto"][];
+            stops?: components["schemas"]["ReportStopDto"][];
+            summary?: components["schemas"]["TripReportRowResponseDto"];
+        };
+        TripReportRowResponseDto: {
+            /** Format: date-time */
+            actualEndAt?: string;
+            /** Format: date-time */
+            actualStartAt?: string;
+            /** Format: int32 */
+            arrivedStopCount?: number;
+            /** Format: double */
+            averageRating?: number;
+            code?: string;
+            costTotal?: number;
+            endLocationName?: string;
+            /** Format: int32 */
+            horseCount?: number;
+            /** Format: int64 */
+            id?: number;
+            /** Format: int32 */
+            incidentCount?: number;
+            /** Format: int32 */
+            lateStopCount?: number;
+            licensePlate?: string;
+            /** Format: date-time */
+            plannedStartAt?: string;
+            /** Format: date-time */
+            returnExpectedAt?: string;
+            returnLate?: boolean;
+            returning?: boolean;
+            startLocationName?: string;
+            /** @enum {string} */
+            status?: "PLANNED" | "DISPATCHED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+            /** Format: int32 */
+            stopCount?: number;
+            /** @enum {string} */
+            tripType?: "PICKUP" | "LINEHAUL" | "DELIVERY" | "TRANSFER" | "DIRECT";
+        };
+        TripReturnPhotoRequestDto: {
+            /** Format: binary */
+            file: string;
+        };
+        TripStartRequestDto: {
+            earlyReason?: string;
+        };
+        TripStopRequestDto: {
+            /** Format: int64 */
+            bookingAddressId?: number;
+            /** Format: int64 */
+            locationId?: number;
+            /** Format: date-time */
+            plannedArrivalAt: string;
+            /** Format: date-time */
+            plannedDepartureAt: string;
+            /** @enum {string} */
+            stopType: "PICKUP" | "DELIVERY" | "HUB" | "REST" | "VITAL_CHECK" | "BORDER" | "QUARANTINE";
+        };
+        TripStopResponseDto: {
+            /** Format: date-time */
+            actualArrivalAt?: string;
+            /** Format: date-time */
+            actualDepartureAt?: string;
+            addressLine?: string;
+            /** Format: int64 */
+            bookingAddressId?: number;
+            bookingCode?: string;
+            /** Format: int64 */
+            id?: number;
+            latitude?: number;
+            /** Format: int64 */
+            locationId?: number;
+            locationName?: string;
+            longitude?: number;
+            /** Format: date-time */
+            plannedArrivalAt?: string;
+            /** Format: date-time */
+            plannedDepartureAt?: string;
+            /** Format: int32 */
+            sequenceNumber?: number;
+            /** @enum {string} */
+            stopType?: "PICKUP" | "DELIVERY" | "HUB" | "REST" | "VITAL_CHECK" | "BORDER" | "QUARANTINE";
+        };
+        TripUnlockRequestDto: {
+            reason: string;
+        };
+        TruckChoiceDto: {
+            /** Format: int64 */
+            allotmentId: number;
+            bookingHorseIds: number[];
+            /** Format: int32 */
+            number?: number;
+            /** Format: int64 */
+            vehicleId: number;
+        };
+        TruckDto: {
+            /** Format: int64 */
+            allotmentId?: number;
+            /** @enum {string} */
+            allotmentType?: "BASE" | "SPARE" | "PRIVATE";
+            /** Format: int32 */
+            capacity?: number;
+            horses?: components["schemas"]["LinehaulHorseDto"][];
+            /** Format: int32 */
+            number?: number;
+            /** Format: int32 */
+            usedSeats?: number;
+            vehicleClassName?: string;
+            vehicles?: components["schemas"]["PlateDto"][];
+        };
+        UnclaimedHorseResolutionRequestDto: {
+            /** @enum {string} */
+            outcome: "RETURNED_TO_SENDER" | "RETURNED_TO_AUTHORIZED_PERSON" | "RELEASED_BY_LEGAL_DOCUMENT";
+            recipientName: string;
+        };
         VehicleClassResponseDto: {
             code?: string;
             /** Format: int64 */
@@ -1334,8 +8345,8 @@ export interface components {
             /** Format: int64 */
             homeHubLocationId: number;
             licensePlate: string;
-            /** Format: date */
-            registrationExpiryDate?: string;
+            /** @enum {string} */
+            serviceRole?: "LINEHAUL" | "SPARE" | "BRANCH";
             /** Format: int32 */
             standardStallCount: number;
             /** Format: int64 */
@@ -1350,8 +8361,8 @@ export interface components {
             /** Format: int64 */
             id?: number;
             licensePlate?: string;
-            /** Format: date */
-            registrationExpiryDate?: string;
+            /** @enum {string} */
+            serviceRole?: "LINEHAUL" | "SPARE" | "BRANCH";
             /** Format: int32 */
             standardStallCount?: number;
             /** @enum {string} */
@@ -1362,18 +8373,102 @@ export interface components {
             /** Format: int32 */
             wideStallCount?: number;
         };
+        VehicleStatusChangeRequestDto: {
+            reason: string;
+        };
+        VehicleSwapRequestDto: {
+            /** Format: int64 */
+            vehicleId: number;
+        };
+        VehicleTripCancelRequestDto: {
+            reason: string;
+        };
+        VehicleTripCreateRequestDto: {
+            /** Format: int64 */
+            departureId?: number;
+            stops?: components["schemas"]["TripStopRequestDto"][];
+            /** @enum {string} */
+            tripType: "PICKUP" | "LINEHAUL" | "DELIVERY" | "TRANSFER" | "DIRECT";
+            /** Format: int64 */
+            vehicleId: number;
+        };
+        VehicleTripResponseDto: {
+            /** Format: date-time */
+            actualEndAt?: string;
+            /** Format: date-time */
+            actualStartAt?: string;
+            code?: string;
+            /** Format: int64 */
+            coordinatorId?: number;
+            coordinatorName?: string;
+            coordinatorStaffCode?: string;
+            crew?: components["schemas"]["CrewAssignmentResponseDto"][];
+            /** Format: int64 */
+            departureId?: number;
+            /** Format: int64 */
+            endLocationId?: number;
+            endLocationName?: string;
+            /** @enum {string} */
+            endVehicleCondition?: "NORMAL" | "NEEDS_MAINTENANCE";
+            endVehicleNote?: string;
+            /** Format: int64 */
+            id?: number;
+            licensePlate?: string;
+            manualStopTimesEditable?: boolean;
+            /** Format: int64 */
+            openIncidentCount?: number;
+            /** Format: date-time */
+            plannedEndAt?: string;
+            /** Format: date-time */
+            plannedStartAt?: string;
+            /** Format: date-time */
+            returnExpectedAt?: string;
+            returnLate?: boolean;
+            returnPhotoAttached?: boolean;
+            returning?: boolean;
+            routeCode?: string;
+            /** Format: int64 */
+            startLocationId?: number;
+            startLocationName?: string;
+            /** @enum {string} */
+            status?: "PLANNED" | "DISPATCHED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+            stops?: components["schemas"]["TripStopResponseDto"][];
+            takeOverAllowed?: boolean;
+            /** @enum {string} */
+            tripType?: "PICKUP" | "LINEHAUL" | "DELIVERY" | "TRANSFER" | "DIRECT";
+            /** Format: int64 */
+            vehicleId?: number;
+            /** Format: int32 */
+            vehicleSeats?: number;
+        };
+        VehicleTripUpdateRequestDto: {
+            /** Format: date-time */
+            plannedStartAt?: string;
+            stops?: components["schemas"]["StopTimeRequestDto"][];
+            /** Format: int64 */
+            vehicleId?: number;
+        };
         VehicleUpdateRequestDto: {
             /** Format: int64 */
             homeHubLocationId: number;
             licensePlate: string;
-            /** Format: date */
-            registrationExpiryDate?: string;
+            /** @enum {string} */
+            serviceRole?: "LINEHAUL" | "SPARE" | "BRANCH";
             /** Format: int32 */
             standardStallCount: number;
             /** Format: int64 */
             vehicleClassId: number;
             /** Format: int32 */
             wideStallCount: number;
+        };
+        VetResultRequestDto: {
+            /** Format: int64 */
+            incidentPlanId?: number;
+            note: string;
+        };
+        VnpayIpnResponseDto: {
+            Message?: string;
+            RspCode?: string;
         };
     };
     responses: never;
@@ -1384,6 +8479,78 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    search_1: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+                target?: string;
+                action?: string;
+                role?: string;
+                actor?: string;
+                key?: string;
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseSystemLogPageResponseDto"];
+                };
+            };
+        };
+    };
+    options: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseMapStringListString"];
+                };
+            };
+        };
+    };
+    get_4: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseSystemLogResponseDto"];
+                };
+            };
+        };
+    };
     changePassword: {
         parameters: {
             query?: never;
@@ -1403,7 +8570,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["ApiResponseVoid"];
+                    "*/*": components["schemas"]["ApiResponseAuthResponse"];
                 };
             };
         };
@@ -1491,6 +8658,7 @@ export interface operations {
             query?: never;
             header?: {
                 Authorization?: string;
+                "X-Client-App"?: string;
             };
             path?: never;
             cookie?: never;
@@ -1563,7 +8731,9 @@ export interface operations {
     refreshToken: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-Client-App"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -1632,6 +8802,2092 @@ export interface operations {
             };
         };
     };
+    billableServices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListBillableServiceResponseDto"];
+                };
+            };
+        };
+    };
+    completePickupAddOn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompletePickupAddOnRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePickupAddOnResponseDto"];
+                };
+            };
+        };
+    };
+    confirmPickupLiability: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PickupMissLiabilityRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePickupMissResponseDto"];
+                };
+            };
+        };
+    };
+    ofHorse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListHealthLogResponseDto"];
+                };
+            };
+        };
+    };
+    appoint: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HubAppointmentRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHorseStayResponseDto"];
+                };
+            };
+        };
+    };
+    pickupAddOns: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListPickupAddOnResponseDto"];
+                };
+            };
+        };
+    };
+    chooseAfterPickupMiss: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PickupMissChoiceRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePickupMissResponseDto"];
+                };
+            };
+        };
+    };
+    list_4: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListBookingSummaryResponseDto"];
+                };
+            };
+        };
+    };
+    submitWithInsuranceFiles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookingCreateRequestDto"];
+                "multipart/form-data": {
+                    insuranceFiles?: string[];
+                    request: components["schemas"]["BookingCreateRequestDto"];
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingResponseDto"];
+                };
+            };
+        };
+    };
+    missingDocuments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListBookingResponseDto"];
+                };
+            };
+        };
+    };
+    overdueDocuments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListBookingResponseDto"];
+                };
+            };
+        };
+    };
+    queue: {
+        parameters: {
+            query?: {
+                mine?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListBookingResponseDto"];
+                };
+            };
+        };
+    };
+    summaries: {
+        parameters: {
+            query: {
+                statuses: ("PENDING_INTAKE" | "UNDER_REVIEW" | "NEEDS_RESUBMISSION" | "QUOTING" | "AWAITING_DEPOSIT" | "QUOTE_EXPIRED" | "CONFIRMED" | "SCHEDULE_CHANGE_REQUIRED" | "IN_OPERATION" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED")[];
+                page?: number;
+                mine?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListBookingSummaryResponseDto"];
+                };
+            };
+        };
+    };
+    recordContact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BalanceHoldContactRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    bookingDelay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListBookingDelayResponseDto"];
+                };
+            };
+        };
+    };
+    refundAfterDelay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelBookingRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingCancellationResponseDto"];
+                };
+            };
+        };
+    };
+    previewDelayRefund: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingCancellationResponseDto"];
+                };
+            };
+        };
+    };
+    rescheduleAfterDelay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookingRescheduleRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingResponseDto"];
+                };
+            };
+        };
+    };
+    view: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDeliveryComplaintResponseDto"];
+                };
+            };
+        };
+    };
+    submit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": components["schemas"]["ComplaintCreateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDeliveryComplaintResponseDto"];
+                };
+            };
+        };
+    };
+    confirm_3: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeliveryConfirmationRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDeliveryComplaintResponseDto"];
+                };
+            };
+        };
+    };
+    reply: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ComplaintReplyRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDeliveryComplaintResponseDto"];
+                };
+            };
+        };
+    };
+    resolve_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ComplaintResolveRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDeliveryComplaintResponseDto"];
+                };
+            };
+        };
+    };
+    submitOnBehalf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": components["schemas"]["ComplaintOnBehalfRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDeliveryComplaintResponseDto"];
+                };
+            };
+        };
+    };
+    extend_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PickupWaitExtensionRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    payments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListPaymentResponseDto"];
+                };
+            };
+        };
+    };
+    quotations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListQuotationResponseDto"];
+                };
+            };
+        };
+    };
+    draft: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseQuotationResponseDto"];
+                };
+            };
+        };
+    };
+    rate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RatingRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseRatingResponseDto"];
+                };
+            };
+        };
+    };
+    sendToHub: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PickupHubTransferRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    settlement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseSettlementResponseDto"];
+                };
+            };
+        };
+    };
+    complete_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseSettlementResponseDto"];
+                };
+            };
+        };
+    };
+    createExtraCharge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExtraChargeRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePaymentResponseDto"];
+                };
+            };
+        };
+    };
+    forBooking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListStablingClockResponseDto"];
+                };
+            };
+        };
+    };
+    get_3: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingDetailResponseDto"];
+                };
+            };
+        };
+    };
+    cancel_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelBookingRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingCancellationResponseDto"];
+                };
+            };
+        };
+    };
+    cancelForCompany: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompanyCancelBookingRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingCancellationResponseDto"];
+                };
+            };
+        };
+    };
+    cancelForCustomer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManagerCancelBookingRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingCancellationResponseDto"];
+                };
+            };
+        };
+    };
+    preview_3: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingCancellationResponseDto"];
+                };
+            };
+        };
+    };
+    changeDeparture: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookingDepartureChangeRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingResponseDto"];
+                };
+            };
+        };
+    };
+    code: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCollectionCodeResponseDto"];
+                };
+            };
+        };
+    };
+    confirm_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCollectionCodeResponseDto"];
+                };
+            };
+        };
+    };
+    costsOfBooking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListCostItemResponseDto"];
+                };
+            };
+        };
+    };
+    customerCosts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListCostItemResponseDto"];
+                };
+            };
+        };
+    };
+    customerPlans: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListPlanDto"];
+                };
+            };
+        };
+    };
+    confirm_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeliveryChangeConfirmRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDeliveryChangeResponseDto"];
+                };
+            };
+        };
+    };
+    preview_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeliveryChangeRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDeliveryChangeResponseDto"];
+                };
+            };
+        };
+    };
+    list_7: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListBookingDocumentResponseDto"];
+                };
+            };
+        };
+    };
+    checklist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingDocumentChecklistResponseDto"];
+                };
+            };
+        };
+    };
+    customerChecklist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingDocumentChecklistResponseDto"];
+                };
+            };
+        };
+    };
+    upload: {
+        parameters: {
+            query: {
+                request: components["schemas"]["DocumentUploadRequestDto"];
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingDocumentResponseDto"];
+                };
+            };
+        };
+    };
+    uploadForPartner: {
+        parameters: {
+            query: {
+                request: components["schemas"]["PartnerDocumentUploadRequestDto"];
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingDocumentResponseDto"];
+                };
+            };
+        };
+    };
+    approve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                documentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DocumentApprovalRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingDocumentResponseDto"];
+                };
+            };
+        };
+    };
+    reject_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                documentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentRejectionRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingDocumentResponseDto"];
+                };
+            };
+        };
+    };
+    revoke: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                documentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentRevocationRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingDocumentResponseDto"];
+                };
+            };
+        };
+    };
+    confirm: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                insuranceId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["InsuranceConfirmationRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    recordEvidence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                insuranceId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InsuranceEvidenceRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    recordPremiumRefund: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                insuranceId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InsurancePremiumRefundRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    reopen_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                insuranceId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InsuranceReopenRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    requestRevision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                insuranceId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InsuranceRevisionReasonRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    revise: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                insuranceId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file?: string;
+                    request: components["schemas"]["PersonalInsuranceRevisionRequestDto"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    intake: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookingIntakeRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingResponseDto"];
+                };
+            };
+        };
+    };
+    journey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingJourneyResponseDto"];
+                };
+            };
+        };
+    };
+    previewForManager: {
+        parameters: {
+            query: {
+                byCompany: boolean;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingCancellationResponseDto"];
+                };
+            };
+        };
+    };
+    listPickupMisses: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListPickupMissResponseDto"];
+                };
+            };
+        };
+    };
+    reassign: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookingReassignmentRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingResponseDto"];
+                };
+            };
+        };
+    };
+    review: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingCancellationResponseDto"];
+                };
+            };
+        };
+    };
+    refundUnspentLines: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefundQuotationLinesRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListPaymentResponseDto"];
+                };
+            };
+        };
+    };
+    reject_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookingRejectionRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingResponseDto"];
+                };
+            };
+        };
+    };
+    reopenExpiredQuote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingResponseDto"];
+                };
+            };
+        };
+    };
+    reportDocumentDelay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportDocumentDelayRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingResponseDto"];
+                };
+            };
+        };
+    };
+    reschedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookingRescheduleRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingResponseDto"];
+                };
+            };
+        };
+    };
+    resubmit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["BookingResubmissionRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingResponseDto"];
+                };
+            };
+        };
+    };
+    returnToCustomer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookingReturnRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingResponseDto"];
+                };
+            };
+        };
+    };
+    detail_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingDetailResponseDto"];
+                };
+            };
+        };
+    };
+    startQuoting: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["BookingQuotingRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingResponseDto"];
+                };
+            };
+        };
+    };
+    mine_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListCoordinatorTripResponseDto"];
+                };
+            };
+        };
+    };
+    horses: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListCoordinatorTripHorseResponseDto"];
+                };
+            };
+        };
+    };
+    recordCost: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CostItemRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCostItemResponseDto"];
+                };
+            };
+        };
+    };
+    acceptCost: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCostItemResponseDto"];
+                };
+            };
+        };
+    };
+    approveCost: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CostApproveRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCostItemResponseDto"];
+                };
+            };
+        };
+    };
+    declineCost: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCostItemResponseDto"];
+                };
+            };
+        };
+    };
+    markRecovered: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCostItemResponseDto"];
+                };
+            };
+        };
+    };
+    phoneConsent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PhoneCostConsentRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCostItemResponseDto"];
+                };
+            };
+        };
+    };
+    receipts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListEvidenceResponseDto"];
+                };
+            };
+        };
+    };
+    attachReceipt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListEvidenceResponseDto"];
+                };
+            };
+        };
+    };
     countries: {
         parameters: {
             query?: never;
@@ -1648,6 +10904,325 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListCountryResponse"];
+                };
+            };
+        };
+    };
+    listCountryRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListCountryRuleResponseDto"];
+                };
+            };
+        };
+    };
+    createCountryRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CountryRuleCreateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCountryRuleResponseDto"];
+                };
+            };
+        };
+    };
+    preview_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegulationPreviewRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseRegulationPreviewResponseDto"];
+                };
+            };
+        };
+    };
+    getCountryRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCountryRuleResponseDto"];
+                };
+            };
+        };
+    };
+    updateCountryRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CountryRuleUpdateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCountryRuleResponseDto"];
+                };
+            };
+        };
+    };
+    listDocumentRequirements: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ruleId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListDocumentRequirementResponseDto"];
+                };
+            };
+        };
+    };
+    createDocumentRequirement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ruleId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentRequirementCreateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDocumentRequirementResponseDto"];
+                };
+            };
+        };
+    };
+    updateDocumentRequirement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ruleId: number;
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentRequirementUpdateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDocumentRequirementResponseDto"];
+                };
+            };
+        };
+    };
+    mine_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListMyCrewAssignmentResponseDto"];
+                };
+            };
+        };
+    };
+    acknowledge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseMyCrewAssignmentResponseDto"];
+                };
+            };
+        };
+    };
+    releaseCrew: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVehicleTripResponseDto"];
+                };
+            };
+        };
+    };
+    trip_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCrewTripResponseDto"];
+                };
+            };
+        };
+    };
+    departureReadiness: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseTripDepartureReadinessResponseDto"];
+                };
+            };
+        };
+    };
+    board: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListCustodyRowResponseDto"];
                 };
             };
         };
@@ -1810,7 +11385,7 @@ export interface operations {
             };
         };
     };
-    create_2: {
+    create_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -1834,7 +11409,7 @@ export interface operations {
             };
         };
     };
-    update_2: {
+    update_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -1926,7 +11501,7 @@ export interface operations {
             };
         };
     };
-    list_2: {
+    list_6: {
         parameters: {
             query: {
                 routeId?: number;
@@ -1951,18 +11526,17 @@ export interface operations {
             };
         };
     };
-    createAdHoc: {
+    decisions: {
         parameters: {
-            query?: never;
+            query: {
+                from: string;
+                to: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DepartureCreateRequest"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description OK */
             200: {
@@ -1970,7 +11544,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["ApiResponseDepartureResponse"];
+                    "*/*": components["schemas"]["ApiResponseListDepartureDecisionResponseDto"];
                 };
             };
         };
@@ -1993,6 +11567,102 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseDepartureSuggestionResponse"];
+                };
+            };
+        };
+    };
+    suggestLinehaul: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                departureId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseLinehaulSuggestionResponseDto"];
+                };
+            };
+        };
+    };
+    applyLinehaul: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                departureId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinehaulApplyRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListLong"];
+                };
+            };
+        };
+    };
+    detail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDepartureDetailResponseDto"];
+                };
+            };
+        };
+    };
+    assignDeparture: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CoordinatorAssignmentRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
                 };
             };
         };
@@ -2023,6 +11693,699 @@ export interface operations {
             };
         };
     };
+    confirmRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DepartureConfirmRunRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDepartureDecisionResponseDto"];
+                };
+            };
+        };
+    };
+    delay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DepartureDelayRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDepartureResponse"];
+                };
+            };
+        };
+    };
+    removeVehicle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                allotmentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DepartureVehicleRemoveRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDepartureDetailResponseDto"];
+                };
+            };
+        };
+    };
+    bookings_1: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListDispatchBookingResponseDto"];
+                };
+            };
+        };
+    };
+    crewCandidates: {
+        parameters: {
+            query: {
+                role: "DRIVER" | "ESCORT" | "VET";
+                tripId?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListCrewCandidateResponseDto"];
+                };
+            };
+        };
+    };
+    groupingSuggestions: {
+        parameters: {
+            query: {
+                date: string;
+                hubId: number;
+                tripType: "PICKUP" | "LINEHAUL" | "DELIVERY" | "TRANSFER" | "DIRECT";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListTripGroupResponseDto"];
+                };
+            };
+        };
+    };
+    planTrip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlannedTripRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePlannedTripResponseDto"];
+                };
+            };
+        };
+    };
+    vehicles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListDispatchVehicleResponseDto"];
+                };
+            };
+        };
+    };
+    listDocumentTypes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListDocumentTypeResponseDto"];
+                };
+            };
+        };
+    };
+    createDocumentType: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentTypeCreateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDocumentTypeResponseDto"];
+                };
+            };
+        };
+    };
+    getDocumentType: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDocumentTypeResponseDto"];
+                };
+            };
+        };
+    };
+    updateDocumentType: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentTypeUpdateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDocumentTypeResponseDto"];
+                };
+            };
+        };
+    };
+    dispute: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DebtDisputeRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePaymentResponseDto"];
+                };
+            };
+        };
+    };
+    decideDispute: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DebtDisputeDecisionRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePaymentResponseDto"];
+                };
+            };
+        };
+    };
+    extend: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DebtExtensionRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePaymentResponseDto"];
+                };
+            };
+        };
+    };
+    releaseBlock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePaymentResponseDto"];
+                };
+            };
+        };
+    };
+    reopen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePaymentResponseDto"];
+                };
+            };
+        };
+    };
+    writeOff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    decision: string;
+                    request: components["schemas"]["DebtDisputeRequestDto"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePaymentResponseDto"];
+                };
+            };
+        };
+    };
+    search: {
+        parameters: {
+            query: {
+                q: string;
+                countryCode: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListGeocodeResultResponseDto"];
+                };
+            };
+        };
+    };
+    completeHandover: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["HandoverCompleteRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCrewTripResponseDto"];
+                };
+            };
+        };
+    };
+    fail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCrewTripResponseDto"];
+                };
+            };
+        };
+    };
+    scan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HandoverScanRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCrewTripResponseDto"];
+                };
+            };
+        };
+    };
+    photo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                horseLegId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCrewTripResponseDto"];
+                };
+            };
+        };
+    };
+    papers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListHandoverPaperResponseDto"];
+                };
+            };
+        };
+    };
+    mark: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HandoverPaperRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListHandoverPaperResponseDto"];
+                };
+            };
+        };
+    };
+    record_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCrewTripResponseDto"];
+                };
+            };
+        };
+    };
+    refuse_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    photo: string;
+                    request: components["schemas"]["HandoverRefusalRequestDto"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCrewTripResponseDto"];
+                };
+            };
+        };
+    };
+    startWaiting: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCrewTripResponseDto"];
+                };
+            };
+        };
+    };
     checkHealth: {
         parameters: {
             query?: never;
@@ -2043,7 +12406,757 @@ export interface operations {
             };
         };
     };
-    list_4: {
+    listHorseHealthCheckTasks: {
+        parameters: {
+            query: {
+                bookingHorseId: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListHealthCheckTaskResponseDto"];
+                };
+            };
+        };
+    };
+    assignHealthCheckTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HealthCheckTaskCreateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHealthCheckTaskResponseDto"];
+                };
+            };
+        };
+    };
+    listHealthCheckAssignees: {
+        parameters: {
+            query: {
+                bookingHorseId: number;
+                vehicleTripId?: number;
+                horseStayId?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListHealthCheckAssigneeResponseDto"];
+                };
+            };
+        };
+    };
+    listMyHealthCheckTasks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListHealthCheckTaskResponseDto"];
+                };
+            };
+        };
+    };
+    acceptHealthCheckTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHealthCheckTaskResponseDto"];
+                };
+            };
+        };
+    };
+    cancelHealthCheckTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HealthCheckTaskCancelRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHealthCheckTaskResponseDto"];
+                };
+            };
+        };
+    };
+    record: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HealthLogRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHealthLogResponseDto"];
+                };
+            };
+        };
+    };
+    cancelLeg: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListTripHorseResponseDto"];
+                };
+            };
+        };
+    };
+    activeStays: {
+        parameters: {
+            query: {
+                locationId: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListHorseStayResponseDto"];
+                };
+            };
+        };
+    };
+    appointments: {
+        parameters: {
+            query: {
+                locationId: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListHorseStayResponseDto"];
+                };
+            };
+        };
+    };
+    myStays: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListHorseStayResponseDto"];
+                };
+            };
+        };
+    };
+    collectionTime: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HubCollectionTimeRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHorseStayResponseDto"];
+                };
+            };
+        };
+    };
+    deliver: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    photo: string;
+                    /** Format: binary */
+                    record: string;
+                    request: components["schemas"]["HubHandoverRequestDto"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHorseStayResponseDto"];
+                };
+            };
+        };
+    };
+    handoverPapers: {
+        parameters: {
+            query: {
+                receiving: boolean;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListHandoverPaperResponseDto"];
+                };
+            };
+        };
+    };
+    receive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    photo: string;
+                    /** Format: binary */
+                    record: string;
+                    request: components["schemas"]["HubHandoverRequestDto"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHorseStayResponseDto"];
+                };
+            };
+        };
+    };
+    refuse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HubRefusalRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    resolve_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    proof: string;
+                    request: components["schemas"]["UnclaimedHorseResolutionRequestDto"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    stable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HubStablingRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHorseStayResponseDto"];
+                };
+            };
+        };
+    };
+    changeHubStall: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stayId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HubStallChangeRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHubStallResponseDto"];
+                };
+            };
+        };
+    };
+    chooseLaterSlot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stayId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StablingLaterSlotRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    ready: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stayId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    recordReady: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stayId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StablingReadyRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    reportCollection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stayId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StablingCollectionRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    listHorseTypes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListHorseTypeResponseDto"];
+                };
+            };
+        };
+    };
+    listHorses: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListHorseResponseDto"];
+                };
+            };
+        };
+    };
+    createHorse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HorseCreateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHorseResponseDto"];
+                };
+            };
+        };
+    };
+    listHorseDocumentTypes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListDocumentTypeResponseDto"];
+                };
+            };
+        };
+    };
+    getHorse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHorseResponseDto"];
+                };
+            };
+        };
+    };
+    updateHorse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HorseUpdateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHorseResponseDto"];
+                };
+            };
+        };
+    };
+    listHorseDocuments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListHorseDocumentResponseDto"];
+                };
+            };
+        };
+    };
+    uploadHorseDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": components["schemas"]["HorseDocumentUploadRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHorseDocumentResponseDto"];
+                };
+            };
+        };
+    };
+    list_5: {
         parameters: {
             query?: never;
             header?: never;
@@ -2111,7 +13224,556 @@ export interface operations {
             };
         };
     };
-    list_1: {
+    hubOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListHubOverviewResponseDto"];
+                };
+            };
+        };
+    };
+    acceptPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    approvePlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PlanApproveRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIncidentResponseDto"];
+                };
+            };
+        };
+    };
+    rejectPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanRejectRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIncidentResponseDto"];
+                };
+            };
+        };
+    };
+    open: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListIncidentResponseDto"];
+                };
+            };
+        };
+    };
+    report: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IncidentReportRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIncidentResponseDto"];
+                };
+            };
+        };
+    };
+    severityDefaults: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseMapIncidentTypeIncidentSeverity"];
+                };
+            };
+        };
+    };
+    incident: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIncidentResponseDto"];
+                };
+            };
+        };
+    };
+    cancelLegs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CancelLegsRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIncidentResponseDto"];
+                };
+            };
+        };
+    };
+    close: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIncidentResponseDto"];
+                };
+            };
+        };
+    };
+    costsOfIncident: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListCostItemResponseDto"];
+                };
+            };
+        };
+    };
+    confirmFit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIncidentResponseDto"];
+                };
+            };
+        };
+    };
+    amendHandoverCause: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HandoverCauseRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIncidentResponseDto"];
+                };
+            };
+        };
+    };
+    photos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListEvidenceResponseDto"];
+                };
+            };
+        };
+    };
+    attachPhoto: {
+        parameters: {
+            query?: {
+                latitude?: number;
+                longitude?: number;
+                documentType?: string;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListEvidenceResponseDto"];
+                };
+            };
+        };
+    };
+    propose: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IncidentPlanRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIncidentResponseDto"];
+                };
+            };
+        };
+    };
+    resolve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIncidentResponseDto"];
+                };
+            };
+        };
+    };
+    startRest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIncidentResponseDto"];
+                };
+            };
+        };
+    };
+    returnToHub: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIncidentResponseDto"];
+                };
+            };
+        };
+    };
+    changeSeverity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IncidentSeverityRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    unlockTrip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TripUnlockRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    swapVehicle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VehicleSwapRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIncidentResponseDto"];
+                };
+            };
+        };
+    };
+    recordVetResult: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VetResultRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIncidentResponseDto"];
+                };
+            };
+        };
+    };
+    list_2: {
         parameters: {
             query?: {
                 type?: "HUB" | "QUARANTINE_FARM" | "REST_STOP" | "BORDER_GATE" | "STABLE" | "RACETRACK";
@@ -2134,7 +13796,7 @@ export interface operations {
             };
         };
     };
-    create_1: {
+    create_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -2158,7 +13820,78 @@ export interface operations {
             };
         };
     };
-    get_1: {
+    hubStallInventory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                hubId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHubStallInventoryResponseDto"];
+                };
+            };
+        };
+    };
+    createHubStall: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                hubId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HubStallCreateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHubStallResponseDto"];
+                };
+            };
+        };
+    };
+    deactivateHubStall: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                hubId: number;
+                stallId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHubStallResponseDto"];
+                };
+            };
+        };
+    };
+    get_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -2180,7 +13913,7 @@ export interface operations {
             };
         };
     };
-    update_1: {
+    update_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -2206,7 +13939,7 @@ export interface operations {
             };
         };
     };
-    activate_1: {
+    activate_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -2246,6 +13979,110 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseLocationResponse"];
+                };
+            };
+        };
+    };
+    mine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListNotificationResponseDto"];
+                };
+            };
+        };
+    };
+    deleteAll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    markAllRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    delete_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    markRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
                 };
             };
         };
@@ -2290,6 +14127,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponsePartyResponseDto"];
+                };
+            };
+        };
+    };
+    listInsurers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListInsurerResponseDto"];
                 };
             };
         };
@@ -2374,7 +14231,7 @@ export interface operations {
             header?: never;
             path: {
                 id: number;
-                roleType: "DEST_AGENT" | "QUARANTINE_FARM" | "STABLE" | "VET" | "RESCUE" | "INSURER";
+                roleType: "QUARANTINE_FARM" | "STABLE" | "VET" | "RESCUE" | "INSURER";
             };
             cookie?: never;
         };
@@ -2391,6 +14248,411 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponsePartyRoleResponseDto"];
+                };
+            };
+        };
+    };
+    ipn: {
+        parameters: {
+            query: {
+                parameters: {
+                    [key: string]: string;
+                };
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["VnpayIpnResponseDto"];
+                };
+            };
+        };
+    };
+    paymentReturn: {
+        parameters: {
+            query: {
+                parameters: {
+                    [key: string]: string;
+                };
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePaymentResultResponseDto"];
+                };
+            };
+        };
+    };
+    checkout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePaymentCheckoutResponseDto"];
+                };
+            };
+        };
+    };
+    list_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListPriceListResponseDto"];
+                };
+            };
+        };
+    };
+    create_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PriceListCreateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePriceListResponseDto"];
+                };
+            };
+        };
+    };
+    get_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePriceListResponseDto"];
+                };
+            };
+        };
+    };
+    update_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PriceListUpdateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePriceListResponseDto"];
+                };
+            };
+        };
+    };
+    delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    activate_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PriceListActivateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePriceListResponseDto"];
+                };
+            };
+        };
+    };
+    archive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PriceListArchiveRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePriceListResponseDto"];
+                };
+            };
+        };
+    };
+    items: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListPriceItemResponseDto"];
+                };
+            };
+        };
+    };
+    createItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PriceItemCreateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePriceItemResponseDto"];
+                };
+            };
+        };
+    };
+    getItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                itemId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePriceItemResponseDto"];
+                };
+            };
+        };
+    };
+    updateItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                itemId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PriceItemUpdateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePriceItemResponseDto"];
+                };
+            };
+        };
+    };
+    deleteItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                itemId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    preview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PricingPreviewRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePricingPreviewResponseDto"];
+                };
+            };
+        };
+    };
+    transferOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferOptionsRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseTransferOptionsResponseDto"];
                 };
             };
         };
@@ -2413,6 +14675,317 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListProvinceResponse"];
+                };
+            };
+        };
+    };
+    contact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseContactResponseDto"];
+                };
+            };
+        };
+    };
+    publicTrack: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicTrackingRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListPublicTrackingResponseDto"];
+                };
+            };
+        };
+    };
+    transportRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseTransportRulesResponseDto"];
+                };
+            };
+        };
+    };
+    accept: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["QuotationAcceptRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseQuotationResponseDto"];
+                };
+            };
+        };
+    };
+    adjust: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuotationAdjustmentRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseQuotationResponseDto"];
+                };
+            };
+        };
+    };
+    reject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuotationRejectRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseQuotationResponseDto"];
+                };
+            };
+        };
+    };
+    send: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["QuotationSendRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseQuotationResponseDto"];
+                };
+            };
+        };
+    };
+    refunds: {
+        parameters: {
+            query?: {
+                status?: "PENDING" | "PAID" | "FAILED" | "CANCELLED";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListRefundResponseDto"];
+                };
+            };
+        };
+    };
+    markRefunded: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    receipt?: string;
+                    request: components["schemas"]["MarkRefundedRequestDto"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePaymentResponseDto"];
+                };
+            };
+        };
+    };
+    summary: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseOperationsSummaryResponseDto"];
+                };
+            };
+        };
+    };
+    revenue: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseRevenueReportResponseDto"];
+                };
+            };
+        };
+    };
+    trips_1: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListTripReportRowResponseDto"];
+                };
+            };
+        };
+    };
+    trip_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseTripReportResponseDto"];
                 };
             };
         };
@@ -2553,6 +15126,68 @@ export interface operations {
             };
         };
     };
+    specialistWorkQueue: {
+        parameters: {
+            query?: {
+                all?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListSpecialistWorkResponseDto"];
+                };
+            };
+        };
+    };
+    specialistWorkSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseSpecialistWorkSummaryResponseDto"];
+                };
+            };
+        };
+    };
+    stablePartners: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListStablePartnerResponseDto"];
+                };
+            };
+        };
+    };
     listStaffAccounts: {
         parameters: {
             query?: never;
@@ -2645,6 +15280,142 @@ export interface operations {
             };
         };
     };
+    lockStaffAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffAccountStatusRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseStaffAccountResponseDto"];
+                };
+            };
+        };
+    };
+    unlockStaffAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffAccountStatusRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseStaffAccountResponseDto"];
+                };
+            };
+        };
+    };
+    workloads: {
+        parameters: {
+            query: {
+                role: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListStaffWorkloadResponseDto"];
+                };
+            };
+        };
+    };
+    bookings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                staffId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListBookingResponseDto"];
+                };
+            };
+        };
+    };
+    workSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseStaffWorkSummaryResponseDto"];
+                };
+            };
+        };
+    };
+    stallTypes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListStallTypeResponseDto"];
+                };
+            };
+        };
+    };
     listSystemConfigs: {
         parameters: {
             query?: never;
@@ -2713,6 +15484,108 @@ export interface operations {
             };
         };
     };
+    updateSystemTextConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SystemTextConfigUpdateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseSystemConfigResponseDto"];
+                };
+            };
+        };
+    };
+    arrive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCrewTripResponseDto"];
+                };
+            };
+        };
+    };
+    depart: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["StopDepartRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCrewTripResponseDto"];
+                };
+            };
+        };
+    };
+    createHandover: {
+        parameters: {
+            query?: {
+                incidentPlanId?: number;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HandoverCreateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCrewTripResponseDto"];
+                };
+            };
+        };
+    };
     vehicleClasses: {
         parameters: {
             query?: never;
@@ -2729,6 +15602,447 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListVehicleClassResponseDto"];
+                };
+            };
+        };
+    };
+    trips: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListVehicleTripResponseDto"];
+                };
+            };
+        };
+    };
+    createTrip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VehicleTripCreateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVehicleTripResponseDto"];
+                };
+            };
+        };
+    };
+    createPlannedTrip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlannedTripRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVehicleTripResponseDto"];
+                };
+            };
+        };
+    };
+    trip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVehicleTripResponseDto"];
+                };
+            };
+        };
+    };
+    updateTrip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VehicleTripUpdateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVehicleTripResponseDto"];
+                };
+            };
+        };
+    };
+    assignTrip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CoordinatorAssignmentRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    cancelTrip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VehicleTripCancelRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVehicleTripResponseDto"];
+                };
+            };
+        };
+    };
+    complete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TripCompleteRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCrewTripResponseDto"];
+                };
+            };
+        };
+    };
+    assignCrew: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CrewAssignmentRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVehicleTripResponseDto"];
+                };
+            };
+        };
+    };
+    horsesOnTrip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListTripHorseResponseDto"];
+                };
+            };
+        };
+    };
+    assignHorse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HorseLegRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListTripHorseResponseDto"];
+                };
+            };
+        };
+    };
+    ofTrip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListIncidentResponseDto"];
+                };
+            };
+        };
+    };
+    returnPhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": components["schemas"]["TripReturnPhotoRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCrewTripResponseDto"];
+                };
+            };
+        };
+    };
+    plan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseStallPlanResponseDto"];
+                };
+            };
+        };
+    };
+    apply: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StallPlanApplyRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseStallPlanResponseDto"];
+                };
+            };
+        };
+    };
+    suggest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseStallPlanResponseDto"];
+                };
+            };
+        };
+    };
+    start: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TripStartRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCrewTripResponseDto"];
+                };
+            };
+        };
+    };
+    takeOver: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CoordinatorTakeOverRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
                 };
             };
         };
@@ -2811,6 +16125,84 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["VehicleUpdateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVehicleResponseDto"];
+                };
+            };
+        };
+    };
+    reactivate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VehicleStatusChangeRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVehicleResponseDto"];
+                };
+            };
+        };
+    };
+    retire: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VehicleStatusChangeRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVehicleResponseDto"];
+                };
+            };
+        };
+    };
+    startMaintenance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VehicleStatusChangeRequestDto"];
             };
         };
         responses: {

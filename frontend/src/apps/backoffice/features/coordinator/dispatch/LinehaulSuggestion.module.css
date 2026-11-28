@@ -1,0 +1,36 @@
+.stack,
+.truck {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.truck {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.horses {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding-inline-start: var(--space-4);
+  overflow-wrap: anywhere;
+}
+
+.horses li span {
+  display: block;
+}
+
+.horses li span:last-child {
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+}

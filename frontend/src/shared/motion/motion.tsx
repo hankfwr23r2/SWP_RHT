@@ -1,59 +1,64 @@
-// Hiệu ứng chuyển động dùng chung (GSAP). Quy tắc:
+// Hiệu ứng chuyển động dùng chung, chạy bằng Web Animations của trình duyệt để không thêm thư viện vào gói tải đầu. Quy tắc:
 // - Trang giới thiệu: hiệu ứng rõ nét. Trang làm việc: nhanh (≤ 0,4 giây) và tinh tế, không làm chậm thao tác.
 // - Người dùng bật "giảm chuyển động" trong hệ điều hành thì bỏ hết hiệu ứng.
 // - Không tạo hiệu ứng cho số tiền (dễ đọc nhầm giá trị).
-// - Luôn dùng fromTo() với điểm đích ghi rõ, KHÔNG dùng from(): React StrictMode chạy hiệu ứng 2 lần,
-//   from() lần 2 sẽ lấy trạng thái "đang ẩn" của lần 1 làm đích và phần tử bị kẹt ở trạng thái ẩn.
-import { useRef, type ReactNode } from 'react'
+// - Nội dung trong màn hình lúc mở trang hiện ngay, không chờ hiệu ứng.
+import { useEffect, useRef, type ReactNode } from 'react'
 import { useLocation } from 'react-router'
-import { gsap } from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { useGSAP } from '@gsap/react'
-
-gsap.registerPlugin(ScrollTrigger, useGSAP)
-
-// Lần đầu vào trang (chưa có cache), font và ảnh tải xong làm bố cục xê dịch:
-// tính lại vị trí kích hoạt để hiệu ứng cuộn chạy đúng chỗ.
-window.addEventListener('load', () => ScrollTrigger.refresh())
-document.fonts?.ready.then(() => ScrollTrigger.refresh())
 
 export const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+const EASE_OUT = 'cubic-bezier(0.22, 1, 0.36, 1)'
+
+function riseIn(el: Element, distance: number, duration: number, delay = 0) {
+  if (typeof el.animate !== 'function') return
+  el.animate(
+    [{ opacity: 0, transform: `translateY(${distance}px)` }, { opacity: 1, transform: 'none' }],
+    { duration, delay, easing: EASE_OUT, fill: 'backwards' },
+  )
+}
 
 // Nội dung trang trượt nhẹ lên khi đổi trang
 export function PageTransition({ children }: { children: ReactNode }) {
   const { pathname } = useLocation()
   const ref = useRef<HTMLDivElement>(null)
-  useGSAP(() => {
-    if (reducedMotion()) return
-    gsap.fromTo(ref.current, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.35, ease: 'power2.out', clearProps: 'transform' })
-  }, { dependencies: [pathname] })
+  const shown = useRef(pathname)
+  useEffect(() => {
+    if (shown.current === pathname) return
+    shown.current = pathname
+    if (ref.current && !reducedMotion()) riseIn(ref.current, 14, 350)
+  }, [pathname])
   return <div ref={ref}>{children}</div>
 }
 
-// Các phần tử khớp selector hiện lần lượt khi xuất hiện lần đầu (thẻ, dòng bảng…)
+// Các phần tử khớp selector hiện lần lượt khi xuất hiện lần đầu (thẻ, dòng bảng…). deps: lúc chạy lại, do nơi gọi quyết định
 export function useStaggerIn(selector: string, deps: unknown[] = []) {
   const scope = useRef<HTMLDivElement>(null)
-  useGSAP(() => {
+  useEffect(() => {
     if (reducedMotion()) return
-    const items = scope.current?.querySelectorAll(selector)
-    if (!items?.length) return
-    gsap.fromTo(items, { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.35, stagger: 0.04, ease: 'power2.out', clearProps: 'transform,opacity' })
-  }, { scope, dependencies: deps })
+    scope.current?.querySelectorAll(selector).forEach((el, i) => riseIn(el, 12, 350, Math.min(i, 12) * 40))
+  }, deps)
   return scope
 }
 
 // Hiện dần khi cuộn tới (trang giới thiệu). Phần tử có data-delay (ms) sẽ trễ tương ứng.
 export function useScrollReveal(selector: string, deps: unknown[] = []) {
   const scope = useRef<HTMLDivElement>(null)
-  useGSAP(() => {
-    const items = gsap.utils.toArray<HTMLElement>(selector, scope.current)
-    if (reducedMotion()) { gsap.set(items, { opacity: 1, y: 0 }); return }
-    items.forEach(el => {
-      gsap.fromTo(el, { opacity: 0, y: 40 }, {
-        opacity: 1, y: 0, duration: 0.8, ease: 'power3.out', delay: Number(el.dataset.delay ?? 0) / 1000,
-        scrollTrigger: { trigger: el, start: 'top 88%', once: true },
-      })
-    })
-  }, { scope, dependencies: deps })
+  useEffect(() => {
+    if (reducedMotion() || typeof IntersectionObserver === 'undefined') return
+    const below = [...scope.current?.querySelectorAll<HTMLElement>(selector) ?? []]
+      .filter(el => el.getBoundingClientRect().top > window.innerHeight * 0.88)
+    const observer = new IntersectionObserver(entries => {
+      for (const { isIntersecting, target } of entries) {
+        if (!isIntersecting) continue
+        observer.unobserve(target)
+        const el = target as HTMLElement
+        el.style.opacity = ''
+        riseIn(el, 40, 800, Number(el.dataset.delay ?? 0))
+      }
+    }, { rootMargin: '0px 0px -12% 0px' })
+    below.forEach(el => { el.style.opacity = '0'; observer.observe(el) })
+    return () => { observer.disconnect(); below.forEach(el => { el.style.opacity = '' }) }
+  }, deps)
   return scope
 }

@@ -1,14 +1,16 @@
 package com.example.racehorse_transport.dto.departure;
 
+import com.example.racehorse_transport.entity.VehicleClass;
+import com.example.racehorse_transport.entity.DepartureVehicle;
+import com.example.racehorse_transport.entity.enums.DepartureAllotmentType;
+import com.example.racehorse_transport.entity.enums.DepartureAvailability;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.racehorse_transport.entity.Departure;
 import com.example.racehorse_transport.entity.Location;
 import com.example.racehorse_transport.entity.Route;
 import com.example.racehorse_transport.entity.enums.DepartureStatus;
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalTime;
 import org.junit.jupiter.api.Test;
 
 class DepartureDtoTest {
@@ -28,27 +30,6 @@ class DepartureDtoTest {
     }
 
     @Test
-    void createRequestLeavesStatusAndBookedStallsToService() {
-        DepartureCreateRequestDto request = new DepartureCreateRequestDto();
-        request.setRouteId(4L);
-        request.setDepartureDate(LocalDate.of(2027, 1, 5));
-        request.setDepartureTime(LocalTime.of(7, 0));
-        request.setBookingCutoffHours(48);
-        request.setStallCapacity(6);
-        Instant planned = Instant.parse("2027-01-05T00:00:00Z");
-        Instant cutoff = Instant.parse("2027-01-03T00:00:00Z");
-
-        Departure departure = request.toEntity(route(), planned, cutoff);
-
-        assertThat(departure.getId()).isNull();
-        assertThat(departure.getDepartureSchedule()).isNull();
-        assertThat(departure.getStatus()).isNull();
-        assertThat(departure.getPlannedDepartureAt()).isEqualTo(planned);
-        assertThat(departure.getBookingCutoffAt()).isEqualTo(cutoff);
-        assertThat(departure.getStallCapacity()).isEqualTo(6);
-    }
-
-    @Test
     void responseCarriesRouteEndsAndGivenAvailability() {
         Departure departure = new Departure();
         departure.setId(10L);
@@ -65,5 +46,27 @@ class DepartureDtoTest {
         assertThat(dto.getOriginCode()).isEqualTo("HUB-HCM");
         assertThat(dto.getDestinationCode()).isEqualTo("HUB-DN");
         assertThat(dto.getAvailableStalls()).isEqualTo(2);
+
+        var customer = DepartureResponseDto.forCustomer(departure, DepartureAvailability.NEARLY_FULL);
+        assertThat(customer.getAvailability()).isEqualTo(DepartureAvailability.NEARLY_FULL);
+        assertThat(customer.getStallCapacity()).isNull();
+        assertThat(customer.getBookedStallCount()).isNull();
+        assertThat(customer.getAvailableStalls()).isNull();
+    }
+
+    @Test
+    void allotmentResponseCarriesItsClassAndReason() {
+        var vehicleClass = new VehicleClass();
+        vehicleClass.setId(4L);
+        vehicleClass.setCode("HEAVY");
+        var allotment = new DepartureVehicle();
+        allotment.setId(5L);
+        allotment.setVehicleClass(vehicleClass);
+        allotment.setVehicleCount(2);
+        allotment.setAllotmentType(DepartureAllotmentType.SPARE);
+        allotment.setReason("Reinforcement");
+
+        assertThat(DepartureVehicleResponseDto.from(allotment)).isEqualTo(
+                new DepartureVehicleResponseDto(5L, 4L, "HEAVY", 2, DepartureAllotmentType.SPARE, "Reinforcement"));
     }
 }

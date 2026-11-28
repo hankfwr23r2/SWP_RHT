@@ -1,0 +1,155 @@
+package com.example.racehorse_transport.service.impl;
+
+import com.example.racehorse_transport.service.CoordinatorAssignmentService;
+import com.example.racehorse_transport.dto.dispatch.CrewAssignmentRequestDto;
+import com.example.racehorse_transport.dto.dispatch.MyCrewAssignmentResponseDto;
+import com.example.racehorse_transport.dto.dispatch.VehicleTripResponseDto;
+import com.example.racehorse_transport.entity.CrewAssignment;
+import com.example.racehorse_transport.entity.Staff;
+import com.example.racehorse_transport.entity.VehicleTrip;
+import com.example.racehorse_transport.entity.enums.CrewAssignmentStatus;
+import com.example.racehorse_transport.entity.enums.CrewRole;
+import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
+import com.example.racehorse_transport.exception.DispatchRuleException;
+import com.example.racehorse_transport.exception.ResourceNotFoundException;
+import com.example.racehorse_transport.policy.DispatchPolicy;
+import com.example.racehorse_transport.repository.CrewAssignmentRepository;
+import com.example.racehorse_transport.repository.StaffRepository;
+import com.example.racehorse_transport.service.CrewAssignmentService;
+import com.example.racehorse_transport.service.CrewPositionService;
+import com.example.racehorse_transport.service.DispatchService;
+import com.example.racehorse_transport.service.NotificationService;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Set;
+import com.example.racehorse_transport.entity.HorseLeg;
+import com.example.racehorse_transport.entity.enums.HandoverStatus;
+import com.example.racehorse_transport.entity.enums.HorseLegStatus;
+import com.example.racehorse_transport.policy.TrackingPolicy;
+import com.example.racehorse_transport.policy.TrackingPolicy.CustodyHolder;
+import com.example.racehorse_transport.repository.HandoverHorseRepository;
+import com.example.racehorse_transport.repository.HorseLegRepository;
+import java.util.HashMap;
+import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+public class CrewAssignmentServiceImpl implements CrewAssignmentService {
+
+    private static final Set<VehicleTripStatus> ENDED = Set.of(VehicleTripStatus.COMPLETED, VehicleTripStatus.CANCELLED);
+    private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+    private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm dd/MM").withZone(BUSINESS_ZONE);
+
+    private final CrewAssignmentRepository assignments;
+    private final CoordinatorAssignmentService coordinators;
+    private final StaffRepository staff;
+    private final DispatchService dispatch;
+    private final NotificationService notifications;
+    private final HorseLegRepository legs;
+    private final HandoverHorseRepository scans;
+    private final CrewPositionService positions;
+
+    @Override
+    @Transactional
+    public VehicleTripResponseDto assign(Long vehicleTripId, CrewAssignmentRequestDto request, String username) {
+        VehicleTrip trip = coordinators.requireTripWrite(vehicleTripId, username);
+        // Lượt đang chạy chỉ nhận thêm hộ tống thay ca giữa đường (người thay tự tới điểm dừng rồi ký SHIFT)
+        boolean midway = trip.getStatus() == VehicleTripStatus.IN_PROGRESS;
+        if (!midway && trip.getStatus() != VehicleTripStatus.PLANNED && trip.getStatus() != VehicleTripStatus.DISPATCHED) {
+            throw new DispatchRuleException("vehicleTripId", "Chỉ phân công cho lượt xe chưa chạy, hoặc thêm hộ tống thay ca cho lượt đang chạy.", true);
+        }
+        if (midway && request.crewRole() != CrewRole.ESCORT) {
+            throw new DispatchRuleException("crewRole", "Lượt xe đang chạy chỉ thêm được hộ tống thay ca.", true);
+        }
+        Staff member = staff.findForUpdate(request.staffId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhân viên " + request.staffId()));
+        DispatchPolicy.requireActiveStaff(member.getEmploymentStatus());
+        DispatchPolicy.requireCrewRole(request.crewRole(), member.getUser().getRole().getCode());
+        if (assignments.existsByVehicleTrip_IdAndStaff_UserIdAndStatusNot(trip.getId(), member.getUserId(), CrewAssignmentStatus.RELEASED)) {
+            throw new DispatchRuleException("staffId", "Nhân viên đã có trong lượt xe này.", true);
+        }
+        positions.requireSchedule(member, request.crewRole(), trip, midway);
+        CrewAssignment assignment = request.toEntity(trip, member);
+        assignment.setStatus(CrewAssignmentStatus.ASSIGNED);
+        assignments.save(assignment);
+        notifications.notify(List.of(member.getUserId()), null, "Lượt xe mới",
+                "Bạn được phân công lượt xe " + trip.getCode() + " bắt đầu lúc " + TIME.format(trip.getPlannedStartAt())
+                        + ". Mở \"Lượt xe của tôi\" để xác nhận nhận việc.", null);
+        return dispatch.trip(trip.getId());
+    }
+
+    @Override
+    @Transactional
+    public VehicleTripResponseDto release(Long assignmentId, String username) {
+        CrewAssignment assignment = find(assignmentId);
+        VehicleTripStatus tripStatus = coordinators.requireTripWrite(assignment.getVehicleTrip().getId(), username).getStatus();
+        if (tripStatus == VehicleTripStatus.IN_PROGRESS) {
+            // Quy tắc #38: không rời ca khi còn phụ trách ngựa chưa bàn giao
+            List<String> held = horsesHeldBy(assignment.getStaff().getUserId(), assignment.getVehicleTrip().getId());
+            if (!held.isEmpty()) {
+                throw new DispatchRuleException("status", assignment.getStaff().getFullName() + " còn phụ trách " + String.join(", ", held)
+                        + ". Người thay phải nhận bàn giao ca trước.", true);
+            }
+        } else if (tripStatus != VehicleTripStatus.PLANNED && tripStatus != VehicleTripStatus.DISPATCHED) {
+            throw new DispatchRuleException("status", "Lượt xe đã kết thúc hoặc bị hủy, không gỡ nhân viên được.", true);
+        }
+        if (assignment.getStatus() != CrewAssignmentStatus.RELEASED) {
+            assignment.setStatus(CrewAssignmentStatus.RELEASED);
+            notifications.notify(List.of(assignment.getStaff().getUserId()), null,
+                    "Đã gỡ khỏi lượt xe",
+                    "Bạn đã được gỡ khỏi lượt xe " + assignment.getVehicleTrip().getCode() + ".",
+                    "/my-trips");
+        }
+        return dispatch.trip(assignment.getVehicleTrip().getId());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<MyCrewAssignmentResponseDto> mine(String username) {
+        return assignments.findOpenOfUser(username, CrewAssignmentStatus.RELEASED, ENDED).stream()
+                .map(MyCrewAssignmentResponseDto::from).toList();
+    }
+
+    @Override
+    @Transactional
+    public MyCrewAssignmentResponseDto acknowledge(Long assignmentId, String username) {
+        CrewAssignment assignment = find(assignmentId);
+        if (!assignment.getStaff().getUser().getUsername().equals(username)) {
+            throw new AccessDeniedException("Đây không phải phân công của bạn.");
+        }
+        if (assignment.getStatus() == CrewAssignmentStatus.RELEASED) {
+            throw new DispatchRuleException("status", "Bạn đã được gỡ khỏi lượt xe này.", true);
+        }
+        if (ENDED.contains(assignment.getVehicleTrip().getStatus())) {
+            throw new DispatchRuleException("status", "Lượt xe đã kết thúc hoặc bị hủy.", true);
+        }
+        assignment.setStatus(CrewAssignmentStatus.ACKNOWLEDGED);
+        return MyCrewAssignmentResponseDto.from(assignment);
+    }
+
+    // Quy tắc #37: người phụ trách một con là người ký lần giao nhận DONE mới nhất mà công ty là bên nhận
+    private List<String> horsesHeldBy(Long userId, Long tripId) {
+        List<HorseLeg> onboard = legs.findActiveOnTrip(tripId, Set.of(HorseLegStatus.CANCELLED, HorseLegStatus.FAILED)).stream()
+                .filter(l -> l.getStatus() == HorseLegStatus.IN_PROGRESS).toList();
+        if (onboard.isEmpty()) return List.of();
+        Map<Long, Long> holder = new HashMap<>();
+        scans.findByBookingHorseIds(onboard.stream().map(l -> l.getBookingHorse().getId()).toList()).stream()
+                .filter(row -> row.getHandover().getStatus() == HandoverStatus.DONE && Boolean.TRUE.equals(row.getMicrochipMatched())
+                        && TrackingPolicy.holderAfter(row.getHandover().getHandoverType(), row.getHandover().getToParty() != null) == CustodyHolder.COMPANY)
+                .sorted(Comparator.comparing(row -> row.getHandover().getHandedAt()))
+                .forEach(row -> holder.put(row.getHorseLeg().getBookingHorse().getId(), row.getHandover().getHandledBy().getUserId()));
+        return onboard.stream().filter(l -> userId.equals(holder.get(l.getBookingHorse().getId())))
+                .map(l -> l.getBookingHorse().getHorse().getName()).toList();
+    }
+
+    private CrewAssignment find(Long id) {
+        return assignments.findWithTripAndStaff(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phân công " + id));
+    }
+}

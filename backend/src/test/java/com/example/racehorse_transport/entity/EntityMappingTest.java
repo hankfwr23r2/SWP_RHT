@@ -102,11 +102,12 @@ class EntityMappingTest {
 
         assertThat(route.getOrigin().getCode()).isEqualTo("HUB-HCM");
         assertThat(route.getDestination().getLocationType()).isEqualTo(LocationType.HUB);
-        assertThat(route.getDistanceKm()).isEqualByComparingTo("960.00");
-        assertThat(stops).extracting(s -> s.getId().getSequenceNumber()).containsExactly(1, 2, 3, 4, 5);
+        assertThat(route.getDistanceKm()).isEqualByComparingTo("972.00");
+        assertThat(stops).extracting(s -> s.getId().getSequenceNumber()).containsExactly(1, 2, 3, 4, 5, 6, 7, 8);
         assertThat(stops.get(0).getLocation().getCode()).isEqualTo("HUB-HCM");
-        assertThat(stops.get(2).getStopType()).isEqualTo(RouteStopType.VITAL_CHECK);
-        assertThat(stops.get(4).getLocation().getCode()).isEqualTo("HUB-DN");
+        assertThat(stops.get(3).getStopType()).isEqualTo(RouteStopType.REST);
+        assertThat(stops.get(3).getLocation().getCode()).isEqualTo("HUB-NT");
+        assertThat(stops.get(7).getLocation().getCode()).isEqualTo("HUB-DN");
     }
 
     @Test
@@ -144,9 +145,10 @@ class EntityMappingTest {
 
     @Test
     void partnerKeepsItsRoles() {
-        Party agent = parties.findAll().stream().filter(p -> p.getDisplayName().startsWith("Đại lý")).findFirst().orElseThrow();
+        var partner = parties.findAll().stream().filter(p -> partyRoles.findById_PartyId(p.getId()).stream()
+                .anyMatch(role -> role.getId().getRoleType() == PartyRoleType.STABLE)).findFirst().orElseThrow();
 
-        assertThat(partyRoles.findById_PartyId(agent.getId())).extracting(r -> r.getId().getRoleType()).containsExactly(PartyRoleType.DEST_AGENT);
+        assertThat(partyRoles.findById_PartyId(partner.getId())).extracting(r -> r.getId().getRoleType()).containsExactly(PartyRoleType.STABLE);
     }
 
     @Test
@@ -160,7 +162,7 @@ class EntityMappingTest {
             assertThat(item.getBillableService().getCode()).isEqualTo("LINEHAUL_STALL");
             assertThat(item.getRoute().getCode()).isEqualTo("HCM-PNH");
             assertThat(item.getStallType().getCode()).isEqualTo("STANDARD");
-            assertThat(item.getUnitPrice()).isEqualByComparingTo("6000000");
+            assertThat(item.getUnitPrice()).isEqualByComparingTo("3200000");
         });
         assertThat(items).anySatisfy(item -> {
             assertThat(item.getBillableService().getCode()).isEqualTo("PICKUP_KM");
@@ -176,7 +178,7 @@ class EntityMappingTest {
                 .findFirst().orElseThrow();
 
         List<DocumentRequirement> list = requirements.findByRule_Id(rule.getId());
-        assertThat(list).hasSize(6);
+        assertThat(list).hasSize(10);
         assertThat(list).anySatisfy(r -> {
             assertThat(r.getDocumentType().getCode()).isEqualTo("LAB_TEST");
             assertThat(r.getDocumentType().getOwnerType()).isEqualTo(DocumentSubject.BOOKING_HORSE);
@@ -189,7 +191,7 @@ class EntityMappingTest {
         DepartureSchedule schedule = schedules.findAll().stream()
                 .filter(s -> s.getRoute().getCode().equals("HCM-PNH")).findFirst().orElseThrow();
         assertThat(scheduleDays.findById_DepartureScheduleId(schedule.getId())).extracting(d -> d.getId().getDayOfWeek())
-                .containsExactlyInAnyOrder((short) 1, (short) 4);
+                .containsExactly((short) 6);
 
         // Chuyến đột xuất (không theo lịch) để không trùng các chuyến do seed sinh từ lịch
         Departure departure = new Departure();
@@ -197,7 +199,7 @@ class EntityMappingTest {
         departure.setDepartureDate(LocalDate.of(2026, 12, 21));
         departure.setPlannedDepartureAt(Instant.parse("2026-12-20T23:00:00Z"));
         departure.setBookingCutoffAt(Instant.parse("2026-12-17T23:00:00Z"));
-        departure.setStallCapacity(schedule.getStallCapacity());
+        departure.setStallCapacity(schedule.getBaseVehicleCount() * schedule.getBaseVehicleClass().getMaxStallCount());
         departure.setStatus(DepartureStatus.OPEN);
         Long id = departures.saveAndFlush(departure).getId();
         em.clear();
@@ -266,11 +268,11 @@ class EntityMappingTest {
         line.setStatus(BookingHorseStatus.ACTIVE);
         line = bookingHorses.saveAndFlush(line);
 
-        BillableService feeding = services.findByCode("FEEDING").orElseThrow();
+        BillableService vetCheck = services.findByCode("VET_CHECK").orElseThrow();
         BookingHorseAddOn addOn = new BookingHorseAddOn();
-        addOn.setId(new BookingHorseAddOnId(line.getId(), feeding.getId()));
+        addOn.setId(new BookingHorseAddOnId(line.getId(), vetCheck.getId()));
         addOn.setBookingHorse(line);
-        addOn.setBillableService(feeding);
+        addOn.setBillableService(vetCheck);
         addOn.setQuantity(3);
         addOns.save(addOn);
 
@@ -278,6 +280,7 @@ class EntityMappingTest {
         history.setBooking(booking);
         history.setToStatus(BookingStatus.PENDING_INTAKE);
         history.setChangedBy(customerUser);
+        history.setChangedAt(java.time.Instant.parse("2027-01-10T08:00:00Z"));
         statusHistory.save(history);
 
         TermsAcceptance terms = new TermsAcceptance();
@@ -314,7 +317,7 @@ class EntityMappingTest {
         assertThat(reloadedLine.getAddedAt()).isNotNull();
         assertThat(reloadedLine.getFeedSuppliedByOwner()).isFalse();
         assertThat(addOns.findById_BookingHorseId(reloadedLine.getId()))
-                .singleElement().satisfies(a -> assertThat(a.getBillableService().getCode()).isEqualTo("FEEDING"));
+                .singleElement().satisfies(a -> assertThat(a.getBillableService().getCode()).isEqualTo("VET_CHECK"));
         assertThat(statusHistory.findByBooking_IdOrderByChangedAtAscIdAsc(reloaded.getId()))
                 .singleElement().satisfies(h -> {
                     assertThat(h.getFromStatus()).isNull();

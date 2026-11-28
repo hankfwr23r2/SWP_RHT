@@ -6,6 +6,13 @@ public class AccountRuleException extends IllegalArgumentException {
         super(message);
     }
 
+    public static class InvalidStatusException extends IllegalStateException {
+
+        public InvalidStatusException() {
+            super("Trạng thái tài khoản đã thay đổi, vui lòng tải lại.");
+        }
+    }
+
     public static class DuplicateAccountException extends IllegalStateException {
 
         public DuplicateAccountException() {

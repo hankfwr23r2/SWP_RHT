@@ -95,6 +95,10 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
         // Nhận được OTP qua email cũng là đã xác thực email
         user.setEmailVerified(true);
+        // Mọi phiên cũ hết hiệu lực; chứng minh được chủ email thì gỡ khóa tạm do nhập sai
+        user.setTokenVersion(user.getTokenVersion() + 1);
+        user.setFailedLoginCount(0);
+        user.setLockedUntil(null);
         users.save(user);
         otps.delete(otp);
     }

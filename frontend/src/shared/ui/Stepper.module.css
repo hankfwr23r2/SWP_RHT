@@ -1,0 +1,104 @@
+.list {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+
+/* Đường nối giữa hai bước */
+.step:not(:last-child)::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  margin: 0 var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+}
+
+.done:not(:last-child)::after {
+  background: var(--color-primary-bright);
+}
+
+.marker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+}
+
+.done .marker {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.current {
+  color: var(--color-heading);
+  font-weight: var(--weight-semibold);
+}
+
+.current .marker {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.name {
+  white-space: nowrap;
+}
+
+.compact {
+  display: none;
+  margin: 0 0 var(--space-2);
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+}
+
+.compact strong {
+  color: var(--color-heading);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Điện thoại: dòng chữ "Bước 2/4" và các chấm tiến độ, ẩn tên từng bước */
+@media (max-width: 640px) {
+  .compact {
+    display: block;
+  }
+
+  .name {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .marker {
+    width: 24px;
+    height: 24px;
+  }
+}

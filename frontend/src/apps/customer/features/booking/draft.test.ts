@@ -1,52 +1,53 @@
-import { describe, expect, it } from 'vitest'
-import type { ServiceCatalogItem } from '@shared/api/serviceCatalog'
-import { defaultConfig, isDeclinedInsurance, serviceOptionFor } from './draft'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const service = (
-  id: number,
-  serviceCode: string,
-  serviceName: string,
-  categoryId: number,
-  price = 0,
-): ServiceCatalogItem => ({
-  id,
-  serviceCode,
-  serviceName,
-  categoryId,
-  categoryName: `Category ${categoryId}`,
-  price,
-  billingUnit: 'PER_HORSE',
-  status: 'ACTIVE',
-})
+const store = new Map<string, string>()
+const signIn = (username: string) => store.set('SWP_SESSION_customer', JSON.stringify({ role: 'customer', username }))
 
-describe('booking service catalog selection', () => {
-  const catalog = [
-    service(1, 'STALL_STANDARD', 'Khoang tiêu chuẩn', 1),
-    service(2, 'STALL_SINGLE_EXTENDED', 'Khoang đơn mở rộng', 1, 2_000_000),
-    service(4, 'FEED_ADVANCED', 'Gói nâng cao', 2, 300_000),
-    service(10, 'INSURANCE_DECLINED', 'Từ chối', 4),
-  ]
-
-  it('dùng mã dịch vụ ổn định và vẫn đọc lựa chọn ID trong bản nháp cũ', () => {
-    const config = { ...defaultConfig(), selectedServiceCodes: { stall: 'STALL_SINGLE_EXTENDED' } }
-    expect(serviceOptionFor(catalog, config, 'stall')?.id).toBe(2)
-    expect(serviceOptionFor(catalog, { ...defaultConfig(), selectedServices: { stall: 2 } }, 'stall')?.id).toBe(2)
-    expect(serviceOptionFor(catalog, { ...defaultConfig(), feedPackage: 'advanced' }, 'feed')?.id).toBe(4)
+describe('bản nháp đơn', () => {
+  beforeEach(() => {
+    store.clear()
+    vi.resetModules()
+    vi.stubGlobal('sessionStorage', {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => { store.set(key, value) },
+      removeItem: (key: string) => { store.delete(key) },
+    })
   })
 
-  it('không tự thay dịch vụ đã bị ẩn do ngừng áp dụng', () => {
-    const config = { ...defaultConfig(), selectedServices: { stall: 2 } }
-    expect(serviceOptionFor([catalog[0]], config, 'stall')).toBeUndefined()
+  it('giữ riêng theo tài khoản, người đăng nhập sau không thấy bản nháp của người trước', async () => {
+    const { saveDraft } = await import('./draft')
+    signIn('a')
+    saveDraft({ pickupNote: 'của A' })
+    signIn('b')
+    saveDraft({ deliveryNote: 'của B' })
+    expect(JSON.parse(store.get('SWP_RHT_BOOKING_DRAFT_b')!).pickupNote).toBe('')
+    expect(JSON.parse(store.get('SWP_RHT_BOOKING_DRAFT_a')!).pickupNote).toBe('của A')
   })
 
-  it('xác định lựa chọn từ chối bảo hiểm để buộc xác nhận điều khoản', () => {
-    expect(isDeclinedInsurance(catalog[3])).toBe(true)
-    expect(isDeclinedInsurance(catalog[1])).toBe(false)
+  it('gửi xong thì xóa bản nháp', async () => {
+    const { clearDraft, saveDraft } = await import('./draft')
+    signIn('a')
+    saveDraft({ pickupNote: 'x' })
+    clearDraft()
+    expect(store.has('SWP_RHT_BOOKING_DRAFT_a')).toBe(false)
   })
 
-  it('không trả dịch vụ nước đã ngừng cung cấp', () => {
-    expect(serviceOptionFor([
-      service(7, 'WATER_EVERY_2H', 'Mỗi 2 giờ', 3, 50_000),
-    ], defaultConfig(), 'water')).toBeUndefined()
+  it('bản nháp hỏng thì bắt đầu lại từ đầu', async () => {
+    const { saveDraft } = await import('./draft')
+    signIn('a')
+    store.set('SWP_RHT_BOOKING_DRAFT_a', '{hỏng')
+    saveDraft({ pickupNote: 'mới' })
+    expect(JSON.parse(store.get('SWP_RHT_BOOKING_DRAFT_a')!)).toMatchObject({ pickupNote: 'mới', horseIds: [] })
+  })
+
+  it('không ghi tệp hợp đồng vào sessionStorage', async () => {
+    const { emptyHorse, saveDraft } = await import('./draft')
+    signIn('a')
+    saveDraft({ horseIds: [1], horses: {
+      1: { ...emptyHorse(), coverage: 'PERSONAL', policyNumber: 'P1', policyFile: new File(['%PDF-1.7'], 'policy.pdf') },
+    } })
+    const raw = store.get('SWP_RHT_BOOKING_DRAFT_a')!
+    expect(JSON.parse(raw).horses[1]).toMatchObject({ coverage: 'PERSONAL', policyNumber: 'P1' })
+    expect(raw).not.toContain('policyFile')
   })
 })

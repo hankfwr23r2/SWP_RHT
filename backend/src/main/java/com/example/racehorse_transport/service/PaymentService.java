@@ -1,12 +1,30 @@
 package com.example.racehorse_transport.service;
 
+import com.example.racehorse_transport.dto.payment.PaymentResponseDto;
+import com.example.racehorse_transport.entity.Quotation;
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 
-// Hợp đồng gọi chéo giữa hai luồng (docs/KE_HOACH_TRIEN_KHAI.md mục 3.3).
-// Cài đặt: luồng A (task A7, A8). Gọi: luồng A. Chưa có cài đặt thì bên gọi test bằng mock.
 public interface PaymentService {
+    BigDecimal outstanding(Quotation quotation);
+    List<PaymentResponseDto> payments(Long bookingId, String username);
 
-    // Lập khoản thu thêm (payment EXTRA_CHARGE) cho các chi phí đã duyệt mà khách hoặc người nhận chịu.
-    // Trả về id của payment. Bên cài đặt gọi CostItemService.linkExtraPayment để gắn ngược.
+    List<PaymentResponseDto> paymentsForManager(Long bookingId);
+
+    // Luồng B gọi khi hoàn tất nhận ngựa. A khóa đơn trước khi tạo khoản thu.
+    void requestBalance(Long bookingId, Instant receivedAt);
+
+    // Các thao tác nội bộ A7 chạy trong transaction đang giữ khóa booking.
+    void createDeposit(Quotation quotation);
+
+    void cancelPendingDeposits(Long bookingId);
+
+    boolean expireDepositAndRelease(Quotation quotation, Instant now);
+
+    BigDecimal reconcileBalance(Quotation quotation);
+
     Long createExtraCharge(Long bookingId, List<Long> costItemIds, Long actorUserId);
+
+    Long createExtraChargeForUser(Long bookingId, List<Long> costItemIds, String username);
 }

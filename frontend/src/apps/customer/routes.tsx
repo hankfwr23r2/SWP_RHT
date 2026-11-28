@@ -1,11 +1,10 @@
 // Danh sách trang của app khách: URL → trang → vai trò. Rỗng roles = công khai.
 import { lazy } from 'react'
 import type { AppRoute } from '@shared/routing/types'
+import i18n, { i18nReady } from '@shared/i18n'
 import LoginPage from './features/auth/LoginPage'
 import HomePage from './features/home/HomePage'
-import { horseListLoader, horsesLoader } from './features/horses/loaders'
-import { orderDetailLoader, ordersLoader } from './features/orders/loaders'
-import { portalLoader } from './features/portal/portalLoader'
+import { horseProfilesLoader } from './features/horses/loaders'
 
 // Trang chủ và đăng nhập tải ngay; các trang còn lại chỉ tải khi mở tới (lazy), để lần mở web đầu tiên
 // không phải tải cả thư viện bản đồ (~1,7 MB) mà trang chủ không dùng.
@@ -14,12 +13,18 @@ const SitemapPage = lazy(() => import('../sitemap/SitemapPage').then(m => ({ def
 const CustomerForgotPasswordPage = lazy(() => import('@shared/auth/ForgotPasswordPage').then(m => ({ default: m.CustomerForgotPasswordPage })))
 const RegisterPage = lazy(() => import('./features/auth/RegisterPage'))
 const VerifyEmailPage = lazy(() => import('./features/auth/VerifyEmailPage'))
-const Step1RoutePage = lazy(() => import('./features/booking/Step1RoutePage'))
 const PolicyPage = lazy(() => import('./features/policies/PolicyPage'))
 const VnpayReturnPage = lazy(() => import('./features/payment/VnpayReturnPage'))
-const ProfilePage = lazy(() => import('./features/profile/ProfilePage'))
 
 const C = ['customer'] as AppRoute['roles']
+
+// Bốn bước đặt đơn dùng chung dữ liệu; chờ bộ chữ để tiêu đề trang đúng ngôn ngữ
+const bookingStep = (step: 'route' | 'horses' | 'services' | 'review', load: NonNullable<AppRoute['lazyPage']>): AppRoute => ({
+  path: `/booking/${step}`, roles: C, layout: 'customer',
+  loader: () => import('./features/booking/loaders').then(m => m.bookingLoader()),
+  lazyPage: () => Promise.all([load(), i18nReady]).then(([page]) => page),
+  get title() { return i18n.t(`bookingForm.steps.${step}`) },
+})
 
 export const routes: AppRoute[] = [
   { path: '/', page: HomePage, roles: [], title: 'Trang chủ', layout: 'public', catalog: false },
@@ -27,17 +32,52 @@ export const routes: AppRoute[] = [
   { path: '/forgot-password', page: CustomerForgotPasswordPage, roles: [], title: 'Quên mật khẩu', layout: 'bare', catalog: false },
   { path: '/register', page: RegisterPage, roles: [], title: 'Đăng ký', layout: 'bare', catalog: false },
   { path: '/verify-email', page: VerifyEmailPage, roles: [], title: 'Xác thực email', layout: 'bare', catalog: false },
-  { path: '/portal', lazyPage: () => import('./features/portal/PortalPage'), loader: portalLoader, roles: C, title: 'Trang chủ', layout: 'customer' },
-  { path: '/profile', page: ProfilePage, roles: C, title: 'Hồ sơ cá nhân', layout: 'customer' },
-  { path: '/horses', lazyPage: () => import('./features/horses/HorsesPage'), loader: horsesLoader, roles: C, title: 'Hồ sơ ngựa', layout: 'customer' },
-  { path: '/booking/route', page: Step1RoutePage, roles: C, title: 'Đặt chuyến · Chuyến đi', layout: 'customer' },
-  { path: '/booking/horses', lazyPage: () => import('./features/booking/Step2HorsesPage'), loader: horsesLoader, roles: C, title: 'Đặt chuyến · Chọn ngựa', layout: 'customer' },
-  { path: '/booking/services', lazyPage: () => import('./features/booking/Step3ServicesPage'), loader: horseListLoader, roles: C, title: 'Đặt chuyến · Dịch vụ & bảo hiểm', layout: 'customer' },
-  { path: '/booking/review', lazyPage: () => import('./features/booking/Step4ReviewPage'), loader: horseListLoader, roles: C, title: 'Đặt chuyến · Xác nhận & gửi', layout: 'customer' },
-  { path: '/orders', lazyPage: () => import('./features/orders/OrdersPage'), loader: ordersLoader, roles: C, title: 'Đơn của tôi', layout: 'customer' },
-  { path: '/history', lazyPage: () => import('./features/orders/HistoryPage'), loader: ordersLoader, roles: C, title: 'Lịch sử đơn', layout: 'customer' },
+  {
+    path: '/portal', roles: C, layout: 'customer',
+    loader: () => import('./features/portal/loaders').then(m => m.portalLoader()),
+    lazyPage: () => Promise.all([import('./features/portal/PortalPage'), i18nReady]).then(([page]) => page),
+    get title() { return i18n.t('nav.home') },
+  },
+  {
+    path: '/profile', roles: C, layout: 'customer',
+    loader: () => import('./features/profile/loaders').then(m => m.profileLoader()),
+    lazyPage: () => Promise.all([import('./features/profile/ProfilePage'), i18nReady]).then(([page]) => page),
+    get title() { return i18n.t('profile.title') },
+  },
+  {
+    path: '/horses', roles: C, layout: 'customer', loader: horseProfilesLoader,
+    lazyPage: () => Promise.all([import('./features/horses/HorsesPage'), i18nReady]).then(([page]) => page),
+    get title() { return i18n.t('horses.title') },
+  },
+  {
+    path: '/addresses', roles: C, layout: 'customer',
+    loader: () => import('./features/addresses/loaders').then(m => m.addressesLoader()),
+    lazyPage: () => Promise.all([import('./features/addresses/AddressBookPage'), i18nReady]).then(([page]) => page),
+    get title() { return i18n.t('addresses.title') },
+  },
+  bookingStep('route', () => import('./features/booking/Step1RoutePage')),
+  bookingStep('horses', () => import('./features/booking/Step2HorsesPage')),
+  bookingStep('services', () => import('./features/booking/Step3ServicesPage')),
+  bookingStep('review', () => import('./features/booking/Step4ReviewPage')),
+  {
+    path: '/orders', roles: C, layout: 'customer',
+    loader: () => import('./features/orders/loaders').then(m => m.ordersLoader()),
+    lazyPage: () => Promise.all([import('./features/orders/OrdersPage'), i18nReady]).then(([page]) => page),
+    get title() { return i18n.t('myOrders.title') },
+  },
+  {
+    path: '/history', roles: C, layout: 'customer',
+    loader: () => import('./features/orders/loaders').then(m => m.ordersLoader()),
+    lazyPage: () => Promise.all([import('./features/orders/HistoryPage'), i18nReady]).then(([page]) => page),
+    get title() { return i18n.t('myOrders.historyTitle') },
+  },
   { path: '/terms', page: PolicyPage, roles: [], title: 'Điều khoản và chính sách', layout: 'public', catalog: false },
-  { path: '/orders/:id', lazyPage: () => import('./features/orders/OrderDetailPage'), loader: orderDetailLoader, roles: C, title: 'Chi tiết đơn', layout: 'customer' },
+  {
+    path: '/orders/:id', roles: C, layout: 'customer',
+    loader: context => import('./features/orders/loaders').then(m => m.orderDetailLoader(context)),
+    lazyPage: () => Promise.all([import('./features/orders/OrderDetailPage'), i18nReady]).then(([page]) => page),
+    get title() { return i18n.t('myOrders.title') },
+  },
   { path: '/payment/vnpay-return', page: VnpayReturnPage, roles: [], title: 'Kết quả thanh toán', layout: 'public' },
 ]
 

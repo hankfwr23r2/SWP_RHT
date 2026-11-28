@@ -23,9 +23,6 @@ frontend/.env
 frontend/*.local
 *application-local.properties
 *.sql
-# Keep the reviewed read-only audit script
-!backend/scripts/audit-horse-delivery-locations.sql
-!backend/scripts/migrations/*.sql
 # Keep the sequence repair script; database dumps remain ignored.
 !docker/postgres/repair_sequences.sql
 # Flyway migrations and dev seed are source code and must be committed.
@@ -63,3 +60,6 @@ graphify-out/
 # Claude Code
 CLAUDE.md
 *:Zone.Identifier
+
+# Dữ liệu của chế độ chạy thử
+local-demo/
