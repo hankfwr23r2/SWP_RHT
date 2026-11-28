@@ -103,7 +103,6 @@ export const staffDispatch = {
       "all": "All ({{count}})",
       "nextWeekHint": "Nothing waiting this week. {{count}} orders wait in a later week.",
       "openWeek": "Open week of {{date}}",
-      "awayAt": "At {{name}}",
       "planReturn": "Plan the return",
       "nothing": "Nothing left to plan",
       "pickupOn": "Pickup {{date}}",

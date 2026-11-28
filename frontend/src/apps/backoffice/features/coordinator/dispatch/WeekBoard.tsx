@@ -32,12 +32,7 @@ export function WeekBoard({ weekStart, vehicles, trips, onOpen, onReturn }: {
           <div className={s.vehicle}>
             <strong>{vehicle.licensePlate}</strong>
             <span>{t('dispatch.board.seats', { count: (vehicle.standardStallCount ?? 0) + 2 * (vehicle.wideStallCount ?? 0) })}</span>
-            {isAway(vehicle) && (
-              <>
-                <span className={s.warn}><i className="fa-solid fa-location-dot" aria-hidden="true" /> {t('dispatch.board.awayAt', { name: vehicle.currentLocationName })}</span>
-                {vehicle.status === 'ACTIVE' && <Button size="sm" variant="ghost" onClick={() => onReturn(vehicle)}>{t('dispatch.board.planReturn')}</Button>}
-              </>
-            )}
+            {isAway(vehicle) && vehicle.status === 'ACTIVE' && <Button size="sm" variant="ghost" onClick={() => onReturn(vehicle)}>{t('dispatch.board.planReturn')}</Button>}
             {vehicle.status !== 'ACTIVE' && <span className={s.warn}>{t(`staffCatalog.status.${vehicle.status}`, { defaultValue: vehicle.status })}</span>}
           </div>
           <div className={s.lane}>
