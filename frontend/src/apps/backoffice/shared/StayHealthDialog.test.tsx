@@ -21,40 +21,38 @@ function save() {
   fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: /lưu|ghi nhận/i }))
 }
 
-it('requires both report fields and sends measurements and notes for the selected stay', async () => {
+it('hub form keeps only health status and reporter, and sends just those', async () => {
   vi.mocked(apiClient.post).mockResolvedValue({ status: 201, data: { data: {} } })
   const onSaved = showForm(true)
+  for (const removed of [/Kênh báo/, 'Uống nước', 'Ăn', /Nhiệt độ/, /Nhịp tim/, /Nhịp thở/, 'Triệu chứng', 'Ghi chú']) {
+    expect(screen.queryByLabelText(removed)).toBeNull()
+  }
   expect((screen.getByRole('button', { name: /lưu|ghi nhận/i }) as HTMLButtonElement).disabled).toBe(true)
   fireEvent.change(screen.getByLabelText(/Người báo/), { target: { value: 'Lan' } })
-  expect((screen.getByRole('button', { name: /lưu|ghi nhận/i }) as HTMLButtonElement).disabled).toBe(true)
-  fireEvent.change(screen.getByLabelText(/Kênh báo/), { target: { value: 'Điện thoại' } })
-  fireEvent.click(screen.getByLabelText('Uống nước'))
-  fireEvent.click(screen.getByRole('option', { name: 'Bình thường' }))
-  fireEvent.click(screen.getByLabelText('Ăn'))
-  fireEvent.click(screen.getByRole('option', { name: 'Bình thường' }))
-  fireEvent.change(screen.getByLabelText(/Nhiệt độ/), { target: { value: '37.8' } })
-  fireEvent.change(screen.getByLabelText(/Nhịp tim/), { target: { value: '42' } })
-  fireEvent.change(screen.getByLabelText(/Nhịp thở/), { target: { value: '16' } })
-  fireEvent.change(screen.getByLabelText('Triệu chứng'), { target: { value: 'Ho' } })
-  fireEvent.change(screen.getByLabelText('Ghi chú'), { target: { value: 'Đã theo dõi' } })
+  fireEvent.click(screen.getByLabelText(/Sức khỏe/))
+  fireEvent.click(screen.getByRole('option', { name: 'Theo dõi' }))
   save()
   await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1))
   expect(apiClient.post).toHaveBeenCalledWith('/health-logs', {
-    bookingHorseId: 3, horseStayId: 7, healthStatus: 'NORMAL', reportedBy: 'Lan', reportChannel: 'Điện thoại',
-    waterIntake: 'NORMAL', feedIntake: 'NORMAL',
-    temperatureCelsius: 37.8, heartRateBpm: 42, respirationRatePerMinute: 16, symptoms: 'Ho', note: 'Đã theo dõi',
+    bookingHorseId: 3, horseStayId: 7, healthStatus: 'WATCH', reportedBy: 'Lan',
   }, expect.anything())
 })
 
-it('shows backend field errors without discarding the crew draft', async () => {
-  vi.mocked(apiClient.post).mockResolvedValue({
-    status: 400, data: { message: 'Invalid note', data: { note: 'Ghi chú chưa hợp lệ' } },
-  })
-  const onSaved = showForm()
+it('stay keeper form has only health status', () => {
+  showForm()
+  expect(screen.getByLabelText(/Sức khỏe/)).toBeTruthy()
   expect(screen.queryByLabelText(/Người báo/)).toBeNull()
-  fireEvent.change(screen.getByLabelText('Ghi chú'), { target: { value: 'Bản nháp' } })
+  expect(within(screen.getByRole('dialog')).queryAllByRole('textbox')).toHaveLength(0)
+})
+
+it('shows backend field errors without discarding the draft', async () => {
+  vi.mocked(apiClient.post).mockResolvedValue({
+    status: 400, data: { message: 'Invalid reporter', data: { reportedBy: 'Người báo chưa hợp lệ' } },
+  })
+  const onSaved = showForm(true)
+  fireEvent.change(screen.getByLabelText(/Người báo/), { target: { value: 'Bản nháp' } })
   save()
-  expect(await screen.findByText('Ghi chú chưa hợp lệ')).toBeTruthy()
-  expect((screen.getByLabelText('Ghi chú') as HTMLTextAreaElement).value).toBe('Bản nháp')
+  expect(await screen.findByText('Người báo chưa hợp lệ')).toBeTruthy()
+  expect((screen.getByLabelText(/Người báo/) as HTMLInputElement).value).toBe('Bản nháp')
   expect(onSaved).not.toHaveBeenCalled()
 })

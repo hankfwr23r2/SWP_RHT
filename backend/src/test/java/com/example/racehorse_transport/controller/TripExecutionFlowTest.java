@@ -269,7 +269,7 @@ class TripExecutionFlowTest {
     }
 
     @Test
-    void pickupCannotLeaveRestStopWithoutEveryHorsesFeedAndWaterLog() throws Exception {
+    void pickupLeavesRestedRestStopWithoutAFeedAndWaterLog() throws Exception {
         long rest = locations.findByCode("REST-SONLA").orElseThrow().getId();
         entityManager.flush();
         jdbc.update("UPDATE vehicle_trip SET trip_type = 'PICKUP', status = 'IN_PROGRESS', actual_start_at = now() WHERE id = ?", trip);
@@ -282,8 +282,7 @@ class TripExecutionFlowTest {
                     alight_trip_stop_id = ? WHERE id = ?
                 """, stops.getLast(), leg);
         entityManager.clear();
-        act(driver, "/trip-stops/" + stops.get(2) + "/depart").andExpect(status().isConflict())
-                .andExpect(jsonPath("$.data.healthLogs", org.hamcrest.Matchers.containsString("Chưa ghi ăn uống")));
+        act(driver, "/trip-stops/" + stops.get(2) + "/depart").andExpect(status().isOk());
     }
 
     private String departureStatus(long departureId) {

@@ -42,7 +42,6 @@ export const fieldCrew = {
   stayHealth: {
     record: "Ghi sức khỏe",
     reportedBy: "Người báo",
-    reportChannel: "Kênh báo (ví dụ: điện thoại)",
     heartRateBpm: "Nhịp tim (lần/phút)",
     respirationRatePerMinute: "Nhịp thở (lần/phút)",
     symptoms: "Triệu chứng",

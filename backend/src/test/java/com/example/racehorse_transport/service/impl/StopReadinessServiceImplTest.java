@@ -14,7 +14,6 @@ import com.example.racehorse_transport.entity.enums.VehicleTripType;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.repository.HandoverHorseRepository;
 import com.example.racehorse_transport.repository.HandoverRepository;
-import com.example.racehorse_transport.repository.HorseHealthLogRepository;
 import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.service.AuditService;
 import com.example.racehorse_transport.service.PaymentReadinessService;
@@ -34,7 +33,7 @@ class StopReadinessServiceImplTest {
     private final HorseLegRepository legs = mock(HorseLegRepository.class);
     private final TripStop stop = new TripStop();
     private final StopReadinessServiceImpl service = new StopReadinessServiceImpl(mock(HandoverRepository.class),
-            mock(HandoverHorseRepository.class), legs, mock(HorseHealthLogRepository.class), mock(PaymentReadinessService.class),
+            mock(HandoverHorseRepository.class), legs, mock(PaymentReadinessService.class),
             mock(SystemConfigService.class), mock(AuditService.class), Clock.fixed(now, ZoneOffset.UTC),
             mock(PickupBalanceService.class), mock(StablingTimelineService.class));
 

@@ -105,14 +105,8 @@ public class HealthLogServiceImpl implements HealthLogService {
 
         HorseHealthLog log = request.toEntity(line, stop, stay);
         if (coordinator) {
-            log.setNote(HealthLogPolicy.reportedNote(request.reportedBy(), request.reportChannel(), request.note()));
+            log.setNote(HealthLogPolicy.reportedNote(request.reportedBy()));
         }
-        healthLogs.findFirstByBookingHorse_IdOrderByRecordedAtDesc(line.getId())
-                .filter(previous -> HealthLogPolicy.refusedWaterTwice(request.waterIntake(), previous.getWaterIntake()))
-                .ifPresent(previous -> {
-                    log.setHealthStatus(HealthLogPolicy.atLeastWatch(request.healthStatus()));
-                    notifyCoordinators(line, stop == null ? null : stop.getVehicleTrip());
-                });
         HorseHealthLog saved = save(log, recorder, recordedAt);
         if (saved.getHealthStatus() == HealthStatus.SICK || saved.getHealthStatus() == HealthStatus.CRITICAL) {
             notifyCoordinatorsForHealth(line, saved.getHealthStatus(), stop == null ? null : stop.getVehicleTrip());
@@ -203,13 +197,6 @@ public class HealthLogServiceImpl implements HealthLogService {
             throw new AccessDeniedException("Chỉ ghi sức khỏe trong lần lưu trú ở hub hoặc chuồng.");
         }
         return stay;
-    }
-
-    private void notifyCoordinators(BookingHorse line, VehicleTrip trip) {
-        List<Long> recipients = coordinators.forHorse(line, trip);
-        if (recipients.isEmpty()) return;
-        notifications.notify(recipients, line.getBooking().getId(), "Ngựa bỏ uống hai lần dừng liền",
-                line.getHorse().getName() + " (đơn " + line.getBooking().getCode() + ") không uống nước ở hai lần dừng liền, đã chuyển sang theo dõi.", null);
     }
 
     private void notifyCoordinatorsForHealth(BookingHorse line, HealthStatus status, VehicleTrip trip) {

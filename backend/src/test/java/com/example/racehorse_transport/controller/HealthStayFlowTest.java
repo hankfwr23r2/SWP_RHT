@@ -31,7 +31,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
-// B3: ghi ăn uống ở trạm nghỉ, chặn rời trạm (#34), bỏ uống 2 lần liền thì theo dõi, tập kết ở hub sau khi giao vào hub
+// B3: ghi sức khỏe ở trạm nghỉ, rời trạm phải nghỉ đủ (#34), tập kết ở hub sau khi giao vào hub
 @PostgresIntegrationTest
 @AutoConfigureMockMvc
 @Transactional
@@ -74,7 +74,7 @@ class HealthStayFlowTest {
     }
 
     @Test
-    void restStopNeedsEveryHorseLoggedAndRested() throws Exception {
+    void restStopNeedsRestButNotAFeedLog() throws Exception {
         long rest = locations.findByCode("REST-PHANTHIET").orElseThrow().getId();
         List<Long> stops = runToPickupAndLeave("DIRECT", List.of(
                 stop("locationId", hcm, "HUB", 0), stop("bookingAddressId", pickup, "PICKUP", 60), stop("locationId", rest, "REST", 120),
@@ -82,11 +82,8 @@ class HealthStayFlowTest {
         drive("/trip-stops/" + stops.get(2) + "/arrive").andExpect(status().isOk());
 
         drive("/trip-stops/" + stops.get(2) + "/depart").andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Chưa ghi ăn uống cho: Sao Mai."));
-        log(stops.get(2), null, "NORMAL", null, null).andExpect(status().isCreated());
-        drive("/trip-stops/" + stops.get(2) + "/depart").andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Chưa ghi ăn uống cho: Sao Mai."));
-        log(stops.get(2), null, "NORMAL", "NORMAL", "NORMAL").andExpect(status().isCreated())
+                .andExpect(jsonPath("$.message").value("Chưa nghỉ đủ 30 phút. Rời sớm phải ghi lý do."));
+        log(stops.get(2), null, "NORMAL", null, null).andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.placeName").value(locations.findById(rest).orElseThrow().getName()));
         drive("/trip-stops/" + stops.get(2) + "/depart").andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("Chưa nghỉ đủ 30 phút. Rời sớm phải ghi lý do."));
@@ -186,28 +183,6 @@ class HealthStayFlowTest {
     }
 
     @Test
-    void refusingWaterAtTwoStopsInARowRaisesWatchAndAlertsCoordinators() throws Exception {
-        long rest = locations.findByCode("REST-PHANTHIET").orElseThrow().getId();
-        List<Long> stops = runToPickupAndLeave("DIRECT", List.of(
-                stop("locationId", hcm, "HUB", 0), stop("bookingAddressId", pickup, "PICKUP", 60), stop("locationId", rest, "REST", 120),
-                stop("bookingAddressId", delivery, "DELIVERY", 240), stop("locationId", hcm, "HUB", 480)), 2);
-        // Lần dừng trước (lúc nhận ngựa) đã bỏ uống
-        jdbc.update("""
-                INSERT INTO horse_health_log (booking_horse_id, recorded_by, recorded_at, trip_stop_id, health_status, water_intake, feed_intake)
-                VALUES (?, ?, now() - interval '2 hours', ?, 'NORMAL', 'REFUSED', 'NORMAL')""",
-                line, jdbc.queryForObject("SELECT user_id FROM staff WHERE staff_code = (SELECT staff_code FROM staff ORDER BY user_id DESC LIMIT 1)", Long.class), stops.get(1));
-        drive("/trip-stops/" + stops.get(2) + "/arrive").andExpect(status().isOk());
-
-        log(stops.get(2), null, "NORMAL", "REFUSED", "REDUCED").andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.healthStatus").value("WATCH"));
-        entityManager.flush();
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM notification_recipient r JOIN notification n ON n.id = r.notification_id WHERE r.user_id = ? AND n.title LIKE 'Ngựa bỏ uống%'", Integer.class, coordinatorStaff.getUserId()))
-                .isEqualTo(1);
-        mvc.perform(get("/booking-horses/{id}/health-logs", line).header(HttpHeaders.AUTHORIZATION, coordinator))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.data[0].healthStatus").value("WATCH"));
-    }
-
-    @Test
     void handingIntoHubOpensAnAssemblyStayWhereHealthIsLogged() throws Exception {
         List<Long> stops = runToPickupAndLeave("PICKUP", List.of(
                 stop("locationId", hcm, "HUB", 0), stop("bookingAddressId", pickup, "PICKUP", 60), stop("locationId", hcm, "HUB", 240)), 2);
@@ -249,9 +224,6 @@ class HealthStayFlowTest {
         postHealth(manager, body).andExpect(status().isForbidden());
         postHealth(coordinator, logBody(hubStop, null, "NORMAL", null, null)).andExpect(status().isForbidden());
         postHealth(coordinator, body).andExpect(status().isBadRequest()).andExpect(jsonPath("$.data.reportedBy").exists());
-        postHealth(coordinator, withReport(body, """
-                "reportedBy":"Nhân viên chuồng","reportChannel":" "
-                """)).andExpect(status().isBadRequest()).andExpect(jsonPath("$.data.reportChannel").exists());
         mvc.perform(get("/horse-stays/mine").header(HttpHeaders.AUTHORIZATION, escort))
                 .andExpect(status().isOk()).andExpect(jsonPath(lineFilter + ".id").value((int) stay));
         mvc.perform(get("/horse-stays/mine").header(HttpHeaders.AUTHORIZATION, driver))
@@ -272,9 +244,9 @@ class HealthStayFlowTest {
                 .andExpect(status().isOk()).andExpect(jsonPath(lineFilter + ".careOverdue").value(true));
         postHealth(driver, body).andExpect(status().isForbidden());
         postHealth(coordinator, withReport(logBody(null, stay, "CRITICAL", "NORMAL", "NORMAL"), """
-                "reportedBy":"Nhân viên chuồng","reportChannel":"Điện thoại","note":"Đã gọi bác sĩ"
+                "reportedBy":"Nhân viên chuồng"
                 """)).andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.note").value("Người báo: Nhân viên chuồng\nKênh báo: Điện thoại\nĐã gọi bác sĩ"));
+                .andExpect(jsonPath("$.data.note").value("Người báo: Nhân viên chuồng"));
         mvc.perform(get("/custody-board").header(HttpHeaders.AUTHORIZATION, coordinator))
                 .andExpect(status().isOk()).andExpect(jsonPath(lineFilter + ".careOverdue").value(false));
         entityManager.flush();
@@ -286,7 +258,7 @@ class HealthStayFlowTest {
         jdbc.update("UPDATE horse_stay SET actual_end_at = clock_timestamp() WHERE id = ?", stay);
         entityManager.clear();
         postHealth(coordinator, withReport(body, """
-                "reportedBy":"Nhân viên chuồng","reportChannel":"Điện thoại"
+                "reportedBy":"Nhân viên chuồng"
                 """)).andExpect(status().isConflict());
         mvc.perform(get("/horse-stays/mine").header(HttpHeaders.AUTHORIZATION, driver))
                 .andExpect(status().isOk()).andExpect(jsonPath(lineFilter).isEmpty());
@@ -349,7 +321,7 @@ class HealthStayFlowTest {
 
         long stayId = ((Number) stay.get("id")).longValue();
         postHealth(coordinator, withReport(logBody(null, stayId, "NORMAL", "NORMAL", "NORMAL"), """
-                "reportedBy":"Nhân viên chuồng","reportChannel":"Điện thoại"
+                "reportedBy":"Nhân viên chuồng"
                 """)).andExpect(status().isCreated()).andExpect(jsonPath("$.data.horseStayId").value(stayId));
 
         // Chưa nhận lại thì chưa rời trạm

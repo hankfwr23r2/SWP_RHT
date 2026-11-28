@@ -6,11 +6,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.example.racehorse_transport.entity.enums.HealthStatus;
 import com.example.racehorse_transport.entity.enums.HorseStayType;
-import com.example.racehorse_transport.entity.enums.IntakeLevel;
 import com.example.racehorse_transport.entity.enums.LocationType;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import java.time.Instant;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class HealthLogPolicyTest {
@@ -35,32 +33,20 @@ class HealthLogPolicyTest {
     }
 
     @Test
-    void requiresBothReportFieldsAndLimitsTheCombinedNote() {
-        assertThat(HealthLogPolicy.reportedNote(" Lan ", " Điện thoại ", " Ho nhẹ "))
-                .isEqualTo("Người báo: Lan\nKênh báo: Điện thoại\nHo nhẹ");
-        assertThatThrownBy(() -> HealthLogPolicy.reportedNote(null, "Điện thoại", null))
+    void hubReportNeedsOnlyTheReporter() {
+        assertThat(HealthLogPolicy.reportedNote(" Lan ")).isEqualTo("Người báo: Lan");
+        assertThatThrownBy(() -> HealthLogPolicy.reportedNote(" "))
                 .isInstanceOfSatisfying(DispatchRuleException.class, error -> assertThat(error.getField()).isEqualTo("reportedBy"));
-        assertThatThrownBy(() -> HealthLogPolicy.reportedNote("Lan", " ", null))
-                .isInstanceOfSatisfying(DispatchRuleException.class, error -> assertThat(error.getField()).isEqualTo("reportChannel"));
-        assertThatThrownBy(() -> HealthLogPolicy.reportedNote("Lan", "Điện thoại", "a".repeat(2000)))
-                .isInstanceOfSatisfying(DispatchRuleException.class, error -> assertThat(error.getField()).isEqualTo("note"));
     }
 
     @Test
-    void refusingWaterTwiceRaisesToWatch() {
-        assertThat(HealthLogPolicy.refusedWaterTwice(IntakeLevel.REFUSED, IntakeLevel.REFUSED)).isTrue();
-        assertThat(HealthLogPolicy.refusedWaterTwice(IntakeLevel.REFUSED, IntakeLevel.REDUCED)).isFalse();
-        assertThat(HealthLogPolicy.refusedWaterTwice(IntakeLevel.NORMAL, IntakeLevel.REFUSED)).isFalse();
-        assertThat(HealthLogPolicy.refusedWaterTwice(IntakeLevel.REFUSED, null)).isFalse();
+    void vetNoteRaisesToAtLeastWatch() {
         assertThat(HealthLogPolicy.atLeastWatch(HealthStatus.NORMAL)).isEqualTo(HealthStatus.WATCH);
         assertThat(HealthLogPolicy.atLeastWatch(HealthStatus.SICK)).isEqualTo(HealthStatus.SICK);
     }
 
     @Test
-    void restStopIsLeftOnlyWhenEveryHorseIsLoggedAndRested() {
-        assertThatCode(() -> HealthLogPolicy.requireAllLogged(List.of())).doesNotThrowAnyException();
-        assertThatThrownBy(() -> HealthLogPolicy.requireAllLogged(List.of("Sao Mai", "Gió Bắc"))).hasMessageContaining("Sao Mai, Gió Bắc");
-
+    void restStopIsLeftOnlyWhenRested() {
         assertThatCode(() -> HealthLogPolicy.requireRested(ARRIVED, ARRIVED.plusSeconds(30 * 60), 30, null)).doesNotThrowAnyException();
         assertThatThrownBy(() -> HealthLogPolicy.requireRested(ARRIVED, ARRIVED.plusSeconds(29 * 60), 30, " "))
                 .hasMessageContaining("Chưa nghỉ đủ 30 phút");

@@ -107,7 +107,7 @@ export function canComplete(run: CrewTrip): boolean {
     && (!last || horsesAtStable(run, last).size === 0)
 }
 
-// Trạm nghỉ và điểm khám: phải ghi uống và ăn cho mọi con đang trên xe trước khi rời (quy tắc #34)
+// Trạm nghỉ và điểm khám: kíp xe ghi sức khỏe cho con đang trên xe
 export const isRestStop = (stop: Stop) => stop.stopType === 'REST' || stop.stopType === 'VITAL_CHECK'
 
 // Con đang trên xe khi đi qua điểm này: đã lên trước điểm này và sẽ xuống sau điểm này
