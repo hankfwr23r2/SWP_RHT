@@ -32,6 +32,14 @@ public final class HealthCheckTaskPolicy {
         return Optional.ofNullable(CHECKS_BY_TRIP.get(tripType));
     }
 
+    // Lần ghi sức khỏe ở hub tính là đã khám ra hub khi ghi trong lúc ngựa đang ở hub đó và không quá withinHours giờ
+    // trước lúc rời hub (now). Không cần việc khám được giao trước: hộ tống hay điều phối khám rồi thì xe được chạy.
+    public static boolean recentHubCheck(Instant recordedAt, HorseStay stayOfLog, Long requiredStayId, Instant now, int withinHours) {
+        if (recordedAt == null || stayOfLog == null || !isOpenAtHub(stayOfLog)) return false;
+        if (requiredStayId != null && !requiredStayId.equals(stayOfLog.getId())) return false;
+        return !recordedAt.isAfter(now) && !recordedAt.isBefore(now.minus(java.time.Duration.ofHours(withinHours)));
+    }
+
     public static boolean isOpenAtHub(HorseStay stay) {
         return stay.getActualStartAt() != null && stay.getActualEndAt() == null
                 && stay.getLocation().getLocationType() == LocationType.HUB;

@@ -9,9 +9,12 @@ import com.example.racehorse_transport.entity.enums.HorseInsuranceStatus;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.policy.HealthCheckTaskPolicy;
 import com.example.racehorse_transport.repository.HealthCheckTaskRepository;
+import com.example.racehorse_transport.repository.HorseHealthLogRepository;
 import com.example.racehorse_transport.repository.HorseInsuranceRepository;
 import com.example.racehorse_transport.service.DocumentCompletenessService;
 import com.example.racehorse_transport.service.HandoverReadinessService;
+import com.example.racehorse_transport.service.SystemConfigService;
+import java.time.Clock;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +26,9 @@ public class HandoverReadinessServiceImpl implements HandoverReadinessService {
     private final HorseInsuranceRepository insurances;
     private final DocumentCompletenessService documents;
     private final HealthCheckTaskRepository healthChecks;
+    private final HorseHealthLogRepository healthLogs;
+    private final SystemConfigService configs;
+    private final Clock clock;
 
     @Override
     public void requireConfirmedInsurance(BookingHorse horse) {
@@ -65,7 +71,13 @@ public class HandoverReadinessServiceImpl implements HandoverReadinessService {
     }
 
     private void requireCheck(BookingHorse horse, HealthCheckType type, Long tripId, Long stayId) {
-        if (!healthChecks.hasCompletedCheck(horse.getId(), type, tripId, stayId)) {
+        if (healthChecks.hasCompletedCheck(horse.getId(), type, tripId, stayId)) return;
+        // Đã ghi sức khỏe ở hub gần lúc rời hub cũng tính là đã khám, kể cả khi việc khám chưa được giao hoặc giao cho người khác
+        int hours = configs.getInt("PRE_EXIT_CHECK_HOURS");
+        boolean recent = healthLogs.findFirstByBookingHorse_IdOrderByRecordedAtDesc(horse.getId())
+                .filter(log -> HealthCheckTaskPolicy.recentHubCheck(log.getRecordedAt(), log.getHorseStay(), stayId, clock.instant(), hours))
+                .isPresent();
+        if (!recent) {
             String message = type == HealthCheckType.BEFORE_DEPARTURE ? "Chưa khám trước khi chạy: " : "Chưa khám trước khi giao: ";
             throw new DispatchRuleException("healthCheck", message + horse.getHorse().getName(), true);
         }
