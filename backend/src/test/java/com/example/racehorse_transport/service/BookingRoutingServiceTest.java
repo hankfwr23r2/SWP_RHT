@@ -49,6 +49,7 @@ class BookingRoutingServiceTest {
     @Mock private RegulationService regulations;
     @Mock private DocumentCompletenessService completeness;
     @Mock private Clock clock;
+    @Mock private com.example.racehorse_transport.service.SystemConfigService configs;
     @InjectMocks private BookingRoutingServiceImpl routing;
 
     @Test
